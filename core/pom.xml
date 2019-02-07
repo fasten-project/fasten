@@ -24,7 +24,6 @@
             <groupId>it.unimi.dsi</groupId>
             <artifactId>webgraph</artifactId>
             <version>3.6.1</version>
-            <scope>runtime</scope>
         </dependency>
     </dependencies>
 
