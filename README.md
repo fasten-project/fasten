@@ -9,10 +9,10 @@
 - Export the `JAVA_HOME` environment variable to point to your newly installed JDK
     - Mac: `export JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-11.0.2.jdk/Contents/Home/`
 - Install the [latest version of IntelliJ Community edition](https://www.jetbrains.com/idea/download/#section=mac) (>= 2018.3)
-- Clone the project from GitHub: `git clone https://github.com/fasten-project/core`
+- Clone the project from GitHub: `git clone https://github.com/fasten-project/fasten`
 - Do a test build on the command line: `cd fasten && mvn install`. Everything should work.
 - Open the project in IntelliJ:
-    - In the open project screen, click Open Directory and navigate to your FASTEN checkout
+    - In the open project screen, click "Import Project" and navigate to your FASTEN checkout
     - Select "Import from from external model" and then Maven
     - Click Next, Next
     - In the SDK selection screen, select JDK 11. If it is not there, click the
