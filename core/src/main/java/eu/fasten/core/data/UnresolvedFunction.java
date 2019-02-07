@@ -18,14 +18,19 @@
 
 package eu.fasten.core.data;
 
-import java.util.List;
+import java.io.Serializable;
+import java.util.Set;
 
-public class UnresolvedFunction extends Function {
+/**
+ * An UnresolvedFunction corresponds to a function call to a function specified in
+ * a dependency.
+ */
+public class UnresolvedFunction extends Function  implements Serializable {
 
     public final Dependency dependency;
 
-    public UnresolvedFunction(String fqn, List<ResolvedFunction> resolvedCalls,
-                              List<UnresolvedFunction> unresolvedCalls, Dependency dependency) {
+    public UnresolvedFunction(String fqn, Set<ResolvedFunction> resolvedCalls,
+                              Set<UnresolvedFunction> unresolvedCalls, Dependency dependency) {
 
         super(fqn, resolvedCalls, unresolvedCalls);
         this.dependency = dependency;

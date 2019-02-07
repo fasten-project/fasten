@@ -18,7 +18,16 @@
 
 package eu.fasten.core.data;
 
-public class Dependency {
+import java.io.Serializable;
+
+/**
+ * A dependency relationship in a package dependency network. A dependency is
+ * owned by a {@link PackageVersion} and links the owning package to another
+ * package given a {@link Dependency#versionConstraint}. The contents of the
+ * {@link Dependency#versionConstraint} is determined by the underlying package
+ * network. Most of them just use some form of semantic versioning.
+ */
+public class Dependency implements Serializable {
 
     public final Package pkg;
     public final String versionConstraint;

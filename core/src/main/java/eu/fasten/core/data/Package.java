@@ -18,7 +18,12 @@
 
 package eu.fasten.core.data;
 
-public class Package {
+import java.io.Serializable;
+
+/**
+ * A Package represents an unversioned artifact residing in a package repository.
+ */
+public class Package implements Serializable {
 
     public final String repo;
     public final String artifactName;

@@ -19,14 +19,19 @@
 package eu.fasten.core.data;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Set;
 
+/**
+ * A ResolvedFunction represents a function which can be resolved (is part of)
+ * within the current package version (i.e., is not a call to a function specified
+ * in a dependency).
+ */
 public class ResolvedFunction extends Function implements Serializable {
 
     public final PackageVersion pkg;
 
-    public ResolvedFunction(String fqn, List<ResolvedFunction> resolvedCalls,
-                            List<UnresolvedFunction> unresolvedCalls, PackageVersion pkg) {
+    public ResolvedFunction(String fqn, Set<ResolvedFunction> resolvedCalls,
+                            Set<UnresolvedFunction> unresolvedCalls, PackageVersion pkg) {
         super(fqn, resolvedCalls, unresolvedCalls);
         this.pkg = pkg;
     }

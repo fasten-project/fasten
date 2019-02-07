@@ -18,21 +18,27 @@
 
 package eu.fasten.core.data;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.io.Serializable;
+import java.util.*;
 
-public abstract class Function {
+/**
+ * A function node in a call-based dependency network. A function contains
+ * a set of function calls that the call graph generator can resolve within
+ * the current analysis context ({@link Function#resolvedCalls}) and
+ * another set of function calls that need to be resolved by consulting the
+ * dependency set for the package that includes this function
+ * ({@link Function#unresolvedCalls}).
+ */
+public abstract class Function implements Serializable {
 
     public final String fqn;
 
-    public final List<ResolvedFunction> resolvedCalls;
-    public final List<UnresolvedFunction> unresolvedCalls;
+    public final Set<ResolvedFunction> resolvedCalls;
+    public final Set<UnresolvedFunction> unresolvedCalls;
 
     public final Map<String, String> metadata;
 
-    protected Function(String fqn, List<ResolvedFunction> resolvedCalls, List<UnresolvedFunction> unresolvedCalls) {
+    protected Function(String fqn, Set<ResolvedFunction> resolvedCalls, Set<UnresolvedFunction> unresolvedCalls) {
         this.fqn = fqn;
         this.resolvedCalls = resolvedCalls;
         this.unresolvedCalls = unresolvedCalls;
