@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>eu.fasten</groupId>
+    <artifactId>parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <description>
+        The FASTEN project makes software ecosystems robust, by making package management intelligent.
+    </description>
+    <url>https://www.fasten-project.eu</url>
+
+    <licenses>
+        <license>
+            <name>Apache License v2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>source</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Georgios Gousios</name>
+            <email>gousiosg@gmail.com</email>
+            <organization>TU Delft</organization>
+        </developer>
+        <developer>
+            <name>Joseph Hejderup</name>
+            <email></email>
+            <organization>TU Delft</organization>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>https://github.com/fasten-project/core</connection>
+        <url>https://github.com/fasten-project/core</url>
+    </scm>
+
+    <modules>
+        <module>core</module>
+        <module>analyzer</module>
+        <module>server</module>
+        <module>pipeliner</module>
+    </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.5</version>
+                <configuration>
+                    <generateBackupPoms>false</generateBackupPoms>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <release>11</release>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
