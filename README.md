@@ -1,4 +1,5 @@
-## Fasten-core
+## Fasten-core 
+[![Build Status](https://travis-ci.org/fasten-project/fasten.svg?branch=master)](https://travis-ci.org/fasten-project/fasten)
 
 ### Creating a workspace with IntelliJ
 
