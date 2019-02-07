@@ -18,7 +18,7 @@ This document is a draft of the FASTEN knowledge base service. The knowledge bas
 - `libfasten-pipeliner`: 
    - Orchestration component for creating workflow pipelines using `libfasten-core` and `libfasten-analyzer`. Event feed data will come from [Codefeedr](https://github.com/codefeedr/codefeedr) such as CVE or licence data. The component will also create new queryable and push-based event streams such as a "the daily top-10 most imported library function". Package manager plugins will interface this component for push-based notifications.
 - `libfasten-server:`
-   -  REST API to interface the knowledge and its various components. 
+   -  REST API to interface the knowledge base and its various components. 
 
 
 ### Data specifications 
