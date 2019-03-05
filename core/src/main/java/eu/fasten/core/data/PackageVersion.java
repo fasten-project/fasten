@@ -30,13 +30,13 @@ import java.util.Set;
  * {@link PackageVersion#version} corresponds to a repository-specific
  * version specification. Most package repositories use some form of
  * semantic versioning.
- *
+ * <p>
  * The PackageVersion is also the entry point to the fine-grained,
  * call-based dependency network, through the {@link PackageVersion#functions}
  * field.
  *
  * <h2>Dependency resolution</h2>
- *
+ * <p>
  * The data model does not include the concept of dependency resolution, which
  * it delegates to repository-specific algorithms. However, it does need to
  * support retroactive dependency resolution, at any point in the repository's
@@ -44,17 +44,17 @@ import java.util.Set;
  * {@link PackageVersion#dependencies} goes as follows:
  *
  * <ol>
- *     <li>Search the package version index for all PackageVersions that
- *     for package {@link Dependency#pkg} that satisfy the repository specific
- *     {@link Dependency#versionConstraint}</li>
+ * <li>Search the package version index for all PackageVersions that
+ * for package {@link Dependency#pkg} that satisfy the repository specific
+ * {@link Dependency#versionConstraint}</li>
  *
- *     <li>From the list above, keep the first PackageVersion whose
- *     {@link #releaseDate} is less than {@link this#releaseDate}</li>
+ * <li>From the list above, keep the first PackageVersion whose
+ * {@link #releaseDate} is less than {@link this#releaseDate}</li>
  *
- *     <li>Add all {@link Function}s in the identified PackageVersion to the
- *     set of functions to return.</li>
+ * <li>Add all {@link Function}s in the identified PackageVersion to the
+ * set of functions to return.</li>
  * </ol>
- *
+ * <p>
  * This will give us a set of {@link Function}s, of which some will be
  * {@link UnresolvedFunction}s. To resolve them, we need to apply a
  * language-specific resolution mechanism to match each
@@ -76,5 +76,10 @@ public class PackageVersion implements Serializable {
         this.releaseDate = releaseDate;
         this.dependencies = dependencies;
         this.functions = functions;
+    }
+
+    @Override
+    public String toString() {
+        return "Release(" + pkg.artifactName + "," + version + "," + dependencies + ")";
     }
 }

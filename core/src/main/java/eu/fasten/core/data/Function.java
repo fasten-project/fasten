@@ -19,7 +19,10 @@
 package eu.fasten.core.data;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * A function node in a call-based dependency network. A function contains

@@ -36,4 +36,9 @@ public class Dependency implements Serializable {
         this.pkg = pkg;
         this.versionConstraint = versionConstraint;
     }
+
+    @Override
+    public String toString() {
+        return "Dependency(" + pkg.toString() + "," + versionConstraint + ")";
+    }
 }

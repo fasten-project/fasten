@@ -17,28 +17,36 @@
  */
 package eu.fasten.core.praezi;
 
+import eu.fasten.core.data.Dependency;
+import eu.fasten.core.data.Function;
+import eu.fasten.core.data.Package;
+import eu.fasten.core.data.PackageVersion;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 
 public class Crates {
     static final String CRATES_INDEX = "https://github.com/rust-lang/crates.io-index";
-    static final String INDEX_DIR = "fasten/rust/index";
+    static final String INDEX_DIR = getUsersHomeDir() + File.separator + "fasten/rust/index";
     static final String REV_ID = "b76c5ac";
     private Repository repo;
-
-    private static String getUsersHomeDir() {
-        var users_home = System.getProperty("user.home");
-        return users_home.replace("\\", "/"); // to support all platforms.
-    }
+    private List<PackageVersion> releases;
 
     public Crates() {
-        var indexPath = getUsersHomeDir() + File.separator + INDEX_DIR ;
-        var indexDir = new File(indexPath);
+
+        var indexDir = new File(INDEX_DIR);
         if (!indexDir.exists()) {
             try {
                 var git = Git.cloneRepository()
@@ -54,12 +62,58 @@ public class Crates {
         var repositoryBuilder = new FileRepositoryBuilder();
         repositoryBuilder.setGitDir(indexDir);
         try {
-            repo = repositoryBuilder.build();
+            this.repo = repositoryBuilder.build();
             System.out.println("Successfully loaded the index!");
+            this.releases = parsePackageVersions();
+            System.out.println("Successfully parsed the index!");
+
         } catch (IOException e) {
             System.err.println("Could not load the index at path " + CRATES_INDEX + " : " + e.getMessage());
         }
 
+    }
+
+    private static String getUsersHomeDir() {
+        var users_home = System.getProperty("user.home");
+        return users_home.replace("\\", "/"); // to support all platforms.
+    }
+
+    public List<PackageVersion> getPackageVersions() {
+        return this.releases;
+    }
+
+    private List<PackageVersion> parsePackageVersions() {
+        try (Stream<Path> paths = Files.walk(Paths.get(INDEX_DIR))) {
+
+            var idxEntries = paths.filter(it -> !(it.toString().contains(".DS_Store") || it.toString().contains(".git") || it.toString().contains("config.json")))
+                    .filter(Files::isRegularFile)
+                    .flatMap(file -> {
+                        try {
+                            return Files.lines(file);
+                        } catch (IOException e) {
+                            return Stream.empty();
+                        }
+                    }).map(JSONObject::new).toArray(JSONObject[]::new);
+
+
+            return Stream.of(idxEntries)
+                    .map(obj -> {
+                        var pkg = new Package("cratesio", obj.getString("name"));
+                        var depz = new HashSet<Dependency>();
+                        var fns = Collections.<Function>emptySet();
+                        obj.getJSONArray("deps")
+                                .forEach(item -> {
+                                    var o = (JSONObject) item;
+                                    depz.add(new Dependency(new Package("cratesio", o.getString("name")), o.getString("req")));
+                                });
+                        return new PackageVersion(pkg, obj.getString("vers"), new Date(), depz, fns);
+                    }).collect(Collectors.toList());
+
+
+        } catch (IOException e) {
+            System.err.println("Could not read index files at " + CRATES_INDEX + " : " + e.getMessage());
+        }
+        return new ArrayList<PackageVersion>();
     }
 
 

@@ -21,6 +21,6 @@ package eu.fasten.core.praezi;
 public class Main {
     public static void main(String[] args) {
         var index = new Crates();
-
+        index.getPackageVersions().forEach(System.out::println);
     }
 }

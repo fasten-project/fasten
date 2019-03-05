@@ -19,6 +19,7 @@
 package eu.fasten.core.data;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * A Package represents an unversioned artifact residing in a package repository.
@@ -31,5 +32,25 @@ public class Package implements Serializable {
     public Package(String repo, String artifactName) {
         this.repo = repo;
         this.artifactName = artifactName;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof Package)) return false;
+
+        var pkg = (Package) obj;
+
+        return Objects.equals(artifactName, pkg.artifactName) && Objects.equals(repo, pkg.repo);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(artifactName, repo);
+    }
+
+    @Override
+    public String toString() {
+        return "Package(" + artifactName + ")";
     }
 }

@@ -25,7 +25,7 @@ import java.util.Set;
  * An UnresolvedFunction corresponds to a function call to a function specified in
  * a dependency.
  */
-public class UnresolvedFunction extends Function  implements Serializable {
+public class UnresolvedFunction extends Function implements Serializable {
 
     public final Dependency dependency;
 
