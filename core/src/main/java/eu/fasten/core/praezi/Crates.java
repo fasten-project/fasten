@@ -38,6 +38,16 @@ import java.util.stream.Stream;
 
 
 public class Crates {
+
+
+    public static native String resolve(String req, String versions);
+
+    static {
+        //IMPORTANT: cargo build https://github.com/jhejderup/semver-jni-rs and set the java.lib.path to it
+        // to make it compile 
+        System.loadLibrary("semver_jni_rs");
+    }
+
     static final String CRATES_INDEX = "https://github.com/rust-lang/crates.io-index";
     static final String INDEX_DIR = getUsersHomeDir() + File.separator + "fasten/rust/index";
     static final String REV_ID = "b76c5ac";
@@ -45,7 +55,6 @@ public class Crates {
     private List<PackageVersion> releases;
 
     public Crates() {
-
         var indexDir = new File(INDEX_DIR);
         if (!indexDir.exists()) {
             try {

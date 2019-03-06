@@ -22,5 +22,7 @@ public class Main {
     public static void main(String[] args) {
         var index = new Crates();
         index.getPackageVersions().forEach(System.out::println);
+        System.out.println(index.resolve(">=1.0.0","2.0.0,1.1.1,2.1.2,1.1.1"));
+
     }
 }
