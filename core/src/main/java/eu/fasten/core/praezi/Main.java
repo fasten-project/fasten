@@ -21,8 +21,12 @@ package eu.fasten.core.praezi;
 public class Main {
     public static void main(String[] args) {
         var index = new Crates();
-        index.getPackageVersions().forEach(System.out::println);
-        System.out.println(index.resolve(">=1.0.0","2.0.0,1.1.1,2.1.2,1.1.1"));
+        // log, 0.4.0
+        var dependents = index.getDependents();
+        var releases = index.getReleases();
+
+        var resolvedgraph = index.createDependentGraph("rand", "0.3.22");
+        System.out.println(resolvedgraph);
 
     }
 }

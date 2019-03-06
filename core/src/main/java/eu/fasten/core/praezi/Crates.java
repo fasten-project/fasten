@@ -40,22 +40,25 @@ import java.util.stream.Stream;
 public class Crates {
 
 
-    public static native String resolve(String req, String versions);
-
-    static {
-        //IMPORTANT: cargo build https://github.com/jhejderup/semver-jni-rs and set the java.lib.path to it
-        // to make it compile 
-        System.loadLibrary("semver_jni_rs");
-    }
-
     static final String CRATES_INDEX = "https://github.com/rust-lang/crates.io-index";
     static final String INDEX_DIR = getUsersHomeDir() + File.separator + "fasten/rust/index";
     static final String REV_ID = "b76c5ac";
+
+    static {
+        //IMPORTANT: cargo build https://github.com/jhejderup/semver-jni-rs and set the java.lib.path to it
+        // to make it compile
+        System.loadLibrary("semver_jni_rs");
+    }
+
     private Repository repo;
-    private List<PackageVersion> releases;
+    private List<PackageVersion> packageVersions;
+    // package name -> [(dependent, version, constraint)]
+    private HashMap<String, List<DependencyConstraint>> dependents;
+    private HashMap<String, List<String>> releases;
 
     public Crates() {
         var indexDir = new File(INDEX_DIR);
+
         if (!indexDir.exists()) {
             try {
                 var git = Git.cloneRepository()
@@ -73,7 +76,7 @@ public class Crates {
         try {
             this.repo = repositoryBuilder.build();
             System.out.println("Successfully loaded the index!");
-            this.releases = parsePackageVersions();
+            this.packageVersions = parsePackageVersions();
             System.out.println("Successfully parsed the index!");
 
         } catch (IOException e) {
@@ -82,16 +85,59 @@ public class Crates {
 
     }
 
+    public static native String resolve(String req, String versions);
+
+    public List<PackageVersion> getPackageVersions() {
+        return this.packageVersions;
+    }
+
+    public HashMap<String, List<DependencyConstraint>> getDependents() { return this.dependents;}
+
+    public HashMap<String, List<String>> getReleases() { return this.releases;}
+
     private static String getUsersHomeDir() {
         var users_home = System.getProperty("user.home");
         return users_home.replace("\\", "/"); // to support all platforms.
     }
 
-    public List<PackageVersion> getPackageVersions() {
-        return this.releases;
+    public HashMap<String, List<String>> createDependentGraph(String pkg, String version) {
+        System.out.println("package: " + pkg  + "version" + version);
+        var graph = new HashMap<String, List<String>>();
+        var releasesString = String.join(",", getReleases().get(pkg));
+        var visited = new HashSet<DependencyConstraint>();
+        var lst = getDependents().get(pkg);
+
+
+        while(lst != null && lst.size() > 0) {
+            var x = lst.remove(0);
+            if (!visited.contains(x)) {
+                visited.add(x);
+                String res = resolve(x.versionConstraint, releasesString);
+
+                if (res.equals(version)) {
+                    if (graph.containsKey(pkg + version)) {
+                        graph.get(pkg + version).add(x.pkg + x.version);
+                    } else {
+                        var l = new ArrayList<String>();
+                        l.add(x.pkg + x.version);
+                        graph.put(pkg + version, l);
+                    }
+                    var subgraph = createDependentGraph(x.pkg, x.version);
+                    System.out.println(subgraph);
+                    graph.forEach(
+                            (key, value) -> subgraph.merge( key, value, (v1, v2) ->
+                               Stream.concat(v1.stream(), v2.stream()).distinct().collect(Collectors.toList())));
+                }
+            }
+        }
+        return graph;
     }
 
     private List<PackageVersion> parsePackageVersions() {
+
+        dependents = new HashMap<>();
+        releases = new HashMap<>();
+
         try (Stream<Path> paths = Files.walk(Paths.get(INDEX_DIR))) {
 
             var idxEntries = paths.filter(it -> !(it.toString().contains(".DS_Store") || it.toString().contains(".git") || it.toString().contains("config.json")))
@@ -110,10 +156,26 @@ public class Crates {
                         var pkg = new Package("cratesio", obj.getString("name"));
                         var depz = new HashSet<Dependency>();
                         var fns = Collections.<Function>emptySet();
+
+                        if(!releases.containsKey(obj.getString("name"))){
+                            var lst = new ArrayList<String>();
+                            lst.add(obj.getString("vers"));
+                            releases.put(obj.getString("name"), lst);
+                        } else {
+                            releases.get(obj.getString("name")).add(obj.getString("vers"));
+                        }
                         obj.getJSONArray("deps")
                                 .forEach(item -> {
                                     var o = (JSONObject) item;
                                     depz.add(new Dependency(new Package("cratesio", o.getString("name")), o.getString("req")));
+                                    var depConstraint = new DependencyConstraint(obj.getString("name"), obj.getString("vers"), o.getString("req"));
+                                    if (!dependents.containsKey(o.getString("name"))) {
+                                        var lst = new ArrayList<DependencyConstraint>();
+                                        lst.add(depConstraint);
+                                        dependents.put(o.getString("name"), lst);
+                                    } else {
+                                        dependents.get(o.getString("name")).add(depConstraint);
+                                    }
                                 });
                         return new PackageVersion(pkg, obj.getString("vers"), new Date(), depz, fns);
                     }).collect(Collectors.toList());
@@ -124,6 +186,8 @@ public class Crates {
         }
         return new ArrayList<PackageVersion>();
     }
+
+
 
 
 }
