@@ -123,10 +123,16 @@ public class Crates {
                         graph.put(pkg + version, l);
                     }
                     var subgraph = createDependentGraph(x.pkg, x.version);
-                    System.out.println(subgraph);
-                    graph.forEach(
-                            (key, value) -> subgraph.merge( key, value, (v1, v2) ->
-                               Stream.concat(v1.stream(), v2.stream()).distinct().collect(Collectors.toList())));
+
+                    var mergedMap = Stream.of(graph, subgraph)
+                            .flatMap(map -> map.entrySet().stream())
+                            .collect(Collectors.toMap(
+                                    Map.Entry::getKey,
+                                    Map.Entry::getValue,
+                                    (v1, v2) ->
+                                            Stream.concat(v1.stream(), v2.stream()).distinct().collect(Collectors.toList())));
+                    graph = new HashMap<>(mergedMap);
+
                 }
             }
         }
