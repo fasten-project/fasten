@@ -43,6 +43,7 @@ public class Crates {
     static final String CRATES_INDEX = "https://github.com/rust-lang/crates.io-index";
     static final String INDEX_DIR = getUsersHomeDir() + File.separator + "fasten/rust/index";
     static final String REV_ID = "b76c5ac";
+    static final String CG_STORE = "/Users/jhejderup/Desktop/fastengraphs";
 
     static {
         //IMPORTANT: cargo build https://github.com/jhejderup/semver-jni-rs and set the java.lib.path to it
@@ -87,40 +88,72 @@ public class Crates {
 
     public static native String resolve(String req, String versions);
 
-    public List<PackageVersion> getPackageVersions() {
-        return this.packageVersions;
-    }
-
-    public HashMap<String, List<DependencyConstraint>> getDependents() { return this.dependents;}
-
-    public HashMap<String, List<String>> getReleases() { return this.releases;}
-
     private static String getUsersHomeDir() {
         var users_home = System.getProperty("user.home");
         return users_home.replace("\\", "/"); // to support all platforms.
     }
 
-    public HashMap<String, List<String>> createDependentGraph(String pkg, String version) {
-        System.out.println("package: " + pkg  + "version" + version);
-        var graph = new HashMap<String, List<String>>();
+    public List<PackageVersion> getPackageVersions() {
+        return this.packageVersions;
+    }
+
+    public HashMap<String, List<DependencyConstraint>> getDependents() {
+        return this.dependents;
+    }
+
+    public HashMap<String, List<String>> getReleases() {
+        return this.releases;
+    }
+
+    private boolean hasCallgraph(SimplePackageVersion pkg) {
+
+        return new File(CG_STORE + File.separator + pkg.name + File.separator + pkg.version + File.separator + "callgraph.unmangled.graph").isFile();
+
+    }
+
+
+    public HashMap<SimplePackageVersion, List<SimplePackageVersion>> createFastenGraph(HashMap<SimplePackageVersion, List<SimplePackageVersion>> map) {
+        //Clone the map
+        var mapCopy = map.entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        Map.Entry::getValue));
+        var hmapCopy = new HashMap<>(mapCopy);
+        //Remove keys without call graphs
+        hmapCopy.entrySet().removeIf(e -> !hasCallgraph(e.getKey()));
+        //Remove values without call graphs
+        hmapCopy.entrySet().forEach(e -> e.getValue().removeIf(v -> !hasCallgraph(v)));
+        //Graph with call graphs
+        hmapCopy.forEach((k, v) -> System.out.println("key: " + k + ", value: " + v));
+
+
+        return hmapCopy;
+
+    }
+
+    //TODO: should add nodes without outgoing edges
+    public HashMap<SimplePackageVersion, List<SimplePackageVersion>> createDependentGraph(String pkg, String version) {
+        var graph = new HashMap<SimplePackageVersion, List<SimplePackageVersion>>();
         var releasesString = String.join(",", getReleases().get(pkg));
         var visited = new HashSet<DependencyConstraint>();
         var lst = getDependents().get(pkg);
 
 
-        while(lst != null && lst.size() > 0) {
+        while (lst != null && lst.size() > 0) {
             var x = lst.remove(0);
             if (!visited.contains(x)) {
                 visited.add(x);
                 String res = resolve(x.versionConstraint, releasesString);
 
                 if (res.equals(version)) {
-                    if (graph.containsKey(pkg + version)) {
-                        graph.get(pkg + version).add(x.pkg + x.version);
+                    var key = new SimplePackageVersion(pkg, version);
+                    var value = new SimplePackageVersion(x.pkg, x.version);
+                    if (graph.containsKey(key)) {
+                        graph.get(key).add(value);
                     } else {
-                        var l = new ArrayList<String>();
-                        l.add(x.pkg + x.version);
-                        graph.put(pkg + version, l);
+                        var l = new ArrayList<SimplePackageVersion>();
+                        l.add(value);
+                        graph.put(key, l);
                     }
                     var subgraph = createDependentGraph(x.pkg, x.version);
 
@@ -163,7 +196,7 @@ public class Crates {
                         var depz = new HashSet<Dependency>();
                         var fns = Collections.<Function>emptySet();
 
-                        if(!releases.containsKey(obj.getString("name"))){
+                        if (!releases.containsKey(obj.getString("name"))) {
                             var lst = new ArrayList<String>();
                             lst.add(obj.getString("vers"));
                             releases.put(obj.getString("name"), lst);
@@ -192,8 +225,6 @@ public class Crates {
         }
         return new ArrayList<PackageVersion>();
     }
-
-
 
 
 }

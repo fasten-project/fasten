@@ -26,7 +26,7 @@ public class Main {
         var releases = index.getReleases();
 
         var resolvedgraph = index.createDependentGraph("rand", "0.3.22");
-        System.out.println(resolvedgraph);
+        index.createFastenGraph(resolvedgraph);
 
     }
 }

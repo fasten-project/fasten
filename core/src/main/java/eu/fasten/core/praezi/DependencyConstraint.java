@@ -25,13 +25,13 @@ public class DependencyConstraint implements Serializable {
     public boolean equals(Object o) {
         if (o instanceof DependencyConstraint) {
             DependencyConstraint dc = (DependencyConstraint) o;
-            return Objects.equals(dc.pkg,this.pkg) && Objects.equals(dc.version, this.version) && Objects.equals(dc.versionConstraint, this.versionConstraint);
+            return Objects.equals(dc.pkg, this.pkg) && Objects.equals(dc.version, this.version) && Objects.equals(dc.versionConstraint, this.versionConstraint);
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.pkg,this.version, this.versionConstraint);
+        return Objects.hash(this.pkg, this.version, this.versionConstraint);
     }
 }
