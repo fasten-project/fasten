@@ -17,17 +17,22 @@
  */
 package eu.fasten.core.praezi;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-public class Main {
-    public static void main(String[] args) {
-        var index = new Crates();
-        // log, 0.4.0
-        var dependents = index.getDependents();
-        var releases = index.getReleases();
+public class CallGraph implements Serializable {
 
-        var resolvedgraph = index.createDependentGraph("rand", "0.3.22");
-        index.createFastenGraph(resolvedgraph);
+    public final HashMap<String, String> nodes;
+    public final HashMap<String, ArrayList<String>> edges;
 
+    public CallGraph(HashMap<String, String> nodes, HashMap<String, ArrayList<String>> edges) {
+        this.nodes = nodes;
+        this.edges = edges;
+    }
 
+    @Override
+    public String toString() {
+        return nodes.toString() + edges.toString();
     }
 }

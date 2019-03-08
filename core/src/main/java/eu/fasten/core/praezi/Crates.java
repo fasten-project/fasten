@@ -126,6 +126,13 @@ public class Crates {
         //Graph with call graphs
         hmapCopy.forEach((k, v) -> System.out.println("key: " + k + ", value: " + v));
 
+        hmapCopy.forEach((k, v) -> {
+            try {
+                System.out.println(k.getCallGraph());
+            } catch (IOException e) {
+            }
+        });
+
 
         return hmapCopy;
 
