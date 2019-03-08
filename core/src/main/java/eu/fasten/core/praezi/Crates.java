@@ -112,7 +112,11 @@ public class Crates {
     }
 
 
-    public HashMap<SimplePackageVersion, List<SimplePackageVersion>> createFastenGraph(HashMap<SimplePackageVersion, List<SimplePackageVersion>> map) {
+    public CallGraph createFastenGraph(HashMap<SimplePackageVersion, List<SimplePackageVersion>> map) {
+        //fastengraph
+        var fnodes = new HashMap<String, String>();
+        var fedges = new HashMap<String, ArrayList<String>>();
+
         //Clone the map
         var mapCopy = map.entrySet()
                 .stream()
@@ -126,15 +130,23 @@ public class Crates {
         //Graph with call graphs
         hmapCopy.forEach((k, v) -> System.out.println("key: " + k + ", value: " + v));
 
-        hmapCopy.forEach((k, v) -> {
-            try {
-                System.out.println(k.getCallGraph());
-            } catch (IOException e) {
-            }
-        });
+//        hmapCopy.forEach((k, v) -> {
+//            try {
+//                fnodes.putAll(k.getCallGraph().nodes);
+//                var mergedMap = Stream.of(fedges, k.getCallGraph().edges)
+//                        .flatMap(m -> m.entrySet().stream())
+//                        .collect(Collectors.toMap(
+//                                Map.Entry::getKey,
+//                                Map.Entry::getValue,
+//                                (v1, v2) ->
+//                                        Stream.concat(v1.stream(), v2.stream()).distinct().collect(Collectors.toList())));
+//
+//            } catch (IOException e) {
+//            }
+//        });
 
 
-        return hmapCopy;
+        return new CallGraph(fnodes, fedges);
 
     }
 
