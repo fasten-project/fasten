@@ -55,6 +55,8 @@ public class FastenURI {
 			else {
 				forge = regName.substring(0,  exclPos);
 				artefactVersion = regName.substring(exclPos + 1);
+				if (artefactVersion.indexOf('!') >= 0) throw new IllegalArgumentException("More than one forge");
+				if (forge.indexOf('$') >= 0) throw new IllegalArgumentException("Version / forge inverted or mixed");
 			}
 
 			final var dollarPos = artefactVersion.indexOf('$');
@@ -65,6 +67,7 @@ public class FastenURI {
 			else {
 				artefact = artefactVersion.substring(0, dollarPos);
 				version = artefactVersion.substring(dollarPos + 1);
+				if (version.indexOf('$') >= 0) throw new IllegalArgumentException("More than one version");
 			}
 
 			if (artefact.length() == 0) throw new IllegalArgumentException("The artefact cannot be empty");
@@ -76,6 +79,7 @@ public class FastenURI {
 			module = entity = null;
 			return;
 		}
+		
 		final var slashPos = path.indexOf('/', 1); // Skip first slash
 
 		if (slashPos == -1) module = path.substring(1);
@@ -89,7 +93,7 @@ public class FastenURI {
 		}
 
 		entity = path.substring(slashPos + 1);
-		if (entity.length() == 0) throw new IllegalArgumentException("The opaque part cannot be empty");
+		if (entity.length() == 0) throw new IllegalArgumentException("The entity part cannot be empty");
 	}
 
 	protected FastenURI(final String s) throws URISyntaxException {

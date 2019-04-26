@@ -47,5 +47,41 @@ class FastenURITest {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			new FastenURI("fasten://a!/∂∂∂/πππ");
 		});
+		
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			new FastenURI("fasten://a!b!c/∂∂∂/πππ");
+		});
+		
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			new FastenURI("fasten://a$b!c/∂∂∂/πππ");
+		});
+
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			new FastenURI("fasten://a!b$c$d/∂∂∂/πππ");
+		});
+		
+		fastenURI = new FastenURI("fasten://b/∂∂∂"); // Module, no entity
+		assertEquals("fasten", fastenURI.getScheme());
+		assertNull(fastenURI.getForge());
+		assertEquals("b", fastenURI.getArtefact());
+		assertNull(fastenURI.getVersion());
+		assertEquals("∂∂∂", fastenURI.getModule());
+		assertNull(fastenURI.getEntity());
+
+		fastenURI = new FastenURI("fasten:/b/∂∂∂"); // Module and entity but no artefact
+		assertEquals("fasten", fastenURI.getScheme());
+		assertNull(fastenURI.getForge());
+		assertNull(fastenURI.getArtefact());
+		assertNull(fastenURI.getVersion());
+		assertEquals("b", fastenURI.getModule());
+		assertEquals("∂∂∂", fastenURI.getEntity());
+	
+		fastenURI = new FastenURI("fasten:∂∂∂"); // Entity but no artefact and no module
+		assertEquals("fasten", fastenURI.getScheme());
+		assertNull(fastenURI.getForge());
+		assertNull(fastenURI.getArtefact());
+		assertNull(fastenURI.getVersion());
+		assertNull(fastenURI.getModule());
+		assertEquals("∂∂∂", fastenURI.getEntity());
 	}
 }
