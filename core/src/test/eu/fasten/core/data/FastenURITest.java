@@ -76,12 +76,5 @@ class FastenURITest {
 		assertEquals("b", fastenURI.getModule());
 		assertEquals("∂∂∂", fastenURI.getEntity());
 	
-		fastenURI = new FastenURI("fasten:∂∂∂"); // Entity but no artefact and no module
-		assertEquals("fasten", fastenURI.getScheme());
-		assertNull(fastenURI.getForge());
-		assertNull(fastenURI.getArtefact());
-		assertNull(fastenURI.getVersion());
-		assertNull(fastenURI.getModule());
-		assertEquals("∂∂∂", fastenURI.getEntity());
 	}
 }
