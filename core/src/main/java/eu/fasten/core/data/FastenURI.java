@@ -94,6 +94,7 @@ public class FastenURI {
 
 		entity = path.substring(slashPos + 1);
 		if (entity.length() == 0) throw new IllegalArgumentException("The entity part cannot be empty");
+		if (entity.indexOf(':') >= 0) throw new IllegalArgumentException("The entity part cannot contain colons");
 	}
 
 	protected FastenURI(final String s) throws URISyntaxException {

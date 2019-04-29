@@ -108,4 +108,5 @@ public class FastenJavaURI extends FastenURI {
 	public FastenJavaURI getReturnType() {
 		return returnType;
 	}
+	
 }

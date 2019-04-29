@@ -60,6 +60,10 @@ class FastenURITest {
 			new FastenURI("fasten://a!b$c$d/∂∂∂/πππ");
 		});
 		
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			new FastenURI("fasten://a!b$c/∂∂∂/πππ:pippo");
+		});
+		
 		fastenURI = new FastenURI("fasten://b/∂∂∂"); // Module, no entity
 		assertEquals("fasten", fastenURI.getScheme());
 		assertNull(fastenURI.getForge());
