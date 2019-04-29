@@ -27,10 +27,10 @@ import java.nio.charset.StandardCharsets;
 
 public class FastenJavaURI extends FastenURI {
 	private final static FastenJavaURI[] NO_ARGS_ARRAY = new FastenJavaURI[0];
-	protected String className;
-	protected String functionName;
-	protected FastenJavaURI[] args;
-	protected FastenJavaURI returnType;
+	protected final String className;
+	protected final String functionName;
+	protected final FastenJavaURI[] args;
+	protected final FastenJavaURI returnType;
 
 	public FastenJavaURI(final String s) throws URISyntaxException {
 		this(new FastenURI(s));
@@ -38,11 +38,23 @@ public class FastenJavaURI extends FastenURI {
 
 	public FastenJavaURI(final FastenURI fastenURI) {
 		super(fastenURI.uri);
-		if (entity == null) return;
-		final var colonPos = entity.indexOf(":");
-		if (colonPos == -1) throw new IllegalArgumentException("The entity part must contain a colon");
-		className = entity.substring(0, colonPos);
-		final var funcArgsType = entity.substring(colonPos + 1);
+		if (entity == null) {
+			className = null;
+			functionName = null;
+			returnType = null;
+			args = null;
+			return;
+		}
+		final var dotPos = entity.indexOf(".");
+		if (dotPos == -1) {
+			className = entity;
+			functionName = null;
+			returnType = null;
+			args = null;
+			return;
+		}
+		className = entity.substring(0, dotPos);
+		final var funcArgsType = entity.substring(dotPos + 1);
 		final var openParenPos = funcArgsType.indexOf('(');
 		if (openParenPos == -1) throw new IllegalArgumentException("Missing open parenthesis");
 		functionName = funcArgsType.substring(0, openParenPos);
