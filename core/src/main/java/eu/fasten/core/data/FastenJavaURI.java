@@ -18,10 +18,16 @@
 
 package eu.fasten.core.data;
 
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
+
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
 /** A class representing a Fasten URI for the Java language; it has to be considered experimental until the BNF for such URIs is set in stone. */
 
@@ -109,4 +115,107 @@ public class FastenJavaURI extends FastenURI {
 		return returnType;
 	}
 	
+	
+	/** Returns the {@link FastenJavaURI} of a given class in a specific context. The context is used to omit (relativize) the parts of the
+	 *  URI that are the same as in the context; it can be <code>null</code> if there is no context. For each package, the name of the
+	 *  artefact containing the package is deduced from <code>packageToArtefact</code>; if not present as a key, the artefact is
+	 *  assumed to be named as the package. The forge and / or version are deduced similarly from the other two maps.
+	 * 
+	 * @param klass the class for which the URI is needed.
+	 * @param context the context URI.
+	 * @param packageToArtefact a map from package names to artefact names.
+	 * @param artefactToForge a map from artefact names to forge names.
+	 * @param artefactToVersion a map from artefact names to versions.
+	 * @return the {@link FastenJavaURI} for <code>method</code>.
+	 * @throws URISyntaxException
+	 */
+	private static FastenJavaURI getTypeURI(final Class<?> klass, final FastenJavaURI context, final Map<String, String> packageToArtefact, final Map<String, String> artefactToForge, final Map<String, String> artefactToVersion) throws URISyntaxException {
+		final StringBuilder sb = new StringBuilder();
+		final String module = klass.getPackageName();
+		final String artefact = packageToArtefact.getOrDefault(module, module);
+		final String forge = artefactToForge.get(artefact);
+		final String version = artefactToVersion.get(artefact);
+		final String type = klass.getSimpleName();
+		boolean entityOnly = true;
+		if (context == null || !artefact.equals(context.getArtefact()) || forge != null && !forge.equals(context.getForge()) || version != null && !version.equals(context.getVersion())) {
+			if (context == null || !"fasten".equals(context.getScheme())) sb.append("fasten:");
+			sb.append("//");
+			if (forge != null && (context == null || !forge.equals(context.getForge()))) sb.append(forge + "!");
+			sb.append(artefact);
+			if (version != null && (context == null || !version.equals(context.getVersion()))) sb.append("$" + version);
+			entityOnly = false;
+		}
+		if (context == null || !module.equals(context.getModule())) {
+			sb.append("/" + module);
+			entityOnly = false;
+		}
+		if (!entityOnly) sb.append("/");
+		sb.append(type);
+		return new FastenJavaURI(sb.toString());
+	}
+	
+	/** Returns the {@link FastenJavaURI} of a given method in a specific context. The context is used to omit (relativize) the parts of the
+	 *  URI that are the same as in the context; it can be <code>null</code> if there is no context. For each package, the name of the
+	 *  artefact containing the package is deduced from <code>packageToArtefact</code>; if not present as a key, the artefact is
+	 *  assumed to be named as the package. The forge and / or version are deduced similarly from the other two maps.
+	 * 
+	 * @param method the method for which the URI is needed.
+	 * @param context the context URI.
+	 * @param packageToArtefact a map from package names to artefact names.
+	 * @param artefactToForge a map from artefact names to forge names.
+	 * @param artefactToVersion a map from artefact names to versions.
+	 * @return the {@link FastenJavaURI} for <code>method</code>.
+	 * @throws URISyntaxException
+	 */
+	public static FastenJavaURI getURI(final Method method, final FastenJavaURI context, final Map<String, String> packageToArtefact, final Map<String, String> artefactToForge, final Map<String, String> artefactToVersion) throws URISyntaxException {
+		FastenJavaURI typeURI = getTypeURI(method.getDeclaringClass(), context, packageToArtefact, artefactToForge, artefactToVersion);
+		FastenJavaURI returnTypeURI = getTypeURI(method.getReturnType(), typeURI, packageToArtefact, artefactToForge, artefactToVersion);
+		Class<?>[] parameterType = method.getParameterTypes();
+		int n = parameterType.length;
+		FastenJavaURI[] parameterTypeURI = new FastenJavaURI[n];
+		for (int i = 0; i < n; i++) 
+			parameterTypeURI[i] = getTypeURI(parameterType[i], typeURI, packageToArtefact, artefactToForge, artefactToVersion);
+		StringBuilder sb = new StringBuilder();
+		sb.append(typeURI.toString() + "." + method.getName() + "(");
+		for (int i = 0; i < n; i++) {
+			if (i > 0) sb.append(",");
+			sb.append(URLEncoder.encode(parameterTypeURI[i].toString(), StandardCharsets.UTF_8));
+		}
+		sb.append(")");
+		sb.append(URLEncoder.encode(returnTypeURI.toString(), StandardCharsets.UTF_8));
+		return new FastenJavaURI(sb.toString());
+	}
+
+	/** Returns the {@link FastenJavaURI} of a given method in a specific context. The context is used to omit (relativize) the parts of the
+	 *  URI that are the same as in the context; it can be <code>null</code> if there is no context. For each package, the name of the
+	 *  artefact containing the package is <code>jdk</code>.
+	 * 
+	 * @param method the method for which the URI is needed.
+	 * @param context the context URI.
+	 * @return the {@link FastenJavaURI} for <code>method</code>.
+	 * @throws URISyntaxException
+	 */
+	public static FastenJavaURI getURI(final Method method, final FastenJavaURI context) throws URISyntaxException {
+		Map<String, String> emptyMap = Collections.<String, String>emptyMap();
+		Object2ObjectOpenHashMap<String, String> jdkMap = new Object2ObjectOpenHashMap<>();
+		jdkMap.defaultReturnValue("jdk");
+		return getURI(method, context, jdkMap, emptyMap, emptyMap);
+	}
+
+	/** Returns the {@link FastenJavaURI} of a given class in a specific context. The context is used to omit (relativize) the parts of the
+	 *  URI that are the same as in the context; it can be <code>null</code> if there is no context. For each package, the name of the
+	 *  artefact containing the package is <code>jdk</code>.
+	 * 
+	 * @param klass the class for which the URI is needed.
+	 * @param context the context URI.
+	 * @return the {@link FastenJavaURI} for <code>method</code>.
+	 * @throws URISyntaxException
+	 */
+	public static FastenJavaURI getURI(final Class<?> klass, final FastenJavaURI context) throws URISyntaxException {
+		Map<String, String> emptyMap = Collections.<String, String>emptyMap();
+		Object2ObjectOpenHashMap<String, String> jdkMap = new Object2ObjectOpenHashMap<>();
+		jdkMap.defaultReturnValue("jdk");
+		return getTypeURI(klass, context, jdkMap, emptyMap, emptyMap);
+	}
+
 }

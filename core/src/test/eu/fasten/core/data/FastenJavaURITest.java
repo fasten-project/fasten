@@ -4,7 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.awt.Component;
+import java.awt.event.ActionListener;
 import java.net.URISyntaxException;
+
+import javax.swing.JColorChooser;
 
 import org.junit.jupiter.api.Test;
 
@@ -83,6 +87,28 @@ class FastenJavaURITest {
 		assertEquals(2, args.length);
 		assertEquals("//jdk/java.primitive/int", args[0].toString()); // TODO
 		assertEquals("//jdk/java.primitive/int", args[1].toString()); // TODO
+	}
+	
+	@Test
+	void testGetURIJColorChooser() throws NoSuchMethodException, SecurityException, URISyntaxException {
+		var method = JColorChooser.class.getMethod("createDialog", Component.class, String.class, boolean.class, JColorChooser.class, ActionListener.class, ActionListener.class);
+		FastenJavaURI uri = FastenJavaURI.getURI(method, null);
+		assertEquals("fasten", uri.getScheme());
+		assertEquals("jdk", uri.getArtefact());
+		assertEquals(null, uri.getVersion());
+		assertEquals(null, uri.getForge());
+		assertEquals("javax.swing", uri.getModule());
+		assertEquals("JColorChooser", uri.getClassName());
+		assertEquals("createDialog", uri.getFunctionName());
+		assertEquals("JDialog", uri.getReturnType().toString()); 
+		FastenJavaURI[] args = uri.getArgs();
+		assertEquals(6, args.length);
+		assertEquals("/java.awt/Component", args[0].toString());
+		assertEquals("/java.lang/String", args[1].toString());
+		assertEquals("/java.lang/boolean", args[2].toString());
+		assertEquals("JColorChooser", args[3].toString());
+		assertEquals("/java.awt.event/ActionListener", args[4].toString());
+		assertEquals("/java.awt.event/ActionListener", args[5].toString());
 	}
 	
 }
