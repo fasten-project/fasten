@@ -73,13 +73,13 @@ public class FastenURI {
 			if (artefact.length() == 0) throw new IllegalArgumentException("The artefact cannot be empty");
 		}
 
-		final var path = uri.getPath();
+		final var path = uri.getRawPath();
 
 		if (path == null || path.length() == 0) {
 			module = entity = null;
 			return;
 		}
-		
+
 		final var slashPos = path.indexOf('/', 1); // Skip first slash
 
 		if (slashPos == -1) module = path.substring(1);

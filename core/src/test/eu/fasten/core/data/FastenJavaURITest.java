@@ -54,7 +54,7 @@ class FastenJavaURITest {
 		//assertEquals(FastenJavaURI.create("BVGraph"), fastenJavaURI.getReturnType());
 		//assertEquals(FastenJavaURI.create("fasten://webgraph.jar/it.unimi.dsi.webgraph/BVGraph"), fastenJavaURI.resolve(fastenJavaURI.getReturnType()));
 	}
-	
+
 	@Test
 	void testExample1() throws URISyntaxException {
 		final var fastenJavaURI = new FastenJavaURI("fasten://xerces.xercesImpl$2.6.2/org.apache.html.dom/HTMLUListElementImpl.%3Cinit%3E(HTMLDocumentImpl,%2F%2Fjdk%2Fjava.lang%2FString)HTMLUListElementImpl");
@@ -66,7 +66,7 @@ class FastenJavaURITest {
 		assertEquals("HTMLUListElementImpl", fastenJavaURI.getClassName());
 		assertEquals("<init>", fastenJavaURI.getFunctionName());
 		assertEquals("HTMLUListElementImpl", fastenJavaURI.getReturnType().toString()); // TODO
-		FastenJavaURI[] args = fastenJavaURI.getArgs();
+		final FastenJavaURI[] args = fastenJavaURI.getArgs();
 		assertEquals(2, args.length);
 		assertEquals("HTMLDocumentImpl", args[0].toString()); // TODO
 		assertEquals("//jdk/java.lang/String", args[1].toString()); // TODO
@@ -83,16 +83,16 @@ class FastenJavaURITest {
 		assertEquals("NonBlockingJsonParserBase", fastenJavaURI.getClassName());
 		assertEquals("_findName", fastenJavaURI.getFunctionName());
 		assertEquals("//jdk/java.lang/String", fastenJavaURI.getReturnType().toString()); // TODO
-		FastenJavaURI[] args = fastenJavaURI.getArgs();
+		final FastenJavaURI[] args = fastenJavaURI.getArgs();
 		assertEquals(2, args.length);
 		assertEquals("//jdk/java.primitive/int", args[0].toString()); // TODO
 		assertEquals("//jdk/java.primitive/int", args[1].toString()); // TODO
 	}
-	
+
 	@Test
 	void testGetURIJColorChooser() throws NoSuchMethodException, SecurityException, URISyntaxException {
-		var method = JColorChooser.class.getMethod("createDialog", Component.class, String.class, boolean.class, JColorChooser.class, ActionListener.class, ActionListener.class);
-		FastenJavaURI uri = FastenJavaURI.getURI(method, null);
+		final var method = JColorChooser.class.getMethod("createDialog", Component.class, String.class, boolean.class, JColorChooser.class, ActionListener.class, ActionListener.class);
+		final FastenJavaURI uri = FastenJavaURI.getURI(method, null);
 		assertEquals("fasten", uri.getScheme());
 		assertEquals("jdk", uri.getArtefact());
 		assertEquals(null, uri.getVersion());
@@ -100,8 +100,8 @@ class FastenJavaURITest {
 		assertEquals("javax.swing", uri.getModule());
 		assertEquals("JColorChooser", uri.getClassName());
 		assertEquals("createDialog", uri.getFunctionName());
-		assertEquals("JDialog", uri.getReturnType().toString()); 
-		FastenJavaURI[] args = uri.getArgs();
+		assertEquals("JDialog", uri.getReturnType().toString());
+		final FastenJavaURI[] args = uri.getArgs();
 		assertEquals(6, args.length);
 		assertEquals("/java.awt/Component", args[0].toString());
 		assertEquals("/java.lang/String", args[1].toString());
@@ -110,5 +110,9 @@ class FastenJavaURITest {
 		assertEquals("/java.awt.event/ActionListener", args[4].toString());
 		assertEquals("/java.awt.event/ActionListener", args[5].toString());
 	}
-	
+
+	@Test
+	void testSpecialCharacters() throws URISyntaxException {
+		final var uri = new FastenJavaURI("//com.fasterxml.jackson.core_jackson-databind/com.fasterxml.jackson.databind.type/TypeBindings.%3Cinit%3E(//jdk/java.lang/String%255B%255D,//jdk/com.fasterxml.jackson.databind/JavaType%255B%255D,//jdk/java.lang/String%255B%255D)//com.fasterxml.jackson.core_jackson-databind/com.fasterxml.jackson.databind.type/TypeBindings");
+	}
 }
