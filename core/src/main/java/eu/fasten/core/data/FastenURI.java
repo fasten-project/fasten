@@ -75,7 +75,7 @@ public class FastenURI {
 
 		final var path = uri.getPath();
 
-		if (path == null) {
+		if (path == null || path.length() == 0) {
 			module = entity = null;
 			return;
 		}

@@ -35,6 +35,15 @@ class FastenURITest {
 		assertNull(fastenURI.getVersion());
 		assertEquals("∂∂∂", fastenURI.getModule());
 		assertEquals("πππ", fastenURI.getEntity());
+		
+		fastenURI = new FastenURI("fasten://it.unimi.dsi.fastutil");
+		assertEquals("fasten", fastenURI.getScheme());
+		assertNull(fastenURI.getForge());
+		assertNull(fastenURI.getVersion());
+		assertEquals("it.unimi.dsi.fastutil", fastenURI.getArtefact());
+		assertNull(fastenURI.getModule());
+		assertNull(fastenURI.getEntity());
+		
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			new FastenURI("fasten://a!$c/∂∂∂/πππ");
