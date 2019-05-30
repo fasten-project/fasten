@@ -26,73 +26,75 @@ import java.net.URISyntaxException;
 public class FastenURI {
 	/** The underlying {@link URI}. */
 	protected final URI uri;
-	/** The forge of the {@link #artefact} associated with this FastenURI, or {@code null} if the forge is not specified. */
+	/** The forge of the {@link #product} associated with this FastenURI, or {@code null} if the forge is not specified. */
 	protected final String forge;
-	/** The artefact associated with this FastenURI, or {@code null} if the artefact is not specified. */
-	protected final String artefact;
-	/** The {@link #artefact} version, or {@code null} if the version is not specified. */
+	/** The product associated with this FastenURI, or {@code null} if the product is not specified. */
+	protected final String product;
+	/** The {@link #product} version, or {@code null} if the version is not specified. */
 	protected final String version;
 	/** The module, or {@code null} if the module is not specified. */
-	protected final String module;
+	protected final String namespace;
 	/** The language-dependent part, or {@code null} if the language-dependent part is not specified. */
 	protected final String entity;
 
 	protected FastenURI(final URI uri) {
 		this.uri = uri;
 		if (uri.getScheme() != null && ! "fasten".equalsIgnoreCase(uri.getScheme())) throw new IllegalArgumentException("Scheme, if specified, must be 'fasten'");
-		final var regName = uri.getAuthority();
+		final String forgeProductVersion = uri.getAuthority();
 
-		if (regName == null) {
-			forge = artefact = version = null;
+		if (forgeProductVersion == null) {
+			forge = product = version = null;
 		}
 		else {
-			final var exclPos = regName.indexOf('!');
-			String artefactVersion;
+			final var exclPos = forgeProductVersion.indexOf('!');
+			String productVersion;
 			if (exclPos == -1) { // No forge
 				forge = null;
-				artefactVersion = regName;
+				productVersion = forgeProductVersion;
 			}
 			else {
-				forge = regName.substring(0,  exclPos);
-				artefactVersion = regName.substring(exclPos + 1);
-				if (artefactVersion.indexOf('!') >= 0) throw new IllegalArgumentException("More than one forge");
+				forge = forgeProductVersion.substring(0,  exclPos);
+				productVersion = forgeProductVersion.substring(exclPos + 1);
+				if (productVersion.indexOf('!') >= 0) throw new IllegalArgumentException("More than one forge");
 				if (forge.indexOf('$') >= 0) throw new IllegalArgumentException("Version / forge inverted or mixed");
 			}
 
-			final var dollarPos = artefactVersion.indexOf('$');
+			final var dollarPos = productVersion.indexOf('$');
 			if (dollarPos == -1) {
-				artefact = artefactVersion;
+				product = productVersion;
 				version = null;
 			}
 			else {
-				artefact = artefactVersion.substring(0, dollarPos);
-				version = artefactVersion.substring(dollarPos + 1);
+				product = productVersion.substring(0, dollarPos);
+				version = productVersion.substring(dollarPos + 1);
 				if (version.indexOf('$') >= 0) throw new IllegalArgumentException("More than one version");
 			}
 
-			if (artefact.length() == 0) throw new IllegalArgumentException("The artefact cannot be empty");
+			if (product.length() == 0) throw new IllegalArgumentException("The product cannot be empty");
 		}
 
 		final var path = uri.getRawPath();
 
 		if (path == null || path.length() == 0) {
-			module = entity = null;
+			namespace = entity = null;
 			return;
 		}
 
-		final var slashPos = path.indexOf('/', 1); // Skip first slash
+		int slashPos;
+		if (path.charAt(0) == '/') { // We have a namespace
+			slashPos = path.indexOf('/', 1); // Skip first slash
 
-		if (slashPos == -1) module = path.substring(1);
-		else module = path.substring(1, slashPos);
+			if (slashPos == -1)  throw new IllegalArgumentException("Missing entity");
+			namespace = path.substring(1, slashPos);
 
-		if (module.length() == 0) throw new IllegalArgumentException("The mod part cannot be empty");
-
-		if (slashPos == -1) {
-			entity = null;
-			return;
+			if (namespace.length() == 0) throw new IllegalArgumentException("The namespace cannot be empty");
+			entity = path.substring(slashPos + 1);
+		}
+		else {
+			namespace = null;
+			entity = path;
 		}
 
-		entity = path.substring(slashPos + 1);
 		if (entity.length() == 0) throw new IllegalArgumentException("The entity part cannot be empty");
 		if (entity.indexOf(':') >= 0) throw new IllegalArgumentException("The entity part cannot contain colons");
 	}
@@ -126,8 +128,8 @@ public class FastenURI {
 		return forge;
 	}
 
-	public String getArtefact() {
-		return artefact;
+	public String getProduct() {
+		return product;
 	}
 
 	public String getVersion() {
@@ -138,8 +140,8 @@ public class FastenURI {
 		return entity;
 	}
 
-	public String getModule() {
-		return module;
+	public String getNamespace() {
+		return namespace;
 	}
 
 

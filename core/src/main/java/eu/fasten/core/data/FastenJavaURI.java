@@ -34,7 +34,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 public class FastenJavaURI extends FastenURI {
 	private final static FastenJavaURI[] NO_ARGS_ARRAY = new FastenJavaURI[0];
 	protected final String className;
-	protected final String functionName;
+	protected final String functionOrAttributeName;
 	protected final FastenJavaURI[] args;
 	protected final FastenJavaURI returnType;
 
@@ -46,15 +46,15 @@ public class FastenJavaURI extends FastenURI {
 		super(fastenURI.uri);
 		if (entity == null) {
 			className = null;
-			functionName = null;
+			functionOrAttributeName = null;
 			returnType = null;
 			args = null;
 			return;
 		}
 		final var dotPos = entity.indexOf(".");
-		if (dotPos == -1) {
+		if (dotPos == -1) { // entity-type
 			className = entity;
-			functionName = null;
+			functionOrAttributeName = null;
 			returnType = null;
 			args = null;
 			return;
@@ -62,8 +62,13 @@ public class FastenJavaURI extends FastenURI {
 		className = entity.substring(0, dotPos);
 		final var funcArgsType = entity.substring(dotPos + 1);
 		final var openParenPos = funcArgsType.indexOf('(');
-		if (openParenPos == -1) throw new IllegalArgumentException("Missing open parenthesis");
-		functionName = funcArgsType.substring(0, openParenPos);
+		if (openParenPos == -1) { // entity-attribute
+			args = null;
+			returnType = null;
+			functionOrAttributeName = null;
+			return;
+		}
+		functionOrAttributeName = funcArgsType.substring(0, openParenPos);
 		final var closedParenPos = funcArgsType.indexOf(')');
 		if (closedParenPos == -1) throw new IllegalArgumentException("Missing close parenthesis");
 		returnType = FastenJavaURI.create(funcArgsType.substring(closedParenPos + 1));
@@ -104,7 +109,7 @@ public class FastenJavaURI extends FastenURI {
 	}
 
 	public String getFunctionName() {
-		return functionName;
+		return functionOrAttributeName;
 	}
 
 	public FastenJavaURI[] getArgs() {
@@ -114,13 +119,13 @@ public class FastenJavaURI extends FastenURI {
 	public FastenJavaURI getReturnType() {
 		return returnType;
 	}
-	
-	
+
+
 	/** Returns the {@link FastenJavaURI} of a given class in a specific context. The context is used to omit (relativize) the parts of the
 	 *  URI that are the same as in the context; it can be <code>null</code> if there is no context. For each package, the name of the
 	 *  artefact containing the package is deduced from <code>packageToArtefact</code>; if not present as a key, the artefact is
 	 *  assumed to be named as the package. The forge and / or version are deduced similarly from the other two maps.
-	 * 
+	 *
 	 * @param klass the class for which the URI is needed.
 	 * @param context the context URI.
 	 * @param packageToArtefact a map from package names to artefact names.
@@ -137,7 +142,7 @@ public class FastenJavaURI extends FastenURI {
 		final String version = artefactToVersion.get(artefact);
 		final String type = klass.getSimpleName();
 		boolean entityOnly = true;
-		if (context == null || !artefact.equals(context.getArtefact()) || forge != null && !forge.equals(context.getForge()) || version != null && !version.equals(context.getVersion())) {
+		if (context == null || !artefact.equals(context.getProduct()) || forge != null && !forge.equals(context.getForge()) || version != null && !version.equals(context.getVersion())) {
 			if (context == null || !"fasten".equals(context.getScheme())) sb.append("fasten:");
 			sb.append("//");
 			if (forge != null && (context == null || !forge.equals(context.getForge()))) sb.append(forge + "!");
@@ -145,7 +150,7 @@ public class FastenJavaURI extends FastenURI {
 			if (version != null && (context == null || !version.equals(context.getVersion()))) sb.append("$" + version);
 			entityOnly = false;
 		}
-		if (context == null || !module.equals(context.getModule())) {
+		if (context == null || !module.equals(context.getNamespace())) {
 			sb.append("/" + module);
 			entityOnly = false;
 		}
@@ -153,12 +158,12 @@ public class FastenJavaURI extends FastenURI {
 		sb.append(type);
 		return new FastenJavaURI(sb.toString());
 	}
-	
+
 	/** Returns the {@link FastenJavaURI} of a given method in a specific context. The context is used to omit (relativize) the parts of the
 	 *  URI that are the same as in the context; it can be <code>null</code> if there is no context. For each package, the name of the
 	 *  artefact containing the package is deduced from <code>packageToArtefact</code>; if not present as a key, the artefact is
 	 *  assumed to be named as the package. The forge and / or version are deduced similarly from the other two maps.
-	 * 
+	 *
 	 * @param method the method for which the URI is needed.
 	 * @param context the context URI.
 	 * @param packageToArtefact a map from package names to artefact names.
@@ -168,14 +173,14 @@ public class FastenJavaURI extends FastenURI {
 	 * @throws URISyntaxException
 	 */
 	public static FastenJavaURI getURI(final Method method, final FastenJavaURI context, final Map<String, String> packageToArtefact, final Map<String, String> artefactToForge, final Map<String, String> artefactToVersion) throws URISyntaxException {
-		FastenJavaURI typeURI = getTypeURI(method.getDeclaringClass(), context, packageToArtefact, artefactToForge, artefactToVersion);
-		FastenJavaURI returnTypeURI = getTypeURI(method.getReturnType(), typeURI, packageToArtefact, artefactToForge, artefactToVersion);
-		Class<?>[] parameterType = method.getParameterTypes();
-		int n = parameterType.length;
-		FastenJavaURI[] parameterTypeURI = new FastenJavaURI[n];
-		for (int i = 0; i < n; i++) 
+		final FastenJavaURI typeURI = getTypeURI(method.getDeclaringClass(), context, packageToArtefact, artefactToForge, artefactToVersion);
+		final FastenJavaURI returnTypeURI = getTypeURI(method.getReturnType(), typeURI, packageToArtefact, artefactToForge, artefactToVersion);
+		final Class<?>[] parameterType = method.getParameterTypes();
+		final int n = parameterType.length;
+		final FastenJavaURI[] parameterTypeURI = new FastenJavaURI[n];
+		for (int i = 0; i < n; i++)
 			parameterTypeURI[i] = getTypeURI(parameterType[i], typeURI, packageToArtefact, artefactToForge, artefactToVersion);
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 		sb.append(typeURI.toString() + "." + method.getName() + "(");
 		for (int i = 0; i < n; i++) {
 			if (i > 0) sb.append(",");
@@ -189,15 +194,15 @@ public class FastenJavaURI extends FastenURI {
 	/** Returns the {@link FastenJavaURI} of a given method in a specific context. The context is used to omit (relativize) the parts of the
 	 *  URI that are the same as in the context; it can be <code>null</code> if there is no context. For each package, the name of the
 	 *  artefact containing the package is <code>jdk</code>.
-	 * 
+	 *
 	 * @param method the method for which the URI is needed.
 	 * @param context the context URI.
 	 * @return the {@link FastenJavaURI} for <code>method</code>.
 	 * @throws URISyntaxException
 	 */
 	public static FastenJavaURI getURI(final Method method, final FastenJavaURI context) throws URISyntaxException {
-		Map<String, String> emptyMap = Collections.<String, String>emptyMap();
-		Object2ObjectOpenHashMap<String, String> jdkMap = new Object2ObjectOpenHashMap<>();
+		final Map<String, String> emptyMap = Collections.<String, String>emptyMap();
+		final Object2ObjectOpenHashMap<String, String> jdkMap = new Object2ObjectOpenHashMap<>();
 		jdkMap.defaultReturnValue("jdk");
 		return getURI(method, context, jdkMap, emptyMap, emptyMap);
 	}
@@ -205,15 +210,15 @@ public class FastenJavaURI extends FastenURI {
 	/** Returns the {@link FastenJavaURI} of a given class in a specific context. The context is used to omit (relativize) the parts of the
 	 *  URI that are the same as in the context; it can be <code>null</code> if there is no context. For each package, the name of the
 	 *  artefact containing the package is <code>jdk</code>.
-	 * 
+	 *
 	 * @param klass the class for which the URI is needed.
 	 * @param context the context URI.
 	 * @return the {@link FastenJavaURI} for <code>method</code>.
 	 * @throws URISyntaxException
 	 */
 	public static FastenJavaURI getURI(final Class<?> klass, final FastenJavaURI context) throws URISyntaxException {
-		Map<String, String> emptyMap = Collections.<String, String>emptyMap();
-		Object2ObjectOpenHashMap<String, String> jdkMap = new Object2ObjectOpenHashMap<>();
+		final Map<String, String> emptyMap = Collections.<String, String>emptyMap();
+		final Object2ObjectOpenHashMap<String, String> jdkMap = new Object2ObjectOpenHashMap<>();
 		jdkMap.defaultReturnValue("jdk");
 		return getTypeURI(klass, context, jdkMap, emptyMap, emptyMap);
 	}
