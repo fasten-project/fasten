@@ -26,57 +26,57 @@ import java.net.URISyntaxException;
 public class FastenURI {
 	/** The underlying {@link URI}. */
 	protected final URI uri;
-	/** The forge of the {@link #product} associated with this FastenURI, or {@code null} if the forge is not specified. */
-	protected final String forge;
+	/** The forge of the {@linkplain #rawProduct product} associated with this FastenURI, or {@code null} if the forge is not specified. */
+	protected final String rawForge;
 	/** The product associated with this FastenURI, or {@code null} if the product is not specified. */
-	protected final String product;
-	/** The {@link #product} version, or {@code null} if the version is not specified. */
-	protected final String version;
+	protected final String rawProduct;
+	/** The {@linkplain #rawProduct product} version, or {@code null} if the version is not specified. */
+	protected final String rawVersion;
 	/** The module, or {@code null} if the module is not specified. */
-	protected final String namespace;
+	protected final String rawNamespace;
 	/** The language-dependent part, or {@code null} if the language-dependent part is not specified. */
-	protected final String entity;
+	protected final String rawEntity;
 
 	protected FastenURI(final URI uri) {
 		this.uri = uri;
 		if (uri.getScheme() != null && ! "fasten".equalsIgnoreCase(uri.getScheme())) throw new IllegalArgumentException("Scheme, if specified, must be 'fasten'");
-		final String forgeProductVersion = uri.getAuthority();
+		final String forgeProductVersion = uri.getRawAuthority();
 
 		if (forgeProductVersion == null) {
-			forge = product = version = null;
+			rawForge = rawProduct = rawVersion = null;
 		}
 		else {
 			final var exclPos = forgeProductVersion.indexOf('!');
 			String productVersion;
 			if (exclPos == -1) { // No forge
-				forge = null;
+				rawForge = null;
 				productVersion = forgeProductVersion;
 			}
 			else {
-				forge = forgeProductVersion.substring(0,  exclPos);
+				rawForge = forgeProductVersion.substring(0,  exclPos);
 				productVersion = forgeProductVersion.substring(exclPos + 1);
 				if (productVersion.indexOf('!') >= 0) throw new IllegalArgumentException("More than one forge");
-				if (forge.indexOf('$') >= 0) throw new IllegalArgumentException("Version / forge inverted or mixed");
+				if (rawForge.indexOf('$') >= 0) throw new IllegalArgumentException("Version / forge inverted or mixed");
 			}
 
 			final var dollarPos = productVersion.indexOf('$');
 			if (dollarPos == -1) {
-				product = productVersion;
-				version = null;
+				rawProduct = productVersion;
+				rawVersion = null;
 			}
 			else {
-				product = productVersion.substring(0, dollarPos);
-				version = productVersion.substring(dollarPos + 1);
-				if (version.indexOf('$') >= 0) throw new IllegalArgumentException("More than one version");
+				rawProduct = productVersion.substring(0, dollarPos);
+				rawVersion = productVersion.substring(dollarPos + 1);
+				if (rawVersion.indexOf('$') >= 0) throw new IllegalArgumentException("More than one version");
 			}
 
-			if (product.length() == 0) throw new IllegalArgumentException("The product cannot be empty");
+			if (rawProduct.length() == 0) throw new IllegalArgumentException("The product cannot be empty");
 		}
 
 		final var path = uri.getRawPath();
 
 		if (path == null || path.length() == 0) {
-			namespace = entity = null;
+			rawNamespace = rawEntity = null;
 			return;
 		}
 
@@ -85,18 +85,18 @@ public class FastenURI {
 			slashPos = path.indexOf('/', 1); // Skip first slash
 
 			if (slashPos == -1)  throw new IllegalArgumentException("Missing entity");
-			namespace = path.substring(1, slashPos);
+			rawNamespace = path.substring(1, slashPos);
 
-			if (namespace.length() == 0) throw new IllegalArgumentException("The namespace cannot be empty");
-			entity = path.substring(slashPos + 1);
+			if (rawNamespace.length() == 0) throw new IllegalArgumentException("The namespace cannot be empty");
+			rawEntity = path.substring(slashPos + 1);
 		}
 		else {
-			namespace = null;
-			entity = path;
+			rawNamespace = null;
+			rawEntity = path;
 		}
 
-		if (entity.length() == 0) throw new IllegalArgumentException("The entity part cannot be empty");
-		if (entity.indexOf(':') >= 0) throw new IllegalArgumentException("The entity part cannot contain colons");
+		if (rawEntity.length() == 0) throw new IllegalArgumentException("The entity part cannot be empty");
+		if (rawEntity.indexOf(':') >= 0) throw new IllegalArgumentException("The entity part cannot contain colons");
 	}
 
 	protected FastenURI(final String s) throws URISyntaxException {
@@ -124,24 +124,89 @@ public class FastenURI {
 		return new FastenURI(uri);
 	}
 
+	public static FastenURI create(final String rawForge, final String rawProduct, final String rawVersion, final String rawNamespace, final String rawEntity) {
+		final StringBuffer urisb = new StringBuffer();
+		urisb.append("fasten:");
+		if (rawProduct != null) {
+			urisb.append("//");
+			if (rawForge != null) urisb.append(rawForge + "!");
+			urisb.append(rawProduct);
+			if (rawVersion != null) urisb.append("$" + rawVersion);
+			urisb.append("/" + rawNamespace + "/" + rawEntity);
+		} else urisb.append("/" + rawNamespace + "/" + rawEntity);
+		return new FastenURI(URI.create(urisb.toString()));
+	}
+
+	public static FastenURI create(final String rawForgeProductVersion, final String rawNamespace, final String rawEntity) {
+		return new FastenURI(URI.create("fasten:" + rawForgeProductVersion + "/" + rawNamespace + "/" + rawEntity));
+	}
+
+	public String getRawForge() {
+		return rawForge;
+	}
+
+	public String getRawProduct() {
+		return rawProduct;
+	}
+
+	public String getRawVersion() {
+		return rawVersion;
+	}
+
+	public String getRawEntity() {
+		return rawEntity;
+	}
+
+	public String getRawNamespace() {
+		return rawNamespace;
+	}
+
+	private static int decode(final char c) {
+		if ((c >= '0') && (c <= '9')) return c - '0';
+		if ((c >= 'a') && (c <= 'f')) return c - 'a' + 10;
+		if ((c >= 'A') && (c <= 'F')) return c - 'A' + 10;
+		assert false;
+		return -1;
+	}
+
+	private static char decode(final char c1, final char c2) {
+		return (char) (((decode(c1) & 0xf) << 4) | ((decode(c2) & 0xf) << 0));
+	}
+
+	protected static String decode(final String s) {
+		if (s == null) return s;
+		final int n = s.length();
+		if (n == 0 || s.indexOf('%') < 0) return s;
+
+		final StringBuilder sb = new StringBuilder(n);
+
+		for (int i = 0; i < n; i++) {
+			final char c = s.charAt(i);
+			if (c != '%') sb.append(c);
+			else sb.append(decode(s.charAt(++i), s.charAt(++i)));
+		}
+
+		return sb.toString();
+	}
+
 	public String getForge() {
-		return forge;
+		return decode(rawForge);
 	}
 
 	public String getProduct() {
-		return product;
+		return decode(rawProduct);
 	}
 
 	public String getVersion() {
-		return version;
+		return decode(rawVersion);
 	}
 
 	public String getEntity() {
-		return entity;
+		return decode(rawEntity);
 	}
 
 	public String getNamespace() {
-		return namespace;
+		return decode(rawNamespace);
 	}
 
 
@@ -182,9 +247,18 @@ public class FastenURI {
 		return uri.toString();
 	}
 
-	public String toASCIIString() {
-		return uri.toASCIIString();
+	@Override
+	public boolean equals(final Object o) {
+		if (o == null) return false;
+		return uri.toString().equals(o.toString());
 	}
 
-	// TODO: hash() / equals()
+	@Override
+	public int hashCode() {
+		return uri.toString().hashCode();
+	}
+
+	public FastenURI canonicalize() {
+		 return this;
+	}
 }

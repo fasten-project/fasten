@@ -35,7 +35,7 @@ class FastenURITest {
 		assertNull(fastenURI.getVersion());
 		assertEquals("∂∂∂", fastenURI.getNamespace());
 		assertEquals("πππ", fastenURI.getEntity());
-		
+
 		fastenURI = new FastenURI("fasten://it.unimi.dsi.fastutil");
 		assertEquals("fasten", fastenURI.getScheme());
 		assertNull(fastenURI.getForge());
@@ -43,7 +43,7 @@ class FastenURITest {
 		assertEquals("it.unimi.dsi.fastutil", fastenURI.getProduct());
 		assertNull(fastenURI.getNamespace());
 		assertNull(fastenURI.getEntity());
-		
+
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			new FastenURI("fasten://a!$c/∂∂∂/πππ");
@@ -56,11 +56,11 @@ class FastenURITest {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			new FastenURI("fasten://a!/∂∂∂/πππ");
 		});
-		
+
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			new FastenURI("fasten://a!b!c/∂∂∂/πππ");
 		});
-		
+
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			new FastenURI("fasten://a$b!c/∂∂∂/πππ");
 		});
@@ -68,26 +68,34 @@ class FastenURITest {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			new FastenURI("fasten://a!b$c$d/∂∂∂/πππ");
 		});
-		
+
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			new FastenURI("fasten://a!b$c/∂∂∂/πππ:pippo");
 		});
-		
-		fastenURI = new FastenURI("fasten://b/∂∂∂"); // Module, no entity
+
+		fastenURI = new FastenURI("fasten://b/∂∂∂/€");
 		assertEquals("fasten", fastenURI.getScheme());
 		assertNull(fastenURI.getForge());
 		assertEquals("b", fastenURI.getProduct());
 		assertNull(fastenURI.getVersion());
 		assertEquals("∂∂∂", fastenURI.getNamespace());
-		assertNull(fastenURI.getEntity());
+		assertEquals("€", fastenURI.getEntity());
 
-		fastenURI = new FastenURI("fasten:/b/∂∂∂"); // Module and entity but no artefact
-		assertEquals("fasten", fastenURI.getScheme());
-		assertNull(fastenURI.getForge());
-		assertNull(fastenURI.getProduct());
-		assertNull(fastenURI.getVersion());
-		assertEquals("b", fastenURI.getNamespace());
-		assertEquals("∂∂∂", fastenURI.getEntity());
-	
 	}
+	@Test
+	void testRawNonRow() throws URISyntaxException {
+		final var fastenURI = new FastenURI("fasten://a%2F!b%2F$c%2F/∂∂∂%2F/πππ%2F");
+		assertEquals("fasten", fastenURI.getScheme());
+		assertEquals("a/", fastenURI.getForge());
+		assertEquals("b/", fastenURI.getProduct());
+		assertEquals("c/", fastenURI.getVersion());
+		assertEquals("∂∂∂/", fastenURI.getNamespace());
+		assertEquals("πππ/", fastenURI.getEntity());
+		assertEquals("a%2F", fastenURI.getRawForge());
+		assertEquals("b%2F", fastenURI.getRawProduct());
+		assertEquals("c%2F", fastenURI.getRawVersion());
+		assertEquals("∂∂∂%2F", fastenURI.getRawNamespace());
+		assertEquals("πππ%2F", fastenURI.getRawEntity());
+	}
+
 }

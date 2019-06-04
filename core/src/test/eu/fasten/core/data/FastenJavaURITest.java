@@ -112,12 +112,22 @@ class FastenJavaURITest {
 	}
 
 	@Test
-	void testSpecialCharacters() throws URISyntaxException {
-		final var uri = new FastenJavaURI("//com.fasterxml.jackson.core_jackson-databind/com.fasterxml.jackson.databind.type/TypeBindings.%3Cinit%3E(//jdk/java.lang/String%255B%255D,//jdk/com.fasterxml.jackson.databind/JavaType%255B%255D,//jdk/java.lang/String%255B%255D)//com.fasterxml.jackson.core_jackson-databind/com.fasterxml.jackson.databind.type/TypeBindings");
+	public void testNamespace() throws URISyntaxException {
+		final var uri = new FastenJavaURI("/my.package/A.f(A)B");
+		assertEquals(FastenJavaURI.create("/my.package/A.f(A)B"), uri.args[0].resolve(uri));
 	}
 
 	@Test
-	public void testNamespace() throws URISyntaxException {
-		final var uri = new FastenJavaURI("/my.package/A.f(A)B");
+	public void testCanonical() throws URISyntaxException {
+		FastenJavaURI uri = new FastenJavaURI("fasten://mvn$a/foo/Bar.jam(fasten%3A%2F%2Fmvn$a%2Ffoo%2FBar)%2Fbar%2FBar");
+		assertEquals(FastenJavaURI.create("fasten://mvn$a/foo/Bar"), uri.getArgs()[0]);
+		assertEquals(FastenJavaURI.create("/bar/Bar"), uri.getReturnType());
+		assertEquals(FastenJavaURI.create("fasten://mvn$a/foo/Bar.jam(Bar)bar%2FBar"), uri.canonicalize());
+
+		uri = new FastenJavaURI("fasten://mvn$a/foo/Bar.jam(%2F%2Fmvn$a%2Ffoo%2FBar)%2Fbar%2FBar");
+		assertEquals(FastenJavaURI.create("fasten://mvn$a/foo/Bar.jam(Bar)bar%2FBar"), uri.canonicalize());
+
+		uri = new FastenJavaURI("fasten://mvn$a/foo/Bar.jam(%2Ffoo%2FBar)%2Fbar%2FBar");
+		assertEquals(FastenJavaURI.create("fasten://mvn$a/foo/Bar.jam(Bar)bar%2FBar"), uri.canonicalize());
 	}
 }

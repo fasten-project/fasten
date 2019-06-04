@@ -21,7 +21,6 @@ package eu.fasten.core.data;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -44,23 +43,23 @@ public class FastenJavaURI extends FastenURI {
 
 	public FastenJavaURI(final FastenURI fastenURI) {
 		super(fastenURI.uri);
-		if (entity == null) {
+		if (rawEntity == null) {
 			className = null;
 			functionOrAttributeName = null;
 			returnType = null;
 			args = null;
 			return;
 		}
-		final var dotPos = entity.indexOf(".");
+		final var dotPos = rawEntity.indexOf(".");
 		if (dotPos == -1) { // entity-type
-			className = entity;
+			className = decode(rawEntity);
 			functionOrAttributeName = null;
 			returnType = null;
 			args = null;
 			return;
 		}
-		className = entity.substring(0, dotPos);
-		final var funcArgsType = entity.substring(dotPos + 1);
+		className = decode(rawEntity.substring(0, dotPos));
+		final var funcArgsType = decode(rawEntity.substring(dotPos + 1));
 		final var openParenPos = funcArgsType.indexOf('(');
 		if (openParenPos == -1) { // entity-attribute
 			args = null;
@@ -68,10 +67,10 @@ public class FastenJavaURI extends FastenURI {
 			functionOrAttributeName = null;
 			return;
 		}
-		functionOrAttributeName = funcArgsType.substring(0, openParenPos);
+		functionOrAttributeName = decode(funcArgsType.substring(0, openParenPos));
 		final var closedParenPos = funcArgsType.indexOf(')');
 		if (closedParenPos == -1) throw new IllegalArgumentException("Missing close parenthesis");
-		returnType = FastenJavaURI.create(funcArgsType.substring(closedParenPos + 1));
+		returnType = FastenJavaURI.create(decode(funcArgsType.substring(closedParenPos + 1)));
 		final var argString = funcArgsType.substring(openParenPos + 1, closedParenPos);
 		if (argString.length() == 0) {
 			args = NO_ARGS_ARRAY;
@@ -80,7 +79,7 @@ public class FastenJavaURI extends FastenURI {
 
 		final var a = argString.split(",");
 		args = new FastenJavaURI[a.length];
-		for(int i = 0; i < a.length; i++) args[i] = FastenJavaURI.create(URLDecoder.decode(a[i], StandardCharsets.UTF_8));
+		for(int i = 0; i < a.length; i++) args[i] = FastenJavaURI.create(decode(a[i]));
 	}
 
 	/**
@@ -104,6 +103,33 @@ public class FastenJavaURI extends FastenURI {
 		return new FastenJavaURI(FastenURI.create(uri));
 	}
 
+	public static FastenJavaURI create(final String rawForge, final String rawProduct, final String rawVersion, final String rawNamespace, final String className, final String functionOrAttributeName, final FastenJavaURI[] relativizedArgs, final FastenJavaURI relativizedReturnType) {
+		// TODO: percent uppercasing
+		final StringBuffer entitysb = new StringBuffer();
+		entitysb.append(className + ".");
+		entitysb.append(functionOrAttributeName + "(");
+		for (int i = 0; i < relativizedArgs.length; i++) {
+			if (i>0) entitysb.append(",");
+			entitysb.append(FastenJavaURI.pctEncodeNonUnreserved(relativizedArgs[i].uri.toString()));
+		}
+		entitysb.append(")");
+		entitysb.append(FastenJavaURI.pctEncodeNonUnreserved(relativizedReturnType.uri.toString()));
+		final FastenURI fastenURI = FastenURI.create(rawForge, rawProduct, rawVersion, rawNamespace, entitysb.toString());
+		return create(fastenURI.uri);
+	}
+
+	public static String pctEncodeNonUnreserved(final String s) {
+		final StringBuffer sb = new StringBuffer();
+		for (int i = 0; i < s.length(); i++) {
+			final char c = s.charAt(i);
+			if (c < 0xFF && !Character.isAlphabetic(c) && !Character.isDigit(c) && c != '-' && c != '.' && c != '_' && c != '~' )
+				sb.append("%" + String.format("%02X", Integer.valueOf(c)));
+			else
+				sb.append(c);
+		}
+		return sb.toString();
+	}
+
 	public String getClassName() {
 		return className;
 	}
@@ -118,6 +144,40 @@ public class FastenJavaURI extends FastenURI {
 
 	public FastenJavaURI getReturnType() {
 		return returnType;
+	}
+
+	public static FastenJavaURI create(final String rawForge, final String rawProduct, final String rawVersion, final String rawNamespace, final String rawEntity) {
+		final StringBuffer urisb = new StringBuffer();
+		urisb.append("fasten:");
+		if (rawProduct != null) {
+			urisb.append("//");
+			if (rawForge != null) urisb.append(rawForge + "!");
+			urisb.append(rawProduct);
+			if (rawVersion != null) urisb.append("$" + rawVersion);
+			urisb.append("/" + rawEntity);
+		} else urisb.append("/" + rawEntity);
+		return FastenJavaURI.create(URI.create(urisb.toString()));
+	}
+
+
+	private FastenJavaURI relativize(final FastenJavaURI u) {
+		final String rawAuthority = u.uri.getRawAuthority();
+		// There is an authority and it doesn't match: return u
+		if (rawAuthority != null && ! uri.getRawAuthority().equals(rawAuthority)) return u;
+		// Matching authorities, or no authority, and there's a namespace, and it doesn't match: return u
+		if (rawNamespace != null && ! rawNamespace.equals(u.rawNamespace)) return FastenJavaURI.create(u.getRawNamespace() + "/"+  u.getRawEntity());
+		// Matching authorities, or no authority, and there's a namespace, and it doesn't match: return u
+		return FastenJavaURI.create(u.getRawEntity());
+	}
+
+	@Override
+	public FastenJavaURI canonicalize() {
+		final FastenJavaURI[] relativizedArgs = new FastenJavaURI[args.length];
+
+		for(int i = 0; i < args.length; i++)
+			relativizedArgs[i] = relativize(args[i]);
+		final FastenJavaURI relativizedReturnType = relativize(returnType);
+		return FastenJavaURI.create(rawForge, rawProduct, rawVersion, rawNamespace, className, functionOrAttributeName, relativizedArgs, relativizedReturnType);
 	}
 
 
@@ -222,5 +282,4 @@ public class FastenJavaURI extends FastenURI {
 		jdkMap.defaultReturnValue("jdk");
 		return getTypeURI(klass, context, jdkMap, emptyMap, emptyMap);
 	}
-
 }
