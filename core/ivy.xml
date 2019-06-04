@@ -12,7 +12,5 @@
 		<dependency org="it.unimi.dsi" name="webgraph" rev="3.6.1" />
 		<dependency org="org.eclipse.jgit" name="org.eclipse.jgit" rev="5.2.1.201812262042-r" />
 		<dependency org="org.json" name="json" rev="20180813" />
-		<dependency org="org.junit.jupiter" name="junit-jupiter-engine" rev="latest.release" conf="test"/>
-		<dependency org="org.junit.platform" name="junit-platform-launcher" rev="latest.release" conf="test"/>
 	</dependencies>
 </ivy-module>
