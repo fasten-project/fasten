@@ -37,9 +37,12 @@ public class FastenURI {
 	/** The language-dependent part, or {@code null} if the language-dependent part is not specified. */
 	protected final String rawEntity;
 
-	protected FastenURI(final URI uri) {
-		this.uri = uri;
+	protected FastenURI(URI uri) {
 		if (uri.getScheme() != null && ! "fasten".equalsIgnoreCase(uri.getScheme())) throw new IllegalArgumentException("Scheme, if specified, must be 'fasten'");
+		// Bypass URI when the scheme is specified, but there is no forge-product-version
+		if (uri.isOpaque()) uri = URI.create(uri.getSchemeSpecificPart());
+
+		this.uri = uri;
 		final String forgeProductVersion = uri.getRawAuthority();
 
 		if (forgeProductVersion == null) {
@@ -91,6 +94,7 @@ public class FastenURI {
 			rawEntity = path.substring(slashPos + 1);
 		}
 		else {
+			if (path.indexOf('/') != -1) throw new IllegalArgumentException("The entity part cannot contain a slash (namespaces must be always prefixed with a slash)"); // No slash
 			rawNamespace = null;
 			rawEntity = path;
 		}
@@ -218,8 +222,15 @@ public class FastenURI {
 		return create(uri.resolve(URI.create(str)));
 	}
 
-	public FastenURI relativize(final FastenURI uri) {
-		return create(this.uri.relativize(uri.uri));
+	public FastenURI relativize(final FastenURI u) {
+		if (rawNamespace == null) throw new IllegalStateException("You cannot relativize without a namespace");
+		final String rawAuthority = u.uri.getRawAuthority();
+		// There is an authority and it doesn't match: return u
+		if (rawAuthority != null && ! rawAuthority.equals(uri.getRawAuthority())) return u;
+		// Matching authorities, or no authority, and there's a namespace, and it doesn't match: return namespace + entity
+		if (u.rawNamespace != null && ! rawNamespace.equals(u.rawNamespace)) return FastenURI.create("/" + u.rawNamespace + "/" +  u.rawEntity);
+		// Matching authorities, or no authority, matching namespaces, or no namespace: return entity
+		return FastenURI.create(u.getRawEntity());
 	}
 
 	public String getScheme() {
