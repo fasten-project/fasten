@@ -78,7 +78,7 @@ public class FastenURI {
 
 		final var path = uri.getRawPath();
 
-		if (path == null || path.length() == 0) {
+		if (path.length() == 0) {
 			rawNamespace = rawEntity = null;
 			return;
 		}
@@ -165,7 +165,7 @@ public class FastenURI {
 	 * @see #create(String, String, String, String, String)
 	 */
 	public static FastenURI create(final String rawForgeProductVersion, final String rawNamespace, final String rawEntity) {
-		return new FastenURI(URI.create("fasten:" + rawForgeProductVersion + "/" + rawNamespace + "/" + rawEntity));
+		return new FastenURI(URI.create("fasten://" + rawForgeProductVersion + "/" + rawNamespace + "/" + rawEntity));
 	}
 
 	public String getRawForge() {
@@ -240,10 +240,6 @@ public class FastenURI {
 		return create(uri.resolve(fastenURI.uri));
 	}
 
-	public FastenURI resolve(final String str) {
-		return create(uri.resolve(URI.create(str)));
-	}
-
 	/** Relativizes the provided FASTEN URI with respected to this FASTEN URI.
 	 *
 	 * <p>The definition of relativization for FASTEN URIs is slightly more general than
@@ -273,12 +269,28 @@ public class FastenURI {
 		return uri.getScheme();
 	}
 
+	/** Returns the {@linkplain URI#getPath() path} of this FASTEN URI.
+	 *
+	 * <p>WARNING: contrarily to {@link URI}, we return {@code null} for empty paths.
+	 *
+	 * @return the path, or {@code null} if there is no path.
+	 */
 	public String getPath() {
-		return uri.getPath();
+		final String path = uri.getPath();
+		assert path != null;
+		return path.length() == 0 ? null : path;
 	}
 
+	/** Returns the {@linkplain URI#getRawPath() raw path} of this FASTEN URI.
+	 *
+	 * <p>WARNING: contrarily to {@link URI}, we return {@code null} for empty paths.
+	 *
+	 * @return the raw path, or {@code null} if there is no path.
+	 */
 	public String getRawPath() {
-		return uri.getRawPath();
+		final String path = uri.getRawPath();
+		assert path != null;
+		return path.length() == 0 ? null : path;
 	}
 
 	@Override

@@ -73,6 +73,24 @@ class FastenURITest {
 			new FastenURI("fasten://a!b$c/∂∂∂/πππ:pippo");
 		});
 
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			new FastenURI("fasten://a!b$c//πππ:pippo");
+		});
+
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			new FastenURI("unfasten://webgraph.jar/foo");
+		});
+
+		fastenURI = new FastenURI("fasten://webgraph.jar");
+		assertNull(fastenURI.getPath());
+		assertNull(fastenURI.getRawPath());
+		assertEquals("", fastenURI.uri.getPath());
+
+		fastenURI = new FastenURI("fasten://webgraph.jar/p/a");
+		assertEquals("/p/a", fastenURI.getPath());
+		assertEquals("/p/a", fastenURI.getRawPath());
+		assertEquals("/p/a", fastenURI.uri.getPath());
+
 		fastenURI = new FastenURI("fasten://b/∂∂∂/€");
 		assertEquals("fasten", fastenURI.getScheme());
 		assertNull(fastenURI.getForge());
@@ -82,6 +100,22 @@ class FastenURITest {
 		assertEquals("€", fastenURI.getEntity());
 
 	}
+
+	@Test
+	public void testCreateFromComponents() {
+		FastenURI u;
+
+		u = FastenURI.create(null, null, null, "foo", "Bar");
+		assertEquals("fasten:/foo/Bar", u.toString());
+
+		u = FastenURI.create("mvn", "prod", null, "foo", "Bar");
+		assertEquals("fasten://mvn!prod/foo/Bar", u.toString());
+
+		u = FastenURI.create("mvn!prod", "foo", "Bar");
+		assertEquals("fasten://mvn!prod/foo/Bar", u.toString());
+
+	}
+
 	@Test
 	void testRawNonRow() throws URISyntaxException {
 		final var fastenURI = new FastenURI("fasten://a%2F!b%2F$c%2F/∂∂∂%2F/πππ%2F");
@@ -120,6 +154,11 @@ class FastenURITest {
 	@Test
 	public void testRelativize() {
 		FastenURI u;
+
+		Assertions.assertThrows(IllegalStateException.class, () -> {
+			final FastenURI v = FastenURI.create("fasten://mvn$a/foo/Bar");
+			assertEquals(FastenURI.create("/foo/Bar"), FastenURI.create("Bar").relativize(v));
+		});
 
 		u = FastenURI.create("fasten://mvn$a/foo/Bar");
 		assertEquals(FastenURI.create("/foo/Bar"), FastenURI.create("fasten://mvn$a/nope/Bar").relativize(u));

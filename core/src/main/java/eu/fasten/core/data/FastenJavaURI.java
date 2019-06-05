@@ -109,7 +109,7 @@ public class FastenJavaURI extends FastenURI {
 	 * @param rawVersion the version, or {@code null}.
 	 * @param typeName the name of the type.
 	 * @param functionOrAttributeName the name of the function (if {@code returnType} is not {@code null}) or attribute.
-	 * @param argTypes the argument of the function.
+	 * @param argTypes the types of arguments of the function; you can use either an empty array or {@code null} for the empty list.
 	 * @param returnType the return type ({@code null} for attributes).
 	 * @return a {@link FastenJavaURI}.
 	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a {@link FastenJavaURI}.
@@ -149,7 +149,7 @@ public class FastenJavaURI extends FastenURI {
 		final StringBuffer sb = new StringBuffer();
 		for (int i = 0; i < s.length(); i++) {
 			final char c = s.charAt(i);
-			if (c < 0xFF && !Character.isLetterOrDigit(c) && ! typeChar.contains(c))
+			if (c < 0x7F && !Character.isLetterOrDigit(c) && ! typeChar.contains(c))
 				sb.append("%" + String.format("%02X", Integer.valueOf(c)));
 			else
 				sb.append(c);

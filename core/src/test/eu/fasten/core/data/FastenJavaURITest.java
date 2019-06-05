@@ -51,6 +51,24 @@ class FastenJavaURITest {
 	}
 
 	@Test
+	void testCreationNoEntity() {
+		assertEquals("webgraph.jar", new FastenJavaURI("fasten://webgraph.jar").getProduct());
+	}
+
+	@Test
+	void testCreationError() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			new FastenJavaURI("fasten://webgraph.jar/it.unimi.dsi.webgraph/BVGraph.copy(");
+		});
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			new FastenJavaURI("fasten://webgraph.jar/it.unimi.dsi.webgraph/");
+		});
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			new FastenJavaURI("fasten://webgraph.jar/it.unimi.dsi.webgraph");
+		});
+	}
+
+	@Test
 	void testExample1() {
 		final var fastenJavaURI = new FastenJavaURI("fasten://xerces.xercesImpl$2.6.2/org.apache.html.dom/HTMLUListElementImpl.%3Cinit%3E(HTMLDocumentImpl,%2F%2Fjdk%2Fjava.lang%2FString)HTMLUListElementImpl");
 		assertEquals("fasten", fastenJavaURI.getScheme());
@@ -195,6 +213,9 @@ class FastenJavaURITest {
 		u = FastenJavaURI.create(null, null, null, "foo", "Bar", "dummy", new FastenJavaURI[] {}, null);
 		assertEquals("fasten:/foo/Bar.dummy", u.toString());
 
+		u = FastenJavaURI.create(null, null, null, "foo", "Bar", "dummy", null, null);
+		assertEquals("fasten:/foo/Bar.dummy", u.toString());
+
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			FastenJavaURI.create(null, null, null, "foo", "Bar", "dummy", new FastenJavaURI[] { FastenJavaURI.create("A") }, null);
 		});
@@ -202,5 +223,20 @@ class FastenJavaURITest {
 		u = FastenJavaURI.create(null, null, null, "foo", "Bar", "dummy", new FastenJavaURI[] { FastenJavaURI.create("A") }, FastenJavaURI.create("B"));
 		assertEquals("fasten:/foo/Bar.dummy(A)B", u.toString());
 
+		u = FastenJavaURI.create(null, null, null, "foo", "Bar", "dummy", new FastenJavaURI[] { FastenJavaURI.create("X"), FastenJavaURI.create("Y") }, FastenJavaURI.create("B"));
+		assertEquals("fasten:/foo/Bar.dummy(X,Y)B", u.toString());
+
+		u = FastenJavaURI.create(null, null, null, "foo", "Bar", "dummy", null, FastenJavaURI.create("B"));
+		assertEquals("fasten:/foo/Bar.dummy()B", u.toString());
+
+	}
+
+	@Test
+	public void testPctEncode() {
+		assertEquals("a", FastenJavaURI.pctEncodeArg("a"));
+		assertEquals("-", FastenJavaURI.pctEncodeArg("-"));
+		assertEquals("µ", FastenJavaURI.pctEncodeArg("µ"));
+		assertEquals("ò", FastenJavaURI.pctEncodeArg("ò"));
+		assertEquals("%2F", FastenJavaURI.pctEncodeArg("/"));
 	}
 }
