@@ -121,11 +121,6 @@ class FastenURITest {
 	public void testRelativize() {
 		FastenURI u;
 
-		Assertions.assertThrows(IllegalStateException.class, () -> {
-			final FastenURI v = FastenURI.create("/foo/Bar");
-			assertEquals(v, FastenURI.create("Bar").relativize(v));
-		});
-
 		u = FastenURI.create("fasten://mvn$a/foo/Bar");
 		assertEquals(FastenURI.create("/foo/Bar"), FastenURI.create("fasten://mvn$a/nope/Bar").relativize(u));
 
@@ -138,11 +133,6 @@ class FastenURITest {
 		u = FastenURI.create("fasten://mvn$b/foo/Bar");
 		assertEquals(u, FastenURI.create("//mvn$a/foo/Bar").relativize(u));
 
-		Assertions.assertThrows(IllegalStateException.class, () -> {
-			final FastenURI v = FastenURI.create("fasten://mvn$b/foo/Bar");
-			assertEquals(v, FastenURI.create("Bar").relativize(v));
-		});
-
 		u = FastenURI.create("fasten://mvn$a/foo/Bar");
 		assertEquals(FastenURI.create("Bar"), FastenURI.create("fasten://mvn$a/foo/Dummy").relativize(u));
 
@@ -153,5 +143,45 @@ class FastenURITest {
 		assertEquals(FastenURI.create("Bar"), FastenURI.create("fasten://mvn$a/foo/Bar").relativize(u));
 	}
 
+
+	@Test
+	public void testRelativizeResolve() {
+		FastenURI u, v;
+
+		u = FastenURI.create("fasten://mvn$a/foo/Bar");
+		v = FastenURI.create("fasten://mvn$a/nope/Bar");
+		assertEquals(u, v.resolve(v.relativize(u)));
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+
+		u = FastenURI.create("fasten://mvn$b/foo/Bar");
+		v = FastenURI.create("fasten://mvn$a/foo/Bar");
+		assertEquals(u, v.resolve(v.relativize(u)));
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+
+		u = FastenURI.create("//mvn$b/foo/Bar");
+		v = FastenURI.create("fasten://mvn$a/foo/Bar");
+		assertEquals("fasten:" + u, v.resolve(v.relativize(u)).toString());
+		assertEquals("fasten:" + v.relativize(u), v.relativize(v.resolve(u)).toString());
+
+		u = FastenURI.create("fasten://mvn$b/foo/Bar");
+		v = FastenURI.create("//mvn$a/foo/Bar");
+		assertEquals(u, v.resolve(v.relativize(u)));
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+
+		u = FastenURI.create("fasten://mvn$a/foo/Bar");
+		v = FastenURI.create("fasten://mvn$a/foo/Dummy");
+		assertEquals(u, v.resolve(v.relativize(u)));
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+
+		u = FastenURI.create("/foo/Bar");
+		v = FastenURI.create("fasten://mvn$a/foo/Bar");
+		assertEquals("fasten://mvn$a" + u, v.resolve(v.relativize(u)).toString());
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+
+		u = FastenURI.create("Bar");
+		v = FastenURI.create("fasten://mvn$a/foo/Bar");
+		assertEquals("fasten://mvn$a/foo/" + u, v.resolve(v.relativize(u)).toString());
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+	}
 
 }

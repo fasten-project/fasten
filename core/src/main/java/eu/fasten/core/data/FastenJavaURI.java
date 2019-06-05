@@ -22,7 +22,8 @@ import java.net.URI;
 
 import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
 
-/** A class representing a Fasten URI for the Java language; it has to be considered experimental until the BNF for such URIs is set in stone. */
+/** A class representing a Fasten URI for the Java language; it has to be considered experimental
+ *  until the BNF for such URIs is set in stone. */
 
 public class FastenJavaURI extends FastenURI {
 	private final static FastenJavaURI[] NO_ARGS_ARRAY = new FastenJavaURI[0];
@@ -97,17 +98,41 @@ public class FastenJavaURI extends FastenURI {
 		return new FastenJavaURI(uri);
 	}
 
-	public static FastenJavaURI create(final String rawForge, final String rawProduct, final String rawVersion, final String rawNamespace, final String className, final String functionOrAttributeName, final FastenJavaURI[] relativizedArgs, final FastenJavaURI relativizedReturnType) {
-		// TODO: percent uppercasing
+	/**
+	 * Creates a {@link FastenJavaURI} from components.
+	 *
+	 * <P>Please note that while {@link FastenURI} components must be provided <em>raw</em>, all
+	 * other components must not be.
+	 *
+	 * @param rawForge the forge, or {@code null}.
+	 * @param rawProduct the product, or {@code null}.
+	 * @param rawVersion the version, or {@code null}.
+	 * @param typeName the name of the type.
+	 * @param functionOrAttributeName the name of the function (if {@code returnType} is not {@code null}) or attribute.
+	 * @param argTypes the argument of the function.
+	 * @param returnType the return type ({@code null} for attributes).
+	 * @return a {@link FastenJavaURI}.
+	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a {@link FastenJavaURI}.
+	 */
+
+	public static FastenJavaURI create(final String rawForge, final String rawProduct, final String rawVersion, final String rawNamespace,
+			final String typeName, final String functionOrAttributeName,
+			final FastenJavaURI[] argTypes, final FastenJavaURI returnType) {
 		final StringBuffer entitysb = new StringBuffer();
-		entitysb.append(className + ".");
-		entitysb.append(functionOrAttributeName + "(");
-		for (int i = 0; i < relativizedArgs.length; i++) {
-			if (i>0) entitysb.append(",");
-			entitysb.append(FastenJavaURI.pctEncodeArg(relativizedArgs[i].uri.toString()));
+		entitysb.append(typeName + '.');
+		entitysb.append(functionOrAttributeName);
+
+		if (returnType != null) {
+			entitysb.append('(');
+			if (argTypes != null)
+				for (int i = 0; i < argTypes.length; i++) {
+					if (i>0) entitysb.append(',');
+					entitysb.append(FastenJavaURI.pctEncodeArg(argTypes[i].uri.toString()));
+				}
+			entitysb.append(')');
+			entitysb.append(FastenJavaURI.pctEncodeArg(returnType.uri.toString()));
 		}
-		entitysb.append(")");
-		entitysb.append(FastenJavaURI.pctEncodeArg(relativizedReturnType.uri.toString()));
+		else if (argTypes != null && argTypes.length > 0) throw new IllegalArgumentException("You cannot specify argument types for an attribute");
 		final FastenURI fastenURI = FastenURI.create(rawForge, rawProduct, rawVersion, rawNamespace, entitysb.toString());
 		return create(fastenURI.uri);
 	}
@@ -148,6 +173,14 @@ public class FastenJavaURI extends FastenURI {
 		return returnType;
 	}
 
+	/** Relativizes the provided FASTEN Java URI with respected to this FASTEN Java URI.
+	 *
+	 * <p>Note that this method is only a convenient version of {@link FastenURI#relativize(FastenURI)},
+	 * which it overrides.
+	 * @param u a FASTEN Java URI.
+	 * @return {@code u} relativized to this FASTEN Java URI.
+	 * @see FastenURI#relativize(FastenURI)
+	 */
 	@Override
 	public FastenJavaURI relativize(final FastenURI u) {
 		if (rawNamespace == null) throw new IllegalStateException("You cannot relativize without a namespace");

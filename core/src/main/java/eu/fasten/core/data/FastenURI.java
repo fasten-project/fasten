@@ -128,6 +128,19 @@ public class FastenURI {
 		return new FastenURI(uri);
 	}
 
+	/**
+	 * Creates a {@link FastenURI} from given raw (i.e., properly escaped) fine-grained components.
+	 *
+	 * <p>No check is performed on the correctness of the components.
+	 * @param rawForge the forge, or {@code null}.
+	 * @param rawProduct the product, or {@code null}.
+	 * @param rawVersion the version, or {@code null}.
+	 * @param rawNamespace the namespace, or {@code null}.
+	 * @param rawEntity the entity, or {@code null}.
+	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a {@link FastenURI}.
+	 * @see #create(String, String, String)
+	 */
+
 	public static FastenURI create(final String rawForge, final String rawProduct, final String rawVersion, final String rawNamespace, final String rawEntity) {
 		final StringBuffer urisb = new StringBuffer();
 		urisb.append("fasten:");
@@ -141,6 +154,16 @@ public class FastenURI {
 		return new FastenURI(URI.create(urisb.toString()));
 	}
 
+	/**
+	 * Creates a {@link FastenURI} from given raw (i.e., properly escaped) coarse-grained components.
+	 *
+	 * <p>No check is performed on the correctness of the components.
+	 * @param rawForgeProductVersion forge, product, and version, combined, or {@code null}.
+	 * @param rawNamespace the namespace, or {@code null}.
+	 * @param rawEntity the entity, or {@code null}.
+	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a {@link FastenURI}.
+	 * @see #create(String, String, String, String, String)
+	 */
 	public static FastenURI create(final String rawForgeProductVersion, final String rawNamespace, final String rawEntity) {
 		return new FastenURI(URI.create("fasten:" + rawForgeProductVersion + "/" + rawNamespace + "/" + rawEntity));
 	}
@@ -213,7 +236,6 @@ public class FastenURI {
 		return decode(rawNamespace);
 	}
 
-
 	public FastenURI resolve(final FastenURI fastenURI) {
 		return create(uri.resolve(fastenURI.uri));
 	}
@@ -222,6 +244,20 @@ public class FastenURI {
 		return create(uri.resolve(URI.create(str)));
 	}
 
+	/** Relativizes the provided FASTEN URI with respected to this FASTEN URI.
+	 *
+	 * <p>The definition of relativization for FASTEN URIs is slightly more general than
+	 * that used by {@link URI#relativize(URI)}: equal prefixes formed by
+	 * {@code forge-product-version} and possibly {@code namespace} between this URI
+	 * and the provided URI will be erased by the relativization process. In particular,
+	 * this URI needs not be a prefix of the provided URI to relativize successfully.
+	 *
+	 * <p>It is guaranteed that u is a suffix of v.resolve(v.relativize(u)).
+	 * <p>It is guaranteed that v.relativize(u) is exactly v.relativize(v.resolve(u)) (modulo, possibly, the scheme part).
+	 *
+	 * @param u a FASTEN URI.
+	 * @return {@code u} relativized to this FASTEN URI.
+	 */
 	public FastenURI relativize(final FastenURI u) {
 		if (rawNamespace == null) throw new IllegalStateException("You cannot relativize without a namespace");
 		final String rawAuthority = u.uri.getRawAuthority();
@@ -237,20 +273,12 @@ public class FastenURI {
 		return uri.getScheme();
 	}
 
-	public boolean isAbsolute() {
-		return uri.isAbsolute();
-	}
-
-	public int getPort() {
-		return uri.getPort();
-	}
-
 	public String getPath() {
 		return uri.getPath();
 	}
 
-	public String getQuery() {
-		return uri.getQuery();
+	public String getRawPath() {
+		return uri.getRawPath();
 	}
 
 	@Override
@@ -269,6 +297,10 @@ public class FastenURI {
 		return uri.toString().hashCode();
 	}
 
+	/** A no-op canonicalization method.
+	 *
+	 * @return this {@link FastenURI}.
+	 */
 	public FastenURI canonicalize() {
 		 return this;
 	}

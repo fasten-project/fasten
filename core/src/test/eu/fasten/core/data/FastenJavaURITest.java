@@ -4,15 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import java.net.URISyntaxException;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class FastenJavaURITest {
 
 	@Test
-	void testCreationEmptyArgs() throws URISyntaxException {
+	void testCreationEmptyArgs() {
 		var fastenJavaURI = new FastenJavaURI("fasten://webgraph.jar/it.unimi.dsi.webgraph/BVGraph.copy()BVGraph");
 		assertEquals("fasten", fastenJavaURI.getScheme());
 		assertNull(fastenJavaURI.getForge());
@@ -39,7 +37,7 @@ class FastenJavaURITest {
 	}
 
 	@Test
-	void testCreationOneArg() throws URISyntaxException {
+	void testCreationOneArg() {
 		final var fastenJavaURI = new FastenJavaURI("fasten://webgraph.jar/it.unimi.dsi.webgraph/BVGraph.successors(%2Fjava.primitive%2Fint)LazyIntIterator");
 		assertEquals("fasten", fastenJavaURI.getScheme());
 		assertEquals("webgraph.jar", fastenJavaURI.getProduct());
@@ -53,7 +51,7 @@ class FastenJavaURITest {
 	}
 
 	@Test
-	void testExample1() throws URISyntaxException {
+	void testExample1() {
 		final var fastenJavaURI = new FastenJavaURI("fasten://xerces.xercesImpl$2.6.2/org.apache.html.dom/HTMLUListElementImpl.%3Cinit%3E(HTMLDocumentImpl,%2F%2Fjdk%2Fjava.lang%2FString)HTMLUListElementImpl");
 		assertEquals("fasten", fastenJavaURI.getScheme());
 		assertEquals("xerces.xercesImpl", fastenJavaURI.getProduct());
@@ -70,7 +68,7 @@ class FastenJavaURITest {
 	}
 
 	@Test
-	void testExample2() throws URISyntaxException {
+	void testExample2() {
 		final var fastenJavaURI = new FastenJavaURI("fasten://com.faster.jackson.core.jackson-core/com.fasterxml.jackson.core.json.async/NonBlockingJsonParserBase._findName(%2F%2Fjdk%2Fjava.primitive%2Fint,%2F%2Fjdk%2Fjava.primitive%2Fint)%2F%2Fjdk%2Fjava.lang%2FString");
 		assertEquals("fasten", fastenJavaURI.getScheme());
 		assertEquals("com.faster.jackson.core.jackson-core", fastenJavaURI.getProduct());
@@ -87,13 +85,13 @@ class FastenJavaURITest {
 	}
 
 	@Test
-	public void testNamespace() throws URISyntaxException {
+	public void testNamespace() {
 		final var uri = new FastenJavaURI("/my.package/A.f(A)B");
 		assertEquals(FastenJavaURI.create("/my.package/A.f(A)B"), uri.args[0].resolve(uri));
 	}
 
 	@Test
-	public void testCanonical() throws URISyntaxException {
+	public void testCanonical() {
 		FastenJavaURI uri = new FastenJavaURI("fasten://mvn$a/foo/Bar.jam(fasten%3A%2F%2Fmvn$a%2Ffoo%2FBar)%2Fbar%2FBar");
 		assertEquals(FastenJavaURI.create("fasten://mvn$a/foo/Bar"), uri.getArgs()[0]);
 		assertEquals(FastenJavaURI.create("/bar/Bar"), uri.getReturnType());
@@ -149,4 +147,60 @@ class FastenJavaURITest {
 		assertEquals(FastenJavaURI.create("Bar"), FastenJavaURI.create("fasten://mvn$a/foo/Bar").relativize(u));
 	}
 
+	@Test
+	public void testRelativizeResolve() {
+		FastenJavaURI u, v;
+
+		u = FastenJavaURI.create("fasten://mvn$a/foo/Bar");
+		v = FastenJavaURI.create("fasten://mvn$a/nope/Bar");
+		assertEquals(u, v.resolve(v.relativize(u)));
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+
+		u = FastenJavaURI.create("fasten://mvn$b/foo/Bar");
+		v = FastenJavaURI.create("fasten://mvn$a/foo/Bar");
+		assertEquals(u, v.resolve(v.relativize(u)));
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+
+		u = FastenJavaURI.create("//mvn$b/foo/Bar");
+		v = FastenJavaURI.create("fasten://mvn$a/foo/Bar");
+		assertEquals("fasten:" + u, v.resolve(v.relativize(u)).toString());
+		assertEquals("fasten:" + v.relativize(u), v.relativize(v.resolve(u)).toString());
+
+		u = FastenJavaURI.create("fasten://mvn$b/foo/Bar");
+		v = FastenJavaURI.create("//mvn$a/foo/Bar");
+		assertEquals(u, v.resolve(v.relativize(u)));
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+
+		u = FastenJavaURI.create("fasten://mvn$a/foo/Bar");
+		v = FastenJavaURI.create("fasten://mvn$a/foo/Dummy");
+		assertEquals(u, v.resolve(v.relativize(u)));
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+
+		u = FastenJavaURI.create("/foo/Bar");
+		v = FastenJavaURI.create("fasten://mvn$a/foo/Bar");
+		assertEquals("fasten://mvn$a" + u, v.resolve(v.relativize(u)).toString());
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+
+		u = FastenJavaURI.create("Bar");
+		v = FastenJavaURI.create("fasten://mvn$a/foo/Bar");
+		assertEquals("fasten://mvn$a/foo/" + u, v.resolve(v.relativize(u)).toString());
+		assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
+	}
+
+
+	@Test
+	public void testCreateFromComponents() {
+		FastenJavaURI u;
+
+		u = FastenJavaURI.create(null, null, null, "foo", "Bar", "dummy", new FastenJavaURI[] {}, null);
+		assertEquals("fasten:/foo/Bar.dummy", u.toString());
+
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			FastenJavaURI.create(null, null, null, "foo", "Bar", "dummy", new FastenJavaURI[] { FastenJavaURI.create("A") }, null);
+		});
+
+		u = FastenJavaURI.create(null, null, null, "foo", "Bar", "dummy", new FastenJavaURI[] { FastenJavaURI.create("A") }, FastenJavaURI.create("B"));
+		assertEquals("fasten:/foo/Bar.dummy(A)B", u.toString());
+
+	}
 }
