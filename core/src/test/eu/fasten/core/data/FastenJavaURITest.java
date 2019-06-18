@@ -18,7 +18,7 @@ class FastenJavaURITest {
 		assertNull(fastenJavaURI.getVersion());
 		assertEquals("it.unimi.dsi.webgraph", fastenJavaURI.getNamespace());
 		assertEquals("BVGraph", fastenJavaURI.getClassName());
-		assertEquals("copy", fastenJavaURI.getFunctionName());
+		assertEquals("copy", fastenJavaURI.getEntityName());
 		assertArrayEquals(new FastenJavaURI[0], fastenJavaURI.getArgs());
 		//assertEquals(FastenJavaURI.create("BVGraph"), fastenJavaURI.getReturnType());
 		//assertEquals(FastenJavaURI.create("fasten://webgraph.jar/it.unimi.dsi.webgraph/BVGraph"), fastenJavaURI.resolve(fastenJavaURI.getReturnType()));
@@ -30,7 +30,7 @@ class FastenJavaURITest {
 		assertEquals("3.6.2", fastenJavaURI.getVersion());
 		assertEquals("it.unimi.dsi.webgraph", fastenJavaURI.getNamespace());
 		assertEquals("BVGraph", fastenJavaURI.getClassName());
-		assertEquals("copy", fastenJavaURI.getFunctionName());
+		assertEquals("copy", fastenJavaURI.getEntityName());
 		assertArrayEquals(new FastenJavaURI[0], fastenJavaURI.getArgs());
 		//assertEquals(FastenJavaURI.create("BVGraph"), fastenJavaURI.getReturnType());
 		//assertEquals(FastenJavaURI.create("fasten://webgraph.jar/it.unimi.dsi.webgraph/BVGraph"), fastenJavaURI.resolve(fastenJavaURI.getReturnType()));
@@ -44,7 +44,7 @@ class FastenJavaURITest {
 		assertNull(fastenJavaURI.getForge());
 		assertEquals("it.unimi.dsi.webgraph", fastenJavaURI.getNamespace());
 		assertEquals("BVGraph", fastenJavaURI.getClassName());
-		assertEquals("successors", fastenJavaURI.getFunctionName());
+		assertEquals("successors", fastenJavaURI.getEntityName());
 		//assertArrayEquals(new FastenJavaURI[] { FastenJavaURI.create("LazyIntIterator")}, fastenJavaURI.getArgs());
 		//assertEquals(FastenJavaURI.create("BVGraph"), fastenJavaURI.getReturnType());
 		//assertEquals(FastenJavaURI.create("fasten://webgraph.jar/it.unimi.dsi.webgraph/BVGraph"), fastenJavaURI.resolve(fastenJavaURI.getReturnType()));
@@ -77,7 +77,7 @@ class FastenJavaURITest {
 		assertNull(fastenJavaURI.getForge());
 		assertEquals("org.apache.html.dom", fastenJavaURI.getNamespace());
 		assertEquals("HTMLUListElementImpl", fastenJavaURI.getClassName());
-		assertEquals("<init>", fastenJavaURI.getFunctionName());
+		assertEquals("<init>", fastenJavaURI.getEntityName());
 		assertEquals("HTMLUListElementImpl", fastenJavaURI.getReturnType().toString()); // TODO
 		final FastenJavaURI[] args = fastenJavaURI.getArgs();
 		assertEquals(2, args.length);
@@ -94,7 +94,7 @@ class FastenJavaURITest {
 		assertNull(fastenJavaURI.getForge());
 		assertEquals("com.fasterxml.jackson.core.json.async", fastenJavaURI.getNamespace());
 		assertEquals("NonBlockingJsonParserBase", fastenJavaURI.getClassName());
-		assertEquals("_findName", fastenJavaURI.getFunctionName());
+		assertEquals("_findName", fastenJavaURI.getEntityName());
 		assertEquals("//jdk/java.lang/String", fastenJavaURI.getReturnType().toString()); // TODO
 		final FastenJavaURI[] args = fastenJavaURI.getArgs();
 		assertEquals(2, args.length);

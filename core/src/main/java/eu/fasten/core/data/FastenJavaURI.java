@@ -78,9 +78,9 @@ public class FastenJavaURI extends FastenURI {
 	}
 
 	/**
-	 * Creates a {@link FastenURI} from a string, with the same logic of {@link URI#create(String)}.
-	 * @param s a string specifying a {@link FastenURI}.
-	 * @return a {@link FastenURI}.
+	 * Creates a {@link FastenJavaURI} from a string, with the same logic of {@link URI#create(String)}.
+	 * @param s a string specifying a {@link FastenJavaURI}.
+	 * @return a {@link FastenJavaURI}.
 	 */
 
 	public static FastenJavaURI create(final String s) {
@@ -107,6 +107,7 @@ public class FastenJavaURI extends FastenURI {
 	 * @param rawForge the forge, or {@code null}.
 	 * @param rawProduct the product, or {@code null}.
 	 * @param rawVersion the version, or {@code null}.
+	 * @param rawVersion the namespace, or {@code null}.
 	 * @param typeName the name of the type.
 	 * @param functionOrAttributeName the name of the function (if {@code returnType} is not {@code null}) or attribute.
 	 * @param argTypes the types of arguments of the function; you can use either an empty array or {@code null} for the empty list.
@@ -161,14 +162,26 @@ public class FastenJavaURI extends FastenURI {
 		return className;
 	}
 
-	public String getFunctionName() {
+	/** Returns the name of the method or attribute associated with this FASTEN Java URI.
+	 *
+	 * @return the name of the method or attribute associated with this FASTEN Java URI, or {@code null} if none was specified at creation time.
+	 */
+	public String getEntityName() {
 		return functionOrAttributeName;
 	}
 
+	/** Returns the arguments of the method associated with this FASTEN Java URI, or {@code null}.
+	 *
+	 * @return the arguments of the method associated with this FASTEN Java URI, or {@code null} if the URI refers to an attribute.
+	 */
 	public FastenJavaURI[] getArgs() {
 		return args.clone(); // defensive copy?
 	}
 
+	/** Returns the return type of the method associated with this FASTEN Java URI, or {@code null}.
+	 *
+	 * @return the return type of the method associated with this FASTEN Java URI, or {@code null} if the URI refers to an attribute.
+	 */
 	public FastenJavaURI getReturnType() {
 		return returnType;
 	}
