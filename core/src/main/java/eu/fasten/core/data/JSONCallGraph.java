@@ -2,11 +2,15 @@ package eu.fasten.core.data;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+
+
 
 public class JSONCallGraph {
 
@@ -94,7 +98,9 @@ public class JSONCallGraph {
 		public Dependency(JSONObject json) {
 			this.forge = json.getString("forge");
 			this.product = json.getString("product");
-			this.constraints = Constraint.constraints(json.getJSONArray("constraints"));
+			//TODO
+			//this.constraints = Constraint.constraints(json.getJSONArray("constraints"));
+			this.constraints = new Constraint[] {new Constraint(json.getString("constraints"), null)};
 		}
 		
 		/** Given an JSON array of dependencies (a depset as specified in Fasten Deliverable 2.1), it returns
@@ -117,6 +123,8 @@ public class JSONCallGraph {
 	public final String version;
 	public final long timestamp;
 	public final Dependency[] depset;
+	public ArrayList<FastenURI[]> graph;
+	private FastenURI uri;
 	
 	
 	/** Creates a JSON call graph with given data.
@@ -127,15 +135,17 @@ public class JSONCallGraph {
 	 * @param timestamp the timestamp (in seconds from UNIX epoch); optional: if not present, it is set to -1.
 	 * @param depset the depset.
 	 */
-	public JSONCallGraph(String forge, String product, String version, long timestamp, Dependency[] depset) {
+	public JSONCallGraph(String forge, String product, String version, long timestamp, Dependency[] depset, ArrayList<FastenURI[]> graph) {
 		this.forge = forge;
 		this.product = product;
 		this.version = version;
 		this.timestamp = timestamp;
 		this.depset = depset;
+		this.uri = uri();
+		this.graph = graph;
 	}
 	
-	public JSONCallGraph(JSONObject json) {
+	public JSONCallGraph(JSONObject json) throws JSONException, URISyntaxException {
 		this.forge = json.getString("forge");
 		this.product = json.getString("product");
 		this.version = json.getString("version");
@@ -147,14 +157,30 @@ public class JSONCallGraph {
 		}
 		this.timestamp = ts;
 		this.depset = Dependency.depset(json.getJSONArray("depset"));
+		this.uri = uri();
+		this.graph = new ArrayList<FastenURI[]>();
+		JSONArray jsonArray = json.getJSONArray("graph");
+		for (Object p: jsonArray) {
+			JSONArray pair = (JSONArray) p;
+			this.graph.add(new FastenURI[] {
+					new FastenURI(pair.getString(0)),
+					new FastenURI(pair.getString(1))
+			});			
+		}
 	}
-
-
-
-	public static void main(String[] args) throws JSONException, FileNotFoundException {
+	
+	private FastenURI uri() {
+		return FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
+	}
+	
+	public static void main(String[] args) throws JSONException, FileNotFoundException, URISyntaxException {
 		JSONObject json = new JSONObject(new JSONTokener(new FileReader("/Users/boldi/Desktop/can_cgraph.json")));
 		JSONCallGraph callGraph = new JSONCallGraph(json);
-		System.out.println(callGraph.forge);
+		System.out.println(callGraph.uri());
+		for (FastenURI[] pair: callGraph.graph) 
+			System.out.println(pair[0] + "\t" + pair[1]);
 	}
+	
+	
 
 }
