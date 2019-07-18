@@ -131,7 +131,7 @@ class JSONCallGraphTest {
 				"      ]\n" + 
 				"}";
 		JSONObject json = new JSONObject(callGraph);
-		JSONCallGraph cg = new JSONCallGraph(json);
+		JSONCallGraph cg = new JSONCallGraph(json, null);
 		assertEquals("mvn", cg.forge);
 		assertEquals("foo", cg.product);
 		assertEquals("2.0", cg.version);
