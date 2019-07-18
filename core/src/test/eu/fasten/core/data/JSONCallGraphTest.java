@@ -5,9 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -110,7 +112,7 @@ class JSONCallGraphTest {
 	}
 
 	@Test
-	void testCallGraph() {
+	void testCallGraph() throws JSONException, URISyntaxException {
 		String callGraph = "{\n" + 
 				"    \"forge\": \"mvn\",\n" + 
 				"    \"product\": \"foo\",\n" + 
