@@ -1,12 +1,9 @@
 package eu.fasten.core.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URISyntaxException;
-import java.util.Arrays;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,6 +20,10 @@ class JSONCallGraphTest {
 	void testConstraint() {
 		JSONCallGraph.Constraint c;
 		
+		c = new JSONCallGraph.Constraint("3.1", "7.4");
+		assertEquals("3.1", c.lowerBound);
+		assertEquals("7.4", c.upperBound);
+		
 		c = new JSONCallGraph.Constraint("[3.1..7.4]");
 		assertEquals("3.1", c.lowerBound);
 		assertEquals("7.4", c.upperBound);
@@ -34,6 +35,7 @@ class JSONCallGraphTest {
 		c = new JSONCallGraph.Constraint("[   ..  3.1]");
 		assertNull(c.lowerBound);
 		assertEquals("3.1", c.upperBound);
+		assertEquals("[..3.1]", c.toString());
 
 		
 		c = new JSONCallGraph.Constraint("[3.1]");
