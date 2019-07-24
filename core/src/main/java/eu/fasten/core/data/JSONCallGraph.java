@@ -12,6 +12,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import com.martiansoftware.jsap.JSAP;
+import com.martiansoftware.jsap.JSAPException;
+import com.martiansoftware.jsap.JSAPResult;
+import com.martiansoftware.jsap.Parameter;
+import com.martiansoftware.jsap.SimpleJSAP;
+import com.martiansoftware.jsap.Switch;
+import com.martiansoftware.jsap.UnflaggedOption;
+
 
 
 public class JSONCallGraph {
@@ -96,25 +104,29 @@ public class JSONCallGraph {
 		/** Create a dependency based on the given JSON Object.
 		 * 
 		 * @param json the JSON dependency object, as specified in Fasten Deliverable 2.1 
+		 * @param ignoreConstraints  if <code>true</code>, constraints are specified by a simple string.
 		 */
-		public Dependency(JSONObject json) {
+		public Dependency(JSONObject json, boolean ignoreConstraints) {
 			this.forge = json.getString("forge");
 			this.product = json.getString("product");
 			//TODO
-			//this.constraints = Constraint.constraints(json.getJSONArray("constraints"));
-			this.constraints = new Constraint[] {new Constraint(json.getString("constraints"), null)};
+			if (ignoreConstraints)
+				this.constraints = new Constraint[] {new Constraint(json.getString("constraints"), null)};
+			else
+				this.constraints = Constraint.constraints(json.getJSONArray("constraints"));
 		}
 		
 		/** Given an JSON array of dependencies (a depset as specified in Fasten Deliverable 2.1), it returns
 		 *  the corresponding depset.
 		 *   
 		 * @param depset the JSON array of dependencies.
+		 * @param ignoreConstraints  if <code>true</code>, constraints are specified by a simple string.
 		 * @return the corresponding array of dependencies.
 		 */
-		public static Dependency[] depset(JSONArray depset) {
+		public static Dependency[] depset(JSONArray depset, boolean ignoreConstraints) {
 			Dependency[] d = new Dependency[depset.length()];
 			for (int i = 0; i < d.length; i++) 
-				d[i] = new Dependency(depset.getJSONObject(i));
+				d[i] = new Dependency(depset.getJSONObject(i), ignoreConstraints);
 			return d;
 		}
 		
@@ -181,9 +193,10 @@ public class JSONCallGraph {
 	 *  which case a null print stream will be used).
 	 *  
 	 * @param json the JSON Object.
+	 * @param ignoreConstraints if <code>true</code>, constraints are specified by a simple string.
 	 */
-	public JSONCallGraph(JSONObject json, PrintStream err) throws JSONException, URISyntaxException {
-		if (err == null) err = new PrintStream(new NullOutputStream());		
+	public JSONCallGraph(JSONObject json, boolean ignoreConstraints, PrintStream err) throws JSONException, URISyntaxException {
+		if (err == null) err = new PrintStream(new NullOutputStream());	
 		this.forge = json.getString("forge");
 		this.product = json.getString("product");
 		this.version = json.getString("version");
@@ -194,7 +207,7 @@ public class JSONCallGraph {
 			ts = -1;
 		}
 		this.timestamp = ts;
-		this.depset = Dependency.depset(json.getJSONArray("depset"));
+		this.depset = Dependency.depset(json.getJSONArray("depset"), ignoreConstraints);
 		uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
 		forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
 		this.graph = new ArrayList<FastenURI[]>();
@@ -228,13 +241,22 @@ public class JSONCallGraph {
 		err.println("Stored " + this.graph.size() + " arcs of the " + numberOfArcs + " specified");
 	}
 	
-	public static void main(String[] args) throws JSONException, FileNotFoundException, URISyntaxException {
-		if (args.length != 1) {
-			System.err.println("Should provide exactly one argument (the file containing the JSON Object specifying the call graph)");
-			System.exit(1);
-		}
-		JSONObject json = new JSONObject(new JSONTokener(new FileReader(args[0])));
-		JSONCallGraph callGraph = new JSONCallGraph(json, System.err);
+	public static void main(String[] args) throws JSONException, FileNotFoundException, URISyntaxException, JSAPException {
+		final SimpleJSAP jsap = new SimpleJSAP( JSONCallGraph.class.getName(), 
+				"Reads a file containing a JSON call graph in the format specified by the Deliverable D2.1", 
+				new Parameter[] {
+					new Switch( "ignore-constraints", 'c', "ignore-constraints", "The constraints are ignored (i.e., they are accepted in the form of a generic string)." ),
+					new UnflaggedOption( "filename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The name of the file containing the JSON object." ),
+			}
+		);
+
+		JSAPResult jsapResult = jsap.parse(args);
+		if ( jsap.messagePrinted() ) return;
+		String filename = jsapResult.getString("filename");
+		boolean ignoreConstraints = jsapResult.getBoolean("ignore-constraints");
+		
+		JSONObject json = new JSONObject(new JSONTokener(new FileReader(filename)));
+		JSONCallGraph callGraph = new JSONCallGraph(json, ignoreConstraints, System.err);
 		// TODO do something with the graph?
 	}
 	
