@@ -69,7 +69,7 @@ class JSONCallGraphTest {
 		assertEquals("7.1", d.constraints[0].upperBound);
 		
 		JSONObject json = new JSONObject("{\"forge\": \"maven\", \"product\": \"foo.bar\", \"constraints\": [\"[3.1..  7.1   ]\",\"[   9]\",\"[10.3  ..]\"] }");
-		d = new JSONCallGraph.Dependency(json);
+		d = new JSONCallGraph.Dependency(json, false);
 		assertEquals("maven", d.forge);
 		assertEquals("foo.bar", d.product);
 		Constraint[] constraints = d.constraints;
@@ -88,7 +88,7 @@ class JSONCallGraphTest {
 				"{\"forge\": \"maven\", \"product\": \"foo.bar\", \"constraints\": [\"[3.1..  7.1   ]\",\"[   9]\",\"[10.3  ..]\"] }, " +
 				"{\"forge\": \"other\", \"product\": \"bar.nee\", \"constraints\": [\"[..9]\",\"[10.3  ..]\"] }" +
 				"]");
-		Dependency[] depset = JSONCallGraph.Dependency.depset(json);
+		Dependency[] depset = JSONCallGraph.Dependency.depset(json, false);
 		Dependency d = depset[0];
 		assertEquals("maven", d.forge);
 		assertEquals("foo.bar", d.product);
@@ -131,7 +131,7 @@ class JSONCallGraphTest {
 				"      ]\n" + 
 				"}";
 		JSONObject json = new JSONObject(callGraph);
-		JSONCallGraph cg = new JSONCallGraph(json, null);
+		JSONCallGraph cg = new JSONCallGraph(json, false, null);
 		assertEquals("mvn", cg.forge);
 		assertEquals("foo", cg.product);
 		assertEquals("2.0", cg.version);
