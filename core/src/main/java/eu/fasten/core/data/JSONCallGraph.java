@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.core.data;
 
 import java.io.FileNotFoundException;
@@ -32,7 +50,7 @@ public class JSONCallGraph {
 		public final String upperBound;
 
 		/** Generate a constraint with given lower and upper bounds.
-		 * 
+		 *
 		 * @param lowerBound the lower bound.
 		 * @param upperBound the upper bound.
 		 */
@@ -40,7 +58,7 @@ public class JSONCallGraph {
 			this.lowerBound = lowerBound;
 			this.upperBound = upperBound;
 		}
-		
+
 		/** Generate a constraint on the basis of a specification. The spec must:
 		 *  <ol>
 		 *  	<li>start with a '['
@@ -51,62 +69,62 @@ public class JSONCallGraph {
 		 *  </ol>
 		 * @param spec the specification.
 		 */
-		public Constraint(String spec) {
+		public Constraint(final String spec) {
 			if ((spec.charAt(0) != '[') || (spec.charAt(spec.length() - 1) != ']')) throw new IllegalArgumentException("Constraints must start with '[' and end with ']'");
-			int pos = spec.indexOf("..");
+			final int pos = spec.indexOf("..");
 			if (spec.indexOf("..", pos + 1) >= 0) throw new IllegalArgumentException("Constraints must contain exactly one ..");
-			String lowerBound = spec.substring(1, pos >= 0? pos : spec.length() - 1).trim();
-			String upperBound = spec.substring(pos >= 0? pos + 2 : 1, spec.length() - 1).trim();
+			final String lowerBound = spec.substring(1, pos >= 0? pos : spec.length() - 1).trim();
+			final String upperBound = spec.substring(pos >= 0? pos + 2 : 1, spec.length() - 1).trim();
 			this.lowerBound = lowerBound.length() == 0? null : lowerBound;
 			this.upperBound = upperBound.length() == 0? null : upperBound;
 		}
-		
+
 		/** Given a {@link JSONArray} of specifications of constraints, it returns the corresponding array
 		 *  of contraints.
-		 *  
+		 *
 		 * @param jsonArray an array of strings, each being the {@linkplain #Constraint(String) specification} of a constraint.
 		 * @return the corresponding array of constraints.
 		 */
-		public static Constraint[] constraints(JSONArray jsonArray) {
-			Constraint[] c = new Constraint[jsonArray.length()];
-			for (int i = 0; i < c.length; i++) 
+		public static Constraint[] constraints(final JSONArray jsonArray) {
+			final Constraint[] c = new Constraint[jsonArray.length()];
+			for (int i = 0; i < c.length; i++)
 				c[i] = new Constraint(jsonArray.getString(i));
 			return c;
 		}
 
 		@Override
 		public String toString() {
-			return "[" + 
+			return "[" +
 					(lowerBound == null? "" : lowerBound) +
 					".." +
 					(upperBound == null? "" : upperBound) +
 					"]";
 		}
 	}
-	
+
 	public static class Dependency {
 		public final String forge;
 		public final String product;
 		public final Constraint[] constraints;
-		
+
 		/** Create a dependency with given data.
-		 * 
+		 *
 		 * @param forge the forge.
 		 * @param product the product.
 		 * @param constraint the array of constraints.
 		 */
-		public Dependency(String forge, String product, Constraint[] constraint) {
+		public Dependency(final String forge, final String product, final Constraint[] constraint) {
 			this.forge = forge;
 			this.product = product;
 			this.constraints = constraint;
 		}
-		
+
 		/** Create a dependency based on the given JSON Object.
-		 * 
-		 * @param json the JSON dependency object, as specified in Fasten Deliverable 2.1 
+		 *
+		 * @param json the JSON dependency object, as specified in Fasten Deliverable 2.1
 		 * @param ignoreConstraints  if <code>true</code>, constraints are specified by a simple string.
 		 */
-		public Dependency(JSONObject json, boolean ignoreConstraints) {
+		public Dependency(final JSONObject json, final boolean ignoreConstraints) {
 			this.forge = json.getString("forge");
 			this.product = json.getString("product");
 			//TODO
@@ -115,23 +133,23 @@ public class JSONCallGraph {
 			else
 				this.constraints = Constraint.constraints(json.getJSONArray("constraints"));
 		}
-		
+
 		/** Given an JSON array of dependencies (a depset as specified in Fasten Deliverable 2.1), it returns
 		 *  the corresponding depset.
-		 *   
+		 *
 		 * @param depset the JSON array of dependencies.
 		 * @param ignoreConstraints  if <code>true</code>, constraints are specified by a simple string.
 		 * @return the corresponding array of dependencies.
 		 */
-		public static Dependency[] depset(JSONArray depset, boolean ignoreConstraints) {
-			Dependency[] d = new Dependency[depset.length()];
-			for (int i = 0; i < d.length; i++) 
+		public static Dependency[] depset(final JSONArray depset, final boolean ignoreConstraints) {
+			final Dependency[] d = new Dependency[depset.length()];
+			for (int i = 0; i < d.length; i++)
 				d[i] = new Dependency(depset.getJSONObject(i), ignoreConstraints);
 			return d;
 		}
-		
+
 	}
-	
+
 	/** The forge. */
 	public final String forge;
 	/** The product. */
@@ -156,10 +174,10 @@ public class JSONCallGraph {
 	 * </ol>
 	 */
 	public ArrayList<FastenURI[]> graph;
-	
-	
+
+
 	/** Creates a JSON call graph with given data.
-	 * 
+	 *
 	 * @param forge the forge.
 	 * @param product the product.
 	 * @param version the version.
@@ -167,7 +185,7 @@ public class JSONCallGraph {
 	 * @param depset the depset.
 	 * @param graph the call graph (no control is done on the graph).
 	 */
-	public JSONCallGraph(String forge, String product, String version, long timestamp, Dependency[] depset, ArrayList<FastenURI[]> graph) {
+	public JSONCallGraph(final String forge, final String product, final String version, final long timestamp, final Dependency[] depset, final ArrayList<FastenURI[]> graph) {
 		this.forge = forge;
 		this.product = product;
 		this.version = version;
@@ -177,9 +195,9 @@ public class JSONCallGraph {
 		forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
 		this.graph = graph;
 	}
-	
+
 	/** Creates a JSON call graph for a given JSON Object, as specified in Deliverable D2.1.
-	 *  The timestamp is optional (if not specified, it is set to -1). 
+	 *  The timestamp is optional (if not specified, it is set to -1).
 	 *  Moreover, the list of arcs is checked in that all involved URIs must be:
 	 * <ol>
 	 *  <li>they are in schemeless canonical form;
@@ -191,37 +209,37 @@ public class JSONCallGraph {
 	 *  Arcs not satisfying these properties are discarded, and a suitable error message is printed
 	 *  over the given print stream (typically, <code>err</code>, but can also be <code>null</code> in
 	 *  which case a null print stream will be used).
-	 *  
+	 *
 	 * @param json the JSON Object.
 	 * @param ignoreConstraints if <code>true</code>, constraints are specified by a simple string.
 	 */
-	public JSONCallGraph(JSONObject json, boolean ignoreConstraints, PrintStream err) throws JSONException, URISyntaxException {
-		if (err == null) err = new PrintStream(new NullOutputStream());	
+	public JSONCallGraph(final JSONObject json, final boolean ignoreConstraints, PrintStream err) throws JSONException, URISyntaxException {
+		if (err == null) err = new PrintStream(new NullOutputStream());
 		this.forge = json.getString("forge");
 		this.product = json.getString("product");
 		this.version = json.getString("version");
 		long ts;
 		try {
 			ts = json.getLong("timestamp");
-		} catch (JSONException exception) {
+		} catch (final JSONException exception) {
 			ts = -1;
 		}
 		this.timestamp = ts;
 		this.depset = Dependency.depset(json.getJSONArray("depset"), ignoreConstraints);
 		uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
 		forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
-		this.graph = new ArrayList<FastenURI[]>();
-		JSONArray jsonArray = json.getJSONArray("graph");
-		int numberOfArcs = jsonArray.length();
+		this.graph = new ArrayList<>();
+		final JSONArray jsonArray = json.getJSONArray("graph");
+		final int numberOfArcs = jsonArray.length();
 		for (int i = 0; i < numberOfArcs; i++) {
-			JSONArray pair = jsonArray.getJSONArray(i);
-			FastenURI[] arc = new FastenURI[] {
+			final JSONArray pair = jsonArray.getJSONArray(i);
+			final FastenURI[] arc = new FastenURI[] {
 					new FastenURI(pair.getString(0)),
 					new FastenURI(pair.getString(1)) };
 			int correctNodesInArc = 0;
 			// Check the graph content
 			for (int j = 0; j < arc.length; j++) {
-				FastenURI node = arc[j];
+				final FastenURI node = arc[j];
 				// URI in schemeless canonical form
 				if (node.getScheme() != null) err.println("Ignoring arc " + i + "/" + numberOfArcs + ": node " + node + " should be schemeless");
 				else if (!node.toString().equals(node.canonicalize().toString())) err.println("Ignoring arc " + i + "/" + numberOfArcs + ": node " + node + " not in canonical form [" + node.canonicalize() + "]");
@@ -240,26 +258,26 @@ public class JSONCallGraph {
 		}
 		err.println("Stored " + this.graph.size() + " arcs of the " + numberOfArcs + " specified");
 	}
-	
-	public static void main(String[] args) throws JSONException, FileNotFoundException, URISyntaxException, JSAPException {
-		final SimpleJSAP jsap = new SimpleJSAP( JSONCallGraph.class.getName(), 
-				"Reads a file containing a JSON call graph in the format specified by the Deliverable D2.1", 
+
+	public static void main(final String[] args) throws JSONException, FileNotFoundException, URISyntaxException, JSAPException {
+		final SimpleJSAP jsap = new SimpleJSAP( JSONCallGraph.class.getName(),
+				"Reads a file containing a JSON call graph in the format specified by the Deliverable D2.1",
 				new Parameter[] {
 					new Switch( "ignore-constraints", 'c', "ignore-constraints", "The constraints are ignored (i.e., they are accepted in the form of a generic string)." ),
 					new UnflaggedOption( "filename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The name of the file containing the JSON object." ),
 			}
 		);
 
-		JSAPResult jsapResult = jsap.parse(args);
+		final JSAPResult jsapResult = jsap.parse(args);
 		if ( jsap.messagePrinted() ) return;
-		String filename = jsapResult.getString("filename");
-		boolean ignoreConstraints = jsapResult.getBoolean("ignore-constraints");
-		
-		JSONObject json = new JSONObject(new JSONTokener(new FileReader(filename)));
-		JSONCallGraph callGraph = new JSONCallGraph(json, ignoreConstraints, System.err);
+		final String filename = jsapResult.getString("filename");
+		final boolean ignoreConstraints = jsapResult.getBoolean("ignore-constraints");
+
+		final JSONObject json = new JSONObject(new JSONTokener(new FileReader(filename)));
+		final JSONCallGraph callGraph = new JSONCallGraph(json, ignoreConstraints, System.err);
 		// TODO do something with the graph?
 	}
-	
-	
+
+
 
 }
