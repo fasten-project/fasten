@@ -46,6 +46,17 @@ public class CanonicalJSON {
         return uri;
     }
 
+    public static String getType(TypeName type){
+        String packagename ,classname;
+
+        if (type == null) return "";
+        if (type.getClassName() == null) return "";
+        packagename = ( type.getPackage() == null ? "" : type.getPackage().toString().replace("/", "."));
+        classname = type.getClassName().toString();
+
+        return "/" + packagename  + "/" + classname;
+    }
+
     public static String getMethodInfo(Method method) {
         String namespace = method.namespace.substring(0, method.namespace.lastIndexOf(".") - 1).replace("$", ".");
         String typeName = method.namespace.substring(method.namespace.lastIndexOf(".") + 1).replace("$", ".");
@@ -54,12 +65,13 @@ public class CanonicalJSON {
         String argTypes = "";
         if (args != null) {
             for (int i = 0; i < args.length; i++) {
-                argTypes = (i == args.length - 1 ? FastenJavaURI.pctEncodeArg(args[i].toString()) : FastenJavaURI.pctEncodeArg(args[i].toString()) + ",");
+                argTypes = (i == args.length - 1 ? FastenJavaURI.pctEncodeArg(getType(args[i])) : FastenJavaURI.pctEncodeArg(getType(args[i])) + ",");
             }
         }
-        String returnType = FastenJavaURI.pctEncodeArg(method.symbol.getDescriptor().getReturnType().toString());
+        String returnType = FastenJavaURI.pctEncodeArg(getType(method.symbol.getDescriptor().getReturnType()));
         return "/" + namespace + "/" + typeName + "." + functionName + "(" + argTypes + ")" + returnType;
     }
+
 
     private static String cleanupVersion(String version) {
         return version.substring(0, version.contains("-") ? version.indexOf("-") : version.length());

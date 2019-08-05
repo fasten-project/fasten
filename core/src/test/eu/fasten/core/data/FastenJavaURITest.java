@@ -240,13 +240,5 @@ class FastenJavaURITest {
 		assertEquals("%2F", FastenJavaURI.pctEncodeArg("/"));
 	}
 
-	// TODO Remove this test
-	@Test
-	public void testExtraDecodes() {
-		FastenJavaURI uri = new FastenJavaURI("/com.google.cloud.trace.cor/NaiveSamplingTraceOptionsFactory.create()Lcom%2Fgoogle%2Fcloud%2Ftrace%2Fcore%2FTraceOptions");
-		assertEquals("com.google.cloud.trace.cor", uri.getNamespace());
-		uri = new FastenJavaURI("/com.google.cloud.trace.cor/SpanContextFactory.childContext(Lcom%2Fgoogle%2Fcloud%2Ftrace%2Fcore%2FSpanContext)Lcom%2Fgoogle%2Fcloud%2Ftrace%2Fcore%2FSpanContext");
-		assertEquals("com.google.cloud.trace.cor", uri.getNamespace());
-	}
 
 }
