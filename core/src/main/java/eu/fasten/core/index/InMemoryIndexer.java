@@ -27,7 +27,7 @@ import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Iterator;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONException;
@@ -191,8 +191,7 @@ public class InMemoryIndexer {
 
 	public Collection<FastenURI> reaches(final FastenURI uri) {
 		final long uriGID = URI2GID.getLong(uri);
-		if (uriGID == -1) return Collections.emptyList();
-		final String product = uri.getProduct();
+		if (uriGID == -1) return null;
 		// Accumulates results
 		final LongLinkedOpenHashSet resultGID = new LongLinkedOpenHashSet();
 		// Visit queue
@@ -205,6 +204,7 @@ public class InMemoryIndexer {
 			final Pair<CallGraph, Long> pair = queue.dequeue();
 			final long gid = pair.getRight().longValue();
 			final CallGraph callGraph = pair.getLeft();
+			final String product = callGraph.product;
 			final int lid = callGraph.GID2LID.get(gid);
 			final LazyIntIterator successors = callGraph.graph.successors(lid);
 			for(int s; (s = successors.nextInt()) != -1;) {
@@ -287,7 +287,17 @@ public class InMemoryIndexer {
 			if ( q.length() == 0 ) continue;
 
 			final FastenURI uri = FastenURI.create(q);
-			System.out.println(inMemoryIndexer.reaches(uri));
+			final Collection<FastenURI> result = inMemoryIndexer.reaches(uri);
+			if (result == null) {
+				System.out.println("Method not indexed");
+			}
+			else if (result.size() == 0) {
+				System.out.println("No method called");
+			}
+			else {
+				final Iterator<FastenURI> iterator = result.iterator();
+				for(int i = 0; iterator.hasNext() && i < 50; i++) System.out.println(iterator.next());
+			}
 		}
 	}
 }
