@@ -25,11 +25,21 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Properties;
+import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -70,6 +80,31 @@ import it.unimi.dsi.webgraph.Transform;
  *
  */
 public class InMemoryIndexer {
+
+	public static class KafkaConsumerMonster {
+
+	    private final static String BROKER = "localhost:30001,localhost:30002,localhost:30003";
+
+	    public static Consumer<String, String> createConsumer(final String topic) {
+	        final Properties props = new Properties();
+
+	        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BROKER);
+	        props.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString()); // We want to have a random consumer group.
+	        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+	                StringDeserializer.class.getName());
+	        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+	                StringDeserializer.class.getName());
+	        props.put("auto.offset.reset", "earliest");
+	        props.put("max.poll.records","1");
+
+	        final Consumer<String, String> consumer = new KafkaConsumer<>(props);
+	        consumer.subscribe(Collections.singletonList(topic));
+
+	        return consumer;
+	    }
+
+
+	}
 	private static final Logger LOGGER = LoggerFactory.getLogger(InMemoryIndexer.class);
 
 	protected Object2LongMap<FastenURI> URI2GID = new Object2LongOpenHashMap<>();
@@ -250,7 +285,8 @@ public class InMemoryIndexer {
 				"Creates a searchable in-memory index from a list of JSON files",
 				new Parameter[] {
 					new FlaggedOption( "input", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'I', "input", "A file containing the input." ),
-					new UnflaggedOption( "filename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.GREEDY, "The name of the file containing the JSON object." ),
+					new FlaggedOption( "topic", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 't', "topic", "A kafka topic containing the input." ),
+					new UnflaggedOption( "filename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.GREEDY, "The name of the file containing the JSON object." ),
 			}
 		);
 
@@ -258,13 +294,26 @@ public class InMemoryIndexer {
 		if ( jsap.messagePrinted() ) return;
 
 		final InMemoryIndexer inMemoryIndexer = new InMemoryIndexer();
+		if (jsapResult.userSpecified("topic")) {
+			// Kafka consumer
+			final String kafka = jsapResult.getString("topic");
+			final Consumer<String, String> consumer = KafkaConsumerMonster.createConsumer(kafka);
+			final ConsumerRecords<String, String> records = consumer.poll(Duration.ofDays(365));
 
-		for(final String file: jsapResult.getStringArray("filename")) {
-			LOGGER.info("Parsing " + file);
-			final FileReader reader = new FileReader(file);
-			final JSONObject json = new JSONObject(new JSONTokener(reader));
-			inMemoryIndexer.add(new JSONCallGraph(json, true));
-			reader.close();
+			for (final ConsumerRecord<String, String> record : records) {
+				final JSONObject jsonObject = new JSONObject(record.value());
+				System.out.println(jsonObject.toString());
+			}
+		}
+		else {
+			// Files
+			for(final String file: jsapResult.getStringArray("filename")) {
+				LOGGER.info("Parsing " + file);
+				final FileReader reader = new FileReader(file);
+				final JSONObject json = new JSONObject(new JSONTokener(reader));
+				inMemoryIndexer.add(new JSONCallGraph(json, true));
+				reader.close();
+			}
 		}
 		/*
 		for(final CallGraph g: inMemoryIndexer.callGraphs) {
