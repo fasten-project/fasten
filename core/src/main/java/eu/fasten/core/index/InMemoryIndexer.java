@@ -25,7 +25,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -95,7 +94,7 @@ public class InMemoryIndexer {
 	        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
 	                StringDeserializer.class.getName());
 	        props.put("auto.offset.reset", "earliest");
-	        props.put("max.poll.records","1");
+	        props.put("max.poll.records", Integer.toString(Integer.MAX_VALUE));
 
 	        final Consumer<String, String> consumer = new KafkaConsumer<>(props);
 	        consumer.subscribe(Collections.singletonList(topic));
@@ -162,6 +161,7 @@ public class InMemoryIndexer {
 			version = g.version;
 			forge = g.forge;
 
+			LOGGER.info("Analyzing " + forge + "/" + product + "/" + version);
 			final ArrayList<FastenURI[]> arcs = g.graph;
 
 			// Add URIs to the global map, and create a temporary linked local map
@@ -175,7 +175,7 @@ public class InMemoryIndexer {
 				// TODO: this should be a raw product and a raw version
 				final FastenURI source = FastenURI.create(null, product, version, arc[0].getRawNamespace(), arc[0].getRawEntity());
 				final long gid = addURI(source);
-				if (gids.add(gid) && gid < currentGIDs) throw new IllegalArgumentException("URI" + source + " appears as source in two different revisions");
+				if (gids.add(gid) && gid < currentGIDs) throw new IllegalArgumentException("URI " + source + " appears as source in two different revisions");
 				normalizedSources.add(source);
 				String targetRawProduct = arc[1].getRawProduct();
 				String targetRawVersion = null;
@@ -298,11 +298,15 @@ public class InMemoryIndexer {
 			// Kafka consumer
 			final String kafka = jsapResult.getString("topic");
 			final Consumer<String, String> consumer = KafkaConsumerMonster.createConsumer(kafka);
-			final ConsumerRecords<String, String> records = consumer.poll(Duration.ofDays(365));
+			final ConsumerRecords<String, String> records = consumer.poll(Long.MAX_VALUE);
 
 			for (final ConsumerRecord<String, String> record : records) {
-				final JSONObject jsonObject = new JSONObject(record.value());
-				System.out.println(jsonObject.toString());
+				final JSONObject json = new JSONObject(record.value());
+				try {
+					inMemoryIndexer.add(new JSONCallGraph(json, false));
+				} catch(final IllegalArgumentException e) {
+					e.printStackTrace(System.err);
+				}
 			}
 		}
 		else {
@@ -315,15 +319,17 @@ public class InMemoryIndexer {
 				reader.close();
 			}
 		}
-		/*
-		for(final CallGraph g: inMemoryIndexer.callGraphs) {
-			System.out.println(g);
+
+		/*for(final CallGraph g: inMemoryIndexer.callGraphs) {
+			System.err.println(g);
 		}
 
 		System.out.print(inMemoryIndexer.URI2GID);
 		System.out.println(inMemoryIndexer.product2Dependecies);
 		System.out.println(inMemoryIndexer.dependency2Products);
 		*/
+
+		System.out.println("Indexing complete.");
 		final BufferedReader br = new BufferedReader( new InputStreamReader( jsapResult.userSpecified( "input" ) ? new FileInputStream( jsapResult.getString( "input") ) : System.in ) );
 
 		for ( ;; ) {
