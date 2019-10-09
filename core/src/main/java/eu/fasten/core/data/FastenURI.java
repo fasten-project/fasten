@@ -24,6 +24,8 @@ import java.net.URISyntaxException;
 /** A class representing a Fasten URI; it has to be considered experimental until the BNF for such URIs is set in stone. */
 
 public class FastenURI {
+	/** A placeholder Fasten URI. */
+	public static final FastenURI NULL_FASTEN_URI = FastenURI.create("//-");
 	/** The underlying {@link URI}. */
 	protected final URI uri;
 	/** The forge of the {@linkplain #rawProduct product} associated with this FastenURI, or {@code null} if the forge is not specified. */

@@ -222,6 +222,10 @@ public class JSONCallGraph {
 			// Check the graph content
 			for (int j = 0; j < arc.length; j++) {
 				FastenURI node = arc[j];
+				if (FastenURI.NULL_FASTEN_URI.equals(node)) {
+					correctNodesInArc++;
+					continue;
+				}
 				// URI in schemeless canonical form
 				if (node.getScheme() != null) LOGGER.warn("Ignoring arc " + i + "/" + numberOfArcs + ": node " + node + " should be schemeless");
 				else if (!node.toString().equals(node.canonicalize().toString())) LOGGER.warn("Ignoring arc " + i + "/" + numberOfArcs + ": node " + node + " not in canonical form [" + node.canonicalize() + "]");
@@ -232,7 +236,7 @@ public class JSONCallGraph {
 				// If product is specified, the node must be the source
 				else if (node.getProduct() != null  && j == 0) LOGGER.warn("Ignoring arc " + i + "/" + numberOfArcs + ": node " + node + " is external, and cannot appear as source of an arc");
 				// Check that namespace is present
-				else if (node.getNamespace() == null) LOGGER.warn("Ignoring arc " + i + "/" + numberOfArcs + ": namespace is not present in node " + pair.getString(i));
+				else if (node.getNamespace() == null) LOGGER.warn("Ignoring arc " + i + "/" + numberOfArcs + ": namespace is not present in node " + pair.getString(j));
 				// TODO we should also check that it is a function or an attribute, not a type!
 				else correctNodesInArc++;
 			}

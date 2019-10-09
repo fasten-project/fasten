@@ -176,16 +176,18 @@ public class InMemoryIndexer {
 				final FastenURI source = FastenURI.create(null, product, version, arc[0].getRawNamespace(), arc[0].getRawEntity());
 				final long gid = addURI(source);
 				if (gids.add(gid) && gid < currentGIDs) throw new IllegalArgumentException("URI " + source + " appears as source in two different revisions");
-				normalizedSources.add(source);
-				String targetRawProduct = arc[1].getRawProduct();
-				String targetRawVersion = null;
-				if (targetRawProduct == null) {
-					targetRawProduct = product;
-					targetRawVersion = version;
+				if (!FastenURI.NULL_FASTEN_URI.equals(arc[1])) {
+					normalizedSources.add(source);
+					String targetRawProduct = arc[1].getRawProduct();
+					String targetRawVersion = null;
+					if (targetRawProduct == null) {
+						targetRawProduct = product;
+						targetRawVersion = version;
+					}
+					final FastenURI target = FastenURI.create(null, targetRawProduct, targetRawVersion, arc[1].getRawNamespace(), arc[1].getRawEntity());
+					gids.add(addURI(target));
+					normalizedTargets.add(target);
 				}
-				final FastenURI target = FastenURI.create(null, targetRawProduct, targetRawVersion, arc[1].getRawNamespace(), arc[1].getRawEntity());
-				gids.add(addURI(target));
-				normalizedTargets.add(target);
 			}
 			// Set up local bijection
 			LID2GID = LongIterators.unwrap(gids.iterator());
@@ -194,8 +196,9 @@ public class InMemoryIndexer {
 
 			// Create, store and load compressed versions of the graph and of the transpose.
 			final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(LID2GID.length);
-			for(int i = 0; i < normalizedSources.size(); i++)
+			for(int i = 0; i < normalizedSources.size(); i++) {
 				mutableGraph.addArc(GID2LID.get(URI2GID.getLong(normalizedSources.get(i))), GID2LID.get(URI2GID.getLong(normalizedTargets.get(i))));
+			}
 
 			final File f = File.createTempFile(InMemoryIndexer.class.getSimpleName(), ".tmpgraph");
 			BVGraph.store(mutableGraph.immutableView(), f.toString());
@@ -315,7 +318,7 @@ public class InMemoryIndexer {
 				LOGGER.info("Parsing " + file);
 				final FileReader reader = new FileReader(file);
 				final JSONObject json = new JSONObject(new JSONTokener(reader));
-				inMemoryIndexer.add(new JSONCallGraph(json, true));
+				inMemoryIndexer.add(new JSONCallGraph(json, false));
 				reader.close();
 			}
 		}
