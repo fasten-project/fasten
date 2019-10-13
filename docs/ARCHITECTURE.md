@@ -2,7 +2,7 @@
 
 This document is a draft of the FASTEN knowledge base service. The knowledge base comprises four components: `libfasten-core`, `libfasten-analyzer`, `libfasten-pipeliner`, and `libfasten-server`. An overview of each component is described below:
 
-- `libfasten-core`: [webgraph](http://webgraph.di.unimi.it/) already provide functionality to store and 
+- `libfasten-core`: [webgraph](http://webgraph.di.unimi.it/) already provides functionality to store and 
    query graph data from billions of nodes and edges. Our goal is to extend [webgraph](http://webgraph.di.unimi.it/) 
    with call graph specific functionality:
     - __metadata storage:__ keeping _node_ (e.g., ref to Github, LOC, complexity, CVE, deprecation) and 
