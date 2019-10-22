@@ -185,10 +185,10 @@ public class CallGraphGenerator {
 	public static void main(String[] args) throws IOException, JSAPException, ClassNotFoundException {
 		SimpleJSAP jsap = new SimpleJSAP(CallGraphGenerator.class.getName(), "Generates pseudorandom call graphs", new Parameter[] {
 				new UnflaggedOption("n", JSAP.INTEGER_PARSER, JSAP.REQUIRED, "The number of graphs."),
-				new FlaggedOption( "host", JSAP.STRING_PARSER, "localhost", JSAP.NOT_REQUIRED, 'h', "topic", "The host of the Kafka server." ),
-				new FlaggedOption( "port", JSAP.INTEGER_PARSER, "3000", JSAP.NOT_REQUIRED, 'p', "topic", "The port of the Kafka server." ),
+				new FlaggedOption( "host", JSAP.STRING_PARSER, "localhost", JSAP.NOT_REQUIRED, 'h', "host", "The host of the Kafka server." ),
+				new FlaggedOption( "port", JSAP.INTEGER_PARSER, "3000", JSAP.NOT_REQUIRED, 'p', "port", "The port of the Kafka server." ),
 				new FlaggedOption( "topic", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 't', "topic", "A kafka topic ." ),
-				new UnflaggedOption("basename", JSAP.STRING_PARSER, JSAP.REQUIRED, "The basename of the resulting graphs."),
+				new UnflaggedOption("basename", JSAP.STRING_PARSER, JSAP.NOT_REQUIRED, "The basename of the resulting graphs."),
 		});
 
 		JSAPResult jsapResult = jsap.parse(args);
@@ -215,7 +215,7 @@ public class CallGraphGenerator {
 		callGraphGenerator.generate(jsapResult.getInt("n"), new EnumeratedIntegerDistribution(new int[] { 100 }), new EnumeratedIntegerDistribution(new int[] { 10 }), new BinomialDistribution(4, 0.5), new GeometricDistribution(.5), new XoRoShiRo128PlusPlusRandomGenerator(0));
 		if (jsapResult.userSpecified("topic")) {
 			Properties properties = new Properties();
-			properties.put("bootstrap.servers", jsapResult.getString("host") + ":" + jsapResult.getString("port"));
+			properties.put("bootstrap.servers", jsapResult.getString("host") + ":" + Integer.toString(jsapResult.getInt("port")));
 			properties.put("client.id", CallGraphGenerator.class.getSimpleName());
 			properties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 			properties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
@@ -228,7 +228,7 @@ public class CallGraphGenerator {
 			KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 			final int np = callGraphGenerator.rcgs.length;
 			for(int i = 0; i < np; i++) {
-				producer.send(new ProducerRecord<>(topic, "fasten://graph-" + i + "$1.0", graph2String(callGraphGenerator, i)));
+				producer.send(new ProducerRecord<>(topic, "fasten://f!graph-" + i + "$1.0", graph2String(callGraphGenerator, i)));
 			}
 
 			producer.close();

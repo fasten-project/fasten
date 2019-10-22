@@ -80,30 +80,6 @@ import it.unimi.dsi.webgraph.Transform;
  */
 public class InMemoryIndexer {
 
-	public static class KafkaConsumerMonster {
-
-	    private final static String BROKER = "localhost:30001,localhost:30002,localhost:30003";
-
-	    public static Consumer<String, String> createConsumer(final String topic) {
-	        final Properties props = new Properties();
-
-	        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BROKER);
-	        props.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString()); // We want to have a random consumer group.
-	        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-	                StringDeserializer.class.getName());
-	        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-	                StringDeserializer.class.getName());
-	        props.put("auto.offset.reset", "earliest");
-	        props.put("max.poll.records", Integer.toString(Integer.MAX_VALUE));
-
-	        final Consumer<String, String> consumer = new KafkaConsumer<>(props);
-	        consumer.subscribe(Collections.singletonList(topic));
-
-	        return consumer;
-	    }
-
-
-	}
 	private static final Logger LOGGER = LoggerFactory.getLogger(InMemoryIndexer.class);
 
 	protected Object2LongMap<FastenURI> URI2GID = new Object2LongOpenHashMap<>();
@@ -161,7 +137,7 @@ public class InMemoryIndexer {
 			version = g.version;
 			forge = g.forge;
 
-			LOGGER.info("Analyzing " + forge + "/" + product + "/" + version);
+			LOGGER.info("Analyzing fasten://" + forge + "!" + product + "$" + version);
 			final ArrayList<FastenURI[]> arcs = g.graph;
 
 			// Add URIs to the global map, and create a temporary linked local map
@@ -285,13 +261,14 @@ public class InMemoryIndexer {
 
 	public static void main(final String[] args) throws JSONException, URISyntaxException, JSAPException, IOException {
 		final SimpleJSAP jsap = new SimpleJSAP( JSONCallGraph.class.getName(),
-				"Creates a searchable in-memory index from a list of JSON files",
-				new Parameter[] {
-					new FlaggedOption( "input", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'I', "input", "A file containing the input." ),
-					new FlaggedOption( "topic", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 't', "topic", "A kafka topic containing the input." ),
-					new UnflaggedOption( "filename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.GREEDY, "The name of the file containing the JSON object." ),
-			}
-		);
+			"Creates a searchable in-memory index from a list of JSON files",
+			new Parameter[] {
+				new FlaggedOption( "input", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'I', "input", "A file containing the input." ),
+				new FlaggedOption( "topic", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 't', "topic", "A kafka topic containing the input." ),
+				new FlaggedOption( "host", JSAP.STRING_PARSER, "localhost", JSAP.NOT_REQUIRED, 'h', "host", "The host of the Kafka server." ),
+				new FlaggedOption( "port", JSAP.INTEGER_PARSER, "30001", JSAP.NOT_REQUIRED, 'p', "port", "The port of the Kafka server." ),
+				new UnflaggedOption( "filename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.GREEDY, "The name of the file containing the JSON object." ),
+		});
 
 		final JSAPResult jsapResult = jsap.parse(args);
 		if ( jsap.messagePrinted() ) return;
@@ -299,11 +276,22 @@ public class InMemoryIndexer {
 		final InMemoryIndexer inMemoryIndexer = new InMemoryIndexer();
 		if (jsapResult.userSpecified("topic")) {
 			// Kafka consumer
-			final String kafka = jsapResult.getString("topic");
-			final Consumer<String, String> consumer = KafkaConsumerMonster.createConsumer(kafka);
+			final String topic = jsapResult.getString("topic");
+	        final Properties props = new Properties();
+	        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, jsapResult.getString("host") + ":" + Integer.toString(jsapResult.getInt("port")));
+	        props.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString()); // We want to have a random consumer group.
+	        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+	        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+	        props.put("auto.offset.reset", "earliest");
+	        props.put("max.poll.records", Integer.toString(Integer.MAX_VALUE));
+
+	        final Consumer<String, String> consumer = new KafkaConsumer<>(props);
+	 		consumer.subscribe(Collections.singletonList(topic));
+
 			final ConsumerRecords<String, String> records = consumer.poll(Long.MAX_VALUE);
 
 			for (final ConsumerRecord<String, String> record : records) {
+				LOGGER.info("Retrieved graph " + record.key());
 				final JSONObject json = new JSONObject(record.value());
 				try {
 					inMemoryIndexer.add(new JSONCallGraph(json, false));
