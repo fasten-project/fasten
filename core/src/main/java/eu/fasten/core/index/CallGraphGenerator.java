@@ -19,26 +19,22 @@ package eu.fasten.core.index;
  */
 
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Properties;
 
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
 import org.apache.commons.math3.distribution.GeometricDistribution;
 import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.json.JSONObject;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
+import com.martiansoftware.jsap.FlaggedOption;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPException;
 import com.martiansoftware.jsap.JSAPResult;
@@ -46,11 +42,10 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
-import eu.fasten.core.data.JSONCallGraph;
-import eu.fasten.core.index.InMemoryIndexer.KafkaConsumerMonster;
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandomGenerator;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
@@ -188,8 +183,11 @@ public class CallGraphGenerator {
 	}
 	
 	public static void main(String[] args) throws IOException, JSAPException, ClassNotFoundException {
-		SimpleJSAP jsap = new SimpleJSAP(CallGraphGenerator.class.getName(), "Generates a PNG rendition of the .", new Parameter[] {
+		SimpleJSAP jsap = new SimpleJSAP(CallGraphGenerator.class.getName(), "Generates pseudorandom call graphs", new Parameter[] {
 				new UnflaggedOption("n", JSAP.INTEGER_PARSER, JSAP.REQUIRED, "The number of graphs."),
+				new FlaggedOption( "host", JSAP.STRING_PARSER, "localhost", JSAP.NOT_REQUIRED, 'h', "topic", "The host of the Kafka server." ),
+				new FlaggedOption( "port", JSAP.INTEGER_PARSER, "3000", JSAP.NOT_REQUIRED, 'p', "topic", "The port of the Kafka server." ),
+				new FlaggedOption( "topic", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 't', "topic", "A kafka topic ." ),
 				new UnflaggedOption("basename", JSAP.STRING_PARSER, JSAP.REQUIRED, "The basename of the resulting graphs."),
 		});
 
@@ -215,42 +213,61 @@ public class CallGraphGenerator {
 
 		CallGraphGenerator callGraphGenerator = new CallGraphGenerator();
 		callGraphGenerator.generate(jsapResult.getInt("n"), new EnumeratedIntegerDistribution(new int[] { 100 }), new EnumeratedIntegerDistribution(new int[] { 10 }), new BinomialDistribution(4, 0.5), new GeometricDistribution(.5), new XoRoShiRo128PlusPlusRandomGenerator(0));
-		final int np = callGraphGenerator.rcgs.length;
-		for(int i = 0; i < np; i++) {
-			printGraph(new FileOutputStream(basename + "-" + i + ".json"), callGraphGenerator, i);
-			
+		if (jsapResult.userSpecified("topic")) {
+			Properties properties = new Properties();
+			properties.put("bootstrap.servers", jsapResult.getString("host") + ":" + jsapResult.getString("port"));
+			properties.put("client.id", CallGraphGenerator.class.getSimpleName());
+			properties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+			properties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+	
+			AdminClient adminClient = AdminClient.create(properties);
+			String topic = jsapResult.getString("topic");
+			adminClient.createTopics(ObjectLists.singleton(new NewTopic(topic, 1, (short)1)));
+			adminClient.close();
+
+			KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
+			final int np = callGraphGenerator.rcgs.length;
+			for(int i = 0; i < np; i++) {
+				producer.send(new ProducerRecord<>(topic, "fasten://graph-" + i + "$1.0", graph2String(callGraphGenerator, i)));
+			}
+
+			producer.close();
+		}
+		else {
+			final int np = callGraphGenerator.rcgs.length;
+			for(int i = 0; i < np; i++) Files.writeString(Paths.get(basename + "-" + i + ".json"), graph2String(callGraphGenerator, i)); 
 		}
 	}
 
-	private static void printGraph(OutputStream stream, CallGraphGenerator callGraphGenerator, int i) throws FileNotFoundException {
-		PrintStream ps = new PrintStream(stream);
-		ps.println("{");
-		ps.println("\"forge\": \"f\",");
-		ps.println("\"product\": \"graph" + i + "\",");
-		ps.println("\"version\": \"1.0\",");
-		ps.println("\"timestamp\": \"0\",");
-		ps.println("\"depset\": [");
+	private static String graph2String(CallGraphGenerator callGraphGenerator, int i) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{\n");
+		sb.append("\"forge\": \"f\",\n");
+		sb.append("\"product\": \"graph-" + i + "\",\n");
+		sb.append("\"version\": \"1.0\",\n");
+		sb.append("\"timestamp\": \"0\",\n");
+		sb.append("\"depset\": [\n");
 		for(IntIterator d = callGraphGenerator.deps[i].iterator(); d.hasNext(); ) {
-			ps.print( "{ \"forge\": \"f\", \"product\": \"graph" + d.nextInt() + "\", \"constraints\": [\"[1.0]\"] }");
-			if (d.hasNext()) ps.print(", ");
+			sb.append( "{ \"forge\": \"f\", \"product\": \"graph" + d.nextInt() + "\", \"constraints\": [\"[1.0]\"] }");
+			if (d.hasNext()) sb.append(", ");
 		}
-		ps.println("],");
-		ps.println("\"graph\": [");
+		sb.append("],\n");
+		sb.append("\"graph\": [\n");
 		ArrayListMutableGraph g = callGraphGenerator.rcgs[i];
 		IntOpenHashSet callsExternal = new IntOpenHashSet();
 		for(int[] t: callGraphGenerator.source2Targets[i]) {
-			ps.println("[ \"/p" + i + "/A.f" + t[0] + "()v\", \"//graph" + t[1] + "/p" + t[1] + "/A.f" + t[2] +"()v\" ],");
+			sb.append("[ \"/p" + i + "/A.f" + t[0] + "()v\", \"//graph" + t[1] + "/p" + t[1] + "/A.f" + t[2] +"()v\" ],\n");
 			callsExternal.add(t[0]);
 		}
 
 		for(int j = 0; j < g.numNodes(); j++) {
 			if (!callsExternal.contains(j) && g.outdegree(j) == 0)
-				ps.println("[ \"/p" + i + "/A.f" + j + "()v\", \"//-\" ],");
+				sb.append("[ \"/p" + i + "/A.f" + j + "()v\", \"//-\" ],\n");
 			for(IntIterator s = g.successors(j); s.hasNext();)
-				ps.println("[ \"/p" + i + "/A.f" + j + "()v\", \"/p" + i + "/A.f" + s.nextInt() +"()v\" ],");
+				sb.append("[ \"/p" + i + "/A.f" + j + "()v\", \"/p" + i + "/A.f" + s.nextInt() +"()v\" ],\n");
 		}
-		ps.println("]");
-		ps.println("}");
-		ps.close();
+		sb.append("]\n");
+		sb.append("}\n");
+		return sb.toString();
 	}
 }
