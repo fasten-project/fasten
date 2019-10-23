@@ -25,12 +25,15 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -172,9 +175,8 @@ public class InMemoryIndexer {
 
 			// Create, store and load compressed versions of the graph and of the transpose.
 			final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(LID2GID.length);
-			for(int i = 0; i < normalizedSources.size(); i++) {
+			for(int i = 0; i < normalizedSources.size(); i++)
 				mutableGraph.addArc(GID2LID.get(URI2GID.getLong(normalizedSources.get(i))), GID2LID.get(URI2GID.getLong(normalizedTargets.get(i))));
-			}
 
 			final File f = File.createTempFile(InMemoryIndexer.class.getSimpleName(), ".tmpgraph");
 			BVGraph.store(mutableGraph.immutableView(), f.toString());
@@ -203,7 +205,7 @@ public class InMemoryIndexer {
 		}
 	}
 
-	public Collection<FastenURI> reaches(final FastenURI uri) {
+	public synchronized Collection<FastenURI> reaches(final FastenURI uri) {
 		final long uriGID = URI2GID.getLong(uri);
 		if (uriGID == -1) return null;
 		// Accumulates results
@@ -233,7 +235,7 @@ public class InMemoryIndexer {
 					final String succProduct = succURI.getProduct();
 					assert succURI.getVersion() == null : succURI.getVersion();
 					boolean added = false;
-					for(final CallGraph g: callGraphs) {
+					for(final CallGraph g: callGraphs)
 						if (g.product.equals(succProduct)) {
 							// TODO: should be a raw version
 							final FastenURI succVersionedURI = FastenURI.create(null, succURI.getRawProduct(), g.version, succURI.getRawNamespace(), succURI.getRawEntity());
@@ -243,7 +245,6 @@ public class InMemoryIndexer {
 								added = true;
 							}
 						}
-					}
 					// If no versioned URI is found, we leave the external reference
 					if (!added) resultGID.add(succGID);
 				}
@@ -255,53 +256,64 @@ public class InMemoryIndexer {
 		return result;
 	}
 
-	public void add(final JSONCallGraph g) throws IOException {
+	public synchronized void add(final JSONCallGraph g) throws IOException {
 		callGraphs.add(new CallGraph(g));
 	}
 
 	public static void main(final String[] args) throws JSONException, URISyntaxException, JSAPException, IOException {
 		final SimpleJSAP jsap = new SimpleJSAP( JSONCallGraph.class.getName(),
-			"Creates a searchable in-memory index from a list of JSON files",
-			new Parameter[] {
-				new FlaggedOption( "input", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'I', "input", "A file containing the input." ),
-				new FlaggedOption( "topic", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 't', "topic", "A kafka topic containing the input." ),
-				new FlaggedOption( "host", JSAP.STRING_PARSER, "localhost", JSAP.NOT_REQUIRED, 'h', "host", "The host of the Kafka server." ),
-				new FlaggedOption( "port", JSAP.INTEGER_PARSER, "30001", JSAP.NOT_REQUIRED, 'p', "port", "The port of the Kafka server." ),
-				new UnflaggedOption( "filename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.GREEDY, "The name of the file containing the JSON object." ),
+				"Creates a searchable in-memory index from a list of JSON files",
+				new Parameter[] {
+						new FlaggedOption( "input", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'I', "input", "A file containing the input." ),
+						new FlaggedOption( "topic", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 't', "topic", "A kafka topic containing the input." ),
+						new FlaggedOption( "host", JSAP.STRING_PARSER, "localhost", JSAP.NOT_REQUIRED, 'h', "host", "The host of the Kafka server." ),
+						new FlaggedOption( "port", JSAP.INTEGER_PARSER, "30001", JSAP.NOT_REQUIRED, 'p', "port", "The port of the Kafka server." ),
+						new UnflaggedOption( "filename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.GREEDY, "The name of the file containing the JSON object." ),
 		});
 
 		final JSAPResult jsapResult = jsap.parse(args);
 		if ( jsap.messagePrinted() ) return;
 
 		final InMemoryIndexer inMemoryIndexer = new InMemoryIndexer();
+		final Consumer<String, String> consumer;
+		final boolean[] stop = new boolean[1];
 		if (jsapResult.userSpecified("topic")) {
 			// Kafka consumer
 			final String topic = jsapResult.getString("topic");
-	        final Properties props = new Properties();
-	        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, jsapResult.getString("host") + ":" + Integer.toString(jsapResult.getInt("port")));
-	        props.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString()); // We want to have a random consumer group.
-	        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-	        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-	        props.put("auto.offset.reset", "earliest");
-	        props.put("max.poll.records", Integer.toString(Integer.MAX_VALUE));
+			final Properties props = new Properties();
+			props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, jsapResult.getString("host") + ":" + Integer.toString(jsapResult.getInt("port")));
+			props.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString()); // We want to have a random consumer group.
+			props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+			props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+			props.put("auto.offset.reset", "earliest");
+			props.put("max.poll.records", Integer.toString(Integer.MAX_VALUE));
+			consumer = new KafkaConsumer<>(props);
+			consumer.subscribe(Collections.singletonList(topic));
 
-	        final Consumer<String, String> consumer = new KafkaConsumer<>(props);
-	 		consumer.subscribe(Collections.singletonList(topic));
-
-			final ConsumerRecords<String, String> records = consumer.poll(Long.MAX_VALUE);
-
-			for (final ConsumerRecord<String, String> record : records) {
-				LOGGER.info("Retrieved graph " + record.key());
-				final JSONObject json = new JSONObject(record.value());
+			Executors.newSingleThreadExecutor().submit((Callable<Void>)() -> {
 				try {
-					inMemoryIndexer.add(new JSONCallGraph(json, false));
-				} catch(final IllegalArgumentException e) {
-					e.printStackTrace(System.err);
+					while(!stop[0]) {
+						final ConsumerRecords<String, String> records = consumer.poll(Duration.ofDays(356));
+
+						for (final ConsumerRecord<String, String> record : records) {
+							if (stop[0]) break;
+							final JSONObject json = new JSONObject(record.value());
+							try {
+								inMemoryIndexer.add(new JSONCallGraph(json, false));
+							} catch(final IllegalArgumentException e) {
+								e.printStackTrace(System.err);
+							}
+						}
+					}
+
+					return null;
 				}
-			}
-		}
-		else {
-			// Files
+				finally {
+					consumer.close();
+				}
+			});
+		} else {// Files
+			consumer = null;
 			for(final String file: jsapResult.getStringArray("filename")) {
 				LOGGER.info("Parsing " + file);
 				final FileReader reader = new FileReader(file);
@@ -318,7 +330,7 @@ public class InMemoryIndexer {
 		System.out.print(inMemoryIndexer.URI2GID);
 		System.out.println(inMemoryIndexer.product2Dependecies);
 		System.out.println(inMemoryIndexer.dependency2Products);
-		*/
+		 */
 
 		System.out.println("Indexing complete.");
 		final BufferedReader br = new BufferedReader( new InputStreamReader( jsapResult.userSpecified( "input" ) ? new FileInputStream( jsapResult.getString( "input") ) : System.in ) );
@@ -326,20 +338,17 @@ public class InMemoryIndexer {
 		for ( ;; ) {
 			System.out.print( ">" );
 			final String q = br.readLine();
-			if ( q == null ) {
-				System.err.println();
+			if (q == null || "$quit".equals(q)) {
+				stop[0] = true;
+				consumer.wakeup();
 				break; // CTRL-D
 			}
 			if ( q.length() == 0 ) continue;
 
 			final FastenURI uri = FastenURI.create(q);
 			final Collection<FastenURI> result = inMemoryIndexer.reaches(uri);
-			if (result == null) {
-				System.out.println("Method not indexed");
-			}
-			else if (result.size() == 0) {
-				System.out.println("No method called");
-			}
+			if (result == null) System.out.println("Method not indexed");
+			else if (result.size() == 0) System.out.println("No method called");
 			else {
 				final Iterator<FastenURI> iterator = result.iterator();
 				for(int i = 0; iterator.hasNext() && i < 50; i++) System.out.println(iterator.next());
