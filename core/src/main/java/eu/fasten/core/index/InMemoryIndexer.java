@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -47,9 +49,13 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import org.rocksdb.Options;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.primitives.Longs;
 import com.martiansoftware.jsap.FlaggedOption;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPException;
@@ -75,9 +81,9 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.BVGraph;
+import it.unimi.dsi.webgraph.ImmutableGraph;
 import it.unimi.dsi.webgraph.LazyIntIterator;
 import it.unimi.dsi.webgraph.NodeIterator;
-import it.unimi.dsi.webgraph.Transform;
 
 /** A sample in-memory indexer that reads, compresses and stores in memory
  * graphs stored in JSON format and answers to impact queries.
@@ -98,6 +104,13 @@ public class InMemoryIndexer {
 	 * is to keep track of dependencies between revisions. */
 	protected Object2ObjectOpenHashMap<String, ObjectOpenHashSet<String>> product2Dependecies = new Object2ObjectOpenHashMap<>();
 	protected Object2ObjectOpenHashMap<String, ObjectOpenHashSet<String>> dependency2Products = new Object2ObjectOpenHashMap<>();
+
+	/** The RocksDB instance used by this indexer. */
+	private final RocksDB db;
+
+	public InMemoryIndexer(final RocksDB db) {
+		this.db = db;
+	}
 
 	/** Adds a URI to the global maps. If the URI is already present, returns its GID.
 	 *
@@ -131,16 +144,16 @@ public class InMemoryIndexer {
 	protected class CallGraph {
 		public final long[] LID2GID;
 		public final Long2IntOpenHashMap GID2LID = new Long2IntOpenHashMap();
-		public final BVGraph graph;
-		public final BVGraph transpose;
 		private final String product;
 		private final String version;
 		private final String forge;
+		private final long index;
 
-		protected CallGraph(final JSONCallGraph g) throws IOException {
+		protected CallGraph(final JSONCallGraph g, final long index) throws IOException, RocksDBException {
 			product = g.product;
 			version = g.version;
 			forge = g.forge;
+			this.index = index;
 
 			LOGGER.info("Analyzing fasten://" + forge + "!" + product + "$" + version);
 			final ArrayList<FastenURI[]> arcs = g.graph;
@@ -182,9 +195,10 @@ public class InMemoryIndexer {
 
 			final File f = File.createTempFile(InMemoryIndexer.class.getSimpleName(), ".tmpgraph");
 			BVGraph.store(mutableGraph.immutableView(), f.toString());
-			graph = BVGraph.load(f.toString());
-			BVGraph.store(Transform.transpose(mutableGraph.immutableView()), f.toString());
-			transpose = BVGraph.load(f.toString());
+			System.err.println("Storing graph");
+			db.put(Longs.toByteArray(index), SerializationUtils.serialize((Serializable) BVGraph.load(f.toString())));
+			//BVGraph.store(Transform.transpose(mutableGraph.immutableView()), f.toString());
+			//transpose = BVGraph.load(f.toString());
 			new File(f.toString() + BVGraph.PROPERTIES_EXTENSION).delete();
 			new File(f.toString() + BVGraph.OFFSETS_EXTENSION).delete();
 			new File(f.toString() + BVGraph.GRAPH_EXTENSION).delete();
@@ -194,10 +208,20 @@ public class InMemoryIndexer {
 			for(final Dependency depset: g.depset) addDependency(product, depset.product);
 		}
 
+		public ImmutableGraph graph() {
+			System.err.println("Reading graph");
+
+			try {
+				return SerializationUtils.deserialize(db.get(Longs.toByteArray(index)));
+			} catch (final RocksDBException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
 		@Override
 		public String toString() {
 			final StringBuilder b = new StringBuilder();
-			for(final NodeIterator nodeIterator = graph.nodeIterator(); nodeIterator.hasNext(); ) {
+			for(final NodeIterator nodeIterator = graph().nodeIterator(); nodeIterator.hasNext(); ) {
 				final FastenURI u = GID2URI.get(LID2GID[nodeIterator.nextInt()]);
 				final LazyIntIterator successors = nodeIterator.successors();
 				for(int s; (s = successors.nextInt()) != -1; )
@@ -224,7 +248,7 @@ public class InMemoryIndexer {
 			final CallGraph callGraph = pair.getLeft();
 			final String product = callGraph.product;
 			final int lid = callGraph.GID2LID.get(gid);
-			final LazyIntIterator successors = callGraph.graph.successors(lid);
+			final LazyIntIterator successors = callGraph.graph().successors(lid);
 			for(int s; (s = successors.nextInt()) != -1;) {
 				final long succGID = callGraph.LID2GID[s];
 				final FastenURI succURI = GID2URI.get(succGID);
@@ -258,11 +282,11 @@ public class InMemoryIndexer {
 		return result;
 	}
 
-	public synchronized void add(final JSONCallGraph g) throws IOException {
-		callGraphs.add(new CallGraph(g));
+	public synchronized void add(final JSONCallGraph g, final long index) throws IOException, RocksDBException {
+		callGraphs.add(new CallGraph(g, index));
 	}
 
-	public static void main(final String[] args) throws JSONException, URISyntaxException, JSAPException, IOException {
+	public static void main(final String[] args) throws JSONException, URISyntaxException, JSAPException, IOException, RocksDBException {
 		final SimpleJSAP jsap = new SimpleJSAP( JSONCallGraph.class.getName(),
 				"Creates a searchable in-memory index from a list of JSON files",
 				new Parameter[] {
@@ -276,7 +300,12 @@ public class InMemoryIndexer {
 		final JSAPResult jsapResult = jsap.parse(args);
 		if ( jsap.messagePrinted() ) return;
 
-		final InMemoryIndexer inMemoryIndexer = new InMemoryIndexer();
+		RocksDB.loadLibrary();
+		final Options options = new Options();
+		options.setCreateIfMissing(true);
+		final RocksDB db = RocksDB.open(options, "rocksdb");
+
+		final InMemoryIndexer inMemoryIndexer = new InMemoryIndexer(db);
 		final Consumer<String, String> consumer;
 		final boolean[] stop = new boolean[1];
 		if (jsapResult.userSpecified("topic")) {
@@ -293,17 +322,19 @@ public class InMemoryIndexer {
 			consumer.subscribe(Collections.singletonList(topic));
 
 			Future<?> future = Executors.newSingleThreadExecutor().submit(() -> {
+				long index = 0;
 				try {
 					while(!stop[0]) {
 						final ConsumerRecords<String, String> records = consumer.poll(Duration.ofDays(356));
 
 						for (final ConsumerRecord<String, String> record : records) {
+							System.err.println("New record " + record);
 							if (stop[0]) break;
 							final JSONObject json = new JSONObject(record.value());
 							try {
-								inMemoryIndexer.add(new JSONCallGraph(json, false));
+								inMemoryIndexer.add(new JSONCallGraph(json, false), index++);
 							} catch(final IllegalArgumentException e) {
-								e.printStackTrace(System.err);
+								throw new RuntimeException(e);
 							}
 						}
 					}
@@ -323,11 +354,12 @@ public class InMemoryIndexer {
 			}
 		} else {// Files
 			consumer = null;
+			long index = 0;
 			for(final String file: jsapResult.getStringArray("filename")) {
 				LOGGER.info("Parsing " + file);
 				final FileReader reader = new FileReader(file);
 				final JSONObject json = new JSONObject(new JSONTokener(reader));
-				inMemoryIndexer.add(new JSONCallGraph(json, false));
+				inMemoryIndexer.add(new JSONCallGraph(json, false), index++);
 				reader.close();
 			}
 		}
@@ -348,6 +380,7 @@ public class InMemoryIndexer {
 			System.out.print( ">" );
 			final String q = br.readLine();
 			if (q == null || "$quit".equals(q)) {
+				System.err.println("Exiting");
 				stop[0] = true;
 				consumer.wakeup();
 				break; // CTRL-D
@@ -363,5 +396,8 @@ public class InMemoryIndexer {
 				for(int i = 0; iterator.hasNext() && i < 50; i++) System.out.println(iterator.next());
 			}
 		}
+
+		db.close();
+		options.close();
 	}
 }
