@@ -33,7 +33,9 @@ import java.util.Iterator;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -290,7 +292,7 @@ public class InMemoryIndexer {
 			consumer = new KafkaConsumer<>(props);
 			consumer.subscribe(Collections.singletonList(topic));
 
-			Executors.newSingleThreadExecutor().submit((Callable<Void>)() -> {
+			Future<?> future = Executors.newSingleThreadExecutor().submit(() -> {
 				try {
 					while(!stop[0]) {
 						final ConsumerRecords<String, String> records = consumer.poll(Duration.ofDays(356));
@@ -312,6 +314,13 @@ public class InMemoryIndexer {
 					consumer.close();
 				}
 			});
+			try {
+				future.get();
+			} catch (ExecutionException e) {
+				e.getCause().printStackTrace();
+			} catch (InterruptedException e) {
+				System.err.println("*** Interrupted");
+			}
 		} else {// Files
 			consumer = null;
 			for(final String file: jsapResult.getStringArray("filename")) {
