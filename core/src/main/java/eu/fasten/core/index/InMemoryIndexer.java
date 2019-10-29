@@ -24,7 +24,6 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -39,6 +38,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -55,6 +55,9 @@ import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.google.common.primitives.Longs;
 import com.martiansoftware.jsap.FlaggedOption;
 import com.martiansoftware.jsap.JSAP;
@@ -79,6 +82,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.io.InputBitStream;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.BVGraph;
 import it.unimi.dsi.webgraph.ImmutableGraph;
@@ -90,6 +94,24 @@ import it.unimi.dsi.webgraph.NodeIterator;
  *
  */
 public class InMemoryIndexer {
+
+	public class BVGraphSerializer extends FieldSerializer<BVGraph> {
+
+		public BVGraphSerializer(final Kryo kryo) {
+			super(kryo, BVGraph.class);
+		}
+
+		@Override
+		public BVGraph read(final Kryo kryo, final Input input, final Class<? extends BVGraph> type) {
+			final BVGraph read = super.read(kryo, input, type);
+			try {
+				FieldUtils.writeField(read, "outdegreeIbs", new InputBitStream((byte[])FieldUtils.readField(BVGraph.class, "graphMemory")), true);
+			} catch (final IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+			return read;
+		}
+	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InMemoryIndexer.class);
 
@@ -105,11 +127,15 @@ public class InMemoryIndexer {
 	protected Object2ObjectOpenHashMap<String, ObjectOpenHashSet<String>> product2Dependecies = new Object2ObjectOpenHashMap<>();
 	protected Object2ObjectOpenHashMap<String, ObjectOpenHashSet<String>> dependency2Products = new Object2ObjectOpenHashMap<>();
 
+	FieldSerializer<?> serializer;
 	/** The RocksDB instance used by this indexer. */
 	private final RocksDB db;
+	Kryo kryo;
 
 	public InMemoryIndexer(final RocksDB db) {
 		this.db = db;
+		final Kryo kryo = new Kryo();
+		kryo.register(BVGraph.class, new BVGraphSerializer(kryo));
 	}
 
 	/** Adds a URI to the global maps. If the URI is already present, returns its GID.
@@ -195,8 +221,9 @@ public class InMemoryIndexer {
 
 			final File f = File.createTempFile(InMemoryIndexer.class.getSimpleName(), ".tmpgraph");
 			BVGraph.store(mutableGraph.immutableView(), f.toString());
-			System.err.println("Storing graph");
-			db.put(Longs.toByteArray(index), SerializationUtils.serialize((Serializable) BVGraph.load(f.toString())));
+
+			db.put(Longs.toByteArray(index), SerializationUtils.serialize(BVGraph.load(f.toString())));
+
 			//BVGraph.store(Transform.transpose(mutableGraph.immutableView()), f.toString());
 			//transpose = BVGraph.load(f.toString());
 			new File(f.toString() + BVGraph.PROPERTIES_EXTENSION).delete();
@@ -209,8 +236,6 @@ public class InMemoryIndexer {
 		}
 
 		public ImmutableGraph graph() {
-			System.err.println("Reading graph");
-
 			try {
 				return SerializationUtils.deserialize(db.get(Longs.toByteArray(index)));
 			} catch (final RocksDBException e) {
@@ -328,12 +353,12 @@ public class InMemoryIndexer {
 						final ConsumerRecords<String, String> records = consumer.poll(Duration.ofDays(356));
 
 						for (final ConsumerRecord<String, String> record : records) {
-							System.err.println("New record " + record);
 							if (stop[0]) break;
 							final JSONObject json = new JSONObject(record.value());
 							try {
 								inMemoryIndexer.add(new JSONCallGraph(json, false), index++);
 							} catch(final IllegalArgumentException e) {
+								e.printStackTrace(System.err);
 								throw new RuntimeException(e);
 							}
 						}
@@ -373,7 +398,6 @@ public class InMemoryIndexer {
 		System.out.println(inMemoryIndexer.dependency2Products);
 		 */
 
-		System.out.println("Indexing complete.");
 		final BufferedReader br = new BufferedReader( new InputStreamReader( jsapResult.userSpecified( "input" ) ? new FileInputStream( jsapResult.getString( "input") ) : System.in ) );
 
 		for ( ;; ) {

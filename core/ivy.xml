@@ -12,6 +12,7 @@
 		<dependency org="it.unimi.dsi" name="webgraph" rev="3.6.1" />
 		<dependency org="it.unimi.dsi" name="dsiutils" rev="2.6.0" />
 		<dependency org="org.rocksdb" name="rocksdbjni" rev="latest.release" />
+		<dependency org="com.esotericsoftware" name="kryo" rev="5.0.0-RC4" />
 		<dependency org="org.eclipse.jgit" name="org.eclipse.jgit" rev="5.2.1.201812262042-r" />
 		<dependency org="org.json" name="json" rev="20180813" />
 		<dependency org="org.apache.kafka" name="kafka-clients" rev="latest.release"/>
