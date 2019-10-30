@@ -32,12 +32,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -56,8 +54,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.google.common.primitives.Longs;
 import com.martiansoftware.jsap.FlaggedOption;
 import com.martiansoftware.jsap.JSAP;
@@ -70,6 +70,7 @@ import com.martiansoftware.jsap.UnflaggedOption;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JSONCallGraph;
 import eu.fasten.core.data.JSONCallGraph.Dependency;
+import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -83,6 +84,9 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.io.InputBitStream;
+import it.unimi.dsi.io.NullInputStream;
+import it.unimi.dsi.lang.MutableString;
+import it.unimi.dsi.sux4j.util.EliasFanoMonotoneLongBigList;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.BVGraph;
 import it.unimi.dsi.webgraph.ImmutableGraph;
@@ -105,7 +109,8 @@ public class InMemoryIndexer {
 		public BVGraph read(final Kryo kryo, final Input input, final Class<? extends BVGraph> type) {
 			final BVGraph read = super.read(kryo, input, type);
 			try {
-				FieldUtils.writeField(read, "outdegreeIbs", new InputBitStream((byte[])FieldUtils.readField(BVGraph.class, "graphMemory")), true);
+				FieldUtils.writeField(read, "outdegreeIbs",
+						new InputBitStream((byte[])FieldUtils.readField(read, "graphMemory", true)), true);
 			} catch (final IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
@@ -134,8 +139,13 @@ public class InMemoryIndexer {
 
 	public InMemoryIndexer(final RocksDB db) {
 		this.db = db;
-		final Kryo kryo = new Kryo();
+		kryo = new Kryo();
 		kryo.register(BVGraph.class, new BVGraphSerializer(kryo));
+		kryo.register(byte[].class);
+		kryo.register(InputBitStream.class);
+		kryo.register(NullInputStream.class);
+		kryo.register(EliasFanoMonotoneLongBigList.class, new JavaSerializer());
+		kryo.register(MutableString.class, new FieldSerializer<>(kryo, MutableString.class));
 	}
 
 	/** Adds a URI to the global maps. If the URI is already present, returns its GID.
@@ -222,7 +232,11 @@ public class InMemoryIndexer {
 			final File f = File.createTempFile(InMemoryIndexer.class.getSimpleName(), ".tmpgraph");
 			BVGraph.store(mutableGraph.immutableView(), f.toString());
 
-			db.put(Longs.toByteArray(index), SerializationUtils.serialize(BVGraph.load(f.toString())));
+			final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
+			final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
+			kryo.writeObject(bbo, BVGraph.load(f.toString()));
+			bbo.flush();
+			db.put(Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
 
 			//BVGraph.store(Transform.transpose(mutableGraph.immutableView()), f.toString());
 			//transpose = BVGraph.load(f.toString());
@@ -235,9 +249,12 @@ public class InMemoryIndexer {
 			for(final Dependency depset: g.depset) addDependency(product, depset.product);
 		}
 
+		@SuppressWarnings("null")
 		public ImmutableGraph graph() {
 			try {
-				return SerializationUtils.deserialize(db.get(Longs.toByteArray(index)));
+				final byte[] buffer = new byte[1000000];
+				db.get(Longs.toByteArray(index), buffer);
+				return kryo.readObject(new Input(buffer), BVGraph.class);
 			} catch (final RocksDBException e) {
 				throw new RuntimeException(e);
 			}
@@ -346,7 +363,7 @@ public class InMemoryIndexer {
 			consumer = new KafkaConsumer<>(props);
 			consumer.subscribe(Collections.singletonList(topic));
 
-			Future<?> future = Executors.newSingleThreadExecutor().submit(() -> {
+			final Future<?> future = Executors.newSingleThreadExecutor().submit(() -> {
 				long index = 0;
 				try {
 					while(!stop[0]) {
@@ -372,9 +389,9 @@ public class InMemoryIndexer {
 			});
 			try {
 				future.get();
-			} catch (ExecutionException e) {
+			} catch (final ExecutionException e) {
 				e.getCause().printStackTrace();
-			} catch (InterruptedException e) {
+			} catch (final InterruptedException e) {
 				System.err.println("*** Interrupted");
 			}
 		} else {// Files
