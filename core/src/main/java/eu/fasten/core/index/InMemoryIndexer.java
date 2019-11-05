@@ -328,7 +328,7 @@ public class InMemoryIndexer {
 		callGraphs.add(new CallGraph(g, index));
 	}
 
-	public static void main(final String[] args) throws JSONException, URISyntaxException, JSAPException, IOException, RocksDBException {
+	public static void main(final String[] args) throws JSONException, URISyntaxException, JSAPException, IOException, RocksDBException, InterruptedException, ExecutionException {
 		final SimpleJSAP jsap = new SimpleJSAP( JSONCallGraph.class.getName(),
 				"Creates a searchable in-memory index from a list of JSON files",
 				new Parameter[] {
@@ -350,6 +350,7 @@ public class InMemoryIndexer {
 		final InMemoryIndexer inMemoryIndexer = new InMemoryIndexer(db);
 		final Consumer<String, String> consumer;
 		final boolean[] stop = new boolean[1];
+		Future<?> future = null;
 		if (jsapResult.userSpecified("topic")) {
 			// Kafka consumer
 			final String topic = jsapResult.getString("topic");
@@ -363,7 +364,7 @@ public class InMemoryIndexer {
 			consumer = new KafkaConsumer<>(props);
 			consumer.subscribe(Collections.singletonList(topic));
 
-			final Future<?> future = Executors.newSingleThreadExecutor().submit(() -> {
+			future = Executors.newSingleThreadExecutor().submit(() -> {
 				long index = 0;
 				try {
 					while(!stop[0]) {
@@ -387,13 +388,6 @@ public class InMemoryIndexer {
 					consumer.close();
 				}
 			});
-			try {
-				future.get();
-			} catch (final ExecutionException e) {
-				e.getCause().printStackTrace();
-			} catch (final InterruptedException e) {
-				System.err.println("*** Interrupted");
-			}
 		} else {// Files
 			consumer = null;
 			long index = 0;
@@ -418,6 +412,8 @@ public class InMemoryIndexer {
 		final BufferedReader br = new BufferedReader( new InputStreamReader( jsapResult.userSpecified( "input" ) ? new FileInputStream( jsapResult.getString( "input") ) : System.in ) );
 
 		for ( ;; ) {
+			if (future != null && future.isDone()) future.get();
+
 			System.out.print( ">" );
 			final String q = br.readLine();
 			if (q == null || "$quit".equals(q)) {
