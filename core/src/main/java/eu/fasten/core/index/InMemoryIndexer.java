@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -98,7 +99,6 @@ import it.unimi.dsi.webgraph.ImmutableGraph;
 import it.unimi.dsi.webgraph.LazyIntIterator;
 import it.unimi.dsi.webgraph.NodeIterator;
 import it.unimi.dsi.webgraph.Transform;
-
 /** A sample in-memory indexer that reads, compresses and stores in memory
  * graphs stored in JSON format and answers to impact queries.
  *
@@ -190,7 +190,7 @@ public class InMemoryIndexer {
 	}
 
 
-	public ObjectList<long[]> succcessors(final long... node) {
+	public ObjectList<long[]> successors(final long... node) {
 		assert node.length == 2;
 		final long gid = node[0];
 		final long index = node[1];
@@ -229,7 +229,10 @@ public class InMemoryIndexer {
 		final ObjectList<long[]> result = new ObjectArrayList<>();
 		int x;
 
-		while((x = s.nextInt()) != -1 && x < callGraph.nInternal) result.add(new long[] { callGraph.LID2GID[x], index } );
+		while((x = s.nextInt()) != -1 && x < callGraph.nInternal) {
+			System.err.println("Adding predecessors " + Arrays.toString(new long[] { callGraph.LID2GID[x], index }));
+			result.add(new long[] { callGraph.LID2GID[x], index } );
+		}
 
 		if (x == -1) return result;
 
@@ -401,9 +404,11 @@ public class InMemoryIndexer {
 		@SuppressWarnings("null")
 		public ImmutableGraph[] graphs() {
 			try {
+				// TODO: dynamic
 				final byte[] buffer = new byte[1000000];
 				db.get(Longs.toByteArray(index), buffer);
-				return new ImmutableGraph[] { kryo.readObject(new Input(buffer), BVGraph.class),  kryo.readObject(new Input(buffer), BVGraph.class) };
+				final Input input = new Input(buffer);
+				return new ImmutableGraph[] { kryo.readObject(input, BVGraph.class),  kryo.readObject(input, BVGraph.class) };
 			} catch (final RocksDBException e) {
 				throw new RuntimeException(e);
 			}
@@ -422,37 +427,72 @@ public class InMemoryIndexer {
 		}
 	}
 
-	public synchronized Collection<FastenURI> reaches(final FastenURI fastenURI) {
+	protected synchronized ObjectLinkedOpenCustomHashSet<long[]> reaches(final long... start) {
 		final ObjectLinkedOpenCustomHashSet<long[]> result = new ObjectLinkedOpenCustomHashSet<>(LongArrays.HASH_STRATEGY);
 		// Visit queue
 		final ObjectArrayFIFOQueue<long[]> queue = new ObjectArrayFIFOQueue<>();
-		queue.enqueue(fastenURI2Node(fastenURI));
+		queue.enqueue(start);
 
 		while(!queue.isEmpty()) {
 			final long[] node = queue.dequeue();
-			if (result.add(node)) for(final long[] s: succcessors(node))
+			if (result.add(node)) for(final long[] s: successors(node))
 				if (!result.contains(s)) queue.enqueue(s);
 		}
 
+		return result;
+	}
+
+	public Collection<FastenURI> reaches(final FastenURI fastenURI) {
+		final ObjectLinkedOpenCustomHashSet<long[]> reaches = reaches(fastenURI2Node(fastenURI));
 		final ObjectArrayList<FastenURI> resultURI = new ObjectArrayList<>();
-		for(final long[] node: result) resultURI.add(node2FastenURI(node));
+		for(final long[] node: reaches) resultURI.add(node2FastenURI(node));
 		return resultURI;
 	}
 
-	public synchronized Collection<FastenURI> coreaches(final FastenURI fastenURI) {
+	public static String toString(final Iterable<long[]> iterable) {
+		final StringBuilder b = new StringBuilder("{");
+		for(final long[]a : iterable) {
+			if (b.length() != 1) b.append(", ");
+			b.append(Arrays.toString(a));
+		}
+		return b.append("}").toString();
+	}
+
+	public String toLIDString(final Iterable<long[]> iterable) {
+		final StringBuilder b = new StringBuilder("{");
+		for(final long[] node : iterable) {
+			if (b.length() != 1) b.append(", ");
+			b.append(toLIDString(node));
+		}
+		return b.append("}").toString();
+	}
+
+	public String toLIDString(final long... node) {
+		return Arrays.toString(new long[] { callGraphs.get(node[1]).GID2LID.get(node[0]), node[1]});
+	}
+
+	public synchronized ObjectLinkedOpenCustomHashSet<long[]> coreaches(final long... start) {
 		final ObjectLinkedOpenCustomHashSet<long[]> result = new ObjectLinkedOpenCustomHashSet<>(LongArrays.HASH_STRATEGY);
 		// Visit queue
 		final ObjectArrayFIFOQueue<long[]> queue = new ObjectArrayFIFOQueue<>();
-		queue.enqueue(fastenURI2Node(fastenURI));
+		queue.enqueue(start);
 
 		while(!queue.isEmpty()) {
 			final long[] node = queue.dequeue();
-			if (result.add(node)) for(final long[] s: predecessors(node))
-				if (!result.contains(s)) queue.enqueue(s);
+			System.err.println("Visiting " + Arrays.toString(node));
+			System.err.println("Predecessors: " + toString(predecessors(node)));
+			if (result.add(node))
+				for(final long[] s: predecessors(node))
+					if (!result.contains(s)) queue.enqueue(s);
 		}
 
+		return result;
+	}
+
+	public synchronized Collection<FastenURI> coreaches(final FastenURI fastenURI) {
+		final ObjectLinkedOpenCustomHashSet<long[]> coreaches = coreaches(fastenURI2Node(fastenURI));
 		final ObjectArrayList<FastenURI> resultURI = new ObjectArrayList<>();
-		for(final long[] node: result) resultURI.add(node2FastenURI(node));
+		for(final long[] node: coreaches) resultURI.add(node2FastenURI(node));
 		return resultURI;
 	}
 

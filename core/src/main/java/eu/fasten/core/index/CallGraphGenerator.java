@@ -212,7 +212,7 @@ public class CallGraphGenerator {
 		}*/
 
 		final CallGraphGenerator callGraphGenerator = new CallGraphGenerator();
-		callGraphGenerator.generate(jsapResult.getInt("n"), new EnumeratedIntegerDistribution(new int[] { 100 }), new EnumeratedIntegerDistribution(new int[] { 10 }), new BinomialDistribution(4, 0.5), new GeometricDistribution(.5), new XoRoShiRo128PlusPlusRandomGenerator(0));
+		callGraphGenerator.generate(jsapResult.getInt("n"), new EnumeratedIntegerDistribution(new int[] { 12 }), new EnumeratedIntegerDistribution(new int[] { 10 }), new BinomialDistribution(4, 0.5), new GeometricDistribution(.5), new XoRoShiRo128PlusPlusRandomGenerator(0));
 		if (jsapResult.userSpecified("topic")) {
 			final Properties properties = new Properties();
 			properties.put("bootstrap.servers", jsapResult.getString("host") + ":" + Integer.toString(jsapResult.getInt("port")));

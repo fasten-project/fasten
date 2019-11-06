@@ -9,5 +9,6 @@
 	</classpathentry>
 	<classpathentry kind="con" path="org.apache.ivyde.eclipse.cpcontainer.IVYDE_CONTAINER/?project=fasten&amp;ivyXmlPath=ivy.xml&amp;confs=*"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/5"/>
+	<classpathentry kind="lib" path="/Users/vigna/.ivy/cache/ch.qos.logback/logback-core/jars/logback-core-1.3.0-alpha4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
