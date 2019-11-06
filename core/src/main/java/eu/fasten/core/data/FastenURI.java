@@ -47,9 +47,7 @@ public class FastenURI {
 		this.uri = uri;
 		final String forgeProductVersion = uri.getRawAuthority();
 
-		if (forgeProductVersion == null) {
-			rawForge = rawProduct = rawVersion = null;
-		}
+		if (forgeProductVersion == null) rawForge = rawProduct = rawVersion = null;
 		else {
 			final var exclPos = forgeProductVersion.indexOf('!');
 			String productVersion;
@@ -130,6 +128,18 @@ public class FastenURI {
 		return new FastenURI(uri);
 	}
 
+
+	private static FastenURI create(final StringBuilder urisb, final String rawForge, final String rawProduct, final String rawVersion, final String rawNamespace, final String rawEntity) {
+		if (rawProduct != null) {
+			urisb.append("//");
+			if (rawForge != null) urisb.append(rawForge + "!");
+			urisb.append(rawProduct);
+			if (rawVersion != null) urisb.append("$" + rawVersion);
+			urisb.append("/" + rawNamespace + "/" + rawEntity);
+		} else urisb.append("/" + rawNamespace + "/" + rawEntity);
+		return new FastenURI(URI.create(urisb.toString()));
+	}
+
 	/**
 	 * Creates a {@link FastenURI} from given raw (i.e., properly escaped) fine-grained components.
 	 *
@@ -144,16 +154,24 @@ public class FastenURI {
 	 */
 
 	public static FastenURI create(final String rawForge, final String rawProduct, final String rawVersion, final String rawNamespace, final String rawEntity) {
-		final StringBuffer urisb = new StringBuffer();
-		urisb.append("fasten:");
-		if (rawProduct != null) {
-			urisb.append("//");
-			if (rawForge != null) urisb.append(rawForge + "!");
-			urisb.append(rawProduct);
-			if (rawVersion != null) urisb.append("$" + rawVersion);
-			urisb.append("/" + rawNamespace + "/" + rawEntity);
-		} else urisb.append("/" + rawNamespace + "/" + rawEntity);
-		return new FastenURI(URI.create(urisb.toString()));
+		return create(new StringBuilder().append("fasten:"), rawForge, rawProduct, rawVersion, rawNamespace, rawEntity);
+	}
+
+	/**
+	 * Creates a <em>schemeless</em> {@link FastenURI} from given raw (i.e., properly escaped) fine-grained components.
+	 *
+	 * <p>No check is performed on the correctness of the components.
+	 * @param rawForge the forge, or {@code null}.
+	 * @param rawProduct the product, or {@code null}.
+	 * @param rawVersion the version, or {@code null}.
+	 * @param rawNamespace the namespace, or {@code null}.
+	 * @param rawEntity the entity, or {@code null}.
+	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a {@link FastenURI}.
+	 * @see #create(String, String, String)
+	 */
+
+	public static FastenURI createSchemeless(final String rawForge, final String rawProduct, final String rawVersion, final String rawNamespace, final String rawEntity) {
+		return create(new StringBuilder(), rawForge, rawProduct, rawVersion, rawNamespace, rawEntity);
 	}
 
 	/**
@@ -316,6 +334,6 @@ public class FastenURI {
 	 * @return this {@link FastenURI}.
 	 */
 	public FastenURI canonicalize() {
-		 return this;
+		return this;
 	}
 }

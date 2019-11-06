@@ -119,7 +119,7 @@ public class FastenJavaURI extends FastenURI {
 	public static FastenJavaURI create(final String rawForge, final String rawProduct, final String rawVersion, final String rawNamespace,
 			final String typeName, final String functionOrAttributeName,
 			final FastenJavaURI[] argTypes, final FastenJavaURI returnType) {
-		final StringBuffer entitysb = new StringBuffer();
+		final StringBuilder entitysb = new StringBuilder();
 		entitysb.append(typeName + '.');
 		entitysb.append(functionOrAttributeName);
 
@@ -139,15 +139,15 @@ public class FastenJavaURI extends FastenURI {
 	}
 
 	private final static CharOpenHashSet typeChar = new CharOpenHashSet(new char[] {
-				'-', '.', '_', '~', // unreserved
-				'!', '$', '&', '\'', '*', ';', '=', // sub-delims-type
-				'@'
-			},
+			'-', '.', '_', '~', // unreserved
+			'!', '$', '&', '\'', '*', ';', '=', // sub-delims-type
+			'@'
+	},
 			.5f);
 
 	public static String pctEncodeArg(final String s) {
 		// Encoding characters not in arg-char (see BNF)
-		final StringBuffer sb = new StringBuffer();
+		final StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < s.length(); i++) {
 			final char c = s.charAt(i);
 			if (c < 0x7F && !Character.isLetterOrDigit(c) && ! typeChar.contains(c))
