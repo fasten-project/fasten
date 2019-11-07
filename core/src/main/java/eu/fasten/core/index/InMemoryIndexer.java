@@ -203,10 +203,13 @@ public class InMemoryIndexer {
 		final ObjectList<long[]> result = new ObjectArrayList<>();
 		int x;
 
+		/* In the successor case, internal nodes can be added directly... */
+
 		while((x = s.nextInt()) != -1 && x < callGraph.nInternal) result.add(new long[] { callGraph.LID2GID[x], index } );
 
 		if (x == -1) return result;
 
+		/* ...but external nodes must be search for in the revision call graphs in which they appear. */
 		do {
 			final long xGid = callGraph.LID2GID[x];
 			for(final LongIterator revisions = GIDAppearsIn.get(xGid).iterator(); revisions.hasNext();)
@@ -229,23 +232,23 @@ public class InMemoryIndexer {
 		final ObjectList<long[]> result = new ObjectArrayList<>();
 		int x;
 
-		while((x = s.nextInt()) != -1 && x < callGraph.nInternal) {
-			System.err.println("Adding predecessors " + Arrays.toString(new long[] { callGraph.LID2GID[x], index }));
+		/* In the predecessor case, all nodes returned by the graph are necessarily internal. */
+		while((x = s.nextInt()) != -1) {
+			assert x < callGraph.nInternal;
 			result.add(new long[] { callGraph.LID2GID[x], index } );
 		}
 
-		if (x == -1) return result;
-
-		do {
-			final long xGid = callGraph.LID2GID[x];
-			for(final LongIterator revisions = GIDCalledBy.get(xGid).iterator(); revisions.hasNext();) {
+		/* To move backward in the call graph, we use GIDCalledBy to find revisions that might
+		 * contain external nodes of the form <gid, index>. */
+		do
+			for(final LongIterator revisions = GIDCalledBy.get(gid).iterator(); revisions.hasNext();) {
 				final long revIndex = revisions.nextLong();
 				final CallGraph precCallGraph = callGraphs.get(revIndex);
 				final ImmutableGraph transpose = precCallGraph.graphs()[1];
-				final LazyIntIterator p = transpose.successors(precCallGraph.GID2LID.get(xGid));
+				final LazyIntIterator p = transpose.successors(precCallGraph.GID2LID.get(gid));
 				for(int y; (y = p.nextInt()) != -1;) result.add(new long[] { precCallGraph.LID2GID[y], revIndex });
 			}
-		} while((x = s.nextInt()) != -1);
+		while((x = s.nextInt()) != -1);
 
 		return result;
 	}
@@ -479,8 +482,6 @@ public class InMemoryIndexer {
 
 		while(!queue.isEmpty()) {
 			final long[] node = queue.dequeue();
-			System.err.println("Visiting " + Arrays.toString(node));
-			System.err.println("Predecessors: " + toString(predecessors(node)));
 			if (result.add(node))
 				for(final long[] s: predecessors(node))
 					if (!result.contains(s)) queue.enqueue(s);
