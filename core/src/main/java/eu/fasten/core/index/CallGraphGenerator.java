@@ -119,10 +119,11 @@ public class CallGraphGenerator {
 	 * @param initialGraphSizeDistribution the distribution of the initial graph sizes (the initial independent set from which the preferential attachment starts).
 	 * @param outdegreeDistribution the distribution of internal outdegrees (number of internal calls per function).
 	 * @param externalOutdegreeDistribution the distribution of external outdegrees (number of external calls per function).
+	 * @param depExponent exponent of the Zipf distribution used to establish the dependencies between call graphs.
 	 * @param random the random object used for the generation. 
 	 */
 	public void generate(final int np, final IntegerDistribution graphSizeDistribution, final IntegerDistribution initialGraphSizeDistribution,
-			final IntegerDistribution outdegreeDistribution, final IntegerDistribution externalOutdegreeDistribution, final RandomGenerator random) {
+			final IntegerDistribution outdegreeDistribution, final IntegerDistribution externalOutdegreeDistribution, double depExponent, final RandomGenerator random) {
 		rcgs = new ArrayListMutableGraph[np];
 		final FenwickTree[] td = new FenwickTree[np];
 		deps = new IntOpenHashSet[np];
@@ -138,8 +139,7 @@ public class CallGraphGenerator {
 			td[i] = getPreferentialDistribution(rcgs[i].immutableView(), true);
 		}
 		// Generate the dependency DAG between revisions and the corresponding PA distribution
-		final ImmutableGraph dependencyDAG = preferentialAttachmentDAG(np, 1, outdegreeDistribution, random).immutableView();
-		final FenwickTree tdDep = getPreferentialDistribution(dependencyDAG, false);
+		ZipfDistribution tdDep = new ZipfDistribution(np, depExponent);
 		for (int sourcePackage = 0; sourcePackage < np; sourcePackage++) {
 			source2Targets[sourcePackage] = new ObjectOpenCustomHashSet<>(IntArrays.HASH_STRATEGY);
 
@@ -147,9 +147,9 @@ public class CallGraphGenerator {
 				final int externalOutdegree = Math.min(externalOutdegreeDistribution.sample(), sourcePackage - 1);
 				for (int t = 0; t < externalOutdegree; t++) {
 					int targetPackage;
-					do targetPackage = tdDep.sample(random) - 1; while(targetPackage == sourcePackage);
+					do targetPackage = tdDep.sample() - 1; while(targetPackage == sourcePackage);
 					deps[sourcePackage].add(targetPackage);
-					final int targetNode = td[targetPackage].sample(random) - 1;
+					final int targetNode = td[targetPackage].sample(random);
 					source2Targets[sourcePackage].add(new int[] { sourceNode, targetPackage, targetNode });
 				}
 			}
@@ -171,10 +171,11 @@ public class CallGraphGenerator {
 
 		final CallGraphGenerator callGraphGenerator = new CallGraphGenerator();
 		callGraphGenerator.generate(jsapResult.getInt("n"), 
-				new ZipfDistribution(500, 1.03), // Graph size distribution
+				new BinomialDistribution(500, 0.2), // Graph size distribution
 				new EnumeratedIntegerDistribution(new int[] { 1 }), // Initial graph size distribution  
 				new BinomialDistribution(4, 0.5),  // Internal outdegree distribution
 				new GeometricDistribution(.5),  // External outdegree distribution
+				2,  // Exponent of Zipf distribution for dependencies
 				new XoRoShiRo128PlusPlusRandomGenerator(0));
 		if (jsapResult.userSpecified("topic")) {
 			final Properties properties = new Properties();
