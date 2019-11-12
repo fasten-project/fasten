@@ -676,7 +676,7 @@ public class InMemoryIndexer {
 			}
 
 			elapsed += System.nanoTime();
-			System.err.printf("Elapsed: %.3fs (%d results, %.3f nodes/s)\n", elapsed / 1E09, result.size(), 10E09 * result.size() / elapsed);
+			System.err.printf("Elapsed: %.3fs (%d results, %.3f nodes/s)\n", elapsed / 1E09, result.size(), 1E09 * result.size() / elapsed);
 			final Iterator<FastenURI> iterator = result.iterator();
 			for(int i = 0; iterator.hasNext() && i < 10; i++) System.out.println(iterator.next());
 			if (result.size() > 10) System.out.println("[...]");
