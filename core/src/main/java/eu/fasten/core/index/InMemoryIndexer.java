@@ -317,7 +317,7 @@ public class InMemoryIndexer {
 			forge = g.forge;
 			this.index = index;
 
-			LOGGER.info("Analyzing fasten://" + forge + "!" + product + "$" + version);
+			LOGGER.debug("Analyzing fasten://" + forge + "!" + product + "$" + version);
 			final ArrayList<FastenURI[]> arcs = g.graph;
 
 			/*
@@ -565,7 +565,7 @@ public class InMemoryIndexer {
 			consumer = null;
 			long index = 0;
 			for(final String file: jsapResult.getStringArray("filename")) {
-				LOGGER.info("Parsing " + file);
+				LOGGER.debug("Parsing " + file);
 				final FileReader reader = new FileReader(file);
 				final JSONObject json = new JSONObject(new JSONTokener(reader));
 				inMemoryIndexer.add(new JSONCallGraph(json, false), index++);
