@@ -71,16 +71,17 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
     }
 
     private Optional<Namespace> getGlobalPortion(IClass klass) {
-        if (klass instanceof ArrayClass) {
-            return Optional.of(JDKPackage.getInstance());
-        }
 
         try {
-            String jarFile = WalaCallgraphConstructor.fetchJarFile(klass);
-            if (!jarFile.endsWith("rt.jar")) {
-                return Optional.of(this.jarToCoordinate.get(jarFile));
-            } else {
+            var jarFile = WalaCallgraphConstructor.fetchJarFile(klass);
+
+            if (jarFile.endsWith("jmod") ||
+                    jarFile.endsWith("rt.jar") ||
+                    jarFile.endsWith("classes.jar")
+            ) {
                 return Optional.of(JDKPackage.getInstance());
+            } else {
+                return Optional.of(this.jarToCoordinate.get(jarFile));
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -56,22 +56,22 @@ public final class WalaCallgraphConstructor {
             String classpath = coordinates.get(0).jarPath.toString();
 
             //1. Fetch exclusion file
-            ClassLoader classLoader = WalaCallgraphConstructor.class.getClassLoader();
-            File exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());
+            var classLoader = Thread.currentThread().getContextClassLoader();
+            var exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());
 
             //2. Set the analysis scope
             AnalysisScope scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exclusionFile);
 
             //3. Class Hierarchy for name resolution -> missing superclasses are replaced by the ClassHierarchy root,
             //   i.e. java.lang.Object
-            ClassHierarchy cha = ClassHierarchyFactory.makeWithRoot(scope);
+            var cha = ClassHierarchyFactory.makeWithRoot(scope);
 
             //4. Specify Entrypoints -> all non-primordial public entrypoints (also with declared parameters, not sub-types)
-            ArrayList<Entrypoint> entryPoints = getEntrypoints(cha);
+            var entryPoints = getEntrypoints(cha);
 
             //5. Encapsulates various analysis options
-            AnalysisOptions options = new AnalysisOptions(scope, entryPoints);
-            AnalysisCache cache = new AnalysisCacheImpl();
+            var options = new AnalysisOptions(scope, entryPoints);
+            var cache = new AnalysisCacheImpl();
 
             //6 Build the call graph
             //0-CFA points-to analysis
