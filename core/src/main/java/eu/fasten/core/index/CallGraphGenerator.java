@@ -9,8 +9,8 @@ import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
 import org.apache.commons.math3.distribution.GeometricDistribution;
 import org.apache.commons.math3.distribution.IntegerDistribution;
-import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.util.MathArrays;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -82,9 +82,9 @@ public class CallGraphGenerator {
 	 *  and it is initialized to <code>d</code> or to <code>D-d+1</code> (the latter iff <code>reverse</code> is true),
 	 *  where <code>D</code> is the maximum indegree in <code>g</code>, and <code>d</code> is <code>i</code>'s indegree.
 	 *
-	 * @param g
-	 * @param reverse
-	 * @return 
+	 * @param g a graph.
+	 * @param reverse if true, we generate the <em>reverse</em> distribution.
+	 * @return a Fenwick tree as above.
 	 */
 	public static FenwickTree getPreferentialDistribution(final ImmutableGraph g, final boolean reverse) {
 		final int n = g.numNodes();
@@ -107,23 +107,23 @@ public class CallGraphGenerator {
 		return t;
 	}
 
-	/** Generates <code>np</code> call graphs. Each call graph is obtained using {@link #preferentialAttachmentDAG(int, int, IntegerDistribution, RandomGenerator)} (with 
+	/** Generates <code>np</code> call graphs. Each call graph is obtained using {@link #preferentialAttachmentDAG(int, int, IntegerDistribution, RandomGenerator)} (with
 	 *  specified initial graph size (<code>initialGraphSizeDistribution</code>), graph size (<code>graphSizeDistribution</code>), outdegree distribution (<code>outdegreeDistribution</code>).
 	 *  Then a dependency DAG is generated between the call graphs, once more usin {@link #preferentialAttachmentDAG(int, int, IntegerDistribution, RandomGenerator)} (this
 	 *  time the initial graph size is 1, whereas the outdegree distribution is <code>outdegreeDistribution</code>).
 	 *  Then to each node of each call graph a new set of outgoing arcs is generated (their number is chosen using <code>externalOutdegreeDistribution</code>): the target
-	 *  call graph is generated using the indegree distribution of the dependency DAG; the target node is chosen according to the reverse indegree distribution within the revision call graph.  
-	 * 
+	 *  call graph is generated using the indegree distribution of the dependency DAG; the target node is chosen according to the reverse indegree distribution within the revision call graph.
+	 *
 	 * @param np number of revision call graphs to be generated.
 	 * @param graphSizeDistribution the distribution of the graph sizes (number of functions per call graph).
 	 * @param initialGraphSizeDistribution the distribution of the initial graph sizes (the initial independent set from which the preferential attachment starts).
 	 * @param outdegreeDistribution the distribution of internal outdegrees (number of internal calls per function).
 	 * @param externalOutdegreeDistribution the distribution of external outdegrees (number of external calls per function).
 	 * @param depExponent exponent of the Zipf distribution used to establish the dependencies between call graphs.
-	 * @param random the random object used for the generation. 
+	 * @param random the random object used for the generation.
 	 */
 	public void generate(final int np, final IntegerDistribution graphSizeDistribution, final IntegerDistribution initialGraphSizeDistribution,
-			final IntegerDistribution outdegreeDistribution, final IntegerDistribution externalOutdegreeDistribution, double depExponent, final RandomGenerator random) {
+			final IntegerDistribution outdegreeDistribution, final IntegerDistribution externalOutdegreeDistribution, final IntegerDistribution dependencyOutdegreeDistribution, final RandomGenerator random) {
 		rcgs = new ArrayListMutableGraph[np];
 		final FenwickTree[] td = new FenwickTree[np];
 		deps = new IntOpenHashSet[np];
@@ -135,28 +135,43 @@ public class CallGraphGenerator {
 			final int n = graphSizeDistribution.sample();
 			final int n0 = Math.min(initialGraphSizeDistribution.sample(), n);
 			rcgs[i] = preferentialAttachmentDAG(n, n0, outdegreeDistribution, random);
-			System.out.println("Generated a call graph with size\t" + rcgs[i].numNodes());
 			td[i] = getPreferentialDistribution(rcgs[i].immutableView(), true);
 		}
-		// Generate the dependency DAG between revisions and the corresponding PA distribution
-		ZipfDistribution tdDep = new ZipfDistribution(np, depExponent);
+
+		// Generate the dependency DAG between revisions using preferential attachment starting from 1 node
+		// TODO: make distribution a parameter
+		final ArrayListMutableGraph depDAG = preferentialAttachmentDAG(np, 1, dependencyOutdegreeDistribution, random);
+
+		// For each source package, generate function calls so to cover all dependencies
 		for (int sourcePackage = 0; sourcePackage < np; sourcePackage++) {
 			source2Targets[sourcePackage] = new ObjectOpenCustomHashSet<>(IntArrays.HASH_STRATEGY);
+			final int outdegree = depDAG.outdegree(sourcePackage);
+			if (outdegree == 0) continue; // No calls needed (I'm kinda busy)
 
-			for (int sourceNode = 0; sourceNode < rcgs[sourcePackage].numNodes(); sourceNode++) {
-				final int externalOutdegree = Math.min(externalOutdegreeDistribution.sample(), sourcePackage - 1);
+			final int numFuncs = rcgs[sourcePackage].numNodes();
+			final int[] externalArcs = new int[numFuncs];
+			int allExternalArcs = 0;
+			// We decide how many calls to dispatch from each function
+			for (int sourceNode = 0; sourceNode < numFuncs; sourceNode++) allExternalArcs += (externalArcs[sourceNode] = externalOutdegreeDistribution.sample());
+			// We create a global list of external successors by shuffling
+			final int[] targetPackage = new int[allExternalArcs];
+			final int[] succ = depDAG.successorArray(sourcePackage);
+			for(int i = 0; i < outdegree; i++) deps[sourcePackage].add(succ[i]);
+			for(int i = 0; i < allExternalArcs; i++) targetPackage[i] = succ[i % outdegree];
+			MathArrays.shuffle(targetPackage, random);
+
+			for (int sourceNode = allExternalArcs = 0; sourceNode < numFuncs; sourceNode++) {
+				final int externalOutdegree = externalArcs[sourceNode];
 				for (int t = 0; t < externalOutdegree; t++) {
-					int targetPackage;
-					do targetPackage = tdDep.sample() - 1; while(targetPackage == sourcePackage);
-					deps[sourcePackage].add(targetPackage);
-					final int targetNode = td[targetPackage].sample(random);
-					source2Targets[sourcePackage].add(new int[] { sourceNode, targetPackage, targetNode });
+					final int targetNode = td[targetPackage[allExternalArcs + t]].sample(random) - 1;
+					source2Targets[sourcePackage].add(new int[] { sourceNode, targetPackage[allExternalArcs + t], targetNode });
 				}
+				allExternalArcs += externalOutdegree;
 			}
 		}
 	}
 
-	public static void main(final String[] args) throws IOException, JSAPException, ClassNotFoundException {
+	public static void main(final String[] args) throws IOException, JSAPException {
 		final SimpleJSAP jsap = new SimpleJSAP(CallGraphGenerator.class.getName(), "Generates pseudorandom call graphs", new Parameter[] {
 				new UnflaggedOption("n", JSAP.INTEGER_PARSER, JSAP.REQUIRED, "The number of graphs."),
 				new FlaggedOption( "host", JSAP.STRING_PARSER, "localhost", JSAP.NOT_REQUIRED, 'h', "host", "The host of the Kafka server." ),
@@ -170,12 +185,12 @@ public class CallGraphGenerator {
 		final String basename = jsapResult.getString("basename");
 
 		final CallGraphGenerator callGraphGenerator = new CallGraphGenerator();
-		callGraphGenerator.generate(jsapResult.getInt("n"), 
+		callGraphGenerator.generate(jsapResult.getInt("n"),
 				new BinomialDistribution(500, 0.2), // Graph size distribution
-				new EnumeratedIntegerDistribution(new int[] { 1 }), // Initial graph size distribution  
+				new EnumeratedIntegerDistribution(new int[] { 1 }), // Initial graph size distribution
 				new BinomialDistribution(4, 0.5),  // Internal outdegree distribution
 				new GeometricDistribution(.5),  // External outdegree distribution
-				2,  // Exponent of Zipf distribution for dependencies
+				new EnumeratedIntegerDistribution(new int[] { 5 }), // Dependency outdegree distribution
 				new XoRoShiRo128PlusPlusRandomGenerator(0));
 		if (jsapResult.userSpecified("topic")) {
 			final Properties properties = new Properties();
