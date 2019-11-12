@@ -21,7 +21,7 @@
 
     <properties>
         <log4j.version>2.11.1</log4j.version>
-        <wala.version>1.5.2</wala.version>
+        <wala.version>1.5.3</wala.version>
     </properties>
 
     <repositories>
