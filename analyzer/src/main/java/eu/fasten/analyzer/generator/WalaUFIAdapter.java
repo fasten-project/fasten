@@ -31,7 +31,6 @@ import eu.fasten.analyzer.lapp.callgraph.FolderLayout.DollarSeparatedLayout;
 import eu.fasten.analyzer.lapp.callgraph.wala.WalaAnalysisResult;
 import eu.fasten.analyzer.lapp.callgraph.wala.WalaAnalysisTransformer;
 import eu.fasten.analyzer.lapp.core.LappPackage;
-import com.ibm.wala.classLoader.ArrayClass;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.types.TypeName;

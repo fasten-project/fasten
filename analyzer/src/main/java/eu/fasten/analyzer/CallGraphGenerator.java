@@ -21,11 +21,12 @@ package eu.fasten.analyzer;
 
 
 import eu.fasten.analyzer.data.callgraph.WalaCallGraph;
+import eu.fasten.analyzer.data.fastenJSON.CanonicalJSON;
 import eu.fasten.analyzer.data.type.MavenResolvedCoordinate;
 import eu.fasten.analyzer.generator.WalaCallgraphConstructor;
 import eu.fasten.analyzer.generator.WalaUFIAdapter;
+import eu.fasten.core.data.JSONCallGraph;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
-import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,29 +41,35 @@ public class CallGraphGenerator {
 
 
     private static List<MavenResolvedCoordinate> buildClasspath(String mavenCoordinate){
-        logger.info("Building analyzedClasspath of {}", mavenCoordinate);
-        MavenResolvedArtifact[] artifacts = Maven.resolver().resolve(mavenCoordinate).withTransitivity().asResolvedArtifact();
-        List<MavenResolvedArtifact> arts = Arrays.asList(artifacts);
-        List<MavenResolvedCoordinate> path = arts.stream().map(MavenResolvedCoordinate::of).collect(Collectors.toList());
-        System.out.println(path);
-        logger.info("The analyzedClasspath of {} is {} ", mavenCoordinate, path);
-        return path;
+        logger.debug("Building classpath for {}", mavenCoordinate);
+        var artifacts = Maven.resolver().
+                resolve(mavenCoordinate).
+                withTransitivity().
+                asResolvedArtifact();
+
+        var paths = Arrays.asList(artifacts).stream().
+                map(MavenResolvedCoordinate::of).
+                collect(Collectors.toList());
+        logger.debug("The classpath for {} is {}", mavenCoordinate, paths);
+        return paths;
     }
 
 
-    public static WalaUFIAdapter generateCallGraph(String coordinate){
+    public static JSONCallGraph generateCallGraph(String coordinate){
 
-        WalaUFIAdapter wrapped_cg = null;
         try {
             List<MavenResolvedCoordinate> path = buildClasspath(coordinate);
-            logger.info("Building generator using generator....");
+            logger.debug("Building generator using generator....");
+            long start = System.currentTimeMillis();
             WalaCallGraph cg = WalaCallgraphConstructor.build(path);
-            wrapped_cg = WalaUFIAdapter.wrap(cg);
-            logger.info("Call graph construction done!");
+            logger.debug("Call graph construction took {}ms", System.currentTimeMillis() - start);
+
+            //return CanonicalJSON.toJson(WalaUFIAdapter.wrap(cg), "");
+            return null;
         } catch (Exception e) {
             logger.error("An exception occurred for {}", coordinate, e);
+            return null;
         }
-        return wrapped_cg;
     }
 }
 

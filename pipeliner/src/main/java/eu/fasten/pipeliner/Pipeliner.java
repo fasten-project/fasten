@@ -57,12 +57,12 @@ public class Pipeliner {
                     if(!tempFile.exists()) {
                         logger.info("Call Graph Generation for :{}", coordinate);
                         projectNumber++;
-                        wrapped_cg = CallGraphGenerator.generateCallGraph(coordinate);
+                        //wrapped_cg = CallGraphGenerator.generateCallGraph(coordinate);
                         if (wrapped_cg == null) {
                             nonResolvables += + projectNumber + "-" + coordinate + "\n";
                             continue;
                         }
-                        KafkaProducerMonster.runProducer(projectNumber, CanonicalJSON.createJson(wrapped_cg, artifact.getDate()));
+                        //KafkaProducerMonster.runProducer(projectNumber, CanonicalJSON.toJson(wrapped_cg, artifact.getDate()));
                         logger.info("producing done!");
                     }
                 }
