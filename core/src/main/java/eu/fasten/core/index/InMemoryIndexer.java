@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.ref.SoftReference;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -81,13 +82,16 @@ import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
+import it.unimi.dsi.fastutil.objects.AbstractObjectCollection;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenCustomHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectList;
+import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.io.InputBitStream;
 import it.unimi.dsi.io.NullInputStream;
@@ -104,6 +108,7 @@ import it.unimi.dsi.webgraph.Transform;
  *
  */
 public class InMemoryIndexer {
+
 
 	public class BVGraphSerializer extends FieldSerializer<BVGraph> {
 
@@ -405,13 +410,21 @@ public class InMemoryIndexer {
 		}
 
 		@SuppressWarnings("null")
+		SoftReference<ImmutableGraph[]> graphs;
+
 		public ImmutableGraph[] graphs() {
+			if (graphs != null) {
+				final var graphs = this.graphs.get();
+				if (graphs != null) return graphs;
+			}
 			try {
 				// TODO: dynamic
 				final byte[] buffer = new byte[1000000];
 				db.get(Longs.toByteArray(index), buffer);
 				final Input input = new Input(buffer);
-				return new ImmutableGraph[] { kryo.readObject(input, BVGraph.class),  kryo.readObject(input, BVGraph.class) };
+				final var graphs = new ImmutableGraph[] { kryo.readObject(input, BVGraph.class),  kryo.readObject(input, BVGraph.class) };
+				this.graphs = new SoftReference<>(graphs);
+				return graphs;
 			} catch (final RocksDBException e) {
 				throw new RuntimeException(e);
 			}
@@ -430,7 +443,45 @@ public class InMemoryIndexer {
 		}
 	}
 
+
+	private final class NamedResult extends AbstractObjectCollection<FastenURI> {
+		private final ObjectLinkedOpenCustomHashSet<long[]> reaches;
+
+		private NamedResult(final ObjectLinkedOpenCustomHashSet<long[]> reaches) {
+			this.reaches = reaches;
+		}
+
+		@Override
+		public int size() {
+			return reaches.size();
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return reaches.isEmpty();
+		}
+
+		@Override
+		public ObjectIterator<FastenURI> iterator() {
+			final ObjectListIterator<long[]> iterator = reaches.iterator();
+			return new ObjectIterator<>() {
+
+				@Override
+				public boolean hasNext() {
+					return iterator.hasNext();
+				}
+
+				@Override
+				public FastenURI next() {
+					return node2FastenURI(iterator.next());
+				}
+			};
+		}
+	}
+
 	protected synchronized ObjectLinkedOpenCustomHashSet<long[]> reaches(final long... start) {
+		assert start != null;
+		assert start.length == 2;
 		final ObjectLinkedOpenCustomHashSet<long[]> result = new ObjectLinkedOpenCustomHashSet<>(LongArrays.HASH_STRATEGY);
 		// Visit queue
 		final ObjectArrayFIFOQueue<long[]> queue = new ObjectArrayFIFOQueue<>();
@@ -438,6 +489,8 @@ public class InMemoryIndexer {
 
 		while(!queue.isEmpty()) {
 			final long[] node = queue.dequeue();
+			assert node != null;
+			assert node.length == 2;
 			if (result.add(node)) for(final long[] s: successors(node))
 				if (!result.contains(s)) queue.enqueue(s);
 		}
@@ -446,10 +499,9 @@ public class InMemoryIndexer {
 	}
 
 	public Collection<FastenURI> reaches(final FastenURI fastenURI) {
-		final ObjectLinkedOpenCustomHashSet<long[]> reaches = reaches(fastenURI2Node(fastenURI));
-		final ObjectArrayList<FastenURI> resultURI = new ObjectArrayList<>();
-		for(final long[] node: reaches) resultURI.add(node2FastenURI(node));
-		return resultURI;
+		final long[] start = fastenURI2Node(fastenURI);
+		if (start == null) return null;
+		return new NamedResult(reaches(start));
 	}
 
 	public static String toString(final Iterable<long[]> iterable) {
@@ -475,6 +527,8 @@ public class InMemoryIndexer {
 	}
 
 	public synchronized ObjectLinkedOpenCustomHashSet<long[]> coreaches(final long... start) {
+		assert start != null;
+		assert start.length == 2;
 		final ObjectLinkedOpenCustomHashSet<long[]> result = new ObjectLinkedOpenCustomHashSet<>(LongArrays.HASH_STRATEGY);
 		// Visit queue
 		final ObjectArrayFIFOQueue<long[]> queue = new ObjectArrayFIFOQueue<>();
@@ -482,6 +536,8 @@ public class InMemoryIndexer {
 
 		while(!queue.isEmpty()) {
 			final long[] node = queue.dequeue();
+			assert node != null;
+			assert node.length == 2;
 			if (result.add(node))
 				for(final long[] s: predecessors(node))
 					if (!result.contains(s)) queue.enqueue(s);
@@ -491,16 +547,16 @@ public class InMemoryIndexer {
 	}
 
 	public synchronized Collection<FastenURI> coreaches(final FastenURI fastenURI) {
-		final ObjectLinkedOpenCustomHashSet<long[]> coreaches = coreaches(fastenURI2Node(fastenURI));
-		final ObjectArrayList<FastenURI> resultURI = new ObjectArrayList<>();
-		for(final long[] node: coreaches) resultURI.add(node2FastenURI(node));
-		return resultURI;
+		final long[] start = fastenURI2Node(fastenURI);
+		if (start == null) return null;
+		return new NamedResult(coreaches(start));
 	}
 
 	public synchronized void add(final JSONCallGraph g, final long index) throws IOException, RocksDBException {
 		callGraphs.put(index, new CallGraph(g, index));
 	}
 
+	@SuppressWarnings("boxing")
 	public static void main(final String[] args) throws JSONException, URISyntaxException, JSAPException, IOException, RocksDBException, InterruptedException, ExecutionException {
 		final SimpleJSAP jsap = new SimpleJSAP( JSONCallGraph.class.getName(),
 				"Creates a searchable in-memory index from a list of JSON files",
@@ -597,15 +653,33 @@ public class InMemoryIndexer {
 			}
 			if ( q.length() == 0 ) continue;
 
-			final FastenURI uri = FastenURI.create(q.substring(1));
-			final boolean forward = q.startsWith("+");
-			final Collection<FastenURI> result = forward ? inMemoryIndexer.reaches(uri) : inMemoryIndexer.coreaches(uri);
-			if (result == null) System.out.println("Method not indexed");
-			else if (result.size() == 0) System.out.println(forward? "No method called" : "No method calls this method");
-			else {
-				final Iterator<FastenURI> iterator = result.iterator();
-				for(int i = 0; iterator.hasNext() && i < 50; i++) System.out.println(iterator.next());
+			final FastenURI uri;
+			try {
+				uri = FastenURI.create(q.substring(1));
 			}
+			catch(final Exception e) {
+				e.printStackTrace(System.err);
+				continue;
+			}
+
+			final boolean forward = q.startsWith("+");
+			long elapsed = - System.nanoTime();
+			final Collection<FastenURI> result = forward ? inMemoryIndexer.reaches(uri) : inMemoryIndexer.coreaches(uri);
+			if (result == null) {
+				System.out.println("Method not indexed");
+				continue;
+			}
+
+			if (result.size() == 0) {
+				System.out.println(forward? "No method called" : "No method calls this method");
+				continue;
+			}
+
+			elapsed += System.nanoTime();
+			System.err.printf("Elapsed: %.3fs (%d results, %.3f nodes/s)\n", elapsed / 1E09, result.size(), 10E09 * result.size() / elapsed);
+			final Iterator<FastenURI> iterator = result.iterator();
+			for(int i = 0; iterator.hasNext() && i < 10; i++) System.out.println(iterator.next());
+			if (result.size() > 10) System.out.println("[...]");
 		}
 
 		db.close();
