@@ -242,7 +242,7 @@ public class JSONCallGraph {
 			}
 			if (correctNodesInArc == 2) this.graph.add(arc);
 		}
-		LOGGER.warn("Stored " + this.graph.size() + " arcs of the " + numberOfArcs + " specified");
+		LOGGER.info("Stored " + this.graph.size() + " arcs of the " + numberOfArcs + " specified");
 	}
 	
 	public static void main(String[] args) throws JSONException, FileNotFoundException, URISyntaxException, JSAPException {

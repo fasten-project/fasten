@@ -101,11 +101,16 @@
             <artifactId>logback-classic</artifactId>
             <version>1.2.3</version>
         </dependency>
-		  <dependency>
-			  <groupId>com.esotericsoftware</groupId>
-			  <artifactId>kryo</artifactId>
-			  <version>5.0.0-RC4</version>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+           <artifactId>kafka-clients</artifactId>
+           <version>2.3.0</version>
+        </dependency>
+	  <dependency>
+		  <groupId>com.esotericsoftware</groupId>
+		  <artifactId>kryo</artifactId>
+		  <version>5.0.0-RC4</version>
+	</dependency>
 
 
     </dependencies>
