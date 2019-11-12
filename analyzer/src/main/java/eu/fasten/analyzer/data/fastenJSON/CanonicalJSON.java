@@ -83,7 +83,7 @@ public class CanonicalJSON {
 
         JSONObject canonicalJson = new JSONObject();
         canonicalJson.put("version", dependencies.get(0).version);
-        canonicalJson.put("product", dependencies.get(0).groupId + dependencies.get(0).artifactId);
+        canonicalJson.put("product", dependencies.get(0).groupId + "." + dependencies.get(0).artifactId);
         canonicalJson.put("forge", "mvn");
         canonicalJson.put("timestamp", date);
 
