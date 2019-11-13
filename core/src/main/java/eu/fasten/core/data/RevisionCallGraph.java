@@ -23,7 +23,6 @@ import com.martiansoftware.jsap.Switch;
 import com.martiansoftware.jsap.UnflaggedOption;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectLists;
 
 
 
@@ -125,33 +124,27 @@ public class RevisionCallGraph {
 		/** Create a dependency based on the given JSON Object.
 		 * 
 		 * @param json the JSON dependency object, as specified in Fasten Deliverable 2.1 
-		 * @param ignoreConstraints  if <code>true</code>, constraints are specified by a simple string.
 		 */
-		public Dependency(JSONObject json, boolean ignoreConstraints) {
+		public Dependency(JSONObject json) {
 			this.forge = json.getString("forge");
 			this.product = json.getString("product");
-			//TODO
-			if (ignoreConstraints)
-				this.constraints = ObjectLists.singleton(new Constraint(json.getString("constraints"), null));
-			else
-				this.constraints = Constraint.constraints(json.getJSONArray("constraints"));
+			this.constraints = Constraint.constraints(json.getJSONArray("constraints"));
 		}
 		
 		/** Given an JSON array of dependencies (a depset as specified in Fasten Deliverable 2.1), it returns
 		 *  the corresponding depset.
 		 *   
 		 * @param depset the JSON array of dependencies.
-		 * @param ignoreConstraints  if <code>true</code>, constraints are specified by a simple string.
 		 * @return the corresponding list of dependencies.
 		 */
-		public static List<List<Dependency>> depset(JSONArray depset, boolean ignoreConstraints) {
+		public static List<List<Dependency>> depset(JSONArray depset) {
 			List<List<Dependency>> d = new ObjectArrayList<>();
 			for (int i = 0; i < depset.length(); i++) {
 				List<Dependency> clause = new ObjectArrayList<>();
 				System.out.println(depset);
 				JSONArray depsetClause = depset.getJSONArray(i);
 				for (int j = 0; j < depsetClause.length(); j++) 
-					clause.add(new Dependency(depsetClause.getJSONObject(j), ignoreConstraints));
+					clause.add(new Dependency(depsetClause.getJSONObject(j)));
 				d.add(clause);
 			}
 			return d;
@@ -272,7 +265,7 @@ public class RevisionCallGraph {
 			LOGGER.warn("No timestamp provided: assuming -1");
 		}
 		this.timestamp = ts;
-		this.depset = Dependency.depset(json.getJSONArray("depset"), ignoreConstraints);
+		this.depset = Dependency.depset(json.getJSONArray("depset"));
 		uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
 		forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
 		this.graph = new ArrayList<FastenURI[]>();

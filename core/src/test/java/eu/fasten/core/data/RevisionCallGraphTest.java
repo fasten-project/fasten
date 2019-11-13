@@ -78,7 +78,7 @@ class RevisionCallGraphTest {
 		
 		String spec = "{\"forge\": \"maven\", \"product\": \"foo.bar\", \"constraints\": [\"[3.1..  7.1   ]\",\"[   9]\",\"[10.3  ..]\"] }";
 		JSONObject json = new JSONObject(spec);
-		d = new RevisionCallGraph.Dependency(json, false);
+		d = new RevisionCallGraph.Dependency(json);
 		assertEquals("maven", d.forge);
 		assertEquals("foo.bar", d.product);
 		List<Constraint> constraints = d.constraints;
@@ -100,7 +100,7 @@ class RevisionCallGraphTest {
 				"[{\"forge\": \"other\", \"product\": \"bar.nee\", \"constraints\": [\"[..9]\",\"[10.3  ..]\"] }]" +
 				"]";
 		JSONArray json = new JSONArray(spec);
-		List<List<Dependency>> depset = RevisionCallGraph.Dependency.depset(json, false);
+		List<List<Dependency>> depset = RevisionCallGraph.Dependency.depset(json);
 		Dependency d = depset.get(0).get(0);
 		assertEquals("maven", d.forge);
 		assertEquals("foo.bar", d.product);
@@ -134,7 +134,8 @@ class RevisionCallGraphTest {
 				"    \"depset\":\n" + 
 				"      [\n" + 
 				"        [{ \"forge\": \"mvn\", \"product\": \"a\", \"constraints\": [\"[1.0..2.0]\", \"[4.2..]\"]}],\n" + 
-				"        [{ \"forge\": \"other\", \"product\": \"b\", \"constraints\": [\"[4.3.2]\"]}]\n" + 
+				"        [{ \"forge\": \"other\", \"product\": \"b\", \"constraints\": [\"[4.3.2]\"]},\n" + 
+				"        { \"forge\": \"other\", \"product\": \"c\", \"constraints\": [\"[1.1..2.0]\"]}]\n" + 
 				"      ],\n" + 
 				"    \"graph\": \n" + 
 				"      [\n" + 
@@ -165,6 +166,10 @@ class RevisionCallGraphTest {
 		assertEquals(1, constraints.size());
 		assertEquals("4.3.2", constraints.get(0).lowerBound);
 		assertEquals("4.3.2", constraints.get(0).upperBound);
+		constraints = depset.get(1).get(1).constraints;
+		assertEquals(1, constraints.size());
+		assertEquals("1.1", constraints.get(0).lowerBound);
+		assertEquals("2.0", constraints.get(0).upperBound);
 		
 		assertJsonEquals(new JSONObject(callGraph.replace(" ", "")), cg.toJSON());
 	}
