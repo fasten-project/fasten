@@ -69,8 +69,8 @@ import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.JSONCallGraph;
-import eu.fasten.core.data.JSONCallGraph.Dependency;
+import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph.Dependency;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -316,7 +316,7 @@ public class InMemoryIndexer {
 		private final String forge;
 		private final long index;
 
-		protected CallGraph(final JSONCallGraph g, final long index) throws IOException, RocksDBException {
+		protected CallGraph(final RevisionCallGraph g, final long index) throws IOException, RocksDBException {
 			product = g.product;
 			version = g.version;
 			forge = g.forge;
@@ -552,13 +552,13 @@ public class InMemoryIndexer {
 		return new NamedResult(coreaches(start));
 	}
 
-	public synchronized void add(final JSONCallGraph g, final long index) throws IOException, RocksDBException {
+	public synchronized void add(final RevisionCallGraph g, final long index) throws IOException, RocksDBException {
 		callGraphs.put(index, new CallGraph(g, index));
 	}
 
 	@SuppressWarnings("boxing")
 	public static void main(final String[] args) throws JSONException, URISyntaxException, JSAPException, IOException, RocksDBException, InterruptedException, ExecutionException {
-		final SimpleJSAP jsap = new SimpleJSAP( JSONCallGraph.class.getName(),
+		final SimpleJSAP jsap = new SimpleJSAP( RevisionCallGraph.class.getName(),
 				"Creates a searchable in-memory index from a list of JSON files",
 				new Parameter[] {
 						new FlaggedOption( "input", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'I', "input", "A file containing the input." ),
@@ -603,7 +603,7 @@ public class InMemoryIndexer {
 							if (stop[0]) break;
 							final JSONObject json = new JSONObject(record.value());
 							try {
-								inMemoryIndexer.add(new JSONCallGraph(json, false), index++);
+								inMemoryIndexer.add(new RevisionCallGraph(json, false), index++);
 							} catch(final IllegalArgumentException e) {
 								e.printStackTrace(System.err);
 								throw new RuntimeException(e);
@@ -624,7 +624,7 @@ public class InMemoryIndexer {
 				LOGGER.debug("Parsing " + file);
 				final FileReader reader = new FileReader(file);
 				final JSONObject json = new JSONObject(new JSONTokener(reader));
-				inMemoryIndexer.add(new JSONCallGraph(json, false), index++);
+				inMemoryIndexer.add(new RevisionCallGraph(json, false), index++);
 				reader.close();
 			}
 		}

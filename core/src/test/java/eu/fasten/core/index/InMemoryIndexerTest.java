@@ -16,7 +16,7 @@ import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 
-import eu.fasten.core.data.JSONCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.index.InMemoryIndexer.CallGraph;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenCustomHashSet;
@@ -38,7 +38,7 @@ public class InMemoryIndexerTest {
 
 		final InMemoryIndexer inMemoryIndexer = new InMemoryIndexer(db);
 		for (int index = 0; index < jsonSpec.length; index++)
-			inMemoryIndexer.add(new JSONCallGraph(new JSONObject(jsonSpec[index]), false), index);
+			inMemoryIndexer.add(new RevisionCallGraph(new JSONObject(jsonSpec[index]), false), index);
 
 		for(final var entry : inMemoryIndexer.callGraphs.long2ObjectEntrySet()) {
 			final CallGraph callGraph = entry.getValue();

@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,11 +22,14 @@ import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.Switch;
 import com.martiansoftware.jsap.UnflaggedOption;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 
 
 
-public class JSONCallGraph {
-	private static final Logger LOGGER = LoggerFactory.getLogger(JSONCallGraph.class);
+
+public class RevisionCallGraph {
+	private static final Logger LOGGER = LoggerFactory.getLogger(RevisionCallGraph.class);
 
 	/** A constraint represents an interval of versions. It includes all versions between a given lower and upper bound. */
 	public static class Constraint {
@@ -53,7 +58,7 @@ public class JSONCallGraph {
 		 *  </ol>
 		 * @param spec the specification.
 		 */
-		public Constraint(String spec) {
+		public Constraint(final String spec) {
 			if ((spec.charAt(0) != '[') || (spec.charAt(spec.length() - 1) != ']')) throw new IllegalArgumentException("Constraints must start with '[' and end with ']'");
 			int pos = spec.indexOf("..");
 			if (spec.indexOf("..", pos + 1) >= 0) throw new IllegalArgumentException("Constraints must contain exactly one ..");
@@ -63,22 +68,36 @@ public class JSONCallGraph {
 			this.upperBound = upperBound.length() == 0? null : upperBound;
 		}
 		
-		/** Given a {@link JSONArray} of specifications of constraints, it returns the corresponding array
+		/** Given a {@link JSONArray} of specifications of constraints, it returns the corresponding list
 		 *  of contraints.
 		 *  
 		 * @param jsonArray an array of strings, each being the {@linkplain #Constraint(String) specification} of a constraint.
-		 * @return the corresponding array of constraints.
+		 * @return the corresponding list of constraints.
 		 */
-		public static Constraint[] constraints(JSONArray jsonArray) {
-			Constraint[] c = new Constraint[jsonArray.length()];
-			for (int i = 0; i < c.length; i++) 
-				c[i] = new Constraint(jsonArray.getString(i));
+		public static List<Constraint> constraints(final JSONArray jsonArray) {
+			List<Constraint> c = new ObjectArrayList<>();
+			for (int i = 0; i < jsonArray.length(); i++) 
+				c.add(new Constraint(jsonArray.getString(i)));
 			return c;
+		}
+		
+		/** Converts a list of {@link Constraint constraints} to its JSON representation.
+		 * 
+		 * @param c the list of contraints to be converted.
+		 * @return the corresponding JSON representation.
+		 */
+		public static JSONArray toJSON(final List<Constraint> c) {
+			JSONArray result = new JSONArray();
+			for (Constraint constraint: c) result.put(constraint.toString());
+			return result;
 		}
 
 		@Override
 		public String toString() {
-			return "[" + 
+			if (lowerBound != null && lowerBound.equals(upperBound)) 
+				return "[" + lowerBound + "]";
+			else 
+				return "[" + 
 					(lowerBound == null? "" : lowerBound) +
 					".." +
 					(upperBound == null? "" : upperBound) +
@@ -89,15 +108,15 @@ public class JSONCallGraph {
 	public static class Dependency {
 		public final String forge;
 		public final String product;
-		public final Constraint[] constraints;
+		public final List<Constraint> constraints;
 		
 		/** Create a dependency with given data.
 		 * 
 		 * @param forge the forge.
 		 * @param product the product.
-		 * @param constraint the array of constraints.
+		 * @param constraint the list of constraints.
 		 */
-		public Dependency(String forge, String product, Constraint[] constraint) {
+		public Dependency(final String forge, final String product, final List<Constraint> constraint) {
 			this.forge = forge;
 			this.product = product;
 			this.constraints = constraint;
@@ -113,7 +132,7 @@ public class JSONCallGraph {
 			this.product = json.getString("product");
 			//TODO
 			if (ignoreConstraints)
-				this.constraints = new Constraint[] {new Constraint(json.getString("constraints"), null)};
+				this.constraints = ObjectLists.singleton(new Constraint(json.getString("constraints"), null));
 			else
 				this.constraints = Constraint.constraints(json.getJSONArray("constraints"));
 		}
@@ -123,13 +142,36 @@ public class JSONCallGraph {
 		 *   
 		 * @param depset the JSON array of dependencies.
 		 * @param ignoreConstraints  if <code>true</code>, constraints are specified by a simple string.
-		 * @return the corresponding array of dependencies.
+		 * @return the corresponding list of dependencies.
 		 */
-		public static Dependency[] depset(JSONArray depset, boolean ignoreConstraints) {
-			Dependency[] d = new Dependency[depset.length()];
-			for (int i = 0; i < d.length; i++) 
-				d[i] = new Dependency(depset.getJSONObject(i), ignoreConstraints);
+		public static List<Dependency> depset(JSONArray depset, boolean ignoreConstraints) {
+			List<Dependency> d = new ObjectArrayList<>();
+			for (int i = 0; i < depset.length(); i++) 
+				d.add(new Dependency(depset.getJSONObject(i), ignoreConstraints));
 			return d;
+		}
+		
+		/** Produces the JSON representation of this dependency.
+		 * 
+		 * @return the JSON representation.
+		 */
+		public JSONObject toJSON() {
+			JSONObject result = new JSONObject();
+			result.put("forge", forge);
+			result.put("product", product);
+			result.put("constraints", Constraint.toJSON(constraints));
+			return result;
+		}
+		
+		/** Converts a list of {@link Dependency dependencies} to its JSON representation.
+		 * 
+		 * @param depset the list of dependencies to be converted.
+		 * @return the corresponding JSON representation.
+		 */
+		public static JSONArray toJSON(final List<Dependency> depset) {
+			JSONArray result = new JSONArray();
+			for (Dependency dep: depset) result.put(dep.toJSON());
+			return result;
 		}
 		
 	}
@@ -143,7 +185,7 @@ public class JSONCallGraph {
 	/** The timestamp (if specified, or -1) in seconds from UNIX Epoch. */
 	public final long timestamp;
 	/** The depset. */
-	public final Dependency[] depset;
+	public final List<Dependency> depset;
 	/** The URI of this revision. */
 	public final FastenURI uri;
 	/** The forgeless URI of this revision. */
@@ -158,8 +200,20 @@ public class JSONCallGraph {
 	 * </ol>
 	 */
 	public ArrayList<FastenURI[]> graph;
-	
-	
+
+
+	private RevisionCallGraph(Builder builder) {
+		this.forge = builder.forge;
+		this.product = builder.product;
+		this.version = builder.version;
+		this.timestamp = builder.timestamp;
+		this.depset = builder.depset;
+		this.uri = builder.uri;
+		this.forgelessUri = builder.forgelessUri;
+		this.graph = builder.graph;
+	}
+
+
 	/** Creates a JSON call graph with given data.
 	 * 
 	 * @param forge the forge.
@@ -169,7 +223,7 @@ public class JSONCallGraph {
 	 * @param depset the depset.
 	 * @param graph the call graph (no control is done on the graph).
 	 */
-	public JSONCallGraph(String forge, String product, String version, long timestamp, Dependency[] depset, ArrayList<FastenURI[]> graph) {
+	public RevisionCallGraph(String forge, String product, String version, long timestamp, List<Dependency> depset, ArrayList<FastenURI[]> graph) {
 		this.forge = forge;
 		this.product = product;
 		this.version = version;
@@ -195,7 +249,7 @@ public class JSONCallGraph {
 	 * @param json the JSON Object.
 	 * @param ignoreConstraints if <code>true</code>, constraints are specified by a simple string.
 	 */
-	public JSONCallGraph(JSONObject json, boolean ignoreConstraints) throws JSONException, URISyntaxException {
+	public RevisionCallGraph(JSONObject json, boolean ignoreConstraints) throws JSONException, URISyntaxException {
 		this.forge = json.getString("forge");
 		this.product = json.getString("product");
 		this.version = json.getString("version");
@@ -245,8 +299,25 @@ public class JSONCallGraph {
 		LOGGER.info("Stored " + this.graph.size() + " arcs of the " + numberOfArcs + " specified");
 	}
 	
+	/** Produces the JSON representation of this {@link RevisionCallGraph}.
+	 * 
+	 * @return the JSON representation.
+	 */
+	public JSONObject toJSON() {
+		JSONObject result = new JSONObject();
+		result.put("forge", forge);
+		result.put("product", product);
+		result.put("version", version);
+		if (timestamp >= 0) result.put("timestamp", timestamp);
+		result.put("depset", Dependency.toJSON(depset));
+		JSONArray graphJSONArray = new JSONArray();
+		for (FastenURI[] arc: graph) graphJSONArray.put(new JSONArray(new String[] {arc[0].toString(), arc[1].toString()}));
+		result.put("graph", graphJSONArray);
+		return result;
+	}
+	
 	public static void main(String[] args) throws JSONException, FileNotFoundException, URISyntaxException, JSAPException {
-		final SimpleJSAP jsap = new SimpleJSAP( JSONCallGraph.class.getName(), 
+		final SimpleJSAP jsap = new SimpleJSAP( RevisionCallGraph.class.getName(), 
 				"Reads a file containing a JSON call graph in the format specified by the Deliverable D2.1", 
 				new Parameter[] {
 					new Switch( "ignore-constraints", 'c', "ignore-constraints", "The constraints are ignored (i.e., they are accepted in the form of a generic string)." ),
@@ -260,8 +331,77 @@ public class JSONCallGraph {
 		boolean ignoreConstraints = jsapResult.getBoolean("ignore-constraints");
 		
 		JSONObject json = new JSONObject(new JSONTokener(new FileReader(filename)));
-		JSONCallGraph callGraph = new JSONCallGraph(json, ignoreConstraints);
+		RevisionCallGraph callGraph = new RevisionCallGraph(json, ignoreConstraints);
 		// TODO do something with the graph?
+	}
+
+	/**
+	 * Creates builder to build {@link RevisionCallGraph}.
+	 * @return created builder
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder to build {@link RevisionCallGraph}.
+	 */
+	public static final class Builder {
+		private String forge;
+		private String product;
+		private String version;
+		private long timestamp;
+		private List<Dependency> depset = Collections.emptyList();
+		private FastenURI uri;
+		private FastenURI forgelessUri;
+		private ArrayList<FastenURI[]> graph;
+
+		private Builder() {
+		}
+
+		public Builder forge(String forge) {
+			this.forge = forge;
+			return this;
+		}
+
+		public Builder product(String product) {
+			this.product = product;
+			return this;
+		}
+
+		public Builder version(String version) {
+			this.version = version;
+			return this;
+		}
+
+		public Builder timestamp(long timestamp) {
+			this.timestamp = timestamp;
+			return this;
+		}
+
+		public Builder depset(List<Dependency> depset) {
+			this.depset = depset;
+			return this;
+		}
+
+		public Builder uri(FastenURI uri) {
+			this.uri = uri;
+			return this;
+		}
+
+		public Builder forgelessUri(FastenURI forgelessUri) {
+			this.forgelessUri = forgelessUri;
+			return this;
+		}
+
+		public Builder graph(ArrayList<FastenURI[]> graph) {
+			this.graph = graph;
+			return this;
+		}
+
+		public RevisionCallGraph build() {
+			return new RevisionCallGraph(this);
+		}
 	}
 	
 	
