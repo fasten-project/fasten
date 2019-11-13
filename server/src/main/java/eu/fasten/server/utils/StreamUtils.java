@@ -16,12 +16,20 @@
  * limitations under the License.
  */
 
-package eu.fasten.server;
+package eu.fasten.server.utils;
 
-public class Main {
+import java.util.Iterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
-    public static void main(String[] args) {
-        var x = "world";
-        System.out.println("Hello " + x);
+public class StreamUtils {
+
+    public static <T> Stream<T> asStream(Iterator<T> sourceIterator) {
+        return asStream(sourceIterator, false);
+    }
+
+    public static <T> Stream<T> asStream(Iterator<T> sourceIterator, boolean parallel) {
+        Iterable<T> iterable = () -> sourceIterator;
+        return StreamSupport.stream(iterable.spliterator(), parallel);
     }
 }

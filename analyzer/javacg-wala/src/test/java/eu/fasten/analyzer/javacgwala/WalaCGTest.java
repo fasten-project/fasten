@@ -2,7 +2,7 @@ package eu.fasten.analyzer.javacgwala;
 
 import org.junit.Test;
 
-import static eu.fasten.analyzer.javacgwala.CallGraphGenerator.generateCallGraph;
+import static eu.fasten.analyzer.javacgwala.WalaJavaCGGen.generateCallGraph;
 import static org.junit.Assert.assertNull;
 
 public class WalaCGTest {
