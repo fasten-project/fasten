@@ -25,9 +25,10 @@ import eu.fasten.analyzer.javacgwala.lapp.core.Method;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.analyzer.javacgwala.data.type.MavenResolvedCoordinate;
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.JSONCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class CanonicalJSON {
@@ -74,23 +75,23 @@ public class CanonicalJSON {
     }
 
 
-    public static JSONCallGraph.Dependency toFastenDep(MavenResolvedCoordinate coord) {
+    public static RevisionCallGraph.Dependency toFastenDep(MavenResolvedCoordinate coord) {
         //var constraints = coord. Constraint(final String lowerBound, final String upperBound)
-        return new JSONCallGraph.Dependency("mvn",
+        return new RevisionCallGraph.Dependency("mvn",
                 coord.groupId + ":" + coord.artifactId,
-                new JSONCallGraph.Constraint[1]
+                Arrays.asList(new RevisionCallGraph.Constraint[1])
         );
     }
 
-    public static JSONCallGraph toJsonCallgraph(WalaUFIAdapter wrapped_cg, long date) {
+    public static RevisionCallGraph toJsonCallgraph(WalaUFIAdapter wrapped_cg, long date) {
         List<MavenResolvedCoordinate> dependencies = wrapped_cg.callGraph.analyzedClasspath;
 
-        var deparray = new JSONCallGraph.Dependency[dependencies.size()];
+        List deparray = Arrays.asList(new RevisionCallGraph.Dependency[dependencies.size()]);
         for (int i = 0; i < dependencies.size(); i++){
-            deparray[i] = toFastenDep(dependencies.get(i));
+            deparray.set(i,toFastenDep(dependencies.get(i)));
         }
 
-        return new JSONCallGraph(
+        return new RevisionCallGraph(
                 "mvn",
                 dependencies.get(0).groupId + "." + dependencies.get(0).artifactId,
                 dependencies.get(0).version,
