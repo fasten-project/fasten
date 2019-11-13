@@ -139,7 +139,6 @@ public class CallGraphGenerator {
 		}
 
 		// Generate the dependency DAG between revisions using preferential attachment starting from 1 node
-		// TODO: make distribution a parameter
 		final ArrayListMutableGraph depDAG = preferentialAttachmentDAG(np, 1, dependencyOutdegreeDistribution, random);
 
 		// For each source package, generate function calls so to cover all dependencies
@@ -225,8 +224,9 @@ public class CallGraphGenerator {
 		sb.append("\"version\": \"1.0\",\n");
 		sb.append("\"timestamp\": \"0\",\n");
 		sb.append("\"depset\": [\n");
+		// All generated DNFs are singletons
 		for(final IntIterator d = callGraphGenerator.deps[i].iterator(); d.hasNext(); ) {
-			sb.append( "{ \"forge\": \"f\", \"product\": \"graph-" + d.nextInt() + "\", \"constraints\": [\"[1.0]\"] }");
+			sb.append( "[{ \"forge\": \"f\", \"product\": \"graph-" + d.nextInt() + "\", \"constraints\": [\"[1.0]\"] }]");
 			if (d.hasNext()) sb.append(", ");
 		}
 		sb.append("],\n");
