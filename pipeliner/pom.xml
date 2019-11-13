@@ -34,8 +34,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>eu.fasten</groupId>
-            <artifactId>analyzer</artifactId>
+            <groupId>eu.fasten.analyzer</groupId>
+            <artifactId>javacg-wala</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>

@@ -21,12 +21,9 @@ package eu.fasten.pipeliner;
 
 
 
-import eu.fasten.analyzer.CallGraphGenerator;
-import eu.fasten.analyzer.data.fastenJSON.CanonicalJSON;
-import eu.fasten.analyzer.generator.WalaUFIAdapter;
-import eu.fasten.analyzer.serverContact.Artifact;
-import eu.fasten.analyzer.serverContact.KafkaConsumerMonster;
-import eu.fasten.analyzer.serverContact.KafkaProducerMonster;
+import eu.fasten.analyzer.javacgwala.generator.WalaUFIAdapter;
+import eu.fasten.analyzer.javacgwala.serverContact.Artifact;
+import eu.fasten.analyzer.javacgwala.serverContact.KafkaConsumerMonster;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
