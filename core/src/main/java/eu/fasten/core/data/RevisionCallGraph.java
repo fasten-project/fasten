@@ -144,10 +144,16 @@ public class RevisionCallGraph {
 		 * @param ignoreConstraints  if <code>true</code>, constraints are specified by a simple string.
 		 * @return the corresponding list of dependencies.
 		 */
-		public static List<Dependency> depset(JSONArray depset, boolean ignoreConstraints) {
-			List<Dependency> d = new ObjectArrayList<>();
-			for (int i = 0; i < depset.length(); i++) 
-				d.add(new Dependency(depset.getJSONObject(i), ignoreConstraints));
+		public static List<List<Dependency>> depset(JSONArray depset, boolean ignoreConstraints) {
+			List<List<Dependency>> d = new ObjectArrayList<>();
+			for (int i = 0; i < depset.length(); i++) {
+				List<Dependency> clause = new ObjectArrayList<>();
+				System.out.println(depset);
+				JSONArray depsetClause = depset.getJSONArray(i);
+				for (int j = 0; j < depsetClause.length(); j++) 
+					clause.add(new Dependency(depsetClause.getJSONObject(j), ignoreConstraints));
+				d.add(clause);
+			}
 			return d;
 		}
 		
@@ -168,9 +174,14 @@ public class RevisionCallGraph {
 		 * @param depset the list of dependencies to be converted.
 		 * @return the corresponding JSON representation.
 		 */
-		public static JSONArray toJSON(final List<Dependency> depset) {
+		public static JSONArray toJSON(final List<List<Dependency>> depset) {
 			JSONArray result = new JSONArray();
-			for (Dependency dep: depset) result.put(dep.toJSON());
+			for (List<Dependency> clause: depset) {
+				JSONArray jsonClause = new JSONArray();
+				for (Dependency dep: clause)
+					jsonClause.put(dep.toJSON());
+				result.put(jsonClause);
+			}
 			return result;
 		}
 		
@@ -185,7 +196,7 @@ public class RevisionCallGraph {
 	/** The timestamp (if specified, or -1) in seconds from UNIX Epoch. */
 	public final long timestamp;
 	/** The depset. */
-	public final List<Dependency> depset;
+	public final List<List<Dependency>> depset;
 	/** The URI of this revision. */
 	public final FastenURI uri;
 	/** The forgeless URI of this revision. */
@@ -223,7 +234,7 @@ public class RevisionCallGraph {
 	 * @param depset the depset.
 	 * @param graph the call graph (no control is done on the graph).
 	 */
-	public RevisionCallGraph(String forge, String product, String version, long timestamp, List<Dependency> depset, ArrayList<FastenURI[]> graph) {
+	public RevisionCallGraph(String forge, String product, String version, long timestamp, List<List<Dependency>> depset, ArrayList<FastenURI[]> graph) {
 		this.forge = forge;
 		this.product = product;
 		this.version = version;
@@ -351,7 +362,7 @@ public class RevisionCallGraph {
 		private String product;
 		private String version;
 		private long timestamp;
-		private List<Dependency> depset = Collections.emptyList();
+		private List<List<Dependency>> depset = Collections.emptyList();
 		private FastenURI uri;
 		private FastenURI forgelessUri;
 		private ArrayList<FastenURI[]> graph;
@@ -379,7 +390,7 @@ public class RevisionCallGraph {
 			return this;
 		}
 
-		public Builder depset(List<Dependency> depset) {
+		public Builder depset(List<List<Dependency>> depset) {
 			this.depset = depset;
 			return this;
 		}

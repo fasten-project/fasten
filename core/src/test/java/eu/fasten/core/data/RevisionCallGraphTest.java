@@ -96,12 +96,12 @@ class RevisionCallGraphTest {
 	@Test
 	void testDepset() {
 		String spec = "[" +
-				"{\"forge\": \"maven\", \"product\": \"foo.bar\", \"constraints\": [\"[3.1..  7.1   ]\",\"[   9]\",\"[10.3  ..]\"] }, " +
-				"{\"forge\": \"other\", \"product\": \"bar.nee\", \"constraints\": [\"[..9]\",\"[10.3  ..]\"] }" +
+				"[{\"forge\": \"maven\", \"product\": \"foo.bar\", \"constraints\": [\"[3.1..  7.1   ]\",\"[   9]\",\"[10.3  ..]\"] }], " +
+				"[{\"forge\": \"other\", \"product\": \"bar.nee\", \"constraints\": [\"[..9]\",\"[10.3  ..]\"] }]" +
 				"]";
 		JSONArray json = new JSONArray(spec);
-		List<Dependency> depset = RevisionCallGraph.Dependency.depset(json, false);
-		Dependency d = depset.get(0);
+		List<List<Dependency>> depset = RevisionCallGraph.Dependency.depset(json, false);
+		Dependency d = depset.get(0).get(0);
 		assertEquals("maven", d.forge);
 		assertEquals("foo.bar", d.product);
 		List<Constraint> constraints = d.constraints;
@@ -112,7 +112,7 @@ class RevisionCallGraphTest {
 		assertEquals("9", constraints.get(1).upperBound);
 		assertEquals("10.3", constraints.get(2).lowerBound);
 		assertNull(constraints.get(2).upperBound);
-		d = depset.get(1);
+		d = depset.get(1).get(0);
 		assertEquals("other", d.forge);
 		assertEquals("bar.nee", d.product);
 		constraints = d.constraints;
@@ -133,8 +133,8 @@ class RevisionCallGraphTest {
 				"    \"version\": \"2.0\",\n" + 
 				"    \"depset\":\n" + 
 				"      [\n" + 
-				"        { \"forge\": \"mvn\", \"product\": \"a\", \"constraints\": [\"[1.0..2.0]\", \"[4.2..]\"]},\n" + 
-				"        { \"forge\": \"other\", \"product\": \"b\", \"constraints\": [\"[4.3.2]\"]}\n" + 
+				"        [{ \"forge\": \"mvn\", \"product\": \"a\", \"constraints\": [\"[1.0..2.0]\", \"[4.2..]\"]}],\n" + 
+				"        [{ \"forge\": \"other\", \"product\": \"b\", \"constraints\": [\"[4.3.2]\"]}]\n" + 
 				"      ],\n" + 
 				"    \"graph\": \n" + 
 				"      [\n" + 
@@ -149,19 +149,19 @@ class RevisionCallGraphTest {
 		assertEquals("mvn", cg.forge);
 		assertEquals("foo", cg.product);
 		assertEquals("2.0", cg.version);
-		List<Dependency> depset = cg.depset;
+		List<List<Dependency>> depset = cg.depset;
 		assertEquals(2, depset.size());
-		assertEquals("mvn", depset.get(0).forge);
-		assertEquals("a", depset.get(0).product);
-		List<Constraint> constraints = depset.get(0).constraints;
+		assertEquals("mvn", depset.get(0).get(0).forge);
+		assertEquals("a", depset.get(0).get(0).product);
+		List<Constraint> constraints = depset.get(0).get(0).constraints;
 		assertEquals(2, constraints.size());
 		assertEquals("1.0", constraints.get(0).lowerBound);
 		assertEquals("2.0", constraints.get(0).upperBound);
 		assertEquals("4.2", constraints.get(1).lowerBound);
 		assertNull(constraints.get(1).upperBound);
-		assertEquals("mvn", depset.get(0).forge);
-		assertEquals("a", depset.get(0).product);
-		constraints = depset.get(1).constraints;
+		assertEquals("mvn", depset.get(0).get(0).forge);
+		assertEquals("a", depset.get(0).get(0).product);
+		constraints = depset.get(1).get(0).constraints;
 		assertEquals(1, constraints.size());
 		assertEquals("4.3.2", constraints.get(0).lowerBound);
 		assertEquals("4.3.2", constraints.get(0).upperBound);

@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -406,7 +407,10 @@ public class InMemoryIndexer {
 			f.delete();
 
 			// Store dependencies between products
-			for(final Dependency depset: g.depset) addDependency(product, depset.product);
+			// TODO flattening dependencies
+			for(final List<Dependency> depset: g.depset) 
+				for (final Dependency dep: depset)
+					addDependency(product, dep.product);
 		}
 
 		@SuppressWarnings("null")
