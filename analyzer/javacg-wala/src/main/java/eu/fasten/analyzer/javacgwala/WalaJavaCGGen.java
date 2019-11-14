@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package eu.fasten.analyzer.javacgwala;
 
 
@@ -47,6 +46,12 @@ public class WalaJavaCGGen implements FastenPlugin {
     public String description() {
         return "Constructs call graphs for Java packages using Wala.";
     }
+
+    @Override
+    public void start() { }
+
+    @Override
+    public void stop() { }
 
     private static List<MavenResolvedCoordinate> buildClasspath(String mavenCoordinate){
         logger.debug("Building classpath for {}", mavenCoordinate);

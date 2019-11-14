@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+package eu.fasten.analyzer.javacgopal;
+
 import eu.fasten.core.data.FastenJavaURI;
 import org.opalj.br.FieldType;
 import org.opalj.br.Method;

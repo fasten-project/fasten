@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+package eu.fasten.analyzer.javacgopal;
+
 /**
  * Mocks scala Function1.
  * A functional interface that can help injecting java lambdas into scala.

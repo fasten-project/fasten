@@ -110,7 +110,7 @@ public class RevisionCallGraph {
 		public final List<Constraint> constraints;
 		
 		/** Create a dependency with given data.
-		 * 
+		 *
 		 * @param forge the forge.
 		 * @param product the product.
 		 * @param constraint the list of constraints.

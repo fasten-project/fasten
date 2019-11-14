@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+package eu.fasten.analyzer.javacgopal;
+
 import org.opalj.br.Method;
 import scala.Function0;
 import scala.collection.Iterable;

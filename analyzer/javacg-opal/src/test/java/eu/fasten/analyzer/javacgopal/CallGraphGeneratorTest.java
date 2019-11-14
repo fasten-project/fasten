@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+package eu.fasten.analyzer.javacgopal;
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertNotNull;

@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+package eu.fasten.analyzer.javacgopal;
+
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenArtifactInfo;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;

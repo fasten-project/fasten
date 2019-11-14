@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+package eu.fasten.analyzer.javacgopal;
+
 import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
 import org.opalj.br.ClassHierarchy;
 
@@ -48,7 +50,7 @@ public class PartialCallGraph {
     }
 
     /**
-     * Using this constructor it is possible to directly retrieve calls in PartialCallGraph.
+     * Using this constructor it is possible to directly retrieve calls in eu.fasten.analyzer.javacgopal.PartialCallGraph.
      * e.g. add edges to resolved calls one by one when scala is being used.
      */
     public PartialCallGraph() {

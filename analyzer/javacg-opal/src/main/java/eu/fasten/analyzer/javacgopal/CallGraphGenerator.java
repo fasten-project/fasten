@@ -16,17 +16,16 @@
  * limitations under the License.
  */
 
-import org.opalj.AnalysisModes;
+package eu.fasten.analyzer.javacgopal;
+
 import org.opalj.ai.analyses.cg.CallGraphFactory;
 import org.opalj.ai.analyses.cg.ComputedCallGraph;
 import org.opalj.ai.analyses.cg.CHACallGraphAlgorithmConfiguration;
 
 
 import org.opalj.br.Method;
-import org.opalj.br.analyses.AnalysisModeConfigFactory;
 import org.opalj.br.analyses.Project;
 import org.opalj.collection.immutable.ConstArray;
-import org.opalj.fpcf.analyses.cg.cha.CHACallGraphKey$;
 import scala.collection.Iterable;
 import scala.collection.JavaConversions;
 import scala.collection.Map;
@@ -61,9 +60,9 @@ final public class CallGraphGenerator {
     }
 
     /**
-     * Given a call graph in OPAL format returns a call graph in PartialCallGraph format.
+     * Given a call graph in OPAL format returns a call graph in eu.fasten.analyzer.javacgopal.PartialCallGraph format.
      * @param callGraphInOpalFormat Is an object of OPAL ComputedCallGraph.
-     * @return PartialCallGraph includes all the calls(as java List) and ClassHierarchy.
+     * @return eu.fasten.analyzer.javacgopal.PartialCallGraph includes all the calls(as java List) and ClassHierarchy.
      */
      static PartialCallGraph ToPartialGraph(ComputedCallGraph callGraphInOpalFormat) {
 
@@ -81,7 +80,7 @@ final public class CallGraphGenerator {
     /**
      * Adds resolved calls to its parameter.
      * @param resolvedCallsList An empty ArrayList to get the resolved calls in java format.
-     * @return ScalaFunction2 As a fake scala function to be passed to the scala.
+     * @return eu.fasten.analyzer.javacgopal.ScalaFunction2 As a fake scala function to be passed to the scala.
      */
      static ScalaFunction2 setResolvedCalls(List<ResolvedCall> resolvedCallsList) {
         return (Method callerMethod, Map<Object, Iterable<Method>> calleeMethodsObject) -> {

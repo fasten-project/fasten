@@ -22,6 +22,11 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * Convert Iterators to Streams
+ *
+ * from here: https://stackoverflow.com/a/28118885
+ */
 public class StreamUtils {
 
     public static <T> Stream<T> asStream(Iterator<T> sourceIterator) {

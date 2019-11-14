@@ -16,16 +16,23 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
-
-import org.opalj.br.Method;
-import scala.collection.Iterable;
-import scala.collection.Map;
+package eu.fasten.core.plugins;
 
 /**
- * Mocks scala Function1.
- * A functional interface that can help injecting java methods into scala.
+ * Indicates a plug-in that produces records to Kafka. As per FASTEN conventions,
+ * the plug-ins are expected to produce text output in the JSON format.
  */
-interface ScalaFunction2 {
-    Boolean execute(Method callee, Map<Object, Iterable<Method>> caller);
+public interface KafkaProducer extends FastenPlugin {
+
+    /**
+     * A unique name for the producer topic to write to. If multiple plug-ins specify the same topic,
+     * the FASTEN server discards all plug-ins except the first to declare the topic.
+     */
+    public String producerTopic();
+
+    /**
+     * The server provides the plug-in with an already initialized Kafka producer. The plug-in
+     * implementation can use it to write a set of mechanisms to Kafka, in a blocking fashion.
+     */
+    public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer);
 }

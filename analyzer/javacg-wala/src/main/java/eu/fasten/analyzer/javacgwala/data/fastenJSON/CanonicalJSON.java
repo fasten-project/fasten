@@ -74,6 +74,10 @@ public class CanonicalJSON {
         return version.substring(0, version.contains("-") ? version.indexOf("-") : version.length());
     }
 
+    private static String coordToProduct(MavenResolvedCoordinate coord) {
+        return coord.artifactId + "." + coord.groupId;
+    }
+
 
     public static RevisionCallGraph.Dependency toFastenDep(MavenResolvedCoordinate coord) {
         //var constraints = coord. Constraint(final String lowerBound, final String upperBound)
@@ -81,6 +85,7 @@ public class CanonicalJSON {
                 coord.groupId + ":" + coord.artifactId,
                 Arrays.asList(new RevisionCallGraph.Constraint[1])
         );
+
     }
 
     public static RevisionCallGraph toJsonCallgraph(WalaUFIAdapter wrapped_cg, long date) {
