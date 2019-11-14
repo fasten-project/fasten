@@ -18,12 +18,14 @@
 
 package eu.fasten.core.data;
 
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 /** A class representing a Fasten URI; it has to be considered experimental until the BNF for such URIs is set in stone. */
 
-public class FastenURI {
+public class FastenURI implements Serializable {
+	private static final long serialVersionUID = 1L;
 	/** A placeholder Fasten URI. */
 	public static final FastenURI NULL_FASTEN_URI = FastenURI.create("//-");
 	/** The underlying {@link URI}. */

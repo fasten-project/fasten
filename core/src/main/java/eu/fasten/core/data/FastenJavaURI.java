@@ -26,6 +26,7 @@ import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
  *  until the BNF for such URIs is set in stone. */
 
 public class FastenJavaURI extends FastenURI {
+	private static final long serialVersionUID = 1L;
 	private final static FastenJavaURI[] NO_ARGS_ARRAY = new FastenJavaURI[0];
 	protected final String className;
 	protected final String functionOrAttributeName;

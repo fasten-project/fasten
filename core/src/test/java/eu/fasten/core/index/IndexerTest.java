@@ -16,12 +16,12 @@ import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 
+import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.RevisionCallGraph;
-import eu.fasten.core.index.InMemoryIndexer.CallGraph;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenCustomHashSet;
 
-public class InMemoryIndexerTest {
+public class IndexerTest {
 
 	final String[] JSON_SPECS = {
 			"{\n" + "\"forge\": \"f\",\n" + "\"product\": \"graph-0\",\n" + "\"version\": \"1.0\",\n" + "\"timestamp\": \"0\",\n" + "\"depset\": [],\n" + "\"graph\": [\n" + "          [ \"/p0/A.f0()v\", \"//-\" ],\n" + "          [ \"/p0/A.f1()v\", \"//-\" ],\n" + "          [ \"/p0/A.f2()v\", \"//-\" ],\n" + "          [ \"/p0/A.f3()v\", \"//-\" ],\n" + "          [ \"/p0/A.f4()v\", \"//-\" ],\n" + "          [ \"/p0/A.f5()v\", \"//-\" ],\n" + "          [ \"/p0/A.f6()v\", \"//-\" ],\n" + "          [ \"/p0/A.f7()v\", \"//-\" ],\n" + "          [ \"/p0/A.f8()v\", \"//-\" ],\n" + "          [ \"/p0/A.f9()v\", \"//-\" ],\n" + "          [ \"/p0/A.f10()v\", \"/p0/A.f8()v\" ],\n" + "          [ \"/p0/A.f10()v\", \"/p0/A.f9()v\" ],\n" + "          [ \"/p0/A.f11()v\", \"/p0/A.f1()v\" ],\n" + "          ]" + "}",
@@ -33,33 +33,35 @@ public class InMemoryIndexerTest {
 		RocksDB.loadLibrary();
 		final Options options = new Options();
 		options.setCreateIfMissing(true);
-		final Path rocksDb = Files.createTempDirectory(InMemoryIndexer.class.getSimpleName());
+		final Path rocksDb = Files.createTempDirectory(Indexer.class.getSimpleName());
 		final RocksDB db = RocksDB.open(options, rocksDb.toString());
+		final KnowledgeBase kb = new KnowledgeBase();
+		kb.callGraphDB(db);
 
-		final InMemoryIndexer inMemoryIndexer = new InMemoryIndexer(db);
+		final Indexer inMemoryIndexer = new Indexer(kb);
 		for (int index = 0; index < jsonSpec.length; index++)
-			inMemoryIndexer.add(new RevisionCallGraph(new JSONObject(jsonSpec[index]), false), index);
+			kb.add(new RevisionCallGraph(new JSONObject(jsonSpec[index]), false), index);
 
-		for(final var entry : inMemoryIndexer.callGraphs.long2ObjectEntrySet()) {
-			final CallGraph callGraph = entry.getValue();
+		for(final var entry : kb.callGraphs.long2ObjectEntrySet()) {
+			eu.fasten.core.data.KnowledgeBase.CallGraph callGraph = entry.getValue();
 			for(int i = 0; i < callGraph.nInternal; i++) {
 				final long[] node = new long[] { callGraph.LID2GID[i], entry.getLongKey() };
 				ObjectLinkedOpenCustomHashSet<long[]> reaches, coreaches;
 
-				reaches = inMemoryIndexer.reaches(node);
+				reaches = kb.reaches(node);
 				for(final long[] reached: reaches) {
-					coreaches = inMemoryIndexer.coreaches(reached);
+					coreaches = kb.coreaches(reached);
 					assertTrue(coreaches.contains(node));
 				}
 
-				coreaches = inMemoryIndexer.coreaches(node);
+				coreaches = kb.coreaches(node);
 				for(final long[] reached: reaches) {
-					reaches = inMemoryIndexer.coreaches(reached);
+					reaches = kb.coreaches(reached);
 					assertTrue(coreaches.contains(node));
 				}
 			}
 		}
-		db.close();
+		kb.close();
 		FileUtils.deleteDirectory(rocksDb.toFile());
 	}
 
