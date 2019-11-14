@@ -24,6 +24,7 @@ import eu.fasten.analyzer.javacgwala.data.callgraph.WalaCallGraph;
 import eu.fasten.analyzer.javacgwala.data.type.MavenResolvedCoordinate;
 import eu.fasten.analyzer.javacgwala.generator.WalaCallgraphConstructor;
 import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.core.plugins.FastenPlugin;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,10 +34,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-public class CallGraphGenerator {
+public class WalaJavaCGGen implements FastenPlugin {
 
-    private static Logger logger = LoggerFactory.getLogger(CallGraphGenerator.class);
+    private static Logger logger = LoggerFactory.getLogger(WalaJavaCGGen.class);
 
+    @Override
+    public String name() {
+        return "eu.fasten.analyzer.javacgwala";
+    }
+
+    @Override
+    public String description() {
+        return "Constructs call graphs for Java packages using Wala.";
+    }
 
     private static List<MavenResolvedCoordinate> buildClasspath(String mavenCoordinate){
         logger.debug("Building classpath for {}", mavenCoordinate);
@@ -69,5 +79,7 @@ public class CallGraphGenerator {
             return null;
         }
     }
+
+
 }
 

@@ -28,6 +28,7 @@ import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class CanonicalJSON {
@@ -76,29 +77,25 @@ public class CanonicalJSON {
 
     public static RevisionCallGraph.Dependency toFastenDep(MavenResolvedCoordinate coord) {
         //var constraints = coord. Constraint(final String lowerBound, final String upperBound)
-        var constraints = new ArrayList<RevisionCallGraph.Constraint>();
-	constraints.add(new RevisionCallGraph.Constraint("1"));
         return new RevisionCallGraph.Dependency("mvn",
                 coord.groupId + ":" + coord.artifactId,
-		constraints
+                Arrays.asList(new RevisionCallGraph.Constraint[1])
         );
     }
 
-    public static RevisionCallGraph toRevisionCallGraph(WalaUFIAdapter wrapped_cg, long date) {
+    public static RevisionCallGraph toJsonCallgraph(WalaUFIAdapter wrapped_cg, long date) {
         List<MavenResolvedCoordinate> dependencies = wrapped_cg.callGraph.analyzedClasspath;
 
-        var deplist = new ArrayList<RevisionCallGraph.Dependency>();
+        List deparray = Arrays.asList(new RevisionCallGraph.Dependency[dependencies.size()]);
         for (int i = 0; i < dependencies.size(); i++){
-            deplist.add(toFastenDep(dependencies.get(i)));
+            deparray.set(i,toFastenDep(dependencies.get(i)));
         }
-	var deps = new ArrayList<List<RevisionCallGraph.Dependency>>();
-	deps.add(deplist);
 
         return new RevisionCallGraph(
                 "mvn",
                 dependencies.get(0).groupId + "." + dependencies.get(0).artifactId,
                 dependencies.get(0).version,
-                date, deps, (new ArrayList<FastenURI[]>())
+                date, deparray, (new ArrayList<FastenURI[]>())
         );
     }
 }

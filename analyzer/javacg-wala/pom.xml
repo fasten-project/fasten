@@ -22,7 +22,6 @@
   </repositories>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <wala.version>1.5.3</wala.version>
   </properties>
 
