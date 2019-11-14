@@ -23,7 +23,7 @@ package eu.fasten.analyzer.javacgwala;
 import eu.fasten.analyzer.javacgwala.data.callgraph.WalaCallGraph;
 import eu.fasten.analyzer.javacgwala.data.type.MavenResolvedCoordinate;
 import eu.fasten.analyzer.javacgwala.generator.WalaCallgraphConstructor;
-import eu.fasten.core.data.JSONCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ public class CallGraphGenerator {
     }
 
 
-    public static JSONCallGraph generateCallGraph(String coordinate){
+    public static RevisionCallGraph generateCallGraph(String coordinate){
 
         try {
             List<MavenResolvedCoordinate> path = buildClasspath(coordinate);
