@@ -24,5 +24,6 @@
     </dependencies>
     <modules>
         <module>javacg-wala</module>
+        <module>javacg-opal</module>
     </modules>
 </project>
