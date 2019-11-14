@@ -63,21 +63,20 @@ public class Indexer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Indexer.class);
 	private final KnowledgeBase kb;
 
-	
+
 	/** Creates an indexer using the given database instance.
-	 * 
+	 *
 	 * @param db the database instance used by this indexer.
 	 */
 	public Indexer(final KnowledgeBase kb) {
 		this.kb = kb;
 	}
-	
-	private final boolean[] stopIndexing = new boolean[1];
-	private Future<?> future;
 
-	public void index(final long max, final Consumer<String, String> consumer, final String topic) {
+	private final boolean[] stopIndexing = new boolean[1];
+
+	public Future<Void> index(final long max, final Consumer<String, String> consumer, final String topic) {
 		consumer.subscribe(Collections.singletonList(topic));
-		future = Executors.newSingleThreadExecutor().submit(() -> {
+		return Executors.newSingleThreadExecutor().submit(() -> {
 			long index = kb.size();
 			long nIndexed = 0;
 			try {
@@ -101,7 +100,7 @@ public class Indexer {
 						}
 					}
 				}
-				
+
 				return null;
 			}
 			finally {
@@ -109,7 +108,7 @@ public class Indexer {
 			}
 		});
 	}
-	
+
 	public void index(final long max, final String... files) throws JSONException, IOException, RocksDBException, URISyntaxException {
 		long index = kb.size();
 		long nIndexed = 0;
@@ -142,21 +141,20 @@ public class Indexer {
 		final JSAPResult jsapResult = jsap.parse(args);
 		if ( jsap.messagePrinted() ) return;
 
-		String kbFilename = jsapResult.getString("kb");
-		String dbName = jsapResult.getString("db");
+		final String kbFilename = jsapResult.getString("kb");
+		final String dbName = jsapResult.getString("db");
 		if (new File(kbFilename).exists() != new File(dbName).exists()) throw new IllegalArgumentException("You cannot specify an existing knowledge base and a non-existing database, or vice versa");
-		
+
 		KnowledgeBase kb;
 		if (new File(kbFilename).exists())  kb = (KnowledgeBase) BinIO.loadObject(kbFilename);
 		else kb = new KnowledgeBase();
 		kb.callGraphDB(dbName);
-		
-		Indexer indexer = new Indexer(kb);
-		
-		long max = jsapResult.getLong("max");
-		
+
+		final Indexer indexer = new Indexer(kb);
+
+		final long max = jsapResult.getLong("max");
+
 		final Consumer<String, String> consumer;
-		Future<?> future = null;
 		if (jsapResult.userSpecified("topic")) {
 			// Kafka indexing
 			final String topic = jsapResult.getString("topic");
@@ -168,7 +166,8 @@ public class Indexer {
 			props.put("auto.offset.reset", "earliest");
 			props.put("max.poll.records", Integer.toString(Integer.MAX_VALUE));
 			consumer = new KafkaConsumer<>(props);
-			indexer.index(max, consumer, topic);
+			final Future<Void> future = indexer.index(max, consumer, topic);
+			future.get(); // Wait for indexing to complete
 		} else
 			// File indexing
 			indexer.index(max, jsapResult.getStringArray("filename"));

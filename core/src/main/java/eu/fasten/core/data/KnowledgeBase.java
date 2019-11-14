@@ -3,6 +3,7 @@ package eu.fasten.core.data;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	private static final long serialVersionUID = 1L;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(KnowledgeBase.class);
-	
+
 	/** Maps schemeless, <em>generic</em> (i.e., without forge and without version, but with a product) FASTEN URIs to a unique identifier. */
 	protected final Object2LongMap<FastenURI> genericURI2GID;
 
@@ -77,15 +78,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 	/** The RocksDB instance used by this indexer. */
 	private transient RocksDB callGraphDB;
-	
+
 	/** The {@link Kryo} object used to serialize data to the database. */
 	private transient Kryo kryo;
-	{
-		initKryo();
-	}
-		
-	public class CallGraph {
 
+	public class CallGraph implements Serializable {
+		private static final long serialVersionUID = 1L;
 		/** Number of internal nodes (first {@link #nInternal} GIDs in {@link #LID2GID}). */
 		public final int nInternal;
 		public final long[] LID2GID;
@@ -198,6 +196,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 				final byte[] buffer = new byte[1000000];
 				callGraphDB.get(Longs.toByteArray(index), buffer);
 				final Input input = new Input(buffer);
+				assert kryo != null;
 				final var graphs = new ImmutableGraph[] { kryo.readObject(input, BVGraph.class),  kryo.readObject(input, BVGraph.class) };
 				this.graphs = new SoftReference<>(graphs);
 				return graphs;
@@ -262,7 +261,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		kryo.register(InputBitStream.class);
 		kryo.register(NullInputStream.class);
 		kryo.register(EliasFanoMonotoneLongBigList.class, new JavaSerializer());
-		kryo.register(MutableString.class, new FieldSerializer<>(kryo, MutableString.class));		
+		kryo.register(MutableString.class, new FieldSerializer<>(kryo, MutableString.class));
 	}
 
 	public KnowledgeBase() {
@@ -275,10 +274,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 		genericURI2GID.defaultReturnValue(-1);
 		GIDAppearsIn.defaultReturnValue(LongSets.EMPTY_SET);
 		GIDCalledBy.defaultReturnValue(LongSets.EMPTY_SET);
-		
+
 		initKryo();
 	}
-	
+
 	public void callGraphDB(final RocksDB db) {
 		this.callGraphDB = db;
 	}
@@ -290,12 +289,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 		callGraphDB(RocksDB.open(options, dbName));
 	}
 
-	/** Adds a given revision index to the set associated to the given gid. 
-	 *  
+	/** Adds a given revision index to the set associated to the given gid.
+	 *
 	 * @param map the map associating gids to sets revision indices.
 	 * @param gid the gid whose associated set should be modified.
 	 * @param revIndex the revision index to be added.
-	 * 
+	 *
 	 * @return true iff the revision index was not present.
 	 */
 	protected static boolean addGidRev(final Long2ObjectMap<LongSet> map, final long gid, final long revIndex) {
@@ -319,7 +318,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/** Returns the successors of a given node.
-	 * 
+	 *
 	 * @param node
 	 * @return
 	 */
@@ -482,5 +481,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 		return callGraphs.size();
 	}
 
+	private void readObject(final ObjectInputStream s) throws IOException, ClassNotFoundException {
+		s.defaultReadObject();
+		initKryo();
+	}
 
 }
