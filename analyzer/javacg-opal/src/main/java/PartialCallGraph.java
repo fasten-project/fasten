@@ -22,9 +22,23 @@ import org.opalj.br.ClassHierarchy;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Call graphs that are not still fully resolved.
+ * e.g. isolated call graphs which within-artifact calls (edges) are known as resolved calls and
+ * Cross-artifact calls are known as unresolved calls.
+ */
 public class PartialCallGraph {
+    /**
+     * Calls that their target's packages are not still known and need to be resolved in later on, e.g. in a merge phase.
+     */
     private List<UnresolvedMethodCall> unresolvedCalls;
+    /**
+     * Calls that their sources and targets are fully resolved.
+     */
     private List<ResolvedCall> resolvedCalls;
+    /**
+     * ClassHierarchy in OPAL format.
+     */
     private ClassHierarchy classHierarchy;
 
     public PartialCallGraph(List<UnresolvedMethodCall> unresolvedCalls, List<ResolvedCall> ResolvedCalls, ClassHierarchy classHierarchy) {
@@ -33,6 +47,10 @@ public class PartialCallGraph {
         this.classHierarchy = classHierarchy;
     }
 
+    /**
+     * Using this constructor it is possible to directly retrieve calls in PartialCallGraph.
+     * e.g. add edges to resolved calls one by one when scala is being used.
+     */
     public PartialCallGraph() {
         this.resolvedCalls = new ArrayList<>();
         this.unresolvedCalls = new ArrayList<>();

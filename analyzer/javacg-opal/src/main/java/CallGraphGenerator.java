@@ -36,9 +36,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Collection;
 
+/**
+ * A wrapper class for OPAL call graph generator.
+ */
+final public class CallGraphGenerator {
 
-public class CallGraphGenerator {
-
+    /**
+     * Loads a given file, generates call graph and change the format of calls to (source -> target).
+     * @param artifactFile Java file that can be a jar or a folder containing jars.
+     * @return A partial graph including ResolvedCalls, UnresolvedCalls and CHA.
+     */
     static PartialCallGraph generatePartialCallGraph(File artifactFile) {
 
         Project artifactInOpalFormat = Project.apply(artifactFile);
@@ -53,7 +60,12 @@ public class CallGraphGenerator {
 
     }
 
-    private static PartialCallGraph ToPartialGraph(ComputedCallGraph callGraphInOpalFormat) {
+    /**
+     * Given a call graph in OPAL format returns a call graph in PartialCallGraph format.
+     * @param callGraphInOpalFormat Is an object of OPAL ComputedCallGraph.
+     * @return PartialCallGraph includes all the calls(as java List) and ClassHierarchy.
+     */
+     static PartialCallGraph ToPartialGraph(ComputedCallGraph callGraphInOpalFormat) {
 
         PartialCallGraph partialCallGraph = new PartialCallGraph();
 
@@ -64,10 +76,14 @@ public class CallGraphGenerator {
         partialCallGraph.setClassHierarchy(callGraphInOpalFormat.callGraph().project().classHierarchy());
 
         return partialCallGraph;
-
     }
 
-    private static ScalaFunction2 setResolvedCalls(List<ResolvedCall> resolvedCallsList) {
+    /**
+     * Adds resolved calls to its parameter.
+     * @param resolvedCallsList An empty ArrayList to get the resolved calls in java format.
+     * @return ScalaFunction2 As a fake scala function to be passed to the scala.
+     */
+     static ScalaFunction2 setResolvedCalls(List<ResolvedCall> resolvedCallsList) {
         return (Method callerMethod, Map<Object, Iterable<Method>> calleeMethodsObject) -> {
             Collection<Iterable<Method>> calleeMethodsCollection =
                 JavaConversions.asJavaCollection(calleeMethodsObject.valuesIterator().toList());
@@ -82,7 +98,12 @@ public class CallGraphGenerator {
         };
     }
 
-    private static Iterable<Method> findEntryPoints(ConstArray allMethods) {
+    /**
+     * Computes the entrypoints as a pre step of call graph generation.
+     * @param allMethods Is all of the methods in an OPAL-loaded project.
+     * @return An iterable of entrypoints to be consumed by scala-written OPAL.
+     */
+     static Iterable<Method> findEntryPoints(ConstArray allMethods) {
 
         return (Iterable<Method>) allMethods.filter(JavaToScalaConverter.asScalaFunction1((Object method) -> (!((Method) method).isAbstract()) && !((Method) method).isPrivate()));
 

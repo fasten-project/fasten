@@ -21,17 +21,29 @@ import org.opalj.br.Method;
 import java.io.FileWriter;
 import java.io.IOException;
 
+/**
+ * A converter for graphs to make JVM format from other graph formats.
+ */
 public class JVMFormat {
+    /**
+     * Prints JVM-formated graphs like this "caller callee </br>".
+     * @param partialCallGraph a partial graph.
+     */
     public static void printJVMGraph(PartialCallGraph partialCallGraph) throws IOException {
         FileWriter writer = new FileWriter("output.txt");
         for (ResolvedCall resolvedCall : partialCallGraph.getResolvedCalls()) {
-            for (Method method : resolvedCall.target) {
-                writer.write(toJVMMethod(resolvedCall.source) + " " + toJVMMethod(method) + "\n");
+            for (Method method : resolvedCall.getTarget()) {
+                writer.write(toJVMMethod(resolvedCall.getSource()) + " " + toJVMMethod(method) + "\n");
             }
         }
         writer.close();
     }
 
+    /**
+     * Converts an OPAL Method to JVM Method.
+     * @param method OPAL method.
+     * @return JVM method in string.
+     */
     public static String toJVMMethod(Method method) {
         return method.classFile().thisType().toJVMTypeName().replace(";", "/" + method.name()) + method.descriptor().toJVMDescriptor();
     }

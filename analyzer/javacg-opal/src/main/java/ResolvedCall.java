@@ -20,9 +20,17 @@ import org.opalj.br.Method;
 
 import java.util.List;
 
+/**
+ * Calls that both source and target are fully known at the moment.
+ */
 public class ResolvedCall {
-    Method source;
-    List<Method> target;
+    /**
+     * Each resolved call consists of one source and one or more targets.
+     * e.g. if method A calls B,C and D.
+     * Then we have Souce: A, target B,C,D.
+     */
+    private Method source;
+    private List<Method> target;
 
     public ResolvedCall(Method source, List<Method> target) {
         this.source = source;
@@ -36,4 +44,8 @@ public class ResolvedCall {
     public void setTarget(List<Method> target) {
         this.target = target;
     }
+
+    public Method getSource() { return source; }
+
+    public List<Method> getTarget() { return target; }
 }

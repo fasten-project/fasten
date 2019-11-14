@@ -27,8 +27,42 @@ import java.util.List;
 
 import eu.fasten.core.data.RevisionCallGraph;
 
+/**
+ * For downloading, resolving and all operations related to maven artifacts.
+ */
 public class MavenResolver {
 
+    /**
+     * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre"
+     */
+    public static class MavenCoordinate {
+        String groupID;
+        String artifactID;
+        String version;
+
+        public MavenCoordinate() {
+        }
+
+        public MavenCoordinate(String groupID, String artifactID, String version) {
+            this.groupID = groupID;
+            this.artifactID = artifactID;
+            this.version = version;
+        }
+
+        public String getProduct() {
+            return groupID + "." + artifactID;
+        }
+
+        public String getCoordinate() {
+            return groupID + ":" + artifactID + ":" + version;
+        }
+    }
+
+    /**
+     * Resolves the dependency tree of a given artifact.
+     * @param mavenCoordinate Maven coordinate of an artifact.
+     * @return A java List of a given artifact's dependencies in FastenJson Dependency format.
+     */
     public static List<RevisionCallGraph.Dependency> resolveDependencies(String mavenCoordinate) {
 
         MavenResolvedArtifact artifact = Maven.resolver().resolve(mavenCoordinate).withoutTransitivity().asSingle(MavenResolvedArtifact.class);
@@ -41,11 +75,17 @@ public class MavenResolver {
                 i.getCoordinate().getGroupId() + "." + i.getCoordinate().getArtifactId(),
                 Arrays.asList(new RevisionCallGraph.Constraint("[" + i.getCoordinate().getVersion() + "]")));
             dependencies.add(dependency);
+            //TODO get the pom file from maven repository and extract version ranges.
         }
 
         return dependencies;
     }
 
+    /**
+     * Downloads and artifact and returns its file.
+     * @param coordinate Maven coordinate indicating an artifact on maven repository.
+     * @return Java File of the given coordinate.
+     */
     public static File downloadArtifact(String coordinate) {
 
         return Maven.resolver().resolve(coordinate).withoutTransitivity().asSingleFile();

@@ -20,6 +20,10 @@ import org.opalj.br.Method;
 import scala.collection.Iterable;
 import scala.collection.Map;
 
+/**
+ * Mocks scala Function1.
+ * A functional interface that can help injecting java methods into scala.
+ */
 interface ScalaFunction2 {
     Boolean execute(Method callee, Map<Object, Iterable<Method>> caller);
 }
