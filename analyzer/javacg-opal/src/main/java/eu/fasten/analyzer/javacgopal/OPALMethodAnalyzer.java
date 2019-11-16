@@ -19,11 +19,15 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.core.data.FastenJavaURI;
+
 import org.opalj.br.FieldType;
 import org.opalj.br.Method;
 import org.opalj.br.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.opalj.br.ReferenceType;
+import org.opalj.br.MethodDescriptor;
+
 import scala.collection.JavaConversions;
 
 import java.util.List;
@@ -36,9 +40,11 @@ public class OPALMethodAnalyzer {
     private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
 
     /**
-     * Given an OPAL method gives us a Canonicalized (reletivized) FastenJAVAURI.
+     * Given an OPAL method gives us a Canonicalized (reletivized) eu.fasten.core.data.FastenJavaURI.
+     *
      * @param method A Method in OPAL format.
-     * @return Canonicalized FastenJavaURI of the given method.
+     *
+     * @return Canonicalized eu.fasten.core.data.FastenJavaURI of the given method.
      */
     public static FastenJavaURI toCanonicalFastenJavaURI(Method method) {
 
@@ -63,8 +69,37 @@ public class OPALMethodAnalyzer {
     }
 
     /**
+     * Converts an unresolved method to a Canonicalized (reletivized) eu.fasten.core.data.FastenJavaURI.
+     *
+     * @param calleeClass The class of the method in org.opalj.br.ReferenceType format.
+     * @param calleeName Name of the class in String.
+     * @param calleeDescriptor Descriptor of the method in org.opalj.br.MethodDescriptor format.
+     *
+     * @return @return Canonicalized eu.fasten.core.data.FastenJavaURI of the given method.
+     */
+    public static FastenJavaURI toCanonicalFastenJavaURI(ReferenceType calleeClass, String calleeName, MethodDescriptor calleeDescriptor) {
+
+        String URIString = "//SomeDependency" +
+            getPackageName(calleeClass) +
+            getClassName(calleeClass) +
+            "." + calleeName +
+            "(" + getPctParameters(JavaConversions.seqAsJavaList(calleeDescriptor.parameterTypes())) +
+            ")" + getPctReturnType(calleeDescriptor.returnType());
+
+        try {
+            return new FastenJavaURI(URIString).canonicalize();
+        } catch (IllegalArgumentException | NullPointerException e) {
+            logger.error("{} faced {}", URIString, e.getMessage());
+        }
+
+        return null;
+    }
+
+    /**
      * Convert OPAL return types to Fasten pct Format.
+     *
      * @param returnType Return type of a method in OPAL format.
+     *
      * @return Fasten pct encoded return type, e.g. it always replaces / with %2F.
      */
     public static String getPctReturnType(Type returnType) {
@@ -73,7 +108,9 @@ public class OPALMethodAnalyzer {
 
     /**
      * Convert OPAL parameters to pct Format.
+     *
      * @param parametersType Java List of parameters of in OPAL types.
+     *
      * @return Pct encoded return type in string, e.g. pct always replaces "/" with "%2F".
      */
     public static String getPctParameters(List<FieldType> parametersType) {
@@ -89,42 +126,47 @@ public class OPALMethodAnalyzer {
 
     /**
      * Recursively figures out the OPAL types of parameters and convert them to FastenURI namespaces.
+     *
      * @param parameter OPAL parameter.
-     * @return String in FastenURI format, for namespace of the given parameter.
+     *
+     * @return String in eu.fasten.core.data.FastenURI format, for namespace of the given parameter.
      */
     public static String getPackageName(Type parameter) {
         String parameterPackageName = "";
         if (parameter.isBaseType()) {
-            parameterPackageName = parameter.asBaseType().WrapperType().packageName().replace("/", ".");
+            parameterPackageName = parameter.asBaseType().WrapperType().packageName();
         } else if (parameter.isReferenceType()) {
             if (parameter.isArrayType()) {
-                parameterPackageName = getPackageName(parameter.asArrayType().componentType()).replace("/", ".");
+                parameterPackageName = getPackageName(parameter.asArrayType().componentType());
             } else
-                parameterPackageName = parameter.asObjectType().packageName().replace("/", ".");
+                parameterPackageName = parameter.asObjectType().packageName();
         } else if (parameter.isVoidType()) {
-            parameterPackageName = "";
+            parameterPackageName = "java.lang";
         }
-        parameterPackageName = parameterPackageName.isEmpty() ? "" : "/" + parameterPackageName;
-        return parameterPackageName;
+        parameterPackageName = parameterPackageName.startsWith("/") ? parameterPackageName.substring(1) : parameterPackageName;
+
+        return "/" + parameterPackageName.replace("/", ".");
     }
 
     /**
      * Recursively figures out the OPAL types of parameters and convert them to FastenURI type (class).
-     * @param parameter OPAL parameter.
-     * @return String in FastenURI format, for type of the given parameter.
+     *
+     * @param parameter OPAL parameter in org.opalj.br.Type format.
+     *
+     * @return String in eu.fasten.core.data.FastenURI format, for type of the given parameter.
      */
     public static String getClassName(Type parameter) {
         String parameterClassName = "";
         if (parameter.isBaseType()) {
-            parameterClassName = "/" + parameter.asBaseType().WrapperType().simpleName();
+            parameterClassName =  parameter.asBaseType().WrapperType().simpleName();
         } else if (parameter.isReferenceType()) {
             if (parameter.isArrayType()) {
-                parameterClassName = "/" + getClassName(parameter.asArrayType().componentType());
+                parameterClassName =  getClassName(parameter.asArrayType().componentType());
             } else
-                parameterClassName = "/" + parameter.asObjectType().simpleName();
+                parameterClassName =  parameter.asObjectType().simpleName();
         } else if (parameter.isVoidType()) {
-            parameterClassName = "/VoidType";
+            parameterClassName = "void";
         }
-        return parameterClassName;
+        return "/" + parameterClassName;
     }
 }

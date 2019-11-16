@@ -38,9 +38,9 @@ public class MavenResolver {
      * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre"
      */
     public static class MavenCoordinate {
-        String groupID;
-        String artifactID;
-        String version;
+        private String groupID;
+        private String artifactID;
+        private String version;
 
         public MavenCoordinate() {
         }
@@ -58,6 +58,30 @@ public class MavenResolver {
         public String getCoordinate() {
             return groupID + ":" + artifactID + ":" + version;
         }
+
+        public void setGroupID(String groupID) {
+            this.groupID = groupID;
+        }
+
+        public void setArtifactID(String artifactID) {
+            this.artifactID = artifactID;
+        }
+
+        public void setVersion(String version) {
+            this.version = version;
+        }
+
+        public String getGroupID() {
+            return groupID;
+        }
+
+        public String getArtifactID() {
+            return artifactID;
+        }
+
+        public String getVersion() {
+            return version;
+        }
     }
 
     /**
@@ -65,18 +89,18 @@ public class MavenResolver {
      * @param mavenCoordinate Maven coordinate of an artifact.
      * @return A java List of a given artifact's dependencies in FastenJson Dependency format.
      */
-    public static List<RevisionCallGraph.Dependency> resolveDependencies(String mavenCoordinate) {
+    public static List<List<RevisionCallGraph.Dependency>> resolveDependencies(String mavenCoordinate) {
 
         MavenResolvedArtifact artifact = Maven.resolver().resolve(mavenCoordinate).withoutTransitivity().asSingle(MavenResolvedArtifact.class);
 
-        List<RevisionCallGraph.Dependency> dependencies = new ArrayList<>();
+        List<List<RevisionCallGraph.Dependency>> dependencies = new ArrayList<>();
 
         for (MavenArtifactInfo i : artifact.getDependencies()) {
             RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
                 "mvn",
-                i.getCoordinate().getGroupId() + "." + i.getCoordinate().getArtifactId(),
+                i.getCoordinate().getGroupId() +"."+ i.getCoordinate().getArtifactId(),
                 Arrays.asList(new RevisionCallGraph.Constraint("[" + i.getCoordinate().getVersion() + "]")));
-            dependencies.add(dependency);
+            dependencies.add((List<RevisionCallGraph.Dependency>) dependency);
             //TODO get the pom file from maven repository and extract version ranges.
         }
 

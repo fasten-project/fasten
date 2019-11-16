@@ -18,9 +18,12 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import eu.fasten.core.data.FastenURI;
+
 import org.opalj.br.Method;
 
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Calls that both source and target are fully known at the moment.
@@ -50,4 +53,46 @@ public class ResolvedCall {
     public Method getSource() { return source; }
 
     public List<Method> getTarget() { return target; }
+
+    /**
+     * Converts resolved calls to URI pairs.
+     *
+     * @param resolvedCall All callers and callees are org.opalj.br.Method.
+     *
+     * @return List of two dimensional eu.fasten.core.data.FastenURIs[] which both dimensions of the array are
+     * fully resolved methods.
+     */
+    public static ArrayList<FastenURI[]> toUIRCalls(ResolvedCall resolvedCall) {
+
+        var resolvedCallURIs = new ArrayList<FastenURI[]>();
+
+        var sourceURI = OPALMethodAnalyzer.toCanonicalFastenJavaURI(resolvedCall.getSource());
+
+        if ( sourceURI != null) {
+            for (Method target : resolvedCall.getTarget()) {
+
+                FastenURI[] fastenURI = new FastenURI[2];
+                var targetURI =  OPALMethodAnalyzer.toCanonicalFastenJavaURI(target);
+
+                if ( targetURI != null ) {
+                    fastenURI[0] = sourceURI;
+                    fastenURI[1] = targetURI;
+                    resolvedCallURIs.add(fastenURI);
+                }
+
+            }
+        }
+        return resolvedCallURIs;
+    }
+
+    /**
+     * Converts resolved calls to URI pairs.
+     *
+     * @return List of two dimensional eu.fasten.core.data.FastenURI[] which both dimensions of the array are
+     * fully resolved methods.
+     */
+    public ArrayList<FastenURI[]> toUIRCalls() {
+        return toUIRCalls(this);
+    }
+
 }
