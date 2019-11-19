@@ -21,14 +21,16 @@ package eu.fasten.analyzer.javacgopal;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class MavenResolverTest {
 
     @Test
     public void testResolveDependencies() {
-
-        assertEquals("foo",
-                MavenResolver.resolveDependencies("com.ibm.wala:com.ibm.wala.core:1.5.4"));
+        var deps = MavenResolver.resolveDependencies("com.ibm.wala:com.ibm.wala.core:1.5.4");
+        assertNotNull(deps);
+        assertEquals(2, deps.size());
+        assertEquals("[1.5.4]", deps.get(0).get(0).constraints.get(0).toString());
     }
 
     @Test

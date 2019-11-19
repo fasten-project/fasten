@@ -66,7 +66,9 @@ public class MavenResolver {
                     "mvn",
                     groupId + "." + artifactId,
                     Arrays.asList(new RevisionCallGraph.Constraint(version, version)));
-                dependencies.add((List<RevisionCallGraph.Dependency>) dependency);
+                var depList = new ArrayList<RevisionCallGraph.Dependency>();
+                depList.add(dependency);
+                dependencies.add(depList);
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: " + mavenCoordinate);
