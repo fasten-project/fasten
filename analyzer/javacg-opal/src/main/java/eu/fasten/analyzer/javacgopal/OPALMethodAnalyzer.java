@@ -55,7 +55,7 @@ public class OPALMethodAnalyzer {
         try {
             namespace = fqn.substring(0, fqn.lastIndexOf("/")).replace("/", ".");
         } catch (StringIndexOutOfBoundsException e) {
-            logger.error("Can not find the namespace of {}. Faced {}", JVMFormat.toJVMMethod(method), e.getMessage());
+            logger.error("Can not find the namespace. {} happened for this URI: {}", e.getMessage(), JVMFormat.toJVMMethod(method));
         }
         String className = method.declaringClassFile().thisType().simpleName();
         String URIString = "/" + namespace + "/" + className + "." + method.name() + "(" + parameters + ")" + returnType;
@@ -63,7 +63,7 @@ public class OPALMethodAnalyzer {
         try {
             return new FastenJavaURI(URIString).canonicalize();
         } catch (IllegalArgumentException | NullPointerException e) {
-            logger.error("{} faced {}", JVMFormat.toJVMMethod(method), e.getMessage());
+            logger.error("{} ", e.getMessage());
             return null;
         }
     }
@@ -89,7 +89,7 @@ public class OPALMethodAnalyzer {
         try {
             return new FastenJavaURI(URIString).canonicalize();
         } catch (IllegalArgumentException | NullPointerException e) {
-            logger.error("{} faced {}", URIString, e.getMessage());
+            logger.error("{}", e.getMessage());
         }
 
         return null;

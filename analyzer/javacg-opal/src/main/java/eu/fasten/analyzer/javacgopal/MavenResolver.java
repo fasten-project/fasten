@@ -100,7 +100,7 @@ public class MavenResolver {
                 "mvn",
                 i.getCoordinate().getGroupId() +"."+ i.getCoordinate().getArtifactId(),
                 Arrays.asList(new RevisionCallGraph.Constraint("[" + i.getCoordinate().getVersion() + "]")));
-            dependencies.add((List<RevisionCallGraph.Dependency>) dependency);
+            dependencies.add(Arrays.asList(dependency));
             //TODO get the pom file from maven repository and extract version ranges.
         }
 
