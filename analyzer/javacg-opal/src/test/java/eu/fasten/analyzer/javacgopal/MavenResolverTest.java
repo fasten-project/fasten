@@ -30,6 +30,8 @@ public class MavenResolverTest {
         var deps = MavenResolver.resolveDependencies("com.ibm.wala:com.ibm.wala.core:1.5.4");
         assertNotNull(deps);
         assertEquals(2, deps.size());
+        assertEquals(1, deps.get(0).stream().filter(x -> x.product.contains("shrike")).toArray().length);
+        assertEquals(1, deps.get(1).stream().filter(x -> x.product.contains("util")).toArray().length);
         assertEquals("[1.5.4]", deps.get(0).get(0).constraints.get(0).toString());
     }
 

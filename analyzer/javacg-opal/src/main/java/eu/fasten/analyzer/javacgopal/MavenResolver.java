@@ -58,9 +58,16 @@ public class MavenResolver {
             );
 
             for (var depNode : pom.selectNodes("//*[local-name() = 'dependency']")) {
-                var groupId = depNode.selectSingleNode("//*[local-name() = 'groupId']").getStringValue();
-                var artifactId = depNode.selectSingleNode("//*[local-name() = 'artifactId']").getStringValue();
-                var version = depNode.selectSingleNode("//*[local-name() = 'version']").getStringValue();
+                var groupId = depNode.selectSingleNode("./*[local-name() = 'groupId']").getStringValue();
+                var artifactId = depNode.selectSingleNode("./*[local-name() = 'artifactId']").getStringValue();
+                var versionSpec = depNode.selectSingleNode("./*[local-name() = 'version']");
+
+                String version;
+                if (versionSpec != null) {
+                    version = versionSpec.getStringValue();
+                } else {
+                    version = "*";
+                }
 
                 RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
                     "mvn",
