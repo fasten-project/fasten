@@ -18,40 +18,83 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import picocli.CommandLine;
+
 /**
  * Makes javacg-opal module runnable from command line.
- * Usage: java -jar javacg-opal-0.0.1-SNAPSHOT.jar groupId artifactId version timestamp
  */
-public class Main {
+@CommandLine.Command(name = "JavaCGOpal")
+public class Main implements Runnable {
+
+    static class Dependent {
+        @CommandLine.Option(names = {"-g", "--group"},
+            paramLabel = "GROUP",
+            description = "Maven group id",
+            required = true)
+        String group;
+
+        @CommandLine.Option(names = {"-a", "--artifact"},
+            paramLabel = "ARTIFACT",
+            description = "Maven artifact id",
+            required = true)
+        String artifact;
+
+        @CommandLine.Option(names = {"-v", "--version"},
+            paramLabel = "VERSION",
+            description = "Maven version id",
+            required = true)
+        String version;
+    }
+
+    @CommandLine.ArgGroup(exclusive = true)
+    Exclusive exclusive;
+
+    static class Exclusive {
+        @CommandLine.ArgGroup(exclusive = false)
+        Dependent mavencoords;
+
+        @CommandLine.Option(names = {"-c", "--coord"},
+            paramLabel = "COORD",
+            description = "Maven coordinates string",
+            required = true)
+        String mavenCoordStr;
+    }
+
+    @CommandLine.Option(names = {"-t", "--timestamp"},
+        paramLabel = "TS",
+        description = "Release TS",
+        defaultValue = "0")
+    String timestamp;
+
+
+    public void run() {
+        MavenCoordinate mavenCoordinate = null;
+        if (this.exclusive.mavenCoordStr != null) {
+            mavenCoordinate = MavenCoordinate.fromString(this.exclusive.mavenCoordStr);
+        } else {
+            mavenCoordinate = new MavenCoordinate(this.exclusive.mavencoords.group,
+                this.exclusive.mavencoords.artifact,
+                this.exclusive.mavencoords.version);
+        }
+
+        var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
+            mavenCoordinate,
+            Long.parseLong(this.timestamp),
+            CallGraphGenerator.generatePartialCallGraph(
+                MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new)
+            ));
+
+        //TODO something with the calculated RevesionCallGraph.
+        System.out.println(revisionCallGraph.toJSON());
+    }
 
     /**
      * Generates RevisionCallGraphs using Opal for the specified artifact in the command line parameters.
-     *
-     * @param args parameters should be in this sequence: "groupId" "artifactId" "version" "timestamp"
-     * timestamp is the release timestamp of the artifact and should be in seconds from UNIX epoch.
      */
     public static void main(String[] args) {
-
-        if(args.length != 4 || args[0].equals("--help")){
-            System.out.println("Usage:\n" +
-                "\tjava -jar javacg-opal-0.0.1-SNAPSHOT.jar <groupId> <artifactId> <version> <timestamp>");
-        }else {
-
-            var mavenCoordinate = new MavenCoordinate(args[0], args[1], args[2]);
-
-            var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
-                mavenCoordinate,
-                Long.parseLong(args[3]),
-                CallGraphGenerator.generatePartialCallGraph(
-                    MavenResolver.downloadJar(mavenCoordinate.toJarUrl()).orElseThrow(RuntimeException::new)
-                ));
-
-            //TODO something with the calculated RevesionCallGraph.
-
-        }
-
+        int exitCode = new CommandLine(new Main()).execute(args);
+        System.exit(exitCode);
     }
-
 }
 
 

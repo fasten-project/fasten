@@ -28,9 +28,6 @@ public class MavenCoordinate {
     String artifactID;
     String versionConstraint;
 
-    public MavenCoordinate() {
-    }
-
     public MavenCoordinate(String groupID, String artifactID, String version) {
         this.groupID = groupID;
         this.artifactID = artifactID;
