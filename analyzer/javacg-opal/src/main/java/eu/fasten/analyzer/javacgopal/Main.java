@@ -18,28 +18,6 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import eu.fasten.core.data.FastenJavaURI;
-
-import com.fasterxml.jackson.databind.deser.std.StringDeserializer;
-
-import scala.collection.JavaConversions;
-
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.json.JSONObject;
-import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
-import org.opalj.br.Method;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Properties;
-import java.util.UUID;
-
 /**
  * Makes javacg-opal module runnable from command line.
  * Usage: java -jar javacg-opal-0.0.1-SNAPSHOT.jar groupId artifactId version timestamp
@@ -54,12 +32,21 @@ public class Main {
      */
     public static void main(String[] args) {
 
-        MavenResolver.MavenCoordinate mavenCoordinate= new MavenResolver.MavenCoordinate(args[0],args[1],args[2]);
+        if(args.length != 4 || args[0].equals("--help")){
+            System.out.println("Usage:\n" +
+                "\tjava -jar javacg-opal-0.0.1-SNAPSHOT.jar <groupId> <artifactId> <version> <timestamp>");
+        }else {
 
-        var revisionCallGraph =PartialCallGraph.createRevisionCallGraph("mvn",
-            new MavenResolver.MavenCoordinate(mavenCoordinate.getGroupID(), mavenCoordinate.getArtifactID(),mavenCoordinate.getVersion()),
-            Long.parseLong(args[3]),
-            CallGraphGenerator.generatePartialCallGraph(MavenResolver.downloadArtifact(mavenCoordinate.getCoordinate())));
+            MavenResolver.MavenCoordinate mavenCoordinate = new MavenResolver.MavenCoordinate(args[0], args[1], args[2]);
+
+            var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
+                new MavenResolver.MavenCoordinate(mavenCoordinate.getGroupID(), mavenCoordinate.getArtifactID(), mavenCoordinate.getVersion()),
+                Long.parseLong(args[3]),
+                CallGraphGenerator.generatePartialCallGraph(MavenResolver.downloadArtifact(mavenCoordinate.getCoordinate())));
+
+            //TODO something with the calculated RevesionCallGraph.
+
+        }
 
     }
 
