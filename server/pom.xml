@@ -26,32 +26,10 @@
             <version>0.0.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.0.4</version>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven.compiler.plugin.version}</version>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>info.picocli</groupId>
-                            <artifactId>picocli-codegen</artifactId>
-                            <version>4.0.4</version>
-                        </path>
-                    </annotationProcessorPaths>
-                    <compilerArgs>
-                        <arg>-Aproject=${project.groupId}/${project.artifactId}</arg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
