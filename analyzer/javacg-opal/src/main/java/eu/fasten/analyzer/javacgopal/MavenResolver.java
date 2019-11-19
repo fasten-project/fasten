@@ -46,28 +46,30 @@ public class MavenResolver {
      * @param mavenCoordinate Maven coordinate of an artifact.
      * @return A java List of a given artifact's dependencies in FastenJson Dependency format.
      */
-
     public static List<List<RevisionCallGraph.Dependency>> resolveDependencies(String mavenCoordinate) {
 
         var dependencies = new ArrayList<List<RevisionCallGraph.Dependency>>();
 
         try {
-            var pom = new SAXReader().read(downloadPom(mavenCoordinate).orElseThrow(RuntimeException::new));
+            var pom = new SAXReader().read(
+                new ByteArrayInputStream(
+                    downloadPom(mavenCoordinate).orElseThrow(RuntimeException::new).getBytes()
+                )
+            );
 
-            for (var dep : pom.selectNodes("//dependency")) {
-                System.out.println(dep.asXML());
+            for (var depNode : pom.selectNodes("//*[local-name() = 'dependency']")) {
+                var groupId = depNode.selectSingleNode("//*[local-name() = 'groupId']").getStringValue();
+                var artifactId = depNode.selectSingleNode("//*[local-name() = 'artifactId']").getStringValue();
+                var version = depNode.selectSingleNode("//*[local-name() = 'version']").getStringValue();
+
+                RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
+                    "mvn",
+                    groupId + "." + artifactId,
+                    Arrays.asList(new RevisionCallGraph.Constraint(version, version)));
+                dependencies.add((List<RevisionCallGraph.Dependency>) dependency);
             }
-            var depNodes = pom.selectNodes("//dependency");
-
-//            for (Node dependencyNode : depNodes) {
-//                RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
-//                    "mvn",
-//                    i.getCoordinate().getGroupId() + "." + i.getCoordinate().getArtifactId(),
-//                    Arrays.asList(new RevisionCallGraph.Constraint("[" + i.getCoordinate().getVersion() + "]")));
-//                dependencies.add((List<RevisionCallGraph.Dependency>) dependency);
-//            }
-
         } catch (DocumentException e) {
+            logger.error("Error parsing POM file for: " + mavenCoordinate);
             e.printStackTrace();
         }
         return dependencies;
