@@ -25,7 +25,9 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -102,47 +104,18 @@ public class MavenResolver {
     private static Optional<File> httpGetToFile(String url)  {
         logger.debug("HTTP GET: " + url);
 
-        HttpURLConnection conn = null;
-        BufferedInputStream bis = null;
-        BufferedOutputStream bos = null;
-
         try {
-            URL toRetrieve = new URL(url);
-            conn = (HttpURLConnection) toRetrieve.openConnection();
-            conn.setRequestMethod("GET");
-
             //TODO: Download artifacts in configurable shared location
             var tempFile = Files.createTempFile("fasten", ".tmp");
 
-            bis = new BufferedInputStream(conn.getInputStream());
-            bos = new BufferedOutputStream(
-                new FileOutputStream(
-                    new File(tempFile.toAbsolutePath().toString())
-                )
-            );
-
-            byte[] b = new byte[4096];
-            while (bis.read(b) != -1) {
-                bos.write(b);
-            }
-
-            bis.close();
-            bos.close();
-            conn.disconnect();
+            InputStream in = new URL(url).openStream();
+            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
 
             return Optional.of(new File(tempFile.toAbsolutePath().toString()));
 
         } catch (Exception e){
             logger.error("Error retrieving URL: " + url + ". Error: " + e.getMessage());
             return Optional.empty();
-        } finally {
-            try {
-                if (bis != null) { bis.close(); }
-                if (bos != null) { bos.close(); }
-                if (conn != null) { conn.disconnect(); }
-            } catch (Exception e){
-                //ignore
-            }
         }
     }
 }
