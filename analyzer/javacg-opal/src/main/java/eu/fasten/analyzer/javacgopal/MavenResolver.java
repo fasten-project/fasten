@@ -22,7 +22,6 @@ import org.dom4j.DocumentException;
 import org.dom4j.io.SAXReader;
 
 import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -36,13 +35,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * For downloading, resolving and all operations related to maven artifacts.
+ * A set of methods for downloading POM and JAR files given Maven coordinates.
  */
 public class MavenResolver {
-    private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
+    private static Logger logger = LoggerFactory.getLogger(MavenResolver.class);
 
     /**
-     * Resolves the dependency tree of a given artifact.
+     * Returns information about the dependencies of the indicated artifact.
+     *
      * @param mavenCoordinate Maven coordinate of an artifact.
      * @return A java List of a given artifact's dependencies in FastenJson Dependency format.
      */
@@ -78,22 +78,35 @@ public class MavenResolver {
                 dependencies.add(depList);
             }
         } catch (DocumentException e) {
-            logger.error("Error parsing POM file for: " + mavenCoordinate);
-            e.printStackTrace();
+            logger.error("Error parsing POM file for: " + mavenCoordinate, e);
         }
         return dependencies;
     }
 
+    /**
+     * Download a POM file indicated by the provided Maven coordinate
+     * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
+     * @return The contents of the downloaded POM file as a string
+     */
     public static Optional<String> downloadPom(String mavenCoordinate) {
         return httpGetToFile(MavenCoordinate.fromString(mavenCoordinate).toPomUrl()).
             flatMap(f -> fileToString(f));
     }
 
+    /**
+     * Download a JAR file indicated by the provided Maven coordinate
+     *
+     * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
+     * @return A temporary file on the filesystem
+     */
     public static Optional<File> downloadJar(String mavenCoordinate) {
         logger.debug("Downloading JAR for " + mavenCoordinate);
         return httpGetToFile(MavenCoordinate.fromString(mavenCoordinate).toJarUrl());
     }
 
+    /**
+     * Utility function that reads the contents of a file to a String
+     */
     private static Optional<String> fileToString(File f) {
         logger.trace("Loading file as string: " + f.toString());
         try {
@@ -107,11 +120,14 @@ public class MavenResolver {
             return Optional.of(result.toString());
 
         } catch (IOException e) {
-            logger.error("Cannot read from file: " + f.toString() + ". Error: " + e.getMessage());
+            logger.error("Cannot read from file: " + f.toString(), e);
             return Optional.empty();
         }
     }
 
+    /**
+     * Utility function that stores the contents of GET request to a temporary file
+     */
     private static Optional<File> httpGetToFile(String url)  {
         logger.debug("HTTP GET: " + url);
 
@@ -125,7 +141,7 @@ public class MavenResolver {
             return Optional.of(new File(tempFile.toAbsolutePath().toString()));
 
         } catch (Exception e){
-            logger.error("Error retrieving URL: " + url + ". Error: " + e.getMessage());
+            logger.error("Error retrieving URL: " + url, e);
             return Optional.empty();
         }
     }
