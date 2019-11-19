@@ -28,15 +28,13 @@ class PartialCallGraphTest {
     void createRevisionCallGraphTest() {
 
         assertNotNull(PartialCallGraph.createRevisionCallGraph("mvn",
-                new MavenResolver.MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"),
+                new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"),
                 System.currentTimeMillis() / 1000L,
-                CallGraphGenerator.generatePartialCallGraph(MavenResolver.downloadArtifact("org.slf4j:slf4j-api:1.7.29")) ));
+                CallGraphGenerator.generatePartialCallGraph(
+                        MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
+                )
+        ));
 
     }
 
-    @Test
-    public void toURICallGraphTest() {
-        assertNotNull(PartialCallGraph.toURIGraph(CallGraphGenerator.generatePartialCallGraph(MavenResolver.
-                downloadArtifact("org.slf4j:slf4j-api:1.7.29"))));
-    }
 }

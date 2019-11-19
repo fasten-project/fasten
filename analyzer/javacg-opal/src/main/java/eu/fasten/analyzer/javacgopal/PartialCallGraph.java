@@ -97,11 +97,11 @@ public class PartialCallGraph {
      *
      * @return The given revision's call graph in FASTEN format. All nodes are in URI format.
      */
-    public static RevisionCallGraph createRevisionCallGraph(String forge, MavenResolver.MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
+    public static RevisionCallGraph createRevisionCallGraph(String forge, MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
 
         return new RevisionCallGraph(forge,
             coordinate.getProduct(),
-            coordinate.getVersion(),
+            coordinate.versionConstraint,
             timestamp,
             MavenResolver.resolveDependencies(coordinate.getCoordinate()),
             partialCallGraph.toURIGraph());

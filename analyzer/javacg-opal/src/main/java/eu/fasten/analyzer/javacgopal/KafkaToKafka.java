@@ -58,15 +58,18 @@ public class KafkaToKafka {
 
             JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
 
-            MavenResolver.MavenCoordinate mavenCoordinate = new MavenResolver.MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
+            MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
                 kafkaConsumedJson.get("artifactId").toString(),
                 kafkaConsumedJson.get("version").toString());
 
-            MavenResolver.MavenCoordinate mavenCoordinate1 = new MavenResolver.MavenCoordinate("1",
+            MavenCoordinate mavenCoordinate1 = new MavenCoordinate("1",
                 "2",
                 "3");
 
-            PartialCallGraph partialCallGraph = CallGraphGenerator.generatePartialCallGraph(MavenResolver.downloadArtifact(mavenCoordinate1.getCoordinate()));
+            PartialCallGraph partialCallGraph = CallGraphGenerator.generatePartialCallGraph(
+                MavenResolver.downloadJar(mavenCoordinate1.getCoordinate()).orElseThrow(
+                    RuntimeException::new
+            ));
 
             for (ResolvedCall resolvedCall : partialCallGraph.getResolvedCalls()) {
                 OPALMethodAnalyzer.toCanonicalFastenJavaURI(resolvedCall.getSource());

@@ -18,103 +18,131 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import org.jboss.shrinkwrap.resolver.api.maven.Maven;
-import org.jboss.shrinkwrap.resolver.api.maven.MavenArtifactInfo;
-import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
+import org.dom4j.DocumentException;
+import org.dom4j.io.SAXReader;
 
-import java.io.File;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import eu.fasten.core.data.RevisionCallGraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * For downloading, resolving and all operations related to maven artifacts.
  */
 public class MavenResolver {
-
-    /**
-     * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre"
-     */
-    public static class MavenCoordinate {
-        private String groupID;
-        private String artifactID;
-        private String version;
-
-        public MavenCoordinate() {
-        }
-
-        public MavenCoordinate(String groupID, String artifactID, String version) {
-            this.groupID = groupID;
-            this.artifactID = artifactID;
-            this.version = version;
-        }
-
-        public String getProduct() {
-            return groupID + "." + artifactID;
-        }
-
-        public String getCoordinate() {
-            return groupID + ":" + artifactID + ":" + version;
-        }
-
-        public void setGroupID(String groupID) {
-            this.groupID = groupID;
-        }
-
-        public void setArtifactID(String artifactID) {
-            this.artifactID = artifactID;
-        }
-
-        public void setVersion(String version) {
-            this.version = version;
-        }
-
-        public String getGroupID() {
-            return groupID;
-        }
-
-        public String getArtifactID() {
-            return artifactID;
-        }
-
-        public String getVersion() {
-            return version;
-        }
-    }
+    private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
 
     /**
      * Resolves the dependency tree of a given artifact.
      * @param mavenCoordinate Maven coordinate of an artifact.
      * @return A java List of a given artifact's dependencies in FastenJson Dependency format.
      */
+
     public static List<List<RevisionCallGraph.Dependency>> resolveDependencies(String mavenCoordinate) {
 
-        MavenResolvedArtifact artifact = Maven.resolver().resolve(mavenCoordinate).withoutTransitivity().asSingle(MavenResolvedArtifact.class);
+        var dependencies = new ArrayList<List<RevisionCallGraph.Dependency>>();
 
-        List<List<RevisionCallGraph.Dependency>> dependencies = new ArrayList<>();
+        try {
+            var pom = new SAXReader().read(downloadPom(mavenCoordinate).orElseThrow(RuntimeException::new));
 
-        for (MavenArtifactInfo i : artifact.getDependencies()) {
-            RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
-                "mvn",
-                i.getCoordinate().getGroupId() +"."+ i.getCoordinate().getArtifactId(),
-                Arrays.asList(new RevisionCallGraph.Constraint("[" + i.getCoordinate().getVersion() + "]")));
-            dependencies.add((List<RevisionCallGraph.Dependency>) dependency);
-            //TODO get the pom file from maven repository and extract version ranges.
+            for (var dep : pom.selectNodes("//dependency")) {
+                System.out.println(dep.asXML());
+            }
+            var depNodes = pom.selectNodes("//dependency");
+
+//            for (Node dependencyNode : depNodes) {
+//                RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
+//                    "mvn",
+//                    i.getCoordinate().getGroupId() + "." + i.getCoordinate().getArtifactId(),
+//                    Arrays.asList(new RevisionCallGraph.Constraint("[" + i.getCoordinate().getVersion() + "]")));
+//                dependencies.add((List<RevisionCallGraph.Dependency>) dependency);
+//            }
+
+        } catch (DocumentException e) {
+            e.printStackTrace();
         }
-
         return dependencies;
     }
 
-    /**
-     * Downloads and artifact and returns its file.
-     * @param coordinate Maven coordinate indicating an artifact on maven repository.
-     * @return Java File of the given coordinate.
-     */
-    public static File downloadArtifact(String coordinate) {
+    public static Optional<String> downloadPom(String mavenCoordinate) {
+        return httpGetToFile(MavenCoordinate.fromString(mavenCoordinate).toPomUrl()).
+            flatMap(f -> fileToString(f));
+    }
 
-        return Maven.resolver().resolve(coordinate).withoutTransitivity().asSingleFile();
+    public static Optional<File> downloadJar(String mavenCoordinate) {
+        logger.debug("Downloading JAR for " + mavenCoordinate);
+        return httpGetToFile(MavenCoordinate.fromString(mavenCoordinate).toJarUrl());
+    }
 
+    private static Optional<String> fileToString(File f) {
+        logger.trace("Loading file as string: " + f.toString());
+        try {
+            var fr = new BufferedReader(new FileReader(f));
+            StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = fr.readLine()) != null) {
+                result.append(line);
+            }
+            fr.close();
+            return Optional.of(result.toString());
+
+        } catch (IOException e) {
+            logger.error("Cannot read from file: " + f.toString() + ". Error: " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<File> httpGetToFile(String url)  {
+        logger.debug("HTTP GET: " + url);
+
+        HttpURLConnection conn = null;
+        BufferedInputStream bis = null;
+        BufferedOutputStream bos = null;
+
+        try {
+            URL toRetrieve = new URL(url);
+            conn = (HttpURLConnection) toRetrieve.openConnection();
+            conn.setRequestMethod("GET");
+
+            //TODO: Download artifacts in configurable shared location
+            var tempFile = Files.createTempFile("fasten", ".tmp");
+
+            bis = new BufferedInputStream(conn.getInputStream());
+            bos = new BufferedOutputStream(
+                new FileOutputStream(
+                    new File(tempFile.toAbsolutePath().toString())
+                )
+            );
+
+            byte[] b = new byte[4096];
+            while (bis.read(b) != -1) {
+                bos.write(b);
+            }
+
+            bis.close();
+            bos.close();
+            conn.disconnect();
+
+            return Optional.of(new File(tempFile.toAbsolutePath().toString()));
+
+        } catch (Exception e){
+            logger.error("Error retrieving URL: " + url + ". Error: " + e.getMessage());
+            return Optional.empty();
+        } finally {
+            try {
+                if (bis != null) { bis.close(); }
+                if (bos != null) { bos.close(); }
+                if (conn != null) { conn.disconnect(); }
+            } catch (Exception e){
+                //ignore
+            }
+        }
     }
 }
