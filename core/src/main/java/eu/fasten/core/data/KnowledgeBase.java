@@ -27,7 +27,6 @@ import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrays;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongIterators;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
@@ -40,9 +39,8 @@ import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenCustomHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectList;
-import it.unimi.dsi.fastutil.objects.ObjectListIterator;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.io.InputBitStream;
 import it.unimi.dsi.io.NullInputStream;
 import it.unimi.dsi.lang.MutableString;
@@ -59,14 +57,84 @@ import it.unimi.dsi.webgraph.Transform;
  *   whereas all other informations about call graphs (both local information, such as {@link CallGraph#LID2GID}, and
  *   global information, such as {@link #genericURI2GID}) is kept in memory and serialized when the knowledge
  *   base is stored.
- *   
- *   A node in the knowledge base will be represented by an array of two longs: the first one is the
- *   revision index, the second one is an internal node in the corresponding call graph.
  */
 public class KnowledgeBase implements Serializable, Closeable {
 	private static final long serialVersionUID = 1L;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(KnowledgeBase.class);
+	
+	/** A node in the knowledge base is represented by a revision index and a GID, with the proviso
+	 *  that the gid corresponds to an internal node of the call graph specified by the index.
+	 */
+	public class Node {
+		
+		/** Builds a node.
+ 		 * 
+		 * @param gid the GID.
+		 * @param index the revision index.
+		 */
+		public Node(long gid, long index) {
+			this.gid = gid;
+			this.index = index;
+		}
+
+		/** The GID. */
+		public long gid;
+		/** The revision index. */
+		public long index;
+		
+		/** Returns the {@link FastenURI} corresponding to this node.
+		 * 
+		 * @return the {@link FastenURI} corresponding to this node.
+		 */
+		public FastenURI toFastenURI() {
+			final FastenURI genericURI = GID2GenericURI.get(gid);
+			if (genericURI == null) return null;
+			final CallGraph callGraph = callGraphs.get(index);
+			assert genericURI.getProduct().equals(callGraph.product) : genericURI.getProduct() + " != " + callGraph.product;
+			return FastenURI.create(callGraph.forge, callGraph.product, callGraph.version, genericURI.getRawNamespace(), genericURI.getRawEntity());
+		}
+		
+		@Override
+		public String toString() {
+			return 	"[GID=" + gid + 
+					", LID=" + callGraphs.get(index).GID2LID.get(gid) + 
+					", revision=" + index + 
+					"]: " + toFastenURI().toString();
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getOuterType().hashCode();
+			result = prime * result + (int) (gid ^ (gid >>> 32));
+			result = prime * result + (int) (index ^ (index >>> 32));
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Node other = (Node) obj;
+			if (!getOuterType().equals(other.getOuterType()))
+				return false;
+			if (gid != other.gid)
+				return false;
+			if (index != other.index)
+				return false;
+			return true;
+		}
+
+		private KnowledgeBase getOuterType() {
+			return KnowledgeBase.this;
+		}
+	}
 
 	/** Maps schemeless, <em>generic</em> (i.e., without forge and without version, but with a product) FASTEN URIs to a unique identifier. */
 	protected final Object2LongMap<FastenURI> genericURI2GID;
@@ -253,18 +321,17 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 	}
 
-	/** Wraps a set of nodes (each node represented as usual by an array of two longs), and
-	 *  allows one to iterate over it with an iterator that returns the {@link FastenURI} of the
+	/** Wraps a set of nodes, and allows one to iterate over it with an iterator that returns the {@link FastenURI} of the
 	 *  node each time.
 	 */
 	private final class NamedResult extends AbstractObjectCollection<FastenURI> {
-		private final ObjectLinkedOpenCustomHashSet<long[]> reaches;
+		private final ObjectOpenHashSet<Node> reaches;
 
 		/** Wraps a given set of nodes.
 		 * 
 		 * @param reaches the set of nodes.
 		 */
-		private NamedResult(final ObjectLinkedOpenCustomHashSet<long[]> reaches) {
+		private NamedResult(final ObjectOpenHashSet<Node> reaches) {
 			this.reaches = reaches;
 		}
 
@@ -280,7 +347,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 		@Override
 		public ObjectIterator<FastenURI> iterator() {
-			final ObjectListIterator<long[]> iterator = reaches.iterator();
+			final ObjectIterator<Node> iterator = reaches.iterator();
 			return new ObjectIterator<>() {
 
 				@Override
@@ -290,7 +357,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 				@Override
 				public FastenURI next() {
-					return node2FastenURI(iterator.next());
+					return iterator.next().toFastenURI();
 				}
 			};
 		}
@@ -374,7 +441,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 	/** Returns the successors of a given node.
 	 *
-	 * @param node a node (for the form [<code>index</code>, <code>LID</code>])
+	 * @param node a node (say, corresponding to the pair [<code>index</code>, <code>LID</code>])
 	 * @return the list of all successors; these are obtained as follows: for every successor <code>x</code>
 	 * of <code>node</code> in the call graph
 	 * <ul>
@@ -385,22 +452,21 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 *  is a successor.
 	 * </ul>
 	 */
-	public ObjectList<long[]> successors(final long... node) {
-		assert node.length == 2;
-		final long gid = node[0];
-		final long index = node[1];
+	public ObjectList<Node> successors(final Node node) {
+		final long gid = node.gid;
+		final long index = node.index;
 		final CallGraph callGraph = callGraphs.get(index);
 		assert callGraph != null;
 
 		final ImmutableGraph graph = callGraph.graphs()[0];
 		final LazyIntIterator s = graph.successors(callGraph.GID2LID.get(gid));
 
-		final ObjectList<long[]> result = new ObjectArrayList<>();
+		final ObjectList<Node> result = new ObjectArrayList<>();
 		int x;
 
 		/* In the successor case, internal nodes can be added directly... */
 
-		while((x = s.nextInt()) != -1 && x < callGraph.nInternal) result.add(new long[] { callGraph.LID2GID[x], index } );
+		while((x = s.nextInt()) != -1 && x < callGraph.nInternal) result.add(new Node(callGraph.LID2GID[x], index));
 
 		if (x == -1) return result;
 
@@ -408,7 +474,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		do {
 			final long xGid = callGraph.LID2GID[x];
 			for(final LongIterator revisions = GIDAppearsIn.get(xGid).iterator(); revisions.hasNext();)
-				result.add(new long[] { xGid, revisions.nextLong() });
+				result.add(new Node(xGid, revisions.nextLong()));
 		} while((x = s.nextInt()) != -1);
 
 		return result;
@@ -427,23 +493,22 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 *  [<code>otherIndex</code>, <code>x</code>] is a predecessor.
 	 * </ul>
 	 */
-	public ObjectList<long[]> predecessors(final long... node) {
-		assert node.length == 2;
-		final long gid = node[0];
-		final long index = node[1];
+	public ObjectList<Node> predecessors(final Node node) {
+		final long gid = node.gid;
+		final long index = node.index;
 		final CallGraph callGraph = callGraphs.get(index);
 		assert callGraph != null;
 
 		final ImmutableGraph graph = callGraph.graphs()[1];
 		final LazyIntIterator s = graph.successors(callGraph.GID2LID.get(gid));
 
-		final ObjectList<long[]> result = new ObjectArrayList<>();
+		final ObjectList<Node> result = new ObjectArrayList<>();
 		int x;
 
 		/* In the predecessor case, all nodes returned by the graph are necessarily internal. */
 		while((x = s.nextInt()) != -1) {
 			assert x < callGraph.nInternal;
-			result.add(new long[] { callGraph.LID2GID[x], index } );
+			result.add(new Node(callGraph.LID2GID[x], index));
 		}
 
 		/* To move backward in the call graph, we use GIDCalledBy to find revisions that might
@@ -454,42 +519,26 @@ public class KnowledgeBase implements Serializable, Closeable {
 				final CallGraph precCallGraph = callGraphs.get(revIndex);
 				final ImmutableGraph transpose = precCallGraph.graphs()[1];
 				final LazyIntIterator p = transpose.successors(precCallGraph.GID2LID.get(gid));
-				for(int y; (y = p.nextInt()) != -1;) result.add(new long[] { precCallGraph.LID2GID[y], revIndex });
+				for(int y; (y = p.nextInt()) != -1;) result.add(new Node(precCallGraph.LID2GID[y], revIndex));
 			}
 		while((x = s.nextInt()) != -1);
 
 		return result;
 	}
 
-	/** Returns the {@link FastenURI} corresponding to a given node. 
-	 * 
-	 * @param node a node.
-	 * @return the corresponding {@link FastenURI}.
-	 */
-	public FastenURI node2FastenURI(final long...node) {
-		assert node.length == 2;
-		final long gid = node[0];
-		final long index = node[1];
-		final FastenURI genericURI = GID2GenericURI.get(gid);
-		if (genericURI == null) return null;
-		final CallGraph callGraph = callGraphs.get(index);
-		assert genericURI.getProduct().equals(callGraph.product) : genericURI.getProduct() + " != " + callGraph.product;
-		return FastenURI.create(callGraph.forge, callGraph.product, callGraph.version, genericURI.getRawNamespace(), genericURI.getRawEntity());
-	}
-	
 	/** Returns the node corresponding to a given (non-generic) {@link FastenURI}. 
 	 * 
 	 * @param fastenURI a {@link FastenURI} with version.
 	 * @return the corresponding node, or <code>null</code>.
 	 */
-	public long[] fastenURI2Node(final FastenURI fastenURI) {
+	public Node fastenURI2Node(final FastenURI fastenURI) {
 		if (fastenURI.getVersion() == null) throw new IllegalArgumentException("The FASTEN URI must be versioned");
 		final FastenURI genericURI = FastenURI.createSchemeless(null, fastenURI.getRawProduct(), null, fastenURI.getRawNamespace(), fastenURI.getRawEntity());
 		final long gid = genericURI2GID.getLong(genericURI);
 		if (gid == -1) return null;
 		final String version = fastenURI.getVersion();
 		for(final long index: GIDAppearsIn.get(gid))
-			if (version.equals(callGraphs.get(index).version)) return new long[] { gid, index };
+			if (version.equals(callGraphs.get(index).version)) return new Node(gid, index);
 
 		return null;
 	}
@@ -513,19 +562,15 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @param start the starting node.
 	 * @return the set of all nodes for which there is a directed path from <code>start</code> to that node.
 	 */
-	public synchronized ObjectLinkedOpenCustomHashSet<long[]> reaches(final long... start) {
-		assert start != null;
-		assert start.length == 2;
-		final ObjectLinkedOpenCustomHashSet<long[]> result = new ObjectLinkedOpenCustomHashSet<>(LongArrays.HASH_STRATEGY);
+	public synchronized ObjectOpenHashSet<Node> reaches(final Node start) {
+		final ObjectOpenHashSet<Node> result = new ObjectOpenHashSet<>();
 		// Visit queue
-		final ObjectArrayFIFOQueue<long[]> queue = new ObjectArrayFIFOQueue<>();
+		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
 		queue.enqueue(start);
 
 		while(!queue.isEmpty()) {
-			final long[] node = queue.dequeue();
-			assert node != null;
-			assert node.length == 2;
-			if (result.add(node)) for(final long[] s: successors(node))
+			final Node node = queue.dequeue();
+			if (result.add(node)) for(final Node s: successors(node))
 				if (!result.contains(s)) queue.enqueue(s);
 		}
 
@@ -533,13 +578,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/** The set of all {@link FastenURI} that are reachable from a given {@link FastenURI}; just a convenience
-	 *  method to be used instead of {@link #reaches(long...)}. 
+	 *  method to be used instead of {@link #reaches(Node)}. 
 	 * 
 	 * @param fastenURI the starting node.
 	 * @return all the nodes that can be reached from <code>fastenURI</code>.
 	 */
 	public Collection<FastenURI> reaches(final FastenURI fastenURI) {
-		final long[] start = fastenURI2Node(fastenURI);
+		final Node start = fastenURI2Node(fastenURI);
 		if (start == null) return null;
 		return new NamedResult(reaches(start));
 	}
@@ -549,20 +594,16 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @param start the starting node.
 	 * @return the set of all nodes for which there is a directed path from that node to <code>start</code>.
 	 */
-	public synchronized ObjectLinkedOpenCustomHashSet<long[]> coreaches(final long... start) {
-		assert start != null;
-		assert start.length == 2;
-		final ObjectLinkedOpenCustomHashSet<long[]> result = new ObjectLinkedOpenCustomHashSet<>(LongArrays.HASH_STRATEGY);
+	public synchronized ObjectOpenHashSet<Node> coreaches(final Node start) {
+		final ObjectOpenHashSet<Node> result = new ObjectOpenHashSet<>();
 		// Visit queue
-		final ObjectArrayFIFOQueue<long[]> queue = new ObjectArrayFIFOQueue<>();
+		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
 		queue.enqueue(start);
 
 		while(!queue.isEmpty()) {
-			final long[] node = queue.dequeue();
-			assert node != null;
-			assert node.length == 2;
+			final Node node = queue.dequeue();
 			if (result.add(node))
-				for(final long[] s: predecessors(node))
+				for(final Node s: predecessors(node))
 					if (!result.contains(s)) queue.enqueue(s);
 		}
 
@@ -570,13 +611,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/** The set of all {@link FastenURI} that are coreachable from a given {@link FastenURI}; just a convenience
-	 *  method to be used instead of {@link #coreaches(long...)}. 
+	 *  method to be used instead of {@link #coreaches(Node)}. 
 	 * 
 	 * @param fastenURI the starting node.
 	 * @return all the nodes that can be coreached from <code>fastenURI</code>.
 	 */
 	public synchronized Collection<FastenURI> coreaches(final FastenURI fastenURI) {
-		final long[] start = fastenURI2Node(fastenURI);
+		final Node start = fastenURI2Node(fastenURI);
 		if (start == null) return null;
 		return new NamedResult(coreaches(start));
 	}

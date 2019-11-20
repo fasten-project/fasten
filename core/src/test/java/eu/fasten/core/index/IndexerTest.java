@@ -17,9 +17,10 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 
 import eu.fasten.core.data.KnowledgeBase;
+import eu.fasten.core.data.KnowledgeBase.Node;
 import eu.fasten.core.data.RevisionCallGraph;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenCustomHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 public class IndexerTest {
 
@@ -38,24 +39,23 @@ public class IndexerTest {
 		final KnowledgeBase kb = new KnowledgeBase();
 		kb.callGraphDB(db);
 
-		final Indexer inMemoryIndexer = new Indexer(kb);
 		for (int index = 0; index < jsonSpec.length; index++)
 			kb.add(new RevisionCallGraph(new JSONObject(jsonSpec[index]), false), index);
 
 		for(final var entry : kb.callGraphs.long2ObjectEntrySet()) {
 			eu.fasten.core.data.KnowledgeBase.CallGraph callGraph = entry.getValue();
 			for(int i = 0; i < callGraph.nInternal; i++) {
-				final long[] node = new long[] { callGraph.LID2GID[i], entry.getLongKey() };
-				ObjectLinkedOpenCustomHashSet<long[]> reaches, coreaches;
+				final Node node = kb.new Node(callGraph.LID2GID[i], entry.getLongKey());
+				ObjectOpenHashSet<Node> reaches, coreaches;
 
 				reaches = kb.reaches(node);
-				for(final long[] reached: reaches) {
+				for(final Node reached: reaches) {
 					coreaches = kb.coreaches(reached);
 					assertTrue(coreaches.contains(node));
 				}
 
 				coreaches = kb.coreaches(node);
-				for(final long[] reached: reaches) {
+				for(final Node reached: reaches) {
 					reaches = kb.coreaches(reached);
 					assertTrue(coreaches.contains(node));
 				}
