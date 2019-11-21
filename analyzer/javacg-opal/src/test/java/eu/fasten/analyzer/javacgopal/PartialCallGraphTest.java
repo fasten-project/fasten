@@ -18,23 +18,67 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import eu.fasten.core.data.FastenJavaURI;
+
+import java.io.File;
+
 import org.junit.jupiter.api.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertArrayEquals;
+
 
 class PartialCallGraphTest {
 
     @Test
-    void createRevisionCallGraphTest() {
+    void testCreateRevisionCallGraph() {
 
-        assertNotNull(PartialCallGraph.createRevisionCallGraph("mvn",
+        var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"),
-                System.currentTimeMillis() / 1000L,
+                1574072773,
                 CallGraphGenerator.generatePartialCallGraph(
                         MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
                 )
-        ));
+        );
 
+        assertNotNull(revisionCallGraph);
+        assertEquals("mvn",revisionCallGraph.forge);
+        assertEquals("1.7.29",revisionCallGraph.version);
+        assertEquals(1574072773,revisionCallGraph.timestamp);
+        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"),revisionCallGraph.uri);
+        assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"),revisionCallGraph.forgelessUri);
+        assertEquals("org.slf4j.slf4j-api",revisionCallGraph.product);
+        assertNotNull(revisionCallGraph.graph);
+
+    }
+
+    @Test
+    public void testToURICallGraph() {
+
+        /**
+         * SingleSourceToTarget is a java8 compiled bytecode of:
+         *<pre>
+             * package name.space;
+             *
+             * public class SingleSourceToTarget{
+             *
+             *     public static void sourceMethod() { targetMethod(); }
+             *
+             *     public static void targetMethod() {}
+             * }
+         * </pre>
+         */
+
+        assertArrayEquals(
+                new FastenJavaURI[]{
+                        new FastenJavaURI("fasten:/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2Fvoid"),
+                        new FastenJavaURI("fasten:/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2Fvoid")
+                },
+                CallGraphGenerator.generatePartialCallGraph(
+                        new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())
+                ).toURIGraph().get(0)
+        );
     }
 
 }
