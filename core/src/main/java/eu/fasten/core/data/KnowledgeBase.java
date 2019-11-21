@@ -287,7 +287,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			// Compress, load and serialize transpose graph
 			BVGraph.store(Transform.transpose(mutableGraph.immutableView()), f.toString());
             propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
-            graphProperties.load(propertyFile);
+            transposeProperties.load(propertyFile);
             propertyFile.close();
 
 			kryo.writeObject(bbo, BVGraph.load(f.toString()));

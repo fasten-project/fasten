@@ -2,6 +2,7 @@ package eu.fasten.core.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Properties;
 
 import org.rocksdb.RocksDBException;
 
@@ -37,7 +38,8 @@ import it.unimi.dsi.webgraph.ImmutableGraph;
 
 public class KBStats {
 
-	private static ImmutableGraph[] graphs;
+	private static ImmutableGraph[] graph;
+	private static Properties[] property;
 
 	public static void main(final String[] args) throws JSAPException, ClassNotFoundException, RocksDBException, IOException {
 		final SimpleJSAP jsap = new SimpleJSAP( Indexer.class.getName(),
@@ -55,16 +57,23 @@ public class KBStats {
 
 		final StatsAccumulator nodes = new StatsAccumulator();
 		final StatsAccumulator arcs = new StatsAccumulator();
+		final StatsAccumulator bitsPerLink = new StatsAccumulator();
+		final StatsAccumulator bitsPerLinkt = new StatsAccumulator();
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
-			graphs = callGraph.graphs();
-			nodes.add(graphs[0].numNodes());
-			arcs.add(graphs[0].numArcs());
+			graph = callGraph.graphs();
+			nodes.add(graph[0].numNodes());
+			arcs.add(graph[0].numArcs());
+			property = callGraph.graphProperties();
+			bitsPerLink.add(Double.parseDouble((String)(property[0].getProperty("bitsperlink"))));
+			bitsPerLinkt.add(Double.parseDouble((String)(property[1].getProperty("bitsperlink"))));
 		}
 
 		kb.close();
 
 		System.out.println(nodes.snapshot());
 		System.out.println(arcs.snapshot());
+		System.out.println(bitsPerLink.snapshot());
+		System.out.println(bitsPerLinkt.snapshot());
 	}
 
 }
