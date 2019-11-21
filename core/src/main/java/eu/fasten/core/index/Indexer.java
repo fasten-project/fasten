@@ -1,24 +1,5 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package eu.fasten.core.index;
 
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -53,7 +34,6 @@ import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.RevisionCallGraph;
-import it.unimi.dsi.fastutil.io.BinIO;
 /** A sample in-memory indexer that reads, compresses and stores in memory
  *  graphs stored in JSON format and answers to impact queries.
  *
@@ -124,7 +104,6 @@ public class Indexer {
 	}
 
 
-	@SuppressWarnings("boxing")
 	public static void main(final String[] args) throws JSONException, URISyntaxException, JSAPException, IOException, RocksDBException, InterruptedException, ExecutionException, ClassNotFoundException {
 		final SimpleJSAP jsap = new SimpleJSAP( Indexer.class.getName(),
 				"Creates or updates a knowledge base (associated to a given database), indexing either a list of JSON files or a Kafka topic where JSON object are published",
@@ -133,22 +112,16 @@ public class Indexer {
 						new FlaggedOption("host", JSAP.STRING_PARSER, "localhost", JSAP.NOT_REQUIRED, 'h', "host", "The host of the Kafka server." ),
 						new FlaggedOption("port", JSAP.INTEGER_PARSER, "30001", JSAP.NOT_REQUIRED, 'p', "port", "The port of the Kafka server." ),
 						new FlaggedOption("max", JSAP.LONG_PARSER, String.valueOf(Long.MAX_VALUE), JSAP.NOT_REQUIRED, 'm', "max", "The maximum number of call graphs that will be indexed." ),
-						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the Knoweldge Base instance." ),
-						new UnflaggedOption("db", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory containing the RocksDB instance." ),
+						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 						new UnflaggedOption("filename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.GREEDY, "The name of the file containing the JSON object." ),
 		});
 
 		final JSAPResult jsapResult = jsap.parse(args);
 		if ( jsap.messagePrinted() ) return;
 
-		final String kbFilename = jsapResult.getString("kb");
-		final String dbName = jsapResult.getString("db");
-		if (new File(kbFilename).exists() != new File(dbName).exists()) throw new IllegalArgumentException("You cannot specify an existing knowledge base and a non-existing database, or vice versa");
+		final String kbDir = jsapResult.getString("kb");
 
-		KnowledgeBase kb;
-		if (new File(kbFilename).exists())  kb = (KnowledgeBase) BinIO.loadObject(kbFilename);
-		else kb = new KnowledgeBase();
-		kb.callGraphDB(dbName);
+		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir);
 
 		final Indexer indexer = new Indexer(kb);
 
@@ -172,6 +145,5 @@ public class Indexer {
 			// File indexing
 			indexer.index(max, jsapResult.getStringArray("filename"));
 		kb.close();
-		BinIO.storeObject(kb, kbFilename);
 	}
 }

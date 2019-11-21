@@ -9,6 +9,7 @@ import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -23,6 +24,8 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.google.common.primitives.Longs;
 
 import eu.fasten.core.index.BVGraphSerializer;
+import it.unimi.dsi.fastutil.io.BinIO;
+import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -53,7 +56,7 @@ import it.unimi.dsi.webgraph.NodeIterator;
 import it.unimi.dsi.webgraph.Transform;
 
 /**  Instances of this class represent a knowledge base (i.e., a set of revision call graphs).
- *   The knowledge base keeps the actual graphs in an associated {@linkplain #callGraphDB database}, 
+ *   The knowledge base keeps the actual graphs in an associated {@linkplain #callGraphDB database},
  *   whereas all other informations about call graphs (both local information, such as {@link CallGraph#LID2GID}, and
  *   global information, such as {@link #genericURI2GID}) is kept in memory and serialized when the knowledge
  *   base is stored.
@@ -62,18 +65,18 @@ public class KnowledgeBase implements Serializable, Closeable {
 	private static final long serialVersionUID = 1L;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(KnowledgeBase.class);
-	
+
 	/** A node in the knowledge base is represented by a revision index and a GID, with the proviso
 	 *  that the gid corresponds to an internal node of the call graph specified by the index.
 	 */
 	public class Node {
-		
+
 		/** Builds a node.
- 		 * 
+		 *
 		 * @param gid the GID.
 		 * @param index the revision index.
 		 */
-		public Node(long gid, long index) {
+		public Node(final long gid, final long index) {
 			this.gid = gid;
 			this.index = index;
 		}
@@ -82,9 +85,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 		public long gid;
 		/** The revision index. */
 		public long index;
-		
+
 		/** Returns the {@link FastenURI} corresponding to this node.
-		 * 
+		 *
 		 * @return the {@link FastenURI} corresponding to this node.
 		 */
 		public FastenURI toFastenURI() {
@@ -94,12 +97,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 			assert genericURI.getProduct().equals(callGraph.product) : genericURI.getProduct() + " != " + callGraph.product;
 			return FastenURI.create(callGraph.forge, callGraph.product, callGraph.version, genericURI.getRawNamespace(), genericURI.getRawEntity());
 		}
-		
+
 		@Override
 		public String toString() {
-			return 	"[GID=" + gid + 
-					", LID=" + callGraphs.get(index).GID2LID.get(gid) + 
-					", revision=" + index + 
+			return 	"[GID=" + gid +
+					", LID=" + callGraphs.get(index).GID2LID.get(gid) +
+					", revision=" + index +
 					"]: " + toFastenURI().toString();
 		}
 
@@ -114,14 +117,14 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 
 		@Override
-		public boolean equals(Object obj) {
+		public boolean equals(final Object obj) {
 			if (this == obj)
 				return true;
 			if (obj == null)
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			Node other = (Node) obj;
+			final Node other = (Node) obj;
 			if (!getOuterType().equals(other.getOuterType()))
 				return false;
 			if (gid != other.gid)
@@ -135,6 +138,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 			return KnowledgeBase.this;
 		}
 	}
+
+	private static byte[] KB_KEY = Longs.toByteArray(-1);
 
 	/** Maps schemeless, <em>generic</em> (i.e., without forge and without version, but with a product) FASTEN URIs to a unique identifier. */
 	protected final Object2LongMap<FastenURI> genericURI2GID;
@@ -183,12 +188,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 		private final long index;
 		/** An array of two graphs: the call graph (index 0) and its transpose (index 1). */
 		@SuppressWarnings("null")
-		private SoftReference<ImmutableGraph[]> graphs;
+		private transient SoftReference<ImmutableGraph[]> graphs;
 
 		// ALERT unsynchronized update of Knowledge Base maps.
 		/** Creates a call graph from a {@link RevisionCallGraph}. All maps of the knowledge base (e.g. {@link KnowledgeBase#GIDAppearsIn}) are updated
 		 *  appropriately. The graphs are stored in the database.
-		 * 
+		 *
 		 * @param g the revision call graph.
 		 * @param index the revision index.
 		 * @throws IOException
@@ -286,9 +291,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 		/** Returns the call graph and its transpose in a 2-element array. The graphs are cached,
 		 *  and read from the database if needed.
-		 * 
-		 * @return an array containing the call graph and its transpose. 
+		 *
+		 * @return an array containing the call graph and its transpose.
 		 */
+
 		public ImmutableGraph[] graphs() {
 			if (graphs != null) {
 				final var graphs = this.graphs.get();
@@ -328,7 +334,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		private final ObjectOpenHashSet<Node> reaches;
 
 		/** Wraps a given set of nodes.
-		 * 
+		 *
 		 * @param reaches the set of nodes.
 		 */
 		private NamedResult(final ObjectOpenHashSet<Node> reaches) {
@@ -376,7 +382,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 	/** Creates a new knowledge base with no associated database; initializes kryo. One has to explicitly call {@link #callGraphDB(RocksDB)}
 	 *  or {@link #callGraphDB(String)} (typically only once) before using the resulting instance. */
-	public KnowledgeBase() {
+	private KnowledgeBase() {
 		genericURI2GID = new Object2LongOpenHashMap<>();
 		GID2GenericURI = new Long2ObjectOpenHashMap<>();
 		GIDAppearsIn = new Long2ObjectOpenHashMap<>();
@@ -391,24 +397,23 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/** Associates the given database to this knowledge base.
-	 * 
+	 *
 	 * @param db the database to be associated.
 	 */
 	public void callGraphDB(final RocksDB db) {
 		this.callGraphDB = db;
 	}
 
-	/** Associates the database with the specified name (i.e., directory) to this knowledge base;
-	 *  if the database does not exist, it is created.
-	 * 
-	 * @param dbName the name of the directory storing the database.
-	 * @throws RocksDBException
-	 */
-	public void callGraphDB(final String dbName) throws RocksDBException {
+	public static KnowledgeBase getInstance(final String kbDir) throws RocksDBException, ClassNotFoundException, IOException {
 		RocksDB.loadLibrary();
 		final Options options = new Options();
 		options.setCreateIfMissing(true);
-		callGraphDB(RocksDB.open(options, dbName));
+
+		final RocksDB db = RocksDB.open(options, kbDir);
+		final byte[] array = db.get(KB_KEY);
+		final KnowledgeBase kb = array != null ? (KnowledgeBase)BinIO.loadObject(new FastByteArrayInputStream(array)) : new KnowledgeBase();
+		kb.callGraphDB(db);
+		return kb;
 	}
 
 	/** Adds a given revision index to the set associated to the given gid.
@@ -483,12 +488,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/** Returns the predecessors of a given node.
 	 *
 	 * @param node a node (for the form [<code>index</code>, <code>LID</code>])
-	 * @return the list of all predecessors; these are obtained as follows: 
+	 * @return the list of all predecessors; these are obtained as follows:
 	 * <ul>
 	 * 	<li>for every predecessor <code>x</code>
 	 *  of <code>node</code> in the call graph, [<code>index</code>, <code>LID</code>] is a predecessor
 	 *  <li>let <code>g</code> be the GID of <code>node</code>: for every index <code>otherIndex</code>
-	 *  that calls <code>g</code> (i.e., where <code>g</code> is the GID of an external node), 
+	 *  that calls <code>g</code> (i.e., where <code>g</code> is the GID of an external node),
 	 *  and for all the predecessors <code>x</code> of the node with GID <code>g</code> in <code>otherIndex</code>,
 	 *  [<code>otherIndex</code>, <code>x</code>] is a predecessor.
 	 * </ul>
@@ -526,8 +531,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 		return result;
 	}
 
-	/** Returns the node corresponding to a given (non-generic) {@link FastenURI}. 
-	 * 
+	/** Returns the node corresponding to a given (non-generic) {@link FastenURI}.
+	 *
 	 * @param fastenURI a {@link FastenURI} with version.
 	 * @return the corresponding node, or <code>null</code>.
 	 */
@@ -543,8 +548,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 		return null;
 	}
 
-	/** Given a generic URI (one without a version), returns all the matching non-generic URIs. 
-	 * 
+	/** Given a generic URI (one without a version), returns all the matching non-generic URIs.
+	 *
 	 * @param genericURI a generic URI.
 	 * @return the list of all non-generic URIs matching <code>genericURI</code>.
 	 */
@@ -558,7 +563,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/** The set of all nodes that are reachable from <code>start</code>.
-	 * 
+	 *
 	 * @param start the starting node.
 	 * @return the set of all nodes for which there is a directed path from <code>start</code> to that node.
 	 */
@@ -578,8 +583,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/** The set of all {@link FastenURI} that are reachable from a given {@link FastenURI}; just a convenience
-	 *  method to be used instead of {@link #reaches(Node)}. 
-	 * 
+	 *  method to be used instead of {@link #reaches(Node)}.
+	 *
 	 * @param fastenURI the starting node.
 	 * @return all the nodes that can be reached from <code>fastenURI</code>.
 	 */
@@ -590,7 +595,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/** The set of all nodes that are coreachable from <code>start</code>.
-	 * 
+	 *
 	 * @param start the starting node.
 	 * @return the set of all nodes for which there is a directed path from that node to <code>start</code>.
 	 */
@@ -611,8 +616,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/** The set of all {@link FastenURI} that are coreachable from a given {@link FastenURI}; just a convenience
-	 *  method to be used instead of {@link #coreaches(Node)}. 
-	 * 
+	 *  method to be used instead of {@link #coreaches(Node)}.
+	 *
 	 * @param fastenURI the starting node.
 	 * @return all the nodes that can be coreached from <code>fastenURI</code>.
 	 */
@@ -622,8 +627,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 		return new NamedResult(coreaches(start));
 	}
 
-	/** Adds a new {@link CallGraph} to the list of all call graphs. 
-	 * 
+	/** Adds a new {@link CallGraph} to the list of all call graphs.
+	 *
 	 * @param g the revision call graph from which the call graph will be created.
 	 * @param index the revision index to which the new call graph will be associated.
 	 * @throws IOException
@@ -635,11 +640,17 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 	@Override
 	public void close() throws IOException {
-		callGraphDB.close();
+		try {
+			callGraphDB.put(KB_KEY, SerializationUtils.serialize(this));
+		} catch (final RocksDBException e) {
+			throw new IOException(e);
+		} finally {
+			callGraphDB.close();
+		}
 	}
 
 	/** The number of call graphs.
-	 * 
+	 *
 	 * @return the number of call graphs.
 	 */
 	public long size() {
