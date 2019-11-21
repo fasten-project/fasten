@@ -20,13 +20,9 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.core.data.FastenJavaURI;
 
-import org.opalj.br.FieldType;
-import org.opalj.br.Method;
-import org.opalj.br.Type;
+import org.opalj.br.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.opalj.br.ReferenceType;
-import org.opalj.br.MethodDescriptor;
 
 import scala.collection.JavaConversions;
 
@@ -35,7 +31,8 @@ import java.util.List;
 /**
  * Analyze OPAL methods.
  */
-public class OPALMethodAnalyzer {
+public class OPALMethodAnalyzer{
+
 
     private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
 

@@ -25,6 +25,7 @@ import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
 import org.opalj.br.ClassHierarchy;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -119,11 +120,17 @@ public class PartialCallGraph {
         var graph = new ArrayList<FastenURI[]>();
 
         for (ResolvedCall resolvedCall : partialCallGraph.getResolvedCalls()) {
-            graph.addAll(resolvedCall.toUIRCalls());
+            var URICalls = resolvedCall.toURICalls();
+            if (URICalls.size() != 0) {
+                graph.addAll(URICalls);
+            }
         }
 
         for (UnresolvedCall unresolvedCall : partialCallGraph.getUnresolvedCalls()) {
-            graph.add(unresolvedCall.toURICalls());
+            FastenURI[] URICall = unresolvedCall.toURICall();
+            if (URICall[0]!= null && URICall[1] != null){
+                graph.add(URICall);
+            }
         }
 
         return graph;

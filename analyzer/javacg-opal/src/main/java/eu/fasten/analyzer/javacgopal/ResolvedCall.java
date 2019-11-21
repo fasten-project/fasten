@@ -62,7 +62,7 @@ public class ResolvedCall {
      * @return List of two dimensional eu.fasten.core.data.FastenURIs[] which both dimensions of the array are
      * fully resolved methods.
      */
-    public static ArrayList<FastenURI[]> toUIRCalls(ResolvedCall resolvedCall) {
+    public static ArrayList<FastenURI[]> toURICalls(ResolvedCall resolvedCall) {
 
         var resolvedCallURIs = new ArrayList<FastenURI[]>();
 
@@ -91,8 +91,8 @@ public class ResolvedCall {
      * @return List of two dimensional eu.fasten.core.data.FastenURI[] which both dimensions of the array are
      * fully resolved methods.
      */
-    public ArrayList<FastenURI[]> toUIRCalls() {
-        return toUIRCalls(this);
+    public ArrayList<FastenURI[]> toURICalls() {
+        return toURICalls(this);
     }
 
 }

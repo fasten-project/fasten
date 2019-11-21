@@ -24,9 +24,10 @@ import java.io.File;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+
 
 
 class PartialCallGraphTest {
@@ -73,8 +74,8 @@ class PartialCallGraphTest {
         assertArrayEquals(
                 new FastenJavaURI[]{
                         new FastenJavaURI("fasten:/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2Fvoid"),
-                        new FastenJavaURI("fasten:/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2Fvoid")
-                },
+                        new FastenJavaURI("fasten:/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2Fvoid")}
+                ,
                 CallGraphGenerator.generatePartialCallGraph(
                         new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())
                 ).toURIGraph().get(0)

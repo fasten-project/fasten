@@ -39,7 +39,7 @@ public class UnresolvedCall extends UnresolvedMethodCall {
      * @return List of two dimensional eu.fasten.core.data.FastenURIs[] which always the first dimension of the array is a
      * fully resolved method and the second one has an unknown product.
      */
-    public static FastenURI[] toURICalls(UnresolvedMethodCall unresolvedCall) {
+    public static FastenURI[] toURICall(UnresolvedMethodCall unresolvedCall) {
 
         FastenURI[] fastenURI = new FastenURI[2];
 
@@ -65,8 +65,8 @@ public class UnresolvedCall extends UnresolvedMethodCall {
      * @return List of two dimensional eu.fasten.core.data.FastenURIs[] which always the first dimension of the array is a
      * fully resolved method and the second one has an unknown product.
      */
-    public FastenURI[] toURICalls() {
-        return toURICalls(this);
+    public FastenURI[] toURICall() {
+        return toURICall(this);
     }
 
 }
