@@ -2,12 +2,14 @@ package eu.fasten.core.data;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Properties;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.rocksdb.Options;
@@ -269,8 +271,14 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 			final File f = File.createTempFile(KnowledgeBase.class.getSimpleName(), ".tmpgraph");
 
+            Properties graphProperties = new Properties(), transposeProperties = new Properties();
+            FileInputStream propertyFile;
+            
 			// Compress, load and serialize graph
 			BVGraph.store(mutableGraph.immutableView(), f.toString());
+            propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
+            graphProperties.load(propertyFile);
+            propertyFile.close();
 
 			final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
 			final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
@@ -278,9 +286,18 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 			// Compress, load and serialize transpose graph
 			BVGraph.store(Transform.transpose(mutableGraph.immutableView()), f.toString());
+            propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
+            graphProperties.load(propertyFile);
+            propertyFile.close();
 
 			kryo.writeObject(bbo, BVGraph.load(f.toString()));
+			
+			// Write out properties
+			kryo.writeObject(bbo, graphProperties);
+			kryo.writeObject(bbo, transposeProperties);
 			bbo.flush();
+			
+			// Write to DB
 			callGraphDB.put(Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
 
 			new File(f.toString() + BVGraph.PROPERTIES_EXTENSION).delete();
@@ -294,7 +311,6 @@ public class KnowledgeBase implements Serializable, Closeable {
 		 *
 		 * @return an array containing the call graph and its transpose.
 		 */
-
 		public ImmutableGraph[] graphs() {
 			if (graphs != null) {
 				final var graphs = this.graphs.get();
@@ -306,9 +322,30 @@ public class KnowledgeBase implements Serializable, Closeable {
 				callGraphDB.get(Longs.toByteArray(index), buffer);
 				final Input input = new Input(buffer);
 				assert kryo != null;
-				final var graphs = new ImmutableGraph[] { kryo.readObject(input, BVGraph.class),  kryo.readObject(input, BVGraph.class) };
+				final var graphs = new ImmutableGraph[] {kryo.readObject(input, BVGraph.class),  kryo.readObject(input, BVGraph.class)}; 
 				this.graphs = new SoftReference<>(graphs);
 				return graphs;
+			} catch (final RocksDBException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		/** Returns the properties of the call graph and its transpose in a 2-element array.
+		 *
+		 * @return an array containing the properties of the call graph and its transpose.
+		 */
+		public Properties[] graphProperties() {
+			try {
+				// TODO: dynamic
+				final byte[] buffer = new byte[1000000];
+				callGraphDB.get(Longs.toByteArray(index), buffer);
+				final Input input = new Input(buffer);
+				assert kryo != null;
+				kryo.readObject(input, BVGraph.class); // throw away graph
+				kryo.readObject(input, BVGraph.class); // throw away transpose
+				final Properties[] properties = new Properties[] { kryo.readObject(input, Properties.class), kryo.readObject(input, Properties.class) };
+				return properties;
+				
 			} catch (final RocksDBException e) {
 				throw new RuntimeException(e);
 			}
@@ -378,6 +415,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		kryo.register(NullInputStream.class);
 		kryo.register(EliasFanoMonotoneLongBigList.class, new JavaSerializer());
 		kryo.register(MutableString.class, new FieldSerializer<>(kryo, MutableString.class));
+		kryo.register(Properties.class);
 	}
 
 	/** Creates a new knowledge base with no associated database; initializes kryo. One has to explicitly call {@link #callGraphDB(RocksDB)}
