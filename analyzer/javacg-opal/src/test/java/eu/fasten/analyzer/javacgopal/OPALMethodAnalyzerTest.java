@@ -31,28 +31,105 @@ import static org.junit.Assert.assertEquals;
 
 class OPALMethodAnalyzerTest {
 
-    PartialCallGraph callGraph;
+    PartialCallGraph singleSourceToTargetcallGraph,classInitCallGraph;
 
     @BeforeEach
     void generateCallGraph(){
-        callGraph = CallGraphGenerator.generatePartialCallGraph(
-                new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())
 
+        /**
+         * SingleSourceToTarget is a java8 compiled bytecode of:
+         *<pre>
+         * package name.space;
+         *
+         * public class SingleSourceToTarget{
+         *
+         *     public static void sourceMethod() { targetMethod(); }
+         *
+         *     public static void targetMethod() {}
+         * }
+         * </pre>
+         * Including these edges:
+         *  Resolved:[ public static void sourceMethod(),
+         *             public static void targetMethod()]
+         *  Unresolved:[ public void <init>() of current class,
+         *               public void <init>() of Object class]
+         */
+        singleSourceToTargetcallGraph = CallGraphGenerator.generatePartialCallGraph(
+                new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())
         );
+
+        /**
+         * ClassInit is a java8 compiled bytecode of:
+         *<pre>
+         * package name.space;
+         *
+         * public class ClassInit{
+         *
+         * public static void targetMethod(){}
+         *     static{
+         *         targetMethod();
+         *     }
+         * }
+         * </pre>
+         * Including these edges:
+         *  Resolved:[ static void <clinit>(),
+         *             public static void targetMethod()]
+         *  Unresolved:[ public void <init>() of current class,
+         *               public void <init>() of Object class]
+         */
+        classInitCallGraph = CallGraphGenerator.generatePartialCallGraph(
+                new File(Thread.currentThread().getContextClassLoader().getResource("ClassInit.class").getFile())
+        );
+
     }
 
     @Test
-     void testToCanonicalFastenJavaURI() {
+     void testToFastenJavaURI() {
 
         assertEquals(
-                new FastenJavaURI("fasten:/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2Fvoid"),
-                OPALMethodAnalyzer.toCanonicalFastenJavaURI(callGraph.getResolvedCalls().get(0).getSource())
+                new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2Fvoid"),
+                OPALMethodAnalyzer.toFastenJavaURI(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource())
         );
 
         assertEquals(
-                new FastenJavaURI("fasten:/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2Fvoid"),
-                OPALMethodAnalyzer.toCanonicalFastenJavaURI(callGraph.getResolvedCalls().get(0).getTarget().get(0))
+                new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2Fvoid"),
+                OPALMethodAnalyzer.toFastenJavaURI(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getTarget().get(0))
         );
+
+        assertEquals(
+                new FastenJavaURI("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2Fvoid"),
+                OPALMethodAnalyzer.toFastenJavaURI(singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).caller())
+        );
+
+        assertEquals(
+                new FastenJavaURI("//SomeDependency/java.lang/Object.Object()%2Fjava.lang%2Fvoid"),
+                OPALMethodAnalyzer.toFastenJavaURI(
+                        singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).calleeClass(),
+                        singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).calleeName(),
+                        singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).calleeDescriptor()
+                )
+        );
+
+        assertEquals(
+                new FastenJavaURI("/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2Fvoid"),
+                OPALMethodAnalyzer.toFastenJavaURI(classInitCallGraph.getResolvedCalls().get(0).getSource())
+        );
+
+    }
+
+    @Test
+    void testIsInit(){
+
+        assertEquals("SingleSourceToTarget", OPALMethodAnalyzer.isInit(singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).caller()));
+
+        assertEquals(
+                "Object",
+                OPALMethodAnalyzer.isInit(
+                        singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).calleeClass(),
+                        singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).calleeName()
+                )
+        );
+
     }
 
     @Test
@@ -60,7 +137,7 @@ class OPALMethodAnalyzerTest {
 
         assertEquals(
                 "%2Fjava.lang%2Fvoid",
-                OPALMethodAnalyzer.getPctReturnType(callGraph.getResolvedCalls().get(0).getSource()
+                OPALMethodAnalyzer.getPctReturnType(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource()
                 .returnType())
         );
     }
@@ -70,7 +147,7 @@ class OPALMethodAnalyzerTest {
 
         assertEquals(
                 "",
-                OPALMethodAnalyzer.getPctParameters(JavaConversions.seqAsJavaList(callGraph.getResolvedCalls().get(0).getSource()
+                OPALMethodAnalyzer.getPctParameters(JavaConversions.seqAsJavaList(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource()
                         .parameterTypes()))
         );
 
@@ -81,7 +158,7 @@ class OPALMethodAnalyzerTest {
 
         assertEquals(
                 "/java.lang",
-                OPALMethodAnalyzer.getPackageName(callGraph.getResolvedCalls().get(0).getSource()
+                OPALMethodAnalyzer.getPackageName(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource()
                         .returnType())
         );
     }
@@ -91,7 +168,7 @@ class OPALMethodAnalyzerTest {
 
         assertEquals(
                 "/void",
-                OPALMethodAnalyzer.getClassName(callGraph.getResolvedCalls().get(0).getSource()
+                OPALMethodAnalyzer.getClassName(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource()
                         .returnType())
         );
     }
