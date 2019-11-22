@@ -18,7 +18,7 @@ import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.Node;
 import eu.fasten.core.data.RevisionCallGraph;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 
 public class IndexerTest {
 
@@ -40,7 +40,8 @@ public class IndexerTest {
 				final eu.fasten.core.data.KnowledgeBase.CallGraph callGraph = entry.getValue();
 				for(int i = 0; i < callGraph.nInternal; i++) {
 					final Node node = kb.new Node(callGraph.LID2GID[i], entry.getLongKey());
-					ObjectOpenHashSet<Node> reaches, coreaches;
+					ObjectLinkedOpenHashSet<Node> reaches;
+					ObjectLinkedOpenHashSet<Node> coreaches;
 
 					reaches = kb.reaches(node);
 					for(final Node reached: reaches) {

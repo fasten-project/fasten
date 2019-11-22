@@ -70,10 +70,10 @@ public class KBStats {
 
 		kb.close();
 
-		System.out.println(nodes.snapshot());
-		System.out.println(arcs.snapshot());
-		System.out.println(bitsPerLink.snapshot());
-		System.out.println(bitsPerLinkt.snapshot());
+		System.out.println("Nodes: " + nodes.snapshot());
+		System.out.println("Arcs: " + arcs.snapshot());
+		System.out.println("Bits/link: " + bitsPerLink.snapshot());
+		System.out.println("Transpose bits/link: " + bitsPerLinkt.snapshot());
 	}
 
 }

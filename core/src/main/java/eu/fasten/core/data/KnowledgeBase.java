@@ -44,8 +44,8 @@ import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectList;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.io.InputBitStream;
 import it.unimi.dsi.io.NullInputStream;
 import it.unimi.dsi.lang.MutableString;
@@ -368,14 +368,14 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 *  node each time.
 	 */
 	private final class NamedResult extends AbstractObjectCollection<FastenURI> {
-		private final ObjectOpenHashSet<Node> reaches;
+		private final ObjectLinkedOpenHashSet<Node> reaches;
 
 		/** Wraps a given set of nodes.
 		 *
-		 * @param reaches the set of nodes.
+		 * @param objectLinkedOpenHashSet the set of nodes.
 		 */
-		private NamedResult(final ObjectOpenHashSet<Node> reaches) {
-			this.reaches = reaches;
+		private NamedResult(final ObjectLinkedOpenHashSet<Node> objectLinkedOpenHashSet) {
+			this.reaches = objectLinkedOpenHashSet;
 		}
 
 		@Override
@@ -605,8 +605,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @param start the starting node.
 	 * @return the set of all nodes for which there is a directed path from <code>start</code> to that node.
 	 */
-	public synchronized ObjectOpenHashSet<Node> reaches(final Node start) {
-		final ObjectOpenHashSet<Node> result = new ObjectOpenHashSet<>();
+	public synchronized ObjectLinkedOpenHashSet<Node> reaches(final Node start) {
+		final ObjectLinkedOpenHashSet<Node> result = new ObjectLinkedOpenHashSet<>();
 		// Visit queue
 		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
 		queue.enqueue(start);
@@ -637,8 +637,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @param start the starting node.
 	 * @return the set of all nodes for which there is a directed path from that node to <code>start</code>.
 	 */
-	public synchronized ObjectOpenHashSet<Node> coreaches(final Node start) {
-		final ObjectOpenHashSet<Node> result = new ObjectOpenHashSet<>();
+	public synchronized ObjectLinkedOpenHashSet<Node> coreaches(final Node start) {
+		final ObjectLinkedOpenHashSet<Node> result = new ObjectLinkedOpenHashSet<>();
 		// Visit queue
 		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
 		queue.enqueue(start);
