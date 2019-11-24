@@ -43,11 +43,11 @@ public class UnresolvedCall extends UnresolvedMethodCall {
 
         FastenURI[] fastenURI = new FastenURI[2];
 
-        var sourceURI = OPALMethodAnalyzer.toFastenJavaURI(unresolvedCall.caller());
+        var sourceURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(unresolvedCall.caller());
 
         if (sourceURI != null) {
 
-            var targetURI = OPALMethodAnalyzer.toFastenJavaURI(unresolvedCall.calleeClass(),
+            var targetURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(unresolvedCall.calleeClass(),
                 unresolvedCall.calleeName(),
                 unresolvedCall.calleeDescriptor());
 
