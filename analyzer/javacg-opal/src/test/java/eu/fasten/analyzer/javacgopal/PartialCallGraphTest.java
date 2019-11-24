@@ -69,12 +69,17 @@ class PartialCallGraphTest {
              *     public static void targetMethod() {}
              * }
          * </pre>
+         * Including these edges:
+         *  Resolved:[ public static void sourceMethod(),
+         *             public static void targetMethod()]
+         *  Unresolved:[ public void <init>() of current class,
+         *               public void <init>() of Object class.]
          */
 
         assertArrayEquals(
                 new FastenJavaURI[]{
-                        new FastenJavaURI("fasten:/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2Fvoid"),
-                        new FastenJavaURI("fasten:/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2Fvoid")}
+                        new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2Fvoid"),
+                        new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2Fvoid")}
                 ,
                 CallGraphGenerator.generatePartialCallGraph(
                         new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())

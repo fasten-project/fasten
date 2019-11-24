@@ -39,11 +39,11 @@ public class OPALMethodAnalyzer{
     /**
      * Given an OPAL method gives us a Canonicalized (reletivized) eu.fasten.core.data.FastenJavaURI.
      *
-     * @param method A Method in OPAL format.
+     * @param method org.opalj.br.Method.
      *
      * @return Canonicalized eu.fasten.core.data.FastenJavaURI of the given method.
      */
-    public static FastenJavaURI toCanonicalFastenJavaURI(Method method) {
+    public static FastenJavaURI toFastenJavaURI(Method method) {
 
         String parameters = getPctParameters(JavaConversions.seqAsJavaList(method.parameterTypes()));
         String returnType = getPctReturnType(method.returnType());
@@ -55,10 +55,10 @@ public class OPALMethodAnalyzer{
             logger.error("Can not find the namespace. {} happened for this URI: {}", e.getMessage(), JVMFormat.toJVMMethod(method));
         }
         String className = method.declaringClassFile().thisType().simpleName();
-        String URIString = "/" + namespace + "/" + className + "." + method.name() + "(" + parameters + ")" + returnType;
+        String URIString = "/" + namespace + "/" + className + "." + isInit(method) + "(" + parameters + ")" + returnType;
 
         try {
-            return new FastenJavaURI(URIString).canonicalize();
+            return new FastenJavaURI(URIString);
         } catch (IllegalArgumentException | NullPointerException e) {
             logger.error("{} ", e.getMessage());
             return null;
@@ -74,22 +74,57 @@ public class OPALMethodAnalyzer{
      *
      * @return @return Canonicalized eu.fasten.core.data.FastenJavaURI of the given method.
      */
-    public static FastenJavaURI toCanonicalFastenJavaURI(ReferenceType calleeClass, String calleeName, MethodDescriptor calleeDescriptor) {
+    public static FastenJavaURI toFastenJavaURI(ReferenceType calleeClass, String calleeName, MethodDescriptor calleeDescriptor) {
 
         String URIString = "//SomeDependency" +
+            //TODO migrate to "$!"
             getPackageName(calleeClass) +
             getClassName(calleeClass) +
-            "." + calleeName +
+            "." + isInit(calleeClass, calleeName) +
             "(" + getPctParameters(JavaConversions.seqAsJavaList(calleeDescriptor.parameterTypes())) +
             ")" + getPctReturnType(calleeDescriptor.returnType());
 
         try {
-            return new FastenJavaURI(URIString).canonicalize();
+            return new FastenJavaURI(URIString);
         } catch (IllegalArgumentException | NullPointerException e) {
             logger.error("{}", e.getMessage());
         }
 
         return null;
+    }
+
+    /**
+     * Find the String Method name that FastenURI supports.
+     *
+     * @param method org.opalj.br.Method
+     *
+     * @return If the method is a constructor the output is the class name.
+     * For class initializer (static initialization blocks for the class,
+     * and static field initialization), it's pctEncoded "<"clinit">", otherwise the method name.
+     */
+    public static String isInit(Method method) {
+        if (method.name().equals("<init>")) {
+            return method.declaringClassFile().thisType().simpleName();
+        }else if (method.name().equals("<clinit>")){
+            return FastenJavaURI.pctEncodeArg("<init>");
+        }else return method.name();
+    }
+
+    /**
+     * Find the String Method name that FastenURI supports.
+     *
+     * @param method String
+     *
+     * @return If the method is a constructor the output is the class name.
+     * For class initializer (static initialization blocks for the class,
+     * and static field initialization), it's pctEncoded "<"clinit">", otherwise the method name.
+     */
+    public static String isInit(ReferenceType clas, String method) {
+        if (method.equals("<init>")) {
+            return getClassName(clas).replace("/","");
+        }else if (method.equals("<clinit>")){
+            return FastenJavaURI.pctEncodeArg(method);
+        }else return method;
     }
 
     /**
