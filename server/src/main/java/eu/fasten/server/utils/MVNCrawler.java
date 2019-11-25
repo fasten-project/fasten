@@ -115,7 +115,7 @@ public class MVNCrawler {
     }
 
     public void startCrawler() throws IOException {
-        this.ExtractMVNProjects(this.GetPOMFiles());
+        List<MVNProject> extractedProjects = this.ExtractMVNProjects(this.GetPOMFiles());
     }
 
     // TODO: It doesn't get all the POM Files, there are rare cases... hierarchy of files might be deeper!
@@ -195,7 +195,7 @@ public class MVNCrawler {
                                         if(fileName.matches(pomFilePattern)){
                                             // For separating timestamp and file size
                                             String[] timeStampSplit = timeStampList[j].trim().split("\\s+");
-                                            authorRepos.get(authorName).get(repoName).put(verNumber, new POMFile(fileName, timeStampList[0], timeStampList[1]));
+                                            authorRepos.get(authorName).get(repoName).put(verNumber, new POMFile(fileName, timeStampSplit[0], timeStampSplit[1]));
                                             break;
                                         }
 
@@ -215,27 +215,42 @@ public class MVNCrawler {
         return authorRepos;
         }
 
-    public void ExtractMVNProjects(HashMap<String, HashMap<String, HashMap<String, POMFile>>> POMFiles) throws IOException {
+    public List<MVNProject> ExtractMVNProjects(HashMap<String, HashMap<String, HashMap<String, POMFile>>> POMFiles) throws IOException {
+
+        List<MVNProject> projects = new ArrayList<>();
 
         for(String user : POMFiles.keySet()){
-            //System.out.println(user);
+          
             for(String repo : POMFiles.get(user).keySet()) {
-                //System.out.println(repo);
 
                 for(HashMap.Entry<String, POMFile> verAndPOM : POMFiles.get(user).get(repo).entrySet()){
-                    System.out.println(verAndPOM.getKey() + verAndPOM.getValue().fileName);
                     Document XMLDoc = Jsoup.parse(new URL(mvnRepo + user + repo + verAndPOM.getKey() + verAndPOM.getValue().fileName).openStream(),
                             "UTF-8", "", Parser.xmlParser());
 
+                    String groupID = "";
+                    String artifactID = "";
+
                     for(Element e: XMLDoc.getElementsByTag("project"))
                     {
-                        System.out.println(e.getElementsByTag("groupId").text());
-                        System.out.println(e.getElementsByTag("artifactId").text());
+                        groupID = e.getElementsByTag("groupId").text();
+                        artifactID =  e.getElementsByTag("artifactId").text();
+
+                        if(!groupID.isEmpty() && !artifactID.isEmpty()){
+                            break;
+                        }
                     }
+
+                    MVNProject p = new MVNProject(repo.substring(0, repo.length()-1), groupID.substring(0, groupID.length()-1),
+                            artifactID.substring(0, artifactID.length()-1), verAndPOM.getKey().substring(0, verAndPOM.getKey().length()-1),
+                            verAndPOM.getValue().date + " " + verAndPOM.getValue().time);
+                    //System.out.println(p.getProjectName() + p.getGroupID() + p.getArtifactID() + p.getVersion() + p.getTimestamp());
+                    projects.add(p);
 
                 }
             }
         }
+
+        return projects;
     }
 
     public static void main(String[] args) throws IOException {
