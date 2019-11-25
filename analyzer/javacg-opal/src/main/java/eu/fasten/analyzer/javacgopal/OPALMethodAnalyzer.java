@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Analyze OPAL methods.
  */
-public class OPALMethodAnalyzer{
+public class OPALMethodAnalyzer {
 
     private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
 
@@ -40,27 +40,18 @@ public class OPALMethodAnalyzer{
      * Given an OPAL method gives us a Canonicalized (reletivized) eu.fasten.core.data.FastenJavaURI.
      *
      * @param method org.opalj.br.Method.
-     *
      * @return Canonicalized eu.fasten.core.data.FastenJavaURI of the given method.
      */
     public static FastenURI toCanonicalSchemelessURI(Method method) {
 
-        String parameters = getPctParameters(JavaConversions.seqAsJavaList(method.parameterTypes()));
-        String returnType = getPctReturnType(method.returnType());
-        String fqn = method.declaringClassFile().fqn();
-        String namespace = "";
-
         try {
-            namespace = fqn.substring(0, fqn.lastIndexOf("/")).replace("/", ".");
-        } catch (StringIndexOutOfBoundsException e) {
-            logger.error("Can not find the namespace. {} happened for this URI: {}", e.getMessage(), JVMFormat.toJVMMethod(method));
-        }
-
-        String className = method.declaringClassFile().thisType().simpleName();
-        String URIString = "/" + namespace + "/" + className + "." + isInit(method) + "(" + parameters + ")" + returnType;
-
-        try {
-            var JavaURI = new FastenJavaURI(URIString).canonicalize();
+            var JavaURI = FastenJavaURI.create(null, null, null,
+                getPackageName(method.declaringClassFile().thisType()).replace("/",""),
+                getClassName(method.declaringClassFile().thisType()).replace("/",""),
+                isInit(method),
+                getParameters(JavaConversions.seqAsJavaList(method.parameterTypes())),
+                getReturnType(method.returnType())
+            ).canonicalize();
 
             return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(), JavaURI.getRawVersion(),
                 JavaURI.getRawNamespace(), JavaURI.getRawEntity());
@@ -74,24 +65,22 @@ public class OPALMethodAnalyzer{
     /**
      * Converts an unresolved method to a Canonicalized (reletivized) eu.fasten.core.data.FastenJavaURI.
      *
-     * @param calleeClass The class of the method in org.opalj.br.ReferenceType format.
-     * @param calleeName Name of the class in String.
+     * @param calleeClass      The class of the method in org.opalj.br.ReferenceType format.
+     * @param calleeName       Name of the class in String.
      * @param calleeDescriptor Descriptor of the method in org.opalj.br.MethodDescriptor format.
-     *
      * @return @return Canonicalized eu.fasten.core.data.FastenJavaURI of the given method.
      */
     public static FastenURI toCanonicalSchemelessURI(ReferenceType calleeClass, String calleeName, MethodDescriptor calleeDescriptor) {
 
-        String URIString = "//SomeDependency" +
-            //TODO migrate to "$!"
-            getPackageName(calleeClass) +
-            getClassName(calleeClass) +
-            "." + isInit(calleeClass, calleeName) +
-            "(" + getPctParameters(JavaConversions.seqAsJavaList(calleeDescriptor.parameterTypes())) +
-            ")" + getPctReturnType(calleeDescriptor.returnType());
-
         try {
-            var JavaURI = new FastenJavaURI(URIString).canonicalize();
+            var JavaURI =
+                FastenJavaURI.create(null, "SomeDependency", null,
+                    getPackageName(calleeClass).replace("/",""),
+                    getClassName(calleeClass).replace("/",""),
+                    isInit(calleeClass, calleeName),
+                    getParameters(JavaConversions.seqAsJavaList(calleeDescriptor.parameterTypes())),
+                    getReturnType(calleeDescriptor.returnType())
+                ).canonicalize();
 
             return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(), JavaURI.getRawVersion(),
                 JavaURI.getRawNamespace(), JavaURI.getRawEntity());
@@ -107,7 +96,6 @@ public class OPALMethodAnalyzer{
      * Find the String Method name that FastenURI supports.
      *
      * @param method org.opalj.br.Method
-     *
      * @return If the method is a constructor the output is the class name.
      * For class initializer (static initialization blocks for the class,
      * and static field initialization), it's pctEncoded "<"init">", otherwise the method name.
@@ -115,53 +103,52 @@ public class OPALMethodAnalyzer{
     public static String isInit(Method method) {
         if (method.name().equals("<init>")) {
             return method.declaringClassFile().thisType().simpleName();
-        }else if (method.name().equals("<clinit>")){
+        } else if (method.name().equals("<clinit>")) {
             return FastenJavaURI.pctEncodeArg("<init>");
-        }else return method.name();
+        } else return method.name();
     }
 
     /**
      * Find the String Method name that FastenURI supports.
      *
      * @param method String
-     *
      * @return If the method is a constructor the output is the class name.
      * For class initializer (static initialization blocks for the class,
      * and static field initialization), it's pctEncoded "<"init">", otherwise the method name.
      */
     public static String isInit(ReferenceType clas, String method) {
         if (method.equals("<init>")) {
-            return getClassName(clas).replace("/","");
-        }else if (method.equals("<clinit>")){
+            return getClassName(clas).replace("/", "");
+        } else if (method.equals("<clinit>")) {
             return FastenJavaURI.pctEncodeArg("<init>");
-        }else return method;
+        } else return method;
     }
 
     /**
-     * Convert OPAL return types to Fasten pct Format.
+     * Convert OPAL return types to FastenJavaURI.
      *
      * @param returnType Return type of a method in OPAL format.
-     *
-     * @return Fasten pct encoded return type, e.g. it always replaces / with %2F.
+     * @return return type in FastenJavaURI.
      */
-    public static String getPctReturnType(Type returnType) {
-        return FastenJavaURI.pctEncodeArg(getPackageName(returnType) + getClassName(returnType));
+    public static FastenJavaURI getReturnType(Type returnType) {
+        return new FastenJavaURI(getPackageName(returnType) + getClassName(returnType));
     }
 
     /**
-     * Convert OPAL parameters to pct Format.
+     * Convert OPAL parameters to FastenJavaURI.
      *
      * @param parametersType Java List of parameters of in OPAL types.
-     *
-     * @return Pct encoded return type in string, e.g. pct always replaces "/" with "%2F".
+     * @return parameters in FastenJavaURI[].
      */
-    public static String getPctParameters(List<FieldType> parametersType) {
+    public static FastenJavaURI[] getParameters(List<FieldType> parametersType) {
 
-        String parameters = "";
-        for (Type parameter : parametersType) {
-            parameters = parameters + FastenJavaURI.pctEncodeArg(getPackageName(parameter) + getClassName(parameter)) + ",";
+        FastenJavaURI[] parameters = new FastenJavaURI[parametersType.size()];
+
+        for (int i = 0; i < parametersType.size(); i++) {
+
+            parameters[i] = new FastenJavaURI(getPackageName(parametersType.get(i)) + getClassName(parametersType.get(0)));
         }
-        parameters = parameters.equals("") ? "" : parameters.substring(0, parameters.length() - 1);
+
         return parameters;
 
     }
@@ -170,7 +157,6 @@ public class OPALMethodAnalyzer{
      * Recursively figures out the OPAL types of parameters and convert them to FastenURI namespaces.
      *
      * @param parameter OPAL parameter.
-     *
      * @return String in eu.fasten.core.data.FastenURI format, for namespace of the given parameter.
      */
     public static String getPackageName(Type parameter) {
@@ -179,7 +165,7 @@ public class OPALMethodAnalyzer{
             parameterPackageName = parameter.asBaseType().WrapperType().packageName();
         } else if (parameter.isReferenceType()) {
             if (parameter.isArrayType()) {
-                parameterPackageName = getPackageName(parameter.asArrayType().componentType());
+                parameterPackageName = getPackageName(parameter.asArrayType().componentType()).replace("/", "");
             } else
                 parameterPackageName = parameter.asObjectType().packageName();
         } else if (parameter.isVoidType()) {
@@ -194,18 +180,17 @@ public class OPALMethodAnalyzer{
      * Recursively figures out the OPAL types of parameters and convert them to FastenURI type (class).
      *
      * @param parameter OPAL parameter in org.opalj.br.Type format.
-     *
      * @return String in eu.fasten.core.data.FastenURI format, for type of the given parameter.
      */
     public static String getClassName(Type parameter) {
         String parameterClassName = "";
         if (parameter.isBaseType()) {
-            parameterClassName =  parameter.asBaseType().WrapperType().simpleName();
+            parameterClassName = parameter.asBaseType().WrapperType().simpleName();
         } else if (parameter.isReferenceType()) {
             if (parameter.isArrayType()) {
-                parameterClassName =  getClassName(parameter.asArrayType().componentType());
+                parameterClassName = getClassName(parameter.asArrayType().componentType()).replace("/", "").concat("[]");
             } else
-                parameterClassName =  parameter.asObjectType().simpleName();
+                parameterClassName = parameter.asObjectType().simpleName();
         } else if (parameter.isVoidType()) {
             parameterClassName = "void";
         }
