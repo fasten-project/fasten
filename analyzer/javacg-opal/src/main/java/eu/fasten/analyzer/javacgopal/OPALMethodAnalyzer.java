@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.core.data.FastenJavaURI;
 
+import eu.fasten.core.data.FastenURI;
 import org.opalj.br.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,6 @@ import java.util.List;
  */
 public class OPALMethodAnalyzer{
 
-
     private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
 
     /**
@@ -43,22 +43,28 @@ public class OPALMethodAnalyzer{
      *
      * @return Canonicalized eu.fasten.core.data.FastenJavaURI of the given method.
      */
-    public static FastenJavaURI toFastenJavaURI(Method method) {
+    public static FastenURI toCanonicalSchemelessURI(Method method) {
 
         String parameters = getPctParameters(JavaConversions.seqAsJavaList(method.parameterTypes()));
         String returnType = getPctReturnType(method.returnType());
         String fqn = method.declaringClassFile().fqn();
         String namespace = "";
+
         try {
             namespace = fqn.substring(0, fqn.lastIndexOf("/")).replace("/", ".");
         } catch (StringIndexOutOfBoundsException e) {
             logger.error("Can not find the namespace. {} happened for this URI: {}", e.getMessage(), JVMFormat.toJVMMethod(method));
         }
+
         String className = method.declaringClassFile().thisType().simpleName();
         String URIString = "/" + namespace + "/" + className + "." + isInit(method) + "(" + parameters + ")" + returnType;
 
         try {
-            return new FastenJavaURI(URIString);
+            var JavaURI = new FastenJavaURI(URIString).canonicalize();
+
+            return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(), JavaURI.getRawVersion(),
+                JavaURI.getRawNamespace(), JavaURI.getRawEntity());
+
         } catch (IllegalArgumentException | NullPointerException e) {
             logger.error("{} ", e.getMessage());
             return null;
@@ -74,7 +80,7 @@ public class OPALMethodAnalyzer{
      *
      * @return @return Canonicalized eu.fasten.core.data.FastenJavaURI of the given method.
      */
-    public static FastenJavaURI toFastenJavaURI(ReferenceType calleeClass, String calleeName, MethodDescriptor calleeDescriptor) {
+    public static FastenURI toCanonicalSchemelessURI(ReferenceType calleeClass, String calleeName, MethodDescriptor calleeDescriptor) {
 
         String URIString = "//SomeDependency" +
             //TODO migrate to "$!"
@@ -85,7 +91,11 @@ public class OPALMethodAnalyzer{
             ")" + getPctReturnType(calleeDescriptor.returnType());
 
         try {
-            return new FastenJavaURI(URIString);
+            var JavaURI = new FastenJavaURI(URIString).canonicalize();
+
+            return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(), JavaURI.getRawVersion(),
+                JavaURI.getRawNamespace(), JavaURI.getRawEntity());
+
         } catch (IllegalArgumentException | NullPointerException e) {
             logger.error("{}", e.getMessage());
         }
@@ -100,7 +110,7 @@ public class OPALMethodAnalyzer{
      *
      * @return If the method is a constructor the output is the class name.
      * For class initializer (static initialization blocks for the class,
-     * and static field initialization), it's pctEncoded "<"clinit">", otherwise the method name.
+     * and static field initialization), it's pctEncoded "<"init">", otherwise the method name.
      */
     public static String isInit(Method method) {
         if (method.name().equals("<init>")) {
@@ -117,13 +127,13 @@ public class OPALMethodAnalyzer{
      *
      * @return If the method is a constructor the output is the class name.
      * For class initializer (static initialization blocks for the class,
-     * and static field initialization), it's pctEncoded "<"clinit">", otherwise the method name.
+     * and static field initialization), it's pctEncoded "<"init">", otherwise the method name.
      */
     public static String isInit(ReferenceType clas, String method) {
         if (method.equals("<init>")) {
             return getClassName(clas).replace("/","");
         }else if (method.equals("<clinit>")){
-            return FastenJavaURI.pctEncodeArg(method);
+            return FastenJavaURI.pctEncodeArg("<init>");
         }else return method;
     }
 
