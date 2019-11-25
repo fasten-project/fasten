@@ -23,6 +23,8 @@ import eu.fasten.core.data.FastenJavaURI;
 import scala.collection.JavaConversions;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 
 class OPALMethodAnalyzerTest {
 
-    PartialCallGraph singleSourceToTargetcallGraph,classInitCallGraph;
+    PartialCallGraph singleSourceToTargetcallGraph,classInitCallGraph,lambdaCallGraph;
 
     @BeforeEach
     void generateCallGraph(){
@@ -81,15 +83,44 @@ class OPALMethodAnalyzerTest {
                 new File(Thread.currentThread().getContextClassLoader().getResource("ClassInit.class").getFile())
         );
 
+        /**
+         * LambdaExample is a java8 compiled bytecode of:
+         *<pre>
+         * package name.space;
+         *
+         * import java.util.function.Function;
+         *
+         * public class LambdaExample {
+         *     Function f = (it) -> "Hello";
+         * }
+         * </pre>
+         * Including these edges:
+         *  Resolved:   [
+         *                  {public static ""/Lambda$79:0 $newInstance() of class ""/Lambda$79:0,
+         *                   public void <init>() of class ""/Lambda$79:0}
+         *
+         *                  {public Object apply(Object) of class ""/Lambda$79:0,
+         *                   private static Object lambda$new$0(Object) of current class}
+         *
+         *                  {public void <init>() of current class,
+         *                   public static ""/Lambda$79:0 $newInstance() of class ""/Lambda$79:0}
+         *              ]
+         *
+         *  Unresolved: [
+         *                  {public void <init>() of current class,
+         *                   public void <init>() of Object class}
+         *
+         *                  {public static void <init>() of class ""/Lambda$79:0
+         *                   public void <init>() of Object class}
+         *              ]
+         */
+        lambdaCallGraph = CallGraphGenerator.generatePartialCallGraph(
+                new File(Thread.currentThread().getContextClassLoader().getResource("LambdaExample.class").getFile())
+        );
     }
 
     @Test
      void testToFastenJavaURI() {
-
-
-//        PartialCallGraph CallGraph = CallGraphGenerator.generatePartialCallGraph(
-//                new File("/Users/mehdi/Desktop/Fasten/lapp/lapp/lapp/src/test/resources/example_jars/mehdi/name/space/ClassInit.class")
-//        );
 
         assertEquals(
                 new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2Fvoid"),
