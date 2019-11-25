@@ -1,11 +1,14 @@
 package eu.fasten.server.utils;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -49,11 +52,11 @@ public class MVNCrawler {
          * It encapsulates a project on the Maven repository.
          */
 
-        private String projectName;
-        private String groupID;
-        private String artifactID;
-        private String version;
-        private String timestamp;
+        public String projectName;
+        public String groupID;
+        public String artifactID;
+        public String version;
+        public String timestamp;
 
         public MVNProject(String projectName, String groupID, String artifactID, String version, String timestamp) {
             this.projectName = projectName;
@@ -63,45 +66,45 @@ public class MVNCrawler {
             this.timestamp = timestamp;
         }
 
-        public String getProjectName() {
-            return projectName;
-        }
-
-        public String getGroupID() {
-            return groupID;
-        }
-
-        public String getArtifactID() {
-            return artifactID;
-        }
-
-        public String getVersion() {
-            return version;
-        }
-
-        public String getTimestamp() {
-            return timestamp;
-        }
-
-        public void setProjectName(String projectName) {
-            this.projectName = projectName;
-        }
-
-        public void setGroupID(String groupID) {
-            this.groupID = groupID;
-        }
-
-        public void setArtifactID(String artifactID) {
-            this.artifactID = artifactID;
-        }
-
-        public void setVersion(String version) {
-            this.version = version;
-        }
-
-        public void setTimestamp(String timestamp) {
-            this.timestamp = timestamp;
-        }
+//        public String getProjectName() {
+//            return projectName;
+//        }
+//
+//        public String getGroupID() {
+//            return groupID;
+//        }
+//
+//        public String getArtifactID() {
+//            return artifactID;
+//        }
+//
+//        public String getVersion() {
+//            return version;
+//        }
+//
+//        public String getTimestamp() {
+//            return timestamp;
+//        }
+//
+//        public void setProjectName(String projectName) {
+//            this.projectName = projectName;
+//        }
+//
+//        public void setGroupID(String groupID) {
+//            this.groupID = groupID;
+//        }
+//
+//        public void setArtifactID(String artifactID) {
+//            this.artifactID = artifactID;
+//        }
+//
+//        public void setVersion(String version) {
+//            this.version = version;
+//        }
+//
+//        public void setTimestamp(String timestamp) {
+//            this.timestamp = timestamp;
+//        }
     }
 
     public MVNCrawler(final String csvFileName){
@@ -110,6 +113,7 @@ public class MVNCrawler {
 
     public void startCrawler() throws IOException {
         List<MVNProject> extractedProjects = this.extractMVNProjects(this.getPOMFiles());
+        this.projectsToCSV(extractedProjects);
     }
 
     // TODO: It doesn't get all the POM Files, there are rare cases... hierarchy of files might be deeper!
@@ -234,12 +238,11 @@ public class MVNCrawler {
                         }
                     }
 
-                    MVNProject p = new MVNProject(repo.substring(0, repo.length()-1), groupID.substring(0, groupID.length()-1),
-                            artifactID.substring(0, artifactID.length()-1), verAndPOM.getKey().substring(0, verAndPOM.getKey().length()-1),
+                    MVNProject p = new MVNProject(repo.substring(0, repo.length()-1), groupID,
+                            artifactID, verAndPOM.getKey().substring(0, verAndPOM.getKey().length()-1),
                             verAndPOM.getValue().date + " " + verAndPOM.getValue().time);
-                    //System.out.println(p.getProjectName() + p.getGroupID() + p.getArtifactID() + p.getVersion() + p.getTimestamp());
+                    //System.out.println(p.projectName + p.groupID + p.artifactID + p.version + p.timestamp);
                     projects.add(p);
-
                 }
             }
         }
@@ -247,9 +250,18 @@ public class MVNCrawler {
         return projects;
     }
 
-    public void projectsToCSV(List<MVNProject> projects){
+    public void projectsToCSV(List<MVNProject> projects) throws IOException {
 
+        String[] headerNames = {"projectName", "groupID", "artifactID", "version", "timestamp"};
 
+        FileWriter csvFile = new FileWriter(this.csvFileName);
+        CSVPrinter csv = new CSVPrinter(csvFile, CSVFormat.DEFAULT.withHeader(headerNames));
+
+        for(MVNProject p : projects){
+            csv.printRecord(p.projectName, p.groupID, p.artifactID, p.version, p.timestamp);
+        }
+
+        csvFile.close();
     }
 
     public static void main(String[] args) throws IOException {
