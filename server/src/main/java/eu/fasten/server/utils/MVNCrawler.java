@@ -1,16 +1,10 @@
 package eu.fasten.server.utils;
 
-import it.unimi.dsi.fastutil.Hash;
-import org.apache.commons.lang.ObjectUtils;
-
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -115,11 +109,11 @@ public class MVNCrawler {
     }
 
     public void startCrawler() throws IOException {
-        List<MVNProject> extractedProjects = this.ExtractMVNProjects(this.GetPOMFiles());
+        List<MVNProject> extractedProjects = this.extractMVNProjects(this.getPOMFiles());
     }
 
     // TODO: It doesn't get all the POM Files, there are rare cases... hierarchy of files might be deeper!
-    private HashMap<String, HashMap<String, HashMap<String, POMFile>>> GetPOMFiles() throws IOException {
+    private HashMap<String, HashMap<String, HashMap<String, POMFile>>> getPOMFiles() throws IOException {
 
         //Runtime rt = Runtime.getRuntime();
 
@@ -215,12 +209,12 @@ public class MVNCrawler {
         return authorRepos;
         }
 
-    public List<MVNProject> ExtractMVNProjects(HashMap<String, HashMap<String, HashMap<String, POMFile>>> POMFiles) throws IOException {
+    public List<MVNProject> extractMVNProjects(HashMap<String, HashMap<String, HashMap<String, POMFile>>> POMFiles) throws IOException {
 
         List<MVNProject> projects = new ArrayList<>();
 
         for(String user : POMFiles.keySet()){
-          
+
             for(String repo : POMFiles.get(user).keySet()) {
 
                 for(HashMap.Entry<String, POMFile> verAndPOM : POMFiles.get(user).get(repo).entrySet()){
@@ -251,6 +245,11 @@ public class MVNCrawler {
         }
 
         return projects;
+    }
+
+    public void projectsToCSV(List<MVNProject> projects){
+
+
     }
 
     public static void main(String[] args) throws IOException {
