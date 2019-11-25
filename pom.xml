@@ -137,17 +137,6 @@
             <artifactId>picocli</artifactId>
             <version>4.0.4</version>
         </dependency>
-        <!-- For scraping Maven repos and parsing HTML files. -->
-        <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>1.12.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-            <version>1.7</version>
-        </dependency>
     </dependencies>
 
 </project>
