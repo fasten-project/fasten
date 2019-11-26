@@ -22,13 +22,11 @@ import org.dom4j.DocumentException;
 import org.dom4j.io.SAXReader;
 
 import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import eu.fasten.core.data.RevisionCallGraph;
 import org.slf4j.Logger;
@@ -145,4 +143,47 @@ public class MavenResolver {
             return Optional.empty();
         }
     }
+
+    /**
+     * A utility method to get a POM file and its timestamp from a URL
+     * Please note that this might not be the most efficient way but it works and can be improved
+     * later.
+     * @param fileURL
+     * @param dest
+     * @throws IOException
+     */
+    public Date getFileAndTimeStamp(String fileURL, String dest) throws IOException {
+
+        String fileName = fileURL.substring(fileURL.lastIndexOf("/") + 1);
+        StringJoiner pathJoin = new StringJoiner(File.separator);
+        dest = pathJoin.add(dest).add(fileName).toString();
+
+        logger.debug("Filename: " + fileName + " | " + "dest: " + dest);
+
+        URL url = new URL(fileURL);
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+        Date timestamp = new Date(con.getLastModified());
+
+        if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
+
+            logger.debug("Okay status!");
+
+            BufferedReader input = new BufferedReader(new InputStreamReader(con.getInputStream()), 8192);
+            BufferedWriter output = new BufferedWriter(new FileWriter(new File(dest)));
+
+            String line;
+            while((line = input.readLine()) != null) {
+                output.write(line);
+                output.newLine();
+            }
+
+            output.close();
+        }
+        con.disconnect();
+
+        return timestamp;
+    }
+
+
 }
