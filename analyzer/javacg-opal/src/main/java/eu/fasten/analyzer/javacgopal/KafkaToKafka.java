@@ -72,28 +72,39 @@ public class KafkaToKafka {
             ));
 
             for (ResolvedCall resolvedCall : partialCallGraph.getResolvedCalls()) {
-                OPALMethodAnalyzer.toCanonicalSchemelessURI(resolvedCall.getSource());
+
+                OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                    null,
+                    resolvedCall.getSource().declaringClassFile().thisType(),
+                    resolvedCall.getSource().name(),
+                    resolvedCall.getSource().descriptor());
+
                 for (Method target : resolvedCall.getTarget()) {
-                    OPALMethodAnalyzer.toCanonicalSchemelessURI(target);
+
+                    OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                        null,
+                        target.declaringClassFile().thisType(),
+                        target.name(),
+                        target.descriptor()
+                        );
                 }
             }
 
             for (UnresolvedMethodCall unresolvedCall : partialCallGraph.getUnresolvedCalls()) {
 
-                OPALMethodAnalyzer.toCanonicalSchemelessURI(unresolvedCall.caller());
+                OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                    null,
+                    unresolvedCall.caller().declaringClassFile().thisType(),
+                    unresolvedCall.caller().name(),
+                    unresolvedCall.caller().descriptor()
+                );
 
-                String URIString =
-                    "/" + OPALMethodAnalyzer.getPackageName(unresolvedCall.calleeClass()).replace("/", ".").substring(1)
-                        + OPALMethodAnalyzer.getClassName(unresolvedCall.calleeClass()) +
-                        "." + unresolvedCall.calleeName() +
-                        "(" + OPALMethodAnalyzer.getParametersURI(JavaConversions.seqAsJavaList(unresolvedCall.calleeDescriptor().parameterTypes())) +
-                        ")" + OPALMethodAnalyzer.getReturnTypeURI(unresolvedCall.calleeDescriptor().returnType());
-
-                try {
-                    new FastenJavaURI(URIString).canonicalize();
-                } catch (IllegalArgumentException | NullPointerException e) {
-                    logger.error("{} faced {}", URIString, e.getMessage());
-                }
+                OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                    "SomeDependency",
+                    unresolvedCall.calleeClass(),
+                    unresolvedCall.calleeName(),
+                    unresolvedCall.calleeDescriptor()
+                );
             }
         }
         //TODO generate FASTEN JSON and Produce to Kafka.

@@ -66,13 +66,21 @@ public class ResolvedCall {
 
         var resolvedCallURIs = new ArrayList<FastenURI[]>();
 
-        var sourceURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(resolvedCall.getSource());
+        var sourceURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(
+            null,
+            resolvedCall.getSource().declaringClassFile().thisType(),
+            resolvedCall.getSource().name(),
+            resolvedCall.getSource().descriptor());
 
         if ( sourceURI != null) {
             for (Method target : resolvedCall.getTarget()) {
 
                 FastenURI[] fastenURI = new FastenURI[2];
-                var targetURI =  OPALMethodAnalyzer.toCanonicalSchemelessURI(target);
+                var targetURI =  OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                    null,
+                    target.declaringClassFile().thisType(),
+                    target.name(),
+                    target.descriptor());
 
                 if ( targetURI != null ) {
                     fastenURI[0] = sourceURI;

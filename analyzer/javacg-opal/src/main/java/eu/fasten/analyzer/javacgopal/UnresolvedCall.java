@@ -43,13 +43,21 @@ public class UnresolvedCall extends UnresolvedMethodCall {
 
         FastenURI[] fastenURI = new FastenURI[2];
 
-        var sourceURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(unresolvedCall.caller());
+        var sourceURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(
+            null,
+            unresolvedCall.caller().declaringClassFile().thisType(),
+            unresolvedCall.caller().name(),
+            unresolvedCall.caller().descriptor()
+        );
 
         if (sourceURI != null) {
 
-            var targetURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(unresolvedCall.calleeClass(),
+            var targetURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                "SomeDependency",
+                unresolvedCall.calleeClass(),
                 unresolvedCall.calleeName(),
-                unresolvedCall.calleeDescriptor());
+                unresolvedCall.calleeDescriptor()
+            );
 
             if (targetURI != null) {
                 fastenURI[0] = sourceURI;

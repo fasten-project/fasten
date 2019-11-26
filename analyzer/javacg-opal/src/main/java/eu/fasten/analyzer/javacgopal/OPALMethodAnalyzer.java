@@ -19,9 +19,8 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.core.data.FastenJavaURI;
-
 import eu.fasten.core.data.FastenURI;
-import org.eclipse.jgit.lib.Ref;
+
 import org.opalj.br.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,51 +37,23 @@ public class OPALMethodAnalyzer {
     private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
 
     /**
-     * Given an OPAL method gives us a Canonicalized (reletivized) eu.fasten.core.data.FastenJavaURI.
+     * Converts a method to a Canonicalized Schemeless eu.fasten.core.data.FastenURI.
      *
-     * @param method org.opalj.br.Method.
-     * @return Canonicalized eu.fasten.core.data.FastenJavaURI of the given method.
+     * @param product The product which entity belongs to.
+     * @param clas The class of the method in org.opalj.br.ReferenceType format.
+     * @param method Name of the method in String.
+     * @param descriptor Descriptor of the method in org.opalj.br.MethodDescriptor format.
+     * @return @return Canonicalized Schemeless eu.fasten.core.data.FastenURI of the given method.
      */
-    public static FastenURI toCanonicalSchemelessURI(Method method) {
+    public static FastenURI toCanonicalSchemelessURI(String product, ReferenceType clas, String method, MethodDescriptor descriptor) {
 
         try {
-            var JavaURI = FastenJavaURI.create(null, null, null,
-                getPackageName(method.declaringClassFile().thisType()),
-                getClassName(method.declaringClassFile().thisType()),
-                getMethodName(method.declaringClassFile().thisType().simpleName(),method.name()),
-                getParametersURI(JavaConversions.seqAsJavaList(method.parameterTypes())),
-                getReturnTypeURI(method.returnType())
-            ).canonicalize();
-
-            return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(),
-                JavaURI.getRawVersion(),
-                JavaURI.getRawNamespace(), JavaURI.getRawEntity());
-
-        } catch (IllegalArgumentException | NullPointerException e) {
-            logger.error("{} ", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Converts an unresolved method to a Canonicalized (reletivized) eu.fasten.core.data.FastenJavaURI.
-     *
-     * @param calleeClass      The class of the method in org.opalj.br.ReferenceType format.
-     * @param calleeName       Name of the class in String.
-     * @param calleeDescriptor Descriptor of the method in org.opalj.br.MethodDescriptor format.
-     * @return @return Canonicalized eu.fasten.core.data.FastenJavaURI of the given method.
-     */
-    public static FastenURI toCanonicalSchemelessURI(ReferenceType calleeClass, String calleeName, MethodDescriptor calleeDescriptor) {
-
-        try {
-            var JavaURI =
-                FastenJavaURI.create(null, "SomeDependency", null,
-                    //TODO change SomeDependency to $! when it's supported.
-                    getPackageName(calleeClass),
-                    getClassName(calleeClass),
-                    getMethodName(calleeClass.asObjectType().simpleName(), calleeName),
-                    getParametersURI(JavaConversions.seqAsJavaList(calleeDescriptor.parameterTypes())),
-                    getReturnTypeURI(calleeDescriptor.returnType())
+            var JavaURI = FastenJavaURI.create(null, product, null,
+                    getPackageName(clas),
+                    getClassName(clas),
+                    getMethodName(clas.asObjectType().simpleName(), method),
+                    getParametersURI(JavaConversions.seqAsJavaList(descriptor.parameterTypes())),
+                    getReturnTypeURI(descriptor.returnType())
                 ).canonicalize();
 
             return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(),
@@ -152,9 +123,7 @@ public class OPALMethodAnalyzer {
                 "/" + getPackageName(parametersType.get(i)) + "/" + getClassName(
                     parametersType.get(0)));
         }
-
         return parameters;
-
     }
 
     /**
@@ -204,6 +173,7 @@ public class OPALMethodAnalyzer {
 
             if (parameter.isArrayType()) {
                 parameterClassName = getClassName(parameter.asArrayType().componentType()).concat(threeTimesPct("[]"));
+
             } else if (parameter.asObjectType().simpleName().contains("Lambda")) {
                 return threeTimesPct(parameter.asObjectType().simpleName());
             } else {
