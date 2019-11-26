@@ -86,8 +86,8 @@ public class KafkaToKafka {
                     "/" + OPALMethodAnalyzer.getPackageName(unresolvedCall.calleeClass()).replace("/", ".").substring(1)
                         + OPALMethodAnalyzer.getClassName(unresolvedCall.calleeClass()) +
                         "." + unresolvedCall.calleeName() +
-                        "(" + OPALMethodAnalyzer.getParameters(JavaConversions.seqAsJavaList(unresolvedCall.calleeDescriptor().parameterTypes())) +
-                        ")" + OPALMethodAnalyzer.getReturnType(unresolvedCall.calleeDescriptor().returnType());
+                        "(" + OPALMethodAnalyzer.getParametersURI(JavaConversions.seqAsJavaList(unresolvedCall.calleeDescriptor().parameterTypes())) +
+                        ")" + OPALMethodAnalyzer.getReturnTypeURI(unresolvedCall.calleeDescriptor().returnType());
 
                 try {
                     new FastenJavaURI(URIString).canonicalize();
