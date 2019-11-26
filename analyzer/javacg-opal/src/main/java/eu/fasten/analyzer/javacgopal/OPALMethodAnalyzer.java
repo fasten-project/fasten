@@ -46,12 +46,12 @@ public class OPALMethodAnalyzer {
 
         try {
             var JavaURI = FastenJavaURI.create(null, null, null,
-                getPackageName(method.declaringClassFile().thisType()).replace("/",""),
-                getClassName(method.declaringClassFile().thisType()).replace("/",""),
+                getPackageName(method.declaringClassFile().thisType()),
+                getClassName(method.declaringClassFile().thisType()),
                 getMethodName(method),
                 getParametersURI(JavaConversions.seqAsJavaList(method.parameterTypes())),
                 getReturnTypeURI(method.returnType())
-            );
+            ).canonicalize();
 
             return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(), JavaURI.getRawVersion(),
                 JavaURI.getRawNamespace(), JavaURI.getRawEntity());
@@ -76,8 +76,8 @@ public class OPALMethodAnalyzer {
             var JavaURI =
                 FastenJavaURI.create(null, "SomeDependency", null,
                     //TODO change SomeDependency to $! when it's supported.
-                    getPackageName(calleeClass).replace("/",""),
-                    getClassName(calleeClass).replace("/",""),
+                    getPackageName(calleeClass),
+                    getClassName(calleeClass),
                     getMethodName(calleeClass, calleeName),
                     getParametersURI(JavaConversions.seqAsJavaList(calleeDescriptor.parameterTypes())),
                     getReturnTypeURI(calleeDescriptor.returnType())
@@ -102,10 +102,12 @@ public class OPALMethodAnalyzer {
      * and static field initialization), it's pctEncoded "<"init">", otherwise the method name.
      */
     public static String getMethodName(Method method) {
+
         if (method.name().equals("<init>")) {
             return method.declaringClassFile().thisType().simpleName();
         } else if (method.name().equals("<clinit>")) {
-            return FastenJavaURI.pctEncodeArg("<init>");
+            //Three times pctEncoding! It should stay encoded during Canonicalization otherwise it throws exception!
+            return FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg("<init>")));
         } else return method.name();
     }
 
@@ -118,10 +120,11 @@ public class OPALMethodAnalyzer {
      * and static field initialization), it's pctEncoded "<"init">", otherwise the method name.
      */
     public static String getMethodName(ReferenceType clas, String method) {
+
         if (method.equals("<init>")) {
-            return getClassName(clas).replace("/", "");
+            return getClassName(clas);
         } else if (method.equals("<clinit>")) {
-            return FastenJavaURI.pctEncodeArg("<init>");
+            return FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg("<init>")));
         } else return method;
     }
 
@@ -133,11 +136,13 @@ public class OPALMethodAnalyzer {
      */
     public static FastenJavaURI getReturnTypeURI(Type returnType) {
 
-        if (getClassName(returnType).contains(FastenJavaURI.pctEncodeArg("[]"))) {
-            return new FastenJavaURI(FastenJavaURI.pctEncodeArg(getPackageName(returnType) + getClassName(returnType)));
+        var className = getClassName(returnType);
 
+        if (className.contains(FastenJavaURI.pctEncodeArg("[]"))) {
+            return new FastenJavaURI("/" + getPackageName(returnType) + "/" + className);
+        }else {
+            return new FastenJavaURI("/" + getPackageName(returnType) + "/" + className);
         }
-            return new FastenJavaURI(getPackageName(returnType) + getClassName(returnType));
     }
 
     /**
@@ -152,12 +157,13 @@ public class OPALMethodAnalyzer {
 
         for (int i = 0; i < parametersType.size(); i++) {
 
-            if (getClassName(parametersType.get(0)).contains(FastenJavaURI.pctEncodeArg("[]"))) {
-                parameters[i] = new FastenJavaURI(FastenJavaURI.pctEncodeArg(getPackageName(parametersType.get(i)) + getClassName(parametersType.get(0))));
-            }else{
-                parameters[i] = new FastenJavaURI(getPackageName(parametersType.get(i)) + getClassName(parametersType.get(0)));
-            }
+            var className = getClassName(parametersType.get(0));
 
+            if (className.contains(FastenJavaURI.pctEncodeArg("[]"))) {
+                parameters[i] = new FastenJavaURI("/" + getPackageName(parametersType.get(i)) + "/" + className);
+            }else{
+                parameters[i] = new FastenJavaURI("/" + getPackageName(parametersType.get(i)) + "/" + className);
+            }
         }
 
         return parameters;
@@ -171,20 +177,24 @@ public class OPALMethodAnalyzer {
      * @return String in eu.fasten.core.data.FastenURI format, for namespace of the given parameter.
      */
     public static String getPackageName(Type parameter) {
-        String parameterPackageName = "";
+
+        String parameterPackageName = null;
+
         if (parameter.isBaseType()) {
             parameterPackageName = parameter.asBaseType().WrapperType().packageName();
         } else if (parameter.isReferenceType()) {
+
             if (parameter.isArrayType()) {
-                parameterPackageName = getPackageName(parameter.asArrayType().componentType()).replace("/", "");
-            } else
+                parameterPackageName = getPackageName(parameter.asArrayType().componentType());
+            } else {
                 parameterPackageName = parameter.asObjectType().packageName();
+            }
+
         } else if (parameter.isVoidType()) {
             parameterPackageName = "java.lang";
         }
-        parameterPackageName = parameterPackageName.startsWith("/") ? parameterPackageName.substring(1) : parameterPackageName;
 
-        return "/" + parameterPackageName.replace("/", ".");
+        return parameterPackageName.replace("/",".");
     }
 
     /**
@@ -194,17 +204,23 @@ public class OPALMethodAnalyzer {
      * @return String in eu.fasten.core.data.FastenURI format, for type of the given parameter.
      */
     public static String getClassName(Type parameter) {
+
         String parameterClassName = "";
+
         if (parameter.isBaseType()) {
             parameterClassName = parameter.asBaseType().WrapperType().simpleName();
         } else if (parameter.isReferenceType()) {
+
             if (parameter.isArrayType()) {
-                parameterClassName = getClassName(parameter.asArrayType().componentType()).replace("/", "").concat(FastenJavaURI.pctEncodeArg("[]"));
-            } else
+                parameterClassName = getClassName(parameter.asArrayType().componentType()).concat(FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg("[]"))));
+            } else {
                 parameterClassName = parameter.asObjectType().simpleName();
+            }
+
         } else if (parameter.isVoidType()) {
-            parameterClassName = "void";
+            parameterClassName = "Void";
         }
-        return "/" + parameterClassName;
+
+        return parameterClassName;
     }
 }
