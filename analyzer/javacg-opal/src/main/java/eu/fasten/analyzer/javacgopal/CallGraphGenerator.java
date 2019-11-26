@@ -22,7 +22,6 @@ import org.opalj.ai.analyses.cg.CallGraphFactory;
 import org.opalj.ai.analyses.cg.ComputedCallGraph;
 import org.opalj.ai.analyses.cg.CHACallGraphAlgorithmConfiguration;
 
-
 import org.opalj.br.Method;
 import org.opalj.br.analyses.Project;
 import org.opalj.collection.immutable.ConstArray;
