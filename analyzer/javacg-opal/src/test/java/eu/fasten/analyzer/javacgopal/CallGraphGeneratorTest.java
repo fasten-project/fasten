@@ -1,25 +1,21 @@
 package eu.fasten.analyzer.javacgopal;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.opalj.ai.analyses.cg.CHACallGraphAlgorithmConfiguration;
-import org.opalj.ai.analyses.cg.CallGraphFactory;
-import org.opalj.ai.analyses.cg.ComputedCallGraph;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.opalj.br.analyses.Project;
 
 import java.io.File;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class CallGraphGeneratorTest {
+public class CallGraphGeneratorTest {
 
-    PartialCallGraph callgraph;
-    File jarFile;
-    Project artifactInOpalFormat;
+    static PartialCallGraph callgraph;
+    static File jarFile;
+    static Project artifactInOpalFormat;
 
-    @BeforeEach
-    void generateCallGraph() {
-
+    @BeforeClass
+    public static void generateCallGraph() {
 
         /**
          * SingleSourceToTarget is a java8 compiled bytecode of:
@@ -46,7 +42,7 @@ class CallGraphGeneratorTest {
     }
 
     @Test
-    void testGeneratePartialCallGraph() {
+    public void testGeneratePartialCallGraph() {
 
         assertEquals("public static void sourceMethod()",callgraph.getResolvedCalls().get(0).getSource().toString());
         assertEquals("public static void targetMethod()",callgraph.getResolvedCalls().get(0).getTarget().get(0).toString());
@@ -57,7 +53,7 @@ class CallGraphGeneratorTest {
     }
 
     @Test
-    void testFindEntryPoints() {
+    public void testFindEntryPoints() {
 
         var entryPoints = CallGraphGenerator.findEntryPoints(artifactInOpalFormat.allMethodsWithBody());
         assertEquals(3, entryPoints.size());

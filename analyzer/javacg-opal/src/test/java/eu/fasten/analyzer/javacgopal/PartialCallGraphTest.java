@@ -22,15 +22,17 @@ import eu.fasten.core.data.FastenJavaURI;
 
 import java.io.File;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-
-class PartialCallGraphTest {
+public class PartialCallGraphTest {
 
     @Test
-    void testCreateRevisionCallGraph() {
+    public void testCreateRevisionCallGraph() {
 
         var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"),

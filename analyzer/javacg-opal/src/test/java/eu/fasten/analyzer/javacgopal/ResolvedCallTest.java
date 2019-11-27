@@ -19,16 +19,16 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.core.data.FastenJavaURI;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-class ResolvedCallTest {
+public class ResolvedCallTest {
 
     @Test
-    void testToURICalls() {
+    public void testToURICalls() {
 
         assertArrayEquals(
                 new FastenJavaURI[]{

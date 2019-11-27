@@ -24,18 +24,18 @@ import scala.collection.JavaConversions;
 
 import java.io.File;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class OPALMethodAnalyzerTest{
+public class OPALMethodAnalyzerTest{
 
-    PartialCallGraph singleSourceToTargetcallGraph, classInitCallGraph, lambdaCallGraph, arrayCallGraph;
+    static PartialCallGraph singleSourceToTargetcallGraph, classInitCallGraph, lambdaCallGraph, arrayCallGraph;
 
-    @BeforeEach
-    void generateCallGraph() {
+    @BeforeClass
+    public static void generateCallGraph() {
 
         /**
          * SingleSourceToTarget is a java8 compiled bytecode of:
@@ -146,7 +146,7 @@ class OPALMethodAnalyzerTest{
     }
 
     @Test
-    void testToCanonicalSchemelessURI() {
+    public void testToCanonicalSchemelessURI() {
 
         var method = singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource();
         assertEquals(
@@ -213,7 +213,7 @@ class OPALMethodAnalyzerTest{
     }
 
     @Test
-    void testGetMethodName() {
+    public void testGetMethodName() {
 
         var method = singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).caller();
         assertEquals("SingleSourceToTarget", OPALMethodAnalyzer.getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
@@ -233,7 +233,7 @@ class OPALMethodAnalyzerTest{
     }
 
     @Test
-    void testGetReturnTypeURI() {
+    public void testGetReturnTypeURI() {
 
         assertEquals(
                 new FastenJavaURI("/java.lang/Void"),
@@ -248,7 +248,7 @@ class OPALMethodAnalyzerTest{
     }
 
     @Test
-    void testGetParametersURI() {
+    public void testGetParametersURI() {
 
         assertArrayEquals(
                 new FastenJavaURI[0],
@@ -263,7 +263,7 @@ class OPALMethodAnalyzerTest{
     }
 
     @Test
-    void testGetPackageName() {
+    public void testGetPackageName() {
 
         assertEquals(
                 "java.lang",
@@ -277,7 +277,7 @@ class OPALMethodAnalyzerTest{
     }
 
     @Test
-    void testGetClassName() {
+    public void testGetClassName() {
 
         assertEquals(
                 "Void",
