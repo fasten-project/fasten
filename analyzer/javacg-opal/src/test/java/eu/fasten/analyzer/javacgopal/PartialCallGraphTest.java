@@ -78,8 +78,8 @@ class PartialCallGraphTest {
 
         assertArrayEquals(
                 new FastenJavaURI[]{
-                        new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2Fvoid"),
-                        new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2Fvoid")}
+                        new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
+                        new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid")}
                 ,
                 CallGraphGenerator.generatePartialCallGraph(
                         new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())

@@ -87,7 +87,7 @@ public class MavenResolver {
      * @return The contents of the downloaded POM file as a string
      */
     public static Optional<String> downloadPom(String mavenCoordinate) {
-        return httpGetToFile(MavenCoordinate.fromString(mavenCoordinate).toPomUrl()).
+        return httpGetToFile(MavenCoordinate.fromString(mavenCoordinate).toPomUrl(),".pom").
             flatMap(f -> fileToString(f));
     }
 
@@ -99,7 +99,7 @@ public class MavenResolver {
      */
     public static Optional<File> downloadJar(String mavenCoordinate) {
         logger.debug("Downloading JAR for " + mavenCoordinate);
-        return httpGetToFile(MavenCoordinate.fromString(mavenCoordinate).toJarUrl());
+        return httpGetToFile(MavenCoordinate.fromString(mavenCoordinate).toJarUrl(),".jar");
     }
 
     /**
@@ -126,12 +126,12 @@ public class MavenResolver {
     /**
      * Utility function that stores the contents of GET request to a temporary file
      */
-    private static Optional<File> httpGetToFile(String url)  {
+    private static Optional<File> httpGetToFile(String url, String suffix)  {
         logger.debug("HTTP GET: " + url);
 
         try {
             //TODO: Download artifacts in configurable shared location
-            var tempFile = Files.createTempFile("fasten", ".tmp");
+            var tempFile = Files.createTempFile("fasten", suffix);
 
             InputStream in = new URL(url).openStream();
             Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);

@@ -51,7 +51,7 @@ public class OPALMethodAnalyzer {
             var JavaURI = FastenJavaURI.create(null, product, null,
                     getPackageName(clas),
                     getClassName(clas),
-                    getMethodName(clas.asObjectType().simpleName(), method),
+                    getMethodName(getClassName(clas), method),
                     getParametersURI(JavaConversions.seqAsJavaList(descriptor.parameterTypes())),
                     getReturnTypeURI(descriptor.returnType())
                 ).canonicalize();
