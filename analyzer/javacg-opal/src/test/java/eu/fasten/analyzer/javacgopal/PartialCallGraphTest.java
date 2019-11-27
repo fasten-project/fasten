@@ -24,10 +24,7 @@ import java.io.File;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.*;
 
 
 class PartialCallGraphTest {
@@ -50,7 +47,7 @@ class PartialCallGraphTest {
         assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"),revisionCallGraph.uri);
         assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"),revisionCallGraph.forgelessUri);
         assertEquals("org.slf4j.slf4j-api",revisionCallGraph.product);
-        assertNotNull(revisionCallGraph.graph);
+        assertNotEquals(0,revisionCallGraph.graph.size());
 
     }
 
@@ -86,5 +83,6 @@ class PartialCallGraphTest {
                 ).toURIGraph().get(0)
         );
     }
+
 
 }

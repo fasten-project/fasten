@@ -81,7 +81,7 @@ public class OPALMethodAnalyzer {
         if (methodName.equals("<init>")) {
 
             if (className.contains("Lambda")) {
-                return threeTimesPct(className);
+                return FastenJavaURI.pctEncodeArg(className);
             } else {
                 return className;
             }
@@ -105,6 +105,9 @@ public class OPALMethodAnalyzer {
      */
     public static FastenJavaURI getReturnTypeURI(Type returnType) {
 
+        if (getClassName(returnType).contains("Lambda")){
+            return new FastenJavaURI("/" + getPackageName(returnType) + "/" + FastenJavaURI.pctEncodeArg(getClassName(returnType)));
+        }
         return new FastenJavaURI("/" + getPackageName(returnType) + "/" + getClassName(returnType));
     }
 
@@ -175,7 +178,7 @@ public class OPALMethodAnalyzer {
                 parameterClassName = getClassName(parameter.asArrayType().componentType()).concat(threeTimesPct("[]"));
 
             } else if (parameter.asObjectType().simpleName().contains("Lambda")) {
-                return threeTimesPct(parameter.asObjectType().simpleName());
+                return FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg(parameter.asObjectType().simpleName()));
             } else {
                 parameterClassName = parameter.asObjectType().simpleName();
             }
