@@ -37,6 +37,23 @@
         </dependency>
     </dependencies>
 
-
+    <build>
+        <testSourceDirectory>${project.basedir}/src/test/java/eu/fasten/analyzer/javacgopal/</testSourceDirectory>
+        <plugins>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>${user.home}/.m2/repository/</classpathPrefix>
+                            <classpathLayoutType>repository</classpathLayoutType>
+                            <mainClass>eu.fasten.analyzer.javacgopal.Main</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

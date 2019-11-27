@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.Assert.assertArrayEquals;
 
 public class ResolvedCallTest {
 
