@@ -33,6 +33,7 @@ import static org.junit.Assert.assertEquals;
 public class OPALMethodAnalyzerTest{
 
     static PartialCallGraph singleSourceToTargetcallGraph, classInitCallGraph, lambdaCallGraph, arrayCallGraph;
+    static String lambdaNumber;
 
     @BeforeClass
     public static void generateCallGraph() {
@@ -115,8 +116,9 @@ public class OPALMethodAnalyzerTest{
          */
         lambdaCallGraph = CallGraphGenerator.generatePartialCallGraph(
                 new File(Thread.currentThread().getContextClassLoader().getResource("LambdaExample.class").getFile())
-
         );
+        var lambdaFullName = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getSource().declaringClassFile().thisType().fqn();
+        lambdaNumber = lambdaFullName.split("[$]")[1].split(":")[0];
 
         /**
          * SingleSourceToTarget is a java8 compiled bytecode of:
@@ -186,29 +188,29 @@ public class OPALMethodAnalyzerTest{
                 OPALMethodAnalyzer.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
         );
 
-//        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getSource();
-//        assertEquals(
-//                new FastenJavaURI("/null/Lambda$79%3A0.apply(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
-//                OPALMethodAnalyzer.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
-//        );
-//
-//        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getTarget().get(0);
-//        assertEquals(
-//                new FastenJavaURI("/name.space/LambdaExample.lambda$new$0(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
-//                OPALMethodAnalyzer.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
-//        );
-//
-//        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("$newInstance")).findFirst().get().getSource();
-//        assertEquals(
-//                new FastenJavaURI("/null/Lambda$79%3A0.$newInstance()Lambda$79%25253A0"),
-//                OPALMethodAnalyzer.toCanonicalSchemelessURI( null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
-//        );
-//
-//        method = lambdaCallGraph.getUnresolvedCalls().stream().filter(i -> i.caller().declaringClassFile().thisType().packageName().equals("")).findFirst().get().caller();
-//        assertEquals(
-//                new FastenJavaURI("/null/Lambda$79%3A0.Lambda$79%3A0()%2Fjava.lang%2FVoid"),
-//                OPALMethodAnalyzer.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
-//        );
+        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getSource();
+        assertEquals(
+                new FastenJavaURI("/null/Lambda$"+lambdaNumber+"%3A0.apply(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
+                OPALMethodAnalyzer.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+        );
+
+        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getTarget().get(0);
+        assertEquals(
+                new FastenJavaURI("/name.space/LambdaExample.lambda$new$0(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
+                OPALMethodAnalyzer.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+        );
+
+        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("$newInstance")).findFirst().get().getSource();
+        assertEquals(
+                new FastenJavaURI("/null/Lambda$"+lambdaNumber+"%3A0.$newInstance()Lambda$"+lambdaNumber+"%25253A0"),
+                OPALMethodAnalyzer.toCanonicalSchemelessURI( null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+        );
+
+        method = lambdaCallGraph.getUnresolvedCalls().stream().filter(i -> i.caller().declaringClassFile().thisType().packageName().equals("")).findFirst().get().caller();
+        assertEquals(
+                new FastenJavaURI("/null/Lambda$"+lambdaNumber+"%3A0.Lambda$"+lambdaNumber+"%3A0()%2Fjava.lang%2FVoid"),
+                OPALMethodAnalyzer.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+        );
 
     }
 
