@@ -27,11 +27,19 @@ public class MavenCoordinate {
     String groupID;
     String artifactID;
     String versionConstraint;
+    String timestamp;
 
     public MavenCoordinate(String groupID, String artifactID, String version) {
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
+    }
+
+    public MavenCoordinate(String groupID, String artifactID, String version, String timestamp) {
+        this.groupID = groupID;
+        this.artifactID = artifactID;
+        this.versionConstraint = version;
+        this.timestamp = timestamp;
     }
 
     public static MavenCoordinate fromString(String coords) {
