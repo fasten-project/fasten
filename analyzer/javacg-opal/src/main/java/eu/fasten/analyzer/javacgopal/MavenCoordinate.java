@@ -55,6 +55,8 @@ public class MavenCoordinate {
         return groupID + ":" + artifactID + ":" + versionConstraint;
     }
 
+    public String getTimestamp() {return timestamp;}
+
     public String toURL()  {
         StringBuilder url = new StringBuilder(MAVEN_REPO)
             .append(this.groupID.replace('.', '/'))
