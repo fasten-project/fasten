@@ -1,5 +1,7 @@
-package eu.fasten.core.plugins;
+package eu.fasten.server;
 
+import eu.fasten.core.plugins.Analyzer;
+import eu.fasten.core.plugins.FastenPlugin;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -25,24 +27,12 @@ import java.util.concurrent.CountDownLatch;
  */
 
 
-public class MavenCoordConsumer implements FastenPlugin {
+public class MavenCoordConsumer{
 
     final KafkaConsumer<String, String> MVCConsumer;
     private final Logger logger = LoggerFactory.getLogger(MavenCoordConsumer.class.getName());
     private static final String topic = "maven.packages";
     private final String groupId;
-
-    @Override
-    public String name() {
-        return "MavenCoordConsumer";
-    }
-
-    @Override
-    public String description() {
-        return "This plugin is responsible for consuming Maven coordinates records. Currently, it passes the records" +
-                " to the callgraph generator.";
-
-    }
 
     MavenCoordConsumer(String serverProperties, String groupId){
         this.groupId = groupId;
@@ -76,16 +66,13 @@ public class MavenCoordConsumer implements FastenPlugin {
         @Override
         public void run(){
             try{
+
+                Analyzer dummyAnalyzer = new Analyzer();
+
                 do{
                     ConsumerRecords<String, String> records = MVCConsumer.poll(Duration.ofMillis(100));
 
-                    for(ConsumerRecord<String, String> record : records){
-
-                        //TODO: Call graph generator should take Maven coordinates here.
-
-                        logger.info("Key: " + record.key() + " , Value: " + record.value());
-                        logger.info("Partition: " + record.partition() + ", Offset: " + record.offset());
-                    }
+                    dummyAnalyzer.consume(records);
 
                 }while (true);
             } catch (WakeupException e){
@@ -123,16 +110,6 @@ public class MavenCoordConsumer implements FastenPlugin {
         }));
 
         latch.await();
-    }
-
-    @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void stop() {
-
     }
 
     public static void main(String[] args) throws InterruptedException {
