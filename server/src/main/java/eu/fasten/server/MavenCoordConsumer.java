@@ -12,6 +12,7 @@ import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import picocli.CommandLine;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -26,21 +27,18 @@ import java.util.concurrent.CountDownLatch;
  *
  */
 
+@CommandLine.Command(name = "MavenCoordConsumer", description = "Generates call graphs from Maven coordinates.")
+public class MavenCoordConsumer implements Runnable{
 
-public class MavenCoordConsumer{
+    @CommandLine.Option(names = {"-h", "--host"}, defaultValue = "localhost", description = "The IP address of the Kafka server")
+    String IP;
+    @CommandLine.Option(names = {"-p", "--port"}, defaultValue = "9092", description = "The port of the Kafka server.")
+    String port;
 
-    final KafkaConsumer<String, String> MVCConsumer;
+    private KafkaConsumer<String, String> MVCConsumer;
     private final Logger logger = LoggerFactory.getLogger(MavenCoordConsumer.class.getName());
     private static final String topic = "maven.packages";
-    private final String groupId;
-
-    MavenCoordConsumer(String serverProperties, String groupId){
-        this.groupId = groupId;
-        Properties props = consumerProps(serverProperties);
-        this.MVCConsumer = new KafkaConsumer<String, String>(props);
-
-        logger.info("Consumer initialized");
-    }
+    private final String groupId = "some_app";
 
     private Properties consumerProps(String serverProperties) {
         String deserializer = StringDeserializer.class.getName();
@@ -88,8 +86,12 @@ public class MavenCoordConsumer{
         }
     }
 
-    void run() throws InterruptedException {
-        logger.debug("Creating consumer thread");
+    @Override
+    public void run() {
+        Properties props = consumerProps(IP + ":" + port);
+        this.MVCConsumer = new KafkaConsumer<String, String>(props);
+
+        logger.info("Consumer initialized");
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -109,12 +111,15 @@ public class MavenCoordConsumer{
             logger.debug("MVC Consumer has exited");
         }));
 
-        latch.await();
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-    public static void main(String[] args) throws InterruptedException {
-        // TODO: Create a CLI to avoid hardcoding the serverAddress
-        String serverAddress = "127.0.0.1:9092";
-        new MavenCoordConsumer(serverAddress, "some_app").run();
+    public static void main(String[] args) {
+        int exitCode = new CommandLine(new MavenCoordConsumer()).execute(args);
+        System.exit(exitCode);
     }
 }
