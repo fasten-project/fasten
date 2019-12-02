@@ -55,56 +55,59 @@ public class KafkaToKafka {
         ConsumerRecords<String, String> kafkaRecords = KafkaConsumerMonster.createConsumer("cf_mvn_releases").poll(Duration.ofDays(365));
 
         for (ConsumerRecord<String, String> kafkaRecord : kafkaRecords) {
+            try {
+                JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
 
-            JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
+                MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
+                    kafkaConsumedJson.get("artifactId").toString(),
+                    kafkaConsumedJson.get("version").toString());
 
-            MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
-                kafkaConsumedJson.get("artifactId").toString(),
-                kafkaConsumedJson.get("version").toString());
+                MavenCoordinate mavenCoordinate1 = new MavenCoordinate("1",
+                    "2",
+                    "3");
 
-            MavenCoordinate mavenCoordinate1 = new MavenCoordinate("1",
-                "2",
-                "3");
+                PartialCallGraph partialCallGraph = CallGraphGenerator.generatePartialCallGraph(
+                    MavenResolver.downloadJar(mavenCoordinate1.getCoordinate()).orElseThrow(
+                        RuntimeException::new
+                    ));
 
-            PartialCallGraph partialCallGraph = CallGraphGenerator.generatePartialCallGraph(
-                MavenResolver.downloadJar(mavenCoordinate1.getCoordinate()).orElseThrow(
-                    RuntimeException::new
-            ));
-
-            for (ResolvedCall resolvedCall : partialCallGraph.getResolvedCalls()) {
-
-                OPALMethodAnalyzer.toCanonicalSchemelessURI(
-                    null,
-                    resolvedCall.getSource().declaringClassFile().thisType(),
-                    resolvedCall.getSource().name(),
-                    resolvedCall.getSource().descriptor());
-
-                for (Method target : resolvedCall.getTarget()) {
+                for (ResolvedCall resolvedCall : partialCallGraph.getResolvedCalls()) {
 
                     OPALMethodAnalyzer.toCanonicalSchemelessURI(
                         null,
-                        target.declaringClassFile().thisType(),
-                        target.name(),
-                        target.descriptor()
+                        resolvedCall.getSource().declaringClassFile().thisType(),
+                        resolvedCall.getSource().name(),
+                        resolvedCall.getSource().descriptor());
+
+                    for (Method target : resolvedCall.getTarget()) {
+
+                        OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                            null,
+                            target.declaringClassFile().thisType(),
+                            target.name(),
+                            target.descriptor()
                         );
+                    }
                 }
-            }
 
-            for (UnresolvedMethodCall unresolvedCall : partialCallGraph.getUnresolvedCalls()) {
+                for (UnresolvedMethodCall unresolvedCall : partialCallGraph.getUnresolvedCalls()) {
 
-                OPALMethodAnalyzer.toCanonicalSchemelessURI(
-                    null,
-                    unresolvedCall.caller().declaringClassFile().thisType(),
-                    unresolvedCall.caller().name(),
-                    unresolvedCall.caller().descriptor()
-                );
+                    OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                        null,
+                        unresolvedCall.caller().declaringClassFile().thisType(),
+                        unresolvedCall.caller().name(),
+                        unresolvedCall.caller().descriptor()
+                    );
 
-                OPALMethodAnalyzer.toCanonicalSchemelessURI(
-                    "SomeDependency",
-                    unresolvedCall.calleeClass(),
-                    unresolvedCall.calleeName(),
-                    unresolvedCall.calleeDescriptor()
-                );
+                    OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                        "SomeDependency",
+                        unresolvedCall.calleeClass(),
+                        unresolvedCall.calleeName(),
+                        unresolvedCall.calleeDescriptor()
+                    );
+                }
+            }catch (Exception e){
+                logger.info("cound not generate cg for coordinate");
             }
         }
         //TODO generate FASTEN JSON and Produce to Kafka.
