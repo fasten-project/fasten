@@ -38,7 +38,7 @@ public class OPALPluginTest {
     static OPALPlugin opalPlugin;
 
     @BeforeClass
-    public static void instanciatePlugin() {
+    public static void instantiatePlugin() {
         opalPlugin = new OPALPlugin();
     }
 
@@ -75,23 +75,7 @@ public class OPALPluginTest {
     }
 
     @Test
-    public void testSetKafkaProducer() {
-    }
-
-    @Test
     public void testName() {
         assertEquals("eu.fasten.analyzer.javacgopal.OPALPlugin", opalPlugin.name());
-    }
-
-    @Test
-    public void testDescription() {
-    }
-
-    @Test
-    public void testStart() {
-    }
-
-    @Test
-    public void testStop() {
     }
 }
