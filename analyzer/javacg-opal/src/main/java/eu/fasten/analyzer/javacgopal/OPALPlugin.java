@@ -38,6 +38,9 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
                 kafkaConsumedJson.get("artifactId").toString(),
                 kafkaConsumedJson.get("version").toString());
 
+            logger.debug("Started the call graph generation... for: " + "groupId: " + kafkaConsumedJson.get("groupId").toString() +
+                " artifactId: " + kafkaConsumedJson.get("artifactId").toString() + " version: " + kafkaConsumedJson.get("version").toString());
+
             revisionCallGraphs.add(
                 PartialCallGraph.createRevisionCallGraph("mvn",
                     mavenCoordinate,
@@ -47,6 +50,8 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
                     )
                 )
             );
+            logger.debug("Generated a call graph for: " + " groupId: " + kafkaConsumedJson.get("groupId").toString() +
+                " artifactId: " + kafkaConsumedJson.get("artifactId").toString() + " version: " + kafkaConsumedJson.get("version").toString());
             }catch (Exception e){
                 //TODO
             }
