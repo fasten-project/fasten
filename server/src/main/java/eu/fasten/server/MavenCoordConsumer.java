@@ -1,7 +1,5 @@
 package eu.fasten.server;
 
-import eu.fasten.core.plugins.Analyzer;
-import eu.fasten.core.plugins.FastenPlugin;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -10,6 +8,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import picocli.CommandLine;
@@ -65,13 +64,20 @@ public class MavenCoordConsumer implements Runnable{
         public void run(){
             try{
 
-                Analyzer dummyAnalyzer = new Analyzer();
-
                 do{
                     ConsumerRecords<String, String> records = MVCConsumer.poll(Duration.ofMillis(100));
 
-                    dummyAnalyzer.consume(records);
+                    for(ConsumerRecord<String, String> r : records){
+                        System.out.println(r.key() + " " + r.value());
 
+                        JSONObject mvn_record = new JSONObject(r.value());
+                        System.out.println("GroupID: " + mvn_record.getString("groupId"));
+                        System.out.println("ArtifactID: " + mvn_record.getString("artifactId"));
+                        System.out.println("version: " + mvn_record.getString("version"));
+                        System.out.println("datetime: " + mvn_record.getString("date"));
+
+                    }
+                    
                 }while (true);
             } catch (WakeupException e){
                 logger.info("Received shutdown signal!");
