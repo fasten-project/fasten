@@ -2,10 +2,9 @@ package eu.fasten.analyzer.plugins;
 
 import eu.fasten.analyzer.javacgopal.OPALPlugin;
 import eu.fasten.core.plugins.FastenPlugin;
+import eu.fasten.core.plugins.KafkaConsumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.LoggerFactory;
@@ -22,15 +21,15 @@ import java.util.concurrent.CountDownLatch;
  * 2- It generates a call graph for the given Maven coordinates. Note that the Kafka consumer and
  *  its properties are declared in this class.
  */
-public class Analyzer implements FastenPlugin {
+public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
     private String serverAddress;
     private KafkaConsumer<String, String> MVCConsumer;
     private static final String topic = "maven.packages";
     private final String groupId = "some_app";
-    private final Logger logger = LoggerFactory.getLogger(Analyzer.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(DummyAnalyzer.class.getName());
 
-    public Analyzer(String serverAddress) {
+    public DummyAnalyzer(String serverAddress) {
         this.serverAddress = serverAddress;
     }
 
@@ -45,6 +44,16 @@ public class Analyzer implements FastenPlugin {
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
         return properties;
+    }
+
+    @Override
+    public String consumerTopic() {
+        return null;
+    }
+
+    @Override
+    public void consume(ConsumerRecords<String, String> records) {
+
     }
 
     private class ConsumerRunnable implements Runnable {
