@@ -2,43 +2,31 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
+        <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
-        <artifactId>parent</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>server</artifactId>
+    <groupId>eu.fasten.analyzer</groupId>
+    <artifactId>plugins</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <description>
-        Implements a publicly accessible knowledge base for FASTEN.
-    </description>
+    <name>dummy-analyzer</name>
 
     <dependencies>
         <dependency>
-            <groupId>eu.fasten</groupId>
-            <artifactId>core</artifactId>
+            <groupId>eu.fasten.analyzer</groupId>
+            <artifactId>javacg-opal</artifactId>
             <version>0.0.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>eu.fasten.analyzer</groupId>-->
-<!--            <artifactId>plugins</artifactId>-->
-<!--            <version>0.0.1-SNAPSHOT</version>-->
-<!--        </dependency>-->
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-            <version>1.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>1.12.1</version>
+            <groupId>eu.fasten</groupId>
+            <artifactId>server</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
@@ -57,7 +45,7 @@
                             <archive>
                                 <manifest>
                                     <mainClass>
-                                        eu.fasten.server.FastenServer
+                                        eu.fasten.analyzer.plugins.DummyAnalyzer
                                     </mainClass>
                                 </manifest>
                             </archive>

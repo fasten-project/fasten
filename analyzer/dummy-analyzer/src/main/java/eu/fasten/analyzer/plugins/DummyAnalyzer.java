@@ -2,17 +2,14 @@ package eu.fasten.analyzer.plugins;
 
 import eu.fasten.analyzer.javacgopal.OPALPlugin;
 import eu.fasten.core.plugins.FastenPlugin;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import eu.fasten.core.plugins.KafkaConsumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.kafka.common.serialization.StringDeserializer;
+import eu.fasten.server.KafkaConsumerCon;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
@@ -22,29 +19,41 @@ import java.util.concurrent.CountDownLatch;
  * 2- It generates a call graph for the given Maven coordinates. Note that the Kafka consumer and
  *  its properties are declared in this class.
  */
-public class Analyzer implements FastenPlugin {
+public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
-    private String serverAddress;
-    private KafkaConsumer<String, String> MVCConsumer;
-    private static final String topic = "maven.packages";
-    private final String groupId = "some_app";
-    private final Logger logger = LoggerFactory.getLogger(Analyzer.class.getName());
+    //private String serverAddress;
+    private org.apache.kafka.clients.consumer.KafkaConsumer<String, String> kafkaConsumerCon;
+    //private static final String topic = "maven.packages";
+    //private final String groupId = "some_app";
+    private final Logger logger = LoggerFactory.getLogger(DummyAnalyzer.class.getName());
 
-    public Analyzer(String serverAddress) {
-        this.serverAddress = serverAddress;
+    public DummyAnalyzer(KafkaConsumerCon kafkaConsumerCon) {
+        this.kafkaConsumerCon = kafkaConsumerCon.getConsumer();
     }
 
-    private Properties consumerProps(String serverProperties) {
-        String deserializer = StringDeserializer.class.getName();
-        Properties properties = new Properties();
+//    private Properties consumerProps(String serverProperties) {
+//        String deserializer = StringDeserializer.class.getName();
+//        Properties properties = new Properties();
+//
+//        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, serverProperties);
+//        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
+//        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, deserializer);
+//        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
+//        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+//
+//        return properties;
+//    }
 
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, serverProperties);
-        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
-        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, deserializer);
-        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
-        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    @Override
+    public String consumerTopic() {
+        return null;
+    }
 
-        return properties;
+    @Override
+    public void consume(ConsumerRecords<String, String> records) {
+        // Generates call graphs from given Maven records.
+        OPALPlugin opal = new OPALPlugin();
+        opal.consume(records);
     }
 
     private class ConsumerRunnable implements Runnable {
@@ -52,7 +61,6 @@ public class Analyzer implements FastenPlugin {
 
         ConsumerRunnable(CountDownLatch latch){
             mLatch = latch;
-            MVCConsumer.subscribe(Collections.singletonList(topic));
         }
 
         @Override
@@ -60,23 +68,21 @@ public class Analyzer implements FastenPlugin {
             try{
 
                 do{
-                    ConsumerRecords<String, String> records = MVCConsumer.poll(Duration.ofMillis(100));
+                    ConsumerRecords<String, String> records = kafkaConsumerCon.poll(Duration.ofMillis(100));
+                    consume(records);
 
-                    // Generates call graphs from given Maven records.
-                    OPALPlugin opal = new OPALPlugin();
-                    opal.consume(records);
                     //logger.debug("******************* Generated call graph: " + opal.getRevisionCallGraphs().get(0).toJSON().toString() + " ***********************************");
                 }while (true);
             } catch (WakeupException e){
                 logger.info("Received shutdown signal!");
             } finally {
-                MVCConsumer.close();
+                kafkaConsumerCon.close();
                 mLatch.countDown();
             }
         }
 
         void shutdown() {
-            MVCConsumer.wakeup();
+            kafkaConsumerCon.wakeup();
         }
     }
 
@@ -92,8 +98,8 @@ public class Analyzer implements FastenPlugin {
 
     @Override
     public void start() {
-        Properties props = consumerProps(this.serverAddress);
-        this.MVCConsumer = new KafkaConsumer<String, String>(props);
+        //Properties props = consumerProps(this.serverAddress);
+        //this.MVCConsumer = new KafkaConsumer<String, String>(props);
 
         logger.info("Consumer initialized");
 
@@ -125,6 +131,15 @@ public class Analyzer implements FastenPlugin {
     @Override
     public void stop() {
 
+    }
+
+    public static void main(String[] args) {
+
+        KafkaConsumerCon kafkaConsumerCon = new KafkaConsumerCon("localhost:9092", "maven.packages",
+                "some_app");
+
+        DummyAnalyzer analyzer = new DummyAnalyzer(kafkaConsumerCon);
+        analyzer.start();
     }
 
 }
