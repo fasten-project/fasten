@@ -39,6 +39,10 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
     final String CONSUME_TOPIC = "maven.packages";
     final String PRODUCE_TOPIC = "opal_callgraphs";
 
+    public List<RevisionCallGraph> getRevisionCallGraphs() {
+        return revisionCallGraphs;
+    }
+
     @Override
     public String consumerTopic() {
         return CONSUME_TOPIC;
@@ -71,7 +75,7 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
             logger.debug("Generated a call graph for: " + " groupId: " + kafkaConsumedJson.get("groupId").toString() +
                 " artifactId: " + kafkaConsumedJson.get("artifactId").toString() + " version: " + kafkaConsumedJson.get("version").toString());
             }catch (Exception e){
-                //TODO
+                logger.error("*************** " + e.getMessage() + " ********************");
             }
         }
     }
