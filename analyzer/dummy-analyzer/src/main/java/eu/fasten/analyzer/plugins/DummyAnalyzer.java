@@ -23,8 +23,8 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
     //private String serverAddress;
     private org.apache.kafka.clients.consumer.KafkaConsumer<String, String> kafkaConsumerCon;
-    private static final String topic = "maven.packages";
-    private final String groupId = "some_app";
+    //private static final String topic = "maven.packages";
+    //private final String groupId = "some_app";
     private final Logger logger = LoggerFactory.getLogger(DummyAnalyzer.class.getName());
 
     public DummyAnalyzer(KafkaConsumerCon kafkaConsumerCon) {
@@ -51,7 +51,9 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
     @Override
     public void consume(ConsumerRecords<String, String> records) {
-
+        // Generates call graphs from given Maven records.
+        OPALPlugin opal = new OPALPlugin();
+        opal.consume(records);
     }
 
     private class ConsumerRunnable implements Runnable {
@@ -67,10 +69,8 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
                 do{
                     ConsumerRecords<String, String> records = kafkaConsumerCon.poll(Duration.ofMillis(100));
+                    consume(records);
 
-                    // Generates call graphs from given Maven records.
-                    OPALPlugin opal = new OPALPlugin();
-                    opal.consume(records);
                     //logger.debug("******************* Generated call graph: " + opal.getRevisionCallGraphs().get(0).toJSON().toString() + " ***********************************");
                 }while (true);
             } catch (WakeupException e){
@@ -131,6 +131,15 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
     @Override
     public void stop() {
 
+    }
+
+    public static void main(String[] args) {
+
+        KafkaConsumerCon kafkaConsumerCon = new KafkaConsumerCon("localhost:9092", "maven.packages",
+                "some_app");
+
+        DummyAnalyzer analyzer = new DummyAnalyzer(kafkaConsumerCon);
+        analyzer.start();
     }
 
 }
