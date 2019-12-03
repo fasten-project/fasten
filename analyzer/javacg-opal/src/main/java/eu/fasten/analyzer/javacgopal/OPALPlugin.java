@@ -32,6 +32,9 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
 
@@ -58,13 +61,15 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
      *                       "groupId": "com.g2forge.alexandria",
      *                       "artifactId": "alexandria",
      *                       "version": "0.0.9",
-     *                       "date": "2019-06-24 14:42:49"
+     *                       "date": "1574072773"
      *                      }
      */
     @Override
     public void consume(ConsumerRecords<String, String> records) {
 
-        for (ConsumerRecord<String, String> kafkaRecord : records) {
+        StreamSupport.stream(records.spliterator(),true).forEach(
+
+            kafkaRecord ->{
 
             try {
             JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
@@ -72,9 +77,6 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
             MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
                 kafkaConsumedJson.get("artifactId").toString(),
                 kafkaConsumedJson.get("version").toString());
-
-            logger.debug("Started the call graph generation... for: " + "groupId: " + kafkaConsumedJson.get("groupId").toString() +
-                " artifactId: " + kafkaConsumedJson.get("artifactId").toString() + " version: " + kafkaConsumedJson.get("version").toString());
 
             revisionCallGraphs.add(
                 PartialCallGraph.createRevisionCallGraph("mvn",
@@ -85,14 +87,17 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
                     )
                 )
             );
-            logger.debug("Generated a call graph for: " + " groupId: " + kafkaConsumedJson.get("groupId").toString() +
-                " artifactId: " + kafkaConsumedJson.get("artifactId").toString() + " version: " + kafkaConsumedJson.get("version").toString());
-            }catch (Exception e){
-                logger.error("*************** " + e.getMessage() + " ********************");
-            //logger.info("{}'s graph successfully generated!", mavenCoordinate);
 
+            logger.info("{}'s graph successfully generated!", mavenCoordinate.getCoordinate());
+
+            }catch (JSONException e){
+                logger.error("An exception occurred while using consumer records as json: {}", e.getMessage());
+            }catch (Exception e){
+                logger.error(e.getMessage());
             }
-        }
+            }
+        );
+
     }
 
     @Override
