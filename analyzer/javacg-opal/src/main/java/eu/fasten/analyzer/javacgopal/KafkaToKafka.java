@@ -18,11 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import eu.fasten.core.data.FastenJavaURI;
-
 import com.fasterxml.jackson.databind.deser.std.StringDeserializer;
-
-import scala.collection.JavaConversions;
 
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.ConsumerRecord;

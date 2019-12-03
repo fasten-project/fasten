@@ -24,12 +24,14 @@ import eu.fasten.core.plugins.KafkaProducer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
 
@@ -48,6 +50,17 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
         return CONSUME_TOPIC;
     }
 
+    /**
+     * Generates call graphs using OPAL for consumed maven coordinates in eu.fasten.core.data.RevisionCallGraph format.
+     *
+     * @param records An Iterable of records including maven coordinates in the JSON format.
+     *                e.g. {
+     *                       "groupId": "com.g2forge.alexandria",
+     *                       "artifactId": "alexandria",
+     *                       "version": "0.0.9",
+     *                       "date": "2019-06-24 14:42:49"
+     *                      }
+     */
     @Override
     public void consume(ConsumerRecords<String, String> records) {
 
@@ -76,6 +89,8 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
                 " artifactId: " + kafkaConsumedJson.get("artifactId").toString() + " version: " + kafkaConsumedJson.get("version").toString());
             }catch (Exception e){
                 logger.error("*************** " + e.getMessage() + " ********************");
+            //logger.info("{}'s graph successfully generated!", mavenCoordinate);
+
             }
         }
     }
@@ -85,6 +100,11 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
         return PRODUCE_TOPIC;
     }
 
+    /**
+     * Send generated call graphs in eu.fasten.core.data.RevisionCallGraph format to the provided Kafka Producer.
+     *
+     * @param producer org.apache.kafka.clients.producer.KafkaProducer.
+     */
     @Override
     public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
         for (RevisionCallGraph revisionCallGraph : revisionCallGraphs) {
@@ -97,8 +117,8 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
                     }
                     logger.debug("Could not produce artifact {}: ", revisionCallGraph.uri.toString());
                 })).get();
-            }catch (Exception e){
-                //TODO
+            }catch (ExecutionException | InterruptedException e){
+            logger.error(e.getMessage());
             }
         }
 
@@ -112,9 +132,9 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
 
     @Override
     public String description() {
-        return "This plugin is a call graph generator. " +
-            "It implements a consume method that generates call graphs using OPAL call graph generator for provided Kafka consumed maven coordinates." +
-            "It also implements a produce method which produces generated call graphs to a Kafka topic.";
+        return  "This plugin is a call graph generator.\n" +
+                "It implements a consume method that generates call graphs using OPAL call graph generator for provided Kafka consumed maven coordinates.\n" +
+                "It also implements a produce method which produces generated call graphs to a Kafka topic.\n";
     }
 
     @Override
