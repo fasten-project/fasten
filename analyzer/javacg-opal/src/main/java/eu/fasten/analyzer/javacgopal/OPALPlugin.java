@@ -41,6 +41,10 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
     final String CONSUME_TOPIC = "maven.packages";
     final String PRODUCE_TOPIC = "opal_callgraphs";
 
+    public List<RevisionCallGraph> getRevisionCallGraphs() {
+        return revisionCallGraphs;
+    }
+
     @Override
     public String consumerTopic() {
         return CONSUME_TOPIC;
@@ -69,6 +73,9 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
                 kafkaConsumedJson.get("artifactId").toString(),
                 kafkaConsumedJson.get("version").toString());
 
+            logger.debug("Started the call graph generation... for: " + "groupId: " + kafkaConsumedJson.get("groupId").toString() +
+                " artifactId: " + kafkaConsumedJson.get("artifactId").toString() + " version: " + kafkaConsumedJson.get("version").toString());
+
             revisionCallGraphs.add(
                 PartialCallGraph.createRevisionCallGraph("mvn",
                     mavenCoordinate,
@@ -78,12 +85,12 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
                     )
                 )
             );
-            logger.info("{}'s graph successfully generated!", mavenCoordinate);
-
-            }catch (JSONException e){
-                logger.error("An exception occurred while using consumer records as json: {}", e.getMessage());
+            logger.debug("Generated a call graph for: " + " groupId: " + kafkaConsumedJson.get("groupId").toString() +
+                " artifactId: " + kafkaConsumedJson.get("artifactId").toString() + " version: " + kafkaConsumedJson.get("version").toString());
             }catch (Exception e){
-                logger.error(e.getMessage());
+                logger.error("*************** " + e.getMessage() + " ********************");
+            //logger.info("{}'s graph successfully generated!", mavenCoordinate);
+
             }
         }
     }

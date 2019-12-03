@@ -1,5 +1,6 @@
-package eu.fasten.analyzer.javacgopal.plugins;
+package eu.fasten.analyzer.plugins;
 
+import eu.fasten.analyzer.javacgopal.OPALPlugin;
 import eu.fasten.core.plugins.FastenPlugin;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -7,10 +8,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
-import picocli.CommandLine;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -63,17 +62,10 @@ public class Analyzer implements FastenPlugin {
                 do{
                     ConsumerRecords<String, String> records = MVCConsumer.poll(Duration.ofMillis(100));
 
-//                    for(ConsumerRecord<String, String> r : records){
-//                        System.out.println(r.key() + " " + r.value());
-//
-//                        JSONObject mvn_record = new JSONObject(r.value());
-//                        System.out.println("GroupID: " + mvn_record.getString("groupId"));
-//                        System.out.println("ArtifactID: " + mvn_record.getString("artifactId"));
-//                        System.out.println("version: " + mvn_record.getString("version"));
-//                        System.out.println("datetime: " + mvn_record.getString("date"));
-//
-//                    }
-
+                    // Generates call graphs from given Maven records.
+                    OPALPlugin opal = new OPALPlugin();
+                    opal.consume(records);
+                    //logger.debug("******************* Generated call graph: " + opal.getRevisionCallGraphs().get(0).toJSON().toString() + " ***********************************");
                 }while (true);
             } catch (WakeupException e){
                 logger.info("Received shutdown signal!");
