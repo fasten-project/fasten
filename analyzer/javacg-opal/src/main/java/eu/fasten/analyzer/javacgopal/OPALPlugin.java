@@ -73,7 +73,7 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
                 PartialCallGraph.createRevisionCallGraph("mvn",
                     mavenCoordinate,
                     Long.parseLong(kafkaConsumedJson.get("date").toString()),
-                    CallGraphGenerator.generatePartialCallGraph(
+                    new PartialCallGraph(
                         MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new)
                     )
                 )

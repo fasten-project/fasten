@@ -62,10 +62,10 @@ public class KafkaToKafka {
                     "2",
                     "3");
 
-                PartialCallGraph partialCallGraph = CallGraphGenerator.generatePartialCallGraph(
-                    MavenResolver.downloadJar(mavenCoordinate1.getCoordinate()).orElseThrow(
-                        RuntimeException::new
-                    ));
+                PartialCallGraph partialCallGraph = new PartialCallGraph(
+                MavenResolver.downloadJar(mavenCoordinate1.getCoordinate()).orElseThrow(
+                    RuntimeException::new
+                ));
 
                 for (ResolvedCall resolvedCall : partialCallGraph.getResolvedCalls()) {
 

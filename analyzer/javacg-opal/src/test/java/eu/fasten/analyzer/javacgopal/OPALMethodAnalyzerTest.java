@@ -56,7 +56,7 @@ public class OPALMethodAnalyzerTest{
          *  Unresolved:[ public void <init>() of current class,
          *               public void <init>() of Object class]
          */
-        singleSourceToTargetcallGraph = CallGraphGenerator.generatePartialCallGraph(
+        singleSourceToTargetcallGraph = new PartialCallGraph(
                 new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())
         );
 
@@ -79,7 +79,7 @@ public class OPALMethodAnalyzerTest{
          *  Unresolved:[ public void <init>() of current class,
          *               public void <init>() of Object class]
          */
-        classInitCallGraph = CallGraphGenerator.generatePartialCallGraph(
+        classInitCallGraph = new PartialCallGraph(
                 new File(Thread.currentThread().getContextClassLoader().getResource("ClassInit.class").getFile())
         );
 
@@ -114,7 +114,7 @@ public class OPALMethodAnalyzerTest{
          *                   public void <init>() of Object class}
          *              ]
          */
-        lambdaCallGraph = CallGraphGenerator.generatePartialCallGraph(
+        lambdaCallGraph = new PartialCallGraph(
                 new File(Thread.currentThread().getContextClassLoader().getResource("LambdaExample.class").getFile())
         );
         var lambdaFullName = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getSource().declaringClassFile().thisType().fqn();
@@ -142,7 +142,7 @@ public class OPALMethodAnalyzerTest{
          *  Unresolved:[ public void <init>() of current class,
          *               public void <init>() of Object class]
          */
-        arrayCallGraph = CallGraphGenerator.generatePartialCallGraph(
+        arrayCallGraph = new PartialCallGraph(
                 new File(Thread.currentThread().getContextClassLoader().getResource("ArrayExample.class").getFile())
         );
     }

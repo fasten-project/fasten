@@ -64,7 +64,7 @@ public class OPALPluginTest {
 
         JSONAssert.assertEquals(PartialCallGraph.createRevisionCallGraph("mvn",
                         new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"), 1574072773,
-                        CallGraphGenerator.generatePartialCallGraph(MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))).toJSON(),
+                        new PartialCallGraph(MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))).toJSON(),
                 opalPlugin.revisionCallGraphs.get(0).toJSON(), false);
 
     }

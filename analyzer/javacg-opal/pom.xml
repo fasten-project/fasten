@@ -61,8 +61,8 @@
         </plugins>
     </build>
 
-<!--TODO it works when build inside the plugin but throws stack over flow exception when building the whole project! -->
-<!--   -->
+<!--TODO fix: it builds a runnable fat jar when build inside the plugin but throws stack over flow exception when building the whole project! -->
+
 <!--    <build>-->
 <!--        <plugins>-->
 <!--            <plugin>-->

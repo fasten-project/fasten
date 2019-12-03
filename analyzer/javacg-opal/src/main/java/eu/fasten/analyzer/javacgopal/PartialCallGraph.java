@@ -23,10 +23,23 @@ import eu.fasten.core.data.FastenURI;
 
 import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
 import org.opalj.br.ClassHierarchy;
+import org.opalj.ai.analyses.cg.CallGraphFactory;
+import org.opalj.ai.analyses.cg.ComputedCallGraph;
+import org.opalj.ai.analyses.cg.CHACallGraphAlgorithmConfiguration;
+import org.opalj.br.Method;
+import org.opalj.br.analyses.Project;
+import org.opalj.collection.immutable.ConstArray;
 
+import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Collection;
+
+import scala.collection.Iterable;
+import scala.collection.JavaConversions;
+import scala.collection.Map;
+
+
 
 /**
  * Call graphs that are not still fully resolved.
@@ -57,15 +70,17 @@ public class PartialCallGraph {
      * Using this constructor it is possible to directly retrieve calls in eu.fasten.analyzer.javacgopal.PartialCallGraph.
      * e.g. add edges to resolved calls one by one when scala is being used.
      */
-    public PartialCallGraph() {
+
+    public PartialCallGraph(File file) {
         this.resolvedCalls = new ArrayList<>();
         this.unresolvedCalls = new ArrayList<>();
+        this.generatePartialCallGraph(file);
     }
 
     /**
      * This constructor creates the list of UnresolvedCalls from a list of org.opalj.ai.analyses.cg.UnresolvedMethodCall.
      */
-    public void setUnresolvedCalls(List<UnresolvedMethodCall> unresolvedMethodCalls) {
+    private void setUnresolvedCalls(List<UnresolvedMethodCall> unresolvedMethodCalls) {
         for (UnresolvedMethodCall unresolvedMethodCall : unresolvedMethodCalls) {
             this.unresolvedCalls.add(new UnresolvedCall(unresolvedMethodCall.caller(),unresolvedMethodCall.pc(),unresolvedMethodCall.calleeClass(),unresolvedMethodCall.calleeName(),unresolvedMethodCall.calleeDescriptor()));
         }
@@ -73,18 +88,85 @@ public class PartialCallGraph {
 
     public void setResolvedCalls(List<ResolvedCall> resolvedCalls) { this.resolvedCalls = resolvedCalls; }
 
-    public void setClassHierarchy(ClassHierarchy classHierarchy) { this.classHierarchy = classHierarchy; }
+    private void setClassHierarchy(ClassHierarchy classHierarchy) { this.classHierarchy = classHierarchy; }
 
-    public List<UnresolvedCall> getUnresolvedCalls() {
+    List<UnresolvedCall> getUnresolvedCalls() {
         return unresolvedCalls;
     }
 
-    public List<ResolvedCall> getResolvedCalls() {
+    List<ResolvedCall> getResolvedCalls() {
         return resolvedCalls;
     }
 
     public ClassHierarchy getClassHierarchy() {
         return classHierarchy;
+    }
+
+    /**
+     * Loads a given file, generates call graph and change the format of calls to (source -> target).
+     * @param artifactFile Java file that can be a jar or a folder containing jars.
+     * @return A partial graph including ResolvedCalls, UnresolvedCalls and CHA.
+     */
+    PartialCallGraph generatePartialCallGraph(File artifactFile) {
+
+        Project artifactInOpalFormat = Project.apply(artifactFile);
+
+        ComputedCallGraph callGraphInOpalFormat = CallGraphFactory.create(artifactInOpalFormat,
+            JavaToScalaConverter.asScalaFunction0(findEntryPoints(artifactInOpalFormat.allMethodsWithBody())),
+            new CHACallGraphAlgorithmConfiguration(artifactInOpalFormat, true));
+
+//        ComputedCallGraph callGraphInOpalFormat = (ComputedCallGraph) AnalysisModeConfigFactory.resetAnalysisMode(artifactInOpalFormat, AnalysisModes.OPA(),false).get(CHACallGraphKey$.MODULE$);
+
+        return toPartialGraph(callGraphInOpalFormat);
+
+    }
+
+    /**
+     * Given a call graph in OPAL format returns a call graph in eu.fasten.analyzer.javacgopal.PartialCallGraph format.
+     * @param callGraphInOpalFormat Is an object of OPAL ComputedCallGraph.
+     * @return eu.fasten.analyzer.javacgopal.PartialCallGraph includes all the calls(as java List) and ClassHierarchy.
+     */
+    private PartialCallGraph toPartialGraph(ComputedCallGraph callGraphInOpalFormat) {
+
+        callGraphInOpalFormat.callGraph().foreachCallingMethod(JavaToScalaConverter.asScalaFunction2(setResolvedCalls()));
+
+        this.setUnresolvedCalls(new ArrayList<>(JavaConversions.asJavaCollection(callGraphInOpalFormat.unresolvedMethodCalls().toList())));
+
+        this.setClassHierarchy(callGraphInOpalFormat.callGraph().project().classHierarchy());
+
+        return this;
+    }
+
+    /**
+     * Adds resolved calls of OPAL call graph to resolvedCalls of this object.
+     *
+     * @return eu.fasten.analyzer.javacgopal.ScalaFunction2 As a fake scala function to be passed to the scala.
+     */
+    private ScalaFunction2 setResolvedCalls() {
+        return (Method callerMethod, Map<Object, Iterable<Method>> calleeMethodsObject) -> {
+            Collection<Iterable<Method>> calleeMethodsCollection =
+                JavaConversions.asJavaCollection(calleeMethodsObject.valuesIterator().toList());
+
+            List<Method> calleeMethodsList = new ArrayList<>();
+            for (Iterable<Method> i : calleeMethodsCollection) {
+                for (Method j : JavaConversions.asJavaIterable(i)) {
+                    calleeMethodsList.add(j);
+                }
+            }
+            return resolvedCalls.add(new ResolvedCall(callerMethod, calleeMethodsList));
+
+        };
+    }
+
+    /**
+     * Computes the entrypoints as a pre step of call graph generation.
+     * @param allMethods Is all of the methods in an OPAL-loaded project.
+     * @return An iterable of entrypoints to be consumed by scala-written OPAL.
+     */
+    static Iterable<Method> findEntryPoints(ConstArray allMethods) {
+
+        return (Iterable<Method>) allMethods.filter(JavaToScalaConverter.asScalaFunction1((Object method) -> (!((Method) method).isAbstract()) && !((Method) method).isPrivate()));
+
     }
 
     /**
@@ -98,7 +180,7 @@ public class PartialCallGraph {
      *
      * @return The given revision's call graph in FASTEN format. All nodes are in URI format.
      */
-    public static RevisionCallGraph createRevisionCallGraph(String forge, MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
+    static RevisionCallGraph createRevisionCallGraph(String forge, MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
 
         return new RevisionCallGraph(forge,
             coordinate.getProduct(),
@@ -115,7 +197,7 @@ public class PartialCallGraph {
      *
      * @return A graph of all nodes in URI format represented in a List of eu.fasten.core.data.FastenURIs.
      */
-    public static ArrayList<FastenURI[]> toURIGraph(PartialCallGraph partialCallGraph) {
+    private static ArrayList<FastenURI[]> toURIGraph(PartialCallGraph partialCallGraph) {
 
         var graph = new ArrayList<FastenURI[]>();
 
@@ -141,8 +223,9 @@ public class PartialCallGraph {
      *
      * @return A graph of all nodes in URI format represented in a List of eu.fasten.core.data.FastenURI.
      */
-    public ArrayList<FastenURI[]> toURIGraph() {
+    ArrayList<FastenURI[]> toURIGraph() {
         return toURIGraph(this);
     }
+
 
 }
