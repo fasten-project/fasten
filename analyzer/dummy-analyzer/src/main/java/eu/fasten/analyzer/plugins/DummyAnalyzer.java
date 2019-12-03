@@ -3,15 +3,13 @@ package eu.fasten.analyzer.plugins;
 import eu.fasten.analyzer.javacgopal.OPALPlugin;
 import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaConsumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.kafka.common.serialization.StringDeserializer;
+import eu.fasten.server.KafkaConsumerCon;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
@@ -23,28 +21,28 @@ import java.util.concurrent.CountDownLatch;
  */
 public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
-    private String serverAddress;
-    private KafkaConsumer<String, String> MVCConsumer;
+    //private String serverAddress;
+    private org.apache.kafka.clients.consumer.KafkaConsumer<String, String> kafkaConsumerCon;
     private static final String topic = "maven.packages";
     private final String groupId = "some_app";
     private final Logger logger = LoggerFactory.getLogger(DummyAnalyzer.class.getName());
 
-    public DummyAnalyzer(String serverAddress) {
-        this.serverAddress = serverAddress;
+    public DummyAnalyzer(KafkaConsumerCon kafkaConsumerCon) {
+        this.kafkaConsumerCon = kafkaConsumerCon.getConsumer();
     }
 
-    private Properties consumerProps(String serverProperties) {
-        String deserializer = StringDeserializer.class.getName();
-        Properties properties = new Properties();
-
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, serverProperties);
-        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
-        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, deserializer);
-        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
-        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-
-        return properties;
-    }
+//    private Properties consumerProps(String serverProperties) {
+//        String deserializer = StringDeserializer.class.getName();
+//        Properties properties = new Properties();
+//
+//        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, serverProperties);
+//        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
+//        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, deserializer);
+//        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
+//        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+//
+//        return properties;
+//    }
 
     @Override
     public String consumerTopic() {
@@ -61,7 +59,6 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
         ConsumerRunnable(CountDownLatch latch){
             mLatch = latch;
-            MVCConsumer.subscribe(Collections.singletonList(topic));
         }
 
         @Override
@@ -69,7 +66,7 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
             try{
 
                 do{
-                    ConsumerRecords<String, String> records = MVCConsumer.poll(Duration.ofMillis(100));
+                    ConsumerRecords<String, String> records = kafkaConsumerCon.poll(Duration.ofMillis(100));
 
                     // Generates call graphs from given Maven records.
                     OPALPlugin opal = new OPALPlugin();
@@ -79,13 +76,13 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
             } catch (WakeupException e){
                 logger.info("Received shutdown signal!");
             } finally {
-                MVCConsumer.close();
+                kafkaConsumerCon.close();
                 mLatch.countDown();
             }
         }
 
         void shutdown() {
-            MVCConsumer.wakeup();
+            kafkaConsumerCon.wakeup();
         }
     }
 
@@ -101,8 +98,8 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
     @Override
     public void start() {
-        Properties props = consumerProps(this.serverAddress);
-        this.MVCConsumer = new KafkaConsumer<String, String>(props);
+        //Properties props = consumerProps(this.serverAddress);
+        //this.MVCConsumer = new KafkaConsumer<String, String>(props);
 
         logger.info("Consumer initialized");
 
