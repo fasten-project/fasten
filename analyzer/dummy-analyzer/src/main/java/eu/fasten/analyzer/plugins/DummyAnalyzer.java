@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.time.Duration;
-import java.util.Properties;
+
 import java.util.concurrent.CountDownLatch;
 
 /**
