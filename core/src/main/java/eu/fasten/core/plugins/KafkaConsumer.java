@@ -28,7 +28,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
  *           {@link eu.fasten.core.data.RevisionCallGraph} entries. All other types
  *           must be accompanied by custom de-serializers.
  */
-public interface KafkaConsumer<T> extends FastenPlugin {
+public interface KafkaConsumer<T>  {
 
     /**
      * The topic this plug-in is interested into.
