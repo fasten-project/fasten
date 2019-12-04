@@ -121,25 +121,24 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
         this.kafkaProducer = producer;
     }
 
-    @Override
     public String name() {
         return this.getClass().getCanonicalName();
     }
 
-    @Override
-    public String description() {
-        return  "This plugin is a call graph generator.\n" +
-                "It implements a consume method that generates call graphs using OPAL call graph generator for provided Kafka consumed maven coordinates.\n" +
-                "It also implements a produce method which produces generated call graphs to a Kafka topic.\n";
-    }
-
-    @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void stop() {
-
-    }
+//    @Override
+//    public String description() {
+//        return  "This plugin is a call graph generator.\n" +
+//                "It implements a consume method that generates call graphs using OPAL call graph generator for provided Kafka consumed maven coordinates.\n" +
+//                "It also implements a produce method which produces generated call graphs to a Kafka topic.\n";
+//    }
+//
+//    @Override
+//    public void start() {
+//
+//    }
+//
+//    @Override
+//    public void stop() {
+//
+//    }
 }
