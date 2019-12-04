@@ -45,7 +45,7 @@
                             <archive>
                                 <manifest>
                                     <mainClass>
-                                        eu.fasten.analyzer.plugins.DummyAnalyzer
+                                        eu.fasten.analyzer.dummy-analyzer.DummyAnalyzer
                                     </mainClass>
                                     <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                                     <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
@@ -64,6 +64,18 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <annotationProcessors>
+                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
+                    </annotationProcessors>
+                    <source>1.11</source>
+                    <target>1.11</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -137,6 +137,11 @@
             <artifactId>picocli</artifactId>
             <version>4.0.4</version>
         </dependency>
+        <dependency>
+            <groupId>org.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
+            <version>3.1.0</version>
+        </dependency>
     </dependencies>
 
 </project>

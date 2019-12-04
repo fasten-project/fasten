@@ -6,6 +6,7 @@ import eu.fasten.core.plugins.KafkaConsumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.errors.WakeupException;
 import eu.fasten.server.KafkaConsumerCon;
+import org.pf4j.Extension;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -19,6 +20,8 @@ import java.util.concurrent.CountDownLatch;
  * 2- It generates a call graph for the given Maven coordinates. Note that the Kafka consumer and
  *  its properties are declared in this class.
  */
+
+@Extension
 public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
     //private String serverAddress;
@@ -46,7 +49,7 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
     @Override
     public String consumerTopic() {
-        return null;
+        return "maven.packages";
     }
 
     @Override
