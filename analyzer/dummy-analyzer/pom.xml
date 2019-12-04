@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.fasten.analyzer</groupId>
-    <artifactId>plugins</artifactId>
+    <artifactId>dummy-analyzer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
@@ -47,7 +47,16 @@
                                     <mainClass>
                                         eu.fasten.analyzer.plugins.DummyAnalyzer
                                     </mainClass>
+                                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                    <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                                 </manifest>
+                                <manifestEntries>
+                                    <Plugin-Class>eu.fasten.analyzer.dummy-analyzer.DummyAnalyzer</Plugin-Class>
+                                    <Plugin-Id>dummy-analyzer</Plugin-Id>
+                                    <Plugin-Version>0.0.1</Plugin-Version>
+                                    <Plugin-Description>Dummy Analyzer</Plugin-Description>
+                                    <Plugin-License>Apache License 2.0</Plugin-License>
+                                </manifestEntries>
                             </archive>
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
