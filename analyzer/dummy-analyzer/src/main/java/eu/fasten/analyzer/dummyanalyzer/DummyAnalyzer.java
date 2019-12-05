@@ -1,6 +1,6 @@
-package eu.fasten.analyzer.plugins;
+package eu.fasten.analyzer.dummyanalyzer;
 
-import eu.fasten.analyzer.javacgopal.OPALPlugin;
+//import eu.fasten.analyzer.javacgopal.OPALPlugin;
 import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaConsumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -12,6 +12,10 @@ import org.slf4j.Logger;
 
 import java.time.Duration;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -48,15 +52,19 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 //    }
 
     @Override
-    public String consumerTopic() {
-        return "maven.packages";
+    public List<String> consumerTopic() {
+        return new ArrayList<>(Collections.singletonList("maven.packages"));
     }
 
     @Override
-    public void consume(ConsumerRecords<String, String> records) {
-        // Generates call graphs from given Maven records.
-        OPALPlugin opal = new OPALPlugin();
-        opal.consume(records);
+    public void consume(String topic, ConsumerRecords<String, String> records) {
+//        // Generates call graphs from given Maven records.
+//        OPALPlugin opal = new OPALPlugin();
+//        opal.consume(records);
+        for(var record: records) {
+            System.out.println("Key: " + record.key());
+            System.out.println("Value: " + record.value());
+        }
     }
 
     private class ConsumerRunnable implements Runnable {
@@ -72,7 +80,7 @@ public class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
 
                 do{
                     ConsumerRecords<String, String> records = kafkaConsumerCon.poll(Duration.ofMillis(100));
-                    consume(records);
+                    consume(consumerTopic().get(0), records);
 
                     //logger.debug("******************* Generated call graph: " + opal.getRevisionCallGraphs().get(0).toJSON().toString() + " ***********************************");
                 }while (true);

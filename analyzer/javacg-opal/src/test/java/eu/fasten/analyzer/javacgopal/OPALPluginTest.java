@@ -44,7 +44,7 @@ public class OPALPluginTest {
 
     @Test
     public void testConsumerTopic() {
-        assertEquals("maven.packages", opalPlugin.consumerTopic());
+        assertEquals("maven.packages", opalPlugin.consumerTopic().get(0));
     }
 
     @Test
@@ -57,7 +57,9 @@ public class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        opalPlugin.consume(new ConsumerRecords<>(ImmutableMap.of(new TopicPartition(opalPlugin.name(), 1), Arrays.asList(new ConsumerRecord<>(
+        final String topic = "maven.packages";
+
+        opalPlugin.consume(topic, new ConsumerRecords<>(ImmutableMap.of(new TopicPartition(opalPlugin.name(), 1), Arrays.asList(new ConsumerRecord<>(
                                                 opalPlugin.CONSUME_TOPIC, 1, 1, 1l, TimestampType.CREATE_TIME, 1l,
                                                 10, 10, "1", coordinateJSON.toString()))))
         );

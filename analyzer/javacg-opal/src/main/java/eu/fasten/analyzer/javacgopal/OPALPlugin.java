@@ -27,6 +27,9 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.StreamSupport;
 
@@ -39,8 +42,8 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
     final String PRODUCE_TOPIC = "opal_callgraphs";
 
     @Override
-    public String consumerTopic() {
-        return this.CONSUME_TOPIC;
+    public List<String> consumerTopic() {
+        return new ArrayList<>(Collections.singletonList(CONSUME_TOPIC));
     }
 
     /**
@@ -55,7 +58,7 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
      *                      }
      */
     @Override
-    public void consume(ConsumerRecords<String, String> records) {
+    public void consume(String topic, ConsumerRecords<String, String> records) {
 
         StreamSupport.stream(records.spliterator(),true).forEach(
 

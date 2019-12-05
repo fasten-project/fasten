@@ -20,6 +20,8 @@ package eu.fasten.core.plugins;
 
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 
+import java.util.List;
+
 /**
  * Indicates a plug-in that works by consuming records from Kafka.
  *
@@ -33,7 +35,7 @@ public interface KafkaConsumer<T>  {
     /**
      * The topic this plug-in is interested into.
      */
-    public String consumerTopic();
+    public List<String> consumerTopic();
 
     /**
      * A set of records to be consumed. This method must return when all records have
@@ -41,5 +43,5 @@ public interface KafkaConsumer<T>  {
      *
      * @param records An Iterable of records, de-serialized to the provided type {@link T}
      */
-    public void consume(ConsumerRecords<String, T> records);
+    public void consume(String topic, ConsumerRecords<String, T> records);
 }
