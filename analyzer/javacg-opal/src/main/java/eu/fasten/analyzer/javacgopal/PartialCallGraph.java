@@ -190,6 +190,17 @@ public class PartialCallGraph {
             partialCallGraph.toURIGraph());
     }
 
+    static ProposalRevisionCallGraph createProposalRevisionCallGraph(String forge, MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
+
+        return new ProposalRevisionCallGraph(forge,
+            coordinate.getProduct(),
+            coordinate.versionConstraint,
+            timestamp,
+            MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+            partialCallGraph.toURIGraph(),
+            partialCallGraph.classHierarchy);
+    }
+
     /**
      * Converts all nodes (entities) of a partial graph to URIs.
      *

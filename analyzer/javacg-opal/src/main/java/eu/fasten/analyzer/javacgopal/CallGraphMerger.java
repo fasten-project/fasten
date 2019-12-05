@@ -22,12 +22,13 @@ public class CallGraphMerger {
     }
 
     public static List<ProposalRevisionCallGraph> mergeCallGraphs(List<ProposalRevisionCallGraph> revisionCallGraphs) {
-        for (RevisionCallGraph revisionCallGraph : revisionCallGraphs) {
-            for (FastenURI[] fastenURIS : revisionCallGraph.graph) {
+        for (int i =0 ; i < revisionCallGraphs.size() ; i++) {
+            for (FastenURI[] fastenURIS : revisionCallGraphs.get(i).graph) {
                 var callee = fastenURIS[1];
                 if(callee.toString().contains("SomeDependency")){
-                    for (ProposalRevisionCallGraph proposalRevisionCallGraph : revisionCallGraphs) {
-                       var v = proposalRevisionCallGraph.classHierarchy.subtypes();
+                    for (ProposalRevisionCallGraph proposalRevisionCallGraph : revisionCallGraphs.subList(i,revisionCallGraphs.size()-1)) {
+                       var v = proposalRevisionCallGraph.classHierarchy.subtypes().filter(JavaToScalaConverter.asScalaFunction1(j->j.toString().contains(callee.getRawNamespace())));
+                        System.out.println();
                     }
                 }
             }

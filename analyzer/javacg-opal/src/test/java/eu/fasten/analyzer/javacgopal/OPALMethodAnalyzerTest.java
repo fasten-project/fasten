@@ -82,7 +82,6 @@ public class OPALMethodAnalyzerTest{
         classInitCallGraph = new PartialCallGraph(
                 new File(Thread.currentThread().getContextClassLoader().getResource("ClassInit.class").getFile())
         );
-        System.out.println();
         /**
          * LambdaExample is a java8 compiled bytecode of:
          *<pre>

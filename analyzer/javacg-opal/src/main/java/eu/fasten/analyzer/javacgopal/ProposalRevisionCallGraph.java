@@ -14,8 +14,9 @@ public class ProposalRevisionCallGraph extends RevisionCallGraph {
 
     public ClassHierarchy classHierarchy;
 
-    public ProposalRevisionCallGraph(String forge, String product, String version, long timestamp, List<List<Dependency>> depset, ArrayList<FastenURI[]> graph) {
+    public ProposalRevisionCallGraph(String forge, String product, String version, long timestamp, List<List<Dependency>> depset, ArrayList<FastenURI[]> graph, ClassHierarchy classHierarchy) {
         super(forge, product, version, timestamp, depset, graph);
+        this.classHierarchy = classHierarchy;
     }
 
     public ProposalRevisionCallGraph(JSONObject json, boolean ignoreConstraints) throws JSONException, URISyntaxException {
