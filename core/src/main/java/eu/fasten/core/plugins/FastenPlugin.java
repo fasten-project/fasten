@@ -18,6 +18,8 @@
 
 package eu.fasten.core.plugins;
 
+import org.pf4j.ExtensionPoint;
+
 /**
  * Base interface for all FASTEN plugins. Used mostly for discovery and loading.
  *
@@ -34,7 +36,7 @@ package eu.fasten.core.plugins;
  * </ol>
  *
  */
-public interface FastenPlugin {
+public interface FastenPlugin extends ExtensionPoint {
 
     /**
      * Returns a unique name for the plug-in

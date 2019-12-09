@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>analyzer</artifactId>
+        <groupId>eu.fasten</groupId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>eu.fasten.analyzer</groupId>
+    <artifactId>dummy-analyzer</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>dummy-analyzer</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>eu.fasten</groupId>
+            <artifactId>server</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+<!--            <scope>provided</scope>-->
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <finalName>${project.artifactId}-${project.version}-plugin</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <attach>false</attach>
+                    <archive>
+                        <manifest>
+                            <mainClass>
+                                eu.fasten.analyzer.dummyanalyzer.DummyAnalyzer
+                            </mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Plugin-Class>eu.fasten.analyzer.dummyanalyzer.DummyAnalyzer</Plugin-Class>
+                            <Plugin-Id>dummy-analyzer</Plugin-Id>
+                            <Plugin-Version>0.0.1</Plugin-Version>
+                            <Plugin-Description>Dummy Analyzer</Plugin-Description>
+                            <Plugin-License>Apache License 2.0</Plugin-License>
+                        </manifestEntries>
+                    </archive>
+
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                <version>3.8.1</version>-->
+<!--                <configuration>-->
+<!--                    <annotationProcessors>-->
+<!--                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>-->
+<!--                    </annotationProcessors>-->
+<!--                    <source>1.11</source>-->
+<!--                    <target>1.11</target>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+        </plugins>
+    </build>
+
+</project>

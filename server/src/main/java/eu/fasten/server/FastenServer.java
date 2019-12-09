@@ -18,7 +18,12 @@
 
 package eu.fasten.server;
 
+//import eu.fasten.analyzer.plugins.DummyAnalyzer;
 import eu.fasten.core.plugins.FastenPlugin;
+import org.pf4j.DefaultPluginManager;
+import org.pf4j.ExtensionWrapper;
+import org.pf4j.JarPluginManager;
+import org.pf4j.RuntimeMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -27,13 +32,16 @@ import picocli.CommandLine.Option;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import static eu.fasten.server.utils.StreamUtils.asStream;
 
 @CommandLine.Command(name = "FastenServer", mixinStandardHelpOptions = true)
-public class FastenServer implements Runnable {
+public class
+FastenServer implements Runnable {
     public final static String PLUGIN_TEMPLATE = "\\.jar$";
 
     @Option(names = {"-p", "--plugin_dir"},
@@ -41,6 +49,9 @@ public class FastenServer implements Runnable {
             description = "Directory to load plugins from",
             defaultValue = ".")
     private Path pluginPath;
+
+    @Option(names= {"-k", "--kafka_servers"})
+    private List<String> kafkaServers;
 
     private static Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
@@ -65,7 +76,21 @@ public class FastenServer implements Runnable {
     }
 
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new FastenServer()).execute(args);
-        System.exit(exitCode);
+//        int exitCode = new CommandLine(new FastenServer()).execute(args);
+//        System.exit(exitCode);
+
+
+        JarPluginManager jarPluginManager = new JarPluginManager(Paths.get("/Users/amir/projects/fasten/server/src/main/java/eu/fasten/server/plugins"));
+        jarPluginManager.loadPlugins();
+        //System.setProperty("pf4j.mode", RuntimeMode.DEVELOPMENT.toString());
+
+        System.out.println("Mode: " + jarPluginManager.getRuntimeMode().toString());
+
+        List<FastenPlugin> plugins = jarPluginManager.getExtensions(FastenPlugin.class);
+
+        for(FastenPlugin p : plugins){
+            System.out.println("Name: " + p.name());
+        }
+
     }
 }

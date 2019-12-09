@@ -80,7 +80,7 @@ public class Main implements Runnable {
         var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
             mavenCoordinate,
             Long.parseLong(this.timestamp),
-            CallGraphGenerator.generatePartialCallGraph(
+            new PartialCallGraph(
                 MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new)
             ));
 

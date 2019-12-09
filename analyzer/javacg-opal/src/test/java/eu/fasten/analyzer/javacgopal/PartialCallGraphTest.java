@@ -23,13 +23,69 @@ import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
 
 import org.junit.Test;
+import org.junit.BeforeClass;
+import org.opalj.br.analyses.Project;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertArrayEquals;
 
+
 public class PartialCallGraphTest {
+
+    static PartialCallGraph callgraph;
+    static File jarFile;
+    static Project artifactInOpalFormat;
+
+    @BeforeClass
+    public static void generateCallGraph() {
+
+        /**
+         * SingleSourceToTarget is a java8 compiled bytecode of:
+         *<pre>
+         * package name.space;
+         *
+         * public class SingleSourceToTarget{
+         *
+         *     public static void sourceMethod() { targetMethod(); }
+         *
+         *     public static void targetMethod() {}
+         * }
+         * </pre>
+         * Including these edges:
+         *  Resolved:[ public static void sourceMethod(),
+         *             public static void targetMethod()]
+         *  Unresolved:[ public void <init>() of current class,
+         *               public void <init>() of Object class]
+         */
+        jarFile = new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile());
+        callgraph = new PartialCallGraph(jarFile);
+        artifactInOpalFormat = Project.apply(jarFile);
+
+    }
+
+    @Test
+    public void testGeneratePartialCallGraph() {
+
+        assertEquals("public static void sourceMethod()",callgraph.getResolvedCalls().get(0).getSource().toString());
+        assertEquals("public static void targetMethod()",callgraph.getResolvedCalls().get(0).getTarget().get(0).toString());
+        assertEquals("public void <init>()",callgraph.getUnresolvedCalls().get(0).caller().toString());
+        assertEquals("name/space/SingleSourceToTarget",callgraph.getUnresolvedCalls().get(0).caller().declaringClassFile().thisType().fqn());
+        assertEquals("java/lang/Object",callgraph.getUnresolvedCalls().get(0).calleeClass().asObjectType().fqn());
+        assertEquals("<init>",callgraph.getUnresolvedCalls().get(0).calleeName());
+    }
+
+    @Test
+    public void testFindEntryPoints() {
+
+        var entryPoints = PartialCallGraph.findEntryPoints(artifactInOpalFormat.allMethodsWithBody());
+        assertEquals(3, entryPoints.size());
+        assertEquals("public void <init>()", entryPoints.head().toString());
+        assertEquals("public static void sourceMethod()", entryPoints.tail().head().toString());
+        assertEquals("public static void targetMethod()", entryPoints.tail().tail().head().toString());
+
+    }
 
     @Test
     public void testCreateRevisionCallGraph() {
@@ -37,7 +93,7 @@ public class PartialCallGraphTest {
         var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"),
                 1574072773,
-                CallGraphGenerator.generatePartialCallGraph(
+                new PartialCallGraph(
                         MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
                 )
         );
@@ -56,33 +112,12 @@ public class PartialCallGraphTest {
     @Test
     public void testToURICallGraph() {
 
-        /**
-         * SingleSourceToTarget is a java8 compiled bytecode of:
-         *<pre>
-             * package name.space;
-             *
-             * public class SingleSourceToTarget{
-             *
-             *     public static void sourceMethod() { targetMethod(); }
-             *
-             *     public static void targetMethod() {}
-             * }
-         * </pre>
-         * Including these edges:
-         *  Resolved:[ public static void sourceMethod(),
-         *             public static void targetMethod()]
-         *  Unresolved:[ public void <init>() of current class,
-         *               public void <init>() of Object class.]
-         */
-
         assertArrayEquals(
                 new FastenJavaURI[]{
                         new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
                         new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid")}
                 ,
-                CallGraphGenerator.generatePartialCallGraph(
-                        new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())
-                ).toURIGraph().get(0)
+                callgraph.toURIGraph().get(0)
         );
     }
 
