@@ -21,7 +21,9 @@ package eu.fasten.core.index;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Properties;
+import java.util.Random;
 
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
@@ -42,9 +44,12 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
+import it.unimi.dsi.Util;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandomGenerator;
@@ -60,6 +65,11 @@ import it.unimi.dsi.webgraph.NodeIterator;
 public class CallGraphGenerator {
 
 	private ArrayListMutableGraph[] rcgs;
+	/** Each revision call graph <code>rcgs[i]</code> has an associated permutation of nodes <code>nodePermutation[i]</code>,
+	 *  that gives the output name of its functions (e.g., node <code>j</code> of <code>rcgs[i]</code> will
+	 *  be called <code>fk</code> where <code>k=nodePermutation[i][j]</code>.
+	 */
+	private int[][] nodePermutation;  
 	private IntOpenHashSet[] deps;
 	private ObjectOpenCustomHashSet<int[]>[] source2Targets;
 
@@ -127,7 +137,7 @@ public class CallGraphGenerator {
 
 	/** Generates <code>np</code> call graphs. Each call graph is obtained using {@link #preferentialAttachmentDAG(int, int, IntegerDistribution, RandomGenerator)} (with
 	 *  specified initial graph size (<code>initialGraphSizeDistribution</code>), graph size (<code>graphSizeDistribution</code>), outdegree distribution (<code>outdegreeDistribution</code>).
-	 *  Then a dependency DAG is generated between the call graphs, once more usin {@link #preferentialAttachmentDAG(int, int, IntegerDistribution, RandomGenerator)} (this
+	 *  Then a dependency DAG is generated between the call graphs, once more using {@link #preferentialAttachmentDAG(int, int, IntegerDistribution, RandomGenerator)} (this
 	 *  time the initial graph size is 1, whereas the outdegree distribution is <code>outdegreeDistribution</code>).
 	 *  Then to each node of each call graph a new set of outgoing arcs is generated (their number is chosen using <code>externalOutdegreeDistribution</code>): the target
 	 *  call graph is generated using the indegree distribution of the dependency DAG; the target node is chosen according to the reverse indegree distribution within the revision call graph.
@@ -143,6 +153,7 @@ public class CallGraphGenerator {
 	public void generate(final int np, final IntegerDistribution graphSizeDistribution, final IntegerDistribution initialGraphSizeDistribution,
 			final IntegerDistribution outdegreeDistribution, final IntegerDistribution externalOutdegreeDistribution, final IntegerDistribution dependencyOutdegreeDistribution, final RandomGenerator random) {
 		rcgs = new ArrayListMutableGraph[np];
+		nodePermutation = new int[np][];
 		final FenwickTree[] td = new FenwickTree[np];
 		deps = new IntOpenHashSet[np];
 		source2Targets = new ObjectOpenCustomHashSet[np];
@@ -154,6 +165,8 @@ public class CallGraphGenerator {
 			final int n0 = Math.min(initialGraphSizeDistribution.sample(), n);
 			rcgs[i] = preferentialAttachmentDAG(n, n0, outdegreeDistribution, random);
 			td[i] = getPreferentialDistribution(rcgs[i].immutableView(), true);
+			nodePermutation[i] = Util.identity(n);
+			Collections.shuffle(IntArrayList.wrap(nodePermutation[i]), new Random(random.nextLong()));
 		}
 
 		// Generate the dependency DAG between revisions using preferential attachment starting from 1 node
@@ -202,13 +215,14 @@ public class CallGraphGenerator {
 		final String basename = jsapResult.getString("basename");
 
 		final CallGraphGenerator callGraphGenerator = new CallGraphGenerator();
+		XoRoShiRo128PlusPlusRandomGenerator randomGenerator = new XoRoShiRo128PlusPlusRandomGenerator(0);
 		callGraphGenerator.generate(jsapResult.getInt("n"),
-				new BinomialDistribution(500, 0.2), // Graph size distribution
+				new BinomialDistribution(5000, 0.2), // Graph size distribution
 				new EnumeratedIntegerDistribution(new int[] { 1 }), // Initial graph size distribution
 				new BinomialDistribution(4, 0.5),  // Internal outdegree distribution
 				new GeometricDistribution(.5),  // External outdegree distribution
 				new EnumeratedIntegerDistribution(new int[] { 5 }), // Dependency outdegree distribution
-				new XoRoShiRo128PlusPlusRandomGenerator(0));
+				randomGenerator);
 		if (jsapResult.userSpecified("topic")) {
 			final Properties properties = new Properties();
 			properties.put("bootstrap.servers", jsapResult.getString("host") + ":" + Integer.toString(jsapResult.getInt("port")));
@@ -224,17 +238,17 @@ public class CallGraphGenerator {
 			final KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 			final int np = callGraphGenerator.rcgs.length;
 			for(int i = 0; i < np; i++)
-				producer.send(new ProducerRecord<>(topic, "fasten://f!graph-" + i + "$1.0", graph2String(callGraphGenerator, i)));
+				producer.send(new ProducerRecord<>(topic, "fasten://f!graph-" + i + "$1.0", graph2String(callGraphGenerator, i, randomGenerator)));
 
 			producer.close();
 		}
 		else {
 			final int np = callGraphGenerator.rcgs.length;
-			for(int i = 0; i < np; i++) Files.writeString(Paths.get(basename + "-" + i + ".json"), graph2String(callGraphGenerator, i));
+			for(int i = 0; i < np; i++) Files.writeString(Paths.get(basename + "-" + i + ".json"), graph2String(callGraphGenerator, i, randomGenerator));
 		}
 	}
 
-	private static String graph2String(final CallGraphGenerator callGraphGenerator, final int i) {
+	private static String graph2String(final CallGraphGenerator callGraphGenerator, final int i, final RandomGenerator randomGenerator) {
 		final StringBuilder sb = new StringBuilder();
 		sb.append("{\n");
 		sb.append("\"forge\": \"f\",\n");
@@ -249,19 +263,22 @@ public class CallGraphGenerator {
 		}
 		sb.append("],\n");
 		sb.append("\"graph\": [\n");
+		final ObjectArrayList<String> lines = new ObjectArrayList<>(); // Graph lines
 		final ArrayListMutableGraph g = callGraphGenerator.rcgs[i];
 		final IntOpenHashSet callsExternal = new IntOpenHashSet();
 		for(final int[] t: callGraphGenerator.source2Targets[i]) {
-			sb.append("[ \"/p" + i + "/A.f" + t[0] + "()v\", \"//graph-" + t[1] + "/p" + t[1] + "/A.f" + t[2] +"()v\" ],\n");
+			lines.add("[ \"/p" + i + "/A.f" + callGraphGenerator.nodePermutation[i][t[0]] + "()v\", \"//graph-" + t[1] + "/p" + t[1] + "/A.f" + callGraphGenerator.nodePermutation[t[1]][t[2]] +"()v\" ],\n");
 			callsExternal.add(t[0]);
 		}
 
 		for(int j = 0; j < g.numNodes(); j++) {
 			if (!callsExternal.contains(j) && g.outdegree(j) == 0)
-				sb.append("[ \"/p" + i + "/A.f" + j + "()v\", \"//-\" ],\n");
+				lines.add("[ \"/p" + i + "/A.f" + callGraphGenerator.nodePermutation[i][j] + "()v\", \"//-\" ],\n");
 			for(final IntIterator s = g.successors(j); s.hasNext();)
-				sb.append("[ \"/p" + i + "/A.f" + j + "()v\", \"/p" + i + "/A.f" + s.nextInt() +"()v\" ],\n");
+				lines.add("[ \"/p" + i + "/A.f" + callGraphGenerator.nodePermutation[i][j] + "()v\", \"/p" + i + "/A.f" + callGraphGenerator.nodePermutation[i][s.nextInt()] +"()v\" ],\n");
 		}
+		Collections.shuffle(lines, new Random(randomGenerator.nextLong())); // Permute graph lines
+		for (String line: lines) sb.append(line);
 		sb.append("]\n");
 		sb.append("}\n");
 		return sb.toString();

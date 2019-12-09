@@ -26,8 +26,11 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Properties;
+import java.util.Random;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.rocksdb.Options;
@@ -44,6 +47,11 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.google.common.primitives.Longs;
 
 import eu.fasten.core.index.BVGraphSerializer;
+import it.unimi.dsi.Util;
+import it.unimi.dsi.bits.LongArrayBitVector;
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.io.BinIO;
 import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
@@ -67,6 +75,7 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.io.InputBitStream;
 import it.unimi.dsi.io.NullInputStream;
 import it.unimi.dsi.lang.MutableString;
+import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.sux4j.util.EliasFanoMonotoneLongBigList;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.BVGraph;
@@ -270,14 +279,14 @@ public class KnowledgeBase implements Serializable, Closeable {
 			// Set up local bijection
 			nInternal = internalGIDs.size();
 
-			LID2GID = new long[internalGIDs.size() + externalGIDs.size()];
-			LongIterators.unwrap(internalGIDs.iterator(), LID2GID);
-			LongIterators.unwrap(externalGIDs.iterator(), LID2GID, nInternal, Integer.MAX_VALUE);
+			long[] l2g = new long[internalGIDs.size() + externalGIDs.size()];
+			LongIterators.unwrap(internalGIDs.iterator(), l2g);
+			LongIterators.unwrap(externalGIDs.iterator(), l2g, nInternal, Integer.MAX_VALUE);
 			GID2LID.defaultReturnValue(-1);
-			for(int i = 0; i < LID2GID.length; i++) GID2LID.put(LID2GID[i], i);
+			for(int i = 0; i < l2g.length; i++) GID2LID.put(l2g[i], i);
 
 			// Create, store and load compressed versions of the graph and of the transpose.
-			final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(LID2GID.length);
+			final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(l2g.length);
 			for(int i = 0; i < genericSources.size(); i++) {
 				assert genericURI2GID.getLong(genericSources.get(i)) != -1;
 				assert genericURI2GID.getLong(genericTargets.get(i)) != -1;
@@ -293,7 +302,9 @@ public class KnowledgeBase implements Serializable, Closeable {
             FileInputStream propertyFile;
             
 			// Compress, load and serialize graph
-			BVGraph.store(mutableGraph.immutableView(), f.toString());
+            int[] bfsperm = bfsperm(mutableGraph.immutableView(), -1, internalGIDs.size());
+			ImmutableGraph graph = Transform.map(mutableGraph.immutableView(), bfsperm);
+			BVGraph.store(graph, f.toString());
             propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
             graphProperties.load(propertyFile);
             propertyFile.close();
@@ -302,8 +313,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 			final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
 			kryo.writeObject(bbo, BVGraph.load(f.toString()));
 
+			// Permute LID2GID accordingly
+			LID2GID = new long[l2g.length];
+			for (int x = 0; x < l2g.length; x++) LID2GID[bfsperm[x]] = l2g[x];
+			for(int i = 0; i < l2g.length; i++) GID2LID.put(LID2GID[i], i);
+			
 			// Compress, load and serialize transpose graph
-			BVGraph.store(Transform.transpose(mutableGraph.immutableView()), f.toString());
+			BVGraph.store(Transform.transpose(graph), f.toString());
             propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
             transposeProperties.load(propertyFile);
             propertyFile.close();
@@ -717,5 +733,71 @@ public class KnowledgeBase implements Serializable, Closeable {
 		s.defaultReadObject();
 		initKryo();
 	}
+	
+	/** Return the permutation induced by the visit order of a depth-first visit.
+	 *
+	 * @param graph a graph.
+	 * @param startingNode the only starting node of the visit, or -1 for a complete visit.
+	 * @param internalNodes number of internal nodes in the graph
+	 * @return  the permutation induced by the visit order of a depth-first visit.
+	 */
+	public static int[] bfsperm(final ImmutableGraph graph, final int startingNode, final int internalNodes) {
+		final int n = graph.numNodes();
+
+		final int[] visitOrder = new int[n];
+		Arrays.fill(visitOrder, -1);
+		final IntArrayFIFOQueue queue = new IntArrayFIFOQueue();
+		final LongArrayBitVector visited = LongArrayBitVector.ofLength(n);
+		final ProgressLogger pl = new ProgressLogger(LOGGER);
+		pl.expectedUpdates = n;
+		pl.itemsName = "nodes";
+		pl.start("Starting breadth-first visit...");
+		Arrays.fill(visitOrder, -1);
+
+		int internalPos = 0, externalPos = internalNodes;
+
+		for(int i = 0; i < n; i++) {
+			final int start = i == 0 && startingNode != -1 ? startingNode : i;
+			if (visited.getBoolean(start)) continue;
+			queue.enqueue(start);
+			visited.set(start);
+
+			int currentNode;
+			final IntArrayList successors = new IntArrayList();
+
+			while(! queue.isEmpty()) {
+				currentNode = queue.dequeueInt();
+				if (currentNode < internalNodes) 
+					visitOrder[internalPos++] = currentNode;
+				else
+					visitOrder[externalPos++] = currentNode;
+				int degree = graph.outdegree(currentNode);
+				final LazyIntIterator iterator = graph.successors(currentNode);
+
+				successors.clear();
+				while(degree-- != 0) {
+					final int succ = iterator.nextInt();
+					if (! visited.getBoolean(succ)) {
+						successors.add(succ);
+						visited.set(succ);
+					}
+				}
+
+				final int[] randomSuccessors = successors.elements();
+				IntArrays.quickSort(randomSuccessors, 0, successors.size(), (x, y) -> x - y);
+
+				for(int j = successors.size(); j-- != 0;) queue.enqueue(randomSuccessors[j]);
+				pl.update();
+			}
+
+			if (startingNode != -1) break;
+		}
+
+		pl.done();
+		for (int i = 0; i < visitOrder.length; i++) 
+			assert (i < internalNodes) == (visitOrder[i] < internalNodes);
+		return visitOrder;
+	}
+
 
 }
