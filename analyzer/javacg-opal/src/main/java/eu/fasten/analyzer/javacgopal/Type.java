@@ -29,13 +29,11 @@ import java.util.NoSuchElementException;
 
 public class Type {
 
-    ObjectType thisType;
     List<Method> methods;
     List<ObjectType> superClasses;
     List<ObjectType> superInterfaces;
 
     public Type(ObjectType thisType) {
-        this.thisType = thisType;
         this.methods = new ArrayList<>();
         this.superClasses = new ArrayList<>();
         this.superInterfaces = new ArrayList<>();
@@ -43,16 +41,14 @@ public class Type {
 
     public synchronized void setSupers(ClassHierarchy classHierarchy, ObjectType currentClass) {
 
-        if (classHierarchy.isInterface(currentClass).isNo()) {
-            try {
-                classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s().foreach(
-                    JavaToScalaConverter.asScalaFunction1(cl -> this.superClasses.add((ObjectType) cl))
-                );
-            }catch (NoSuchElementException e){
-                classHierarchy.allSupertypes(currentClass,false).foreach(
-                    JavaToScalaConverter.asScalaFunction1(cl -> this.superClasses.add((ObjectType) cl))
-                );
-            }
+        try {
+            classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s().foreach(
+                JavaToScalaConverter.asScalaFunction1(cl -> this.superClasses.add((ObjectType) cl))
+            );
+        } catch (NoSuchElementException e) {
+            classHierarchy.allSupertypes(currentClass, false).foreach(
+                JavaToScalaConverter.asScalaFunction1(cl -> this.superClasses.add((ObjectType) cl))
+            );
         }
         this.superClasses.add(currentClass);
         Collections.reverse(this.superClasses);

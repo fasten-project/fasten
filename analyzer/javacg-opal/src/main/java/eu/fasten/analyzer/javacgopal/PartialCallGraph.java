@@ -114,7 +114,7 @@ public class PartialCallGraph {
                 Type clas = new Type(currentClass);
                 clas.setSupers(artifactInOpalFormat.classHierarchy(), currentClass);
                 clas.methods.addAll(allMethods.get(currentClass));
-                this.classHierarchy.put(clas.thisType, clas);
+                this.classHierarchy.put(currentClass, clas);
             }
         );
 
@@ -122,7 +122,7 @@ public class PartialCallGraph {
             libraryClass -> {
                 Type clas = new Type(libraryClass);
                 clas.setSupers(artifactInOpalFormat.classHierarchy(), libraryClass);
-                this.classHierarchy.put(clas.thisType, clas);
+                this.classHierarchy.put(libraryClass, clas);
             }
         );
 
@@ -263,14 +263,49 @@ public class PartialCallGraph {
 
     static ProposalRevisionCallGraph createProposalRevisionCallGraph(String forge, MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
 
-//        return new ProposalRevisionCallGraph(forge,
-//            coordinate.getProduct(),
-//            coordinate.versionConstraint,
-//            timestamp,
-//            MavenResolver.resolveDependencies(coordinate.getCoordinate()),
-//            partialCallGraph.toURIGraph(),
-//            partialCallGraph.classHierarchy);
+        return new ProposalRevisionCallGraph(forge,
+            coordinate.getProduct(),
+            coordinate.versionConstraint,
+            timestamp,
+            MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+            partialCallGraph.toURIGraph(),
+            toURIHierarchy(partialCallGraph.classHierarchy,coordinate.getProduct()));
+    }
+
+    private static Map<FastenURI,ProposalRevisionCallGraph.Type> toURIHierarchy(Map<ObjectType, Type> classHierarchy, String productName) {
+
+        Map<FastenURI, ProposalRevisionCallGraph.Type> URIclassHierarchy = new HashMap<>();
+
+        classHierarchy.keySet().parallelStream().forEach(
+            clas->{
+                URIclassHierarchy.put(
+                    OPALMethodAnalyzer.getTypeURI(clas),
+                    new ProposalRevisionCallGraph.Type(
+                        toURI(classHierarchy.get(clas).methods, productName),
+                        toURI(classHierarchy.get(clas).superClasses),
+                        toURI(classHierarchy.get(clas).superInterfaces)
+                    )
+                );
+            }
+
+            );
         return null;
+    }
+
+    private synchronized static List<FastenURI> toURI(List<ObjectType> superClasses) {
+        List<FastenURI> classURIs = new ArrayList<>();
+        superClasses.parallelStream().forEach(
+            clas -> classURIs.add(OPALMethodAnalyzer.getTypeURI(clas))
+        );
+        return classURIs;
+    }
+
+    private synchronized static List<FastenURI> toURI(List<Method> methods, String productName) {
+        List<FastenURI> methodsURIs = new ArrayList<>();
+        methods.parallelStream().forEach(
+            method -> methodsURIs.add(OPALMethodAnalyzer.toCanonicalSchemelessURI(productName, method.declaringClassFile().thisType(), method.name(),method.descriptor()))
+        );
+        return methodsURIs;
     }
 
     /**

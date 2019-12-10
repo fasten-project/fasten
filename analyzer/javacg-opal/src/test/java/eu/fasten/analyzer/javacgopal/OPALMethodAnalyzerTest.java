@@ -238,13 +238,13 @@ public class OPALMethodAnalyzerTest{
 
         assertEquals(
                 new FastenJavaURI("/java.lang/Void"),
-                OPALMethodAnalyzer.getReturnTypeURI(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource()
+                OPALMethodAnalyzer.getTypeURI(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource()
                         .returnType())
         );
 
         assertEquals(
                 new FastenJavaURI("/java.lang/Object%25255B%25255D"),
-                OPALMethodAnalyzer.getReturnTypeURI(arrayCallGraph.getResolvedCalls().get(0).getTarget().get(0).returnType())
+                OPALMethodAnalyzer.getTypeURI(arrayCallGraph.getResolvedCalls().get(0).getTarget().get(0).returnType())
         );
     }
 

@@ -53,7 +53,7 @@ public class OPALMethodAnalyzer {
                     getClassName(clas),
                     getMethodName(getClassName(clas), method),
                     getParametersURI(JavaConversions.seqAsJavaList(descriptor.parameterTypes())),
-                    getReturnTypeURI(descriptor.returnType())
+                    getTypeURI(descriptor.returnType())
                 ).canonicalize();
 
             return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(),
@@ -100,10 +100,10 @@ public class OPALMethodAnalyzer {
     /**
      * Convert OPAL return types to FastenJavaURI.
      *
-     * @param returnType Return type of a method in OPAL format.
-     * @return return type in FastenJavaURI.
+     * @param returnType org.opalj.br.Type
+     * @return type in FastenJavaURI format.
      */
-    public static FastenJavaURI getReturnTypeURI(org.opalj.br.Type returnType) {
+    public static FastenJavaURI getTypeURI(org.opalj.br.Type returnType) {
 
         if (getClassName(returnType).contains("Lambda")){
             return new FastenJavaURI("/" + getPackageName(returnType) + "/" + FastenJavaURI.pctEncodeArg(getClassName(returnType)));
@@ -122,9 +122,7 @@ public class OPALMethodAnalyzer {
         FastenJavaURI[] parameters = new FastenJavaURI[parametersType.size()];
 
         for (int i = 0; i < parametersType.size(); i++) {
-            parameters[i] = new FastenJavaURI(
-                "/" + getPackageName(parametersType.get(i)) + "/" + getClassName(
-                    parametersType.get(0)));
+            parameters[i] = getTypeURI(parametersType.get(i));
         }
         return parameters;
     }
