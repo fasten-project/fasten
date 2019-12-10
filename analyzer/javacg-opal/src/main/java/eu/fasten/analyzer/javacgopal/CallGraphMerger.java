@@ -27,7 +27,7 @@ public class CallGraphMerger {
                 var callee = fastenURIS[1];
                 if(callee.toString().contains("SomeDependency")){
                     for (ProposalRevisionCallGraph proposalRevisionCallGraph : revisionCallGraphs.subList(i,revisionCallGraphs.size()-1)) {
-                       var v = proposalRevisionCallGraph.classHierarchy.subtypes().filter(JavaToScalaConverter.asScalaFunction1(j->j.toString().contains(callee.getRawNamespace())));
+//                       var v = proposalRevisionCallGraph.classHierarchy.supertypes().filter(JavaToScalaConverter.asScalaFunction1(j->j.toString().contains(callee.getRawNamespace())));
                         System.out.println();
                     }
                 }

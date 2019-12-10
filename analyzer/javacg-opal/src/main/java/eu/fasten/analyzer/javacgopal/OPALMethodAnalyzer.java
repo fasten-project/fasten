@@ -103,7 +103,7 @@ public class OPALMethodAnalyzer {
      * @param returnType Return type of a method in OPAL format.
      * @return return type in FastenJavaURI.
      */
-    public static FastenJavaURI getReturnTypeURI(Type returnType) {
+    public static FastenJavaURI getReturnTypeURI(org.opalj.br.Type returnType) {
 
         if (getClassName(returnType).contains("Lambda")){
             return new FastenJavaURI("/" + getPackageName(returnType) + "/" + FastenJavaURI.pctEncodeArg(getClassName(returnType)));
@@ -136,7 +136,7 @@ public class OPALMethodAnalyzer {
      * @param parameter OPAL parameter.
      * @return String in eu.fasten.core.data.FastenURI format, for namespace of the given parameter.
      */
-    public static String getPackageName(Type parameter) {
+    public static String getPackageName(org.opalj.br.Type parameter) {
 
         String parameterPackageName = "";
 
@@ -166,7 +166,7 @@ public class OPALMethodAnalyzer {
      * @param parameter OPAL parameter in org.opalj.br.Type format.
      * @return String in eu.fasten.core.data.FastenURI format, for type of the given parameter.
      */
-    public static String getClassName(Type parameter) {
+    public static String getClassName(org.opalj.br.Type parameter) {
 
         String parameterClassName = "";
 

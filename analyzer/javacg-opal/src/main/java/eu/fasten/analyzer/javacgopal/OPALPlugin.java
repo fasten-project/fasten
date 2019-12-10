@@ -37,7 +37,7 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
 
     private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
 
-    org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
+    private org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
     final String CONSUME_TOPIC = "maven.packages";
     final String PRODUCE_TOPIC = "opal_callgraphs";
 

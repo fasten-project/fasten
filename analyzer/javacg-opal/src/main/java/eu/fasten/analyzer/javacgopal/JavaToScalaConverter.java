@@ -49,15 +49,15 @@ final class JavaToScalaConverter {
 
     /**
      * Imitates a scala function1 in case of Lambda in java to be passed to scala.
-     * @param findEntryPoints A java Lambda in order to do things on scala.
+     * @param lambdaFunction A java Lambda in order to do things on scala.
      * @return Execution of java Lambda as scala function1.
      */
-    public static AbstractFunction1 asScalaFunction1(ScalaFunction1 findEntryPoints) {
+    public static AbstractFunction1 asScalaFunction1(ScalaFunction1 lambdaFunction) {
         return new AbstractFunction1() {
 
             @Override
             public Object apply(Object v1) {
-                return findEntryPoints.execute(v1);
+                return lambdaFunction.execute(v1);
             }
         };
     }
