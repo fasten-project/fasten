@@ -21,6 +21,8 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.core.data.FastenJavaURI;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.junit.Test;
 import org.junit.BeforeClass;
@@ -30,7 +32,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertArrayEquals;
-
 
 public class PartialCallGraphTest {
 
@@ -68,12 +69,12 @@ public class PartialCallGraphTest {
     @Test
     public void testGeneratePartialCallGraph() {
 
-        assertEquals("public static void sourceMethod()",callgraph.getResolvedCalls().get(0).getSource().toString());
-        assertEquals("public static void targetMethod()",callgraph.getResolvedCalls().get(0).getTarget().get(0).toString());
-        assertEquals("public void <init>()",callgraph.getUnresolvedCalls().get(0).caller().toString());
-        assertEquals("name/space/SingleSourceToTarget",callgraph.getUnresolvedCalls().get(0).caller().declaringClassFile().thisType().fqn());
-        assertEquals("java/lang/Object",callgraph.getUnresolvedCalls().get(0).calleeClass().asObjectType().fqn());
-        assertEquals("<init>",callgraph.getUnresolvedCalls().get(0).calleeName());
+        assertEquals("public static void sourceMethod()", callgraph.getResolvedCalls().get(0).getSource().toString());
+        assertEquals("public static void targetMethod()", callgraph.getResolvedCalls().get(0).getTarget().get(0).toString());
+        assertEquals("public void <init>()", callgraph.getUnresolvedCalls().get(0).caller().toString());
+        assertEquals("name/space/SingleSourceToTarget", callgraph.getUnresolvedCalls().get(0).caller().declaringClassFile().thisType().fqn());
+        assertEquals("java/lang/Object", callgraph.getUnresolvedCalls().get(0).calleeClass().asObjectType().fqn());
+        assertEquals("<init>", callgraph.getUnresolvedCalls().get(0).calleeName());
     }
 
     @Test
@@ -91,7 +92,7 @@ public class PartialCallGraphTest {
     public void testCreateRevisionCallGraph() {
 
         var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
-                new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"),
+                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
                 1574072773,
                 new PartialCallGraph(
                         MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
@@ -99,13 +100,13 @@ public class PartialCallGraphTest {
         );
 
         assertNotNull(revisionCallGraph);
-        assertEquals("mvn",revisionCallGraph.forge);
-        assertEquals("1.7.29",revisionCallGraph.version);
-        assertEquals(1574072773,revisionCallGraph.timestamp);
-        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"),revisionCallGraph.uri);
-        assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"),revisionCallGraph.forgelessUri);
-        assertEquals("org.slf4j.slf4j-api",revisionCallGraph.product);
-        assertNotEquals(0,revisionCallGraph.graph.size());
+        assertEquals("mvn", revisionCallGraph.forge);
+        assertEquals("1.7.29", revisionCallGraph.version);
+        assertEquals(1574072773, revisionCallGraph.timestamp);
+        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"), revisionCallGraph.uri);
+        assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"), revisionCallGraph.forgelessUri);
+        assertEquals("org.slf4j.slf4j-api", revisionCallGraph.product);
+        assertNotEquals(0, revisionCallGraph.graph.size());
 
     }
 
@@ -119,6 +120,77 @@ public class PartialCallGraphTest {
                 ,
                 callgraph.toURIGraph().get(0)
         );
+    }
+
+    @Test
+    public void testToURITypes() {
+
+        assertEquals(
+                Arrays.asList(new FastenJavaURI("/name.space/SingleSourceToTarget"), new FastenJavaURI("/java.lang/Object")),
+                PartialCallGraph.toURITypes(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).superClasses)
+        );
+
+        assertEquals(
+                new ArrayList<>(),
+                PartialCallGraph.toURITypes(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).superInterfaces)
+        );
+    }
+
+    @Test
+    public void testToURIMethods() {
+
+        assertEquals(Arrays.asList(
+                new FastenJavaURI("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid"),
+                new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
+                new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid")
+                ),
+                PartialCallGraph.toURIMethods(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).methods)
+        );
+    }
+
+    @Test
+    public void testToURIHierarchy() {
+
+        assertEquals(Arrays.asList(
+                new FastenJavaURI("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid"),
+                new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
+                new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid")
+                ),
+                PartialCallGraph.toURIMethods(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).methods)
+        );
+
+        assertEquals(
+                new ArrayList<>(),
+                PartialCallGraph.toURIHierarchy(callgraph.getClassHierarchy()).get(new FastenJavaURI("/name.space/SingleSourceToTarget")).superInterfaces
+        );
+
+        assertEquals(
+                Arrays.asList(new FastenJavaURI("/name.space/SingleSourceToTarget"), new FastenJavaURI("/java.lang/Object")),
+                PartialCallGraph.toURIHierarchy(callgraph.getClassHierarchy()).get(new FastenJavaURI("/name.space/SingleSourceToTarget")).superClasses
+        );
+
+    }
+
+    @Test
+    public void testCreateProposalRevisionCallGraph() {
+
+        var proposalRevisionCallGraph = PartialCallGraph.createProposalRevisionCallGraph("mvn",
+                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
+                1574072773,
+                new PartialCallGraph(
+                        MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
+                )
+        );
+
+        assertNotNull(proposalRevisionCallGraph);
+        assertEquals("mvn", proposalRevisionCallGraph.forge);
+        assertEquals("1.7.29", proposalRevisionCallGraph.version);
+        assertEquals(1574072773, proposalRevisionCallGraph.timestamp);
+        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"), proposalRevisionCallGraph.uri);
+        assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"), proposalRevisionCallGraph.forgelessUri);
+        assertEquals("org.slf4j.slf4j-api", proposalRevisionCallGraph.product);
+        assertNotEquals(0, proposalRevisionCallGraph.graph.size());
+
     }
 
 

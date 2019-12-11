@@ -98,7 +98,7 @@ public class PartialCallGraph {
      *
      * @param artifactInOpalFormat org.opalj.br.analyses.Project.
      */
-    private void setClassHierarchy(Project artifactInOpalFormat) {
+    void setClassHierarchy(Project artifactInOpalFormat) {
 
         Map<ObjectType, List<Method>> allMethods = new HashMap<>();
         artifactInOpalFormat.allMethodsWithBody().foreach((JavaToScalaConverter.asScalaFunction1(
@@ -109,22 +109,18 @@ public class PartialCallGraph {
         Set<ObjectType> libraryClasses = new HashSet<>(JavaConversions.mapAsJavaMap(artifactInOpalFormat.classHierarchy().supertypes()).keySet());
         libraryClasses.removeAll(currentArtifactClasses);
 
-        currentArtifactClasses.parallelStream().forEach(
-            currentClass -> {
-                Type clas = new Type(currentClass);
-                clas.setSupers(artifactInOpalFormat.classHierarchy(), currentClass);
-                clas.methods.addAll(allMethods.get(currentClass));
-                this.classHierarchy.put(currentClass, clas);
-            }
-        );
+        for (ObjectType currentClass : currentArtifactClasses) {
+            Type type = new Type();
+            type.setSupers(artifactInOpalFormat.classHierarchy(), currentClass);
+            type.methods.addAll(allMethods.get(currentClass));
+            this.classHierarchy.put(currentClass, type);
+        }
 
-        libraryClasses.parallelStream().forEach(
-            libraryClass -> {
-                Type clas = new Type(libraryClass);
-                clas.setSupers(artifactInOpalFormat.classHierarchy(), libraryClass);
-                this.classHierarchy.put(libraryClass, clas);
-            }
-        );
+        for (ObjectType libraryClass : libraryClasses) {
+            Type type = new Type();
+            type.setSupers(artifactInOpalFormat.classHierarchy(), libraryClass);
+            this.classHierarchy.put(libraryClass, type);
+        }
 
     }
 
@@ -133,7 +129,7 @@ public class PartialCallGraph {
      *
      * @param methods a map of methods inside each class.
      *                Keys are org.opalj.ObjectType and values are a list of org.opalj.br.Method declared inside of that class.
-     * @param method the org.opalj.br.Method to be added.
+     * @param method  the org.opalj.br.Method to be added.
      * @return if the value is successfully added returns true otherwise false.
      */
     private Boolean putMethod(Map<ObjectType, List<Method>> methods, Method method) {
@@ -151,10 +147,11 @@ public class PartialCallGraph {
                     currentClassMethods.add(method);
                 }
             }
-            methods.put(currentClass,currentClassMethods);
+            methods.put(currentClass, currentClassMethods);
             return true;
 
-        }catch (Exception e){
+        } catch (Exception e) {
+            logger.error("Couldn't add the method {} to the list of methods of the class:{} ", method, currentClass, e);
             return false;
         }
     }
@@ -269,42 +266,69 @@ public class PartialCallGraph {
             timestamp,
             MavenResolver.resolveDependencies(coordinate.getCoordinate()),
             partialCallGraph.toURIGraph(),
-            toURIHierarchy(partialCallGraph.classHierarchy,coordinate.getProduct()));
+            toURIHierarchy(partialCallGraph.classHierarchy));
     }
 
-    private static Map<FastenURI,ProposalRevisionCallGraph.Type> toURIHierarchy(Map<ObjectType, Type> classHierarchy, String productName) {
+
+    /**
+     * Converts all of the members of the classHierarchy to FastenURIs.
+     *
+     * @param classHierarchy Map<org.obalj.br.ObjectType, eu.fasten.analyzer.javacgopal.Type>
+     * @return Map<eu.fasten.core.data.FastenURI, eu.fasten.analyzer.javacgopal.ProposalRevisionCallGraph.Type>
+     */
+    static Map<FastenURI, ProposalRevisionCallGraph.Type> toURIHierarchy(Map<ObjectType, Type> classHierarchy) {
 
         Map<FastenURI, ProposalRevisionCallGraph.Type> URIclassHierarchy = new HashMap<>();
 
-        classHierarchy.keySet().parallelStream().forEach(
-            clas->{
-                URIclassHierarchy.put(
-                    OPALMethodAnalyzer.getTypeURI(clas),
-                    new ProposalRevisionCallGraph.Type(
-                        toURI(classHierarchy.get(clas).methods, productName),
-                        toURI(classHierarchy.get(clas).superClasses),
-                        toURI(classHierarchy.get(clas).superInterfaces)
-                    )
-                );
-            }
+        for (ObjectType aClass : classHierarchy.keySet()) {
 
+            var type = classHierarchy.get(aClass);
+
+            URIclassHierarchy.put(
+                OPALMethodAnalyzer.getTypeURI(aClass),
+                new ProposalRevisionCallGraph.Type(
+                    toURIMethods(type.methods),
+                    toURITypes(type.superClasses),
+                    toURITypes(type.superInterfaces)
+                )
             );
-        return null;
+        }
+        return URIclassHierarchy;
     }
 
-    private synchronized static List<FastenURI> toURI(List<ObjectType> superClasses) {
+    /**
+     * Converts a list of classes or interfaces to a list of FastenURIs.
+     * Note: It keeps the order of elements since the order of classes is important in further analysis.
+     *
+     * @param classes A list of org.obalj.br.ObjectType
+     * @return A list of eu.fasten.core.data.FastenURI.
+     */
+    static List<FastenURI> toURITypes(List<ObjectType> classes) {
         List<FastenURI> classURIs = new ArrayList<>();
-        superClasses.parallelStream().forEach(
-            clas -> classURIs.add(OPALMethodAnalyzer.getTypeURI(clas))
-        );
+        for (ObjectType aClass : classes) {
+            classURIs.add(OPALMethodAnalyzer.getTypeURI(aClass));
+        }
         return classURIs;
     }
 
-    private synchronized static List<FastenURI> toURI(List<Method> methods, String productName) {
+    /**
+     * Converts a list of methods to a list of FastenURIs.
+     *
+     * @param methods A list of org.obalj.br.Method
+     * @return A list of eu.fasten.core.data.FastenURIs.
+     */
+    static List<FastenURI> toURIMethods(List<Method> methods) {
         List<FastenURI> methodsURIs = new ArrayList<>();
-        methods.parallelStream().forEach(
-            method -> methodsURIs.add(OPALMethodAnalyzer.toCanonicalSchemelessURI(productName, method.declaringClassFile().thisType(), method.name(),method.descriptor()))
-        );
+        for (Method method : methods) {
+            methodsURIs.add(
+                OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                    null,
+                    method.declaringClassFile().thisType(),
+                    method.name(),
+                    method.descriptor()
+                )
+            );
+        }
         return methodsURIs;
     }
 

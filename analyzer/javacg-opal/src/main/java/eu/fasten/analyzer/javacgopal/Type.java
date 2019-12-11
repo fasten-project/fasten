@@ -33,7 +33,7 @@ public class Type {
     List<ObjectType> superClasses;
     List<ObjectType> superInterfaces;
 
-    public Type(ObjectType thisType) {
+    public Type() {
         this.methods = new ArrayList<>();
         this.superClasses = new ArrayList<>();
         this.superInterfaces = new ArrayList<>();
@@ -54,7 +54,7 @@ public class Type {
         Collections.reverse(this.superClasses);
 
         classHierarchy.allSuperinterfacetypes(currentClass, true).foreach(
-            JavaToScalaConverter.asScalaFunction1(interfac -> this.superInterfaces.add((ObjectType) interfac))
+            JavaToScalaConverter.asScalaFunction1(anInterface -> this.superInterfaces.add((ObjectType) anInterface))
         );
     }
 }

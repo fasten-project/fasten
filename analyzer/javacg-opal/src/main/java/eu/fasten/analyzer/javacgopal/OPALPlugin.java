@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -40,7 +41,7 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
     private org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
     final String CONSUME_TOPIC = "maven.packages";
     final String PRODUCE_TOPIC = "opal_callgraphs";
-
+    RevisionCallGraph lastCallGraphGenerated;
     @Override
     public List<String> consumerTopic() {
         return new ArrayList<>(Collections.singletonList(CONSUME_TOPIC));
@@ -73,28 +74,28 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
 
                     logger.info("Generating RevisionCallGraph for {} ...", mavenCoordinate.getCoordinate());
 
-                    var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
+                    lastCallGraphGenerated = PartialCallGraph.createRevisionCallGraph("mvn",
                         mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
                         new PartialCallGraph(MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
                     );
 
                     logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
 
-                    logger.info("Producing generated call graph for {} to Kafka ...", revisionCallGraph.uri.toString());
+                    logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
 
-                    ProducerRecord<Object, String> record = new ProducerRecord<>(revisionCallGraph.uri.toString(), revisionCallGraph.toJSON().toString());
+                    ProducerRecord<Object, String> record = new ProducerRecord<>(lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
 
                     try {
                         kafkaProducer.send(record, ((recordMetadata, e) -> {
                             if (e != null) {
-                                logger.error("Problem in producing {}", revisionCallGraph.uri.toString());
+                                logger.error("Problem in producing {}", lastCallGraphGenerated.uri.toString());
                                 logger.error("Error: ", e);
                                 return;
                             }
-                            logger.debug("Could not produce artifact {} : ", revisionCallGraph.uri.toString());
+                            logger.debug("Could not produce artifact {} : ", lastCallGraphGenerated.uri.toString());
                         })).get();
                     } catch (ExecutionException | InterruptedException e) {
-                        logger.error("Exception in producing {}", revisionCallGraph.uri.toString());
+                        logger.error("Exception in producing {}", lastCallGraphGenerated.uri.toString());
                         logger.error("Exception: ", e);
                     }
 
