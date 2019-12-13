@@ -23,20 +23,20 @@ import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 import eu.fasten.server.kafka.FastenKafkaConnection;
 import eu.fasten.server.kafka.FastenKafkaConsumer;
-import eu.fasten.server.kafka.FastenKafkaProducer;
 import org.pf4j.JarPluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
+
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @CommandLine.Command(name = "FastenServer", mixinStandardHelpOptions = true)
 public class FastenServer implements Runnable {
-    public final static String PLUGIN_TEMPLATE = "\\.jar$";
 
     @Option(names = {"-p", "--plugin_dir"},
             paramLabel = "DIR",
@@ -44,12 +44,28 @@ public class FastenServer implements Runnable {
             defaultValue = ".")
     private Path pluginPath;
 
-    @Option(names= {"-k", "--kafka_servers"})
+    @Option(names = {"-k", "--kafka_server"},
+            paramLabel = "server.name:port",
+            description = "Kafka server to connect to. Use multiple times for clusters.",
+            defaultValue = "localhost:9092")
     private List<String> kafkaServers;
 
     private static Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
+    private List<FastenKafkaConsumer> consumers;
+
     public void run() {
+
+        // Register shutdown actions
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                System.out.println("Shutting down ...");
+                if (consumers != null) {
+                    consumers.forEach(c -> c.shutdown());
+                }
+            }
+        });
+
         logger.debug("Loading plugins from: {}", pluginPath.toAbsolutePath());
 
         JarPluginManager jarPluginManager = new JarPluginManager(pluginPath.toAbsolutePath());
@@ -63,15 +79,16 @@ public class FastenServer implements Runnable {
         logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, {} total plugins",
                 kafkaConsumers.size(), kafkaProducers.size(), plugins.size());
 
-        var consumerThreads = kafkaConsumers.stream().map(k -> {
+        this.consumers = kafkaConsumers.stream().map(k -> {
             var properties = FastenKafkaConnection.kafkaProperties(
                     kafkaServers,
                     k.consumerTopics(),
                     k.getClass().getCanonicalName());
 
             return new FastenKafkaConsumer(properties, k);
-        });
+        }).collect(Collectors.toList());
 
+        this.consumers.forEach(c -> c.run());
     }
 
     public static void main(String[] args) {

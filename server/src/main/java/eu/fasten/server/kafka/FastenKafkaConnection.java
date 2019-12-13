@@ -37,8 +37,7 @@ public abstract class FastenKafkaConnection extends Thread {
         String deserializer = StringDeserializer.class.getName();
         Properties properties = new Properties();
 
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                serverAddresses.stream().reduce("", (acc, x)-> acc + "," + x));
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, String.join(",", serverAddresses));
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, deserializer);
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
