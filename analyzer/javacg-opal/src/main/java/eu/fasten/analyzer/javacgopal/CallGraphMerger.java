@@ -38,13 +38,14 @@ public class CallGraphMerger {
                     //Check whether this method is inside the dependency
                     if (dependency.classHierarchy.containsKey(getTypeURI(target))) {
                         if (dependency.classHierarchy.get(getTypeURI(target)).methods.contains(FastenURI.create(target.getRawPath()))) {
+                            var resolvedMethod = target.toString().replace("SomeDependency", dependency.product);
                             //Check if this call is related to a super class
                             if (isSuperClassMethod) {
                                 //Find that super class. in case there are two, pick the first one since the order of instantiation matters
                                 for (FastenURI superClass : artifact.classHierarchy.get(getTypeURI(source)).superClasses) {
                                     //Check if this dependency contains the super class that we want
                                     if (dependency.classHierarchy.containsKey(superClass)) {
-                                        fastenURIS[1] = new FastenJavaURI(target.toString().replace("SomeDependency", dependency.product));
+                                        fastenURIS[1] = new FastenJavaURI(resolvedMethod);
                                         break nextCall;
                                     } else {
                                         break nextDependency;
@@ -52,7 +53,7 @@ public class CallGraphMerger {
                                 }
                             }
                             else {
-                                fastenURIS[1] = new FastenJavaURI(target.toString().replace("SomeDependency", dependency.product));
+                                fastenURIS[1] = new FastenJavaURI(resolvedMethod);
                             }
                         }
                     }

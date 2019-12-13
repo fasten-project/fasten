@@ -18,8 +18,6 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import eu.fasten.core.data.FastenURI;
-
 /**
  * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre"
  */

@@ -28,6 +28,7 @@ import org.opalj.ai.analyses.cg.CHACallGraphAlgorithmConfiguration;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
 import org.opalj.br.analyses.Project;
+import org.opalj.collection.immutable.Chain;
 import org.opalj.collection.immutable.ConstArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -289,8 +290,8 @@ public class PartialCallGraph {
                 OPALMethodAnalyzer.getTypeURI(aClass),
                 new ProposalRevisionCallGraph.Type(
                     toURIMethods(type.methods),
-                    toURITypes(type.superClasses),
-                    toURITypes(type.superInterfaces)
+                    toURIClasses(type.superClasses),
+                    toURIInterfaces(type.superInterfaces)
                 )
             );
         }
@@ -298,17 +299,30 @@ public class PartialCallGraph {
     }
 
     /**
-     * Converts a list of classes or interfaces to a list of FastenURIs.
-     * Note: It keeps the order of elements since the order of classes is important in further analysis.
+     * Converts a list of interfaces to a list of FastenURIs.
      *
-     * @param classes A list of org.obalj.br.ObjectType
+     * @param interfaces A list of org.obalj.br.ObjectType
      * @return A list of eu.fasten.core.data.FastenURI.
      */
-    static List<FastenURI> toURITypes(List<ObjectType> classes) {
+    static List<FastenURI> toURIInterfaces(List<ObjectType> interfaces) {
         List<FastenURI> classURIs = new ArrayList<>();
-        for (ObjectType aClass : classes) {
+        for (ObjectType aClass : interfaces) {
             classURIs.add(OPALMethodAnalyzer.getTypeURI(aClass));
         }
+        return classURIs;
+    }
+
+    /**
+     * Converts a list of classes to a list of FastenURIs.
+     *
+     * @param classes A list of org.opalj.collection.immutable.Chain<org.obalj.br.ObjectType>
+     * @return A list of eu.fasten.core.data.FastenURI.
+     */
+    static LinkedList<FastenURI> toURIClasses(Chain<ObjectType> classes) {
+        LinkedList<FastenURI> classURIs = new LinkedList<>();
+        classes.foreach( JavaToScalaConverter.asScalaFunction1(aClass ->
+            classURIs.add(OPALMethodAnalyzer.getTypeURI((ObjectType) aClass)))
+        );
         return classURIs;
     }
 
