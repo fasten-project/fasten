@@ -1,11 +1,9 @@
 package eu.fasten.analyzer.javacgopal;
 
-import edu.uci.ics.jung.graph.util.Pair;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.opalj.br.ObjectType;
 
 import java.net.URISyntaxException;
 import java.util.*;
