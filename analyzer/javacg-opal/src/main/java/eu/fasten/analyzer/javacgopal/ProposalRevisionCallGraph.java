@@ -1,25 +1,31 @@
 package eu.fasten.analyzer.javacgopal;
 
+import edu.uci.ics.jung.graph.util.Pair;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.opalj.br.ObjectType;
 
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ProposalRevisionCallGraph extends RevisionCallGraph {
 
     Map<FastenURI,Type> classHierarchy;
 
+    /**
+     * Type can be a class or interface that inherits (implements) from others or implements methods.
+     */
     static class Type{
+        //Methods that this type implements
         List<FastenURI> methods;
-        List<FastenURI> superClasses;
+        //Classes that this type inherits from in the order of instantiation.
+        LinkedList<FastenURI> superClasses;
+        //Interfaces that this type or its super classes implement.
         List<FastenURI> superInterfaces;
 
-        public Type(List<FastenURI> methods, List<FastenURI> superClasses, List<FastenURI> superInterfaces) {
+        public Type(List<FastenURI> methods, LinkedList<FastenURI> superClasses, List<FastenURI> superInterfaces) {
             this.methods = methods;
             this.superClasses = superClasses;
             this.superInterfaces = superInterfaces;

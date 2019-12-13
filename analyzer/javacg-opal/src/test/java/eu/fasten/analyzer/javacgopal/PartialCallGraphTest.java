@@ -23,7 +23,9 @@ import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 
+import eu.fasten.core.data.FastenURI;
 import org.junit.Test;
 import org.junit.BeforeClass;
 import org.opalj.br.analyses.Project;
@@ -123,16 +125,20 @@ public class PartialCallGraphTest {
     }
 
     @Test
-    public void testToURITypes() {
-
-        assertEquals(
-                Arrays.asList(new FastenJavaURI("/java.lang/Object")),
-                PartialCallGraph.toURITypes(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).superClasses)
-        );
+    public void testToURIInterfaces() {
 
         assertEquals(
                 new ArrayList<>(),
-                PartialCallGraph.toURITypes(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).superInterfaces)
+                PartialCallGraph.toURIInterfaces(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).superInterfaces)
+        );
+    }
+
+    @Test
+    public void testToURIClasses() {
+
+        assertEquals(
+                new LinkedList<FastenURI>(Arrays.asList(new FastenJavaURI("/java.lang/Object"))),
+                PartialCallGraph.toURIClasses(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).superClasses)
         );
     }
 

@@ -21,36 +21,42 @@ package eu.fasten.analyzer.javacgopal;
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
+import org.opalj.collection.immutable.Chain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 public class Type {
 
+    private static Logger logger = LoggerFactory.getLogger(Type.class);
+
     List<Method> methods;
-    List<ObjectType> superClasses;
+    Chain<ObjectType> superClasses;
     List<ObjectType> superInterfaces;
 
     public Type() {
         this.methods = new ArrayList<>();
-        this.superClasses = new ArrayList<>();
+        this.superClasses = null;
         this.superInterfaces = new ArrayList<>();
     }
 
+    /**
+     * Sets super classes and super interfaces of this type
+     *
+     * @param classHierarchy org.opalj.br.ClassHierarchy
+     * @param currentClass org.opalj.br.ObjectType. The type that its supper types should be set.
+     */
     public synchronized void setSupers(ClassHierarchy classHierarchy, ObjectType currentClass) {
 
         try {
-            classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s().foreach(
-                JavaToScalaConverter.asScalaFunction1(cl -> this.superClasses.add((ObjectType) cl))
-            );
+            this.superClasses = classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
         } catch (NoSuchElementException e) {
-            classHierarchy.allSupertypes(currentClass, false).foreach(
-                JavaToScalaConverter.asScalaFunction1(cl -> this.superClasses.add((ObjectType) cl))
-            );
+            logger.error("This type doesn't have allSuperclassTypesInInitializationOrder method.", e);
         }
-        Collections.reverse(this.superClasses);
+        superClasses.reverse();
 
         classHierarchy.allSuperinterfacetypes(currentClass, false).foreach(
             JavaToScalaConverter.asScalaFunction1(anInterface -> this.superInterfaces.add((ObjectType) anInterface))
