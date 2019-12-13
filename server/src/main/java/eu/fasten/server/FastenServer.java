@@ -18,8 +18,9 @@
 
 package eu.fasten.server;
 
-//import eu.fasten.analyzer.plugins.DummyAnalyzer;
 import eu.fasten.core.plugins.FastenPlugin;
+import eu.fasten.core.plugins.KafkaConsumer;
+import eu.fasten.core.plugins.KafkaProducer;
 import org.pf4j.DefaultPluginManager;
 import org.pf4j.ExtensionWrapper;
 import org.pf4j.JarPluginManager;
@@ -54,42 +55,23 @@ public class FastenServer implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
-    public Stream<Path> findPlugins(Path dir) throws IOException {
-        return asStream(
-                Files.newDirectoryStream(dir,
-                        file -> file.toString().matches(PLUGIN_TEMPLATE)).iterator()
-        );
-    }
-
-    public Optional<FastenPlugin> loadPlugin(Path plugin) {
-        return null;
-    }
-
     public void run() {
         logger.debug("Loading plugins from: {}", pluginPath.toAbsolutePath());
-        try {
-            findPlugins(pluginPath.toAbsolutePath());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        JarPluginManager jarPluginManager = new JarPluginManager(pluginPath.toAbsolutePath());
+        jarPluginManager.loadPlugins();
+        jarPluginManager.startPlugins();
+
+        List<FastenPlugin> plugins = jarPluginManager.getExtensions(FastenPlugin.class);
+        List<KafkaConsumer> kafkaConsumers = jarPluginManager.getExtensions(KafkaConsumer.class);
+        List<KafkaProducer> kafkaProducers = jarPluginManager.getExtensions(KafkaProducer.class);
+
+        logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, {} total plugins",
+                kafkaConsumers.size(), kafkaProducers.size(), plugins.size());
     }
 
     public static void main(String[] args) {
-//        int exitCode = new CommandLine(new FastenServer()).execute(args);
-//        System.exit(exitCode);
-
-
-        JarPluginManager jarPluginManager = new JarPluginManager(Paths.get("/Users/amir/projects/fasten/server/src/main/java/eu/fasten/server/plugins"));
-        jarPluginManager.loadPlugins();
-        //System.setProperty("pf4j.mode", RuntimeMode.DEVELOPMENT.toString());
-
-        System.out.println("Mode: " + jarPluginManager.getRuntimeMode().toString());
-
-        List<FastenPlugin> plugins = jarPluginManager.getExtensions(FastenPlugin.class);
-
-        for(FastenPlugin p : plugins){
-            System.out.println("Name: " + p.name());
-        }
-
+        int exitCode = new CommandLine(new FastenServer()).execute(args);
+        System.exit(exitCode);
     }
 }

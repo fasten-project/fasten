@@ -18,11 +18,13 @@
 
 package eu.fasten.core.plugins;
 
+import org.pf4j.ExtensionPoint;
+
 /**
  * Indicates a plug-in that produces records to Kafka. As per FASTEN conventions,
  * the plug-ins are expected to produce text output in the JSON format.
  */
-public interface KafkaProducer {
+public interface KafkaProducer extends ExtensionPoint {
 
     /**
      * A unique name for the producer topic to write to. If multiple plug-ins specify the same topic,

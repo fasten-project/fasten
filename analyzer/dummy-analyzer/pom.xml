@@ -16,15 +16,6 @@
 
     <name>dummy-analyzer</name>
 
-    <dependencies>
-        <dependency>
-            <groupId>eu.fasten</groupId>
-            <artifactId>server</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <!--            <scope>provided</scope>-->
-        </dependency>
-    </dependencies>
-
     <build>
         <plugins>
             <plugin>
@@ -45,7 +36,7 @@
                                         <Main-Class>eu.fasten.analyzer.javacgopal.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.dummyanalyzer.DummyAnalyzer</Plugin-Class>
+                                        <Plugin-Class>eu.fasten.analyzer.dummyanalyzer.DummyAnalyzerPlugin</Plugin-Class>
                                         <Plugin-Id>dummy-analyzer</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
                                         <Plugin-Description>Dummy Analyzer</Plugin-Description>
@@ -70,18 +61,18 @@
                 </configuration>
             </plugin>
 
-            <!--            <plugin>-->
-            <!--                <groupId>org.apache.maven.plugins</groupId>-->
-            <!--                <artifactId>maven-compiler-plugin</artifactId>-->
-            <!--                <version>3.8.1</version>-->
-            <!--                <configuration>-->
-            <!--                    <annotationProcessors>-->
-            <!--                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>-->
-            <!--                    </annotationProcessors>-->
-            <!--                    <source>1.11</source>-->
-            <!--                    <target>1.11</target>-->
-            <!--                </configuration>-->
-            <!--            </plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <annotationProcessors>
+                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
+                    </annotationProcessors>
+                    <source>1.11</source>
+                    <target>1.11</target>
+                </configuration>
+            </plugin>
 
         </plugins>
     </build>

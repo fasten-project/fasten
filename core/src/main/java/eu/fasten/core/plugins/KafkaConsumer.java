@@ -19,6 +19,7 @@
 package eu.fasten.core.plugins;
 
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.pf4j.ExtensionPoint;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ import java.util.List;
  *           {@link eu.fasten.core.data.RevisionCallGraph} entries. All other types
  *           must be accompanied by custom de-serializers.
  */
-public interface KafkaConsumer<T>  {
+public interface KafkaConsumer<T> extends ExtensionPoint {
 
     /**
      * The topic this plug-in is interested into.
