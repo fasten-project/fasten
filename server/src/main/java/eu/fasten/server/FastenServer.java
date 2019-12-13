@@ -40,8 +40,7 @@ import java.util.stream.Stream;
 import static eu.fasten.server.utils.StreamUtils.asStream;
 
 @CommandLine.Command(name = "FastenServer", mixinStandardHelpOptions = true)
-public class
-FastenServer implements Runnable {
+public class FastenServer implements Runnable {
     public final static String PLUGIN_TEMPLATE = "\\.jar$";
 
     @Option(names = {"-p", "--plugin_dir"},
