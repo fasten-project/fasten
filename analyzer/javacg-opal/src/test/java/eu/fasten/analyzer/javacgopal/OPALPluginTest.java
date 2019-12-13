@@ -59,10 +59,7 @@ public class OPALPluginTest {
 
         final String topic = "maven.packages";
 
-        opalPlugin.consume(topic, new ConsumerRecords<>(ImmutableMap.of(new TopicPartition(opalPlugin.name(), 1), Arrays.asList(new ConsumerRecord<>(
-                                                opalPlugin.CONSUME_TOPIC, 1, 1, 1l, TimestampType.CREATE_TIME, 1l,
-                                                10, 10, "1", coordinateJSON.toString()))))
-        );
+        opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()));
 
         JSONAssert.assertEquals(
                 PartialCallGraph.createRevisionCallGraph("mvn",

@@ -22,6 +22,7 @@ import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONException;
@@ -45,7 +46,7 @@ public class OPALPlugin extends Plugin {
     }
 
     @Extension
-    public static class OPAL implements FastenPlugin, KafkaConsumer<String>, KafkaProducer {
+    public static class OPAL implements KafkaConsumer<String>, KafkaProducer {
 
         private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
 
@@ -63,61 +64,54 @@ public class OPALPlugin extends Plugin {
          * Generates call graphs using OPAL for consumed maven coordinates in eu.fasten.core.data.RevisionCallGraph format,
          * and produce them to the Producer that is provided for this Object.
          *
-         * @param records An Iterable of records including maven coordinates in the JSON format.
+         * @param kafkaRecord A record including maven coordinates in the JSON format.
          *                e.g. {
-         *                       "groupId": "com.g2forge.alexandria",
-         *                       "artifactId": "alexandria",
-         *                       "version": "0.0.9",
-         *                       "date": "1574072773"
-         *                      }
+         *                "groupId": "com.g2forge.alexandria",
+         *                "artifactId": "alexandria",
+         *                "version": "0.0.9",
+         *                "date": "1574072773"
+         *                }
          */
         @Override
-        public void consume(String topic, ConsumerRecords<String, String> records) {
+        public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
 
-            StreamSupport.stream(records.spliterator(),true).forEach(
+            try {
+                JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
 
-                kafkaRecord -> {
+                MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
+                    kafkaConsumedJson.get("artifactId").toString(),
+                    kafkaConsumedJson.get("version").toString());
 
-                    try {
-                        JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
+                logger.info("Generating RevisionCallGraph for {} ...", mavenCoordinate.getCoordinate());
 
-                        MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
-                            kafkaConsumedJson.get("artifactId").toString(),
-                            kafkaConsumedJson.get("version").toString());
+                lastCallGraphGenerated = PartialCallGraph.createRevisionCallGraph("mvn",
+                    mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
+                    new PartialCallGraph(MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
+                );
 
-                        logger.info("Generating RevisionCallGraph for {} ...", mavenCoordinate.getCoordinate());
+                logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
 
-                        lastCallGraphGenerated = PartialCallGraph.createRevisionCallGraph("mvn",
-                            mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
-                            new PartialCallGraph(MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
-                        );
+                logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
 
-                        logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
+                ProducerRecord<Object, String> record = new ProducerRecord<>(lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
 
-                        logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
-
-                        ProducerRecord<Object, String> record = new ProducerRecord<>(lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
-
-                        try {
-                            kafkaProducer.send(record, ((recordMetadata, e) -> {
-                                if (e != null) {
-                                    logger.error("Problem in producing {}", lastCallGraphGenerated.uri.toString(), e);
-                                    return;
-                                }
-                                logger.debug("Could not produce artifact {} : ", lastCallGraphGenerated.uri.toString());
-                            })).get();
-                        } catch (ExecutionException | InterruptedException e) {
-                            logger.error("Exception in producing {}", lastCallGraphGenerated.uri.toString(), e);
+                try {
+                    kafkaProducer.send(record, ((recordMetadata, e) -> {
+                        if (e != null) {
+                            logger.error("Problem in producing {}", lastCallGraphGenerated.uri.toString(), e);
+                            return;
                         }
-
-                    } catch (JSONException e) {
-                        logger.error("An exception occurred while using consumer records as json: {}", e.getMessage());
-                    } catch (Exception e) {
-                        logger.error(e.getMessage());
-                    }
+                        logger.debug("Could not produce artifact {} : ", lastCallGraphGenerated.uri.toString());
+                    })).get();
+                } catch (ExecutionException | InterruptedException e) {
+                    logger.error("Exception in producing {}", lastCallGraphGenerated.uri.toString(), e);
                 }
-            );
 
+            } catch (JSONException e) {
+                logger.error("An exception occurred while using consumer records as json: {}", e.getMessage());
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+            }
         }
 
         @Override
@@ -146,10 +140,12 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public void start() { }
+        public void start() {
+        }
 
         @Override
-        public void stop() { }
+        public void stop() {
+        }
     }
 }
 

@@ -18,7 +18,7 @@
 
 package eu.fasten.core.plugins;
 
-import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.pf4j.ExtensionPoint;
 
 import java.util.List;
@@ -31,7 +31,7 @@ import java.util.List;
  *           {@link eu.fasten.core.data.RevisionCallGraph} entries. All other types
  *           must be accompanied by custom de-serializers.
  */
-public interface KafkaConsumer<T> extends ExtensionPoint {
+public interface KafkaConsumer<T> extends FastenPlugin, ExtensionPoint {
 
     /**
      * The topic this plug-in is interested into.
@@ -39,10 +39,10 @@ public interface KafkaConsumer<T> extends ExtensionPoint {
     public List<String> consumerTopics();
 
     /**
-     * A set of records to be consumed. This method must return when all records have
-     * been consumed, otherwise it will block further record delivery.
+     * Processed an incoming record. This method must return when the record
+     * has been consumed, otherwise it will block further record delivery.
      *
-     * @param records An Iterable of records, de-serialized to the provided type {@link T}
+     * @param record A record, de-serialized to the provided type {@link T}
      */
-    public void consume(String topic, ConsumerRecords<String, T> records);
+    public void consume(String topic, ConsumerRecord<String, T> record);
 }

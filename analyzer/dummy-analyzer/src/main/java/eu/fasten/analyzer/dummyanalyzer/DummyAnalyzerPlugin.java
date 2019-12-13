@@ -1,8 +1,7 @@
 package eu.fasten.analyzer.dummyanalyzer;
 
-import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaConsumer;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -20,7 +19,7 @@ public class DummyAnalyzerPlugin extends Plugin {
     }
 
     @Extension
-    public static class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
+    public static class DummyAnalyzer implements KafkaConsumer<String> {
         private final Logger logger = LoggerFactory.getLogger(DummyAnalyzer.class.getName());
         @Override
         public List<String> consumerTopics() {
@@ -28,10 +27,8 @@ public class DummyAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public void consume(String topic, ConsumerRecords<String, String> records) {
-            for (var record : records) {
-                logger.debug("Key: " + record.key() + " Value:" + record.value());
-            }
+        public void consume(String topic, ConsumerRecord<String, String> record) {
+            logger.debug("Key: " + record.key() + " Value:" + record.value());
         }
 
         @Override

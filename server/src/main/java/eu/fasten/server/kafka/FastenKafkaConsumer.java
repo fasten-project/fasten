@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
@@ -38,11 +39,22 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
     @Override
     public void run() {
+        logger.debug("Starting consumer: {}", kafkaConsumer.getClass());
+
         try {
+            if(this.connection == null){
+                this.connection = new org.apache.kafka.clients.consumer.KafkaConsumer(this.connProperties);
+                connection.subscribe(kafkaConsumer.consumerTopics());
+            }
             do {
                 ConsumerRecords<String, String> records = connection.poll(Duration.ofMillis(100));
-                kafkaConsumer.consume("foo", records);
-                doCommitSync();
+                List<String> topics = kafkaConsumer.consumerTopics();
+
+                for (String topic : topics){
+                    records.records(topic).forEach(r -> kafkaConsumer.consume(topic, r));
+                    doCommitSync();
+                }
+
             } while (true);
         } catch (WakeupException e) {
             logger.info("Received shutdown signal!");
