@@ -50,10 +50,9 @@ public class Type {
                 JavaToScalaConverter.asScalaFunction1(cl -> this.superClasses.add((ObjectType) cl))
             );
         }
-        this.superClasses.add(currentClass);
         Collections.reverse(this.superClasses);
 
-        classHierarchy.allSuperinterfacetypes(currentClass, true).foreach(
+        classHierarchy.allSuperinterfacetypes(currentClass, false).foreach(
             JavaToScalaConverter.asScalaFunction1(anInterface -> this.superInterfaces.add((ObjectType) anInterface))
         );
     }

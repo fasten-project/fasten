@@ -1,5 +1,6 @@
 package eu.fasten.analyzer.javacgopal;
 
+import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 
@@ -7,33 +8,65 @@ import java.util.List;
 
 public class CallGraphMerger {
 
-    public static CallGraphMerger resolve(MavenCoordinate coordinate){
+    public static CallGraphMerger resolve(MavenCoordinate coordinate) {
 
         var PDN = MavenResolver.resolveDependencies(coordinate.getCoordinate());
 
         List<List<FastenURI>> depencencyList = getDependenciesURI(PDN);
 
         for (List<FastenURI> fastenURIS : depencencyList) {
-                List<ProposalRevisionCallGraph> revisionCallGraphs = loadRevisionCallGraph(fastenURIS);
-                List<ProposalRevisionCallGraph> resolvedCallGraphs = mergeCallGraphs(revisionCallGraphs);
+            List<ProposalRevisionCallGraph> revisionCallGraphs = loadRevisionCallGraph(fastenURIS);
+//                List<ProposalRevisionCallGraph> resolvedCallGraphs = mergeCallGraphs(revisionCallGraphs);
         }
 
         return null;
     }
 
-    public static List<ProposalRevisionCallGraph> mergeCallGraphs(List<ProposalRevisionCallGraph> revisionCallGraphs) {
-        for (int i =0 ; i < revisionCallGraphs.size() ; i++) {
-            for (FastenURI[] fastenURIS : revisionCallGraphs.get(i).graph) {
-                var callee = fastenURIS[1];
-                if(callee.toString().contains("SomeDependency")){
-                    for (ProposalRevisionCallGraph proposalRevisionCallGraph : revisionCallGraphs.subList(i,revisionCallGraphs.size()-1)) {
-//                       var v = proposalRevisionCallGraph.classHierarchy.supertypes().filter(JavaToScalaConverter.asScalaFunction1(j->j.toString().contains(callee.getRawNamespace())));
-                        System.out.println();
+    public static ProposalRevisionCallGraph mergeCallGraph(ProposalRevisionCallGraph artifact, List<ProposalRevisionCallGraph> dependencies) {
+
+        for (FastenURI[] fastenURIS : artifact.graph) {
+            var source = fastenURIS[0];
+            var target = fastenURIS[1];
+            var isSuperClassMethod = artifact.classHierarchy.get(getTypeURI(source)).superClasses.contains(getTypeURI(target));
+            nextCall:
+
+            //Foreach unresolved call
+            if (target.getProduct().equals("SomeDependency")) {
+                //Go through all dependencies
+                for (ProposalRevisionCallGraph dependency : dependencies) {
+                    nextDependency:
+                    //Check whether this method is inside the dependency
+                    if (dependency.classHierarchy.containsKey(getTypeURI(target))) {
+                        if (dependency.classHierarchy.get(getTypeURI(target)).methods.contains(FastenURI.create(target.getRawPath()))) {
+                            //Check if this call is related to a super class
+                            if (isSuperClassMethod) {
+                                //Find that super class. in case there are two, pick the first one since the order of instantiation matters
+                                for (FastenURI superClass : artifact.classHierarchy.get(getTypeURI(source)).superClasses) {
+                                    //Check if this dependency contains the super class that we want
+                                    if (dependency.classHierarchy.containsKey(superClass)) {
+                                        fastenURIS[1] = new FastenJavaURI(target.toString().replace("SomeDependency", dependency.product));
+                                        break nextCall;
+                                    } else {
+                                        break nextDependency;
+                                    }
+                                }
+                            }
+                            else {
+                                fastenURIS[1] = new FastenJavaURI(target.toString().replace("SomeDependency", dependency.product));
+                            }
+                        }
                     }
                 }
             }
         }
-        return null;
+
+
+        return artifact;
+    }
+
+
+    private static FastenURI getTypeURI(FastenURI callee) {
+        return new FastenJavaURI("/" + callee.getNamespace() + "/" + callee.getEntity().substring(0, callee.getEntity().indexOf(".")));
     }
 
     private static List<ProposalRevisionCallGraph> loadRevisionCallGraph(List<FastenURI> uri) {
@@ -59,7 +92,7 @@ public class CallGraphMerger {
         return allProfilesDependenices;
     }
 
-    public static CallGraphMerger resolve(List<List<RevisionCallGraph.Dependency>> packageDependencyNetwork){
+    public static CallGraphMerger resolve(List<List<RevisionCallGraph.Dependency>> packageDependencyNetwork) {
         return null;
     }
 }
