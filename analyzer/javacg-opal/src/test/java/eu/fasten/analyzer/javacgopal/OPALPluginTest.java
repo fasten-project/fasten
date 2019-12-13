@@ -44,7 +44,7 @@ public class OPALPluginTest {
 
     @Test
     public void testConsumerTopic() {
-        assertEquals("maven.packages", opalPlugin.consumerTopic().get(0));
+        assertEquals("maven.packages", opalPlugin.consumerTopics().get(0));
     }
 
     @Test

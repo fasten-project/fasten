@@ -23,7 +23,7 @@ public class DummyAnalyzerPlugin extends Plugin {
     public static class DummyAnalyzer implements FastenPlugin, KafkaConsumer<String> {
         private final Logger logger = LoggerFactory.getLogger(DummyAnalyzer.class.getName());
         @Override
-        public List<String> consumerTopic() {
+        public List<String> consumerTopics() {
             return new ArrayList<>(Collections.singletonList("maven.packages"));
         }
 

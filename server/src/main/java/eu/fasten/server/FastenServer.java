@@ -21,24 +21,18 @@ package eu.fasten.server;
 import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
-import org.pf4j.DefaultPluginManager;
-import org.pf4j.ExtensionWrapper;
+import eu.fasten.server.kafka.FastenKafkaConnection;
+import eu.fasten.server.kafka.FastenKafkaConsumer;
+import eu.fasten.server.kafka.FastenKafkaProducer;
 import org.pf4j.JarPluginManager;
-import org.pf4j.RuntimeMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
-
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.concurrent.CountDownLatch;
 
-import static eu.fasten.server.utils.StreamUtils.asStream;
 
 @CommandLine.Command(name = "FastenServer", mixinStandardHelpOptions = true)
 public class FastenServer implements Runnable {
@@ -68,6 +62,16 @@ public class FastenServer implements Runnable {
 
         logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, {} total plugins",
                 kafkaConsumers.size(), kafkaProducers.size(), plugins.size());
+
+        var consumerThreads = kafkaConsumers.stream().map(k -> {
+            var properties = FastenKafkaConnection.kafkaProperties(
+                    kafkaServers,
+                    k.consumerTopics(),
+                    k.getClass().getCanonicalName());
+
+            return new FastenKafkaConsumer(properties, k);
+        });
+
     }
 
     public static void main(String[] args) {

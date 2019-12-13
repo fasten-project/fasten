@@ -36,7 +36,7 @@ public interface KafkaConsumer<T> extends ExtensionPoint {
     /**
      * The topic this plug-in is interested into.
      */
-    public List<String> consumerTopic();
+    public List<String> consumerTopics();
 
     /**
      * A set of records to be consumed. This method must return when all records have

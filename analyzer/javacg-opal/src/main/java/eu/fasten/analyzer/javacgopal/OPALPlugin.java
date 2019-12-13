@@ -43,7 +43,7 @@ public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
     final String PRODUCE_TOPIC = "opal_callgraphs";
     RevisionCallGraph lastCallGraphGenerated;
     @Override
-    public List<String> consumerTopic() {
+    public List<String> consumerTopics() {
         return new ArrayList<>(Collections.singletonList(CONSUME_TOPIC));
     }
 
