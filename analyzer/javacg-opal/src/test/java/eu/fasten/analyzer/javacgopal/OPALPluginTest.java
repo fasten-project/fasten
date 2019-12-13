@@ -35,11 +35,11 @@ import static org.junit.Assert.assertEquals;
 
 public class OPALPluginTest {
 
-    static OPALPlugin opalPlugin;
+    static OPALPlugin.OPAL opalPlugin;
 
     @BeforeClass
     public static void instantiatePlugin() {
-        opalPlugin = new OPALPlugin();
+        opalPlugin = new OPALPlugin.OPAL();
     }
 
     @Test
@@ -80,6 +80,6 @@ public class OPALPluginTest {
 
     @Test
     public void testName() {
-        assertEquals("eu.fasten.analyzer.javacgopal.OPALPlugin", opalPlugin.name());
+        assertEquals("eu.fasten.analyzer.javacgopal.OPALPlugin.OPAL", opalPlugin.name());
     }
 }
