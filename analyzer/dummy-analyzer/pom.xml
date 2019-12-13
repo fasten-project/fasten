@@ -21,7 +21,7 @@
             <groupId>eu.fasten</groupId>
             <artifactId>server</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-<!--            <scope>provided</scope>-->
+            <!--            <scope>provided</scope>-->
         </dependency>
     </dependencies>
 
@@ -29,54 +29,60 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <finalName>${project.artifactId}-${project.version}-plugin</finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
-                    <attach>false</attach>
-                    <archive>
-                        <manifest>
-                            <mainClass>
-                                eu.fasten.analyzer.dummyanalyzer.DummyAnalyzer
-                            </mainClass>
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                        </manifest>
-                        <manifestEntries>
-                            <Plugin-Class>eu.fasten.analyzer.dummyanalyzer.DummyAnalyzer</Plugin-Class>
-                            <Plugin-Id>dummy-analyzer</Plugin-Id>
-                            <Plugin-Version>0.0.1</Plugin-Version>
-                            <Plugin-Description>Dummy Analyzer</Plugin-Description>
-                            <Plugin-License>Apache License 2.0</Plugin-License>
-                        </manifestEntries>
-                    </archive>
-
-                </configuration>
+                <artifactId>maven-shade-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>make-assembly</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>single</goal>
+                            <goal>shade</goal>
                         </goals>
+                        <configuration>
+
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>eu.fasten.analyzer.javacgopal.Main</Main-Class>
+                                        <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
+                                        <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
+                                        <Plugin-Class>eu.fasten.analyzer.dummyanalyzer.DummyAnalyzer</Plugin-Class>
+                                        <Plugin-Id>dummy-analyzer</Plugin-Id>
+                                        <Plugin-Version>0.0.1</Plugin-Version>
+                                        <Plugin-Description>Dummy Analyzer</Plugin-Description>
+                                        <Plugin-License>Apache License 2.0</Plugin-License>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                        </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-compiler-plugin</artifactId>-->
-<!--                <version>3.8.1</version>-->
-<!--                <configuration>-->
-<!--                    <annotationProcessors>-->
-<!--                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>-->
-<!--                    </annotationProcessors>-->
-<!--                    <source>1.11</source>-->
-<!--                    <target>1.11</target>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
+
+            <!--            <plugin>-->
+            <!--                <groupId>org.apache.maven.plugins</groupId>-->
+            <!--                <artifactId>maven-compiler-plugin</artifactId>-->
+            <!--                <version>3.8.1</version>-->
+            <!--                <configuration>-->
+            <!--                    <annotationProcessors>-->
+            <!--                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>-->
+            <!--                    </annotationProcessors>-->
+            <!--                    <source>1.11</source>-->
+            <!--                    <target>1.11</target>-->
+            <!--                </configuration>-->
+            <!--            </plugin>-->
+
         </plugins>
     </build>
 

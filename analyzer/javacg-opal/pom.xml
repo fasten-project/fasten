@@ -59,84 +59,49 @@
                     </archive>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>com.typesafe.play:play-json_2.11:*</exclude>
+                                    <exclude>com.typesafe.play:play-functional_2.11:*</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>eu.fasten.analyzer.javacgopal.Main</Main-Class>
+                                        <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
+                                        <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
-
-<!--TODO fix: it builds a runnable fat jar when build inside the plugin but throws stack over flow exception when building the whole project! -->
-
-<!--    <build>-->
-<!--        <plugins>-->
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-shade-plugin</artifactId>-->
-<!--                <version>3.2.1</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>shade</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <artifactSet>-->
-<!--                                <excludes>-->
-<!--                                    <exclude>com.fasterxml.jackson.core:*</exclude>-->
-<!--                                    <exclude>com.fasterxml.jackson.datatype:*</exclude>-->
-<!--                                    <exclude>com.esotericsoftware:*</exclude>-->
-<!--                                    <exclude>com.google.guava:*</exclude>-->
-<!--                                    <exclude>com.google.errorprone:*</exclude>-->
-<!--                                    <exclude>com.google.code.findbugs:*</exclude>-->
-<!--                                    <exclude>com.google.j2objc:*</exclude>-->
-<!--                                    <exclude>org.apache.commons:*</exclude>-->
-<!--                                    <exclude>org.apache.commons:*</exclude>-->
-<!--                                    <exclude>org.typelevel:*</exclude>-->
-<!--                                    <exclude>org.apache.commons:*</exclude>-->
-<!--                                    <exclude>org.rocksdb:*</exclude>-->
-<!--                                    <exclude>org.checkerframework:*</exclude>-->
-<!--                                    <exclude>org.codehaus.mojo:*</exclude>-->
-<!--                                    <exclude>commons-configuration:*</exclude>-->
-<!--                                    <exclude>commons-lang:*</exclude>-->
-<!--                                    <exclude>commons-logging:*</exclude>-->
-<!--                                    <exclude>commons-io:*</exclude>-->
-<!--                                    <exclude>commons-collections:*</exclude>-->
-<!--                                    <exclude>net.sf.jung:*</exclude>-->
-<!--                                    <exclude>org.eclipse.jgit:*</exclude>-->
-<!--                                    <exclude>com.jcraft:*</exclude>-->
-<!--                                    <exclude>com.googlecode.javaewah:*</exclude>-->
-<!--                                    <exclude>org.apache.kafka:k*</exclude>-->
-<!--                                    <exclude>com.github.luben:*</exclude>-->
-<!--                                    <exclude>org.lz4:*</exclude>-->
-<!--                                    <exclude>org.xerial.snappy:*</exclude>-->
-<!--                                    <exclude>com.esotericsoftware:*</exclude>-->
-<!--                                    <exclude>org.objenesis:*</exclude>-->
-<!--                                </excludes>-->
-<!--                            </artifactSet>-->
-<!--                            <transformers>-->
-<!--                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">-->
-<!--                                    <manifestEntries>-->
-<!--                                        <Main-Class>eu.fasten.analyzer.javacgopal.Main</Main-Class>-->
-<!--                                        <X-Compile-Source-JDK>11</X-Compile-Source-JDK>-->
-<!--                                        <X-Compile-Target-JDK>11</X-Compile-Target-JDK>-->
-<!--                                    </manifestEntries>-->
-<!--                                </transformer>-->
-<!--                            </transformers>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--                <configuration>-->
-<!--                    <filters>-->
-<!--                        <filter>-->
-<!--                            <artifact>*:*</artifact>-->
-<!--                            <excludes>-->
-<!--                                <exclude>META-INF/*.SF</exclude>-->
-<!--                                <exclude>META-INF/*.DSA</exclude>-->
-<!--                                <exclude>META-INF/*.RSA</exclude>-->
-<!--                            </excludes>-->
-<!--                        </filter>-->
-<!--                    </filters>-->
-<!--                    &lt;!&ndash; Additional configuration. &ndash;&gt;-->
-<!--                </configuration>-->
-<!--            </plugin>-->
-<!--        </plugins>-->
-<!--    </build>-->
 
 </project>
