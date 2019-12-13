@@ -19,12 +19,16 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.pf4j.Extension;
+import org.pf4j.Plugin;
+import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,115 +38,119 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.StreamSupport;
 
-public class OPALPlugin implements KafkaConsumer<String>, KafkaProducer {
+public class OPALPlugin extends Plugin {
 
-    private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
-
-    private org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
-    final String CONSUME_TOPIC = "maven.packages";
-    final String PRODUCE_TOPIC = "opal_callgraphs";
-    RevisionCallGraph lastCallGraphGenerated;
-    @Override
-    public List<String> consumerTopics() {
-        return new ArrayList<>(Collections.singletonList(CONSUME_TOPIC));
+    public OPALPlugin(PluginWrapper wrapper) {
+        super(wrapper);
     }
 
-    /**
-     * Generates call graphs using OPAL for consumed maven coordinates in eu.fasten.core.data.RevisionCallGraph format, and produce them to the Producer that is provided for this Object.
-     *
-     * @param records An Iterable of records including maven coordinates in the JSON format.
-     *                e.g. {
-     *                       "groupId": "com.g2forge.alexandria",
-     *                       "artifactId": "alexandria",
-     *                       "version": "0.0.9",
-     *                       "date": "1574072773"
-     *                      }
-     */
-    @Override
-    public void consume(String topic, ConsumerRecords<String, String> records) {
+    @Extension
+    public static class OPAL implements FastenPlugin, KafkaConsumer<String>, KafkaProducer {
 
-        StreamSupport.stream(records.spliterator(),true).forEach(
+        private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
 
-            kafkaRecord -> {
+        private org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
+        final String CONSUME_TOPIC = "maven.packages";
+        final String PRODUCE_TOPIC = "opal_callgraphs";
+        RevisionCallGraph lastCallGraphGenerated;
 
-                try {
-                    JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
+        @Override
+        public List<String> consumerTopics() {
+            return new ArrayList<>(Collections.singletonList(CONSUME_TOPIC));
+        }
 
-                    MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
-                        kafkaConsumedJson.get("artifactId").toString(),
-                        kafkaConsumedJson.get("version").toString());
+        /**
+         * Generates call graphs using OPAL for consumed maven coordinates in eu.fasten.core.data.RevisionCallGraph format,
+         * and produce them to the Producer that is provided for this Object.
+         *
+         * @param records An Iterable of records including maven coordinates in the JSON format.
+         *                e.g. {
+         *                       "groupId": "com.g2forge.alexandria",
+         *                       "artifactId": "alexandria",
+         *                       "version": "0.0.9",
+         *                       "date": "1574072773"
+         *                      }
+         */
+        @Override
+        public void consume(String topic, ConsumerRecords<String, String> records) {
 
-                    logger.info("Generating RevisionCallGraph for {} ...", mavenCoordinate.getCoordinate());
+            StreamSupport.stream(records.spliterator(),true).forEach(
 
-                    lastCallGraphGenerated = PartialCallGraph.createRevisionCallGraph("mvn",
-                        mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
-                        new PartialCallGraph(MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
-                    );
-
-                    logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
-
-                    logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
-
-                    ProducerRecord<Object, String> record = new ProducerRecord<>(lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
+                kafkaRecord -> {
 
                     try {
-                        kafkaProducer.send(record, ((recordMetadata, e) -> {
-                            if (e != null) {
-                                logger.error("Problem in producing {}", lastCallGraphGenerated.uri.toString());
-                                logger.error("Error: ", e);
-                                return;
-                            }
-                            logger.debug("Could not produce artifact {} : ", lastCallGraphGenerated.uri.toString());
-                        })).get();
-                    } catch (ExecutionException | InterruptedException e) {
-                        logger.error("Exception in producing {}", lastCallGraphGenerated.uri.toString());
-                        logger.error("Exception: ", e);
+                        JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
+
+                        MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
+                            kafkaConsumedJson.get("artifactId").toString(),
+                            kafkaConsumedJson.get("version").toString());
+
+                        logger.info("Generating RevisionCallGraph for {} ...", mavenCoordinate.getCoordinate());
+
+                        lastCallGraphGenerated = PartialCallGraph.createRevisionCallGraph("mvn",
+                            mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
+                            new PartialCallGraph(MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
+                        );
+
+                        logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
+
+                        logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
+
+                        ProducerRecord<Object, String> record = new ProducerRecord<>(lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
+
+                        try {
+                            kafkaProducer.send(record, ((recordMetadata, e) -> {
+                                if (e != null) {
+                                    logger.error("Problem in producing {}", lastCallGraphGenerated.uri.toString(), e);
+                                    return;
+                                }
+                                logger.debug("Could not produce artifact {} : ", lastCallGraphGenerated.uri.toString());
+                            })).get();
+                        } catch (ExecutionException | InterruptedException e) {
+                            logger.error("Exception in producing {}", lastCallGraphGenerated.uri.toString(), e);
+                        }
+
+                    } catch (JSONException e) {
+                        logger.error("An exception occurred while using consumer records as json: {}", e.getMessage());
+                    } catch (Exception e) {
+                        logger.error(e.getMessage());
                     }
-
-                } catch (JSONException e) {
-                    logger.error("An exception occurred while using consumer records as json: {}", e.getMessage());
-                } catch (Exception e) {
-                    logger.error(e.getMessage());
                 }
-            }
-        );
+            );
 
+        }
+
+        @Override
+        public String producerTopic() {
+            return this.PRODUCE_TOPIC;
+        }
+
+        /**
+         * This method should be called before calling consume method.
+         * It sets the KafkaProducer of this Object to what is passed to it.
+         *
+         * @param producer org.apache.kafka.clients.producer.KafkaProducer.
+         */
+        @Override
+        public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
+            this.kafkaProducer = producer;
+        }
+
+        public String name() {
+            return this.getClass().getCanonicalName();
+        }
+
+        @Override
+        public String description() {
+            return "Generates call graphs for Java packages using OPAL";
+        }
+
+        @Override
+        public void start() { }
+
+        @Override
+        public void stop() { }
     }
-
-    @Override
-    public String producerTopic() {
-        return this.PRODUCE_TOPIC;
-    }
-
-    /**
-     * This method should be called before calling consume method.
-     * It sets the KafkaProducer of this Object to what is passed to it.
-     *
-     * @param producer org.apache.kafka.clients.producer.KafkaProducer.
-     */
-    @Override
-    public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
-        this.kafkaProducer = producer;
-    }
-
-    public String name() {
-        return this.getClass().getCanonicalName();
-    }
-
-//    @Override
-//    public String description() {
-//        return  "This plugin is a call graph generator.\n" +
-//                "It implements a consume method that generates call graphs using OPAL call graph generator for provided Kafka consumed maven coordinates.\n" +
-//                "It also implements a produce method which produces generated call graphs to a Kafka topic.\n";
-//    }
-//
-//    @Override
-//    public void start() {
-//
-//    }
-//
-//    @Override
-//    public void stop() {
-//
-//    }
 }
+
+

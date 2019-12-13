@@ -59,7 +59,7 @@ public class PartialCallGraph {
      * ClassHierarchy of the under investigation artifact.
      * For every class in the form of org.opalj.br.ObjectType it specify a single eu.fasten.analyzer.javacgopal.Type.
      */
-    private Map<ObjectType, Type> classHierarchy = new HashMap<>();
+    private Map<ObjectType, Type> classHierarchy;
 
     public PartialCallGraph(List<UnresolvedCall> unresolvedCalls, List<ResolvedCall> ResolvedCalls, Map<ObjectType, Type> classHierarchy) {
         this.unresolvedCalls = unresolvedCalls;
@@ -75,6 +75,7 @@ public class PartialCallGraph {
     public PartialCallGraph(File file) {
         this.resolvedCalls = new ArrayList<>();
         this.unresolvedCalls = new ArrayList<>();
+        this.classHierarchy = new HashMap<>();
         this.generatePartialCallGraph(file);
     }
 
@@ -116,11 +117,11 @@ public class PartialCallGraph {
             this.classHierarchy.put(currentClass, type);
         }
 
-        for (ObjectType libraryClass : libraryClasses) {
-            Type type = new Type();
-            type.setSupers(artifactInOpalFormat.classHierarchy(), libraryClass);
-            this.classHierarchy.put(libraryClass, type);
-        }
+//        for (ObjectType libraryClass : libraryClasses) {
+//            Type type = new Type();
+//            type.setSupers(artifactInOpalFormat.classHierarchy(), libraryClass);
+//            this.classHierarchy.put(libraryClass, type);
+//        }
 
     }
 

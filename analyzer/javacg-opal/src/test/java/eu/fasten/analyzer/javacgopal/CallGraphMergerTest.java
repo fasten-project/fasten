@@ -18,37 +18,89 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import org.junit.jupiter.api.Test;
+import eu.fasten.core.data.FastenJavaURI;
+
+import org.junit.Test;
+import org.junit.BeforeClass;
 
 import java.io.File;
 import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.assertEquals;
 
-class CallGraphMergerTest {
+public class CallGraphMergerTest {
+
+    static ProposalRevisionCallGraph artifact;
+    static ProposalRevisionCallGraph dependency;
+
+    @BeforeClass
+    public static void generateCallGraph() {
+
+        /**
+         * Importer is a java8 compiled bytecode of:
+         *<pre>
+         * package name.space;
+         *
+         * import depen.dency.Imported;
+         *
+         * public class Importer {
+         *     public Importer() {
+         *     }
+         *
+         *     public static void sourceMethod() {
+         *         Imported.targetMethod();
+         *     }
+         * }
+         * </pre>
+         */
+        var importerGraph = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("Importer.class").getFile()));
+
+        artifact = new ProposalRevisionCallGraph("mvn",
+                "ImporterGroup.ImporterArtifact",
+                "1.7.29",
+                1574072773,
+                Arrays.asList(),
+                importerGraph.toURIGraph(),
+                PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy()));
+
+        /**
+         * Imported is a java8 compiled bytecode of:
+         *<pre>
+         * package depen.dency;
+         *
+         * public class Imported {
+         *     public Imported() {
+         *     }
+         *
+         *     public static void targetMethod() {
+         *     }
+         * }
+         * </pre>
+         */
+        var importedGraph = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("Imported.class").getFile()));
+
+        dependency = new ProposalRevisionCallGraph("mvn",
+                "ImportedGroup.ImportedArtifact",
+                "1.7.29",
+                1574072773,
+                Arrays.asList(),
+                importedGraph.toURIGraph(),
+                PartialCallGraph.toURIHierarchy(importedGraph.getClassHierarchy()));
+    }
 
     @Test
-    void testResolve() {
+    public void testResolve() {
 
     }
 
     @Test
-    void testMergeCallGraphs() {
-        var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
-                new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"),
-                1574072773,
-                new PartialCallGraph(
-                        new File(Thread.currentThread().getContextClassLoader().getResource("Importer.class").getFile())
-                )
-        );
-//        var revisionCallGraph1 = PartialCallGraph.createProposalRevisionCallGraph("mvn",
-//                new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"),
-//                1574072773,
-//                new PartialCallGraph(
-//                        new File(Thread.currentThread().getContextClassLoader().getResource("Importer.class").getFile())
-//                )
-//        );
-//
-//        CallGraphMerger.mergeCallGraphs(Arrays.asList(revisionCallGraph,revisionCallGraph1));
+    public void testMergeCallGraphs() {
+
+        assertEquals(new FastenJavaURI("//SomeDependency/depen.dency/Imported.targetMethod()%2Fjava.lang%2FVoid"),
+                artifact.graph.stream().filter(i -> i[1].toString().contains("targetMethod")).findFirst().get()[1]);
+
+        assertEquals(new FastenJavaURI("//ImportedGroup.ImportedArtifact/depen.dency/Imported.targetMethod()%2Fjava.lang%2FVoid"),
+                CallGraphMerger.mergeCallGraph(artifact, Arrays.asList(dependency))
+                        .graph.stream().filter(i -> i[1].toString().contains("targetMethod")).findFirst().get()[1]);
     }
 }

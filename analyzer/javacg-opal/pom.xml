@@ -46,19 +46,19 @@
     <build>
         <testSourceDirectory>${project.basedir}/src/test/java/eu/fasten/analyzer/javacgopal/</testSourceDirectory>
         <plugins>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <classpathPrefix>${user.home}/.m2/repository/</classpathPrefix>
-                            <classpathLayoutType>repository</classpathLayoutType>
-                            <mainClass>eu.fasten.analyzer.javacgopal.Main</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
+<!--            <plugin>-->
+<!--                <artifactId>maven-jar-plugin</artifactId>-->
+<!--                <configuration>-->
+<!--                    <archive>-->
+<!--                        <manifest>-->
+<!--                            <addClasspath>true</addClasspath>-->
+<!--                            <classpathPrefix>${user.home}/.m2/repository/</classpathPrefix>-->
+<!--                            <classpathLayoutType>repository</classpathLayoutType>-->
+<!--                            <mainClass>eu.fasten.analyzer.javacgopal.Main</mainClass>-->
+<!--                        </manifest>-->
+<!--                    </archive>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -82,6 +82,11 @@
                                         <Main-Class>eu.fasten.analyzer.javacgopal.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
+                                        <Plugin-Class>eu.fasten.analyzer.javacgopal.OPALPlugin</Plugin-Class>
+                                        <Plugin-Id>opal-plugin</Plugin-Id>
+                                        <Plugin-Version>0.0.1</Plugin-Version>
+                                        <Plugin-Description>Given a Maven coordinate, generates call graphs and puts them into a Kafka topic</Plugin-Description>
+                                        <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
@@ -99,6 +104,18 @@
                             </excludes>
                         </filter>
                     </filters>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <annotationProcessors>
+                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
+                    </annotationProcessors>
+                    <source>1.11</source>
+                    <target>1.11</target>
                 </configuration>
             </plugin>
         </plugins>
