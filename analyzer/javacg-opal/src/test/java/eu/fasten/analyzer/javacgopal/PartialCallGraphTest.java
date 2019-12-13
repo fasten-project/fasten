@@ -126,7 +126,7 @@ public class PartialCallGraphTest {
     public void testToURITypes() {
 
         assertEquals(
-                Arrays.asList(new FastenJavaURI("/name.space/SingleSourceToTarget"), new FastenJavaURI("/java.lang/Object")),
+                Arrays.asList(new FastenJavaURI("/java.lang/Object")),
                 PartialCallGraph.toURITypes(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).superClasses)
         );
 
@@ -165,7 +165,7 @@ public class PartialCallGraphTest {
         );
 
         assertEquals(
-                Arrays.asList(new FastenJavaURI("/name.space/SingleSourceToTarget"), new FastenJavaURI("/java.lang/Object")),
+                Arrays.asList(new FastenJavaURI("/java.lang/Object")),
                 PartialCallGraph.toURIHierarchy(callgraph.getClassHierarchy()).get(new FastenJavaURI("/name.space/SingleSourceToTarget")).superClasses
         );
 

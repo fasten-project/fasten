@@ -12,6 +12,8 @@ import java.util.Map;
 
 public class ProposalRevisionCallGraph extends RevisionCallGraph {
 
+    Map<FastenURI,Type> classHierarchy;
+
     static class Type{
         List<FastenURI> methods;
         List<FastenURI> superClasses;
@@ -23,8 +25,6 @@ public class ProposalRevisionCallGraph extends RevisionCallGraph {
             this.superInterfaces = superInterfaces;
         }
     }
-
-    private Map<FastenURI,Type> classHierarchy;
 
     public ProposalRevisionCallGraph(String forge, String product, String version, long timestamp, List<List<Dependency>> depset, ArrayList<FastenURI[]> graph, Map<FastenURI,Type> classHierarchy) {
         super(forge, product, version, timestamp, depset, graph);
