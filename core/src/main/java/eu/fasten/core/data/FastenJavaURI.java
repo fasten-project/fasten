@@ -48,25 +48,34 @@ public class FastenJavaURI extends FastenURI {
 		}
 		final var dotPos = rawEntity.indexOf(".");
 		if (dotPos == -1) { // entity-type
+			checkForCommasAndParentheses(rawEntity);
 			className = decode(rawEntity);
 			functionOrAttributeName = null;
 			returnType = null;
 			args = null;
 			return;
 		}
-		className = decode(rawEntity.substring(0, dotPos));
-		final var funcArgsType = decode(rawEntity.substring(dotPos + 1));
+		final String classNameSpec = rawEntity.substring(0, dotPos);
+		checkForCommasParenthesesOrDots(classNameSpec);
+		className = decode(classNameSpec);
+		final String funcArgsTypeSpec = rawEntity.substring(dotPos + 1);
+		final var funcArgsType = decode(funcArgsTypeSpec);
 		final var openParenPos = funcArgsType.indexOf('(');
 		if (openParenPos == -1) { // entity-attribute
+			checkForCommasParenthesesOrDots(funcArgsTypeSpec);
 			args = null;
 			returnType = null;
-			functionOrAttributeName = null;
+			functionOrAttributeName = funcArgsType;
 			return;
 		}
-		functionOrAttributeName = decode(funcArgsType.substring(0, openParenPos));
+		final String functionOrAttributeNameSpec = funcArgsType.substring(0, openParenPos);
+		checkForCommasParenthesesOrDots(functionOrAttributeNameSpec);
+		functionOrAttributeName = decode(functionOrAttributeNameSpec);
 		final var closedParenPos = funcArgsType.indexOf(')');
 		if (closedParenPos == -1) throw new IllegalArgumentException("Missing close parenthesis");
-		returnType = FastenJavaURI.create(decode(funcArgsType.substring(closedParenPos + 1)));
+		final String returnTypeSpec = funcArgsType.substring(closedParenPos + 1);
+		checkForCommasAndParentheses(returnTypeSpec);
+		returnType = FastenJavaURI.create(decode(returnTypeSpec));
 		final var argString = funcArgsType.substring(openParenPos + 1, closedParenPos);
 		if (argString.length() == 0) {
 			args = NO_ARGS_ARRAY;
@@ -75,7 +84,20 @@ public class FastenJavaURI extends FastenURI {
 
 		final var a = argString.split(",");
 		args = new FastenJavaURI[a.length];
-		for(int i = 0; i < a.length; i++) args[i] = FastenJavaURI.create(decode(a[i]));
+		for(int i = 0; i < a.length; i++) {
+			checkForCommasAndParentheses(a[i]);
+			args[i] = FastenJavaURI.create(decode(a[i]));
+		}
+	}
+
+	private void checkForCommasAndParentheses(final String returnTypeSpec) {
+		if (returnTypeSpec.indexOf(',') != -1 || returnTypeSpec.indexOf('(') != -1 || returnTypeSpec.indexOf(')') != -1)
+			throw new IllegalArgumentException("No parentheses or commas are allowed in type components");
+	}
+
+	private void checkForCommasParenthesesOrDots(final String returnTypeSpec) {
+		if (returnTypeSpec.indexOf('.') != -1 || returnTypeSpec.indexOf(',') != -1 || returnTypeSpec.indexOf('(') != -1 || returnTypeSpec.indexOf(')') != -1)
+			throw new IllegalArgumentException("No parentheses, commas or dots are allowed in entity components");
 	}
 
 	/**

@@ -146,6 +146,15 @@ class FastenURITest {
 		});
 	}
 
+
+	@Test
+	public void testEmptyForgeProductRevision() throws URISyntaxException {
+		final FastenURI fastenURI = new FastenURI("fasten:///a/b");
+		assertEquals(null, fastenURI.getForge());
+		assertEquals(null, fastenURI.getProduct());
+		assertEquals(null, fastenURI.getVersion());
+	}
+
 	@Test
 	public void testDecodeEmptyString() {
 		assertEquals(0, FastenURI.decode("").length());

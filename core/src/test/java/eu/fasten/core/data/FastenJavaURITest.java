@@ -1,5 +1,6 @@
 package eu.fasten.core.data;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -240,5 +241,29 @@ class FastenJavaURITest {
 		assertEquals("%2F", FastenJavaURI.pctEncodeArg("/"));
 	}
 
+	@Test
+	public void testExtendedCharactersInTypes() {
+		final FastenJavaURI uri = new FastenJavaURI("/com.google.common.primitives/Ints$IntArrayAsList.%3cinit%3e(%2Fjava.lang%2F%2FInteger)%2Fjava.lang%2Fvoid");
+		assertTrue(uri.getPath().contains("<init>"));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			final FastenJavaURI uri2 = new FastenJavaURI("/com.google.common.primitives/Ints$IntArrayAsList.(init)(%2Fjava.lang%2F%2FInteger)%2Fjava.lang%2Fvoid");
+		});
+	}
 
+	@Test
+	public void testAttributeNames() {
+		final FastenJavaURI uri = FastenJavaURI.create("fasten://mvn$a/foo/Bar.test");
+		assertEquals("Bar", uri.getClassName());
+		assertEquals("test", uri.getEntityName());
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			final FastenJavaURI uri2 = FastenJavaURI.create("fasten://mvn$a/foo/Bar.te.st");
+		});
+	}
+
+	@Test
+	public void testClassNames() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			final FastenJavaURI uri2 = FastenJavaURI.create("fasten://mvn$a/foo/Ba)r");
+		});
+	}
 }
