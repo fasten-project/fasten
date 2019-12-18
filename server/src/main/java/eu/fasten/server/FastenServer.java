@@ -57,14 +57,15 @@ public class FastenServer implements Runnable {
     public void run() {
 
         // Register shutdown actions
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                System.out.println("Shutting down ...");
-                if (consumers != null) {
-                    consumers.forEach(c -> c.shutdown());
-                }
-            }
-        });
+        // TODO: Fix the null pointer exception for the following ShutdownHook
+//        Runtime.getRuntime().addShutdownHook(new Thread() {
+//            public void run() {
+//                logger.debug("Shutting down...");
+//                if (consumers != null) {
+//                    consumers.forEach(c -> c.shutdown());
+//                }
+//            }
+//        });
 
         logger.debug("Loading plugins from: {}", pluginPath.toAbsolutePath());
 
