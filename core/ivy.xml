@@ -17,6 +17,7 @@
 		<dependency org="org.json" name="json" rev="20180813" />
 		<dependency org="org.apache.kafka" name="kafka-clients" rev="latest.release"/>
 		<dependency org="org.slf4j" name="slf4j-api" rev="latest.release"/>
+		<dependency org="org.pf4j" name="pf4j" rev="3.1.0"/>
 		<dependency org="ch.qos.logback" name="logback-classic" rev="latest.release" conf="runtime"/>
 		<dependency org="net.javacrumbs.json-unit" name="json-unit" rev="latest.release"/>
 	</dependencies>
