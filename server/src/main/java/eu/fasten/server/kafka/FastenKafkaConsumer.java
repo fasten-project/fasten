@@ -15,7 +15,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class FastenKafkaConsumer extends FastenKafkaConnection {
 
-    private final Logger logger = LoggerFactory.getLogger(MavenCoordConsumer.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(FastenKafkaConsumer.class.getName());
     private org.apache.kafka.clients.consumer.KafkaConsumer connection;
     private KafkaConsumer kafkaConsumer;
     private CountDownLatch mLatch;
