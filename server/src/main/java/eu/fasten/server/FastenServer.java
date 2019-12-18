@@ -89,7 +89,7 @@ public class FastenServer implements Runnable {
             return new FastenKafkaConsumer(properties, k);
         }).collect(Collectors.toList());
 
-        this.consumers.forEach(c -> c.run());
+        this.consumers.forEach(c -> c.start());
     }
 
     public static void main(String[] args) {
