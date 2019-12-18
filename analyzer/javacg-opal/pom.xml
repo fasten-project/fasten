@@ -90,6 +90,10 @@
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
+                            <!-- Note that this works when maven is ran in the root directory of the project  -->
+                            <outputDirectory>${session.executionRootDirectory}/docker/plugins/</outputDirectory>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>with-dependencies</shadedClassifierName>
                         </configuration>
                     </execution>
                 </executions>

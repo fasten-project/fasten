@@ -39,8 +39,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.26</version>
-        </dependency>
+            <version>1.7.26</version></dependency>
         <dependency>
             <groupId>org.pf4j</groupId>
             <artifactId>pf4j</artifactId>
@@ -68,6 +67,7 @@
                         <configuration>
                             <minimizeJar>true</minimizeJar>
                             <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
+<!--                            <createDependencyReducedPom>false</createDependencyReducedPom>-->
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
@@ -78,6 +78,15 @@
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
+<!--                            <artifactSet>-->
+<!--                                <includes>-->
+<!--                                    <include>*:*</include>-->
+<!--                                </includes>-->
+<!--                            </artifactSet>-->
+                            <!-- Note that this works when maven is ran in the root directory of the project  -->
+                            <outputDirectory>${session.executionRootDirectory}/docker/server/</outputDirectory>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>with-dependencies</shadedClassifierName>
                         </configuration>
                     </execution>
                 </executions>
