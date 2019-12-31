@@ -31,7 +31,7 @@ import java.util.List;
  *           {@link eu.fasten.core.data.RevisionCallGraph} entries. All other types
  *           must be accompanied by custom de-serializers.
  */
-public interface KafkaConsumer<T> extends FastenPlugin, ExtensionPoint {
+public interface KafkaConsumer<T> extends FastenPlugin {
 
     /**
      * The topic this plug-in is interested into.
