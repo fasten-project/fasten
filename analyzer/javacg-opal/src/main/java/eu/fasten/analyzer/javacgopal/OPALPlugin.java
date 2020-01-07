@@ -48,7 +48,7 @@ public class OPALPlugin extends Plugin {
     @Extension
     public static class OPAL implements KafkaConsumer<String>, KafkaProducer {
 
-        private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
+        private static Logger logger = LoggerFactory.getLogger(OPALPlugin.class);
 
         private org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
         final String CONSUME_TOPIC = "maven.packages";
