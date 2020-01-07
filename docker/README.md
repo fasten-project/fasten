@@ -9,8 +9,10 @@ docker build -t fasten-server -f server/Dockerfile .
 ```
 
 ## Run Docker images
+To start the FASTEN server and load the plug-ins, run the following command:
+
 ```
-docker run -it fasten-server -k host.docker.internal:9092
+docker run --network="host" -it fasten-server -k localhost:30001
 ```
 
 ## Publish Docker images
