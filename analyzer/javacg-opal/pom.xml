@@ -87,7 +87,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <minimizeJar>true</minimizeJar>
+                            <minimizeJar>false</minimizeJar>
                             <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
 <!--                            <createDependencyReducedPom>false</createDependencyReducedPom>-->
                             <artifactSet>
@@ -125,7 +125,6 @@
                         <filter>
                             <artifact>*:*</artifact>
                             <excludes>
-                                <exclude></exclude>
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
