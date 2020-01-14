@@ -19,7 +19,9 @@
 package eu.fasten.server.kafka;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.List;
 import java.util.Properties;
@@ -33,7 +35,7 @@ public abstract class FastenKafkaConnection extends Thread {
         this.connProperties = p;
     }
 
-    public static Properties kafkaProperties(List<String> serverAddresses, List<String> topics, String groupId) {
+    public static Properties kafkaProperties(List<String> serverAddresses, String groupId) {
         String deserializer = StringDeserializer.class.getName();
         Properties properties = new Properties();
 
@@ -46,6 +48,18 @@ public abstract class FastenKafkaConnection extends Thread {
         return properties;
     }
 
+    public static Properties producerProperties(List<String> serverAddresses, String clientId){
 
+        String serializer = StringSerializer.class.getName();
+        Properties properties = new Properties();
+
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, String.join(",", serverAddresses));
+        properties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, clientId);
+        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, serializer);
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, serializer);
+        properties.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "10000000");
+
+        return properties;
+    }
 
 }

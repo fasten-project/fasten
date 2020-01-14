@@ -23,12 +23,15 @@ import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 import eu.fasten.server.kafka.FastenKafkaConnection;
 import eu.fasten.server.kafka.FastenKafkaConsumer;
+import eu.fasten.server.kafka.FastenKafkaProducer;
 import org.pf4j.JarPluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
+import javax.sound.midi.SysexMessage;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,6 +56,7 @@ public class FastenServer implements Runnable {
     private static Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     private List<FastenKafkaConsumer> consumers;
+    private List<FastenKafkaProducer> producers;
 
     public void run() {
 
@@ -67,9 +71,9 @@ public class FastenServer implements Runnable {
 //            }
 //        });
 
-        logger.debug("Loading plugins from: {}", pluginPath.toAbsolutePath());
+        logger.debug("Loading plugins from: {}", pluginPath);
 
-        JarPluginManager jarPluginManager = new JarPluginManager(pluginPath.toAbsolutePath());
+        JarPluginManager jarPluginManager = new JarPluginManager(pluginPath);
         jarPluginManager.loadPlugins();
         jarPluginManager.startPlugins();
 
@@ -80,16 +84,26 @@ public class FastenServer implements Runnable {
         logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, {} total plugins",
                 kafkaConsumers.size(), kafkaProducers.size(), plugins.size());
 
+        this.producers = kafkaProducers.stream().map(k -> {
+            var properties = FastenKafkaConnection.producerProperties(kafkaServers,
+                    k.getClass().getCanonicalName());
+
+            return new FastenKafkaProducer(properties, k);
+
+        }).collect(Collectors.toList());
+
+        this.producers.forEach(c -> c.start());
+
         this.consumers = kafkaConsumers.stream().map(k -> {
             var properties = FastenKafkaConnection.kafkaProperties(
                     kafkaServers,
-                    k.consumerTopics(),
                     k.getClass().getCanonicalName());
 
             return new FastenKafkaConsumer(properties, k);
         }).collect(Collectors.toList());
 
         this.consumers.forEach(c -> c.start());
+
     }
 
     public static void main(String[] args) {
