@@ -19,16 +19,45 @@
 package eu.fasten.server.kafka;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
 
 public class FastenKafkaProducer extends FastenKafkaConnection {
 
-    KafkaProducer connection;
+    private final Logger logger = LoggerFactory.getLogger(FastenKafkaProducer.class.getName());
+    KafkaProducer<Object, String> connection;
     eu.fasten.core.plugins.KafkaProducer producer;
+    private CountDownLatch mLatch;
 
     public FastenKafkaProducer(Properties p, eu.fasten.core.plugins.KafkaProducer kp) {
         super(p);
-        this.connection = new KafkaProducer<Object, String>(p);
+        this.producer = kp;
+        this.mLatch = new CountDownLatch(1);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            logger.debug("Caught shutdown hook");
+            try {
+                mLatch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            logger.debug("{} has exited", producer.getClass().getCanonicalName());
+        }));
+
     }
+
+    @Override
+    public void run(){
+        logger.info("Starts....");
+        if(this.connection == null){
+            this.connection = new KafkaProducer<Object, String>(this.connProperties);
+        }
+        this.producer.setKafkaProducer(this.connection);
+        logger.debug("Sets a Kafka producer.....");
+    }
+
 }

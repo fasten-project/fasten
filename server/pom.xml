@@ -39,7 +39,8 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.26</version></dependency>
+            <version>1.7.26</version>
+        </dependency>
         <dependency>
             <groupId>org.pf4j</groupId>
             <artifactId>pf4j</artifactId>
@@ -65,7 +66,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <minimizeJar>true</minimizeJar>
+                            <minimizeJar>false</minimizeJar>
                             <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
 <!--                            <createDependencyReducedPom>false</createDependencyReducedPom>-->
                             <transformers>
