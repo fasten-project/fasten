@@ -130,6 +130,12 @@
                                 <exclude>META-INF/*.RSA</exclude>
                             </excludes>
                         </filter>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>eu/fasten/core/plugins/*</exclude>
+                            </excludes>
+                        </filter>
                     </filters>
                 </configuration>
             </plugin>
