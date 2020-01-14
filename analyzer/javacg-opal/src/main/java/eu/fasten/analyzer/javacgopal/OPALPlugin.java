@@ -50,7 +50,7 @@ public class OPALPlugin extends Plugin {
 
         private static Logger logger = LoggerFactory.getLogger(OPALPlugin.class);
 
-        private org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
+        private static org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
         final String CONSUME_TOPIC = "maven.packages";
         final String PRODUCE_TOPIC = "opal_callgraphs";
         RevisionCallGraph lastCallGraphGenerated;
@@ -93,24 +93,22 @@ public class OPALPlugin extends Plugin {
 
                 logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
 
-                ProducerRecord<Object, String> record = new ProducerRecord<>(lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
+                ProducerRecord<Object, String> record = new ProducerRecord<>(this.PRODUCE_TOPIC,
+                    lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
 
-                try {
-                    kafkaProducer.send(record, ((recordMetadata, e) -> {
-                        if (e != null) {
-                            logger.error("Problem in producing {}", lastCallGraphGenerated.uri.toString(), e);
-                            return;
-                        }
-                        logger.debug("Could not produce artifact {} : ", lastCallGraphGenerated.uri.toString());
-                    })).get();
-                } catch (ExecutionException | InterruptedException e) {
-                    logger.error("Exception in producing {}", lastCallGraphGenerated.uri.toString(), e);
-                }
+                kafkaProducer.send(record, ((recordMetadata, e) -> {
+                    if (recordMetadata != null) {
+                        logger.debug("Sent: {} to {}", lastCallGraphGenerated.uri.toString(), this.PRODUCE_TOPIC);
+                    } else {
+                        e.printStackTrace();
+                    }
+                }));
 
             } catch (JSONException e) {
                 logger.error("An exception occurred while using consumer records as json: {}", e.getMessage());
             } catch (Exception e) {
                 logger.error(e.getMessage());
+                e.printStackTrace();
             }
         }
 
