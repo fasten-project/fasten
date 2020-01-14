@@ -96,7 +96,7 @@ public class CallGraphMergerTest {
     @Test
     public void testMergeCallGraphs() {
 
-        assertEquals(new FastenJavaURI("//SomeDependency/depen.dency/Imported.targetMethod()%2Fjava.lang%2FVoid"),
+        assertEquals(new FastenJavaURI("/depen.dency/Imported.targetMethod()%2Fjava.lang%2FVoid"),
                 artifact.graph.stream().filter(i -> i[1].toString().contains("targetMethod")).findFirst().get()[1]);
 
         assertEquals(new FastenJavaURI("//ImportedGroup.ImportedArtifact/depen.dency/Imported.targetMethod()%2Fjava.lang%2FVoid"),

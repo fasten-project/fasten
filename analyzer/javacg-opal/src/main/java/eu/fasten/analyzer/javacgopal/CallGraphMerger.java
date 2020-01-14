@@ -31,14 +31,14 @@ public class CallGraphMerger {
             nextCall:
 
             //Foreach unresolved call
-            if (target.getProduct().equals("SomeDependency")) {
+            if (target.getProduct() == null) {
                 //Go through all dependencies
                 for (ProposalRevisionCallGraph dependency : dependencies) {
                     nextDependency:
                     //Check whether this method is inside the dependency
                     if (dependency.classHierarchy.containsKey(getTypeURI(target))) {
                         if (dependency.classHierarchy.get(getTypeURI(target)).methods.contains(FastenURI.create(target.getRawPath()))) {
-                            var resolvedMethod = target.toString().replace("SomeDependency", dependency.product);
+                            var resolvedMethod = "//" + dependency.product.concat(target.toString());
                             //Check if this call is related to a super class
                             if (isSuperClassMethod) {
                                 //Find that super class. in case there are two, pick the first one since the order of instantiation matters

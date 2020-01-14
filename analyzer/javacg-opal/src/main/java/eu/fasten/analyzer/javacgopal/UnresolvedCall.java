@@ -53,7 +53,7 @@ public class UnresolvedCall extends UnresolvedMethodCall {
         if (sourceURI != null) {
 
             var targetURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(
-                "SomeDependency",
+                null,
                 unresolvedCall.calleeClass(),
                 unresolvedCall.calleeName(),
                 unresolvedCall.calleeDescriptor()
