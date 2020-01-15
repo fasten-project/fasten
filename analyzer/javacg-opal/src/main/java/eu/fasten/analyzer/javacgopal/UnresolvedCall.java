@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import eu.fasten.core.data.FastenJavaURI;
 import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
 import org.opalj.br.Method;
 import org.opalj.br.MethodDescriptor;
@@ -61,7 +62,7 @@ public class UnresolvedCall extends UnresolvedMethodCall {
 
             if (targetURI != null) {
                 fastenURI[0] = sourceURI;
-                fastenURI[1] = targetURI;
+                fastenURI[1] = FastenURI.create( "//" + targetURI.toString());
             }
 
         }
