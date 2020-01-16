@@ -169,9 +169,8 @@ public class OPALMethodAnalyzerTest{
 
         var unresolvedMethod = singleSourceToTargetcallGraph.getUnresolvedCalls().get(0);
         assertEquals(
-                new FastenJavaURI("//SomeDependency/java.lang/Object.Object()Void"),
-                //TODO change SomeDependency to $! when it's supported.
-                OPALMethodAnalyzer.toCanonicalSchemelessURI("SomeDependency", unresolvedMethod.calleeClass(), unresolvedMethod.calleeName(), unresolvedMethod.calleeDescriptor())
+                new FastenJavaURI("/java.lang/Object.Object()Void"),
+                OPALMethodAnalyzer.toCanonicalSchemelessURI(null, unresolvedMethod.calleeClass(), unresolvedMethod.calleeName(), unresolvedMethod.calleeDescriptor())
         );
 
         method = arrayCallGraph.getResolvedCalls().get(0).getTarget().get(0);
