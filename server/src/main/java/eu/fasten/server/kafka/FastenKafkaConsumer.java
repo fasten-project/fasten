@@ -7,13 +7,14 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
@@ -23,6 +24,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
     private final Logger logger = LoggerFactory.getLogger(FastenKafkaConsumer.class.getName());
     // This produces errors of a plug-in into a Kafka topic.
     private KafkaProducer errorLog;
+    private final String errorLogTopic = "error_logs";
 
     private org.apache.kafka.clients.consumer.KafkaConsumer<String, String> connection;
     private KafkaConsumer<String> kafkaConsumer;
@@ -64,13 +66,26 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         this.errorLog = new KafkaProducer(p);
     }
 
+    private void sendErrorMsg(String msg){
+
+        ProducerRecord<Object, String> errorRecord = new ProducerRecord<>(this.errorLogTopic, msg);
+
+        this.errorLog.send(errorRecord, (recordMetadata, e) -> {
+            if (recordMetadata != null) {
+                logger.debug("Sent Error: {} to {}", msg, this.errorLogTopic);
+            } else {
+                e.printStackTrace();
+            }
+        });
+    }
+
     @Override
     public void run() {
         logger.debug("Starting consumer: {}", kafkaConsumer.getClass());
 
         try {
             if(this.connection == null){
-                this.connection = new org.apache.kafka.clients.consumer.KafkaConsumer<String, String>(this.connProperties);
+                this.connection = new org.apache.kafka.clients.consumer.KafkaConsumer<>(this.connProperties);
                 connection.subscribe(kafkaConsumer.consumerTopics());
             }
             do {
@@ -81,8 +96,14 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
                 for (String topic : topics){
                     //for(ConsumerRecord<String, String> r : records.records(topic)) System.out.println("K: " + r.key());
-                    records.records(topic).forEach(r -> kafkaConsumer.consume(topic, r));
-                    doCommitSync();
+
+                    for(ConsumerRecord<String, String> r : records.records(topic)){
+                        sendErrorMsg( new Date() + " | Offset: " + r.offset() + " | Processing: " + r.key());
+                        kafkaConsumer.consume(topic, r);
+                        doCommitSync();
+
+                    }
+                    //records.records(topic)     forEach(r -> kafkaConsumer.consume(topic, r));
                 }
 
             } while (true);
