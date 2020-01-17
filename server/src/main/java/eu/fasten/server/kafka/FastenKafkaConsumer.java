@@ -8,6 +8,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
@@ -33,7 +35,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
     public FastenKafkaConsumer(Properties p, KafkaConsumer kc) {
         super(p);
         this.kafkaConsumer = kc;
-        this.setErrorLogConn(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG), kc.getClass().getCanonicalName());
+        this.setLogConn(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG), kc.getClass().getCanonicalName());
 
         this.mLatch = new CountDownLatch(1);
 
@@ -55,7 +57,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
     /*
     This methods sets up a connection for producing error logs of a plug-in into a Kafka topic.
      */
-    private void setErrorLogConn(String serverAddress, String clientID){
+    private void setLogConn(String serverAddress, String clientID){
 
         Properties p = new Properties();
         p.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, serverAddress);
@@ -66,9 +68,9 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         this.errorLog = new KafkaProducer(p);
     }
 
-    private void sendErrorMsg(String msg){
+    private void sendLogMsg(String msg){
 
-        ProducerRecord<Object, String> errorRecord = new ProducerRecord<>(this.errorLogTopic, msg);
+        ProducerRecord<Object, String> errorRecord = new ProducerRecord<>(this.errorLogTopic, new Date() + "| " + msg);
 
         this.errorLog.send(errorRecord, (recordMetadata, e) -> {
             if (recordMetadata != null) {
@@ -77,6 +79,18 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                 e.printStackTrace();
             }
         });
+    }
+
+    /**
+     * This is a utility method to get current committed offset of all partitions for a consumer
+     */
+    private void getOffsetForPartitions(org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer, List<String> topics){
+
+        for(String t: topics){
+            for(PartitionInfo p: consumer.partitionsFor(t)){
+                sendLogMsg("T: " + t + " P: " + p.partition() + " OfC: " + consumer.committed(new TopicPartition(t, p.partition())).offset());
+            }
+        }
     }
 
     @Override
@@ -88,9 +102,17 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                 this.connection = new org.apache.kafka.clients.consumer.KafkaConsumer<>(this.connProperties);
                 connection.subscribe(kafkaConsumer.consumerTopics());
             }
+
+            sendLogMsg("Current Offset before running plug-in " + kafkaConsumer.getClass().getCanonicalName());
+            getOffsetForPartitions(this.connection, kafkaConsumer.consumerTopics());
+
+            int i = 0;
+
             do {
                 ConsumerRecords<String, String> records = connection.poll(Duration.ofMillis(100));
                 List<String> topics = kafkaConsumer.consumerTopics();
+
+                sendLogMsg("Received " + records.count() + " records");
 
                 //for(ConsumerRecord<String, String> r : records) System.out.println(r.key() + " " + r.value());
 
@@ -98,9 +120,17 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                     //for(ConsumerRecord<String, String> r : records.records(topic)) System.out.println("K: " + r.key());
 
                     for(ConsumerRecord<String, String> r : records.records(topic)){
-                        sendErrorMsg( new Date() + " | Offset: " + r.offset() + " | Processing: " + r.key());
+                        sendLogMsg("T: " + r.topic() +  " P: " + r.partition() + " Of: " + r.offset() + " | Processing: "
+                                + r.key());
                         kafkaConsumer.consume(topic, r);
                         doCommitSync();
+                        i++;
+
+                        // This is only added for experimenting and debugging.
+                        if(i == 5){
+                            Runtime.getRuntime().halt(2);
+                        }
+
 
                     }
                     //records.records(topic)     forEach(r -> kafkaConsumer.consume(topic, r));
@@ -127,7 +157,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
             // we're shutting down, but finish the commit first and then
             // rethrow the exception so that the main loop can exit
             doCommitSync();
-            throw e;
+            //throw e;
         } catch (CommitFailedException e) {
             // the commit failed with an unrecoverable error. if there is any
             // internal state which depended on the commit, you can clean it
