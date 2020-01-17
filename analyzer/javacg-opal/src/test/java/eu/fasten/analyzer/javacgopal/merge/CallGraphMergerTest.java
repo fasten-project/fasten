@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopal.merge;
 
+import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.callgraph.ProposalRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
-
-import org.junit.Test;
-import org.junit.BeforeClass;
 
 import java.io.File;
 import java.util.Arrays;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import org.junit.Test;
+import org.junit.BeforeClass;
 
 import static org.junit.Assert.assertEquals;
 
@@ -107,44 +107,6 @@ public class CallGraphMergerTest {
                 CallGraphMerger.mergeCallGraph(artifact, Arrays.asList(dependency))
                         .graph.stream().filter(i -> i[1].toString().contains("targetMethod")).findFirst().get()[1]);
 
-
-
-//        var reactiv = PartialCallGraph.createProposalRevisionCallGraph("mvn",
-//                new MavenCoordinate("io.reactivex.rxjava2", "rxjava", "2.2.17"),
-//                1574072773,
-//                new PartialCallGraph(
-//                        MavenResolver.downloadJar("io.reactivex.rxjava2:rxjava:2.2.17").orElseThrow(RuntimeException::new)
-//                )
-//        );
-//
-//        var dep = PartialCallGraph.createProposalRevisionCallGraph("mvn",
-//                new MavenCoordinate("org.reactivestreams", "reactive-streams", "1.0.3"),
-//                1574072773,
-//                new PartialCallGraph(
-//                        MavenResolver.downloadJar("org.reactivestreams:reactive-streams:1.0.3").orElseThrow(RuntimeException::new)
-//                )
-//        );
-//
-//
-//        var merged = CallGraphMerger.mergeCallGraph(reactiv, Arrays.asList(dep));
-//
-//        try (FileWriter file = new FileWriter("reactiv.json")) {
-//
-//            file.write(reactiv.toJSON().toString());
-//            file.flush();
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        try (FileWriter file = new FileWriter("merged.json")) {
-//
-//            file.write(merged.toJSON().toString());
-//            file.flush();
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
 
     }
 }

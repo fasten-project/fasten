@@ -18,6 +18,9 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
+
 import picocli.CommandLine;
 
 /**
@@ -81,7 +84,7 @@ public class Main implements Runnable {
             mavenCoordinate,
             Long.parseLong(this.timestamp),
             new PartialCallGraph(
-                MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new)
+                MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new)
             ));
 
         //TODO something with the calculated RevesionCallGraph.

@@ -16,16 +16,17 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopal.data.callgraph;
 
+import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-import eu.fasten.core.data.FastenURI;
 import org.junit.Test;
 import org.junit.BeforeClass;
 import org.opalj.br.analyses.Project;
@@ -97,7 +98,7 @@ public class PartialCallGraphTest {
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
                 1574072773,
                 new PartialCallGraph(
-                        MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
+                        MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
                 )
         );
 
@@ -129,7 +130,7 @@ public class PartialCallGraphTest {
 
         assertEquals(
                 new ArrayList<>(),
-                PartialCallGraph.toURIInterfaces(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).superInterfaces)
+                PartialCallGraph.toURIInterfaces(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getSuperInterfaces())
         );
     }
 
@@ -138,7 +139,7 @@ public class PartialCallGraphTest {
 
         assertEquals(
                 new LinkedList<FastenURI>(Arrays.asList(new FastenJavaURI("/java.lang/Object"))),
-                PartialCallGraph.toURIClasses(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).superClasses)
+                PartialCallGraph.toURIClasses(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getSuperClasses())
         );
     }
 
@@ -150,7 +151,7 @@ public class PartialCallGraphTest {
                 new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
                 new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid")
                 ),
-                PartialCallGraph.toURIMethods(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).methods)
+                PartialCallGraph.toURIMethods(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getMethods())
         );
     }
 
@@ -162,17 +163,17 @@ public class PartialCallGraphTest {
                 new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
                 new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid")
                 ),
-                PartialCallGraph.toURIMethods(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).methods)
+                PartialCallGraph.toURIMethods(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getMethods())
         );
 
         assertEquals(
                 new ArrayList<>(),
-                PartialCallGraph.toURIHierarchy(callgraph.getClassHierarchy()).get(new FastenJavaURI("/name.space/SingleSourceToTarget")).superInterfaces
+                PartialCallGraph.toURIHierarchy(callgraph.getClassHierarchy()).get(new FastenJavaURI("/name.space/SingleSourceToTarget")).getSuperInterfaces()
         );
 
         assertEquals(
                 Arrays.asList(new FastenJavaURI("/java.lang/Object")),
-                PartialCallGraph.toURIHierarchy(callgraph.getClassHierarchy()).get(new FastenJavaURI("/name.space/SingleSourceToTarget")).superClasses
+                PartialCallGraph.toURIHierarchy(callgraph.getClassHierarchy()).get(new FastenJavaURI("/name.space/SingleSourceToTarget")).getSuperClasses()
         );
 
     }
@@ -184,7 +185,7 @@ public class PartialCallGraphTest {
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
                 1574072773,
                 new PartialCallGraph(
-                        MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
+                        MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
                 )
         );
 

@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopal.scalawrapper;
 
 import org.opalj.br.Method;
+
 import scala.Function0;
 import scala.collection.Iterable;
 import scala.collection.Map;
@@ -30,7 +31,7 @@ import scala.runtime.AbstractFunction2;
  * A wrapper class that wraps java code to be passed to scala.
  * Especially in case of functional programing.
  */
-final class JavaToScalaConverter {
+public final class JavaToScalaConverter {
 
     /**
      * Imitate a scala function0 in case of passing entrypoints as an scala function.
@@ -67,7 +68,7 @@ final class JavaToScalaConverter {
      * @param javaFunction A java function in order to do things on scala.
      * @return Execution of java function as scala function2.
      */
-    static AbstractFunction2<Method, Map<Object, Iterable<Method>>, Object> asScalaFunction2(ScalaFunction2 javaFunction) {
+    public static AbstractFunction2<Method, Map<Object, Iterable<Method>>, Object> asScalaFunction2(ScalaFunction2 javaFunction) {
         return new AbstractFunction2<>() {
 
             @Override

@@ -18,12 +18,17 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.RevisionCallGraph;
-import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,12 +37,6 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.StreamSupport;
 
 public class OPALPlugin extends Plugin {
 
@@ -86,7 +85,7 @@ public class OPALPlugin extends Plugin {
 
                 lastCallGraphGenerated = PartialCallGraph.createRevisionCallGraph("mvn",
                     mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
-                    new PartialCallGraph(MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
+                    new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
                 );
 
                 logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());

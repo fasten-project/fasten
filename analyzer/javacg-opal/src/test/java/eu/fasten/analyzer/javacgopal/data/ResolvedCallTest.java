@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopal.data;
 
+import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
-import org.junit.Test;
 
 import java.io.File;
+
+import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 

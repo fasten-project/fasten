@@ -16,18 +16,18 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopal.data;
 
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class MavenResolverTest {
+public class MavenCoordinateTest {
 
     @Test
     public void testResolveDependencies() {
-        var deps = MavenResolver.resolveDependencies("com.ibm.wala:com.ibm.wala.core:1.5.4");
+        var deps = MavenCoordinate.MavenResolver.resolveDependencies("com.ibm.wala:com.ibm.wala.core:1.5.4");
         assertNotNull(deps);
         assertEquals(2, deps.size());
         assertEquals(1, deps.get(0).stream().filter(x -> x.product.contains("shrike")).toArray().length);

@@ -16,17 +16,19 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopal.data.callgraph;
 
-import org.opalj.br.Method;
+import eu.fasten.analyzer.javacgopal.data.ResolvedCall;
 
 import java.io.FileWriter;
 import java.io.IOException;
 
+import org.opalj.br.Method;
+
 /**
  * A converter for graphs to make JVM format from other graph formats.
  */
-public class JVMFormat {
+public class JVMCallGraph {
     /**
      * Prints JVM-formated graphs like this "caller callee </br>".
      * @param partialCallGraph a partial graph.

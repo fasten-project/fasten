@@ -18,6 +18,9 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -58,7 +61,7 @@ public class OPALPluginTest {
         JSONAssert.assertEquals(
                 PartialCallGraph.createRevisionCallGraph("mvn",
                         new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"), 1574072773,
-                        new PartialCallGraph(MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))
+                        new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))
                 ).toJSON(),
                 opalPlugin.lastCallGraphGenerated.toJSON(), false);
 

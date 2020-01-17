@@ -16,11 +16,9 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopal.data;
 
 import eu.fasten.core.data.FastenURI;
-
-import org.opalj.br.Method;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -34,25 +32,25 @@ public class ResolvedCall {
      * e.g. if method A calls B,C and D.
      * Then we have Souce: A, target B,C,D.
      */
-    private Method source;
-    private List<Method> target;
+    private org.opalj.br.Method source;
+    private List<org.opalj.br.Method> target;
 
-    public ResolvedCall(Method source, List<Method> target) {
+    public ResolvedCall(org.opalj.br.Method source, List<org.opalj.br.Method> target) {
         this.source = source;
         this.target = target;
     }
 
-    public void setSource(Method source) {
+    public void setSource(org.opalj.br.Method source) {
         this.source = source;
     }
 
-    public void setTarget(List<Method> target) {
+    public void setTarget(List<org.opalj.br.Method> target) {
         this.target = target;
     }
 
-    public Method getSource() { return source; }
+    public org.opalj.br.Method getSource() { return source; }
 
-    public List<Method> getTarget() { return target; }
+    public List<org.opalj.br.Method> getTarget() { return target; }
 
     /**
      * Converts resolved calls to URI pairs.
@@ -66,17 +64,17 @@ public class ResolvedCall {
 
         var resolvedCallURIs = new ArrayList<FastenURI[]>();
 
-        var sourceURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(
+        var sourceURI = Method.toCanonicalSchemelessURI(
             null,
             resolvedCall.getSource().declaringClassFile().thisType(),
             resolvedCall.getSource().name(),
             resolvedCall.getSource().descriptor());
 
         if ( sourceURI != null) {
-            for (Method target : resolvedCall.getTarget()) {
+            for (org.opalj.br.Method target : resolvedCall.getTarget()) {
 
                 FastenURI[] fastenURI = new FastenURI[2];
-                var targetURI =  OPALMethodAnalyzer.toCanonicalSchemelessURI(
+                var targetURI =  Method.toCanonicalSchemelessURI(
                     null,
                     target.declaringClassFile().thisType(),
                     target.name(),

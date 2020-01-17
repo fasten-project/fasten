@@ -16,16 +16,12 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
-
-import org.opalj.br.Method;
-import scala.collection.Iterable;
-import scala.collection.Map;
+package eu.fasten.analyzer.javacgopal.scalawrapper;
 
 /**
  * Mocks scala Function1.
- * A functional interface that can help injecting java methods into scala.
+ * A functional interface that can help injecting java lambdas into scala.
  */
-interface ScalaFunction2 {
-    Boolean execute(Method callee, Map<Object, Iterable<Method>> caller);
+public interface ScalaFunction1 {
+    Boolean execute(Object findEntryPoints);
 }

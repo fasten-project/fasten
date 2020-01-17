@@ -107,30 +107,20 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
             sendLogMsg(this.errorLogTopic,"Current Offset before running plug-in " + kafkaConsumer.getClass().getCanonicalName());
             getOffsetForPartitions(this.connection, kafkaConsumer.consumerTopics());
 
-            //int i = 0;
-
             do {
                 ConsumerRecords<String, String> records = connection.poll(Duration.ofMillis(100));
                 List<String> topics = kafkaConsumer.consumerTopics();
 
                 sendLogMsg(this.errorLogTopic, "Received " + records.count() + " records");
 
-                //for(ConsumerRecord<String, String> r : records) System.out.println(r.key() + " " + r.value());
-
                 for (String topic : topics) {
-                    //for(ConsumerRecord<String, String> r : records.records(topic)) System.out.println("K: " + r.key());
-
                     for (ConsumerRecord<String, String> r : records.records(topic)) {
                         sendLogMsg(this.errorLogTopic,"T: " + r.topic() + " P: " + r.partition() + " Of: " + r.offset() + " | Processing: "
                                 + r.key());
                         kafkaConsumer.consume(topic, r);
                         doCommitSync();
-                        //i++;
-
                     }
-                    //records.records(topic)     forEach(r -> kafkaConsumer.consume(topic, r));
                 }
-
             } while (true);
         } catch (RuntimeException re) {
             sendLogMsg(kafkaConsumer.getClass().getSimpleName() + "_errors", "Exception for plug-in:" +
