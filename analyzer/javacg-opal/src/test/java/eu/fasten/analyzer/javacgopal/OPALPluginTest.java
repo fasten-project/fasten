@@ -18,18 +18,12 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.record.TimestampType;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 

@@ -49,14 +49,21 @@ public class Type {
      * @param classHierarchy org.opalj.br.ClassHierarchy
      * @param currentClass org.opalj.br.ObjectType. The type that its supper types should be set.
      */
-    public synchronized void setSupers(ClassHierarchy classHierarchy, ObjectType currentClass) {
+    public void setSupers(ClassHierarchy classHierarchy, ObjectType currentClass) {
 
         try {
             this.superClasses = classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
         } catch (NoSuchElementException e) {
-            logger.error("This type doesn't have allSuperclassTypesInInitializationOrder method.", e);
+            logger.error("This type {} doesn't have allSuperclassTypesInInitializationOrder method.", currentClass, e);
+        } catch (OutOfMemoryError e) {
+            logger.error("This type {} made an out of memory Exception in calculation of its supper types!", currentClass, e);
+        } catch (Exception e) {
+            logger.error("This type made an Exception in calculation of its supper types!", e);
         }
-        superClasses.reverse();
+
+        if (superClasses != null) {
+            superClasses.reverse();
+        }
 
         classHierarchy.allSuperinterfacetypes(currentClass, false).foreach(
             JavaToScalaConverter.asScalaFunction1(anInterface -> this.superInterfaces.add((ObjectType) anInterface))
