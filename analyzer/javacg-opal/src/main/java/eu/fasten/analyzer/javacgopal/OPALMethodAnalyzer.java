@@ -60,7 +60,7 @@ public class OPALMethodAnalyzer {
                 JavaURI.getRawVersion(),
                 JavaURI.getRawNamespace(), JavaURI.getRawEntity());
 
-        } catch (IllegalArgumentException | NullPointerException e) {
+        } catch (IllegalArgumentException | NullPointerException | OutOfMemoryError e) {
             logger.error("{}", e.getMessage());
         }
 
