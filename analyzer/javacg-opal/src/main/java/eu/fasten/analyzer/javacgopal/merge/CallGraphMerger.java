@@ -1,5 +1,7 @@
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopal.merge;
 
+import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgopal.data.callgraph.ProposalRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
@@ -10,7 +12,7 @@ public class CallGraphMerger {
 
     public static CallGraphMerger resolve(MavenCoordinate coordinate) {
 
-        var PDN = MavenResolver.resolveDependencies(coordinate.getCoordinate());
+        var PDN = MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate());
 
         List<List<FastenURI>> depencencyList = getDependenciesURI(PDN);
 
@@ -27,7 +29,7 @@ public class CallGraphMerger {
         for (FastenURI[] fastenURIS : artifact.graph) {
             var source = fastenURIS[0];
             var target = fastenURIS[1];
-            var isSuperClassMethod = artifact.classHierarchy.get(getTypeURI(source)).superClasses.contains(getTypeURI(target));
+            var isSuperClassMethod = artifact.getClassHierarchy().get(getTypeURI(source)).getSuperClasses().contains(getTypeURI(target));
             nextCall:
 
             //Foreach unresolved call
@@ -37,15 +39,15 @@ public class CallGraphMerger {
                 for (ProposalRevisionCallGraph dependency : dependencies) {
                     nextDependency:
                     //Check whether this method is inside the dependency
-                    if (dependency.classHierarchy.containsKey(getTypeURI(target))) {
-                        if (dependency.classHierarchy.get(getTypeURI(target)).methods.contains(FastenURI.create(target.getRawPath()))) {
+                    if (dependency.getClassHierarchy().containsKey(getTypeURI(target))) {
+                        if (dependency.getClassHierarchy().get(getTypeURI(target)).getMethods().contains(FastenURI.create(target.getRawPath()))) {
                             var resolvedMethod = target.toString().replace("///","//" + dependency.product + "/");
                             //Check if this call is related to a super class
                             if (isSuperClassMethod) {
                                 //Find that super class. in case there are two, pick the first one since the order of instantiation matters
-                                for (FastenURI superClass : artifact.classHierarchy.get(getTypeURI(source)).superClasses) {
+                                for (FastenURI superClass : artifact.getClassHierarchy().get(getTypeURI(source)).getSuperClasses()) {
                                     //Check if this dependency contains the super class that we want
-                                    if (dependency.classHierarchy.containsKey(superClass)) {
+                                    if (dependency.getClassHierarchy().containsKey(superClass)) {
                                         fastenURIS[1] = new FastenJavaURI(resolvedMethod);
                                         break nextCall;
                                     } else {

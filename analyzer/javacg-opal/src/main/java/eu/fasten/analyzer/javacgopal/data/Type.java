@@ -16,7 +16,13 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopal.data;
+
+import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.Method;
@@ -25,17 +31,37 @@ import org.opalj.collection.immutable.Chain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-
 public class Type {
 
     private static Logger logger = LoggerFactory.getLogger(Type.class);
 
-    List<Method> methods;
-    Chain<ObjectType> superClasses;
-    List<ObjectType> superInterfaces;
+    private List<Method> methods;
+    private Chain<ObjectType> superClasses;
+    private List<ObjectType> superInterfaces;
+
+    public void setMethods(List<Method> methods) {
+        this.methods = methods;
+    }
+
+    public void setSuperClasses(Chain<ObjectType> superClasses) {
+        this.superClasses = superClasses;
+    }
+
+    public void setSuperInterfaces(List<ObjectType> superInterfaces) {
+        this.superInterfaces = superInterfaces;
+    }
+
+    public List<Method> getMethods() {
+        return methods;
+    }
+
+    public Chain<ObjectType> getSuperClasses() {
+        return superClasses;
+    }
+
+    public List<ObjectType> getSuperInterfaces() {
+        return superInterfaces;
+    }
 
     public Type() {
         this.methods = new ArrayList<>();

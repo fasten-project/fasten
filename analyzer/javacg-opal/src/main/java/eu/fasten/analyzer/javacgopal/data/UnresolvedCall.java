@@ -16,19 +16,17 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
-
-import eu.fasten.core.data.FastenJavaURI;
-import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
-import org.opalj.br.Method;
-import org.opalj.br.MethodDescriptor;
-import org.opalj.br.ReferenceType;
+package eu.fasten.analyzer.javacgopal.data;
 
 import eu.fasten.core.data.FastenURI;
 
+import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
+import org.opalj.br.MethodDescriptor;
+import org.opalj.br.ReferenceType;
+
 public class UnresolvedCall extends UnresolvedMethodCall {
 
-    public UnresolvedCall(Method caller, int pc, ReferenceType calleeClass, String calleeName, MethodDescriptor calleeDescriptor) {
+    public UnresolvedCall(org.opalj.br.Method caller, int pc, ReferenceType calleeClass, String calleeName, MethodDescriptor calleeDescriptor) {
         super(caller, pc, calleeClass, calleeName, calleeDescriptor);
     }
 
@@ -44,7 +42,7 @@ public class UnresolvedCall extends UnresolvedMethodCall {
 
         FastenURI[] fastenURI = new FastenURI[2];
 
-        var sourceURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(
+        var sourceURI = Method.toCanonicalSchemelessURI(
             null,
             unresolvedCall.caller().declaringClassFile().thisType(),
             unresolvedCall.caller().name(),
@@ -53,7 +51,7 @@ public class UnresolvedCall extends UnresolvedMethodCall {
 
         if (sourceURI != null) {
 
-            var targetURI = OPALMethodAnalyzer.toCanonicalSchemelessURI(
+            var targetURI = Method.toCanonicalSchemelessURI(
                 null,
                 unresolvedCall.calleeClass(),
                 unresolvedCall.calleeName(),

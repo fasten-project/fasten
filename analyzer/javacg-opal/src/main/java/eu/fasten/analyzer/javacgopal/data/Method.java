@@ -16,10 +16,12 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopal.data;
 
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
+
+import java.util.List;
 
 import org.opalj.br.*;
 import org.slf4j.Logger;
@@ -27,14 +29,12 @@ import org.slf4j.LoggerFactory;
 
 import scala.collection.JavaConversions;
 
-import java.util.List;
-
 /**
  * Analyze OPAL methods.
  */
-public class OPALMethodAnalyzer {
+public class Method {
 
-    private static Logger logger = LoggerFactory.getLogger(OPALMethodAnalyzer.class);
+    private static Logger logger = LoggerFactory.getLogger(Method.class);
 
     /**
      * Converts a method to a Canonicalized Schemeless eu.fasten.core.data.FastenURI.
