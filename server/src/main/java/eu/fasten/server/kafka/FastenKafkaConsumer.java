@@ -140,7 +140,14 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
             topicPartitions.add(new TopicPartition(this.cgsStatusTopic, p.partition()));
         }
 
-        ConsumerRecords<String, String> statusRecords = this.cgsStatusConsumer.poll(Duration.ofMillis(100));
+        ConsumerRecords<String, String> statusRecords;
+        int i = 0;
+        do{
+            statusRecords = this.cgsStatusConsumer.poll(Duration.ofMillis(100));
+            i++;
+        } while (i <= 5 && statusRecords.count() == 0);
+        // After five times try, either we continue to check or assume that CGS_status topic is empty and return.
+        if(statusRecords.count() == 0) return;
 
         this.cgsStatusConsumer.seekToEnd(topicPartitions);
 
