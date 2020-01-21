@@ -162,13 +162,23 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
             //System.out.println("Checking " + splitRecord[1]);
             logger.info("Checking the status of record: " + splitRecord[1]);
 
+            this.cgsStatusConsumer.close();
+
             if(!lastStatusRecord.get("status").toString().equals(this.OK_STATUS)){
                 logger.info("Increasing offset for skipping a record");
                 final long failedPartition = Long.parseLong(lastStatusRecord.get("partition").toString());
                 final long failedOffset = Long.parseLong(lastStatusRecord.get("offset").toString());
 
-                // A dummy call to poll to make seek method work
-                ConsumerRecords<String, String> failedRecord = this.connection.poll(Duration.ofMillis(100));
+                ConsumerRecords<String, String> failedRecord;
+                do{
+                    // A dummy call to poll to make seek method work
+                    failedRecord = this.connection.poll(Duration.ofMillis(1000));
+                    connection.commitSync();
+                    System.out.println("Fetched " + failedRecord.count());
+                }while (failedRecord.count() == 0);
+
+                System.out.println("Current offset for plug-in" + this.connection.position(new TopicPartition(lastStatusRecord.get("topic").toString(),
+                        (int)failedPartition)));
                 this.connection.seek(new TopicPartition(lastStatusRecord.get("topic").toString(), (int)failedPartition),
                         failedOffset + 1);
             }
