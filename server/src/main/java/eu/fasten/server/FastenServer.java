@@ -53,6 +53,12 @@ public class FastenServer implements Runnable {
             defaultValue = "localhost:9092")
     private List<String> kafkaServers;
 
+    @Option(names = {"-s", "--skip_offsets"},
+            paramLabel = "skip",
+            description = "Adds one to offset of all the partitions of the consumers.",
+            defaultValue = "0")
+    private int skipOffsets;
+
     private static Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     private List<FastenKafkaConsumer> consumers;
@@ -99,7 +105,7 @@ public class FastenServer implements Runnable {
                     kafkaServers,
                     k.getClass().getCanonicalName());
 
-            return new FastenKafkaConsumer(properties, k);
+            return new FastenKafkaConsumer(properties, k, skipOffsets);
         }).collect(Collectors.toList());
 
         this.consumers.forEach(c -> c.start());
