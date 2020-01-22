@@ -52,7 +52,6 @@
             <artifactId>picocli</artifactId>
             <version>4.0.4</version>
         </dependency>
-
 <!--        <dependency>-->
 <!--            <groupId>org.slf4j</groupId>-->
 <!--            <artifactId>slf4j-api</artifactId>-->
@@ -147,7 +146,7 @@
                 <version>3.8.1</version>
                 <configuration>
                     <annotationProcessors>
-                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
+<!--                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>-->
                     </annotationProcessors>
                     <source>1.11</source>
                     <target>1.11</target>
