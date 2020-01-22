@@ -28,9 +28,7 @@ import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Properties;
-import java.util.Random;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.rocksdb.Options;
@@ -279,9 +277,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 			// Set up local bijection
 			nInternal = internalGIDs.size();
 
-			long[] l2g = new long[internalGIDs.size() + externalGIDs.size()];
+			final long[] l2g = new long[internalGIDs.size() + externalGIDs.size()];
 			LongIterators.unwrap(internalGIDs.iterator(), l2g);
-			LongIterators.unwrap(externalGIDs.iterator(), l2g, nInternal, Integer.MAX_VALUE);
+			LongIterators.unwrap(externalGIDs.iterator(), l2g, nInternal, l2g.length - nInternal);
 			GID2LID.defaultReturnValue(-1);
 			for(int i = 0; i < l2g.length; i++) GID2LID.put(l2g[i], i);
 
@@ -290,24 +288,28 @@ public class KnowledgeBase implements Serializable, Closeable {
 			for(int i = 0; i < genericSources.size(); i++) {
 				assert genericURI2GID.getLong(genericSources.get(i)) != -1;
 				assert genericURI2GID.getLong(genericTargets.get(i)) != -1;
-				mutableGraph.addArc(GID2LID.get(
-						genericURI2GID.getLong(genericSources.get(i))),
-						GID2LID.get(
-								genericURI2GID.getLong(genericTargets.get(i))));
+				try {
+					mutableGraph.addArc(GID2LID.get(
+							genericURI2GID.getLong(genericSources.get(i))),
+							GID2LID.get(
+									genericURI2GID.getLong(genericTargets.get(i))));
+				} catch(final IllegalArgumentException e ) {
+					LOGGER.error("Duplicate arc " + genericSources.get(i) + " -> " + genericTargets.get(i));
+				}
 			}
 
 			final File f = File.createTempFile(KnowledgeBase.class.getSimpleName(), ".tmpgraph");
 
-            Properties graphProperties = new Properties(), transposeProperties = new Properties();
-            FileInputStream propertyFile;
-            
+			final Properties graphProperties = new Properties(), transposeProperties = new Properties();
+			FileInputStream propertyFile;
+
 			// Compress, load and serialize graph
-            int[] bfsperm = bfsperm(mutableGraph.immutableView(), -1, internalGIDs.size());
-			ImmutableGraph graph = Transform.map(mutableGraph.immutableView(), bfsperm);
+			final int[] bfsperm = Util.identity(l2g.length); //bfsperm(mutableGraph.immutableView(), -1, internalGIDs.size());
+			final ImmutableGraph graph = Transform.map(mutableGraph.immutableView(), bfsperm);
 			BVGraph.store(graph, f.toString());
-            propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
-            graphProperties.load(propertyFile);
-            propertyFile.close();
+			propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
+			graphProperties.load(propertyFile);
+			propertyFile.close();
 
 			final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
 			final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
@@ -317,20 +319,20 @@ public class KnowledgeBase implements Serializable, Closeable {
 			LID2GID = new long[l2g.length];
 			for (int x = 0; x < l2g.length; x++) LID2GID[bfsperm[x]] = l2g[x];
 			for(int i = 0; i < l2g.length; i++) GID2LID.put(LID2GID[i], i);
-			
+
 			// Compress, load and serialize transpose graph
 			BVGraph.store(Transform.transpose(graph), f.toString());
-            propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
-            transposeProperties.load(propertyFile);
-            propertyFile.close();
+			propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
+			transposeProperties.load(propertyFile);
+			propertyFile.close();
 
 			kryo.writeObject(bbo, BVGraph.load(f.toString()));
-			
+
 			// Write out properties
 			kryo.writeObject(bbo, graphProperties);
 			kryo.writeObject(bbo, transposeProperties);
 			bbo.flush();
-			
+
 			// Write to DB
 			callGraphDB.put(Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
 
@@ -356,7 +358,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 				callGraphDB.get(Longs.toByteArray(index), buffer);
 				final Input input = new Input(buffer);
 				assert kryo != null;
-				final var graphs = new ImmutableGraph[] {kryo.readObject(input, BVGraph.class),  kryo.readObject(input, BVGraph.class)}; 
+				final var graphs = new ImmutableGraph[] {kryo.readObject(input, BVGraph.class),  kryo.readObject(input, BVGraph.class)};
 				this.graphs = new SoftReference<>(graphs);
 				return graphs;
 			} catch (final RocksDBException e) {
@@ -379,7 +381,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 				kryo.readObject(input, BVGraph.class); // throw away transpose
 				final Properties[] properties = new Properties[] { kryo.readObject(input, Properties.class), kryo.readObject(input, Properties.class) };
 				return properties;
-				
+
 			} catch (final RocksDBException e) {
 				throw new RuntimeException(e);
 			}
@@ -733,7 +735,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		s.defaultReadObject();
 		initKryo();
 	}
-	
+
 	/** Return the permutation induced by the visit order of a depth-first visit.
 	 *
 	 * @param graph a graph.
@@ -767,7 +769,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 			while(! queue.isEmpty()) {
 				currentNode = queue.dequeueInt();
-				if (currentNode < internalNodes) 
+				if (currentNode < internalNodes)
 					visitOrder[internalPos++] = currentNode;
 				else
 					visitOrder[externalPos++] = currentNode;
@@ -794,7 +796,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 
 		pl.done();
-		for (int i = 0; i < visitOrder.length; i++) 
+		for (int i = 0; i < visitOrder.length; i++)
 			assert (i < internalNodes) == (visitOrder[i] < internalNodes);
 		return visitOrder;
 	}
