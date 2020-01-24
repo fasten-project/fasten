@@ -188,7 +188,7 @@ public class PartialCallGraphTest {
                         MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
                 )
         );
-
+        proposalRevisionCallGraph.toJSON();
         assertNotNull(proposalRevisionCallGraph);
         assertEquals("mvn", proposalRevisionCallGraph.forge);
         assertEquals("1.7.29", proposalRevisionCallGraph.version);

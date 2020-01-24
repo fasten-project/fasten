@@ -65,8 +65,10 @@ public class KBStats {
 			nodes.add(graph[0].numNodes());
 			arcs.add(graph[0].numArcs());
 			property = callGraph.graphProperties();
-			bitsPerLink.add(Double.parseDouble((String)(property[0].getProperty("bitsperlink"))));
-			bitsPerLinkt.add(Double.parseDouble((String)(property[1].getProperty("bitsperlink"))));
+			final double bpl = Double.parseDouble((property[0].getProperty("bitsperlink")));
+			if (! Double.isNaN(bpl)) bitsPerLink.add(bpl);
+			final double bplt = Double.parseDouble((property[1].getProperty("bitsperlink")));
+			if (! Double.isNaN(bplt)) bitsPerLinkt.add(bplt);
 		}
 
 		kb.close();

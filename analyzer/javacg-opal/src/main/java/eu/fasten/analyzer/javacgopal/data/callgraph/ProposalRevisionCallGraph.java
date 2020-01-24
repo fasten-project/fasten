@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.analyzer.javacgopal.data.callgraph;
 
 import eu.fasten.core.data.FastenURI;
@@ -11,7 +29,7 @@ import org.json.JSONObject;
 
 public class ProposalRevisionCallGraph extends RevisionCallGraph {
 
-    private Map<FastenURI,Type> classHierarchy;
+    private Map<FastenURI, Type> classHierarchy;
 
     public Map<FastenURI, Type> getClassHierarchy() {
         return classHierarchy;
@@ -24,7 +42,7 @@ public class ProposalRevisionCallGraph extends RevisionCallGraph {
     /**
      * Type can be a class or interface that inherits (implements) from others or implements methods.
      */
-    public static class Type{
+    public static class Type {
         //Methods that this type implements
         private List<FastenURI> methods;
         //Classes that this type inherits from in the order of instantiation.
@@ -63,12 +81,45 @@ public class ProposalRevisionCallGraph extends RevisionCallGraph {
         }
     }
 
-    public ProposalRevisionCallGraph(String forge, String product, String version, long timestamp, List<List<Dependency>> depset, ArrayList<FastenURI[]> graph, Map<FastenURI,Type> classHierarchy) {
+    public ProposalRevisionCallGraph(String forge, String product, String version, long timestamp, List<List<Dependency>> depset, ArrayList<FastenURI[]> graph, Map<FastenURI, Type> classHierarchy) {
         super(forge, product, version, timestamp, depset, graph);
         this.classHierarchy = classHierarchy;
     }
 
     public ProposalRevisionCallGraph(JSONObject json, boolean ignoreConstraints) throws JSONException, URISyntaxException {
         super(json, ignoreConstraints);
+    }
+
+    /**
+     * It overrides the toJSON method of the RevisionCallGraph class in order to add ClassHierarchy to it.
+     * @return org.json.JSONObject of this type including the classHierarchy.
+     */
+    @Override
+    public JSONObject toJSON() {
+        var revisionCallGraphJSON = super.toJSON();
+        final JSONObject chaJSON = new JSONObject();
+
+        this.getClassHierarchy().forEach((clas, type) -> {
+
+            final JSONObject typeJSON = new JSONObject();
+
+            typeJSON.put("methods", toListOfString(type.methods));
+            typeJSON.put("superClasses", toListOfString(type.superClasses));
+            typeJSON.put("superInterfaces", toListOfString(type.superInterfaces));
+
+            chaJSON.put(clas.toString(), typeJSON);
+        });
+
+        revisionCallGraphJSON.put("cha", chaJSON);
+
+        return revisionCallGraphJSON;
+    }
+
+    public static List<String> toListOfString(List<FastenURI> list) {
+        List<String> result = new ArrayList<>();
+        for (FastenURI fastenURI : list) {
+            result.add(fastenURI.toString());
+        }
+        return result;
     }
 }
