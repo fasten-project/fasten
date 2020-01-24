@@ -30,12 +30,9 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
-import javax.sound.midi.SysexMessage;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 @CommandLine.Command(name = "FastenServer", mixinStandardHelpOptions = true)

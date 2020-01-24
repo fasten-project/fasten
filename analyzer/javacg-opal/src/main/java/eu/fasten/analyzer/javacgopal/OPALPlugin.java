@@ -24,9 +24,10 @@ import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -52,6 +53,7 @@ public class OPALPlugin extends Plugin {
         private static org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
         final String CONSUME_TOPIC = "maven.packages";
         final String PRODUCE_TOPIC = "opal_callgraphs";
+        private final long CONSUMER_TIME = 1; // 1 minute for generating a call graph
         RevisionCallGraph lastCallGraphGenerated;
 
         @Override
@@ -75,6 +77,9 @@ public class OPALPlugin extends Plugin {
         public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
 
             try {
+
+                ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
+
                 JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
 
                 MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
@@ -83,25 +88,33 @@ public class OPALPlugin extends Plugin {
 
                 logger.info("Generating RevisionCallGraph for {} ...", mavenCoordinate.getCoordinate());
 
-                lastCallGraphGenerated = PartialCallGraph.createRevisionCallGraph("mvn",
-                    mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
-                    new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
-                );
 
-                logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
+                OPALExecutor.submit(() -> {
+                    lastCallGraphGenerated = PartialCallGraph.createRevisionCallGraph("mvn",
+                        mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
+                        new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
+                    );
+                }).get(CONSUMER_TIME, TimeUnit.MINUTES);
+                OPALExecutor.shutdown();
 
-                logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
+                if(lastCallGraphGenerated != null){
+                    logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
 
-                ProducerRecord<Object, String> record = new ProducerRecord<>(this.PRODUCE_TOPIC,
-                    lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
+                    logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
 
-                kafkaProducer.send(record, ((recordMetadata, e) -> {
-                    if (recordMetadata != null) {
-                        logger.debug("Sent: {} to {}", lastCallGraphGenerated.uri.toString(), this.PRODUCE_TOPIC);
-                    } else {
-                        e.printStackTrace();
-                    }
-                }));
+                    ProducerRecord<Object, String> record = new ProducerRecord<>(this.PRODUCE_TOPIC,
+                        lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
+
+                    kafkaProducer.send(record, ((recordMetadata, e) -> {
+                        if (recordMetadata != null) {
+                            logger.debug("Sent: {} to {}", lastCallGraphGenerated.uri.toString(), this.PRODUCE_TOPIC);
+                        } else {
+                            e.printStackTrace();
+                        }
+                    }));
+                } else {
+                    logger.info("{} Exceeded allowed time for generation of the call graph!", mavenCoordinate.getCoordinate());
+                }
 
             } catch (JSONException e) {
                 logger.error("An exception occurred while using consumer records as json: {}", e.getMessage());
