@@ -271,8 +271,11 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                         sendRecord(this.errorLog, this.errorLogTopic,"T: " + r.topic() + " P: " + r.partition() + " Of: " + r.offset() + " | Processing: "
                                 + r.key());
                         sendRecord(this.cgsStatus, this.cgsStatusTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.FAIL_STATUS));
-                        kafkaConsumer.consume(topic, r);
+
+                        // Note that this is "at most once" strategy which values progress over completeness.
                         doCommitSync();
+                        kafkaConsumer.consume(topic, r);
+
                         sendRecord(this.cgsStatus, this.cgsStatusTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.OK_STATUS));
                         }
                     }
