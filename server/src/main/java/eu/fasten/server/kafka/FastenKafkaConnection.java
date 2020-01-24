@@ -47,8 +47,7 @@ public abstract class FastenKafkaConnection extends Thread {
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "2");
-        // 60 seconds for processing a record
-        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "60000");
+        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "1000000");
 
         return properties;
     }
@@ -62,7 +61,7 @@ public abstract class FastenKafkaConnection extends Thread {
         properties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, clientId);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, serializer);
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, serializer);
-        properties.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "10000000");
+        properties.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "100000000");
 
         return properties;
     }
