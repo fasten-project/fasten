@@ -244,6 +244,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
     @Override
     public void run() {
+
         logger.debug("Starting consumer: {}", kafkaConsumer.getClass());
 
         try {
@@ -276,7 +277,8 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                         doCommitSync();
                         kafkaConsumer.consume(topic, r);
 
-                        sendRecord(this.cgsStatus, this.cgsStatusTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.OK_STATUS));
+                        if(kafkaConsumer.recordProcessSuccessful()) sendRecord(this.cgsStatus, this.cgsStatusTopic,
+                                generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.OK_STATUS));
                         }
                     }
             } while (true);

@@ -32,6 +32,11 @@ public class DummyAnalyzerPlugin extends Plugin {
         }
 
         @Override
+        public boolean recordProcessSuccessful() {
+            return true;
+        }
+
+        @Override
         public String name() {
             return "Dummy plugin";
         }

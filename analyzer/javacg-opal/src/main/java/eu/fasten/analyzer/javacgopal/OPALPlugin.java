@@ -54,6 +54,7 @@ public class OPALPlugin extends Plugin {
         final String CONSUME_TOPIC = "maven.packages";
         final String PRODUCE_TOPIC = "opal_callgraphs";
         private final long CONSUMER_TIME = 1; // 1 minute for generating a call graph
+        private boolean processedRecord = false;
         RevisionCallGraph lastCallGraphGenerated;
 
         @Override
@@ -112,6 +113,7 @@ public class OPALPlugin extends Plugin {
                             e.printStackTrace();
                         }
                     }));
+                    processedRecord = true;
                 } else {
                     logger.info("{} Exceeded allowed time for generation of the call graph!", mavenCoordinate.getCoordinate());
                 }
@@ -147,6 +149,11 @@ public class OPALPlugin extends Plugin {
         @Override
         public String description() {
             return "Generates call graphs for Java packages using OPAL";
+        }
+
+        @Override
+        public boolean recordProcessSuccessful(){
+            return this.processedRecord;
         }
 
         @Override
