@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.merge;
 
-import eu.fasten.analyzer.javacgopal.data.callgraph.ProposalRevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
 
 import java.io.*;
@@ -34,7 +34,7 @@ public class CallGraphDifferentiator {
      * @param secondGraph second graph to be compared
      * @throws IOException
      */
-    public static void diff(String resultPath, int graphNumber, ProposalRevisionCallGraph firstGraph, ProposalRevisionCallGraph secondGraph) throws IOException {
+    public static void diff(String resultPath, int graphNumber, ExtendedRevisionCallGraph firstGraph, ExtendedRevisionCallGraph secondGraph) throws IOException {
 
         String graphPath = resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
 

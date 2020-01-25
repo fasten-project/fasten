@@ -27,7 +27,7 @@ import java.util.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ProposalRevisionCallGraph extends RevisionCallGraph {
+public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     private Map<FastenURI, Type> classHierarchy;
 
@@ -81,12 +81,12 @@ public class ProposalRevisionCallGraph extends RevisionCallGraph {
         }
     }
 
-    public ProposalRevisionCallGraph(String forge, String product, String version, long timestamp, List<List<Dependency>> depset, ArrayList<FastenURI[]> graph, Map<FastenURI, Type> classHierarchy) {
+    public ExtendedRevisionCallGraph(String forge, String product, String version, long timestamp, List<List<Dependency>> depset, ArrayList<FastenURI[]> graph, Map<FastenURI, Type> classHierarchy) {
         super(forge, product, version, timestamp, depset, graph);
         this.classHierarchy = classHierarchy;
     }
 
-    public ProposalRevisionCallGraph(JSONObject json, boolean ignoreConstraints) throws JSONException, URISyntaxException {
+    public ExtendedRevisionCallGraph(JSONObject json, boolean ignoreConstraints) throws JSONException, URISyntaxException {
         super(json, ignoreConstraints);
     }
 

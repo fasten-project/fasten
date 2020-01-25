@@ -18,8 +18,8 @@
 
 package eu.fasten.analyzer.javacgopal.merge;
 
+import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
-import eu.fasten.analyzer.javacgopal.data.callgraph.ProposalRevisionCallGraph;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,15 +30,15 @@ import org.junit.BeforeClass;
 
 public class CallGraphDifferentiatorTest {
 
-    static ProposalRevisionCallGraph firstGraph;
-    static ProposalRevisionCallGraph secondGraph;
+    static ExtendedRevisionCallGraph firstGraph;
+    static ExtendedRevisionCallGraph secondGraph;
 
     @BeforeClass
     public static void generateCallGraph() {
 
         var DiffExampleFirst = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleFirst.class").getFile()));
 
-        firstGraph = new ProposalRevisionCallGraph("mvn",
+        firstGraph = new ExtendedRevisionCallGraph("mvn",
                 "DiffExample",
                 "1.7.29",
                 1574072773,
@@ -48,7 +48,7 @@ public class CallGraphDifferentiatorTest {
 
         var DiffExampleSecond = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleSecond.class").getFile()));
 
-        secondGraph = new ProposalRevisionCallGraph("mvn",
+        secondGraph = new ExtendedRevisionCallGraph("mvn",
                 "DiffExample",
                 "1.7.29",
                 1574072773,

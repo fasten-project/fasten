@@ -28,6 +28,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
+import java.io.File;
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 
 public class OPALPluginTest {
@@ -59,7 +62,7 @@ public class OPALPluginTest {
         opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()));
 
         JSONAssert.assertEquals(
-                PartialCallGraph.createRevisionCallGraph("mvn",
+                PartialCallGraph.createExtendedRevisionCallGraph("mvn",
                         new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"), 1574072773,
                         new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))
                 ).toJSON(),

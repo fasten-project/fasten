@@ -266,9 +266,9 @@ public class PartialCallGraph {
             partialCallGraph.toURIGraph());
     }
 
-    public static ProposalRevisionCallGraph createProposalRevisionCallGraph(String forge, MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
+    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(String forge, MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
 
-        return new ProposalRevisionCallGraph(forge,
+        return new ExtendedRevisionCallGraph(forge,
             coordinate.getProduct(),
             coordinate.getVersionConstraint(),
             timestamp,
@@ -282,11 +282,11 @@ public class PartialCallGraph {
      * Converts all of the members of the classHierarchy to FastenURIs.
      *
      * @param classHierarchy Map<org.obalj.br.ObjectType, eu.fasten.analyzer.javacgopal.data.Type>
-     * @return Map<eu.fasten.core.data.FastenURI, eu.fasten.analyzer.javacgopal.graph.ProposalRevisionCallGraph.Type>
+     * @return Map<eu.fasten.core.data.FastenURI, eu.fasten.analyzer.javacgopal.graph.ExtendedRevisionCallGraph.Type>
      */
-    public static Map<FastenURI, ProposalRevisionCallGraph.Type> toURIHierarchy(Map<ObjectType, Type> classHierarchy) {
+    public static Map<FastenURI, ExtendedRevisionCallGraph.Type> toURIHierarchy(Map<ObjectType, Type> classHierarchy) {
 
-        Map<FastenURI, ProposalRevisionCallGraph.Type> URIclassHierarchy = new HashMap<>();
+        Map<FastenURI, ExtendedRevisionCallGraph.Type> URIclassHierarchy = new HashMap<>();
 
         for (ObjectType aClass : classHierarchy.keySet()) {
 
@@ -294,7 +294,7 @@ public class PartialCallGraph {
 
             URIclassHierarchy.put(
                 Method.getTypeURI(aClass),
-                new ProposalRevisionCallGraph.Type(
+                new ExtendedRevisionCallGraph.Type(
                     toURIMethods(type.getMethods()),
                     toURIClasses(type.getSuperClasses()),
                     toURIInterfaces(type.getSuperInterfaces())

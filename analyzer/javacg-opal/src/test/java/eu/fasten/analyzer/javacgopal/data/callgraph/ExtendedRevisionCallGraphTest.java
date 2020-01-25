@@ -25,14 +25,14 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
-public class ProposalRevisionCallGraphTest {
+public class ExtendedRevisionCallGraphTest {
 
     @Test
     public void toJSON() {
 
         var importerGraph = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleFirst.class").getFile()));
 
-        var firstGraph = new ProposalRevisionCallGraph("mvn",
+        var firstGraph = new ExtendedRevisionCallGraph("mvn",
                 "DiffExample",
                 "1.7.29",
                 1574072773,

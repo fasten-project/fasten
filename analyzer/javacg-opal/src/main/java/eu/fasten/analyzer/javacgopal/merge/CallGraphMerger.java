@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.javacgopal.merge;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.callgraph.ProposalRevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
@@ -35,14 +35,14 @@ public class CallGraphMerger {
         List<List<FastenURI>> depencencyList = getDependenciesURI(PDN);
 
         for (List<FastenURI> fastenURIS : depencencyList) {
-            List<ProposalRevisionCallGraph> revisionCallGraphs = loadRevisionCallGraph(fastenURIS);
-//                List<ProposalRevisionCallGraph> resolvedCallGraphs = mergeCallGraphs(revisionCallGraphs);
+            List<ExtendedRevisionCallGraph> revisionCallGraphs = loadRevisionCallGraph(fastenURIS);
+//                List<ExtendedRevisionCallGraph> resolvedCallGraphs = mergeCallGraphs(revisionCallGraphs);
         }
 
         return null;
     }
 
-    public static ProposalRevisionCallGraph mergeCallGraph(ProposalRevisionCallGraph artifact, List<ProposalRevisionCallGraph> dependencies) {
+    public static ExtendedRevisionCallGraph mergeCallGraph(ExtendedRevisionCallGraph artifact, List<ExtendedRevisionCallGraph> dependencies) {
 
         for (FastenURI[] fastenURIS : artifact.graph) {
             var source = fastenURIS[0];
@@ -54,7 +54,7 @@ public class CallGraphMerger {
             if (target.toString().startsWith("///")) {
 
                 //Go through all dependencies
-                for (ProposalRevisionCallGraph dependency : dependencies) {
+                for (ExtendedRevisionCallGraph dependency : dependencies) {
                     nextDependency:
                     //Check whether this method is inside the dependency
                     if (dependency.getClassHierarchy().containsKey(getTypeURI(target))) {
@@ -91,7 +91,7 @@ public class CallGraphMerger {
         return new FastenJavaURI("/" + callee.getNamespace() + "/" + callee.getEntity().substring(0, callee.getEntity().indexOf(".")));
     }
 
-    private static List<ProposalRevisionCallGraph> loadRevisionCallGraph(List<FastenURI> uri) {
+    private static List<ExtendedRevisionCallGraph> loadRevisionCallGraph(List<FastenURI> uri) {
 
         //TODO load RevisionCallGraphs
         return null;

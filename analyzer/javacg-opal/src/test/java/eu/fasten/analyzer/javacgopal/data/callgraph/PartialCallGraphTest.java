@@ -202,9 +202,9 @@ public class PartialCallGraphTest {
     }
 
     @Test
-    public void testCreateProposalRevisionCallGraph() {
+    public void testCreateExtendedRevisionCallGraph() {
 
-        var proposalRevisionCallGraph = PartialCallGraph.createProposalRevisionCallGraph("mvn",
+        var proposalRevisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
                 1574072773,
                 new PartialCallGraph(

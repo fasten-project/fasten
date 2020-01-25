@@ -20,7 +20,7 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
-import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 
@@ -56,7 +56,7 @@ public class OPALPlugin extends Plugin {
         final String PRODUCE_TOPIC = "opal_callgraphs";
         private final long CONSUMER_TIME = 1; // 1 minute for generating a call graph
         private boolean processedRecord = false;
-        RevisionCallGraph lastCallGraphGenerated;
+        ExtendedRevisionCallGraph lastCallGraphGenerated;
 
         @Override
         public List<String> consumerTopics() {
@@ -92,14 +92,14 @@ public class OPALPlugin extends Plugin {
 
 
                 OPALExecutor.submit(() -> {
-                    lastCallGraphGenerated = PartialCallGraph.createRevisionCallGraph("mvn",
+                    lastCallGraphGenerated = PartialCallGraph.createExtendedRevisionCallGraph("mvn",
                         mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
                         new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
                     );
                 }).get(CONSUMER_TIME, TimeUnit.MINUTES);
                 OPALExecutor.shutdown();
 
-                if(lastCallGraphGenerated != null){
+                if(lastCallGraphGenerated != null && lastCallGraphGenerated.graph.size() != 0 ){
                     logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
 
                     logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
@@ -115,6 +115,9 @@ public class OPALPlugin extends Plugin {
                         }
                     }));
                     processedRecord = true;
+                }else {
+                    logger.error("The graph of {} was empty.", mavenCoordinate.getCoordinate());
+
                 }
 
             } catch (JSONException e) {
