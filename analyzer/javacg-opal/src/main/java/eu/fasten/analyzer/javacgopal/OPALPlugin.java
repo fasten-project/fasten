@@ -77,7 +77,7 @@ public class OPALPlugin extends Plugin {
          *                }
          */
         @Override
-        public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
+        public void consume(String topic, ConsumerRecord<String, String> kafkaRecord){
 
             try {
 
@@ -122,12 +122,15 @@ public class OPALPlugin extends Plugin {
 
                 }
 
-            } catch (JSONException e) {
-                logger.error("An exception occurred while using consumer records as json: {}", e.getMessage());
+            }catch (NullPointerException e){
+                logger.error("Null pointer. It might be not having Kafka producer due to test purposes. {}", e.getStackTrace());
+            }
+            catch (JSONException e) {
+                logger.error("An exception occurred while using consumer records as json: {}", e.getStackTrace());
             } catch (TimeoutException e){
                 logger.info("Exceeded allowed time for generation of the call graph");
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                logger.error("", e.getStackTrace());
                 e.printStackTrace();
             }
         }

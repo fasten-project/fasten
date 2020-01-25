@@ -27,10 +27,15 @@ import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import static org.junit.Assert.assertEquals;
 
 public class OPALPluginTest {
+
+    private static Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
     static OPALPlugin.OPAL opalPlugin;
 
@@ -61,10 +66,11 @@ public class OPALPluginTest {
         JSONAssert.assertEquals(
                 PartialCallGraph.createExtendedRevisionCallGraph("mvn",
 
-                        new MavenCoordinate("org.slf4j", "slf4j-api","1.7.29"), 1574072773,
+                        new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773,
                         new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))
                 ).toJSON(),
                 opalPlugin.lastCallGraphGenerated.toJSON(), false);
+
 
     }
 
