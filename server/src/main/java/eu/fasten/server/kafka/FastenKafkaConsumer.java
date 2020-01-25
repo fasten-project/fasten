@@ -277,10 +277,15 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                         doCommitSync();
                         kafkaConsumer.consume(topic, r);
 
-                        if(kafkaConsumer.recordProcessSuccessful()) sendRecord(this.cgsStatus, this.cgsStatusTopic,
-                                generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.OK_STATUS));
+                        if(kafkaConsumer.recordProcessSuccessful()){
+                            sendRecord(this.cgsStatus, this.cgsStatusTopic,
+                                    generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.OK_STATUS));
+                        } else {
+                            sendRecord(this.errorLog, this.errorLogTopic,"T: " + r.topic() + " P: " + r.partition() + " Of: " + r.offset() +
+                                    " | Processing of " + r.key() + " Failed.");
                         }
                     }
+                }
             } while (true);
         } catch (RuntimeException re) {
             sendRecord(this.errorLog, kafkaConsumer.getClass().getSimpleName() + "_errors", "Exception for plug-in:" +

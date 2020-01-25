@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -114,12 +115,12 @@ public class OPALPlugin extends Plugin {
                         }
                     }));
                     processedRecord = true;
-                } else {
-                    logger.info("{} Exceeded allowed time for generation of the call graph!", mavenCoordinate.getCoordinate());
                 }
 
             } catch (JSONException e) {
                 logger.error("An exception occurred while using consumer records as json: {}", e.getMessage());
+            } catch (TimeoutException e){
+                logger.info("Exceeded allowed time for generation of the call graph");
             } catch (Exception e) {
                 logger.error(e.getMessage());
                 e.printStackTrace();
