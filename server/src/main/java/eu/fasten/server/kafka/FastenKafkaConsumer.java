@@ -127,7 +127,8 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
     private String generateRecordStatus(String pluginName, ConsumerRecord record, String status){
 
         return new JSONObject().put("plugin", pluginName).put("topic", record.topic())
-                .put("partition", String.valueOf(record.partition())).put("offset", String.valueOf(record.offset())).put("status", status).toString();
+                .put("partition", String.valueOf(record.partition())).put("offset", String.valueOf(record.offset())).put("record",
+                        record.value()).put("status", status).toString();
 
     }
 
