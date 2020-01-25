@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import eu.fasten.analyzer.javacgopal.data.Method;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 
@@ -157,7 +156,7 @@ public class MethodTest {
                 Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
         );
 
-        method = singleSourceToTargetcallGraph.getResolvedCalls().get(0).getTarget().get(0);
+        method = singleSourceToTargetcallGraph.getResolvedCalls().get(0).getTargets().get(0);
         assertEquals(
                 new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid"),
                 Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
@@ -175,7 +174,7 @@ public class MethodTest {
                 Method.toCanonicalSchemelessURI(null, unresolvedMethod.calleeClass(), unresolvedMethod.calleeName(), unresolvedMethod.calleeDescriptor())
         );
 
-        method = arrayCallGraph.getResolvedCalls().get(0).getTarget().get(0);
+        method = arrayCallGraph.getResolvedCalls().get(0).getTargets().get(0);
         assertEquals(
                 //  [] is pctEncoded three times, It should stay encoded during creating  1- type's URI, 2- Method's URI and 3- Canonicalization.
                 new FastenJavaURI("/name.space/ArrayExample.targetMethod(%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FObject%25255B%25255D"),
@@ -194,7 +193,7 @@ public class MethodTest {
                 Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
         );
 
-        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getTarget().get(0);
+        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getTargets().get(0);
         assertEquals(
                 new FastenJavaURI("/name.space/LambdaExample.lambda$new$0(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
                 Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
@@ -227,7 +226,7 @@ public class MethodTest {
         method = singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource();
         assertEquals("sourceMethod", Method.getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
 
-        method = singleSourceToTargetcallGraph.getResolvedCalls().get(0).getTarget().get(0);
+        method = singleSourceToTargetcallGraph.getResolvedCalls().get(0).getTargets().get(0);
         assertEquals("targetMethod", Method.getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
 
         var unresolvedMethod = singleSourceToTargetcallGraph.getUnresolvedCalls().get(0);
@@ -245,7 +244,7 @@ public class MethodTest {
 
         assertEquals(
                 new FastenJavaURI("/java.lang/Object%25255B%25255D"),
-                Method.getTypeURI(arrayCallGraph.getResolvedCalls().get(0).getTarget().get(0).returnType())
+                Method.getTypeURI(arrayCallGraph.getResolvedCalls().get(0).getTargets().get(0).returnType())
         );
     }
 
@@ -259,7 +258,7 @@ public class MethodTest {
 
         assertArrayEquals(
                 new FastenJavaURI[]{new FastenJavaURI("/java.lang/Object%25255B%25255D")},
-                Method.getParametersURI(JavaConversions.seqAsJavaList(arrayCallGraph.getResolvedCalls().get(0).getTarget().get(0).parameterTypes()))
+                Method.getParametersURI(JavaConversions.seqAsJavaList(arrayCallGraph.getResolvedCalls().get(0).getTargets().get(0).parameterTypes()))
         );
 
     }
@@ -303,7 +302,7 @@ public class MethodTest {
 
         assertEquals(
                 "Object%25255B%25255D",
-                Method.getClassName(arrayCallGraph.getResolvedCalls().get(0).getTarget().get(0).returnType())
+                Method.getClassName(arrayCallGraph.getResolvedCalls().get(0).getTargets().get(0).returnType())
         );
 
     }
