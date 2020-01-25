@@ -131,21 +131,34 @@ public class PartialCallGraphTest {
                 )
         );
 
-        //Based on logs this arc is duplicated. Before removing duplicates the size of duplicate arcs was 32.
-        List<FastenURI[]> methods = new ArrayList<>();
-        for (FastenURI[] fastenURIS : duplicatedEdgesGraph.graph) {
-            if (fastenURIS[0].toString().contains("IdempotentSequence.main")) {
-                methods.add(fastenURIS);
-            }
-        }
-        List<FastenURI[]> duplicates =  new ArrayList<>();
-        for (FastenURI[] method : methods) {
-            if (method[1].toString().contains("Request.Request")) {
-                duplicates.add(method);
-            }
-        }
+        //Based on logs this arc of the resolved calls was duplicated. Before removing duplicates the size of this duplicate arcs was 32.
+        assertEquals(1,
+                searchInGraph(
+                        searchInGraph(duplicatedEdgesGraph.graph, 0, "IdempotentSequence.main"),
+                        1,
+                        "Request.Request"
+                ).size()
+        );
 
-        assertEquals(1,duplicates.size());
+        //Based on logs this arc of the unresolved calls was duplicated. Before removing duplicates the size of this duplicate arcs was 3.
+        assertEquals(1,
+                searchInGraph(
+                        searchInGraph(duplicatedEdgesGraph.graph, 0, "UncompressInputStream.read"),
+                        1,
+                        "System.arraycopy"
+                ).size()
+        );
+
+    }
+
+    private List<FastenURI[]> searchInGraph(List<FastenURI[]> graph, int sourceOrTarget, String stringToSearch) {
+        List<FastenURI[]> arcs = new ArrayList<>();
+        for (FastenURI[] fastenURIS : graph) {
+            if (fastenURIS[sourceOrTarget].toString().contains(stringToSearch)) {
+                arcs.add(fastenURIS);
+            }
+        }
+        return arcs;
     }
 
     @Test
