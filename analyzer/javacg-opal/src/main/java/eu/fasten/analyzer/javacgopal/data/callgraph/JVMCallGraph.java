@@ -36,7 +36,7 @@ public class JVMCallGraph {
     public static void printJVMGraph(PartialCallGraph partialCallGraph) throws IOException {
         FileWriter writer = new FileWriter("output.txt");
         for (ResolvedCall resolvedCall : partialCallGraph.getResolvedCalls()) {
-            for (Method method : resolvedCall.getTarget()) {
+            for (Method method : resolvedCall.getTargets()) {
                 writer.write(toJVMMethod(resolvedCall.getSource()) + " " + toJVMMethod(method) + "\n");
             }
         }

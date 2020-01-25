@@ -33,27 +33,30 @@ public class ResolvedCall {
      * Then we have Souce: A, target B,C,D.
      */
     private org.opalj.br.Method source;
-    private List<org.opalj.br.Method> target;
+    private List<org.opalj.br.Method> targets;
 
-    public ResolvedCall(org.opalj.br.Method source, List<org.opalj.br.Method> target) {
+    public ResolvedCall(org.opalj.br.Method source, List<org.opalj.br.Method> targets) {
         this.source = source;
-        this.target = target;
+        this.targets = targets;
     }
+
+
+    public void clearTargets(){this.targets.clear();}
 
     public void setSource(org.opalj.br.Method source) {
         this.source = source;
     }
 
-    public void setTarget(List<org.opalj.br.Method> target) {
-        this.target = target;
+    public void setTargets(List<org.opalj.br.Method> targets) {
+        this.targets = targets;
     }
 
     public org.opalj.br.Method getSource() { return source; }
 
-    public List<org.opalj.br.Method> getTarget() { return target; }
+    public List<org.opalj.br.Method> getTargets() { return targets; }
 
     /**
-     * Converts resolved calls to URI pairs.
+     * Converts resolved calls to URI pairs. Since there each source in resolvedCall may have multiple targets the result is a list of calls.
      *
      * @param resolvedCall All callers and callees are org.opalj.br.Method.
      *
@@ -71,7 +74,7 @@ public class ResolvedCall {
             resolvedCall.getSource().descriptor());
 
         if ( sourceURI != null) {
-            for (org.opalj.br.Method target : resolvedCall.getTarget()) {
+            for (org.opalj.br.Method target : resolvedCall.getTargets()) {
 
                 FastenURI[] fastenURI = new FastenURI[2];
                 var targetURI =  Method.toCanonicalSchemelessURI(

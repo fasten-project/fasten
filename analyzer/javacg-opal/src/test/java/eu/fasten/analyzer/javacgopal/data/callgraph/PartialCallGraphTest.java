@@ -23,9 +23,7 @@ import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.*;
 
 import org.junit.Test;
 import org.junit.BeforeClass;
@@ -73,7 +71,7 @@ public class PartialCallGraphTest {
     public void testGeneratePartialCallGraph() {
 
         assertEquals("public static void sourceMethod()", callgraph.getResolvedCalls().get(0).getSource().toString());
-        assertEquals("public static void targetMethod()", callgraph.getResolvedCalls().get(0).getTarget().get(0).toString());
+        assertEquals("public static void targetMethod()", callgraph.getResolvedCalls().get(0).getTargets().get(0).toString());
         assertEquals("public void <init>()", callgraph.getUnresolvedCalls().get(0).caller().toString());
         assertEquals("name/space/SingleSourceToTarget", callgraph.getUnresolvedCalls().get(0).caller().declaringClassFile().thisType().fqn());
         assertEquals("java/lang/Object", callgraph.getUnresolvedCalls().get(0).calleeClass().asObjectType().fqn());
@@ -123,6 +121,31 @@ public class PartialCallGraphTest {
                 ,
                 callgraph.toURIGraph().get(0)
         );
+
+        //This artifact has some duplicate arcs in OPAL result.
+        var duplicatedEdgesGraph = PartialCallGraph.createRevisionCallGraph("mvn",
+                new MavenCoordinate("HTTPClient", "HTTPClient", "0.3-3"),
+                1574072773,
+                new PartialCallGraph(
+                        MavenCoordinate.MavenResolver.downloadJar("HTTPClient:HTTPClient:0.3-3").orElseThrow(RuntimeException::new)
+                )
+        );
+
+        //Based on logs this arc is duplicated. Before removing duplicates the size of duplicate arcs was 32.
+        List<FastenURI[]> methods = new ArrayList<>();
+        for (FastenURI[] fastenURIS : duplicatedEdgesGraph.graph) {
+            if (fastenURIS[0].toString().contains("IdempotentSequence.main")) {
+                methods.add(fastenURIS);
+            }
+        }
+        List<FastenURI[]> duplicates =  new ArrayList<>();
+        for (FastenURI[] method : methods) {
+            if (method[1].toString().contains("Request.Request")) {
+                duplicates.add(method);
+            }
+        }
+
+        assertEquals(1,duplicates.size());
     }
 
     @Test
