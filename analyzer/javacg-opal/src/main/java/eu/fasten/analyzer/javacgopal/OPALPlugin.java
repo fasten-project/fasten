@@ -21,6 +21,7 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 
@@ -93,6 +94,7 @@ public class OPALPlugin extends Plugin {
 
                 OPALExecutor.submit(() -> {
                     lastCallGraphGenerated = PartialCallGraph.createExtendedRevisionCallGraph("mvn",
+
                         mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
                         new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
                     );
