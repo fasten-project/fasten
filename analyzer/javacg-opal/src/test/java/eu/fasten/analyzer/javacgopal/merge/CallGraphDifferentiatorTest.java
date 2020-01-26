@@ -60,6 +60,6 @@ public class CallGraphDifferentiatorTest {
 
     @Test
     public void testDiff() throws IOException {
-        //CallGraphDifferentiator.diff("/Users/mehdi/Desktop/FastenRepo/current1/fasten/analyzer/javacg-opal/target/",1, firstGraph, secondGraph);
+        //CallGraphDifferentiator.diff("result path",graph number, firstGraph, secondGraph);
     }
 }

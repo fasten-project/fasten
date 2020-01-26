@@ -389,17 +389,17 @@ public class PartialCallGraph {
      */
     private List<UnresolvedCall> removeDuplicateUnresolvedCall() {
 
-        List<UnresolvedCall> newList = new ArrayList<>();
+        List<UnresolvedCall> distincedArcs = new ArrayList<>();
 
         for (UnresolvedCall element : this.getUnresolvedCalls()) {
 
-            if (!containsCall(newList, element)) {
-                newList.add(element);
+            if (!containsCall(distincedArcs, element)) {
+                distincedArcs.add(element);
             }
         }
 
         this.unresolvedCalls.clear();
-        this.unresolvedCalls = newList;
+        this.unresolvedCalls = distincedArcs;
 
         return this.unresolvedCalls;
 
