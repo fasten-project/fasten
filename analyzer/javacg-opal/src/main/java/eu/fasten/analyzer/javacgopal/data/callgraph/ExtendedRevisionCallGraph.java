@@ -122,4 +122,13 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         }
         return result;
     }
+
+    /**
+     * Note that this is a temporary method for finding a Maven coordinate that generates an empty
+     * call graph. Later on, this method might be helpful for not sending an empty call graph.
+     * @return boolean
+     */
+    public boolean isCallGraphEmpty(){
+        return this.graph.isEmpty();
+    }
 }
