@@ -262,9 +262,10 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                 skipPartitionOffsets();
             }
 
+            List<String> topics = kafkaConsumer.consumerTopics();
+
             do {
                 ConsumerRecords<String, String> records = connection.poll(Duration.ofMillis(100));
-                List<String> topics = kafkaConsumer.consumerTopics();
 
                 sendRecord(this.errorLog, this.errorLogTopic, "Received " + records.count() + " records");
 
@@ -272,7 +273,6 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                     for (ConsumerRecord<String, String> r : records.records(topic)) {
                         sendRecord(this.errorLog, this.errorLogTopic,"T: " + r.topic() + " P: " + r.partition() + " Of: " + r.offset() + " | Processing: "
                                 + r.key());
-                        sendRecord(this.cgsStatus, this.cgsStatusTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.FAIL_STATUS));
 
                         // Note that this is "at most once" strategy which values progress over completeness.
                         doCommitSync();
@@ -282,8 +282,10 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                             sendRecord(this.cgsStatus, this.cgsStatusTopic,
                                     generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.OK_STATUS));
                         } else {
-                            sendRecord(this.errorLog, this.errorLogTopic,"T: " + r.topic() + " P: " + r.partition() + " Of: " + r.offset() +
-                                    " | Processing of " + r.key() + " Failed.");
+//                            sendRecord(this.errorLog, this.errorLogTopic,"T: " + r.topic() + " P: " + r.partition() + " Of: " + r.offset() +
+//                                    " | Processing of " + r.key() + " Failed.");
+                            sendRecord(this.cgsStatus, this.cgsStatusTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(),
+                                    r, this.FAIL_STATUS));
                         }
                     }
                 }

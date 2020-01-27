@@ -56,7 +56,7 @@ public class OPALPlugin extends Plugin {
         final String CONSUME_TOPIC = "maven.packages";
         final String PRODUCE_TOPIC = "opal_callgraphs";
         private final long CONSUMER_TIME = 1; // 1 minute for generating a call graph
-        private boolean processedRecord = false;
+        private boolean processedRecord;
         ExtendedRevisionCallGraph lastCallGraphGenerated;
 
         @Override
@@ -81,7 +81,7 @@ public class OPALPlugin extends Plugin {
 
             try {
 
-                ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
+                processedRecord = false;
 
                 JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
 
@@ -91,7 +91,7 @@ public class OPALPlugin extends Plugin {
 
                 logger.info("Generating RevisionCallGraph for {} ...", mavenCoordinate.getCoordinate());
 
-
+                ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
                 OPALExecutor.submit(() -> {
                     lastCallGraphGenerated = PartialCallGraph.createExtendedRevisionCallGraph("mvn",
 
@@ -101,7 +101,7 @@ public class OPALPlugin extends Plugin {
                 }).get(CONSUMER_TIME, TimeUnit.MINUTES);
                 OPALExecutor.shutdown();
 
-                if(lastCallGraphGenerated != null && lastCallGraphGenerated.graph.size() != 0 ){
+                if(lastCallGraphGenerated != null && lastCallGraphGenerated.graph.size() != 0){
                     logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
 
                     logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
@@ -119,7 +119,6 @@ public class OPALPlugin extends Plugin {
                     processedRecord = true;
                 }else {
                     logger.error("The graph of {} was empty.", mavenCoordinate.getCoordinate());
-
                 }
 
             }catch (NullPointerException e){
