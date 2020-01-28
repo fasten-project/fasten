@@ -135,4 +135,12 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy()));
     }
 
+    /**
+     * Note that this is a temporary method for finding a Maven coordinate that generates an empty
+     * call graph. Later on, this method might be helpful for not sending an empty call graph.
+     * @return boolean
+     */
+    public boolean isCallGraphEmpty(){
+        return this.graph.isEmpty();
+    }
 }
