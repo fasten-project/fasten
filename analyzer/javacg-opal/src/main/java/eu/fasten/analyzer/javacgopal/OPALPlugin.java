@@ -93,7 +93,7 @@ public class OPALPlugin extends Plugin {
 
 
                 OPALExecutor.submit(() -> {
-                    lastCallGraphGenerated = PartialCallGraph.createExtendedRevisionCallGraph("mvn",
+                    lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn",
 
                         mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
                         new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))

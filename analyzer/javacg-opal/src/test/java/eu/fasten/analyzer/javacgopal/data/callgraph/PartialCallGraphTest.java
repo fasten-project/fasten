@@ -214,27 +214,7 @@ public class PartialCallGraphTest {
 
     }
 
-    @Test
-    public void testCreateExtendedRevisionCallGraph() {
 
-        var proposalRevisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph("mvn",
-                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
-                1574072773,
-                new PartialCallGraph(
-                        MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
-                )
-        );
-        proposalRevisionCallGraph.toJSON();
-        assertNotNull(proposalRevisionCallGraph);
-        assertEquals("mvn", proposalRevisionCallGraph.forge);
-        assertEquals("1.7.29", proposalRevisionCallGraph.version);
-        assertEquals(1574072773, proposalRevisionCallGraph.timestamp);
-        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"), proposalRevisionCallGraph.uri);
-        assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"), proposalRevisionCallGraph.forgelessUri);
-        assertEquals("org.slf4j.slf4j-api", proposalRevisionCallGraph.product);
-        assertNotEquals(0, proposalRevisionCallGraph.graph.size());
-
-    }
 
 
 }
