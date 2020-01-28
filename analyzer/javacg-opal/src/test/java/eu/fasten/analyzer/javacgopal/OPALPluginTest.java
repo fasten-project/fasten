@@ -29,8 +29,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class OPALPluginTest {
 
@@ -100,7 +99,7 @@ public class OPALPluginTest {
 
         opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "bar", emptyCGCoordinate.toString()));
 
-        assertFalse(opalPlugin.recordProcessSuccessful());
+        assertTrue(opalPlugin.lastCallGraphGenerated.isCallGraphEmpty());
     }
 
     @Test

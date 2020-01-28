@@ -101,7 +101,7 @@ public class OPALPlugin extends Plugin {
                 }).get(CONSUMER_TIME, TimeUnit.MINUTES);
                 OPALExecutor.shutdown();
 
-                if(lastCallGraphGenerated != null && !lastCallGraphGenerated.isCallGraphEmpty()){
+                if(!lastCallGraphGenerated.isCallGraphEmpty()){
                     logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
 
                     logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
