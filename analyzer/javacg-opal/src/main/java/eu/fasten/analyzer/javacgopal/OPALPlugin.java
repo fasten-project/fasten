@@ -84,53 +84,54 @@ public class OPALPlugin extends Plugin {
                 processedRecord = false;
 
                 JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
-
                 MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
                     kafkaConsumedJson.get("artifactId").toString(),
                     kafkaConsumedJson.get("version").toString());
 
                 logger.info("Generating RevisionCallGraph for {} ...", mavenCoordinate.getCoordinate());
 
-                ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
-                OPALExecutor.submit(() -> {
-                    lastCallGraphGenerated = PartialCallGraph.createExtendedRevisionCallGraph("mvn",
+                try {
 
-                        mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
-                        new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
-                    );
-                }).get(CONSUMER_TIME, TimeUnit.MINUTES);
-                OPALExecutor.shutdown();
+                    ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
+                    OPALExecutor.submit(() -> {
+                        lastCallGraphGenerated = PartialCallGraph.createExtendedRevisionCallGraph("mvn",
 
-                if(lastCallGraphGenerated != null && !lastCallGraphGenerated.isCallGraphEmpty()){
-                    logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
+                            mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
+                            new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
+                        );
+                    }).get(CONSUMER_TIME, TimeUnit.MINUTES);
+                    OPALExecutor.shutdown();
 
-                    logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
+                    if(lastCallGraphGenerated != null && !lastCallGraphGenerated.isCallGraphEmpty()){
+                        logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
 
-                    ProducerRecord<Object, String> record = new ProducerRecord<>(this.PRODUCE_TOPIC,
-                        lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
+                        logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
 
-                    kafkaProducer.send(record, ((recordMetadata, e) -> {
-                        if (recordMetadata != null) {
-                            logger.debug("Sent: {} to {}", lastCallGraphGenerated.uri.toString(), this.PRODUCE_TOPIC);
-                        } else {
-                            e.printStackTrace();
-                        }
-                    }));
-                    processedRecord = true;
-                }else {
-                    logger.error("The graph of {} was empty.", mavenCoordinate.getCoordinate());
+                        ProducerRecord<Object, String> record = new ProducerRecord<>(this.PRODUCE_TOPIC,
+                            lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
+
+                        kafkaProducer.send(record, ((recordMetadata, e) -> {
+                            if (recordMetadata != null) {
+                                logger.debug("Sent: {} to {}", lastCallGraphGenerated.uri.toString(), this.PRODUCE_TOPIC);
+                            } else {
+                                e.printStackTrace();
+                            }
+                        }));
+                        processedRecord = true;
+                    }else {
+                        logger.error("The graph of {} was empty.", mavenCoordinate.getCoordinate());
+                    }
+
+                } catch (NullPointerException e){
+                    logger.error("Null pointer. It might not have a Kafka producer due to test purposes. {}", e.getStackTrace());
+                } catch (TimeoutException e){
+                    logger.info("Exceeded allowed time for generation of the call graph: {}", mavenCoordinate.getCoordinate());
+                } catch (Exception e) {
+                    logger.error("", e.getStackTrace());
+                    e.printStackTrace();
                 }
-
-            }catch (NullPointerException e){
-                logger.error("Null pointer. It might be not having Kafka producer due to test purposes. {}", e.getStackTrace());
-            }
-            catch (JSONException e) {
-                logger.error("An exception occurred while using consumer records as json: {}", e.getStackTrace());
-            } catch (TimeoutException e){
-                logger.info("Exceeded allowed time for generation of the call graph");
-            } catch (Exception e) {
-                logger.error("", e.getStackTrace());
-                e.printStackTrace();
+            } catch (JSONException e){
+                logger.error("Couldn't parse the record as JSON: {}\n{}", kafkaRecord.value(), e.getStackTrace());
             }
         }
 
