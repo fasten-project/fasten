@@ -47,7 +47,7 @@ public class CallGraphDifferentiator {
         Runtime.getRuntime().exec(new String[]{"sh", "-c", "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath + "_Diff.txt"});
     }
 
-    private static void writeToFile(String path, String graph, String suffix) throws IOException {
+    public static void writeToFile(String path, String graph, String suffix) throws IOException {
         BufferedWriter writer;
         writer = new BufferedWriter(new FileWriter(path + suffix));
         writer.write(graph);

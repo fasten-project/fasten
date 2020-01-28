@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -27,16 +28,11 @@ import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class OPALPluginTest {
-
-    private static Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
     final String topic = "maven.packages";
     static OPALPlugin.OPAL opalPlugin;
@@ -63,17 +59,38 @@ public class OPALPluginTest {
 
         opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()));
 
-        JSONAssert.assertEquals(
-                PartialCallGraph.createExtendedRevisionCallGraph("mvn",
+        JSONAssert.assertEquals(ExtendedRevisionCallGraph.create("mvn",
 
-                        new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773,
-                        new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))
-                ).toJSON(),
-                opalPlugin.lastCallGraphGenerated.toJSON(), false);
+                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773,
+                new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))
+        ).toJSON(),
+        opalPlugin.lastCallGraphGenerated.toJSON(), false);
+
     }
 
     @Test
-    public void testEmptyCallGraph(){
+    public void testShouldNotFaceClassReadingError() throws JSONException {
+
+        JSONObject coordinateJSON1 = new JSONObject("{\n" +
+                "    \"groupId\": \"com.zarbosoft\",\n" +
+                "    \"artifactId\": \"coroutines-core\",\n" +
+                "    \"version\": \"0.0.3\",\n" +
+                "    \"date\":\"1574072773\"\n" +
+                "}");
+
+        opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()));
+
+        JSONAssert.assertEquals(ExtendedRevisionCallGraph.create("mvn",
+
+                new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"), 1574072773,
+                new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("com.zarbosoft:coroutines-core:0.0.3").orElseThrow(RuntimeException::new))
+                ).toJSON(),
+                opalPlugin.lastCallGraphGenerated.toJSON(), false);
+
+    }
+
+    @Test
+    public void testEmptyCallGraph() {
         JSONObject emptyCGCoordinate = new JSONObject("{\n" +
                 "    \"groupId\": \"activemq\",\n" +
                 "    \"artifactId\": \"activemq\",\n" +

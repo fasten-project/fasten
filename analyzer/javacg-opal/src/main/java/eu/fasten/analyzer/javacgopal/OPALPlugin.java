@@ -94,9 +94,8 @@ public class OPALPlugin extends Plugin {
 
                     ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
                     OPALExecutor.submit(() -> {
-                        lastCallGraphGenerated = PartialCallGraph.createExtendedRevisionCallGraph("mvn",
-
-                            mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()),
+                        lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
+                            Long.parseLong(kafkaConsumedJson.get("date").toString()),
                             new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
                         );
                     }).get(CONSUMER_TIME, TimeUnit.MINUTES);

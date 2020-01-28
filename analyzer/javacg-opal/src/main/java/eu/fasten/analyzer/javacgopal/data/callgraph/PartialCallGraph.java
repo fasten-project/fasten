@@ -266,16 +266,6 @@ public class PartialCallGraph {
             partialCallGraph.toURIGraph());
     }
 
-    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(String forge, MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
-
-        return new ExtendedRevisionCallGraph(forge,
-            coordinate.getProduct(),
-            coordinate.getVersionConstraint(),
-            timestamp,
-            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
-            partialCallGraph.toURIGraph(),
-            toURIHierarchy(partialCallGraph.classHierarchy));
-    }
 
 
     /**

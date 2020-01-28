@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.data.callgraph;
 
+import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 
@@ -121,6 +122,17 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             result.add(fastenURI.toString());
         }
         return result;
+    }
+
+    public static ExtendedRevisionCallGraph create(String forge, MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
+
+        return new ExtendedRevisionCallGraph(forge,
+            coordinate.getProduct(),
+            coordinate.getVersionConstraint(),
+            timestamp,
+            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+            partialCallGraph.toURIGraph(),
+            PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy()));
     }
 
     /**
