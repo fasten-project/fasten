@@ -57,15 +57,14 @@ public class ExtendedRevisionCallGraphTest {
                         "\"superClasses\":[\"/java.lang/Object\"]}}"
         );
 
-        var g = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("CallBack").getFile()));
-        var s = new ExtendedRevisionCallGraph("mvn",
-                "DiffExample",
-                "1.7.29",
-                1574072773,
-                Arrays.asList(),
-                g.toURIGraph(),
-                PartialCallGraph.toURIHierarchy(g.getClassHierarchy()));
-
+//        var g = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("CallBack").getFile()));
+//        var s = new ExtendedRevisionCallGraph("mvn",
+//                "DiffExample",
+//                "1.7.29",
+//                1574072773,
+//                Arrays.asList(),
+//                g.toURIGraph(),
+//                PartialCallGraph.toURIHierarchy(g.getClassHierarchy()));
 
     }
 
@@ -91,15 +90,13 @@ public class ExtendedRevisionCallGraphTest {
         assertNotEquals(0, extendedRevisionCallGraph.graph.size());
 
 
-        var RevisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
+        var RevisionCallGraphForZarbosoft = ExtendedRevisionCallGraph.create("mvn",
                 new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"),
                 1574072773,
                 new PartialCallGraph(
                         MavenCoordinate.MavenResolver.downloadJar("com.zarbosoft:coroutines-core:0.0.3").orElseThrow(RuntimeException::new)
                 )
         ).toJSON();
-
-        System.out.println();
 
     }
 
