@@ -32,11 +32,13 @@ import org.slf4j.LoggerFactory;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class OPALPluginTest {
 
     private static Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
+    final String topic = "maven.packages";
     static OPALPlugin.OPAL opalPlugin;
 
     @BeforeClass
@@ -59,8 +61,6 @@ public class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        final String topic = "maven.packages";
-
         opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()));
 
         JSONAssert.assertEquals(
@@ -70,8 +70,20 @@ public class OPALPluginTest {
                         new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))
                 ).toJSON(),
                 opalPlugin.lastCallGraphGenerated.toJSON(), false);
+    }
 
+    @Test
+    public void testEmptyCallGraph(){
+        JSONObject emptyCGCoordinate = new JSONObject("{\n" +
+                "    \"groupId\": \"activemq\",\n" +
+                "    \"artifactId\": \"activemq\",\n" +
+                "    \"version\": \"release-1.5\",\n" +
+                "    \"date\":\"1574072773\"\n" +
+                "}");
 
+        opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "bar", emptyCGCoordinate.toString()));
+
+        assertFalse(opalPlugin.recordProcessSuccessful());
     }
 
     @Test
