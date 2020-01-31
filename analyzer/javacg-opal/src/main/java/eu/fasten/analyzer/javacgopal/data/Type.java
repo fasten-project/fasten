@@ -36,14 +36,14 @@ public class Type {
     private static Logger logger = LoggerFactory.getLogger(Type.class);
 
     private List<Method> methods;
-    private List<ObjectType> superClasses;
+    private Chain<ObjectType> superClasses;
     private List<ObjectType> superInterfaces;
 
     public void setMethods(List<Method> methods) {
         this.methods = methods;
     }
 
-    public void setSuperClasses(List<ObjectType> superClasses) {
+    public void setSuperClasses(Chain<ObjectType> superClasses) {
         this.superClasses = superClasses;
     }
 
@@ -55,7 +55,7 @@ public class Type {
         return methods;
     }
 
-    public List<ObjectType> getSuperClasses() {
+    public Chain<ObjectType> getSuperClasses() {
         return superClasses;
     }
 
@@ -78,9 +78,7 @@ public class Type {
     public void setSupers(ClassHierarchy classHierarchy, ObjectType currentClass) {
 
         try {
-            classHierarchy.allSupertypes(currentClass, false).foreach(
-                JavaToScalaConverter.asScalaFunction1(aClass -> this.superClasses.add((ObjectType) aClass))
-            );
+            this.superClasses = classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
         } catch (NoSuchElementException e) {
             logger.error("This type {} doesn't have allSuperclassTypesInInitializationOrder method.", currentClass, e);
         } catch (OutOfMemoryError e) {
@@ -90,7 +88,7 @@ public class Type {
         }
 
         if (superClasses != null) {
-//            superClasses.reverse();
+            superClasses.reverse();
         }
 
         classHierarchy.allSuperinterfacetypes(currentClass, false).foreach(
