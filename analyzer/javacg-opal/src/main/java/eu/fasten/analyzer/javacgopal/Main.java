@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 
 import picocli.CommandLine;
@@ -80,7 +81,7 @@ public class Main implements Runnable {
                 this.exclusive.mavencoords.version);
         }
 
-        var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
+        var revisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
             mavenCoordinate,
             Long.parseLong(this.timestamp),
             new PartialCallGraph(
