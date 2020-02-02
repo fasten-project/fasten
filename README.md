@@ -22,3 +22,6 @@
 - When the import is done, go to File -> Project Structure -> Project Settings
     - From the dropdown menu, select the Java 11 SDK. If it is not there, click on `New` to create it.
     - Set the project language level to Java 11
+- If you encounter "PF4J annotation processor" error when building the project, follow the below steps:
+    - Go to Preferences -> Build, Execution, Deployment -> Compiler -> Annotation Processors .
+    - For the annotation profile of `javacg-opal` and `dummy-analyzer`, select "Obtain processors from classpath".
