@@ -20,6 +20,9 @@
 package eu.fasten.analyzer.javacgwala.lapp.core;
 
 import com.ibm.wala.types.Selector;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,4 +41,12 @@ public abstract class Method {
     }
 
     public abstract String toID();
+
+    public static FastenURI toCanonicalSchemalessURI(FastenJavaURI JavaURI) {
+
+        return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(),
+                JavaURI.getRawVersion(),
+                JavaURI.getRawNamespace(), JavaURI.getRawEntity());
+    }
+
 }

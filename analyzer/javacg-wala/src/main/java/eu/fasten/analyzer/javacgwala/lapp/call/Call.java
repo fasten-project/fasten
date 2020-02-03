@@ -23,6 +23,8 @@ import java.util.Objects;
 
 import eu.fasten.analyzer.javacgwala.lapp.core.Method;
 import eu.fasten.analyzer.javacgwala.lapp.core.ResolvedMethod;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
 
 public class Call extends Edge {
 
@@ -45,6 +47,20 @@ public class Call extends Edge {
     public Call(Method source, Method callee, CallType callType) {
         super(source, callee);
         this.callType = callType;
+    }
+
+    public FastenURI[] toURICall(FastenJavaURI source, FastenJavaURI target) {
+
+        FastenURI[] fastenURI = new FastenURI[2];
+
+        var sourceURI = Method.toCanonicalSchemalessURI(source);
+
+        var targetURI = Method.toCanonicalSchemalessURI(target);
+
+        fastenURI[0] = sourceURI;
+        fastenURI[1] = FastenURI.create( "//" + targetURI.toString());
+
+        return fastenURI;
     }
 
     @Override

@@ -20,8 +20,10 @@ package eu.fasten.analyzer.javacgwala;
 
 
 import eu.fasten.analyzer.javacgwala.data.callgraph.WalaCallGraph;
+import eu.fasten.analyzer.javacgwala.data.fastenJSON.CanonicalJSON;
 import eu.fasten.analyzer.javacgwala.data.type.MavenResolvedCoordinate;
 import eu.fasten.analyzer.javacgwala.generator.WalaCallgraphConstructor;
+import eu.fasten.analyzer.javacgwala.generator.WalaUFIAdapter;
 import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.FastenPlugin;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
@@ -77,8 +79,8 @@ public class WalaJavaCGGen implements FastenPlugin {
             WalaCallGraph cg = WalaCallgraphConstructor.build(path);
             logger.debug("Call graph construction took {}ms", System.currentTimeMillis() - start);
 
-            //return CanonicalJSON.toJson(WalaUFIAdapter.wrap(cg), "");
-            return null;
+            return CanonicalJSON.toJsonCallgraph(WalaUFIAdapter.wrap(cg), 0);
+            //return null;
         } catch (Exception e) {
             logger.error("An exception occurred for {}", coordinate, e);
             return null;

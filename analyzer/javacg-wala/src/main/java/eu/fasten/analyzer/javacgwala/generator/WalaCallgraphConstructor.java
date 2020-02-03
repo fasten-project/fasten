@@ -75,8 +75,8 @@ public final class WalaCallgraphConstructor {
 
             //6 Build the call graph
             //0-CFA points-to analysis
-            // CallGraphBuilder builder = Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha, scope);
-            CallGraphBuilder builder = Util.makeRTABuilder(options, cache, cha, scope);
+            CallGraphBuilder builder = Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha, scope);
+            //CallGraphBuilder builder = Util.makeRTABuilder(options, cache, cha, scope);
             CallGraph callGraph = builder.makeCallGraph(options, null);
             return new WalaCallGraph(callGraph, coordinates);
         } catch (Exception e) {
