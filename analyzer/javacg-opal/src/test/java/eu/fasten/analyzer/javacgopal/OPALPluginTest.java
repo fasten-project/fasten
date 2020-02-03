@@ -29,6 +29,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
+import java.io.FileNotFoundException;
+
 import static org.junit.Assert.*;
 
 public class OPALPluginTest {
@@ -47,7 +49,7 @@ public class OPALPluginTest {
     }
 
     @Test
-    public void testConsume() throws JSONException {
+    public void testConsume() throws JSONException, FileNotFoundException {
 
         JSONObject coordinateJSON = new JSONObject("{\n" +
                 "    \"groupId\": \"org.slf4j\",\n" +
@@ -68,7 +70,7 @@ public class OPALPluginTest {
     }
 
     @Test
-    public void testShouldNotFaceClassReadingError() throws JSONException {
+    public void testShouldNotFaceClassReadingError() throws JSONException, FileNotFoundException {
 
         JSONObject coordinateJSON1 = new JSONObject("{\n" +
                 "    \"groupId\": \"com.zarbosoft\",\n" +

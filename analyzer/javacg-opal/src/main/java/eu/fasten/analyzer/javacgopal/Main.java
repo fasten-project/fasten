@@ -22,7 +22,11 @@ import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
+import java.io.FileNotFoundException;
 
 /**
  * Makes javacg-opal module runnable from command line.
@@ -70,6 +74,7 @@ public class Main implements Runnable {
         defaultValue = "0")
     String timestamp;
 
+    private static Logger logger = LoggerFactory.getLogger(Main.class);
 
     public void run() {
         MavenCoordinate mavenCoordinate = null;
@@ -81,12 +86,18 @@ public class Main implements Runnable {
                 this.exclusive.mavencoords.version);
         }
 
-        var revisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
-            mavenCoordinate,
-            Long.parseLong(this.timestamp),
-            new PartialCallGraph(
-                MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new)
-            ));
+        ExtendedRevisionCallGraph revisionCallGraph = null;
+        try {
+            revisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
+                mavenCoordinate,
+                Long.parseLong(this.timestamp),
+                new PartialCallGraph(
+                    MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new)
+                ));
+        } catch (FileNotFoundException e) {
+            logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
+            e.printStackTrace();
+        }
 
         //TODO something with the calculated RevesionCallGraph.
         System.out.println(revisionCallGraph.toJSON());

@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.javacgopal.data.callgraph;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.Arrays;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
@@ -69,7 +70,7 @@ public class ExtendedRevisionCallGraphTest {
     }
 
     @Test
-    public void create() {
+    public void create() throws FileNotFoundException {
 
         var extendedRevisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),

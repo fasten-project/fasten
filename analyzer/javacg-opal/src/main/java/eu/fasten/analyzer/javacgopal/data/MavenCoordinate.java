@@ -176,7 +176,7 @@ public class MavenCoordinate {
                     depList.add(dependency);
                     dependencies.add(depList);
                 }
-            } catch (DocumentException e) {
+            } catch (DocumentException | FileNotFoundException e) {
                 logger.error("Error parsing POM file for: " + mavenCoordinate, e);
             }
             return dependencies;
@@ -187,7 +187,7 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return The contents of the downloaded POM file as a string
          */
-        public static Optional<String> downloadPom(String mavenCoordinate) {
+        public static Optional<String> downloadPom(String mavenCoordinate) throws FileNotFoundException {
             return httpGetToFile(fromString(mavenCoordinate).toPomUrl(),".pom").
                 flatMap(f -> fileToString(f));
         }
@@ -198,7 +198,7 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return A temporary file on the filesystem
          */
-        public static Optional<File> downloadJar(String mavenCoordinate) {
+        public static Optional<File> downloadJar(String mavenCoordinate) throws FileNotFoundException {
             logger.debug("Downloading JAR for " + mavenCoordinate);
             return httpGetToFile(fromString(mavenCoordinate).toJarUrl(),".jar");
         }
@@ -227,7 +227,7 @@ public class MavenCoordinate {
         /**
          * Utility function that stores the contents of GET request to a temporary file
          */
-        private static Optional<File> httpGetToFile(String url, String suffix)  {
+        private static Optional<File> httpGetToFile(String url, String suffix) throws FileNotFoundException {
             logger.debug("HTTP GET: " + url);
 
             try {
@@ -238,7 +238,9 @@ public class MavenCoordinate {
                 Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
 
                 return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-
+            } catch (FileNotFoundException e) {
+                logger.error("Could not find URL: " + url, e);
+                throw e;
             } catch (Exception e){
                 logger.error("Error retrieving URL: " + url, e);
                 return Optional.empty();
