@@ -25,6 +25,7 @@ import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 
+import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,6 +59,7 @@ public class OPALPlugin extends Plugin {
         private final long CONSUMER_TIME = 1; // 1 minute for generating a call graph
         private boolean processedRecord;
         ExtendedRevisionCallGraph lastCallGraphGenerated;
+        private String pluginError = "";
 
         @Override
         public List<String> consumerTopics() {
@@ -94,10 +96,16 @@ public class OPALPlugin extends Plugin {
 
                     ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
                     OPALExecutor.submit(() -> {
-                        lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
-                            Long.parseLong(kafkaConsumedJson.get("date").toString()),
-                            new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
-                        );
+                        try {
+                            lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
+                                Long.parseLong(kafkaConsumedJson.get("date").toString()),
+                                new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
+                            );
+                        } catch (FileNotFoundException e) {
+                            setPluginError(e.getClass().getSimpleName());
+                            logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
+                            e.printStackTrace();
+                        }
                     }).get(CONSUMER_TIME, TimeUnit.MINUTES);
                     OPALExecutor.shutdown();
 
@@ -121,11 +129,14 @@ public class OPALPlugin extends Plugin {
                         logger.error("The graph of {} was empty.", mavenCoordinate.getCoordinate());
                     }
 
-                } catch (NullPointerException e){
+                } catch (NullPointerException e) {
+                    setPluginError(e.getClass().getSimpleName());
                     logger.error("Null pointer. It might not have a Kafka producer due to test purposes. {}", e.getStackTrace());
                 } catch (TimeoutException e){
+                    setPluginError(e.getClass().getSimpleName());
                     logger.info("Exceeded allowed time for generation of the call graph: {}", mavenCoordinate.getCoordinate());
                 } catch (Exception e) {
+                    setPluginError(e.getClass().getSimpleName());
                     logger.error("", e.getStackTrace());
                     e.printStackTrace();
                 }
@@ -170,6 +181,16 @@ public class OPALPlugin extends Plugin {
 
         @Override
         public void stop() {
+        }
+
+        @Override
+        public void setPluginError(String exceptionType) {
+            this.pluginError = exceptionType;
+        }
+
+        @Override
+        public String getPluginError() {
+            return this.pluginError;
         }
     }
 }

@@ -286,7 +286,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                                     " processed successfully record: " + r.value());
                         } else {
                             sendRecord(this.cgsStatus, this.cgsStatusTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(),
-                                    r, this.FAIL_STATUS));
+                                    r, this.kafkaConsumer.getPluginError()));
                         }
                     }
                 }

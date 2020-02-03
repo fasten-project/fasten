@@ -62,4 +62,12 @@ public interface FastenPlugin extends ExtensionPoint {
      * Invoked when the server is about to shutdown. This enables the plug-in to shutdown gracefully.
      */
     public void stop();
+
+    /**
+     * These two methods should be implemented so that the FASTEN server can retrieve the plug-in's error and its exception
+     * type. This will help to reprocess certain types of failed records.
+     */
+    public void setPluginError(String exceptionType);
+    public String getPluginError();
+
 }
