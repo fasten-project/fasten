@@ -236,6 +236,7 @@ public class MavenCoordinate {
 
                 InputStream in = new URL(url).openStream();
                 Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                in.close();
 
                 return Optional.of(new File(tempFile.toAbsolutePath().toString()));
             } catch (FileNotFoundException e) {
