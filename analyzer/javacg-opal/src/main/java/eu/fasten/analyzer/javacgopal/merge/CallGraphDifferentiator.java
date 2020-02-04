@@ -38,8 +38,8 @@ public class CallGraphDifferentiator {
 
         String graphPath = resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
 
-        firstGraph.graph.sort(getComparing());
-        secondGraph.graph.sort(getComparing());
+        firstGraph.sortGraphEdges();
+        secondGraph.sortGraphEdges();
 
         writeToFile(firstGraph.toJSON().toString(4), graphPath, "_1.txt");
         writeToFile(secondGraph.toJSON().toString(4), graphPath, "_2.txt");
@@ -53,10 +53,5 @@ public class CallGraphDifferentiator {
         writer.write(graph);
         writer.close();
     }
-
-    private static Comparator<FastenURI[]> getComparing() {
-        return Comparator.comparing(o -> (o[0].toString() + o[1].toString()));
-    }
-
 
 }
