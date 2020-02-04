@@ -143,4 +143,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     public boolean isCallGraphEmpty(){
         return this.graph.isEmpty();
     }
+
+    public void sortGraphEdges(){
+        this.graph.sort(Comparator.comparing(o -> (o[0].toString() + o[1].toString())));
+    }
 }
