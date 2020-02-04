@@ -1,9 +1,6 @@
 package eu.fasten.analyzer.javacgwala;
 
-import com.ibm.wala.properties.WalaProperties;
-import com.ibm.wala.util.WalaException;
 import eu.fasten.analyzer.javacgwala.data.type.MavenCoordinate;
-import eu.fasten.core.data.FastenURI;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "JavaCGWala")
@@ -45,7 +42,7 @@ public class Main implements Runnable {
 
 
     public void run() {
-        MavenCoordinate mavenCoordinate = null;
+        MavenCoordinate mavenCoordinate;
         if (this.exclusive.mavenCoordStr != null) {
             mavenCoordinate = MavenCoordinate.of(this.exclusive.mavenCoordStr);
         } else {
@@ -54,7 +51,6 @@ public class Main implements Runnable {
                     this.exclusive.mavencoords.version);
         }
 
-        System.out.println("Generating call graph...");
         var revisionCallGraph = WalaJavaCGGen.generateCallGraph(mavenCoordinate.getCanonicalForm());
 
         //TODO something with the calculated RevesionCallGraph.

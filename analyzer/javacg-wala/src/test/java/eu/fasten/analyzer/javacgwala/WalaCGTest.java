@@ -16,20 +16,32 @@
  * limitations under the License.
  */
 
-
-package eu.fasten.analyzer.javacgwala;
-
+import eu.fasten.analyzer.javacgwala.WalaJavaCGGen;
 import org.junit.Test;
 
-import static eu.fasten.analyzer.javacgwala.WalaJavaCGGen.generateCallGraph;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 public class WalaCGTest {
 
     @Test
-    public void testCreation() {
-        var cg = generateCallGraph("org.slf4j:slf4j-api:1.7.29");
-        assertNotNull(cg);
+    public void generateCallgraph() {
+        var cg = WalaJavaCGGen.generateCallGraph("ai.h2o:h2o-bindings:3.10.0.7");
+        assertEquals(cg.product, "ai.h2o.h2o-bindings");
+        assertEquals(cg.version, "3.10.0.7");
+        assertEquals(cg.uri, "fasten://mvn!ai.h2o.h2o-bindings$3.10.0.7");
+        assertNotNull(cg.graph);
+    }
+
+    @Test
+    public void nameTest() {
+        var cgName = new WalaJavaCGGen().name();
+        assertEquals(cgName, "eu.fasten.analyzer.javacgwala");
+    }
+
+    @Test
+    public void descriptionTest() {
+        var cgDescription = new WalaJavaCGGen().description();
+        assertEquals(cgDescription, "Constructs call graphs for Java packages using Wala.");
     }
 }

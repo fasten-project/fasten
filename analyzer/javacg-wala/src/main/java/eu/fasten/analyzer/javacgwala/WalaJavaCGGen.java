@@ -80,7 +80,6 @@ public class WalaJavaCGGen implements FastenPlugin {
             logger.debug("Call graph construction took {}ms", System.currentTimeMillis() - start);
 
             return CanonicalJSON.toJsonCallgraph(WalaUFIAdapter.wrap(cg), 0);
-            //return null;
         } catch (Exception e) {
             logger.error("An exception occurred for {}", coordinate, e);
             return null;
