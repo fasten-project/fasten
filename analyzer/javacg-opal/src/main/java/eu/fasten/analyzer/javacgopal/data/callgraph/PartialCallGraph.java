@@ -352,6 +352,8 @@ public class PartialCallGraph {
     public static ArrayList<FastenURI[]> toURIGraph(PartialCallGraph partialCallGraph) {
 
         var graph = new ArrayList<FastenURI[]>();
+
+        logger.info("Converting resolved calls to URIs ...");
         partialCallGraph.removeDuplicateResolvedCall().stream().forEach(resolvedCall -> {
             var URICalls = resolvedCall.toURICalls();
 
@@ -359,7 +361,9 @@ public class PartialCallGraph {
                 graph.addAll(URICalls);
             }
         });
+        logger.info("Resolved calls have been converted to URIs");
 
+        logger.info("Converting unresolved calls to URIs ...");
         partialCallGraph.unresolvedCalls.stream().distinct().collect(Collectors.toList()).stream().forEach(unresolvedCall -> {
             FastenURI[] URICall = unresolvedCall.toURICall();
             if (URICall[0] != null && URICall[1] != null) {
@@ -367,6 +371,7 @@ public class PartialCallGraph {
                 graph.add(URICall);
             }
         });
+        logger.info("Unresolved calls have been converted to URIs.");
 
         return graph;
     }

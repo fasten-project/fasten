@@ -28,8 +28,12 @@ import java.util.*;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExtendedRevisionCallGraph extends RevisionCallGraph {
+
+    private static Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
 
     private Map<FastenURI, Type> classHierarchy;
 
@@ -168,17 +172,32 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     public static ExtendedRevisionCallGraph create(String forge, MavenCoordinate coordinate, long timestamp) throws FileNotFoundException {
 
+        logger.info("Generating call graph using Opal ...");
         PartialCallGraph partialCallGraph = new PartialCallGraph(
             MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate()).orElseThrow(RuntimeException::new)
         );
+        logger.info("Opal call graph has been generated.");
+        logger.info("Converting edges to URIs ...");
 
         var graph = partialCallGraph.toURIGraph();
 
+        logger.info("All edges of the graph have been converted to URIs.");
+        logger.info("Cleaning the opal call graph from memory ...");
+
         partialCallGraph.clearGraph();
+
+        logger.info("The Opal call graph has been removed from memory.");
+        logger.info("Converting class hierarchy to URIs ...");
 
         var classHierarcy = PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy());
 
+        logger.info("All entities of the class hierarchy have been converted to URIs.");
+        logger.info("Cleaning the opal call class hierarchy from memory ...");
+
         partialCallGraph.clearClassHierarchy();
+
+        logger.info("The Opal call class hierarchy has been removed from memory.");
+        logger.info("Building the extended revision call graph ...");
 
         return new ExtendedRevisionCallGraph(forge,
             coordinate.getProduct(),
