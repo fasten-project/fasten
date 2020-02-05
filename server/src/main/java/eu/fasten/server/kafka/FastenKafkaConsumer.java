@@ -15,6 +15,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -248,6 +250,8 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
     @Override
     public void run() {
 
+        NumberFormat timeFormatter = new DecimalFormat("#0.000");
+
         logger.debug("Starting consumer: {}", kafkaConsumer.getClass());
 
         try {
@@ -279,11 +283,12 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
                         // Note that this is "at most once" strategy which values progress over completeness.
                         doCommitSync();
+                        long startTime = System.currentTimeMillis();
                         kafkaConsumer.consume(topic, r);
 
                         if(kafkaConsumer.recordProcessSuccessful()){
                             sendRecord(this.errorLog, this.errorLogTopic, new Date() + "| " + "Plug-in " + kafkaConsumer.getClass().getSimpleName() +
-                                    " processed successfully record: " + r.value());
+                                    " processed successfully record [in " + timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d) + " sec.]: " + r.value());
                         } else {
                             sendRecord(this.cgsStatus, this.cgsStatusTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(),
                                     r, this.kafkaConsumer.getPluginError()));
