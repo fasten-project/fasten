@@ -42,6 +42,35 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     }
 
     /**
+     * Removes the content of the revision call graph.
+     * @param excessiveRemove if it is true method will go through all the content
+     *                        of the revision call graph and remove them one by one.
+     *                        if false general references will be null.
+     */
+    public void clear(Boolean excessiveRemove) {
+        if (excessiveRemove) {
+            this.graph.parallelStream().forEach(i -> {
+                i[0] = null;
+                i[1] = null;
+            });
+            this.classHierarchy.forEach((fastenURI, type) -> {
+                fastenURI = null;
+                type.methods.parallelStream().forEach(i -> i = null);
+                type.superClasses.parallelStream().forEach(i -> i = null);
+                type.superInterfaces.parallelStream().forEach(i -> i = null);
+            });
+        } else {
+            this.graph = null;
+            this.classHierarchy = null;
+        }
+    }
+
+    public void clear() {
+        clear(false);
+    }
+
+
+    /**
      * Type can be a class or interface that inherits (implements) from others or implements methods.
      */
     public static class Type {
@@ -94,6 +123,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     /**
      * It overrides the toJSON method of the RevisionCallGraph class in order to add ClassHierarchy to it.
+     *
      * @return org.json.JSONObject of this type including the classHierarchy.
      */
     @Override
@@ -162,13 +192,16 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     /**
      * Note that this is a temporary method for finding a Maven coordinate that generates an empty
      * call graph. Later on, this method might be helpful for not sending an empty call graph.
+     *
      * @return boolean
      */
-    public boolean isCallGraphEmpty(){
+    public boolean isCallGraphEmpty() {
         return this.graph.isEmpty();
     }
 
-    public void sortGraphEdges(){
+    public void sortGraphEdges() {
         this.graph.sort(Comparator.comparing(o -> (o[0].toString() + o[1].toString())));
     }
+
+
 }

@@ -192,6 +192,8 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public void freeResource() { this.lastCallGraphGenerated = null;}
+        public void freeResource() {
+            lastCallGraphGenerated.clear();
+            this.lastCallGraphGenerated = null;}
     }
 }
