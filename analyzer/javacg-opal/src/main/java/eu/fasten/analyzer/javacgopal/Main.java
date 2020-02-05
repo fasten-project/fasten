@@ -88,12 +88,9 @@ public class Main implements Runnable {
 
         ExtendedRevisionCallGraph revisionCallGraph = null;
         try {
-            revisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
-                mavenCoordinate,
-                Long.parseLong(this.timestamp),
-                new PartialCallGraph(
-                    MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new)
-                ));
+
+            revisionCallGraph = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(this.timestamp));
+
         } catch (FileNotFoundException e) {
             logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
             e.printStackTrace();

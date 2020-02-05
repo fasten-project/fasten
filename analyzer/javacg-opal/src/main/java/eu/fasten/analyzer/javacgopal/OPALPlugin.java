@@ -98,10 +98,7 @@ public class OPALPlugin extends Plugin {
                     ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
                     OPALExecutor.submit(() -> {
                         try {
-                            lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
-                                Long.parseLong(kafkaConsumedJson.get("date").toString()),
-                                new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
-                            );
+                            lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()));
                         } catch (FileNotFoundException e) {
                             setPluginError(e.getClass().getSimpleName());
                             logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());

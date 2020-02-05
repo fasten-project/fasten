@@ -396,4 +396,12 @@ public class PartialCallGraph {
     }
 
 
+    public void clearGraph() {
+        this.resolvedCalls = null;
+        this.unresolvedCalls = null;
+    }
+
+    public void clearClassHierarchy() {
+        this.classHierarchy = null;
+    }
 }

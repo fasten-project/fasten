@@ -22,6 +22,7 @@ import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 
+import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.util.*;
 
@@ -133,6 +134,29 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
             partialCallGraph.toURIGraph(),
             PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy()));
+    }
+
+    public static ExtendedRevisionCallGraph create(String forge, MavenCoordinate coordinate, long timestamp) throws FileNotFoundException {
+
+        PartialCallGraph partialCallGraph = new PartialCallGraph(
+            MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate()).orElseThrow(RuntimeException::new)
+        );
+
+        var graph = partialCallGraph.toURIGraph();
+
+        partialCallGraph.clearGraph();
+
+        var classHierarcy = PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy());
+
+        partialCallGraph.clearClassHierarchy();
+
+        return new ExtendedRevisionCallGraph(forge,
+            coordinate.getProduct(),
+            coordinate.getVersionConstraint(),
+            timestamp,
+            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+            graph,
+            classHierarcy);
     }
 
     /**
