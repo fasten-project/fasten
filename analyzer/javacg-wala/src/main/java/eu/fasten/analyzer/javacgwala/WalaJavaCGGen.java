@@ -63,6 +63,11 @@ public class WalaJavaCGGen implements FastenPlugin {
         return "";
     }
 
+    @Override
+    public void freeResource() {
+
+    }
+
     private static List<MavenResolvedCoordinate> buildClasspath(String mavenCoordinate){
         logger.debug("Building classpath for {}", mavenCoordinate);
         var artifacts = Maven.resolver().

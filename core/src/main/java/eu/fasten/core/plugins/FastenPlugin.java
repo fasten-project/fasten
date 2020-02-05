@@ -70,4 +70,10 @@ public interface FastenPlugin extends ExtensionPoint {
     public void setPluginError(String exceptionType);
     public String getPluginError();
 
+    /**
+     * The purpose of this method is to release all the resources of a plug-in. For example, closing a stream or setting
+     * a big object to null.
+     */
+    public void freeResource();
+
 }

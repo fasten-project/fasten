@@ -58,8 +58,9 @@ public class OPALPlugin extends Plugin {
         final String PRODUCE_TOPIC = "opal_callgraphs";
         private final long CONSUMER_TIME = 1; // 1 minute for generating a call graph
         private boolean processedRecord;
-        ExtendedRevisionCallGraph lastCallGraphGenerated;
+        ExtendedRevisionCallGraph lastCallGraphGenerated = null;
         private String pluginError = "";
+
 
         @Override
         public List<String> consumerTopics() {
@@ -192,7 +193,8 @@ public class OPALPlugin extends Plugin {
         public String getPluginError() {
             return this.pluginError;
         }
+
+        @Override
+        public void freeResource() { this.lastCallGraphGenerated = null;}
     }
 }
-
-

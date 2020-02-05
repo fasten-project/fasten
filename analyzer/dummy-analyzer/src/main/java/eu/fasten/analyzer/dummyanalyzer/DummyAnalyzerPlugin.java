@@ -63,5 +63,10 @@ public class DummyAnalyzerPlugin extends Plugin {
         public String getPluginError() {
             return "";
         }
+
+        @Override
+        public void freeResource() {
+
+        }
     }
 }

@@ -293,6 +293,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                             sendRecord(this.cgsStatus, this.cgsStatusTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(),
                                     r, this.kafkaConsumer.getPluginError()));
                         }
+                        kafkaConsumer.freeResource();
                     }
                 }
             } while (true);
