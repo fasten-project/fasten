@@ -22,13 +22,18 @@ import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 
+import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.util.*;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExtendedRevisionCallGraph extends RevisionCallGraph {
+
+    private static Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
 
     private Map<FastenURI, Type> classHierarchy;
 
@@ -39,6 +44,35 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     public void setClassHierarchy(Map<FastenURI, Type> classHierarchy) {
         this.classHierarchy = classHierarchy;
     }
+
+    /**
+     * Removes the content of the revision call graph.
+     * @param excessiveRemove if it is true method will go through all the content
+     *                        of the revision call graph and remove them one by one.
+     *                        if false general references will be null.
+     */
+    public void clear(Boolean excessiveRemove) {
+        if (excessiveRemove) {
+            this.graph.parallelStream().forEach(i -> {
+                i[0] = null;
+                i[1] = null;
+            });
+            this.classHierarchy.forEach((fastenURI, type) -> {
+                fastenURI = null;
+                type.methods.parallelStream().forEach(i -> i = null);
+                type.superClasses.parallelStream().forEach(i -> i = null);
+                type.superInterfaces.parallelStream().forEach(i -> i = null);
+            });
+        } else {
+            this.graph = null;
+            this.classHierarchy = null;
+        }
+    }
+
+    public void clear() {
+        clear(false);
+    }
+
 
     /**
      * Type can be a class or interface that inherits (implements) from others or implements methods.
@@ -93,6 +127,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     /**
      * It overrides the toJSON method of the RevisionCallGraph class in order to add ClassHierarchy to it.
+     *
      * @return org.json.JSONObject of this type including the classHierarchy.
      */
     @Override
@@ -135,16 +170,57 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy()));
     }
 
+    public static ExtendedRevisionCallGraph create(String forge, MavenCoordinate coordinate, long timestamp) throws FileNotFoundException {
+
+        logger.info("Generating call graph using Opal ...");
+        PartialCallGraph partialCallGraph = new PartialCallGraph(
+            MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate()).orElseThrow(RuntimeException::new)
+        );
+        logger.info("Opal call graph has been generated.");
+        logger.info("Converting edges to URIs ...");
+
+        var graph = partialCallGraph.toURIGraph();
+
+        logger.info("All edges of the graph have been converted to URIs.");
+        logger.info("Cleaning the opal call graph from memory ...");
+
+        partialCallGraph.clearGraph();
+
+        logger.info("The Opal call graph has been removed from memory.");
+        logger.info("Converting class hierarchy to URIs ...");
+
+        var classHierarcy = PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy());
+
+        logger.info("All entities of the class hierarchy have been converted to URIs.");
+        logger.info("Cleaning the opal call class hierarchy from memory ...");
+
+        partialCallGraph.clearClassHierarchy();
+
+        logger.info("The Opal call class hierarchy has been removed from memory.");
+        logger.info("Building the extended revision call graph ...");
+
+        return new ExtendedRevisionCallGraph(forge,
+            coordinate.getProduct(),
+            coordinate.getVersionConstraint(),
+            timestamp,
+            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+            graph,
+            classHierarcy);
+    }
+
     /**
      * Note that this is a temporary method for finding a Maven coordinate that generates an empty
      * call graph. Later on, this method might be helpful for not sending an empty call graph.
+     *
      * @return boolean
      */
-    public boolean isCallGraphEmpty(){
+    public boolean isCallGraphEmpty() {
         return this.graph.isEmpty();
     }
 
-    public void sortGraphEdges(){
+    public void sortGraphEdges() {
         this.graph.sort(Comparator.comparing(o -> (o[0].toString() + o[1].toString())));
     }
+
+
 }

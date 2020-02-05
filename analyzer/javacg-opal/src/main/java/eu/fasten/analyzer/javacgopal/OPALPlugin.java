@@ -19,9 +19,7 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
-
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 
@@ -98,10 +96,7 @@ public class OPALPlugin extends Plugin {
                     ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
                     OPALExecutor.submit(() -> {
                         try {
-                            lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
-                                Long.parseLong(kafkaConsumedJson.get("date").toString()),
-                                new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new))
-                            );
+                            lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()));
                         } catch (FileNotFoundException e) {
                             setPluginError(e.getClass().getSimpleName());
                             logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
@@ -195,6 +190,8 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public void freeResource() { this.lastCallGraphGenerated = null;}
+        public void freeResource() {
+            this.lastCallGraphGenerated.clear();
+            this.lastCallGraphGenerated = null;}
     }
 }
