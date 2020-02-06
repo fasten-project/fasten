@@ -324,7 +324,7 @@ public class PartialCallGraph {
      * @param classes A list of org.opalj.collection.immutable.Chain<org.obalj.br.ObjectType>
      * @return A list of eu.fasten.core.data.FastenURI.
      */
-    public static LinkedList<FastenURI> toURIClasses(Chain<ObjectType> classes) throws NullPointerException{
+    public static LinkedList<FastenURI> toURIClasses(Chain<ObjectType> classes){
         LinkedList<FastenURI> classURIs = new LinkedList<>();
 
             classes.foreach(JavaToScalaConverter.asScalaFunction1(
