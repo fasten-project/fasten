@@ -112,7 +112,7 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
         } else if (ty.isClassType()) {
             IClass klass = this.callGraph.rawcg.getClassHierarchy().lookupClass(tyref);
             Namespace inner = klass != null
-                    ? new JavaPackage(((klass.getName().toString()).substring(1)).substring(1)
+                    ? new JavaPackage(klass.getName().toString().substring(1).substring(1)
                     .split("/"))
                     : new JavaPackage("_unknownType", tyref.getName().toString());
             Optional<Namespace> outer = klass != null ? getGlobalPortion(klass) : Optional.empty();
@@ -130,7 +130,7 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
         } else if (tyref.isClassType()) {
             IClass klass = this.callGraph.rawcg.getClassHierarchy().lookupClass(tyref);
             Namespace inner = klass != null
-                    ? new JavaPackage((klass.getName().toString()).substring(1).split("/"))
+                    ? new JavaPackage(klass.getName().toString().substring(1).split("/"))
                     : new JavaPackage("_unknownType", tyref.getName().toString());
             Optional<Namespace> outer = klass != null ? getGlobalPortion(klass) : Optional.empty();
             return new UniversalType(outer, inner);
@@ -161,7 +161,7 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
     public UFI convertToUFI(IMethod item) {
         //1. create resolved path
         Optional<Namespace> outer = getGlobalPortion(item.getDeclaringClass());
-        Namespace inner = new JavaPackage((item.getDeclaringClass().getName().toString())
+        Namespace inner = new JavaPackage(item.getDeclaringClass().getName().toString()
                 .substring(1).split("/"));
         UniversalType path = new UniversalType(outer, inner);
         //2. extract methodname
@@ -185,7 +185,7 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
                 .resolveCalls(callGraph.rawcg)
                 .stream()
                 .flatMap(call -> Stream.of(call.source, call.target))
-                .collect(toMap(c -> convertToUFI(c), Function.identity(), (v1, v2) -> v1));
+                .collect(toMap(this::convertToUFI, Function.identity(), (v1, v2) -> v1));
     }
 
 }

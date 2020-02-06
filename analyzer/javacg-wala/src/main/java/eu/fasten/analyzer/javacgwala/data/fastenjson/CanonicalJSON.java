@@ -45,10 +45,10 @@ public class CanonicalJSON {
         return uri.canonicalize();
     }
 
-    public static FastenJavaURI convertToFastenURI(Method method, String product) {
-        FastenJavaURI uri = new FastenJavaURI("//" + product + getMethodInfo(method));
-        return uri;
-    }
+    //public static FastenJavaURI convertToFastenURI(Method method, String product) {
+    //    FastenJavaURI uri = new FastenJavaURI("//" + product + getMethodInfo(method));
+    //    return uri;
+    //}
 
     /**
      * Converts all nodes {@link Call} of a Wala call graph to URIs.
@@ -113,14 +113,14 @@ public class CanonicalJSON {
         String typeName = method.namespace.substring(method.namespace.lastIndexOf(".") + 1);
         String functionName = method.symbol.getName().toString()
                 .replace("<init>", "initialMethod").replace("<clinit>", "ClassInitial");
-        functionName = (functionName.contains("lambda"))
+        functionName = functionName.contains("lambda")
                 ? FastenJavaURI.pctEncodeArg(functionName) : functionName;
         TypeName[] args = method.symbol.getDescriptor().getParameters();
         String argTypes = "";
         if (args != null) {
             for (int i = 0; i < args.length; i++) {
-                argTypes = (i == args.length - 1 ? FastenJavaURI.pctEncodeArg(getType(args[i]))
-                        : FastenJavaURI.pctEncodeArg(getType(args[i])) + ",");
+                argTypes = i == args.length - 1 ? FastenJavaURI.pctEncodeArg(getType(args[i]))
+                        : FastenJavaURI.pctEncodeArg(getType(args[i])) + ",";
             }
         }
         String returnType = FastenJavaURI.pctEncodeArg(getType(method.symbol.getDescriptor()
@@ -130,14 +130,14 @@ public class CanonicalJSON {
     }
 
 
-    private static String cleanupVersion(String version) {
-        return version.substring(0, version.contains("-") ? version.indexOf("-")
-                : version.length());
-    }
+    //private static String cleanupVersion(String version) {
+    //    return version.substring(0, version.contains("-") ? version.indexOf("-")
+    //            : version.length());
+    //}
 
-    private static String coordToProduct(MavenResolvedCoordinate coord) {
-        return coord.artifactId + "." + coord.groupId;
-    }
+    //private static String coordToProduct(MavenResolvedCoordinate coord) {
+    //    return coord.artifactId + "." + coord.groupId;
+    //}
 
 
     /**

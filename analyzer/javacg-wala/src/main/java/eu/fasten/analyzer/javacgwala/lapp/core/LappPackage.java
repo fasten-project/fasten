@@ -87,7 +87,7 @@ public class LappPackage {
      */
     public boolean addChaEdge(Method related, ResolvedMethod subject, ChaEdge.ChaEdgeType type) {
         if (related instanceof ResolvedMethod) {
-            return addResolvedChaEdge((ResolvedMethod) related, (ResolvedMethod) subject, type);
+            return addResolvedChaEdge((ResolvedMethod) related, subject, type);
         }
 
         return addUnresolvedChaEdge(related, subject, type);

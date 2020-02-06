@@ -78,7 +78,7 @@ public class LappPackageBuilder {
     public LappPackageBuilder setPackages(List<Module> modules) {
         for (Module m : modules) {
             if (m instanceof JarFileModule) {
-                JarFileModule jfm = ((JarFileModule) m);
+                JarFileModule jfm = (JarFileModule) m;
                 lappPackage.artifacts.add(folderLayout.artifactRecordFromJarFile(jfm.getJarFile()));
             } else {
                 logger.warn("Unknown module to analyse found.");
@@ -161,8 +161,7 @@ public class LappPackageBuilder {
             return resolvedMethod;
 
         } else {
-            UnresolvedMethod unresolvedMethod = UnresolvedMethod.findOrCreate(namespace, symbol);
-            return unresolvedMethod;
+            return UnresolvedMethod.findOrCreate(namespace, symbol);
         }
     }
 

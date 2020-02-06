@@ -59,8 +59,7 @@ public class ClassToArtifactResolver implements ClassArtifactResolver {
      */
     public JarFile findJarFileUsingMethod(MethodReference n) {
         IClass klass = cha.lookupClass(n.getDeclaringClass());
-        JarFile jarFile = classToJarFile(klass);
-        return jarFile;
+        return classToJarFile(klass);
     }
 
     @Override
@@ -131,9 +130,7 @@ public class ClassToArtifactResolver implements ClassArtifactResolver {
             ShrikeClass shrikeKlass = (ShrikeClass) klass;
             JarFileEntry moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();
 
-            JarFile jf = moduleEntry.getJarFile();
-
-            return jf;
+            return moduleEntry.getJarFile();
         } catch (ClassCastException e) {
             return null;
         }

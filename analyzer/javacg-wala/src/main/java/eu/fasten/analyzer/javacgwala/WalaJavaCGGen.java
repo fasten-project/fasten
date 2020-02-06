@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+
 package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.javacgwala.data.callgraph.WalaCallGraph;
@@ -58,21 +59,6 @@ public class WalaJavaCGGen implements FastenPlugin {
     public void stop() {
     }
 
-    private static List<MavenResolvedCoordinate> buildClasspath(String mavenCoordinate) {
-        logger.debug("Building classpath for {}", mavenCoordinate);
-        var artifacts = Maven.resolver()
-                .resolve(mavenCoordinate)
-                .withTransitivity()
-                .asResolvedArtifact();
-
-        var paths = Arrays.asList(artifacts).stream()
-                .map(MavenResolvedCoordinate::of)
-                .collect(Collectors.toList());
-        logger.debug("The classpath for {} is {}", mavenCoordinate, paths);
-        return paths;
-    }
-
-
     /**
      * Generates a call graph using Wala analyzer.
      *
@@ -96,6 +82,24 @@ public class WalaJavaCGGen implements FastenPlugin {
         }
     }
 
+    /**
+     * Build a class path for given maven coordinate.
+     *
+     * @param mavenCoordinate - maven coordinate
+     * @return - list of resolved maven coordinates
+     */
+    private static List<MavenResolvedCoordinate> buildClasspath(String mavenCoordinate) {
+        logger.debug("Building classpath for {}", mavenCoordinate);
+        var artifacts = Maven.resolver()
+                .resolve(mavenCoordinate)
+                .withTransitivity()
+                .asResolvedArtifact();
 
+        var paths = Arrays.stream(artifacts)
+                .map(MavenResolvedCoordinate::of)
+                .collect(Collectors.toList());
+        logger.debug("The classpath for {} is {}", mavenCoordinate, paths);
+        return paths;
+    }
 }
 

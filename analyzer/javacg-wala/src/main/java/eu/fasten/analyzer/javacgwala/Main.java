@@ -45,7 +45,7 @@ public class Main implements Runnable {
         String version;
     }
 
-    @CommandLine.ArgGroup(exclusive = true)
+    @CommandLine.ArgGroup()
     Exclusive exclusive;
 
     static class Exclusive {
@@ -75,6 +75,7 @@ public class Main implements Runnable {
         var revisionCallGraph = WalaJavaCGGen.generateCallGraph(mavenCoordinate.getCanonicalForm());
 
         //TODO something with the calculated RevesionCallGraph.
+        assert revisionCallGraph != null;
         System.out.println(revisionCallGraph.toJSON());
     }
 

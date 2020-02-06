@@ -93,8 +93,8 @@ public final class WalaCallgraphConstructor {
             throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
         //1. Fetch exclusion file
         var classLoader = Thread.currentThread().getContextClassLoader();
-        var exclusionFile = new File(classLoader
-                .getResource("Java60RegressionExclusions.txt").getFile());
+        var exclusionFile = new File(Objects.requireNonNull(classLoader
+                .getResource("Java60RegressionExclusions.txt")).getFile());
 
         //2. Set the analysis scope
         AnalysisScope scope = AnalysisScopeReader
@@ -127,12 +127,11 @@ public final class WalaCallgraphConstructor {
      * @return - list of resolved calls
      */
     public static List<ResolvedCall> resolveCalls(CallGraph cg) {
-        Iterable<CGNode> cgNodes = () -> cg.iterator();
-        List<ResolvedCall> calls = StreamSupport
-                .stream(cgNodes.spliterator(), false)
+        return StreamSupport
+                .stream(cg.spliterator(), false)
                 .filter(applicationLoaderFilter)
                 .flatMap(node -> {
-                    Iterable<CallSiteReference> callSites = () -> node.iterateCallSites();
+                    Iterable<CallSiteReference> callSites = node::iterateCallSites;
                     return StreamSupport
                             .stream(callSites.spliterator(), false)
                             .map(callsite -> {
@@ -148,7 +147,6 @@ public final class WalaCallgraphConstructor {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        return calls;
     }
 
     /**
@@ -163,7 +161,7 @@ public final class WalaCallgraphConstructor {
         Stream<IMethod> methods = StreamSupport.stream(classes.spliterator(), false)
                 .flatMap(klass -> klass.getDeclaredMethods().parallelStream());
 
-        List<MethodHierarchy> info = methods.map(m -> {
+        return methods.map(m -> {
             //Check inheritance
             Optional<IMethod> inheritM = getOverriden(m);
 
@@ -181,7 +179,6 @@ public final class WalaCallgraphConstructor {
                 }
             }
         }).collect(Collectors.toList());
-        return info;
     }
 
     /**
@@ -241,8 +238,7 @@ public final class WalaCallgraphConstructor {
         ShrikeClass shrikeKlass = (ShrikeClass) klass;
         JarFileEntry moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();
         JarFile jarFile = moduleEntry.getJarFile();
-        String jarPath = jarFile.getName();
-        return jarPath;
+        return jarFile.getName();
     }
 
     /**
@@ -253,14 +249,12 @@ public final class WalaCallgraphConstructor {
      * @return - list of entry points
      */
     private static ArrayList<Entrypoint> getEntrypoints(ClassHierarchy cha) {
-        Iterable<IClass> classes = () -> cha.iterator();
-        List<Entrypoint> entryPoints = StreamSupport.stream(classes.spliterator(), false)
+        return StreamSupport.stream(cha.spliterator(), false)
                 .filter(WalaCallgraphConstructor::isPublicClass)
                 .flatMap(klass -> klass.getAllMethods().parallelStream())
                 .filter(WalaCallgraphConstructor::isPublicMethod)
                 .map(m -> new DefaultEntrypoint(m, cha))
-                .collect(Collectors.toList());
-        return new ArrayList<>(entryPoints);
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     ///

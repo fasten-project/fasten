@@ -25,7 +25,6 @@ import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
-import com.ibm.wala.types.TypeReference;
 import eu.fasten.analyzer.javacgwala.lapp.call.ChaEdge;
 import eu.fasten.analyzer.javacgwala.lapp.callgraph.wala.LappPackageBuilder.MethodType;
 import eu.fasten.analyzer.javacgwala.lapp.core.Method;
@@ -34,7 +33,6 @@ import eu.fasten.analyzer.javacgwala.lapp.core.ResolvedMethod;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ClassHierarchyInserter {
@@ -54,7 +52,6 @@ public class ClassHierarchyInserter {
     public void insertCHA() {
         IClassLoader classLoader = cha.getLoader(ClassLoaderReference.Application);
 
-        Set<TypeReference> unresolved = cha.getUnresolvedClasses();
         // Iterate all classes in Application scope
         for (Iterator<IClass> it = classLoader.iterateAllClasses(); it.hasNext(); ) {
             IClass klass = it.next();

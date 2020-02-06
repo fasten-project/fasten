@@ -107,7 +107,7 @@ public class ArtifactRecord {
 
         if (parts[0].length() == 0
                 || parts[1].length() == 0
-                || (parts.length == 3 && parts[2].length() == 0)) {
+                || parts.length == 3 && parts[2].length() == 0) {
             return false;
         }
 
