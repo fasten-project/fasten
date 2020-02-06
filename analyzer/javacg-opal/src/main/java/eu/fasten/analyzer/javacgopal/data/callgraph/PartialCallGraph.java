@@ -30,6 +30,8 @@ import eu.fasten.core.data.FastenURI;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
@@ -316,9 +318,15 @@ public class PartialCallGraph {
      */
     public static LinkedList<FastenURI> toURIClasses(Chain<ObjectType> classes) {
         LinkedList<FastenURI> classURIs = new LinkedList<>();
-        classes.foreach(JavaToScalaConverter.asScalaFunction1(aClass ->
-            classURIs.add(Method.getTypeURI((ObjectType) aClass)))
-        );
+
+        try {
+            classes.foreach(JavaToScalaConverter.asScalaFunction1(aClass -> classURIs.add(Method.getTypeURI((ObjectType) aClass))));
+
+        }catch (NullPointerException e){
+            logger.error("This class {} faced error while converting to URI." );
+            e.printStackTrace();
+        }
+
         return classURIs;
     }
 
@@ -352,16 +360,26 @@ public class PartialCallGraph {
     public static ArrayList<FastenURI[]> toURIGraph(PartialCallGraph partialCallGraph) {
 
         var graph = new ArrayList<FastenURI[]>();
+        int resolvedSize = partialCallGraph.getResolvedCalls().size();
+        partialCallGraph.removeDuplicateResolvedCall();
 
         logger.info("Converting resolved calls to URIs ...");
-        partialCallGraph.removeDuplicateResolvedCall().stream().forEach(resolvedCall -> {
-            var URICalls = resolvedCall.toURICalls();
+        AtomicInteger callNumber = new AtomicInteger();
 
+        partialCallGraph.resolvedCalls.forEach( resolvedCall -> {
+            var URICalls = resolvedCall.toURICalls();
             if (URICalls.size() != 0) {
+
+                callNumber.addAndGet(1);
                 graph.addAll(URICalls);
+
+                System.out.printf("> Processed: %d %% -> %d / %d \r",
+                    (callNumber.get() * 100 / resolvedSize),
+                    callNumber.get(),
+                    resolvedSize);
             }
         });
-        logger.info("Resolved calls have been converted to URIs");
+        logger.info("\nResolved calls have been converted to URIs");
 
         logger.info("Converting unresolved calls to URIs ...");
         partialCallGraph.unresolvedCalls.stream().distinct().collect(Collectors.toList()).stream().forEach(unresolvedCall -> {
@@ -383,9 +401,20 @@ public class PartialCallGraph {
      */
     private List<ResolvedCall> removeDuplicateResolvedCall() {
 
-        this.resolvedCalls.parallelStream().forEach(currentMethod ->
-            currentMethod.setTargets(currentMethod.getTargets().stream().distinct().collect(Collectors.toList()))
-        );
+        AtomicInteger numOfDups = new AtomicInteger();
+        AtomicInteger numOfAllArcs = new AtomicInteger();
+        AtomicInteger numOfUniqueArcs = new AtomicInteger();
+
+        logger.info("Removing duplicated arcs from resolved Calls ...");
+        this.resolvedCalls.parallelStream().forEach(currentCalls -> {
+            int numOfTargets = currentCalls.getTargets().size();
+            numOfAllArcs.addAndGet(numOfTargets);
+            currentCalls.setTargets(currentCalls.getTargets().stream().distinct().collect(Collectors.toList()));
+            numOfTargets = numOfTargets - currentCalls.getTargets().size();
+            numOfUniqueArcs.addAndGet(currentCalls.getTargets().size());
+            numOfDups.addAndGet(numOfTargets);
+        });
+        logger.info("From {} arcs in resolved Calls {} duplicated have been removed. number of unique arcs: {}. number of source nodes: {}", numOfAllArcs, numOfDups, numOfUniqueArcs,this.resolvedCalls.size());
 
         return this.resolvedCalls;
 
@@ -407,6 +436,12 @@ public class PartialCallGraph {
     }
 
     public void clearClassHierarchy() {
-        this.classHierarchy = null;
+        this.classHierarchy.forEach((objectType, type) -> {
+            objectType = null;
+            type.setMethods(null);
+            type.setSuperClasses(null);
+            type.setSuperInterfaces(null);
+        });
+        this.classHierarchy.clear();
     }
 }

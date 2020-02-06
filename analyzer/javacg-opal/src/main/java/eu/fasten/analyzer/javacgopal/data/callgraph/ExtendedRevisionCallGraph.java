@@ -57,18 +57,19 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
                 i[0] = null;
                 i[1] = null;
             });
+
             this.classHierarchy.forEach((fastenURI, type) -> {
                 fastenURI = null;
                 type.methods.parallelStream().forEach(i -> i = null);
                 type.superClasses.parallelStream().forEach(i -> i = null);
                 type.superInterfaces.parallelStream().forEach(i -> i = null);
             });
+            this.classHierarchy.clear();
         } else {
             this.graph = null;
             this.classHierarchy = null;
         }
     }
-
     public void clear() {
         clear(false);
     }

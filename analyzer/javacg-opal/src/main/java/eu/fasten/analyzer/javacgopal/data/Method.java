@@ -22,6 +22,7 @@ import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.opalj.br.*;
 import org.slf4j.Logger;
@@ -46,9 +47,9 @@ public class Method {
      * @return @return Canonicalized Schemeless eu.fasten.core.data.FastenURI of the given method.
      */
     public static FastenURI toCanonicalSchemelessURI(String product, ReferenceType clas, String method, MethodDescriptor descriptor) {
-
+        FastenJavaURI javaURI;
         try {
-            var JavaURI = FastenJavaURI.create(null, product, null,
+            javaURI = FastenJavaURI.create(null, product, null,
                     getPackageName(clas),
                     getClassName(clas),
                     getMethodName(getClassName(clas), method),
@@ -56,14 +57,13 @@ public class Method {
                     getTypeURI(descriptor.returnType())
                 ).canonicalize();
 
-            return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(),
-                JavaURI.getRawVersion(),
-                JavaURI.getRawNamespace(), JavaURI.getRawEntity());
+            return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
+                javaURI.getRawVersion(),
+                javaURI.getRawNamespace(), javaURI.getRawEntity());
 
-        } catch (IllegalArgumentException | NullPointerException | OutOfMemoryError e) {
+        } catch (IllegalArgumentException | NullPointerException e) {
             logger.error("{}", e.getMessage());
         }
-
         return null;
     }
 
@@ -121,9 +121,8 @@ public class Method {
 
         FastenJavaURI[] parameters = new FastenJavaURI[parametersType.size()];
 
-        for (int i = 0; i < parametersType.size(); i++) {
-            parameters[i] = getTypeURI(parametersType.get(i));
-        }
+        IntStream.range(0, parametersType.size()).forEach(i -> parameters[i] = getTypeURI(parametersType.get(i)));
+
         return parameters;
     }
 

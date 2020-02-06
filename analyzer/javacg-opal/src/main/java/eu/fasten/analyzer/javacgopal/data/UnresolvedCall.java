@@ -64,6 +64,7 @@ public class UnresolvedCall extends UnresolvedMethodCall {
             }
 
         }
+
         return fastenURI;
     }
 
