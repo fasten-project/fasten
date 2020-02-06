@@ -284,11 +284,19 @@ public class PartialCallGraph {
 
             var type = classHierarchy.get(aClass);
 
-            URIclassHierarchy.put(
+            LinkedList<FastenURI> superClassesURIs = new LinkedList<>();
+
+            if(type.getSuperClasses() != null){
+                superClassesURIs = toURIClasses(type.getSuperClasses());
+            }else {
+                logger.warn("There is no super type for {}", aClass);
+            }
+
+                URIclassHierarchy.put(
                 Method.getTypeURI(aClass),
                 new ExtendedRevisionCallGraph.Type(
                     toURIMethods(type.getMethods()),
-                    toURIClasses(type.getSuperClasses()),
+                    superClassesURIs,
                     toURIInterfaces(type.getSuperInterfaces())
                 )
             );
@@ -316,16 +324,11 @@ public class PartialCallGraph {
      * @param classes A list of org.opalj.collection.immutable.Chain<org.obalj.br.ObjectType>
      * @return A list of eu.fasten.core.data.FastenURI.
      */
-    public static LinkedList<FastenURI> toURIClasses(Chain<ObjectType> classes) {
+    public static LinkedList<FastenURI> toURIClasses(Chain<ObjectType> classes) throws NullPointerException{
         LinkedList<FastenURI> classURIs = new LinkedList<>();
 
-        try {
-            classes.foreach(JavaToScalaConverter.asScalaFunction1(aClass -> classURIs.add(Method.getTypeURI((ObjectType) aClass))));
-
-        }catch (NullPointerException e){
-            logger.error("This class {} faced error while converting to URI." );
-            e.printStackTrace();
-        }
+            classes.foreach(JavaToScalaConverter.asScalaFunction1(
+                aClass -> classURIs.add(Method.getTypeURI((ObjectType) aClass))));
 
         return classURIs;
     }
@@ -366,7 +369,7 @@ public class PartialCallGraph {
         logger.info("Converting resolved calls to URIs ...");
         AtomicInteger callNumber = new AtomicInteger();
 
-        partialCallGraph.resolvedCalls.forEach( resolvedCall -> {
+        partialCallGraph.resolvedCalls.forEach(resolvedCall -> {
             var URICalls = resolvedCall.toURICalls();
             if (URICalls.size() != 0) {
 
@@ -414,7 +417,7 @@ public class PartialCallGraph {
             numOfUniqueArcs.addAndGet(currentCalls.getTargets().size());
             numOfDups.addAndGet(numOfTargets);
         });
-        logger.info("From {} arcs in resolved Calls {} duplicated have been removed. number of unique arcs: {}. number of source nodes: {}", numOfAllArcs, numOfDups, numOfUniqueArcs,this.resolvedCalls.size());
+        logger.info("From {} arcs in resolved Calls {} duplicated have been removed. number of unique arcs: {}. number of source nodes: {}", numOfAllArcs, numOfDups, numOfUniqueArcs, this.resolvedCalls.size());
 
         return this.resolvedCalls;
 

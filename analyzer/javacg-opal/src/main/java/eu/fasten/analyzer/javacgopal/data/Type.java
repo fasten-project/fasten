@@ -96,6 +96,8 @@ public class Type {
             classHierarchy.allSuperinterfacetypes(currentClass, false).foreach(
                 JavaToScalaConverter.asScalaFunction1(anInterface -> this.superInterfaces.add((ObjectType) anInterface))
             );
+        }else {
+            logger.warn("Opal class hierarchy didn't include super types of {}", currentClass);
         }
     }
 }
