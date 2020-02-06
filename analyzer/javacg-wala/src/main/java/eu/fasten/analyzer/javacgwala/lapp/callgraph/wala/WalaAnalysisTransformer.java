@@ -20,17 +20,27 @@
 package eu.fasten.analyzer.javacgwala.lapp.callgraph.wala;
 
 import com.ibm.wala.types.ClassLoaderReference;
-import eu.fasten.analyzer.javacgwala.lapp.callgraph.FolderLayout.ArtifactFolderLayout;
 import eu.fasten.analyzer.javacgwala.lapp.callgraph.ClassToArtifactResolver;
+import eu.fasten.analyzer.javacgwala.lapp.callgraph.folderlayout.ArtifactFolderLayout;
 import eu.fasten.analyzer.javacgwala.lapp.core.LappPackage;
 
 public class WalaAnalysisTransformer {
 
-    public static LappPackage toPackage(WalaAnalysisResult analysisResult, ArtifactFolderLayout layout) {
-        ClassToArtifactResolver artifactResolver = new ClassToArtifactResolver(analysisResult.extendedCha, layout);
+    /**
+     * Transforms result of Wala call graph analysis to a {@link LappPackage}.
+     *
+     * @param analysisResult - Wala call graph analysis
+     * @param layout         - Folder Layout extracted from a jar file.
+     * @return - a new lapp package
+     */
+    public static LappPackage toPackage(WalaAnalysisResult analysisResult,
+                                        ArtifactFolderLayout layout) {
+        ClassToArtifactResolver artifactResolver =
+                new ClassToArtifactResolver(analysisResult.extendedCha, layout);
 
         LappPackageBuilder builder = new LappPackageBuilder(artifactResolver, layout);
-        return builder.setPackages(analysisResult.extendedCha.getScope().getModules(ClassLoaderReference.Application))
+        return builder.setPackages(analysisResult.extendedCha.getScope()
+                .getModules(ClassLoaderReference.Application))
                 .insertCha(analysisResult.extendedCha)
                 .insertCallGraph(analysisResult.cg)
                 .build();

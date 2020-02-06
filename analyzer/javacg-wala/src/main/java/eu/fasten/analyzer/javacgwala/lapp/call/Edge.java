@@ -19,9 +19,9 @@
 
 package eu.fasten.analyzer.javacgwala.lapp.call;
 
+import eu.fasten.analyzer.javacgwala.lapp.core.Method;
 import java.util.Objects;
 
-import eu.fasten.analyzer.javacgwala.lapp.core.Method;
 
 public abstract class Edge {
 
@@ -40,11 +40,15 @@ public abstract class Edge {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Edge edge = (Edge) o;
-        return source.equals(edge.source) &&
-                target.equals(edge.target);
+        return source.equals(edge.source)
+                && target.equals(edge.target);
     }
 
     @Override

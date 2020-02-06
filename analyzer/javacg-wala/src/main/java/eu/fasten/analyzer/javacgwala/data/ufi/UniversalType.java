@@ -19,7 +19,6 @@
 
 package eu.fasten.analyzer.javacgwala.data.ufi;
 
-
 import eu.fasten.analyzer.javacgwala.data.type.Namespace;
 
 import java.io.Serializable;
@@ -38,17 +37,20 @@ public class UniversalType implements Serializable {
     @Override
     public boolean equals(Object o) {
         // self check
-        if (this == o)
+        if (this == o) {
             return true;
+        }
         // null check
-        if (o == null)
+        if (o == null) {
             return false;
+        }
         // type check and cast
-        if (getClass() != o.getClass())
+        if (getClass() != o.getClass()) {
             return false;
+        }
         UniversalType ty = (UniversalType) o;
-        return Objects.equals(this.outer, ty.outer) &&
-                Objects.equals(this.inner, ty.inner);
+        return Objects.equals(this.outer, ty.outer)
+                && Objects.equals(this.inner, ty.inner);
     }
 
     @Override

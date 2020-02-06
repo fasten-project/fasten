@@ -42,11 +42,17 @@ public abstract class Method {
 
     public abstract String toID();
 
-    public static FastenURI toCanonicalSchemalessURI(FastenJavaURI JavaURI) {
+    /**
+     * Convert {@link FastenJavaURI} to {@link FastenURI}.
+     *
+     * @param javaURI - FastenJavaURI to convert
+     * @return - {@link FastenURI}
+     */
+    public static FastenURI toCanonicalSchemalessURI(FastenJavaURI javaURI) {
 
-        return FastenURI.createSchemeless(JavaURI.getRawForge(), JavaURI.getRawProduct(),
-                JavaURI.getRawVersion(),
-                JavaURI.getRawNamespace(), JavaURI.getRawEntity());
+        return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
+                javaURI.getRawVersion(),
+                javaURI.getRawNamespace(), javaURI.getRawEntity());
     }
 
 }

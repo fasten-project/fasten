@@ -17,7 +17,7 @@
  */
 
 
-package eu.fasten.analyzer.javacgwala.lapp.callgraph.FolderLayout;
+package eu.fasten.analyzer.javacgwala.lapp.callgraph.folderlayout;
 
 import eu.fasten.analyzer.javacgwala.lapp.callgraph.ArtifactRecord;
 

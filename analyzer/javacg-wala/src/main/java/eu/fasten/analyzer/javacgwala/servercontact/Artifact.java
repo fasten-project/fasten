@@ -17,7 +17,7 @@
  */
 
 
-package eu.fasten.analyzer.javacgwala.serverContact;
+package eu.fasten.analyzer.javacgwala.servercontact;
 
 import java.util.StringTokenizer;
 
@@ -29,10 +29,20 @@ public class Artifact {
     private String version;
     private String date;
 
-    public Artifact(){
-
+    public Artifact() {
     }
-    public Artifact(long artifactNO, String firstName, String lastName, String version, String date) {
+
+    /**
+     * Construct an artifact.
+     *
+     * @param artifactNO - artifact number
+     * @param firstName  - group ID
+     * @param lastName   - artifact ID
+     * @param version    - version
+     * @param date       - date
+     */
+    public Artifact(long artifactNO, String firstName, String lastName,
+                    String version, String date) {
         this.artifactNO = artifactNO;
         this.groupId = firstName;
         this.artifactId = lastName;
@@ -40,8 +50,13 @@ public class Artifact {
         this.date = date;
     }
 
-    public void parseString(String csvStr){
-        StringTokenizer st = new StringTokenizer(csvStr,",");
+    /**
+     * Parse a csv-format-string representation of an artifact.
+     *
+     * @param csvStr - string representing an artifact
+     */
+    public void parseString(String csvStr) {
+        StringTokenizer st = new StringTokenizer(csvStr, ",");
         artifactNO = Integer.parseInt(st.nextToken());
         groupId = st.nextToken();
         artifactId = st.nextToken();
@@ -92,12 +107,12 @@ public class Artifact {
 
     @Override
     public String toString() {
-        return "Artifact{" +
-                "artifactId=" + artifactId +
-                ", groupId='" + groupId + '\'' +
-                ", lastName='" + artifactId + '\'' +
-                ", version='" + version + '\'' +
-                ", date='" + date + '\'' +
-                '}';
+        return "Artifact{"
+                + "artifactId=" + artifactId
+                + ", groupId='" + groupId + '\''
+                + ", lastName='" + artifactId + '\''
+                + ", version='" + version + '\''
+                + ", date='" + date + '\''
+                + '}';
     }
 }

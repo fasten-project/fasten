@@ -31,12 +31,21 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public final class UFI implements Serializable {
-    public final static String DELIM = "---";
+
+    public static final String DELIM = "---";
     public final UniversalType pathType;
     public final String methodName;
     public final Optional<List<UniversalType>> parameters;
     public final UniversalType returnType;
 
+    /**
+     * Construct UFI.
+     *
+     * @param pathType   - path type
+     * @param methodName - name of method
+     * @param parameters - optional list of parameters
+     * @param returnType - return type
+     */
     public UFI(UniversalType pathType,
                String methodName,
                Optional<List<UniversalType>> parameters,
@@ -47,6 +56,12 @@ public final class UFI implements Serializable {
         this.returnType = returnType;
     }
 
+    /**
+     * Build a string???.
+     *
+     * @param uty - type???
+     * @return - buildup???
+     */
     public static String stringBuilder(UniversalType uty) {
 
         String buildup = "";
@@ -88,11 +103,11 @@ public final class UFI implements Serializable {
     @Override
     public String toString() {
 
-        String args = parameters.isPresent() ?
-                parameters.get()
-                        .stream()
-                        .map(UFI::stringBuilder)
-                        .collect(Collectors.joining(",")) : "";
+        String args = parameters.isPresent()
+                ? parameters.get()
+                .stream()
+                .map(UFI::stringBuilder)
+                .collect(Collectors.joining(",")) : "";
 
 
         return stringBuilder(this.pathType) + DELIM
@@ -105,14 +120,17 @@ public final class UFI implements Serializable {
     @Override
     public boolean equals(Object o) {
         // self check
-        if (this == o)
+        if (this == o) {
             return true;
+        }
         // null check
-        if (o == null)
+        if (o == null) {
             return false;
+        }
         // type check and cast
-        if (getClass() != o.getClass())
+        if (getClass() != o.getClass()) {
             return false;
+        }
         UFI ufi = (UFI) o;
         return Objects.equals(this.toString(), ufi.toString());
     }

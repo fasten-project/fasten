@@ -40,7 +40,8 @@ public class ResolvedMethod extends Method {
     }
 
     public static String toID(String namespace, Selector symbol, JarFile artifact) {
-        return artifact == null ? "Unknown" : artifact.getName() + "::" + namespace + "." + symbol.toString();
+        return artifact == null ? "Unknown"
+                : artifact.getName() + "::" + namespace + "." + symbol.toString();
     }
 
     public static ResolvedMethod findOrCreate(String namespace, Selector symbol, JarFile artifact) {

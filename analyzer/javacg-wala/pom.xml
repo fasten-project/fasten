@@ -23,6 +23,8 @@
 
   <properties>
     <wala.version>1.5.3</wala.version>
+    <checkstyle.version>8.27</checkstyle.version>
+    <checkstyle.plugin.version>3.1.0</checkstyle.plugin.version>
   </properties>
 
   <dependencies>
@@ -91,6 +93,55 @@
       </archive>
     </configuration>
   </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-checkstyle-plugin</artifactId>
+      <version>${checkstyle.plugin.version}</version>
+      <dependencies>
+        <dependency>
+          <groupId>com.puppycrawl.tools</groupId>
+          <artifactId>checkstyle</artifactId>
+          <version>${checkstyle.version}</version>
+        </dependency>
+      </dependencies>
+      <configuration>
+        <configLocation>checkstyle.xml</configLocation>
+      </configuration>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-pmd-plugin</artifactId>
+      <version>3.12.0</version>
+    </plugin>
+
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-site-plugin</artifactId>
+      <version>3.7.1</version>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-project-info-reports-plugin</artifactId>
+      <version>3.0.0</version>
+    </plugin>
   </plugins>
   </build>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <configLocation>checkstyle.xml</configLocation>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <version>3.12.0</version>
+      </plugin>
+    </plugins>
+  </reporting>
 </project>

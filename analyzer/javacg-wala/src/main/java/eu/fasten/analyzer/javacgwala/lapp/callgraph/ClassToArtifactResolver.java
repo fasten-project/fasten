@@ -27,14 +27,16 @@ import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeReference;
-import eu.fasten.analyzer.javacgwala.lapp.callgraph.FolderLayout.ArtifactFolderLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import eu.fasten.analyzer.javacgwala.lapp.callgraph.folderlayout.ArtifactFolderLayout;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.jar.JarFile;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class ClassToArtifactResolver implements ClassArtifactResolver {
     private static Logger logger = LoggerFactory.getLogger(ClassArtifactResolver.class);
@@ -49,10 +51,16 @@ public class ClassToArtifactResolver implements ClassArtifactResolver {
         this.transformer = transformer;
     }
 
-    public JarFile findJarFileUsingMethod(MethodReference n){
-       IClass klass = cha.lookupClass(n.getDeclaringClass());
-       JarFile jarFile = classToJarFile(klass);
-       return jarFile;
+    /**
+     * Get a jar file containing a given method.
+     *
+     * @param n - method reference
+     * @return - jar file
+     */
+    public JarFile findJarFileUsingMethod(MethodReference n) {
+        IClass klass = cha.lookupClass(n.getDeclaringClass());
+        JarFile jarFile = classToJarFile(klass);
+        return jarFile;
     }
 
     @Override
@@ -61,7 +69,9 @@ public class ClassToArtifactResolver implements ClassArtifactResolver {
 
         if (klass == null) {
             // Try harder
-            TypeReference t = TypeReference.findOrCreate(cha.getLoader(ClassLoaderReference.Application).getReference(), n.getDeclaringClass().getName());
+            TypeReference t = TypeReference
+                    .findOrCreate(cha.getLoader(ClassLoaderReference.Application).getReference(),
+                            n.getDeclaringClass().getName());
             klass = cha.lookupClass(t);
         }
 
@@ -99,7 +109,7 @@ public class ClassToArtifactResolver implements ClassArtifactResolver {
     private JarFile classToJarFile(IClass klass) {
         Objects.requireNonNull(klass);
 
-        if (klass instanceof ArrayClass)  {
+        if (klass instanceof ArrayClass) {
             ArrayClass arrayClass = (ArrayClass) klass;
             IClass innerClass = arrayClass.getElementClass();
 
@@ -124,7 +134,7 @@ public class ClassToArtifactResolver implements ClassArtifactResolver {
             JarFile jf = moduleEntry.getJarFile();
 
             return jf;
-        } catch (ClassCastException e){
+        } catch (ClassCastException e) {
             return null;
         }
     }

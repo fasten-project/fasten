@@ -37,18 +37,21 @@ public final class JDKPackage implements Serializable, Namespace {
     @Override
     public boolean equals(Object o) {
         // self check
-        if (this == o)
+        if (this == o) {
             return true;
+        }
         // null check
-        if (o == null)
+        if (o == null) {
             return false;
+        }
         // type check and cast
-        if (getClass() != o.getClass())
+        if (getClass() != o.getClass()) {
             return false;
+        }
         JDKPackage jdk = (JDKPackage) o;
         return
-                Objects.equals(this.vendor, jdk.vendor) &&
-                        Objects.equals(this.version, jdk.version);
+                Objects.equals(this.vendor, jdk.vendor)
+                        && Objects.equals(this.version, jdk.version);
     }
 
     @Override

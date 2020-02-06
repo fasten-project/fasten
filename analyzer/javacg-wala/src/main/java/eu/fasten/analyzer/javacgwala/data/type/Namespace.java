@@ -21,5 +21,6 @@ package eu.fasten.analyzer.javacgwala.data.type;
 
 public interface Namespace {
     String[] getSegments();
+
     String getNamespaceDelim();
 }

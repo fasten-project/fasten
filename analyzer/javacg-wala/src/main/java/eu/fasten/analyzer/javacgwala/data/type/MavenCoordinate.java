@@ -29,7 +29,13 @@ public class MavenCoordinate implements Serializable, Namespace {
     public final String groupId;
     public final String version;
 
-
+    /**
+     * Construct {@link MavenCoordinate} from groupID, artifactID, and version.
+     *
+     * @param groupId    - groupID
+     * @param artifactId - artifactID
+     * @param version    - version
+     */
     public MavenCoordinate(String groupId, String artifactId, String version) {
         this.groupId = groupId;
         this.artifactId = artifactId;
@@ -37,13 +43,24 @@ public class MavenCoordinate implements Serializable, Namespace {
 
     }
 
-    public static MavenCoordinate of(String canonicalform) {
-        String[] segments = canonicalform.split(":");
+    /**
+     * Build {@link MavenCoordinate} given string representing an artifact in a canonical form.
+     *
+     * @param identifier - identifier
+     * @return - new Maven Coordinate
+     */
+    public static MavenCoordinate of(String identifier) {
+        String[] segments = identifier.split(":");
         assert segments.length == 3;
         return new MavenCoordinate(segments[0], segments[1], segments[2]);
 
     }
 
+    /**
+     * Get a string representation of this Maven Coordinate.
+     *
+     * @return - artifact representation in canonical form
+     */
     public String getCanonicalForm() {
         return String.join(this.getNamespaceDelim(),
                 this.groupId,
@@ -61,19 +78,22 @@ public class MavenCoordinate implements Serializable, Namespace {
     @Override
     public boolean equals(Object o) {
         // self check
-        if (this == o)
+        if (this == o) {
             return true;
+        }
         // null check
-        if (o == null)
+        if (o == null) {
             return false;
+        }
         // type check and cast
-        if (getClass() != o.getClass())
+        if (getClass() != o.getClass()) {
             return false;
+        }
         MavenCoordinate coord = (MavenCoordinate) o;
         return
-                Objects.equals(this.groupId, coord.groupId) &&
-                        Objects.equals(this.artifactId, coord.artifactId) &&
-                        Objects.equals(this.version, coord.version);
+                Objects.equals(this.groupId, coord.groupId)
+                        && Objects.equals(this.artifactId, coord.artifactId)
+                        && Objects.equals(this.version, coord.version);
     }
 
     @Override
@@ -87,5 +107,7 @@ public class MavenCoordinate implements Serializable, Namespace {
     }
 
     @Override
-    public String getNamespaceDelim() { return ":"; }
+    public String getNamespaceDelim() {
+        return ":";
+    }
 }

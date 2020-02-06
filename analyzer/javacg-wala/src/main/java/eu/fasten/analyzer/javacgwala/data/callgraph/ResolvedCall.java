@@ -30,7 +30,13 @@ public final class ResolvedCall implements Serializable {
     public final IMethod source;
     public final IInvokeInstruction.Dispatch invoke;
 
-
+    /**
+     * Construct resolved call.
+     *
+     * @param source - caller
+     * @param invoke - invoke
+     * @param target - callee
+     */
     public ResolvedCall(IMethod source, IInvokeInstruction.IDispatch invoke, IMethod target) {
         this.source = source;
         this.target = target;

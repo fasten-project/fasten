@@ -31,13 +31,25 @@ public class ArtifactRecord {
     public final String artifactId;
     private String version;
 
+    /**
+     * Constructs an artifact record based on its group ID, artifact ID, and version.
+     *
+     * @param groupId    - group ID
+     * @param artifactId - artifact ID
+     * @param version    - version
+     */
     public ArtifactRecord(String groupId, String artifactId, String version) {
-
         this.groupId = Objects.requireNonNull(groupId, "groupId must not be null");
         this.artifactId = Objects.requireNonNull(artifactId, "artifactId must not be null");
         this.version = version;
     }
 
+    /**
+     * Constructs an artifact record based on its group ID, artifact ID, and version represented
+     * in a String format.
+     *
+     * @param identifier - string representation of an artifact
+     */
     public ArtifactRecord(String identifier) {
         Objects.requireNonNull(identifier);
 
@@ -67,6 +79,21 @@ public class ArtifactRecord {
         return getIdentifier(groupId, artifactId, version);
     }
 
+    public static String getIdentifier(Artifact artifact) {
+        return getIdentifier(artifact.getGroupId(),
+                artifact.getArtifactId(), artifact.getVersion());
+    }
+
+    public static String getIdentifier(String groupId, String artifactId, String version) {
+        return String.format("%s:%s:%s", groupId, artifactId, version);
+    }
+
+    /**
+     * Check if String representation of artifact is valid.
+     *
+     * @param identifier - artifact identifier
+     * @return - true if identifier is valid
+     */
     public static boolean isValidIdentifier(String identifier) {
         if (identifier == null) {
             return false;
@@ -87,20 +114,15 @@ public class ArtifactRecord {
         return true;
     }
 
-    public static String getIdentifier(Artifact artifact) {
-        return getIdentifier(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
-    }
-
-    public static String getIdentifier(String groupId, String artifactId, String version) {
-        return String.format("%s:%s:%s", groupId, artifactId, version);
-    }
-
-
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         ArtifactRecord that = (ArtifactRecord) o;
 
