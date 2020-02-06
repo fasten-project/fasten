@@ -20,13 +20,14 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 
 /**
  * Makes javacg-opal module runnable from command line.
@@ -77,7 +78,9 @@ public class Main implements Runnable {
     private static Logger logger = LoggerFactory.getLogger(Main.class);
 
     public void run() {
+        NumberFormat timeFormatter = new DecimalFormat("#0.000");
         MavenCoordinate mavenCoordinate = null;
+
         if (this.exclusive.mavenCoordStr != null) {
             mavenCoordinate = MavenCoordinate.fromString(this.exclusive.mavenCoordStr);
         } else {
@@ -88,16 +91,18 @@ public class Main implements Runnable {
 
         ExtendedRevisionCallGraph revisionCallGraph = null;
         try {
-
+            logger.info("Generating call graph for the Maven coordinate: {}", this.exclusive.mavenCoordStr);
+            long startTime = System.currentTimeMillis();
             revisionCallGraph = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(this.timestamp));
+            logger.info("Generated the call graph in {} seconds.", timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
+            //TODO something with the calculated RevesionCallGraph.
+            System.out.println(revisionCallGraph.toJSON());
 
         } catch (FileNotFoundException e) {
             logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
             e.printStackTrace();
         }
 
-        //TODO something with the calculated RevesionCallGraph.
-        System.out.println(revisionCallGraph.toJSON());
     }
 
     /**
