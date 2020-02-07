@@ -92,18 +92,19 @@ public class OPALPlugin extends Plugin {
                 logger.info("Generating RevisionCallGraph for {} ...", mavenCoordinate.getCoordinate());
 
                 try {
+                    lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
+                        Long.parseLong(kafkaConsumedJson.get("date").toString()));
+                    //ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
+                    //OPALExecutor.submit(() -> {
+                        //try {
 
-                    ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
-                    OPALExecutor.submit(() -> {
-                        try {
-                            lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(kafkaConsumedJson.get("date").toString()));
-                        } catch (FileNotFoundException e) {
-                            setPluginError(e.getClass().getSimpleName());
-                            logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
-                            e.printStackTrace();
-                        }
-                    }).get(CONSUMER_TIME, TimeUnit.MINUTES);
-                    OPALExecutor.shutdown();
+//                        } catch (FileNotFoundException e) {
+//                            setPluginError(e.getClass().getSimpleName());
+//                            logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
+//                            e.printStackTrace();
+//                        }
+                    //}).get(CONSUMER_TIME, TimeUnit.MINUTES);
+                    //OPALExecutor.shutdown();
 
                     if(lastCallGraphGenerated != null && !lastCallGraphGenerated.isCallGraphEmpty()){
                         logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
@@ -128,9 +129,13 @@ public class OPALPlugin extends Plugin {
                 } catch (NullPointerException e) {
                     setPluginError(e.getClass().getSimpleName());
                     logger.error("Null pointer. It might not have a Kafka producer due to test purposes. {}", e.getStackTrace());
-                } catch (TimeoutException e){
+//                } catch (TimeoutException e){
+//                    setPluginError(e.getClass().getSimpleName());
+//                    logger.info("Exceeded allowed time for generation of the call graph: {}", mavenCoordinate.getCoordinate());
+                } catch (FileNotFoundException e) {
                     setPluginError(e.getClass().getSimpleName());
-                    logger.info("Exceeded allowed time for generation of the call graph: {}", mavenCoordinate.getCoordinate());
+                    logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
+                    e.printStackTrace();
                 } catch (Exception e) {
                     setPluginError(e.getClass().getSimpleName());
                     logger.error("", e.getStackTrace());
