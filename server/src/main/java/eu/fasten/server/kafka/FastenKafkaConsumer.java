@@ -52,6 +52,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         this.cgsStatus = new KafkaProducer<>(this.setKafkaProducer(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG),
                 kc.getClass().getSimpleName() + "_CGS_status"));
         this.setCGSStatusConn(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG), kc.getClass().getCanonicalName());
+        super.setName(kc.getClass().getSimpleName() + "_consumer"); // Consumer's thread name
 
         this.mLatch = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
