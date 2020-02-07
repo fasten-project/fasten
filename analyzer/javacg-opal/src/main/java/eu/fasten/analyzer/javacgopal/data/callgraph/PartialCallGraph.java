@@ -111,17 +111,17 @@ public class PartialCallGraph {
      */
     public void setClassHierarchy(final Project artifactInOpalFormat) {
 
-        Map<ObjectType, List<org.opalj.br.Method>> allMethods = new HashMap<>();
+        final Map<ObjectType, List<org.opalj.br.Method>> allMethods = new HashMap<>();
         artifactInOpalFormat.allMethodsWithBody().foreach((JavaToScalaConverter.asScalaFunction1(
             (Object method) -> putMethod(allMethods, (org.opalj.br.Method) method)))
         );
 
-        Set<ObjectType> currentArtifactClasses = new HashSet<>(allMethods.keySet());
-        Set<ObjectType> libraryClasses = new HashSet<>(JavaConversions.mapAsJavaMap(artifactInOpalFormat.classHierarchy().supertypes()).keySet());
+        final Set<ObjectType> currentArtifactClasses = new HashSet<>(allMethods.keySet());
+        final Set<ObjectType> libraryClasses = new HashSet<>(JavaConversions.mapAsJavaMap(artifactInOpalFormat.classHierarchy().supertypes()).keySet());
         libraryClasses.removeAll(currentArtifactClasses);
 
         for (ObjectType currentClass : currentArtifactClasses) {
-            Type type = new Type();
+            final Type type = new Type();
             type.setSupers(artifactInOpalFormat.classHierarchy(), currentClass);
             type.getMethods().addAll(allMethods.get(currentClass));
             this.classHierarchy.put(currentClass, type);
@@ -145,20 +145,21 @@ public class PartialCallGraph {
      */
     public Boolean putMethod(final Map<ObjectType, List<org.opalj.br.Method>> methods, final org.opalj.br.Method method) {
 
-        var currentClass = method.declaringClassFile().thisType();
+        final var currentClass = method.declaringClassFile().thisType();
 
-        List<org.opalj.br.Method> currentClassMethods = methods.get(currentClass);
+        final List<org.opalj.br.Method> resultMethods = new ArrayList<>();
 
         try {
+            final var currentClassMethods = methods.get(currentClass);
             if (currentClassMethods == null) {
-                currentClassMethods = new ArrayList<>();
-                currentClassMethods.add(method);
+                resultMethods.add(method);
             } else {
                 if (!currentClassMethods.contains(method)) {
-                    currentClassMethods.add(method);
+                    resultMethods.addAll(currentClassMethods);
+                    resultMethods.add(method);
                 }
             }
-            methods.put(currentClass, currentClassMethods);
+            methods.put(currentClass, resultMethods);
             return true;
 
         } catch (Exception e) {
@@ -226,7 +227,7 @@ public class PartialCallGraph {
             Collection<Iterable<org.opalj.br.Method>> calleeMethodsCollection =
                 JavaConversions.asJavaCollection(calleeMethodsObject.valuesIterator().toList());
 
-            List<org.opalj.br.Method> calleeMethodsList = new ArrayList<>();
+            final List<org.opalj.br.Method> calleeMethodsList = new ArrayList<>();
             for (Iterable<org.opalj.br.Method> i : calleeMethodsCollection) {
                 for (org.opalj.br.Method j : JavaConversions.asJavaIterable(i)) {
                     calleeMethodsList.add(j);
@@ -278,18 +279,18 @@ public class PartialCallGraph {
      */
     public static Map<FastenURI, ExtendedRevisionCallGraph.Type> toURIHierarchy(final Map<ObjectType, Type> classHierarchy) {
 
-        Map<FastenURI, ExtendedRevisionCallGraph.Type> URIclassHierarchy = new HashMap<>();
+        final Map<FastenURI, ExtendedRevisionCallGraph.Type> URIclassHierarchy = new HashMap<>();
 
         for (ObjectType aClass : classHierarchy.keySet()) {
 
             final var type = classHierarchy.get(aClass);
 
-            LinkedList<FastenURI> superClassesURIs = new LinkedList<>();
-
+            final LinkedList<FastenURI> superClassesURIs;
             if(type.getSuperClasses() != null){
                 superClassesURIs = toURIClasses(type.getSuperClasses());
             }else {
                 logger.warn("There is no super type for {}", aClass);
+                superClassesURIs = new LinkedList<>();
             }
 
                 URIclassHierarchy.put(
@@ -367,10 +368,10 @@ public class PartialCallGraph {
         partialCallGraph.removeDuplicateResolvedCall();
 
         logger.info("Converting resolved calls to URIs ...");
-        AtomicInteger callNumber = new AtomicInteger();
+        final AtomicInteger callNumber = new AtomicInteger();
 
         partialCallGraph.resolvedCalls.forEach(resolvedCall -> {
-            var URICalls = resolvedCall.toURICalls();
+            final var URICalls = resolvedCall.toURICalls();
             if (URICalls.size() != 0) {
 
                 callNumber.addAndGet(1);
@@ -389,7 +390,7 @@ public class PartialCallGraph {
 
         logger.info("Converting unresolved calls to URIs ...");
         partialCallGraph.unresolvedCalls.stream().distinct().collect(Collectors.toList()).forEach(unresolvedCall -> {
-            FastenURI[] URICall = unresolvedCall.toURICall();
+            final FastenURI[] URICall = unresolvedCall.toURICall();
             if (URICall[0] != null && URICall[1] != null) {
 
                 graph.add(URICall);
@@ -405,8 +406,8 @@ public class PartialCallGraph {
      * @return true if tests are running, otherwise false.
      */
     public static boolean isJUnitTest() {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        List<StackTraceElement> list = Arrays.asList(stackTrace);
+        final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        final List<StackTraceElement> list = Arrays.asList(stackTrace);
         for (StackTraceElement element : list) {
             if (element.getClassName().startsWith("org.junit.")) {
                 return true;
@@ -422,9 +423,9 @@ public class PartialCallGraph {
      */
     private List<ResolvedCall> removeDuplicateResolvedCall() {
 
-        AtomicInteger numOfDups = new AtomicInteger();
-        AtomicInteger numOfAllArcs = new AtomicInteger();
-        AtomicInteger numOfUniqueArcs = new AtomicInteger();
+        final AtomicInteger numOfDups = new AtomicInteger();
+        final AtomicInteger numOfAllArcs = new AtomicInteger();
+        final AtomicInteger numOfUniqueArcs = new AtomicInteger();
 
         logger.info("Removing duplicated arcs from resolved Calls ...");
         this.resolvedCalls.forEach(currentCalls -> {
