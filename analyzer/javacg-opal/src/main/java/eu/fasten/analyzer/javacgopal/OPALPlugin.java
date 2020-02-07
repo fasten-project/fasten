@@ -25,10 +25,6 @@ import eu.fasten.core.plugins.KafkaProducer;
 
 import java.io.FileNotFoundException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -54,9 +50,7 @@ public class OPALPlugin extends Plugin {
         private static org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
         final String CONSUME_TOPIC = "maven.packages";
         final String PRODUCE_TOPIC = "opal_callgraphs";
-        private final long CONSUMER_TIME = 1; // 1 minute for generating a call graph
         private boolean processedRecord;
-        ExtendedRevisionCallGraph lastCallGraphGenerated = null;
         private String pluginError = "";
 
 
@@ -65,85 +59,89 @@ public class OPALPlugin extends Plugin {
             return new ArrayList<>(Collections.singletonList(CONSUME_TOPIC));
         }
 
+        @Override
+        public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
+            processedRecord = false;
+            consume(kafkaRecord, true);
+            processedRecord = true;
+        }
+
         /**
-         * Generates call graphs using OPAL for consumed maven coordinates in eu.fasten.core.data.RevisionCallGraph format,
-         * and produce them to the Producer that is provided for this Object.
+         * Generates call graphs using OPAL for consumed maven coordinates in
+         * eu.fasten.core.data.RevisionCallGraph format, and produce them to the Producer that is
+         * provided for this Object.
          *
          * @param kafkaRecord A record including maven coordinates in the JSON format.
-         *                e.g. {
-         *                "groupId": "com.g2forge.alexandria",
-         *                "artifactId": "alexandria",
-         *                "version": "0.0.9",
-         *                "date": "1574072773"
-         *                }
+         *                    e.g. {
+         *                    "groupId": "com.g2forge.alexandria",
+         *                    "artifactId": "alexandria",
+         *                    "version": "0.0.9",
+         *                    "date": "1574072773"
+         *                    }
+         * @param writeCGToKafka If true, the generated call graph will be written into Kafka
          */
-        @Override
-        public void consume(String topic, ConsumerRecord<String, String> kafkaRecord){
+        public ExtendedRevisionCallGraph consume(ConsumerRecord<String, String> kafkaRecord,
+                                                 boolean writeCGToKafka) {
 
+            MavenCoordinate mavenCoordinate = null;
+            ExtendedRevisionCallGraph cg = null;
             try {
-
-                processedRecord = false;
-
-                JSONObject kafkaConsumedJson = new JSONObject(kafkaRecord.value());
-                MavenCoordinate mavenCoordinate = new MavenCoordinate(kafkaConsumedJson.get("groupId").toString(),
+                var kafkaConsumedJson = new JSONObject(kafkaRecord.value());
+                mavenCoordinate = new MavenCoordinate(
+                    kafkaConsumedJson.get("groupId").toString(),
                     kafkaConsumedJson.get("artifactId").toString(),
                     kafkaConsumedJson.get("version").toString());
 
-                logger.info("Generating RevisionCallGraph for {} ...", mavenCoordinate.getCoordinate());
+                logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
 
-                try {
-                    lastCallGraphGenerated = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
-                        Long.parseLong(kafkaConsumedJson.get("date").toString()));
-                    //ExecutorService OPALExecutor = Executors.newSingleThreadExecutor();
-                    //OPALExecutor.submit(() -> {
-                        //try {
+                cg = generateCallgraph(mavenCoordinate, kafkaConsumedJson);
 
-//                        } catch (FileNotFoundException e) {
-//                            setPluginError(e.getClass().getSimpleName());
-//                            logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
-//                            e.printStackTrace();
-//                        }
-                    //}).get(CONSUMER_TIME, TimeUnit.MINUTES);
-                    //OPALExecutor.shutdown();
-
-                    if(lastCallGraphGenerated != null && !lastCallGraphGenerated.isCallGraphEmpty()){
-                        logger.info("RevisionCallGraph successfully generated for {}!", mavenCoordinate.getCoordinate());
-
-                        logger.info("Producing generated call graph for {} to Kafka ...", lastCallGraphGenerated.uri.toString());
-
-                        ProducerRecord<Object, String> record = new ProducerRecord<>(this.PRODUCE_TOPIC,
-                            lastCallGraphGenerated.uri.toString(), lastCallGraphGenerated.toJSON().toString());
-
-                        kafkaProducer.send(record, ((recordMetadata, e) -> {
-                            if (recordMetadata != null) {
-                                logger.debug("Sent: {} to {}", lastCallGraphGenerated.uri.toString(), this.PRODUCE_TOPIC);
-                            } else {
-                                e.printStackTrace();
-                            }
-                        }));
-                        processedRecord = true;
-                    }else {
-                        logger.error("The graph of {} was empty.", mavenCoordinate.getCoordinate());
-                    }
-
-                } catch (NullPointerException e) {
-                    setPluginError(e.getClass().getSimpleName());
-                    logger.error("Null pointer. It might not have a Kafka producer due to test purposes. {}", e.getStackTrace());
-//                } catch (TimeoutException e){
-//                    setPluginError(e.getClass().getSimpleName());
-//                    logger.info("Exceeded allowed time for generation of the call graph: {}", mavenCoordinate.getCoordinate());
-                } catch (FileNotFoundException e) {
-                    setPluginError(e.getClass().getSimpleName());
-                    logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
-                    e.printStackTrace();
-                } catch (Exception e) {
-                    setPluginError(e.getClass().getSimpleName());
-                    logger.error("", e.getStackTrace());
-                    e.printStackTrace();
+                if (cg == null || cg.isCallGraphEmpty()) {
+                    logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
+                    return cg;
                 }
-            } catch (JSONException e){
-                logger.error("Couldn't parse the record as JSON: {}\n{}", kafkaRecord.value(), e.getStackTrace());
+
+                logger.info("Call graph successfully generated for {}!",
+                    mavenCoordinate.getCoordinate());
+
+                if(writeCGToKafka) { sendToKafka(cg); }
+
+            }  catch (FileNotFoundException e) {
+                setPluginError(e.getClass().getSimpleName());
+                logger.error("Could find JAR for Maven coordinate: {}",
+                    mavenCoordinate.getCoordinate(), e);
+            } catch (JSONException e) {
+                logger.error("Could not parse input coordinates: {}\n{}", kafkaRecord.value(), e);
+            } catch (Exception e) {
+                setPluginError(e.getClass().getSimpleName());
+                logger.error("", e);
+            } finally {
+                return cg;
             }
+        }
+
+        public void sendToKafka(ExtendedRevisionCallGraph cg) {
+            logger.debug("Writing call graph for {} to Kafka", cg.uri.toString());
+
+            var record = new ProducerRecord<Object, String>(this.PRODUCE_TOPIC,
+                cg.uri.toString(),
+                cg.toJSON().toString()
+            );
+
+            kafkaProducer.send(record, ((recordMetadata, e) -> {
+                if (recordMetadata != null) {
+                    logger.debug("Sent: {} to {}", cg.uri.toString(), this.PRODUCE_TOPIC);
+                } else {
+                    logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
+                }
+            }));
+        }
+
+        public ExtendedRevisionCallGraph generateCallgraph(MavenCoordinate mavenCoordinate,
+                                                            JSONObject kafkaConsumedJson)
+            throws FileNotFoundException {
+            return ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
+                Long.parseLong(kafkaConsumedJson.get("date").toString()));
         }
 
         @Override
@@ -172,7 +170,7 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public boolean recordProcessSuccessful(){
+        public boolean recordProcessSuccessful() {
             return this.processedRecord;
         }
 
@@ -196,10 +194,7 @@ public class OPALPlugin extends Plugin {
 
         @Override
         public void freeResource() {
-            if(this.lastCallGraphGenerated != null){
-                this.lastCallGraphGenerated.clear(true);
-                this.lastCallGraphGenerated = null;
-            }
+
         }
     }
 }
