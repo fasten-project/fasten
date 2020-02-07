@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     private static Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
-
     private Map<FastenURI, Type> classHierarchy;
 
     public Map<FastenURI, Type> getClassHierarchy() {
@@ -171,16 +170,17 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy()));
     }
 
-    public static ExtendedRevisionCallGraph create(String forge, MavenCoordinate coordinate, long timestamp) throws FileNotFoundException {
+    public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate, final long timestamp) throws FileNotFoundException {
 
         logger.info("Generating call graph using Opal ...");
-        PartialCallGraph partialCallGraph = new PartialCallGraph(
+        final PartialCallGraph partialCallGraph = new PartialCallGraph(
             MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate()).orElseThrow(RuntimeException::new)
         );
         logger.info("Opal call graph has been generated.");
+
         logger.info("Converting edges to URIs ...");
 
-        var graph = partialCallGraph.toURIGraph();
+        final var graph = partialCallGraph.toURIGraph();
 
         logger.info("All edges of the graph have been converted to URIs.");
         logger.info("Cleaning the opal call graph from memory ...");
@@ -190,7 +190,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         logger.info("The Opal call graph has been removed from memory.");
         logger.info("Converting class hierarchy to URIs ...");
 
-        var classHierarcy = PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy());
+        final var classHierarcy = PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy());
 
         logger.info("All entities of the class hierarchy have been converted to URIs.");
         logger.info("Cleaning the opal call class hierarchy from memory ...");

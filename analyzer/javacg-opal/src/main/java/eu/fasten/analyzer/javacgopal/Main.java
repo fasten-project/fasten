@@ -28,6 +28,8 @@ import picocli.CommandLine;
 import java.io.FileNotFoundException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Makes javacg-opal module runnable from command line.
@@ -35,7 +37,7 @@ import java.text.NumberFormat;
 @CommandLine.Command(name = "JavaCGOpal")
 public class Main implements Runnable {
 
-    static class Dependent {
+    static class CoordinateComponents {
         @CommandLine.Option(names = {"-g", "--group"},
             paramLabel = "GROUP",
             description = "Maven group id",
@@ -56,11 +58,11 @@ public class Main implements Runnable {
     }
 
     @CommandLine.ArgGroup(exclusive = true)
-    Exclusive exclusive;
+    FullCoordinate fullCoordinate;
 
-    static class Exclusive {
+    static class FullCoordinate {
         @CommandLine.ArgGroup(exclusive = false)
-        Dependent mavencoords;
+        CoordinateComponents coordinateComponents;
 
         @CommandLine.Option(names = {"-c", "--coord"},
             paramLabel = "COORD",
@@ -69,29 +71,51 @@ public class Main implements Runnable {
         String mavenCoordStr;
     }
 
+    @CommandLine.ArgGroup(exclusive = true)
+    MergeGenerateDiff mgd;
+    static class MergeGenerateDiff{
+        @CommandLine.Option(names = {"-m", "--merge"},
+            paramLabel = "MERGE",
+            description = "Merge artifact with the passed dependencies")
+        boolean merge;
+    }
+
     @CommandLine.Option(names = {"-t", "--timestamp"},
         paramLabel = "TS",
         description = "Release TS",
         defaultValue = "0")
     String timestamp;
 
+
+    @CommandLine.Option(names = {"-d", "--dependencies"},
+        paramLabel = "DEPENDENCIES",
+        description = "One or more dependency coordinate to merge with the artifact")
+    String[] dependencies;
+
     private static Logger logger = LoggerFactory.getLogger(Main.class);
 
     public void run() {
         NumberFormat timeFormatter = new DecimalFormat("#0.000");
         MavenCoordinate mavenCoordinate = null;
+        List<MavenCoordinate> dependencies = new ArrayList<>();
 
-        if (this.exclusive.mavenCoordStr != null) {
-            mavenCoordinate = MavenCoordinate.fromString(this.exclusive.mavenCoordStr);
+        if (this.fullCoordinate.mavenCoordStr != null) {
+            mavenCoordinate = MavenCoordinate.fromString(this.fullCoordinate.mavenCoordStr);
         } else {
-            mavenCoordinate = new MavenCoordinate(this.exclusive.mavencoords.group,
-                this.exclusive.mavencoords.artifact,
-                this.exclusive.mavencoords.version);
+            mavenCoordinate = new MavenCoordinate(this.fullCoordinate.coordinateComponents.group,
+                this.fullCoordinate.coordinateComponents.artifact,
+                this.fullCoordinate.coordinateComponents.version);
+        }
+
+        if (this.dependencies != null) {
+            for (String currentCoordinate : this.dependencies) {
+                dependencies.add(MavenCoordinate.fromString(currentCoordinate));
+            }
         }
 
         ExtendedRevisionCallGraph revisionCallGraph = null;
         try {
-            logger.info("Generating call graph for the Maven coordinate: {}", this.exclusive.mavenCoordStr);
+            logger.info("Generating call graph for the Maven coordinate: {}", this.fullCoordinate.mavenCoordStr);
             long startTime = System.currentTimeMillis();
             revisionCallGraph = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(this.timestamp));
             logger.info("Generated the call graph in {} seconds.", timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
