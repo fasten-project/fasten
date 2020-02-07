@@ -20,7 +20,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class MethodTest {
 
-    static CallGraph ssttgraph, cigraph, lambdagraph, arraygraph;
+    private static CallGraph ssttgraph, cigraph, lambdagraph, arraygraph;
 
     @BeforeAll
     public static void setUp() throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {

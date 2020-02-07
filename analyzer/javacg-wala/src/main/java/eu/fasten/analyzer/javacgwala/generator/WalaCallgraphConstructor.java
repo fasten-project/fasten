@@ -59,10 +59,6 @@ import java.util.stream.StreamSupport;
 
 public final class WalaCallgraphConstructor {
 
-    //A filter that accepts WALA objects that "belong" to the application loader.
-    private static Predicate<CGNode> applicationLoaderFilter = node -> isApplication(node
-            .getMethod().getDeclaringClass());
-
     /**
      * Build new Wala Call Graph from maven coordinates.
      *
@@ -182,12 +178,25 @@ public final class WalaCallgraphConstructor {
     }
 
     /**
+     * Fetch Jar file.
+     *
+     * @param klass - class in the jar file
+     * @return - jar file
+     */
+    public static String fetchJarFile(IClass klass) {
+        ShrikeClass shrikeKlass = (ShrikeClass) klass;
+        JarFileEntry moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();
+        JarFile jarFile = moduleEntry.getJarFile();
+        return jarFile.getName();
+    }
+
+    /**
      * Get overriden or implemented methods.
      *
      * @param method - method to find overriden or implemented methods of
      * @return - optional overriden or implemented methods
      */
-    public static Optional<IMethod> getOverriden(IMethod method) {
+    private static Optional<IMethod> getOverriden(IMethod method) {
         IClass c = method.getDeclaringClass();
         IClass parent = c.getSuperclass();
         if (parent == null) {
@@ -209,7 +218,7 @@ public final class WalaCallgraphConstructor {
      * @param method - method to find implemented methods of
      * @return - optional implemented methods
      */
-    public static Optional<IMethod> getImplemented(IMethod method) {
+    private static Optional<IMethod> getImplemented(IMethod method) {
         return method.getDeclaringClass()
                 .getAllImplementedInterfaces() //As interfaces can extend other interfaces,
                 // we get all ancestors
@@ -229,19 +238,6 @@ public final class WalaCallgraphConstructor {
     }
 
     /**
-     * Fetch Jar file.
-     *
-     * @param klass - class in the jar file
-     * @return - jar file
-     */
-    public static String fetchJarFile(IClass klass) {
-        ShrikeClass shrikeKlass = (ShrikeClass) klass;
-        JarFileEntry moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();
-        JarFile jarFile = moduleEntry.getJarFile();
-        return jarFile.getName();
-    }
-
-    /**
      * Create entry points for call graph creation
      * (stuff taken from  woutrrr/lapp).
      *
@@ -256,6 +252,11 @@ public final class WalaCallgraphConstructor {
                 .map(m -> new DefaultEntrypoint(m, cha))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
+
+    //A filter that accepts WALA objects that "belong" to the application loader.
+    private static Predicate<CGNode> applicationLoaderFilter = node -> isApplication(node
+            .getMethod().getDeclaringClass());
+
 
     ///
     /// Helper functions

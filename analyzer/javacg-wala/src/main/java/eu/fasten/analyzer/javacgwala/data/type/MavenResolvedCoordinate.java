@@ -61,7 +61,7 @@ public final class MavenResolvedCoordinate extends MavenCoordinate implements Se
     }
 
     /**
-     * Create new {@link MavenResolvedCoordinate} give a {@link IdeaSingleEntryLibraryDependency}.
+     * Create new {@link MavenResolvedCoordinate} given a {@link IdeaSingleEntryLibraryDependency}.
      *
      * @param d - Idea Single Entry Library Dependency
      * @return - new Maven Resolved Coordinate
