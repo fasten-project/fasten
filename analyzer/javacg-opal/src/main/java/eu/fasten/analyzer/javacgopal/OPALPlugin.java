@@ -52,8 +52,7 @@ public class OPALPlugin extends Plugin {
         final String PRODUCE_TOPIC = "opal_callgraphs";
         private boolean processedRecord;
         private boolean writeCGToKafka = false;
-        private String pluginError = "";
-
+        private String pluginError;
 
         @Override
         public List<String> consumerTopics() {
@@ -62,6 +61,7 @@ public class OPALPlugin extends Plugin {
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
+            pluginError = "";
             processedRecord = false;
             consume(kafkaRecord);
             if(getPluginError().isEmpty()) { processedRecord = true; }
@@ -105,7 +105,7 @@ public class OPALPlugin extends Plugin {
 
                 if(writeCGToKafka) { sendToKafka(cg); }
 
-            }  catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 setPluginError(e.getClass().getSimpleName());
                 logger.error("Could find JAR for Maven coordinate: {}",
                     mavenCoordinate.getCoordinate(), e);
