@@ -38,11 +38,28 @@ public class ResolvedMethod extends Method {
         return toID(namespace, symbol, artifact);
     }
 
+    /**
+     * Convert {@link ResolvedMethod} to ID representation.
+     *
+     * @param namespace - namespace
+     * @param symbol    - symbol
+     * @param artifact  - artifact
+     * @return - method ID
+     */
     public static String toID(String namespace, Selector symbol, JarFile artifact) {
         return artifact == null ? "Unknown"
                 : artifact.getName() + "::" + namespace + "." + symbol.toString();
     }
 
+    /**
+     * Find a resolved method in the Resolved Dictionary or create a new one and add it to
+     * the dictionary.
+     *
+     * @param namespace - namespace
+     * @param symbol    - symbol
+     * @param artifact  - artifact
+     * @return - found or created method
+     */
     public static ResolvedMethod findOrCreate(String namespace, Selector symbol, JarFile artifact) {
         return DEFAULT_CONTEXT.makeResolved(namespace, symbol, artifact);
     }

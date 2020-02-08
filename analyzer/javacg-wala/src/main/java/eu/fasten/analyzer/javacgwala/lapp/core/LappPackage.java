@@ -40,6 +40,11 @@ public class LappPackage {
 
     public final Map<String, String> metadata = new HashMap<>();
 
+    /**
+     * Add a resolved method to the set of resolved methods.
+     *
+     * @param resolvedMethod - method
+     */
     public void addResolvedMethod(ResolvedMethod resolvedMethod) {
         methods.add(resolvedMethod);
     }
@@ -95,12 +100,12 @@ public class LappPackage {
     }
 
     private boolean addResolvedChaEdge(ResolvedMethod related, ResolvedMethod subject,
-                                      ChaEdge.ChaEdgeType type) {
+                                       ChaEdge.ChaEdgeType type) {
         return cha.add(new ChaEdge(related, subject, type));
     }
 
     private boolean addUnresolvedChaEdge(Method related, ResolvedMethod subject,
-                                        ChaEdge.ChaEdgeType type) {
+                                         ChaEdge.ChaEdgeType type) {
         return unresolvedCha.add(new ChaEdge(related, subject, type));
     }
 

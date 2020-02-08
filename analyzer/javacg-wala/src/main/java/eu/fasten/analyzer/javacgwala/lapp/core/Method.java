@@ -36,10 +36,14 @@ public abstract class Method {
     protected Method(String namespace, Selector symbol) {
         this.namespace = namespace;
         this.symbol = symbol;
-
         this.metadata = new HashMap<>();
     }
 
+    /**
+     * Convert {@link Method} to ID representation.
+     *
+     * @return - method ID
+     */
     public abstract String toID();
 
     /**
