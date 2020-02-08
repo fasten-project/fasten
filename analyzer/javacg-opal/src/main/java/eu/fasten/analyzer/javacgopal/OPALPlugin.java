@@ -51,7 +51,6 @@ public class OPALPlugin extends Plugin {
         final String CONSUME_TOPIC = "maven.packages";
         final String PRODUCE_TOPIC = "opal_callgraphs";
         private boolean processedRecord;
-        private boolean writeCGToKafka = false;
         private String pluginError;
 
         @Override
@@ -63,7 +62,7 @@ public class OPALPlugin extends Plugin {
         public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
             pluginError = "";
             processedRecord = false;
-            consume(kafkaRecord);
+            consume(kafkaRecord, true);
             if(getPluginError().isEmpty()) { processedRecord = true; }
         }
 
@@ -79,8 +78,10 @@ public class OPALPlugin extends Plugin {
          *                    "version": "0.0.9",
          *                    "date": "1574072773"
          *                    }
+         * @param writeCGToKafka If true, the generated call graph will be written into Kafka
          */
-        public ExtendedRevisionCallGraph consume(ConsumerRecord<String, String> kafkaRecord) {
+        public ExtendedRevisionCallGraph consume(ConsumerRecord<String, String> kafkaRecord,
+                                                 boolean writeCGToKafka) {
 
             MavenCoordinate mavenCoordinate = null;
             ExtendedRevisionCallGraph cg = null;
@@ -159,7 +160,6 @@ public class OPALPlugin extends Plugin {
         @Override
         public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
             this.kafkaProducer = producer;
-            this.writeCGToKafka = true;
         }
 
         public String name() {
