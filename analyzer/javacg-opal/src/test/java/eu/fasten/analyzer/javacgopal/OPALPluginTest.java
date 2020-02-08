@@ -29,6 +29,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
+import java.io.FileNotFoundException;
+
 import static org.junit.Assert.*;
 
 public class OPALPluginTest {
@@ -47,7 +49,7 @@ public class OPALPluginTest {
     }
 
     @Test
-    public void testConsume() throws JSONException {
+    public void testConsume() throws JSONException, FileNotFoundException {
 
         JSONObject coordinateJSON = new JSONObject("{\n" +
                 "    \"groupId\": \"org.slf4j\",\n" +
@@ -56,19 +58,18 @@ public class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()));
+        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()));
 
-        JSONAssert.assertEquals(ExtendedRevisionCallGraph.create("mvn",
-
+        var extendedRevisionCallGraph  = ExtendedRevisionCallGraph.create("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773,
                 new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))
-        ).toJSON(),
-        opalPlugin.lastCallGraphGenerated.toJSON(), false);
+        );
 
+        JSONAssert.assertEquals(extendedRevisionCallGraph.toJSON(), cg.toJSON(), false);
     }
 
     @Test
-    public void testShouldNotFaceClassReadingError() throws JSONException {
+    public void testShouldNotFaceClassReadingError() throws JSONException, FileNotFoundException {
 
         JSONObject coordinateJSON1 = new JSONObject("{\n" +
                 "    \"groupId\": \"com.zarbosoft\",\n" +
@@ -77,15 +78,14 @@ public class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()));
+        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()));
 
-        JSONAssert.assertEquals(ExtendedRevisionCallGraph.create("mvn",
-
+        var extendedRevisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
                 new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"), 1574072773,
                 new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("com.zarbosoft:coroutines-core:0.0.3").orElseThrow(RuntimeException::new))
-                ).toJSON(),
-                opalPlugin.lastCallGraphGenerated.toJSON(), false);
+        );
 
+        JSONAssert.assertEquals(extendedRevisionCallGraph.toJSON(), cg.toJSON(), false);
     }
 
     @Test
@@ -97,9 +97,24 @@ public class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "bar", emptyCGCoordinate.toString()));
+        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", emptyCGCoordinate.toString()));
 
-        assertTrue(opalPlugin.lastCallGraphGenerated.isCallGraphEmpty());
+        assertTrue(cg.isCallGraphEmpty());
+    }
+
+    @Test
+    public void testFileNotFoundException() {
+        JSONObject noJARFile = new JSONObject("{\n" +
+                "    \"groupId\": \"com.visionarts\",\n" +
+                "    \"artifactId\": \"power-jambda-pom\",\n" +
+                "    \"version\": \"0.9.10\",\n" +
+                "    \"date\":\"1521511260\"\n" +
+                "}");
+
+        opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()));
+
+        assertEquals(FileNotFoundException.class.getSimpleName(), opalPlugin.getPluginError());
+        assertFalse(opalPlugin.recordProcessSuccessful());
     }
 
     @Test

@@ -77,22 +77,27 @@ public class Type {
      */
     public void setSupers(ClassHierarchy classHierarchy, ObjectType currentClass) {
 
-        try {
-            this.superClasses = classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
-        } catch (NoSuchElementException e) {
-            logger.error("This type {} doesn't have allSuperclassTypesInInitializationOrder method.", currentClass, e);
-        } catch (OutOfMemoryError e) {
-            logger.error("This type {} made an out of memory Exception in calculation of its supper types!", currentClass, e);
-        } catch (Exception e) {
-            logger.error("This type made an Exception in calculation of its supper types!", e);
-        }
+        if (classHierarchy.supertypes().contains(currentClass)) {
 
-        if (superClasses != null) {
-            superClasses.reverse();
-        }
+            try {
+                this.superClasses = classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
+            } catch (NoSuchElementException e) {
+                logger.error("This type {} doesn't have allSuperclassTypesInInitializationOrder method.", currentClass, e);
+            } catch (OutOfMemoryError e) {
+                logger.error("This type {} made an out of memory Exception in calculation of its supper types!", currentClass, e);
+            } catch (Exception e) {
+                logger.error("This type made an Exception in calculation of its supper types!", e);
+            }
 
-        classHierarchy.allSuperinterfacetypes(currentClass, false).foreach(
-            JavaToScalaConverter.asScalaFunction1(anInterface -> this.superInterfaces.add((ObjectType) anInterface))
-        );
+            if (superClasses != null) {
+                superClasses.reverse();
+            }
+
+            classHierarchy.allSuperinterfacetypes(currentClass, false).foreach(
+                JavaToScalaConverter.asScalaFunction1(anInterface -> this.superInterfaces.add((ObjectType) anInterface))
+            );
+        }else {
+            logger.warn("Opal class hierarchy didn't include super types of {}", currentClass);
+        }
     }
 }

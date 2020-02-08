@@ -20,9 +20,16 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
+import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Makes javacg-opal module runnable from command line.
@@ -30,7 +37,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "JavaCGOpal")
 public class Main implements Runnable {
 
-    static class Dependent {
+    static class CoordinateComponents {
         @CommandLine.Option(names = {"-g", "--group"},
             paramLabel = "GROUP",
             description = "Maven group id",
@@ -51,17 +58,26 @@ public class Main implements Runnable {
     }
 
     @CommandLine.ArgGroup(exclusive = true)
-    Exclusive exclusive;
+    FullCoordinate fullCoordinate;
 
-    static class Exclusive {
+    static class FullCoordinate {
         @CommandLine.ArgGroup(exclusive = false)
-        Dependent mavencoords;
+        CoordinateComponents coordinateComponents;
 
         @CommandLine.Option(names = {"-c", "--coord"},
             paramLabel = "COORD",
             description = "Maven coordinates string",
             required = true)
         String mavenCoordStr;
+    }
+
+    @CommandLine.ArgGroup(exclusive = true)
+    MergeGenerateDiff mgd;
+    static class MergeGenerateDiff{
+        @CommandLine.Option(names = {"-m", "--merge"},
+            paramLabel = "MERGE",
+            description = "Merge artifact with the passed dependencies")
+        boolean merge;
     }
 
     @CommandLine.Option(names = {"-t", "--timestamp"},
@@ -71,25 +87,46 @@ public class Main implements Runnable {
     String timestamp;
 
 
+    @CommandLine.Option(names = {"-d", "--dependencies"},
+        paramLabel = "DEPENDENCIES",
+        description = "One or more dependency coordinate to merge with the artifact")
+    String[] dependencies;
+
+    private static Logger logger = LoggerFactory.getLogger(Main.class);
+
     public void run() {
+        NumberFormat timeFormatter = new DecimalFormat("#0.000");
         MavenCoordinate mavenCoordinate = null;
-        if (this.exclusive.mavenCoordStr != null) {
-            mavenCoordinate = MavenCoordinate.fromString(this.exclusive.mavenCoordStr);
+        List<MavenCoordinate> dependencies = new ArrayList<>();
+
+        if (this.fullCoordinate.mavenCoordStr != null) {
+            mavenCoordinate = MavenCoordinate.fromString(this.fullCoordinate.mavenCoordStr);
         } else {
-            mavenCoordinate = new MavenCoordinate(this.exclusive.mavencoords.group,
-                this.exclusive.mavencoords.artifact,
-                this.exclusive.mavencoords.version);
+            mavenCoordinate = new MavenCoordinate(this.fullCoordinate.coordinateComponents.group,
+                this.fullCoordinate.coordinateComponents.artifact,
+                this.fullCoordinate.coordinateComponents.version);
         }
 
-        var revisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
-            mavenCoordinate,
-            Long.parseLong(this.timestamp),
-            new PartialCallGraph(
-                MavenCoordinate.MavenResolver.downloadJar(mavenCoordinate.getCoordinate()).orElseThrow(RuntimeException::new)
-            ));
+        if (this.dependencies != null) {
+            for (String currentCoordinate : this.dependencies) {
+                dependencies.add(MavenCoordinate.fromString(currentCoordinate));
+            }
+        }
 
-        //TODO something with the calculated RevesionCallGraph.
-        System.out.println(revisionCallGraph.toJSON());
+        ExtendedRevisionCallGraph revisionCallGraph = null;
+        try {
+            logger.info("Generating call graph for the Maven coordinate: {}", this.fullCoordinate.mavenCoordStr);
+            long startTime = System.currentTimeMillis();
+            revisionCallGraph = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(this.timestamp));
+            logger.info("Generated the call graph in {} seconds.", timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
+            //TODO something with the calculated RevesionCallGraph.
+            System.out.println(revisionCallGraph.toJSON());
+
+        } catch (FileNotFoundException e) {
+            logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
+            e.printStackTrace();
+        }
+
     }
 
     /**

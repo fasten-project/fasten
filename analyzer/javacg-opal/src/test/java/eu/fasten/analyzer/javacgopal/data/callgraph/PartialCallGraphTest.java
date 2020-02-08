@@ -23,6 +23,7 @@ import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.*;
 
 import org.junit.Test;
@@ -90,7 +91,7 @@ public class PartialCallGraphTest {
     }
 
     @Test
-    public void testCreateRevisionCallGraph() {
+    public void testCreateRevisionCallGraph() throws FileNotFoundException {
 
         var revisionCallGraph = PartialCallGraph.createRevisionCallGraph("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
@@ -112,7 +113,7 @@ public class PartialCallGraphTest {
     }
 
     @Test
-    public void testToURICallGraph() {
+    public void testToURICallGraph() throws FileNotFoundException {
 
         assertArrayEquals(
                 new FastenJavaURI[]{

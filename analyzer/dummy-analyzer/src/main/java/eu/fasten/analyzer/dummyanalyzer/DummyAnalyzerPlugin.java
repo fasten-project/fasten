@@ -53,5 +53,20 @@ public class DummyAnalyzerPlugin extends Plugin {
         @Override
         public void stop() {
         }
+
+        @Override
+        public void setPluginError(String exceptionType) {
+
+        }
+
+        @Override
+        public String getPluginError() {
+            return "";
+        }
+
+        @Override
+        public void freeResource() {
+
+        }
     }
 }

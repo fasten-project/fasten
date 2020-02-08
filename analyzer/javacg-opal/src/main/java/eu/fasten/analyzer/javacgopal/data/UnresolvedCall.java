@@ -64,6 +64,7 @@ public class UnresolvedCall extends UnresolvedMethodCall {
             }
 
         }
+
         return fastenURI;
     }
 
@@ -76,4 +77,22 @@ public class UnresolvedCall extends UnresolvedMethodCall {
         return toURICall(this);
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        var unresolvedCall = (UnresolvedCall) obj;
+        if (this.calleeClass() == unresolvedCall.calleeClass()
+            && this.calleeName() == unresolvedCall.calleeName()
+            && this.calleeDescriptor() == unresolvedCall.calleeDescriptor()
+            && this.caller() == unresolvedCall.caller()) {
+            return true;
+
+        }else {
+        return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return this.calleeClass().hashCode() * this.calleeName().hashCode() * this.calleeDescriptor().hashCode() * this.caller().hashCode();
+    }
 }

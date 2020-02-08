@@ -15,6 +15,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -50,6 +52,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         this.cgsStatus = new KafkaProducer<>(this.setKafkaProducer(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG),
                 kc.getClass().getSimpleName() + "_CGS_status"));
         this.setCGSStatusConn(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG), kc.getClass().getCanonicalName());
+        super.setName(kc.getClass().getSimpleName() + "_consumer"); // Consumer's thread name
 
         this.mLatch = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -100,7 +103,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
     private void sendRecord(KafkaProducer producer, String topic, String msg){
 
-        ProducerRecord<Object, String> errorRecord = new ProducerRecord<>(topic, new Date() + "| " + msg);
+        ProducerRecord<Object, String> errorRecord = new ProducerRecord<>(topic, msg);
 
         producer.send(errorRecord, (recordMetadata, e) -> {
             if (recordMetadata != null) {
@@ -124,11 +127,13 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         }
     }
 
-    private String generateRecordStatus(String pluginName, ConsumerRecord record, String status){
+    private String generateRecordStatus(String pluginName, ConsumerRecord<String, String> record, String status){
 
-        return new JSONObject().put("plugin", pluginName).put("topic", record.topic())
-                .put("partition", String.valueOf(record.partition())).put("offset", String.valueOf(record.offset())).put("record",
-                        record.value()).put("status", status).toString();
+//        return new JSONObject().put("plugin", pluginName).put("topic", record.topic())
+//                .put("partition", String.valueOf(record.partition())).put("offset", String.valueOf(record.offset())).put("record",
+//                        record.value()).put("status", status).toString();
+
+        return new JSONObject(record.value()).put("plugin", pluginName).put("status", status).toString();
 
     }
 
@@ -246,6 +251,8 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
     @Override
     public void run() {
 
+        NumberFormat timeFormatter = new DecimalFormat("#0.000");
+
         logger.debug("Starting consumer: {}", kafkaConsumer.getClass());
 
         try {
@@ -254,7 +261,8 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                 connection.subscribe(kafkaConsumer.consumerTopics());
             }
 
-            sendRecord(this.errorLog, this.errorLogTopic,"Current Offset before running plug-in " + kafkaConsumer.getClass().getCanonicalName());
+            sendRecord(this.errorLog, this.errorLogTopic,new Date() + "| " + "Current Offset before running plug-in "
+                    + kafkaConsumer.getClass().getCanonicalName());
             getOffsetForPartitions(this.connection, kafkaConsumer.consumerTopics());
 
             //checkFailStatus();
@@ -267,31 +275,32 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
             do {
                 ConsumerRecords<String, String> records = connection.poll(Duration.ofMillis(100));
 
-                sendRecord(this.errorLog, this.errorLogTopic, "Received " + records.count() + " records");
+                sendRecord(this.errorLog, this.errorLogTopic, new Date() + "| " + "Received " + records.count() + " records");
 
                 for (String topic : topics) {
                     for (ConsumerRecord<String, String> r : records.records(topic)) {
-                        sendRecord(this.errorLog, this.errorLogTopic,"T: " + r.topic() + " P: " + r.partition() + " Of: " + r.offset() + " | Processing: "
-                                + r.key());
+                        sendRecord(this.errorLog, this.errorLogTopic,new Date() + "| " + "T: " + r.topic() + " P: "
+                                + r.partition() + " Of: " + r.offset() + " | Processing: " + r.key());
 
                         // Note that this is "at most once" strategy which values progress over completeness.
                         doCommitSync();
+                        long startTime = System.currentTimeMillis();
                         kafkaConsumer.consume(topic, r);
 
                         if(kafkaConsumer.recordProcessSuccessful()){
-                            sendRecord(this.cgsStatus, this.cgsStatusTopic,
-                                    generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.OK_STATUS));
+                            sendRecord(this.errorLog, this.errorLogTopic, new Date() + "| " + "Plug-in " + kafkaConsumer.getClass().getSimpleName() +
+                                    " processed successfully record [in " + timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d) + " sec.]: " + r.value());
                         } else {
-//                            sendRecord(this.errorLog, this.errorLogTopic,"T: " + r.topic() + " P: " + r.partition() + " Of: " + r.offset() +
-//                                    " | Processing of " + r.key() + " Failed.");
                             sendRecord(this.cgsStatus, this.cgsStatusTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(),
-                                    r, this.FAIL_STATUS));
+                                    r, this.kafkaConsumer.getPluginError()));
                         }
+                        kafkaConsumer.freeResource();
                     }
                 }
             } while (true);
         } catch (RuntimeException re) {
-            sendRecord(this.errorLog, kafkaConsumer.getClass().getSimpleName() + "_errors", "Exception for plug-in:" +
+            sendRecord(this.errorLog, kafkaConsumer.getClass().getSimpleName() + "_errors", new Date() +
+                    "| " + "Exception for plug-in:" +
                     kafkaConsumer.getClass().getCanonicalName() + "\n" + ExceptionUtils.getStackTrace(re));
 //        } catch (WakeupException e) {
 //            logger.info("Received shutdown signal!");

@@ -40,7 +40,6 @@ public class ResolvedCall {
         this.targets = targets;
     }
 
-
     public void clearTargets(){this.targets.clear();}
 
     public void setSource(org.opalj.br.Method source) {
@@ -67,16 +66,15 @@ public class ResolvedCall {
 
         var resolvedCallURIs = new ArrayList<FastenURI[]>();
 
-        var sourceURI = Method.toCanonicalSchemelessURI(
+        FastenURI sourceURI = Method.toCanonicalSchemelessURI(
             null,
             resolvedCall.getSource().declaringClassFile().thisType(),
             resolvedCall.getSource().name(),
             resolvedCall.getSource().descriptor());
 
         if ( sourceURI != null) {
-            for (org.opalj.br.Method target : resolvedCall.getTargets()) {
+            resolvedCall.getTargets().stream().forEach( target -> {
 
-                FastenURI[] fastenURI = new FastenURI[2];
                 var targetURI =  Method.toCanonicalSchemelessURI(
                     null,
                     target.declaringClassFile().thisType(),
@@ -84,13 +82,12 @@ public class ResolvedCall {
                     target.descriptor());
 
                 if ( targetURI != null ) {
-                    fastenURI[0] = sourceURI;
-                    fastenURI[1] = targetURI;
-                    resolvedCallURIs.add(fastenURI);
+                    resolvedCallURIs.add(new FastenURI[]{sourceURI,targetURI});
                 }
-
-            }
+            });
         }
+
+
         return resolvedCallURIs;
     }
 
