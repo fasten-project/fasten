@@ -217,4 +217,21 @@ public class MethodTest {
         assertEquals(actualTargetURI,
                 Method.toCanonicalSchemalessURI(fastenJavaUriTarget).toString());
     }
+
+    @Test
+    public void toID() {
+        var path = new File(Thread.currentThread().getContextClassLoader()
+                .getResource("SingleSourceToTarget.jar")
+                .getFile()).getAbsolutePath();
+
+        var wrapped = WalaUFIAdapter.wrap(new WalaCallGraph(ssttgraph, new ArrayList<>()));
+
+        var resolvedCall = wrapped.lappPackage.resolvedCalls.iterator().next();
+        var unresolvedCall = wrapped.lappPackage.unresolvedCalls.iterator().next();
+
+        assertEquals(path + "::name.space.SingleSourceToTarget.sourceMethod()V",
+                resolvedCall.source.toID());
+        assertEquals(path + "::name.space.SingleSourceToTarget.<init>()V",
+                unresolvedCall.source.toID());
+    }
 }

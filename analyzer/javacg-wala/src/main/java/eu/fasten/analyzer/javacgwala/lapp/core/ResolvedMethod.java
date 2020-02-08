@@ -29,7 +29,7 @@ public class ResolvedMethod extends Method {
 
     public final JarFile artifact;
 
-    ResolvedMethod(String namespace, Selector symbol, JarFile artifact) {
+    public ResolvedMethod(String namespace, Selector symbol, JarFile artifact) {
         super(namespace, symbol);
 
         this.artifact = artifact;

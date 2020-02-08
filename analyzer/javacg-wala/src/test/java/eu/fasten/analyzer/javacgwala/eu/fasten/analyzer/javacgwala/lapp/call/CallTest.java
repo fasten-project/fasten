@@ -1,44 +1,40 @@
 package eu.fasten.analyzer.javacgwala.lapp.call;
 
+import com.ibm.wala.types.Selector;
+import eu.fasten.analyzer.javacgwala.data.fastenjson.CanonicalJSON;
+import eu.fasten.analyzer.javacgwala.lapp.core.ResolvedMethod;
+import eu.fasten.analyzer.javacgwala.lapp.core.UnresolvedMethod;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
-import com.ibm.wala.ipa.cha.ClassHierarchyException;
-import eu.fasten.analyzer.javacgwala.data.callgraph.WalaCallGraph;
-import eu.fasten.analyzer.javacgwala.data.fastenjson.CanonicalJSON;
-import eu.fasten.analyzer.javacgwala.generator.WalaCallgraphConstructor;
-import eu.fasten.analyzer.javacgwala.generator.WalaUFIAdapter;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 
 class CallTest {
 
-    private static WalaUFIAdapter graph;
+    private static Call resolvedCall;
+    private static Call unresolvedCall;
+    private static ResolvedMethod source;
+    private static ResolvedMethod target;
+    private static UnresolvedMethod unresolvedMethod;
 
     @BeforeAll
-    public static void setUp() throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {
-        var path = new File(Thread.currentThread().getContextClassLoader()
-                .getResource("SingleSourceToTarget.jar")
-                .getFile()).getAbsolutePath();
-
-
-        graph = WalaUFIAdapter.wrap(new WalaCallGraph(WalaCallgraphConstructor
-                .buildCallGraph(path), new ArrayList<>()));
+    public static void setUp() {
+        source = new ResolvedMethod("name.space.SingleSourceToTarget", Selector.make("sourceMethod()V"), null);
+        target = new ResolvedMethod("name.space.SingleSourceToTarget", Selector.make("targetMethod()V"), null);
+        unresolvedMethod = new UnresolvedMethod("name.space.SingleSourceToTarget", Selector.make("<init>()V"));
+        resolvedCall = new Call(source, target, Call.CallType.STATIC);
+        unresolvedCall = new Call(source, unresolvedMethod, Call.CallType.STATIC);
     }
 
     @Test
     void toURICall() {
-        var resolvedCall = graph.lappPackage.resolvedCalls.iterator().next();
-        var source = CanonicalJSON.convertToFastenURI(resolvedCall.source);
-        var target = CanonicalJSON.convertToFastenURI(resolvedCall.target);
+        var sourceURI = CanonicalJSON.convertToFastenURI(source);
+        var targetURI = CanonicalJSON.convertToFastenURI(target);
 
-        var fastenUri = resolvedCall.toURICall(source, target);
+        var fastenUri = resolvedCall.toURICall(sourceURI, targetURI);
 
         assertEquals("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid",
                 fastenUri[0].toString());
@@ -48,16 +44,11 @@ class CallTest {
 
     @Test
     void getLabel() {
-        var resolvedCall = graph.lappPackage.resolvedCalls.iterator().next();
-
         assertEquals("invoke_static" ,resolvedCall.getLabel());
     }
 
     @Test
     void isResolved() {
-        var resolvedCall = graph.lappPackage.resolvedCalls.iterator().next();
-        var unresolvedCall = graph.lappPackage.unresolvedCalls.iterator().next();
-
         assertTrue(resolvedCall.isResolved());
         assertFalse(unresolvedCall.isResolved());
     }

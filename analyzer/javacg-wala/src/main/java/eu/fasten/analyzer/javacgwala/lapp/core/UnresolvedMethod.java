@@ -25,7 +25,7 @@ public class UnresolvedMethod extends Method {
 
     public static final AnalysisContext DEFAULT_CONTEXT = new DefaultAnalysisContext();
 
-    UnresolvedMethod(String namespace, Selector symbol) {
+    public UnresolvedMethod(String namespace, Selector symbol) {
         super(namespace, symbol);
     }
 
