@@ -26,17 +26,6 @@ class WalaCallgraphConstructorTest {
     }
 
     @Test
-    void buildCallGraph() {
-
-        // 12 nodes:
-        // fakeRootMethod, fakeWorldClinit
-        // Object <clinit>, <init>, registerNatives
-        // SingleSourceToTarget <init>, sourceMethod, targetMethod, main
-        // String <clinit>, <init>, <init>
-        assertEquals(12, graph.getNumberOfNodes());
-    }
-
-    @Test
     void resolveCalls() {
         var calls = WalaCallgraphConstructor.resolveCalls(graph);
         assertEquals(2, calls.size());
@@ -44,12 +33,5 @@ class WalaCallgraphConstructorTest {
                 calls.get(0).source.toString());
         assertEquals("< Application, Lname/space/SingleSourceToTarget, sourceMethod()V >",
                 calls.get(1).source.toString());
-    }
-
-    @Test
-    void fetchJarFile() {
-        // Fetch jar file of the root class -> rt.jar
-        assertTrue(WalaCallgraphConstructor
-                .fetchJarFile(graph.getClassHierarchy().getRootClass()).endsWith("rt.jar"));
     }
 }
