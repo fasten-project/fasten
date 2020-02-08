@@ -32,9 +32,9 @@ public class MavenCoordinate implements Serializable, Namespace {
     /**
      * Construct {@link MavenCoordinate} from groupID, artifactID, and version.
      *
-     * @param groupId    - groupID
-     * @param artifactId - artifactID
-     * @param version    - version
+     * @param groupId    GroupID
+     * @param artifactId ArtifactID
+     * @param version    Version
      */
     public MavenCoordinate(String groupId, String artifactId, String version) {
         this.groupId = groupId;
@@ -46,8 +46,8 @@ public class MavenCoordinate implements Serializable, Namespace {
     /**
      * Build {@link MavenCoordinate} given string representing an artifact in a canonical form.
      *
-     * @param identifier - identifier
-     * @return - new Maven Coordinate
+     * @param identifier Identifier
+     * @return New Maven Coordinate
      */
     public static MavenCoordinate of(String identifier) {
         String[] segments = identifier.split(":");
@@ -59,7 +59,7 @@ public class MavenCoordinate implements Serializable, Namespace {
     /**
      * Get a string representation of this Maven Coordinate.
      *
-     * @return - artifact representation in canonical form
+     * @return Artifact representation in canonical form
      */
     public String getCanonicalForm() {
         return String.join(this.getNamespaceDelim(),

@@ -35,10 +35,10 @@ public final class MavenResolvedCoordinate extends MavenCoordinate implements Se
      * Construct maven resolve coordinate based on groupID, artifactID, version and
      * a path the jar file.
      *
-     * @param groupId    - group ID
-     * @param artifactId - artifact ID
-     * @param version    - version
-     * @param jarPath    - path to jar file
+     * @param groupId    Group ID
+     * @param artifactId Artifact ID
+     * @param version    Version
+     * @param jarPath    Path to jar file
      */
     public MavenResolvedCoordinate(String groupId, String artifactId,
                                    String version, Path jarPath) {
@@ -49,8 +49,8 @@ public final class MavenResolvedCoordinate extends MavenCoordinate implements Se
     /**
      * Create new {@link MavenResolvedCoordinate} given a {@link MavenResolvedArtifact}.
      *
-     * @param artifact - maven resolved artifact
-     * @return - new Maven Resolved Coordinate
+     * @param artifact Maven resolved artifact
+     * @return New Maven Resolved Coordinate
      */
     public static MavenResolvedCoordinate of(MavenResolvedArtifact artifact) {
         return new MavenResolvedCoordinate(
@@ -63,8 +63,8 @@ public final class MavenResolvedCoordinate extends MavenCoordinate implements Se
     /**
      * Create new {@link MavenResolvedCoordinate} given a {@link IdeaSingleEntryLibraryDependency}.
      *
-     * @param d - Idea Single Entry Library Dependency
-     * @return - new Maven Resolved Coordinate
+     * @param d Idea Single Entry Library Dependency
+     * @return New Maven Resolved Coordinate
      */
     public static MavenResolvedCoordinate of(IdeaSingleEntryLibraryDependency d) {
         GradleModuleVersion mod = d.getGradleModuleVersion();

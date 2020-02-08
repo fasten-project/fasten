@@ -37,9 +37,9 @@ public class CanonicalJSON {
     /**
      * Convert a Wala call graph to FASTEN compatible format.
      *
-     * @param wrappedCG - adapted wala call graph
-     * @param date      - date
-     * @return - FASTEN call graph
+     * @param wrappedCG Adapted wala call graph
+     * @param date      Date
+     * @return FASTEN dall graph
      */
     public static RevisionCallGraph toJsonCallgraph(WalaUFIAdapter wrappedCG, long date) {
         List<MavenResolvedCoordinate> dependencies = wrappedCG.callGraph.analyzedClasspath;
@@ -63,8 +63,8 @@ public class CanonicalJSON {
     /**
      * Convert Wala method {@link Method} to FASTEN compatible {@link FastenJavaURI}.
      *
-     * @param method - wala method
-     * @return - canonicalized FastenJavaURI
+     * @param method Wala method
+     * @return Canonicalized FastenJavaURI
      */
     public static FastenJavaURI convertToFastenURI(Method method) {
         FastenJavaURI uri = FastenJavaURI.create(getMethodInfo(method));
@@ -79,8 +79,8 @@ public class CanonicalJSON {
     /**
      * Converts MavenResolvedCoordinate to a list of FASTEN compatible dependencies.
      *
-     * @param coord - MavenResolvedCoordinate to convert
-     * @return - List of FASTEN compatible dependencies
+     * @param coord MavenResolvedCoordinate to convert
+     * @return List of FASTEN compatible dependencies
      */
     private static List<RevisionCallGraph.Dependency> toFastenDep(MavenResolvedCoordinate coord) {
         //var constraints = coord.   Constraint(final String lowerBound, final String upperBound)
@@ -88,7 +88,7 @@ public class CanonicalJSON {
         result.add(new RevisionCallGraph.Dependency("mvn",
                 coord.groupId + ":" + coord.artifactId,
                 new ArrayList<>()
-        //Arrays.asList(new RevisionCallGraph.Constraint[1])
+                //Arrays.asList(new RevisionCallGraph.Constraint[1])
         ));
         return result;
     }
@@ -96,7 +96,7 @@ public class CanonicalJSON {
     /**
      * Converts all nodes {@link Call} of a Wala call graph to URIs.
      *
-     * @return - A graph of all nodes in URI format represented in a List of {@link FastenURI}
+     * @return A graph of all nodes in URI format represented in a List of {@link FastenURI}
      */
     private static ArrayList<FastenURI[]> toURIGraph(LappPackage lappPackage) {
 
@@ -116,8 +116,8 @@ public class CanonicalJSON {
     /**
      * Add call to a call graph.
      *
-     * @param graph - call graph to add a call to
-     * @param call  - call to add
+     * @param graph Call graph to add a call to
+     * @param call  Call to add
      */
     private static void addCall(ArrayList<FastenURI[]> graph, Call call) {
         var sourceJavaURI = convertToFastenURI(call.source);
@@ -134,8 +134,8 @@ public class CanonicalJSON {
      * Creates a URI representation for method's namespace, typeName, functionName, arguments list,
      * and return type.
      *
-     * @param method - method to extract URI from
-     * @return - URI representation of a method
+     * @param method Method to extract URI from
+     * @return URI representation of a method
      */
     private static String getMethodInfo(Method method) {
         String namespace = method.namespace.substring(0, method.namespace.lastIndexOf("."));
@@ -157,8 +157,8 @@ public class CanonicalJSON {
     /**
      * Getter for the type of a method.
      *
-     * @param type - TypeName to extract name from
-     * @return - method type
+     * @param type TypeName to extract name from
+     * @return Method type
      */
     private static String getType(TypeName type) {
         if (type == null) {
@@ -181,8 +181,8 @@ public class CanonicalJSON {
     /**
      * Get return type of a method.
      *
-     * @param method - method
-     * @return - return type
+     * @param method Method
+     * @return Return type
      */
     private static String getReturnType(Method method) {
         var type = getType(method.symbol.getDescriptor().getReturnType());
@@ -197,9 +197,9 @@ public class CanonicalJSON {
     /**
      * Get name of the method. Resolve < init > and < clinit > cases.
      *
-     * @param className  - name of the class containing method
-     * @param methodName - name of the method
-     * @return - method name
+     * @param className  Name of the class containing method
+     * @param methodName Name of the method
+     * @return Method name
      */
     private static String getMethodName(String className, String methodName) {
 
@@ -221,8 +221,8 @@ public class CanonicalJSON {
     /**
      * Perform encoding 3 times.
      *
-     * @param nonEncoded - String to encode
-     * @return - encoded string
+     * @param nonEncoded String to encode
+     * @return Encoded string
      */
     private static String threeTimesPct(String nonEncoded) {
         return FastenJavaURI.pctEncodeArg(FastenJavaURI

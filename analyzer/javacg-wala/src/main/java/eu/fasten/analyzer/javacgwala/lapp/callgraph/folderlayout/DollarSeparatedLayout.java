@@ -31,7 +31,7 @@ public class DollarSeparatedLayout implements ArtifactFolderLayout {
      * Build ArtifactRecord directly from jar file.
      *
      * @param jarFile Jar file
-     * @return parsed ArtifactRecord
+     * @return Parsed ArtifactRecord
      */
     @Override
     public ArtifactRecord artifactRecordFromJarFile(JarFile jarFile) {
@@ -44,8 +44,8 @@ public class DollarSeparatedLayout implements ArtifactFolderLayout {
     /**
      * Build Artifact record from path.
      *
-     * @param path - path to jar file
-     * @return - parsed ArtifactRecord
+     * @param path Path to jar file
+     * @return Parsed ArtifactRecord
      */
     public ArtifactRecord artifactRecordFromPath(String path) {
 

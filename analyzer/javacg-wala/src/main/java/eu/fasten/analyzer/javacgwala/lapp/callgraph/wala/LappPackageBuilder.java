@@ -58,8 +58,8 @@ public class LappPackageBuilder {
      * Constructs a Lapp Package builder from an artifact resolver
      * and a folder layout of an artifact.
      *
-     * @param artifactResolver - Artifact resolver
-     * @param folderLayout     - Folder Layout extracted from a jar file
+     * @param artifactResolver Artifact resolver
+     * @param folderLayout     Folder Layout extracted from a jar file
      */
     public LappPackageBuilder(ClassToArtifactResolver artifactResolver,
                               ArtifactFolderLayout folderLayout) {
@@ -72,8 +72,8 @@ public class LappPackageBuilder {
     /**
      * Add packages to the set of Artifacts in a lapp package if a package is a Jar module.
      *
-     * @param modules - list of modules
-     * @return - Builder
+     * @param modules List of modules
+     * @return Builder
      */
     public LappPackageBuilder setPackages(List<Module> modules) {
         for (Module m : modules) {
@@ -91,8 +91,8 @@ public class LappPackageBuilder {
     /**
      * Add class hierarchy to a lapp package.
      *
-     * @param cha - class hierarchy to add
-     * @return - Builder
+     * @param cha Class hierarchy to add
+     * @return Builder
      */
     public LappPackageBuilder insertCha(IClassHierarchy cha) {
         ClassHierarchyInserter chaInserter = new ClassHierarchyInserter(cha, this);
@@ -103,8 +103,8 @@ public class LappPackageBuilder {
     /**
      * Add a call graph to a lapp package.
      *
-     * @param callGraph - call graph to add
-     * @return - Builder
+     * @param callGraph Call graph to add
+     * @return Builder
      */
     public LappPackageBuilder insertCallGraph(CallGraph callGraph) {
         if (callGraph == null) {
@@ -121,9 +121,9 @@ public class LappPackageBuilder {
     /**
      * Add method and add metadata to it to lapp package.
      *
-     * @param nodeReference - method reference
-     * @param type          - metadata
-     * @return - Method with metadata added
+     * @param nodeReference Method reference
+     * @param type          Metadata
+     * @return Method with metadata added
      */
     public Method addMethod(MethodReference nodeReference, MethodType type) {
         Method method = addMethod(nodeReference);
@@ -135,8 +135,8 @@ public class LappPackageBuilder {
     /**
      * Add method to the lapp package.
      *
-     * @param reference - method reference
-     * @return - added Method
+     * @param reference Method reference
+     * @return Added Method
      */
     public Method addMethod(MethodReference reference) {
 
@@ -168,10 +168,10 @@ public class LappPackageBuilder {
     /**
      * Add call to a lapp package.
      *
-     * @param source - caller
-     * @param target - callee
-     * @param type   - call type
-     * @return - true if a call was added
+     * @param source Caller
+     * @param target Callee
+     * @param type   Call type
+     * @return True if a call was added
      */
     public boolean addCall(Method source, Method target, Call.CallType type) {
 
@@ -182,10 +182,10 @@ public class LappPackageBuilder {
     /**
      * Add cha edge to a lapp package.
      *
-     * @param related - related method
-     * @param subject - subject
-     * @param type    - type of cha edge
-     * @return - true if added successfully
+     * @param related Related method
+     * @param subject Subject
+     * @param type    Type of cha edge
+     * @return True if added successfully
      */
     public boolean addChaEdge(Method related, ResolvedMethod subject, ChaEdge.ChaEdgeType type) {
 
@@ -196,7 +196,7 @@ public class LappPackageBuilder {
     /**
      * Build a lapp package.
      *
-     * @return - a new {@link LappPackage}
+     * @return A new {@link LappPackage}
      */
     public LappPackage build() {
         return this.lappPackage;

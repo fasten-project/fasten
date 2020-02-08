@@ -54,8 +54,8 @@ public class ClassToArtifactResolver implements ClassArtifactResolver {
     /**
      * Get a jar file containing a given method.
      *
-     * @param n - method reference
-     * @return - jar file
+     * @param n Method reference
+     * @return Jar file
      */
     public JarFile findJarFileUsingMethod(MethodReference n) {
         IClass klass = cha.lookupClass(n.getDeclaringClass());

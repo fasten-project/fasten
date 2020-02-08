@@ -35,11 +35,11 @@ public class Artifact {
     /**
      * Construct an artifact.
      *
-     * @param artifactNO - artifact number
-     * @param firstName  - group ID
-     * @param lastName   - artifact ID
-     * @param version    - version
-     * @param date       - date
+     * @param artifactNO Artifact number
+     * @param firstName  Group ID
+     * @param lastName   Artifact ID
+     * @param version    Version
+     * @param date       Date
      */
     public Artifact(long artifactNO, String firstName, String lastName,
                     String version, String date) {
@@ -53,7 +53,7 @@ public class Artifact {
     /**
      * Parse a csv-format-string representation of an artifact.
      *
-     * @param csvStr - string representing an artifact
+     * @param csvStr String representing an artifact
      */
     public void parseString(String csvStr) {
         StringTokenizer st = new StringTokenizer(csvStr, ",");

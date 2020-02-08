@@ -43,9 +43,9 @@ public class CallGraphInserter {
     /**
      * Constructs a call graph inserter for a specific lapp package builder.
      *
-     * @param cg                 - raw call graph
-     * @param cha                - class hierarchy
-     * @param lappPackageBuilder - lapp package builder to insert call graph into
+     * @param cg                 Raw call graph
+     * @param cha                Class hierarchy
+     * @param lappPackageBuilder Lapp package builder to insert call graph into
      */
     public CallGraphInserter(CallGraph cg, IClassHierarchy cha,
                              LappPackageBuilder lappPackageBuilder) {

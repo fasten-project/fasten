@@ -54,9 +54,9 @@ public class Call extends Edge {
      * Convert a call to FastenURI array in which 0th element represents caller URI
      * and 1st represents callee URI.
      *
-     * @param source - caller
-     * @param target - callee
-     * @return - FastenURI array
+     * @param source Caller
+     * @param target Callee
+     * @return FastenURI array
      */
     public FastenURI[] toURICall(FastenJavaURI source, FastenJavaURI target) {
 

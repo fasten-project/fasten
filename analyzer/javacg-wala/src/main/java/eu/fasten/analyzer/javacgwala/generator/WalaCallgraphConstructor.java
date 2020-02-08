@@ -62,8 +62,8 @@ public final class WalaCallgraphConstructor {
     /**
      * Build new Wala Call Graph from maven coordinates.
      *
-     * @param coordinates - maven coordinates list
-     * @return - wala call graph
+     * @param coordinates Maven coordinates list
+     * @return Wala call graph
      */
     public static WalaCallGraph build(List<MavenResolvedCoordinate> coordinates) {
         try {
@@ -79,11 +79,11 @@ public final class WalaCallgraphConstructor {
     /**
      * Create a call graph instance given a class path.
      *
-     * @param classpath - path to class or jar file
-     * @return - Call Graph
-     * @throws IOException                     - file reading exception
-     * @throws ClassHierarchyException         - exception in making a class hierarchy
-     * @throws CallGraphBuilderCancelException - exception of call graph creation process
+     * @param classpath Path to class or jar file
+     * @return Call Graph
+     * @throws IOException                     File reading exception
+     * @throws ClassHierarchyException         Exception in making a class hierarchy
+     * @throws CallGraphBuilderCancelException Exception of call graph creation process
      */
     public static CallGraph buildCallGraph(String classpath)
             throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
@@ -119,8 +119,8 @@ public final class WalaCallgraphConstructor {
     /**
      * Resolve calls of a given call graph.
      *
-     * @param cg - raw call graph
-     * @return - list of resolved calls
+     * @param cg Raw call graph
+     * @return List of resolved calls
      */
     public static List<ResolvedCall> resolveCalls(CallGraph cg) {
         return StreamSupport
@@ -148,8 +148,8 @@ public final class WalaCallgraphConstructor {
     /**
      * Get all methods from the class hierarchy.
      *
-     * @param cha - class hierarchy to extract methods from
-     * @return - list of method hierarchies
+     * @param cha Class hierarchy to extract methods from
+     * @return List of method hierarchies
      */
     public static List<MethodHierarchy> getAllMethods(ClassHierarchy cha) {
         Iterable<IClass> classes = () -> cha.getLoader(ClassLoaderReference.Application)
@@ -180,8 +180,8 @@ public final class WalaCallgraphConstructor {
     /**
      * Fetch Jar file.
      *
-     * @param klass - class in the jar file
-     * @return - jar file
+     * @param klass Class in the jar file
+     * @return Jar file
      */
     public static String fetchJarFile(IClass klass) {
         ShrikeClass shrikeKlass = (ShrikeClass) klass;
@@ -193,8 +193,8 @@ public final class WalaCallgraphConstructor {
     /**
      * Get overriden or implemented methods.
      *
-     * @param method - method to find overriden or implemented methods of
-     * @return - optional overriden or implemented methods
+     * @param method Method to find overriden or implemented methods of
+     * @return Optional overriden or implemented methods
      */
     private static Optional<IMethod> getOverriden(IMethod method) {
         IClass c = method.getDeclaringClass();
@@ -215,8 +215,8 @@ public final class WalaCallgraphConstructor {
     /**
      * Get implemented methods.
      *
-     * @param method - method to find implemented methods of
-     * @return - optional implemented methods
+     * @param method Method to find implemented methods of
+     * @return Optional implemented methods
      */
     private static Optional<IMethod> getImplemented(IMethod method) {
         return method.getDeclaringClass()
@@ -241,8 +241,8 @@ public final class WalaCallgraphConstructor {
      * Create entry points for call graph creation
      * (stuff taken from  woutrrr/lapp).
      *
-     * @param cha - class hierarchy
-     * @return - list of entry points
+     * @param cha Class hierarchy
+     * @return List of entry points
      */
     private static ArrayList<Entrypoint> getEntrypoints(ClassHierarchy cha) {
         return StreamSupport.stream(cha.spliterator(), false)

@@ -41,10 +41,10 @@ public final class UFI implements Serializable {
     /**
      * Construct UFI.
      *
-     * @param pathType   - path type
-     * @param methodName - name of method
-     * @param parameters - optional list of parameters
-     * @param returnType - return type
+     * @param pathType   Path type
+     * @param methodName Name of method
+     * @param parameters Optional list of parameters
+     * @param returnType Return type
      */
     public UFI(UniversalType pathType,
                String methodName,
@@ -57,10 +57,10 @@ public final class UFI implements Serializable {
     }
 
     /**
-     * Build a string???.
+     * Build a string.
      *
-     * @param uty - type???
-     * @return - buildup???
+     * @param uty Type
+     * @return Buildup
      */
     public static String stringBuilder(UniversalType uty) {
 

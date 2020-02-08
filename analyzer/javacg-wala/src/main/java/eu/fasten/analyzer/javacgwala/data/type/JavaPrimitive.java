@@ -29,8 +29,8 @@ public enum JavaPrimitive implements Namespace {
     /**
      * Return java primitive type based on {@link TypeReference}.
      *
-     * @param tyref - type reference
-     * @return - java primitive
+     * @param tyref Type reference
+     * @return Java primitive
      */
     public static JavaPrimitive of(TypeReference tyref) {
         String s = tyref.getName().toString();

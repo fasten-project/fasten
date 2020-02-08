@@ -42,15 +42,15 @@ public abstract class Method {
     /**
      * Convert {@link Method} to ID representation.
      *
-     * @return - method ID
+     * @return Method ID
      */
     public abstract String toID();
 
     /**
      * Convert {@link FastenJavaURI} to {@link FastenURI}.
      *
-     * @param javaURI - FastenJavaURI to convert
-     * @return - {@link FastenURI}
+     * @param javaURI FastenJavaURI to convert
+     * @return {@link FastenURI}
      */
     public static FastenURI toCanonicalSchemalessURI(FastenJavaURI javaURI) {
 

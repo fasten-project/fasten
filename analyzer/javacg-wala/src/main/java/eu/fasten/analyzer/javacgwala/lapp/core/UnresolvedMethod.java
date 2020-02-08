@@ -36,9 +36,9 @@ public class UnresolvedMethod extends Method {
     /**
      * Convert {@link UnresolvedMethod} to ID representation.
      *
-     * @param namespace - namespace
-     * @param symbol    - symbol
-     * @return - method ID
+     * @param namespace Namespace
+     * @param symbol    Symbol
+     * @return Method ID
      */
     public static String toID(String namespace, Selector symbol) {
         return "__::" + namespace + "." + symbol.toString();
@@ -48,9 +48,9 @@ public class UnresolvedMethod extends Method {
      * Find a unresolved method in the Unresolved Dictionary or create a new one and add it to
      * the dictionary.
      *
-     * @param namespace - namespace
-     * @param symbol    - symbol
-     * @return - found or created method
+     * @param namespace Namespace
+     * @param symbol    Symbol
+     * @return Found or created method
      */
     public static synchronized UnresolvedMethod findOrCreate(String namespace, Selector symbol) {
         return DEFAULT_CONTEXT.makeUnresolved(namespace, symbol);

@@ -41,10 +41,10 @@ public class ResolvedMethod extends Method {
     /**
      * Convert {@link ResolvedMethod} to ID representation.
      *
-     * @param namespace - namespace
-     * @param symbol    - symbol
-     * @param artifact  - artifact
-     * @return - method ID
+     * @param namespace Namespace
+     * @param symbol    Symbol
+     * @param artifact  Artifact
+     * @return Method ID
      */
     public static String toID(String namespace, Selector symbol, JarFile artifact) {
         return artifact == null ? "Unknown"
@@ -55,10 +55,10 @@ public class ResolvedMethod extends Method {
      * Find a resolved method in the Resolved Dictionary or create a new one and add it to
      * the dictionary.
      *
-     * @param namespace - namespace
-     * @param symbol    - symbol
-     * @param artifact  - artifact
-     * @return - found or created method
+     * @param namespace Namespace
+     * @param symbol    Symbol
+     * @param artifact  Artifact
+     * @return Found or created method
      */
     public static ResolvedMethod findOrCreate(String namespace, Selector symbol, JarFile artifact) {
         return DEFAULT_CONTEXT.makeResolved(namespace, symbol, artifact);

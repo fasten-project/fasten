@@ -43,7 +43,7 @@ public class LappPackage {
     /**
      * Add a resolved method to the set of resolved methods.
      *
-     * @param resolvedMethod - method
+     * @param resolvedMethod Method
      */
     public void addResolvedMethod(ResolvedMethod resolvedMethod) {
         methods.add(resolvedMethod);
@@ -53,10 +53,10 @@ public class LappPackage {
      * Add a new call to the set of Resolved calls in case both source and target of are resolved,
      * or to the set of Unresolved calls if at least one of the parameters is not resolved.
      *
-     * @param source - Caller
-     * @param target - Callee
-     * @param type   - Call type
-     * @return - true if call was added successfully
+     * @param source Caller
+     * @param target Callee
+     * @param type   Call type
+     * @return True if call was added successfully
      */
     public boolean addCall(Method source, Method target, Call.CallType type) {
 
@@ -85,10 +85,10 @@ public class LappPackage {
      * Add a new CHA Edge to the set of Resolved Cha Edges if {@param related} is a resolved method,
      * or to the set of Unresolved Cha Edges otherwise.
      *
-     * @param related - related method
-     * @param subject - subject
-     * @param type    - type of cha edge
-     * @return - true if added successfully
+     * @param related Related method
+     * @param subject Subject
+     * @param type    Type of cha edge
+     * @return True if added successfully
      */
     public boolean addChaEdge(Method related, ResolvedMethod subject, ChaEdge.ChaEdgeType type) {
         if (related instanceof ResolvedMethod) {

@@ -49,9 +49,9 @@ public class KafkaProducerMonster {
     /**
      * Run Kafka Producer.
      *
-     * @param graphNumber - graph number
-     * @param callGraph   - call graph in String format
-     * @throws Exception - interrupted exception
+     * @param graphNumber Graph number
+     * @param callGraph   Call graph in String format
+     * @throws Exception Interrupted exception
      */
     public static void runProducer(final int graphNumber, String callGraph) throws Exception {
         final Producer<Long, String> producer = createProducer();

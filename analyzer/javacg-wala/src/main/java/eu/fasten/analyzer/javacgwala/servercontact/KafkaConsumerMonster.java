@@ -40,7 +40,7 @@ public class KafkaConsumerMonster {
     /**
      * Create Kafka consumer.
      *
-     * @return - Kafka consumer
+     * @return Kafka consumer
      */
     public static Consumer<String, String> createConsumer() {
         final Properties props = new Properties();

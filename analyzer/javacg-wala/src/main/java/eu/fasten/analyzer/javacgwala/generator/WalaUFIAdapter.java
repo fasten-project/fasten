@@ -64,7 +64,7 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
     /**
      * Create a Wala call graph adapter.
      *
-     * @param callGraph - raw call graph
+     * @param callGraph Raw call graph
      */
     public WalaUFIAdapter(WalaCallGraph callGraph) {
         this.callGraph = callGraph;
@@ -144,9 +144,9 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
     /**
      * Convert Wala call graph to file.
      *
-     * @param path     - path to file
-     * @param filename - filename
-     * @throws IOException - file writing related exception
+     * @param path     Path to file
+     * @param filename Filename
+     * @throws IOException File writing related exception
      */
     public void toFile(String path, String filename) throws IOException {
         String content = WalaCallgraphConstructor.resolveCalls(this.callGraph.rawcg)

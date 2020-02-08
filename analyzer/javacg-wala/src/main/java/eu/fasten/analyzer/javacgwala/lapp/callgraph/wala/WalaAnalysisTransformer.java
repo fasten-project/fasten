@@ -29,9 +29,9 @@ public class WalaAnalysisTransformer {
     /**
      * Transforms result of Wala call graph analysis to a {@link LappPackage}.
      *
-     * @param analysisResult - Wala call graph analysis
-     * @param layout         - Folder Layout extracted from a jar file.
-     * @return - a new lapp package
+     * @param analysisResult Wala call graph analysis
+     * @param layout         Folder Layout extracted from a jar file.
+     * @return A new lapp package
      */
     public static LappPackage toPackage(WalaAnalysisResult analysisResult,
                                         ArtifactFolderLayout layout) {

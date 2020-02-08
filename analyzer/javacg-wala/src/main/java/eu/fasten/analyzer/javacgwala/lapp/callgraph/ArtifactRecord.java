@@ -34,9 +34,9 @@ public class ArtifactRecord {
     /**
      * Constructs an artifact record based on its group ID, artifact ID, and version.
      *
-     * @param groupId    - group ID
-     * @param artifactId - artifact ID
-     * @param version    - version
+     * @param groupId    Group ID
+     * @param artifactId Artifact ID
+     * @param version    Version
      */
     public ArtifactRecord(String groupId, String artifactId, String version) {
         this.groupId = Objects.requireNonNull(groupId, "groupId must not be null");
@@ -48,7 +48,7 @@ public class ArtifactRecord {
      * Constructs an artifact record based on its group ID, artifact ID, and version represented
      * in a String format.
      *
-     * @param identifier - string representation of an artifact
+     * @param identifier String representation of an artifact
      */
     public ArtifactRecord(String identifier) {
         Objects.requireNonNull(identifier);
@@ -91,8 +91,8 @@ public class ArtifactRecord {
     /**
      * Check if String representation of artifact is valid.
      *
-     * @param identifier - artifact identifier
-     * @return - true if identifier is valid
+     * @param identifier Artifact identifier
+     * @return True if identifier is valid
      */
     public static boolean isValidIdentifier(String identifier) {
         if (identifier == null) {

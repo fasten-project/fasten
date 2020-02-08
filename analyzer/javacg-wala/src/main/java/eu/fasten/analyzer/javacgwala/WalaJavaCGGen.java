@@ -62,8 +62,8 @@ public class WalaJavaCGGen implements FastenPlugin {
     /**
      * Generates a call graph using Wala analyzer.
      *
-     * @param coordinate - Maven coordinate
-     * @return - call graph in FASTEN compatible format
+     * @param coordinate Maven coordinate
+     * @return Call graph in FASTEN compatible format
      */
     public static RevisionCallGraph generateCallGraph(String coordinate) {
 
@@ -85,8 +85,8 @@ public class WalaJavaCGGen implements FastenPlugin {
     /**
      * Build a class path for given maven coordinate.
      *
-     * @param mavenCoordinate - maven coordinate
-     * @return - list of resolved maven coordinates
+     * @param mavenCoordinate Maven coordinate
+     * @return List of resolved maven coordinates
      */
     private static List<MavenResolvedCoordinate> buildClasspath(String mavenCoordinate) {
         logger.debug("Building classpath for {}", mavenCoordinate);

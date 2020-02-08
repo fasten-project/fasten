@@ -33,9 +33,9 @@ public final class MethodHierarchy implements Serializable {
     /**
      * Construct method hierarchy.
      *
-     * @param child  - child
-     * @param type   - type
-     * @param parent - parent
+     * @param child  Child
+     * @param type   Type
+     * @param parent Parent
      */
     public MethodHierarchy(IMethod child, Relation type, Optional<IMethod> parent) {
         this.child = child;
