@@ -66,7 +66,6 @@ public class OPALPluginTest {
         );
 
         JSONAssert.assertEquals(extendedRevisionCallGraph.toJSON(), cg.toJSON(), false);
-
     }
 
     @Test
@@ -112,13 +111,10 @@ public class OPALPluginTest {
                 "    \"date\":\"1521511260\"\n" +
                 "}");
 
-        opalPlugin.consume("maven.packages", new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()));
+        opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()));
 
         assertEquals(FileNotFoundException.class.getSimpleName(), opalPlugin.getPluginError());
-
-        // TODO: below assert fails the test because the processRecord flag becomes true even in the case of a FileNotFoundException.
-        // TODO: OPAL plug-in's flag should be fixed so that the FASTEN server will not print misleading successful message!
-        // assertFalse(opalPlugin.recordProcessSuccessful());
+        assertFalse(opalPlugin.recordProcessSuccessful());
     }
 
     @Test

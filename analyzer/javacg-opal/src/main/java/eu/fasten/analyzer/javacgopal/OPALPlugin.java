@@ -63,7 +63,7 @@ public class OPALPlugin extends Plugin {
         public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
             processedRecord = false;
             consume(kafkaRecord, true);
-            processedRecord = true;
+            if(getPluginError().isEmpty()) { processedRecord = true; }
         }
 
         /**
@@ -111,6 +111,7 @@ public class OPALPlugin extends Plugin {
                 logger.error("Could find JAR for Maven coordinate: {}",
                     mavenCoordinate.getCoordinate(), e);
             } catch (JSONException e) {
+                setPluginError(e.getClass().getSimpleName());
                 logger.error("Could not parse input coordinates: {}\n{}", kafkaRecord.value(), e);
             } catch (Exception e) {
                 setPluginError(e.getClass().getSimpleName());
@@ -132,6 +133,7 @@ public class OPALPlugin extends Plugin {
                 if (recordMetadata != null) {
                     logger.debug("Sent: {} to {}", cg.uri.toString(), this.PRODUCE_TOPIC);
                 } else {
+                    setPluginError(e.getClass().getSimpleName());
                     logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
                 }
             }));
