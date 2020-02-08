@@ -111,7 +111,7 @@ public class OPALPluginTest {
                 "    \"date\":\"1521511260\"\n" +
                 "}");
 
-        opalPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()));
+        opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()), false);
 
         assertEquals(FileNotFoundException.class.getSimpleName(), opalPlugin.getPluginError());
         assertFalse(opalPlugin.recordProcessSuccessful());
