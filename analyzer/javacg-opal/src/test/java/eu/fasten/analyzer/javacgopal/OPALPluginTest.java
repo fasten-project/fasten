@@ -58,7 +58,7 @@ public class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()), false);
+        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()));
 
         var extendedRevisionCallGraph  = ExtendedRevisionCallGraph.create("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773,
@@ -78,7 +78,7 @@ public class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()), false);
+        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()));
 
         var extendedRevisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
                 new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"), 1574072773,
@@ -97,7 +97,7 @@ public class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", emptyCGCoordinate.toString()), false);
+        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", emptyCGCoordinate.toString()));
 
         assertTrue(cg.isCallGraphEmpty());
     }
