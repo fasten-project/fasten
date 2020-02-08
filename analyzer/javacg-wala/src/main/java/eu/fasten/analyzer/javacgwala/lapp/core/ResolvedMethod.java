@@ -31,7 +31,6 @@ public class ResolvedMethod extends Method {
 
     public ResolvedMethod(String namespace, Selector symbol, JarFile artifact) {
         super(namespace, symbol);
-
         this.artifact = artifact;
     }
 
