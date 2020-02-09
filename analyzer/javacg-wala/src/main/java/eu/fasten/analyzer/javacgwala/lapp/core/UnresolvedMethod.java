@@ -25,7 +25,7 @@ public class UnresolvedMethod extends Method {
 
     public static final AnalysisContext DEFAULT_CONTEXT = new DefaultAnalysisContext();
 
-    UnresolvedMethod(String namespace, Selector symbol) {
+    public UnresolvedMethod(String namespace, Selector symbol) {
         super(namespace, symbol);
     }
 
@@ -33,10 +33,25 @@ public class UnresolvedMethod extends Method {
         return toID(namespace, symbol);
     }
 
+    /**
+     * Convert {@link UnresolvedMethod} to ID representation.
+     *
+     * @param namespace Namespace
+     * @param symbol    Symbol
+     * @return Method ID
+     */
     public static String toID(String namespace, Selector symbol) {
         return "__::" + namespace + "." + symbol.toString();
     }
 
+    /**
+     * Find a unresolved method in the Unresolved Dictionary or create a new one and add it to
+     * the dictionary.
+     *
+     * @param namespace Namespace
+     * @param symbol    Symbol
+     * @return Found or created method
+     */
     public static synchronized UnresolvedMethod findOrCreate(String namespace, Selector symbol) {
         return DEFAULT_CONTEXT.makeUnresolved(namespace, symbol);
     }

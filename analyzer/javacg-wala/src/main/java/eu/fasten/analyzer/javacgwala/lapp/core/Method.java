@@ -20,6 +20,9 @@
 package eu.fasten.analyzer.javacgwala.lapp.core;
 
 import com.ibm.wala.types.Selector;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,9 +36,27 @@ public abstract class Method {
     protected Method(String namespace, Selector symbol) {
         this.namespace = namespace;
         this.symbol = symbol;
-
         this.metadata = new HashMap<>();
     }
 
+    /**
+     * Convert {@link Method} to ID representation.
+     *
+     * @return Method ID
+     */
     public abstract String toID();
+
+    /**
+     * Convert {@link FastenJavaURI} to {@link FastenURI}.
+     *
+     * @param javaURI FastenJavaURI to convert
+     * @return {@link FastenURI}
+     */
+    public static FastenURI toCanonicalSchemalessURI(FastenJavaURI javaURI) {
+
+        return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
+                javaURI.getRawVersion(),
+                javaURI.getRawNamespace(), javaURI.getRawEntity());
+    }
+
 }

@@ -30,8 +30,14 @@ public final class MethodHierarchy implements Serializable {
     public final Optional<IMethod> parent;
     public final Relation type;
 
-    public MethodHierarchy(IMethod child, Relation type, Optional<IMethod>
-            parent) {
+    /**
+     * Construct method hierarchy.
+     *
+     * @param child  Child
+     * @param type   Type
+     * @param parent Parent
+     */
+    public MethodHierarchy(IMethod child, Relation type, Optional<IMethod> parent) {
         this.child = child;
         this.parent = parent;
         this.type = type;

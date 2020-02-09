@@ -19,8 +19,8 @@
 
 package eu.fasten.analyzer.javacgwala.data.callgraph;
 
-import eu.fasten.analyzer.javacgwala.data.type.MavenResolvedCoordinate;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import eu.fasten.analyzer.javacgwala.data.type.MavenResolvedCoordinate;
 
 import java.io.Serializable;
 import java.util.List;

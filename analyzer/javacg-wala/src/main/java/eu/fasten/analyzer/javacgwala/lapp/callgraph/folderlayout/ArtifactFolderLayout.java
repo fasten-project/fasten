@@ -17,18 +17,13 @@
  */
 
 
-package eu.fasten.analyzer.javacgwala;
+package eu.fasten.analyzer.javacgwala.lapp.callgraph.folderlayout;
 
-import org.junit.Test;
+import eu.fasten.analyzer.javacgwala.lapp.callgraph.ArtifactRecord;
 
-import static eu.fasten.analyzer.javacgwala.WalaJavaCGGen.generateCallGraph;
-import static org.junit.Assert.assertNull;
+import java.util.jar.JarFile;
 
-public class WalaCGTest {
+public interface ArtifactFolderLayout {
 
-    @Test
-    public void testCreation() {
-        var cg = generateCallGraph("org.slf4j:slf4j-api:1.7.29");
-        assertNull(cg);
-    }
+    ArtifactRecord artifactRecordFromJarFile(JarFile path);
 }

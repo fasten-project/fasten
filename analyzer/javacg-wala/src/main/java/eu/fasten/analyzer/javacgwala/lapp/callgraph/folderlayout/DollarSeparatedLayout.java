@@ -17,7 +17,7 @@
  */
 
 
-package eu.fasten.analyzer.javacgwala.lapp.callgraph.FolderLayout;
+package eu.fasten.analyzer.javacgwala.lapp.callgraph.folderlayout;
 
 import eu.fasten.analyzer.javacgwala.lapp.callgraph.ArtifactRecord;
 
@@ -28,10 +28,10 @@ import java.util.jar.JarFile;
 public class DollarSeparatedLayout implements ArtifactFolderLayout {
 
     /**
-     * Build ArtifactRecord from path
+     * Build ArtifactRecord directly from jar file.
      *
      * @param jarFile Jar file
-     * @return parsed ArtifactRecord
+     * @return Parsed ArtifactRecord
      */
     @Override
     public ArtifactRecord artifactRecordFromJarFile(JarFile jarFile) {
@@ -41,6 +41,12 @@ public class DollarSeparatedLayout implements ArtifactFolderLayout {
         return artifactRecordFromPath(path);
     }
 
+    /**
+     * Build Artifact record from path.
+     *
+     * @param path Path to jar file
+     * @return Parsed ArtifactRecord
+     */
     public ArtifactRecord artifactRecordFromPath(String path) {
 
         Path p = Paths.get(path);
@@ -48,7 +54,7 @@ public class DollarSeparatedLayout implements ArtifactFolderLayout {
 
         if (filename.endsWith(".jar")) {
             filename = filename
-                    .substring(0, filename.length() -4)
+                    .substring(0, filename.length() - 4)
                     .replace('$', ':');
         }
 

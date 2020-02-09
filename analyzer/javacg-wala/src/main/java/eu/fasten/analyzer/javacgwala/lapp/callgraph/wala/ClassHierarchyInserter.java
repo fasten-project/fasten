@@ -25,7 +25,6 @@ import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
-import com.ibm.wala.types.TypeReference;
 import eu.fasten.analyzer.javacgwala.lapp.call.ChaEdge;
 import eu.fasten.analyzer.javacgwala.lapp.callgraph.wala.LappPackageBuilder.MethodType;
 import eu.fasten.analyzer.javacgwala.lapp.core.Method;
@@ -34,7 +33,6 @@ import eu.fasten.analyzer.javacgwala.lapp.core.ResolvedMethod;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ClassHierarchyInserter {
@@ -48,10 +46,12 @@ public class ClassHierarchyInserter {
         this.graph = graph;
     }
 
+    /**
+     * Add a class hierarchy to a lapp package builder.
+     */
     public void insertCHA() {
         IClassLoader classLoader = cha.getLoader(ClassLoaderReference.Application);
 
-        Set<TypeReference> unresolved = cha.getUnresolvedClasses();
         // Iterate all classes in Application scope
         for (Iterator<IClass> it = classLoader.iterateAllClasses(); it.hasNext(); ) {
             IClass klass = it.next();
@@ -77,14 +77,16 @@ public class ClassHierarchyInserter {
         }
     }
 
-    private void processMethod(IClass klass, IMethod declaredMethod, List<IMethod> methodInterfaces) {
+    private void processMethod(IClass klass, IMethod declaredMethod,
+                               List<IMethod> methodInterfaces) {
         if (declaredMethod.isPrivate()) {
             // Private methods cannot be overridden, so no need for them.
             return;
         }
         IClass superKlass = klass.getSuperclass();
 
-        Method declaredMethodNode = graph.addMethod(declaredMethod.getReference(), getMethodType(klass, declaredMethod));
+        Method declaredMethodNode = graph.addMethod(declaredMethod.getReference(),
+                getMethodType(klass, declaredMethod));
 
         if (!(declaredMethodNode instanceof ResolvedMethod)) {
             return;
@@ -102,27 +104,40 @@ public class ClassHierarchyInserter {
 
         if (methodInterfaces != null) {
             for (IMethod interfaceMethod : methodInterfaces) {
-                Method interfaceMethodNode = graph.addMethod(interfaceMethod.getReference(), MethodType.INTERFACE);
+                Method interfaceMethodNode = graph.addMethod(interfaceMethod.getReference(),
+                        MethodType.INTERFACE);
 
-                graph.addChaEdge(interfaceMethodNode, resolvedMethod, ChaEdge.ChaEdgeType.IMPLEMENTS);
+                graph.addChaEdge(interfaceMethodNode, resolvedMethod,
+                        ChaEdge.ChaEdgeType.IMPLEMENTS);
             }
         }
 
 
         // An abstract class doesn't have to define abstract method for interface methods
-        // So if this method doesn't have a super method or an interface method look for them in the interfaces of the abstract superclass
+        // So if this method doesn't have a super method or an interface method look for
+        // them in the interfaces of the abstract superclass
         if (superKlass.isAbstract() && superMethod == null && methodInterfaces == null) {
 
-            Map<Selector, List<IMethod>> abstractSuperClassInterfacesByMethod = superKlass.getDirectInterfaces()
+            Map<Selector, List<IMethod>> abstractSuperClassInterfacesByMethod = superKlass
+                    .getDirectInterfaces()
                     .stream()
                     .flatMap(o -> o.getDeclaredMethods().stream())
                     .collect(Collectors.groupingBy(IMethod::getSelector));
 
-            List<IMethod> abstractSuperClassInterfaceMethods = abstractSuperClassInterfacesByMethod.get(declaredMethod.getSelector());
-            if (abstractSuperClassInterfaceMethods != null && abstractSuperClassInterfaceMethods.size() > 0) {
-                for (IMethod abstractSuperClassInterfaceMethod : abstractSuperClassInterfaceMethods) {
-                    Method abstractSuperClassInterfaceMethodNode = graph.addMethod(abstractSuperClassInterfaceMethod.getReference(), MethodType.INTERFACE);
-                    graph.addChaEdge(abstractSuperClassInterfaceMethodNode, resolvedMethod, ChaEdge.ChaEdgeType.IMPLEMENTS);
+            List<IMethod> abstractSuperClassInterfaceMethods = abstractSuperClassInterfacesByMethod
+                    .get(declaredMethod.getSelector());
+
+            if (abstractSuperClassInterfaceMethods != null
+                    && abstractSuperClassInterfaceMethods.size() > 0) {
+
+                for (IMethod abstractSuperClassInterfaceMethod
+                        : abstractSuperClassInterfaceMethods) {
+
+                    Method abstractSuperClassInterfaceMethodNode = graph
+                            .addMethod(abstractSuperClassInterfaceMethod.getReference(),
+                                    MethodType.INTERFACE);
+                    graph.addChaEdge(abstractSuperClassInterfaceMethodNode, resolvedMethod,
+                            ChaEdge.ChaEdgeType.IMPLEMENTS);
                 }
             }
         }

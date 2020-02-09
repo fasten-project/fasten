@@ -40,13 +40,24 @@ public class CallGraphInserter {
     private final IClassHierarchy cha;
     private final LappPackageBuilder lappPackageBuilder;
 
-    public CallGraphInserter(CallGraph cg, IClassHierarchy cha, LappPackageBuilder lappPackageBuilder) {
+    /**
+     * Constructs a call graph inserter for a specific lapp package builder.
+     *
+     * @param cg                 Raw call graph
+     * @param cha                Class hierarchy
+     * @param lappPackageBuilder Lapp package builder to insert call graph into
+     */
+    public CallGraphInserter(CallGraph cg, IClassHierarchy cha,
+                             LappPackageBuilder lappPackageBuilder) {
         this.cg = cg;
         this.cha = cha;
         this.lappPackageBuilder = lappPackageBuilder;
     }
 
 
+    /**
+     * Add call graph to a lapp package builder.
+     */
     public void insertCallGraph() {
         for (CGNode node : this.cg) {
             MethodReference nodeReference = node.getMethod().getReference();
@@ -55,19 +66,25 @@ public class CallGraphInserter {
                 // Ignore everything not in the application classloader
                 continue;
             }
-            Method methodNode = lappPackageBuilder.addMethod(nodeReference, LappPackageBuilder.MethodType.IMPLEMENTATION);
+            Method methodNode = lappPackageBuilder.addMethod(nodeReference,
+                    LappPackageBuilder.MethodType.IMPLEMENTATION);
 
 
-            for (Iterator<CallSiteReference> callSites = node.iterateCallSites(); callSites.hasNext(); ) {
+            for (Iterator<CallSiteReference> callSites = node.iterateCallSites();
+                 callSites.hasNext(); ) {
                 CallSiteReference callSite = callSites.next();
 
-                /* If the target is unknown, is gets the Application loader by default. We would like this to be the
+                /* If the target is unknown, is gets the Application loader by default.
+                   We would like this to be the
                    Extension loader, that way it is easy to filter them out later.
                    */
-                MethodReference targetWithCorrectClassLoader = correctClassLoader(callSite.getDeclaredTarget());
+                MethodReference targetWithCorrectClassLoader = correctClassLoader(callSite
+                        .getDeclaredTarget());
 
-                Method targetMethodNode = lappPackageBuilder.addMethod(targetWithCorrectClassLoader);
-                lappPackageBuilder.addCall(methodNode, targetMethodNode, getInvocationLabel(callSite));
+                Method targetMethodNode = lappPackageBuilder
+                        .addMethod(targetWithCorrectClassLoader);
+                lappPackageBuilder.addCall(methodNode, targetMethodNode,
+                        getInvocationLabel(callSite));
             }
 
         }
@@ -92,9 +109,9 @@ public class CallGraphInserter {
                 return Call.CallType.SPECIAL;
             case STATIC:
                 return Call.CallType.STATIC;
+            default:
+                return Call.CallType.UNKNOWN;
         }
-
-        return Call.CallType.UNKNOWN;
     }
 
     private MethodReference correctClassLoader(MethodReference reference) {

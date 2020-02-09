@@ -19,23 +19,39 @@
 
 package eu.fasten.analyzer.javacgwala.data.type;
 
-import org.gradle.tooling.model.GradleModuleVersion;
-import org.gradle.tooling.model.idea.IdeaSingleEntryLibraryDependency;
-import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
-
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.gradle.tooling.model.GradleModuleVersion;
+import org.gradle.tooling.model.idea.IdeaSingleEntryLibraryDependency;
+import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
+
+
 public final class MavenResolvedCoordinate extends MavenCoordinate implements Serializable {
     public final Path jarPath;
 
-    public MavenResolvedCoordinate(String groupId, String artifactId, String version, Path jarPath) {
+    /**
+     * Construct maven resolve coordinate based on groupID, artifactID, version and
+     * a path the jar file.
+     *
+     * @param groupId    Group ID
+     * @param artifactId Artifact ID
+     * @param version    Version
+     * @param jarPath    Path to jar file
+     */
+    public MavenResolvedCoordinate(String groupId, String artifactId,
+                                   String version, Path jarPath) {
         super(groupId, artifactId, version);
         this.jarPath = jarPath;
     }
 
-
+    /**
+     * Create new {@link MavenResolvedCoordinate} given a {@link MavenResolvedArtifact}.
+     *
+     * @param artifact Maven resolved artifact
+     * @return New Maven Resolved Coordinate
+     */
     public static MavenResolvedCoordinate of(MavenResolvedArtifact artifact) {
         return new MavenResolvedCoordinate(
                 artifact.getCoordinate().getGroupId(),
@@ -44,6 +60,12 @@ public final class MavenResolvedCoordinate extends MavenCoordinate implements Se
                 artifact.as(Path.class));
     }
 
+    /**
+     * Create new {@link MavenResolvedCoordinate} given a {@link IdeaSingleEntryLibraryDependency}.
+     *
+     * @param d Idea Single Entry Library Dependency
+     * @return New Maven Resolved Coordinate
+     */
     public static MavenResolvedCoordinate of(IdeaSingleEntryLibraryDependency d) {
         GradleModuleVersion mod = d.getGradleModuleVersion();
         return new MavenResolvedCoordinate(

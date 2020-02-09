@@ -19,15 +19,14 @@
 
 package eu.fasten.analyzer.javacgwala.lapp.core;
 
+import eu.fasten.analyzer.javacgwala.lapp.call.Call;
+import eu.fasten.analyzer.javacgwala.lapp.call.ChaEdge;
+import eu.fasten.analyzer.javacgwala.lapp.callgraph.ArtifactRecord;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import eu.fasten.analyzer.javacgwala.lapp.callgraph.ArtifactRecord;
-import eu.fasten.analyzer.javacgwala.lapp.call.Call;
-import eu.fasten.analyzer.javacgwala.lapp.call.ChaEdge;
 
 public class LappPackage {
     public final Set<ArtifactRecord> artifacts = new HashSet<>();
@@ -41,10 +40,24 @@ public class LappPackage {
 
     public final Map<String, String> metadata = new HashMap<>();
 
+    /**
+     * Add a resolved method to the set of resolved methods.
+     *
+     * @param resolvedMethod Method
+     */
     public void addResolvedMethod(ResolvedMethod resolvedMethod) {
         methods.add(resolvedMethod);
     }
 
+    /**
+     * Add a new call to the set of Resolved calls in case both source and target of are resolved,
+     * or to the set of Unresolved calls if at least one of the parameters is not resolved.
+     *
+     * @param source Caller
+     * @param target Callee
+     * @param type   Call type
+     * @return True if call was added successfully
+     */
     public boolean addCall(Method source, Method target, Call.CallType type) {
 
         if (target instanceof ResolvedMethod
@@ -61,26 +74,38 @@ public class LappPackage {
         return unresolvedCalls.add(call);
     }
 
-    private boolean addResolvedCall(ResolvedMethod source, ResolvedMethod target, Call.CallType type) {
+    private boolean addResolvedCall(ResolvedMethod source, ResolvedMethod target,
+                                    Call.CallType type) {
         Call call = new Call(source, target, type);
 
         return resolvedCalls.add(call);
     }
 
+    /**
+     * Add a new CHA Edge to the set of Resolved Cha Edges if {@param related} is a resolved method,
+     * or to the set of Unresolved Cha Edges otherwise.
+     *
+     * @param related Related method
+     * @param subject Subject
+     * @param type    Type of cha edge
+     * @return True if added successfully
+     */
     public boolean addChaEdge(Method related, ResolvedMethod subject, ChaEdge.ChaEdgeType type) {
         if (related instanceof ResolvedMethod) {
-            return addResolvedChaEdge((ResolvedMethod) related, (ResolvedMethod) subject, type);
+            return addResolvedChaEdge((ResolvedMethod) related, subject, type);
         }
 
         return addUnresolvedChaEdge(related, subject, type);
 
     }
 
-    public boolean addResolvedChaEdge(ResolvedMethod related, ResolvedMethod subject, ChaEdge.ChaEdgeType type) {
+    private boolean addResolvedChaEdge(ResolvedMethod related, ResolvedMethod subject,
+                                       ChaEdge.ChaEdgeType type) {
         return cha.add(new ChaEdge(related, subject, type));
     }
 
-    public boolean addUnresolvedChaEdge(Method related, ResolvedMethod subject, ChaEdge.ChaEdgeType type) {
+    private boolean addUnresolvedChaEdge(Method related, ResolvedMethod subject,
+                                         ChaEdge.ChaEdgeType type) {
         return unresolvedCha.add(new ChaEdge(related, subject, type));
     }
 

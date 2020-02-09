@@ -19,10 +19,12 @@
 
 package eu.fasten.analyzer.javacgwala.lapp.call;
 
-import java.util.Objects;
-
 import eu.fasten.analyzer.javacgwala.lapp.core.Method;
 import eu.fasten.analyzer.javacgwala.lapp.core.ResolvedMethod;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+
+import java.util.Objects;
 
 public class Call extends Edge {
 
@@ -40,11 +42,34 @@ public class Call extends Edge {
         }
 
     }
+
     public final CallType callType;
 
     public Call(Method source, Method callee, CallType callType) {
         super(source, callee);
         this.callType = callType;
+    }
+
+    /**
+     * Convert a call to FastenURI array in which 0th element represents caller URI
+     * and 1st represents callee URI.
+     *
+     * @param source Caller
+     * @param target Callee
+     * @return FastenURI array
+     */
+    public FastenURI[] toURICall(FastenJavaURI source, FastenJavaURI target) {
+
+        FastenURI[] fastenURI = new FastenURI[2];
+
+        var sourceURI = Method.toCanonicalSchemalessURI(source);
+
+        var targetURI = Method.toCanonicalSchemalessURI(target);
+
+        fastenURI[0] = sourceURI;
+        fastenURI[1] = FastenURI.create("//" + targetURI.toString());
+
+        return fastenURI;
     }
 
     @Override
@@ -58,9 +83,15 @@ public class Call extends Edge {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
         Call call = (Call) o;
         return callType == call.callType;
     }

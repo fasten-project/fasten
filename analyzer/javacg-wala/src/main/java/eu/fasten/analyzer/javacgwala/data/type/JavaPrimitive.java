@@ -26,10 +26,18 @@ public enum JavaPrimitive implements Namespace {
     FLOAT, INT, LONG, SHORT,
     VOID, UNKNOWN;
 
+    /**
+     * Return java primitive type based on {@link TypeReference}.
+     *
+     * @param tyref Type reference
+     * @return Java primitive
+     */
     public static JavaPrimitive of(TypeReference tyref) {
         String s = tyref.getName().toString();
-        assert (tyref.isPrimitiveType());
-        assert (s.length() > 0);
+
+        assert tyref.isPrimitiveType();
+        assert s.length() > 0;
+
         switch (s.charAt(0)) {
             case TypeReference.BooleanTypeCode:
                 return BOOLEAN;

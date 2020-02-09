@@ -30,9 +30,10 @@ public class DefaultAnalysisContext implements AnalysisContext {
     private final HashMap<String, ResolvedMethod> resolvedDictionary = new HashMap<>();
     private final HashMap<String, UnresolvedMethod> unresolvedDictionary = new HashMap<>();
 
-    
+
     @Override
-    public synchronized ResolvedMethod makeResolved(String namespace, Selector symbol, JarFile artifact) {
+    public synchronized ResolvedMethod makeResolved(String namespace, Selector symbol,
+                                                    JarFile artifact) {
         //Objects.requireNonNull(artifact);
         Objects.requireNonNull(namespace);
         Objects.requireNonNull(symbol);
