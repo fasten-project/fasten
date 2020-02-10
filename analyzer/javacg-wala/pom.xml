@@ -82,7 +82,7 @@
   </dependencies>
 
   <build>
-    <testSourceDirectory>${project.basedir}/src/test/java/eu/fasten/analyzer/javacgwala/</testSourceDirectory>
+    <testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
