@@ -16,5 +16,11 @@ docker run --user $(id -u):$(id -g) --network="host" -d fasten-server -k localho
 ```
 The above command runs the Docker container of the FASTEN server in background as non-root user.
 
+### local
+To start the FASTEN server locally on a Mac system, run the following command:
+```
+docker run -d fasten-server -k host.docker.internal:9092
+```
+
 ## Publish Docker images
 Make sure you have built the latest Docker images.
