@@ -170,7 +170,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy()));
     }
 
-    public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate, final long timestamp) throws FileNotFoundException {
+    public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate, final long timestamp) {
 
         logger.info("Generating call graph using Opal ...");
         final PartialCallGraph partialCallGraph = new PartialCallGraph(

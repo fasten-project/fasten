@@ -73,7 +73,8 @@ public class Main implements Runnable {
 
     @CommandLine.ArgGroup(exclusive = true)
     MergeGenerateDiff mgd;
-    static class MergeGenerateDiff{
+
+    static class MergeGenerateDiff {
         @CommandLine.Option(names = {"-m", "--merge"},
             paramLabel = "MERGE",
             description = "Merge artifact with the passed dependencies")
@@ -114,19 +115,13 @@ public class Main implements Runnable {
         }
 
         ExtendedRevisionCallGraph revisionCallGraph = null;
-        try {
-            logger.info("Generating call graph for the Maven coordinate: {}", this.fullCoordinate.mavenCoordStr);
-            long startTime = System.currentTimeMillis();
-            revisionCallGraph = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(this.timestamp));
-            logger.info("Generated the call graph in {} seconds.", timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
-            //TODO something with the calculated RevesionCallGraph.
-            System.out.println(revisionCallGraph.toJSON());
 
-        } catch (FileNotFoundException e) {
-            logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
-            e.printStackTrace();
-        }
-
+        logger.info("Generating call graph for the Maven coordinate: {}", this.fullCoordinate.mavenCoordStr);
+        long startTime = System.currentTimeMillis();
+        revisionCallGraph = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(this.timestamp));
+        logger.info("Generated the call graph in {} seconds.", timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
+        //TODO something with the calculated RevesionCallGraph.
+        System.out.println(revisionCallGraph.toJSON());
     }
 
     /**

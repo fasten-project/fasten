@@ -101,9 +101,11 @@ public class MavenCoordinate {
         return groupID + ":" + artifactID + ":" + versionConstraint;
     }
 
-    public String getTimestamp() {return timestamp;}
+    public String getTimestamp() {
+        return timestamp;
+    }
 
-    public String toURL()  {
+    public String toURL() {
         StringBuilder url = new StringBuilder(MAVEN_REPO)
             .append(this.groupID.replace('.', '/'))
             .append("/")
@@ -176,7 +178,7 @@ public class MavenCoordinate {
                     depList.add(dependency);
                     dependencies.add(depList);
                 }
-            } catch (DocumentException | FileNotFoundException e) {
+            } catch (DocumentException e) {
                 logger.error("Error parsing POM file for: " + mavenCoordinate, e);
             }
             return dependencies;
@@ -184,11 +186,12 @@ public class MavenCoordinate {
 
         /**
          * Download a POM file indicated by the provided Maven coordinate
+         *
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return The contents of the downloaded POM file as a string
          */
-        public static Optional<String> downloadPom(String mavenCoordinate) throws FileNotFoundException {
-            return httpGetToFile(fromString(mavenCoordinate).toPomUrl(),".pom").
+        public static Optional<String> downloadPom(String mavenCoordinate) {
+            return httpGetToFile(fromString(mavenCoordinate).toPomUrl(), ".pom").
                 flatMap(f -> fileToString(f));
         }
 
@@ -198,9 +201,9 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return A temporary file on the filesystem
          */
-        public static Optional<File> downloadJar(String mavenCoordinate) throws FileNotFoundException {
+        public static Optional<File> downloadJar(String mavenCoordinate) {
             logger.debug("Downloading JAR for " + mavenCoordinate);
-            return httpGetToFile(fromString(mavenCoordinate).toJarUrl(),".jar");
+            return httpGetToFile(fromString(mavenCoordinate).toJarUrl(), ".jar");
         }
 
         /**
@@ -227,7 +230,7 @@ public class MavenCoordinate {
         /**
          * Utility function that stores the contents of GET request to a temporary file
          */
-        private static Optional<File> httpGetToFile(String url, String suffix) throws FileNotFoundException {
+        private static Optional<File> httpGetToFile(String url, String suffix) {
             logger.debug("HTTP GET: " + url);
 
             try {
@@ -239,10 +242,7 @@ public class MavenCoordinate {
                 in.close();
 
                 return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-            } catch (FileNotFoundException e) {
-                logger.error("Could not find URL: " + url, e);
-                throw e;
-            } catch (Exception e){
+            } catch (Exception e) {
                 logger.error("Error retrieving URL: " + url, e);
                 return Optional.empty();
             }
@@ -252,6 +252,7 @@ public class MavenCoordinate {
          * A utility method to get a POM file and its timestamp from a URL
          * Please note that this might not be the most efficient way but it works and can be improved
          * later.
+         *
          * @param fileURL
          * @param dest
          * @throws IOException
@@ -269,7 +270,7 @@ public class MavenCoordinate {
 
             Date timestamp = new Date(con.getLastModified());
 
-            if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
+            if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
 
                 logger.debug("Okay status!");
 
@@ -277,7 +278,7 @@ public class MavenCoordinate {
                 BufferedWriter output = new BufferedWriter(new FileWriter(new File(dest)));
 
                 String line;
-                while((line = input.readLine()) != null) {
+                while ((line = input.readLine()) != null) {
                     output.write(line);
                     output.newLine();
                 }

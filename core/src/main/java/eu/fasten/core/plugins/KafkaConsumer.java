@@ -46,9 +46,4 @@ public interface KafkaConsumer<T> extends FastenPlugin {
      */
     public void consume(String topic, ConsumerRecord<String, T> record);
 
-    /**
-     * This returns true if the plug-in processed the consumed record successfully.
-     * @return
-     */
-    public boolean recordProcessSuccessful();
 }

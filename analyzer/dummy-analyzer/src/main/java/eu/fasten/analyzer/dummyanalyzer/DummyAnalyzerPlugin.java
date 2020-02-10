@@ -32,11 +32,6 @@ public class DummyAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public boolean recordProcessSuccessful() {
-            return true;
-        }
-
-        @Override
         public String name() {
             return "Dummy plugin";
         }
@@ -52,21 +47,6 @@ public class DummyAnalyzerPlugin extends Plugin {
 
         @Override
         public void stop() {
-        }
-
-        @Override
-        public void setPluginError(String exceptionType) {
-
-        }
-
-        @Override
-        public String getPluginError() {
-            return "";
-        }
-
-        @Override
-        public void freeResource() {
-
         }
     }
 }

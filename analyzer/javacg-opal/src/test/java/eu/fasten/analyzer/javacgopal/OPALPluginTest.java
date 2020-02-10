@@ -103,21 +103,6 @@ public class OPALPluginTest {
     }
 
     @Test
-    public void testFileNotFoundException() {
-        JSONObject noJARFile = new JSONObject("{\n" +
-                "    \"groupId\": \"com.visionarts\",\n" +
-                "    \"artifactId\": \"power-jambda-pom\",\n" +
-                "    \"version\": \"0.9.10\",\n" +
-                "    \"date\":\"1521511260\"\n" +
-                "}");
-
-        opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()), false);
-
-        assertEquals(FileNotFoundException.class.getSimpleName(), opalPlugin.getPluginError());
-        assertFalse(opalPlugin.recordProcessSuccessful());
-    }
-
-    @Test
     public void testProducerTopic() {
         assertEquals("opal_callgraphs", opalPlugin.producerTopic());
     }
