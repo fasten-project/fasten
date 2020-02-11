@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.javacgwala.lapp.core;
+package eu.fasten.analyzer.javacgwala.data.core;
 
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;

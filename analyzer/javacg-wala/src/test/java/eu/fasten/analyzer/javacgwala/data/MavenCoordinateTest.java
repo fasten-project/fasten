@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.javacgwala.data.type;
+package eu.fasten.analyzer.javacgwala.data;
 
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import org.junit.jupiter.api.BeforeEach;
