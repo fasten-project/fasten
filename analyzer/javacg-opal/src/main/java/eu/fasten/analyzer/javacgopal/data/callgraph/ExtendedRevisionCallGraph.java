@@ -80,12 +80,18 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      * Type can be a class or interface that inherits (implements) from others or implements methods.
      */
     public static class Type {
+        //The source file name of this type.
+        private String sourceFileName;
         //Methods that this type implements
         private List<FastenURI> methods;
         //Classes that this type inherits from in the order of instantiation.
         private LinkedList<FastenURI> superClasses;
         //Interfaces that this type or its super classes implement.
         private List<FastenURI> superInterfaces;
+
+        public String getSourceFileName() {
+            return sourceFileName;
+        }
 
         public List<FastenURI> getMethods() {
             return methods;
@@ -111,8 +117,9 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             this.superInterfaces = superInterfaces;
         }
 
-        public Type(List<FastenURI> methods, LinkedList<FastenURI> superClasses,
+        public Type(String sourceFile, List<FastenURI> methods, LinkedList<FastenURI> superClasses,
                     List<FastenURI> superInterfaces) {
+            this.sourceFileName = sourceFile;
             this.methods = methods;
             this.superClasses = superClasses;
             this.superInterfaces = superInterfaces;

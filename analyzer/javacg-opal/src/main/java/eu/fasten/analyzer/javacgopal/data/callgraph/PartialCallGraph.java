@@ -38,7 +38,6 @@ import org.opalj.ai.analyses.cg.CallGraphFactory;
 import org.opalj.ai.analyses.cg.ComputedCallGraph;
 import org.opalj.ai.analyses.cg.CHACallGraphAlgorithmConfiguration;
 import org.opalj.br.ObjectType;
-import org.opalj.br.SourceFile;
 import org.opalj.br.analyses.Project;
 import org.opalj.collection.immutable.Chain;
 import org.opalj.collection.immutable.ConstArray;
@@ -121,10 +120,8 @@ public class PartialCallGraph {
         final var libraryClasses = new HashSet<>(JavaConversions.mapAsJavaMap(artifactInOpalFormat.classHierarchy().supertypes()).keySet());
         libraryClasses.removeAll(currentArtifactClasses);
         for (ObjectType currentClass : currentArtifactClasses) {
-            final var type = new Type();
-            type.setSupers(artifactInOpalFormat.classHierarchy(), currentClass);
-            type.getMethods().addAll(allMethods.get(currentClass));
-            this.classHierarchy.put(currentClass, type);
+            final var type = new Type(currentClass, allMethods.get(currentClass), artifactInOpalFormat.classHierarchy());
+            this.classHierarchy.put(type.getType(), type);
         }
 
 //        for (ObjectType libraryClass : libraryClasses) {
@@ -294,6 +291,7 @@ public class PartialCallGraph {
             URIclassHierarchy.put(
                 Method.getTypeURI(aClass),
                 new ExtendedRevisionCallGraph.Type(
+                    type.getSourceFileName(),
                     toURIMethods(type.getMethods()),
                     superClassesURIs,
                     toURIInterfaces(type.getSuperInterfaces())
@@ -302,8 +300,6 @@ public class PartialCallGraph {
         }
         return URIclassHierarchy;
     }
-
-
 
     /**
      * Converts a list of interfaces to a list of FastenURIs.

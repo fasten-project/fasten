@@ -87,7 +87,7 @@ public class OPALPlugin extends Plugin {
                 final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
 
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
-                final ExtendedRevisionCallGraph cg = generateCallgraph(mavenCoordinate, kafkaConsumedJson);
+                final var cg = generateCallgraph(mavenCoordinate, kafkaConsumedJson);
 
                 if (cg == null || cg.isCallGraphEmpty()) {
                     logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());

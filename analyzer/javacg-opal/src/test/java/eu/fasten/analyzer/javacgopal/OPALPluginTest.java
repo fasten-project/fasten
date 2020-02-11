@@ -99,6 +99,7 @@ public class OPALPluginTest {
 
         var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", emptyCGCoordinate.toString()), false);
 
+        //Based on plugin's logs this artifact's call graph should be empty.
         assertTrue(cg.isCallGraphEmpty());
     }
 
