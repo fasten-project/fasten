@@ -40,17 +40,18 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         return classHierarchy;
     }
 
-    public void setClassHierarchy(Map<FastenURI, Type> classHierarchy) {
+    public void setClassHierarchy(final Map<FastenURI, Type> classHierarchy) {
         this.classHierarchy = classHierarchy;
     }
 
     /**
      * Removes the content of the revision call graph.
+     *
      * @param excessiveRemove if it is true method will go through all the content
      *                        of the revision call graph and remove them one by one.
      *                        if false general references will be null.
      */
-    public void clear(Boolean excessiveRemove) {
+    public void clear(final Boolean excessiveRemove) {
         if (excessiveRemove) {
             this.graph.parallelStream().forEach(i -> {
                 i[0] = null;
@@ -69,6 +70,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             this.classHierarchy = null;
         }
     }
+
     public void clear() {
         clear(false);
     }
@@ -109,19 +111,23 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             this.superInterfaces = superInterfaces;
         }
 
-        public Type(List<FastenURI> methods, LinkedList<FastenURI> superClasses, List<FastenURI> superInterfaces) {
+        public Type(List<FastenURI> methods, LinkedList<FastenURI> superClasses,
+                    List<FastenURI> superInterfaces) {
             this.methods = methods;
             this.superClasses = superClasses;
             this.superInterfaces = superInterfaces;
         }
     }
 
-    public ExtendedRevisionCallGraph(String forge, String product, String version, long timestamp, List<List<Dependency>> depset, ArrayList<FastenURI[]> graph, Map<FastenURI, Type> classHierarchy) {
+    public ExtendedRevisionCallGraph(String forge, String product, String version, long timestamp,
+                                     List<List<Dependency>> depset, ArrayList<FastenURI[]> graph,
+                                     Map<FastenURI, Type> classHierarchy) {
         super(forge, product, version, timestamp, depset, graph);
         this.classHierarchy = classHierarchy;
     }
 
-    public ExtendedRevisionCallGraph(JSONObject json, boolean ignoreConstraints) throws JSONException, URISyntaxException {
+    public ExtendedRevisionCallGraph(final JSONObject json, final boolean ignoreConstraints) throws JSONException,
+        URISyntaxException {
         super(json, ignoreConstraints);
     }
 
@@ -132,7 +138,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      */
     @Override
     public JSONObject toJSON() {
-        var revisionCallGraphJSON = super.toJSON();
+        final var revisionCallGraphJSON = super.toJSON();
         final JSONObject chaJSON = new JSONObject();
 
         this.getClassHierarchy().forEach((clas, type) -> {
@@ -151,15 +157,16 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         return revisionCallGraphJSON;
     }
 
-    public static List<String> toListOfString(List<FastenURI> list) {
-        List<String> result = new ArrayList<>();
+    public static List<String> toListOfString(final List<FastenURI> list) {
+        final List<String> result = new ArrayList<>();
         for (FastenURI fastenURI : list) {
             result.add(fastenURI.toString());
         }
         return result;
     }
 
-    public static ExtendedRevisionCallGraph create(String forge, MavenCoordinate coordinate, long timestamp, PartialCallGraph partialCallGraph) {
+    public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate,
+                                                   final long timestamp, final PartialCallGraph partialCallGraph) {
 
         return new ExtendedRevisionCallGraph(forge,
             coordinate.getProduct(),
@@ -170,12 +177,14 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy()));
     }
 
-    public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate, final long timestamp) throws FileNotFoundException {
+    public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate,
+                                                   final long timestamp) throws FileNotFoundException {
 
         logger.info("Generating call graph using Opal ...");
-        final PartialCallGraph partialCallGraph = new PartialCallGraph(
+        final var partialCallGraph = new PartialCallGraph(
             MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate()).orElseThrow(RuntimeException::new)
         );
+
         logger.info("Opal call graph has been generated.");
 
         logger.info("Converting edges to URIs ...");

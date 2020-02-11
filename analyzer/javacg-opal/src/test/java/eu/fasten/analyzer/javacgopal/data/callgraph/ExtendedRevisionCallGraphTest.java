@@ -72,6 +72,7 @@ public class ExtendedRevisionCallGraphTest {
     @Test
     public void create() throws FileNotFoundException {
 
+        //tests both signature of method create of Extended revision call graph.
         var extendedRevisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
                 1574072773,
@@ -81,24 +82,25 @@ public class ExtendedRevisionCallGraphTest {
         );
 
         extendedRevisionCallGraph.toJSON();
-        assertNotNull(extendedRevisionCallGraph);
-        assertEquals("mvn", extendedRevisionCallGraph.forge);
-        assertEquals("1.7.29", extendedRevisionCallGraph.version);
-        assertEquals(1574072773, extendedRevisionCallGraph.timestamp);
-        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"), extendedRevisionCallGraph.uri);
-        assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"), extendedRevisionCallGraph.forgelessUri);
-        assertEquals("org.slf4j.slf4j-api", extendedRevisionCallGraph.product);
-        assertNotEquals(0, extendedRevisionCallGraph.graph.size());
+        assertSLF4j(extendedRevisionCallGraph);
+
+        var cg = ExtendedRevisionCallGraph.create("mvn",
+                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
+
+        assertSLF4j(cg);
 
 
-        var RevisionCallGraphForZarbosoft = ExtendedRevisionCallGraph.create("mvn",
-                new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"),
-                1574072773,
-                new PartialCallGraph(
-                        MavenCoordinate.MavenResolver.downloadJar("com.zarbosoft:coroutines-core:0.0.3").orElseThrow(RuntimeException::new)
-                )
-        ).toJSON();
+    }
 
+    private void assertSLF4j(ExtendedRevisionCallGraph cg) {
+        assertNotNull(cg);
+        assertEquals("mvn", cg.forge);
+        assertEquals("1.7.29", cg.version);
+        assertEquals(1574072773, cg.timestamp);
+        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"), cg.uri);
+        assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"), cg.forgelessUri);
+        assertEquals("org.slf4j.slf4j-api", cg.product);
+        assertNotEquals(0, cg.graph.size());
     }
 
 }

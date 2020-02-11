@@ -95,9 +95,9 @@ public class Main implements Runnable {
     private static Logger logger = LoggerFactory.getLogger(Main.class);
 
     public void run() {
-        NumberFormat timeFormatter = new DecimalFormat("#0.000");
-        MavenCoordinate mavenCoordinate = null;
-        List<MavenCoordinate> dependencies = new ArrayList<>();
+        final NumberFormat timeFormatter = new DecimalFormat("#0.000");
+        final MavenCoordinate mavenCoordinate;
+        final List<MavenCoordinate> dependencies = new ArrayList<>();
 
         if (this.fullCoordinate.mavenCoordStr != null) {
             mavenCoordinate = MavenCoordinate.fromString(this.fullCoordinate.mavenCoordStr);
@@ -113,7 +113,7 @@ public class Main implements Runnable {
             }
         }
 
-        ExtendedRevisionCallGraph revisionCallGraph = null;
+        final ExtendedRevisionCallGraph revisionCallGraph;
         try {
             logger.info("Generating call graph for the Maven coordinate: {}", this.fullCoordinate.mavenCoordStr);
             long startTime = System.currentTimeMillis();
@@ -133,7 +133,7 @@ public class Main implements Runnable {
      * Generates RevisionCallGraphs using Opal for the specified artifact in the command line parameters.
      */
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new Main()).execute(args);
+        final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }
 }

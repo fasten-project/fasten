@@ -22,6 +22,7 @@ import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 import org.opalj.br.*;
@@ -46,8 +47,8 @@ public class Method {
      * @param descriptor Descriptor of the method in org.opalj.br.MethodDescriptor format.
      * @return @return Canonicalized Schemeless eu.fasten.core.data.FastenURI of the given method.
      */
-    public static FastenURI toCanonicalSchemelessURI(String product, ReferenceType clas, String method, MethodDescriptor descriptor) {
-        FastenJavaURI javaURI;
+    public static FastenURI toCanonicalSchemelessURI(final String product, final ReferenceType clas, final String method, final MethodDescriptor descriptor) {
+        final FastenJavaURI javaURI;
         try {
             javaURI = FastenJavaURI.create(null, product, null,
                     getPackageName(clas),
@@ -76,7 +77,7 @@ public class Method {
      * (static initialization blocks for the class, and static field initialization), it's
      * pctEncoded "<"init">", otherwise the method name.
      */
-    public static String getMethodName(String className,String methodName) {
+    public static String getMethodName(final String className, final String methodName) {
 
         if (methodName.equals("<init>")) {
 
@@ -93,7 +94,7 @@ public class Method {
         }
     }
 
-    private static String threeTimesPct(String nonEncoded) {
+    private static String threeTimesPct(final String nonEncoded) {
         return FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg(nonEncoded)));
     }
 
@@ -103,7 +104,7 @@ public class Method {
      * @param returnType org.opalj.br.Type
      * @return type in FastenJavaURI format.
      */
-    public static FastenJavaURI getTypeURI(org.opalj.br.Type returnType) {
+    public static FastenJavaURI getTypeURI(final org.opalj.br.Type returnType) {
 
         if (getClassName(returnType).contains("Lambda")){
             return new FastenJavaURI("/" + getPackageName(returnType) + "/" + FastenJavaURI.pctEncodeArg(getClassName(returnType)));
@@ -117,9 +118,9 @@ public class Method {
      * @param parametersType Java List of parameters of in OPAL types.
      * @return parameters in FastenJavaURI[].
      */
-    public static FastenJavaURI[] getParametersURI(List<FieldType> parametersType) {
+    public static FastenJavaURI[] getParametersURI(final List<FieldType> parametersType) {
 
-        FastenJavaURI[] parameters = new FastenJavaURI[parametersType.size()];
+        final FastenJavaURI[] parameters = new FastenJavaURI[parametersType.size()];
 
         IntStream.range(0, parametersType.size()).forEach(i -> parameters[i] = getTypeURI(parametersType.get(i)));
 
@@ -133,27 +134,28 @@ public class Method {
      * @param parameter OPAL parameter.
      * @return String in eu.fasten.core.data.FastenURI format, for namespace of the given parameter.
      */
-    public static String getPackageName(org.opalj.br.Type parameter) {
-
-        String parameterPackageName = "";
+    public static String getPackageName(final org.opalj.br.Type parameter) {
 
         if (parameter.isBaseType()) {
-            parameterPackageName = parameter.asBaseType().WrapperType().packageName();
+            return slashToDot(parameter.asBaseType().WrapperType().packageName());
         } else if (parameter.isReferenceType()) {
 
             if (parameter.isArrayType()) {
-                parameterPackageName = getPackageName(parameter.asArrayType().componentType());
+                return slashToDot(Objects.requireNonNull(getPackageName(parameter.asArrayType().componentType())));
             } else if (parameter.asObjectType().packageName().equals("")) {
                 return null;
             } else {
-                parameterPackageName = parameter.asObjectType().packageName();
+               return slashToDot(parameter.asObjectType().packageName());
             }
 
         } else if (parameter.isVoidType()) {
-            parameterPackageName = "java.lang";
+            return slashToDot("java.lang");
         }
+        return "";
+    }
 
-        return parameterPackageName.replace("/", ".");
+    private static String slashToDot(final String s) {
+        return s.replace("/", ".");
     }
 
     /**
@@ -163,27 +165,26 @@ public class Method {
      * @param parameter OPAL parameter in org.opalj.br.Type format.
      * @return String in eu.fasten.core.data.FastenURI format, for type of the given parameter.
      */
-    public static String getClassName(org.opalj.br.Type parameter) {
+    public static String getClassName(final org.opalj.br.Type parameter) {
 
-        String parameterClassName = "";
 
         if (parameter.isBaseType()) {
-            parameterClassName = parameter.asBaseType().WrapperType().simpleName();
+            return parameter.asBaseType().WrapperType().simpleName();
         } else if (parameter.isReferenceType()) {
 
             if (parameter.isArrayType()) {
-                parameterClassName = getClassName(parameter.asArrayType().componentType()).concat(threeTimesPct("[]"));
+                return getClassName(parameter.asArrayType().componentType()).concat(threeTimesPct("[]"));
 
             } else if (parameter.asObjectType().simpleName().contains("Lambda")) {
                 return FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg(parameter.asObjectType().simpleName()));
             } else {
-                parameterClassName = parameter.asObjectType().simpleName();
+                return parameter.asObjectType().simpleName();
             }
 
         } else if (parameter.isVoidType()) {
-            parameterClassName = "Void";
+            return "Void";
         }
 
-        return parameterClassName;
+        return "";
     }
 }

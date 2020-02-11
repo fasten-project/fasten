@@ -39,15 +39,15 @@ public class Type {
     private Chain<ObjectType> superClasses;
     private List<ObjectType> superInterfaces;
 
-    public void setMethods(List<Method> methods) {
+    public void setMethods(final List<Method> methods) {
         this.methods = methods;
     }
 
-    public void setSuperClasses(Chain<ObjectType> superClasses) {
+    public void setSuperClasses(final Chain<ObjectType> superClasses) {
         this.superClasses = superClasses;
     }
 
-    public void setSuperInterfaces(List<ObjectType> superInterfaces) {
+    public void setSuperInterfaces(final List<ObjectType> superInterfaces) {
         this.superInterfaces = superInterfaces;
     }
 
@@ -75,7 +75,7 @@ public class Type {
      * @param classHierarchy org.opalj.br.ClassHierarchy
      * @param currentClass org.opalj.br.ObjectType. The type that its supper types should be set.
      */
-    public void setSupers(ClassHierarchy classHierarchy, ObjectType currentClass) {
+    public void setSupers(final ClassHierarchy classHierarchy, final ObjectType currentClass) {
 
         if (classHierarchy.supertypes().contains(currentClass)) {
 

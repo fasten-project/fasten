@@ -38,7 +38,7 @@ public final class JavaToScalaConverter {
      * @param entryPoints Scala Iterable of methods.
      * @return An scala function including the results.
      */
-    public static Function0<Iterable<Method>> asScalaFunction0(Iterable<Method> entryPoints) {
+    public static Function0<Iterable<Method>> asScalaFunction0(final Iterable<Method> entryPoints) {
         return new AbstractFunction0<>() {
 
             @Override
@@ -53,7 +53,7 @@ public final class JavaToScalaConverter {
      * @param lambdaFunction A java Lambda in order to do things on scala.
      * @return Execution of java Lambda as scala function1.
      */
-    public static AbstractFunction1 asScalaFunction1(ScalaFunction1 lambdaFunction) {
+    public static AbstractFunction1 asScalaFunction1(final ScalaFunction1 lambdaFunction) {
         return new AbstractFunction1() {
 
             @Override
@@ -68,7 +68,7 @@ public final class JavaToScalaConverter {
      * @param javaFunction A java function in order to do things on scala.
      * @return Execution of java function as scala function2.
      */
-    public static AbstractFunction2<Method, Map<Object, Iterable<Method>>, Object> asScalaFunction2(ScalaFunction2 javaFunction) {
+    public static AbstractFunction2<Method, Map<Object, Iterable<Method>>, Object> asScalaFunction2(final ScalaFunction2 javaFunction) {
         return new AbstractFunction2<>() {
 
             @Override

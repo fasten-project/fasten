@@ -34,9 +34,9 @@ public class CallGraphDifferentiator {
      * @param secondGraph second graph to be compared
      * @throws IOException
      */
-    public static void diff(String resultPath, int graphNumber, ExtendedRevisionCallGraph firstGraph, ExtendedRevisionCallGraph secondGraph) throws IOException {
+    public static void diffInFile(final String resultPath, final int graphNumber, final ExtendedRevisionCallGraph firstGraph, final ExtendedRevisionCallGraph secondGraph) throws IOException {
 
-        String graphPath = resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
+        final String graphPath = resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
 
         firstGraph.sortGraphEdges();
         secondGraph.sortGraphEdges();
@@ -47,8 +47,8 @@ public class CallGraphDifferentiator {
         Runtime.getRuntime().exec(new String[]{"sh", "-c", "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath + "_Diff.txt"});
     }
 
-    public static void writeToFile(String path, String graph, String suffix) throws IOException {
-        BufferedWriter writer;
+    public static void writeToFile(final String path, final String graph, final String suffix) throws IOException {
+        final BufferedWriter writer;
         writer = new BufferedWriter(new FileWriter(path + suffix));
         writer.write(graph);
         writer.close();
