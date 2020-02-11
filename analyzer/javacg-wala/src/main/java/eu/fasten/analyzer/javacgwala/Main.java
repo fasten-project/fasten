@@ -19,7 +19,8 @@
 
 package eu.fasten.analyzer.javacgwala;
 
-import eu.fasten.analyzer.javacgwala.data.type.MavenCoordinate;
+import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "JavaCGWala")
@@ -72,11 +73,10 @@ public class Main implements Runnable {
                     this.exclusive.mavencoords.version);
         }
 
-        var revisionCallGraph = WalaJavaCGGen.generateCallGraph(mavenCoordinate.getCanonicalForm());
+        var revisionCallGraph = CallGraphConstructor.build(mavenCoordinate.getCanonicalForm());
 
-        //TODO something with the calculated RevesionCallGraph.
         assert revisionCallGraph != null;
-        System.out.println(revisionCallGraph.toJSON());
+        System.out.println(revisionCallGraph.toRevisionCallGraph(0).toJSON());
     }
 
     /**
