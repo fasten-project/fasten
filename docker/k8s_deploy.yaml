@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fasten-server-dev
+  namespace: fasten
+spec:
+  selector:
+    matchLabels:
+      app: fasten-server-dev
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: fasten-server-dev
+    spec:
+      containers:
+        - name: fasten-server-dev
+          image: monster93/fasten-server-dev:v0.1b
+          args: ["-k", "kafka-0.kafka-headless.codefeedr:9092"]
+          ports:
+            - containerPort: 3010

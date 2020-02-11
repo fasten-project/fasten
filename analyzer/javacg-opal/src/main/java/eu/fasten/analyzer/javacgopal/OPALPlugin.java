@@ -51,8 +51,7 @@ public class OPALPlugin extends Plugin {
         final String CONSUME_TOPIC = "maven.packages";
         final String PRODUCE_TOPIC = "opal_callgraphs";
         private boolean processedRecord;
-        private String pluginError = "";
-
+        private String pluginError;
 
         @Override
         public List<String> consumerTopics() {
@@ -61,9 +60,10 @@ public class OPALPlugin extends Plugin {
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
+            pluginError = "";
             processedRecord = false;
             consume(kafkaRecord, true);
-            processedRecord = true;
+            if(getPluginError().isEmpty()) { processedRecord = true; }
         }
 
         /**
@@ -109,7 +109,7 @@ public class OPALPlugin extends Plugin {
             }
         }
 
-        private static MavenCoordinate getMavenCoordinate(final JSONObject kafkaConsumedJson) {
+        public MavenCoordinate getMavenCoordinate(final JSONObject kafkaConsumedJson) {
 
             try {
                 return new MavenCoordinate(
@@ -117,6 +117,7 @@ public class OPALPlugin extends Plugin {
                     kafkaConsumedJson.get("artifactId").toString(),
                     kafkaConsumedJson.get("version").toString());
             } catch (JSONException e) {
+                setPluginError(e.getClass().getSimpleName());
                 logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson, e);
             }
             return null;
@@ -147,6 +148,7 @@ public class OPALPlugin extends Plugin {
                 if (recordMetadata != null) {
                     logger.debug("Sent: {} to {}", cg.uri.toString(), this.PRODUCE_TOPIC);
                 } else {
+                    setPluginError(e.getClass().getSimpleName());
                     logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
                 }
             }));
