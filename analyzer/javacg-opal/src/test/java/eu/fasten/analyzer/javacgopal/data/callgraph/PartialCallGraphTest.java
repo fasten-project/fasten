@@ -188,7 +188,7 @@ public class PartialCallGraphTest {
         mock.put(2, new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid"));
 
         assertEquals(mock,
-                PartialCallGraph.toURIMethods(0,callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getMethods())
+                PartialCallGraph.toURIMethods(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getMethods())
         );
     }
 
@@ -201,7 +201,7 @@ public class PartialCallGraphTest {
         mock.put(2, new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid"));
 
         assertEquals(mock,
-                PartialCallGraph.toURIMethods(0, callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getMethods())
+                PartialCallGraph.toURIMethods(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getMethods())
         );
 
         assertEquals(

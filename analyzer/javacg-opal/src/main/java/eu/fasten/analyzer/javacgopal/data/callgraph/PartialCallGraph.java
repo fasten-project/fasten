@@ -32,6 +32,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
 import org.opalj.ai.analyses.cg.CallGraphFactory;
@@ -119,10 +120,16 @@ public class PartialCallGraph {
         final var currentArtifactClasses = new HashSet<>(allMethods.keySet());
         final var libraryClasses = new HashSet<>(JavaConversions.mapAsJavaMap(artifactInOpalFormat.classHierarchy().supertypes()).keySet());
         libraryClasses.removeAll(currentArtifactClasses);
-        for (ObjectType currentClass : currentArtifactClasses) {
-            final var type = new Type(currentClass, allMethods.get(currentClass), artifactInOpalFormat.classHierarchy());
+
+        final AtomicInteger methodNum = new AtomicInteger();
+        currentArtifactClasses.forEach(currentClass -> {
+
+            final var methods = getMethodsMap(methodNum.get(), allMethods.get(currentClass));
+            final var type = new Type(currentClass, methods, artifactInOpalFormat.classHierarchy());
             this.classHierarchy.put(type.getType(), type);
-        }
+            methodNum.addAndGet(methods.size());
+
+        });
 
 //        for (ObjectType libraryClass : libraryClasses) {
 //            Type type = new Type();
@@ -130,6 +137,13 @@ public class PartialCallGraph {
 //            this.classHierarchy.put(libraryClass, type);
 //        }
 
+    }
+
+    private Map<org.opalj.br.Method, Integer> getMethodsMap(final int keyStartsFrom, final List<org.opalj.br.Method> methods) {
+
+        final int bound = keyStartsFrom + methods.size();
+        return IntStream.range(keyStartsFrom, bound).boxed().collect(Collectors.toMap(
+            i -> methods.get(i - keyStartsFrom), i -> i, (a, b) -> b));
     }
 
     /**
@@ -276,7 +290,6 @@ public class PartialCallGraph {
     public static Map<FastenURI, ExtendedRevisionCallGraph.Type> toURIHierarchy(final Map<ObjectType, Type> classHierarchy) {
 
         final Map<FastenURI, ExtendedRevisionCallGraph.Type> uriClassHierarchy = new HashMap<>();
-        final AtomicInteger methodNumOfArtifact = new AtomicInteger();
 
         for (ObjectType aClass : classHierarchy.keySet()) {
 
@@ -293,12 +306,11 @@ public class PartialCallGraph {
                 Method.getTypeURI(aClass),
                 new ExtendedRevisionCallGraph.Type(
                     type.getSourceFileName(),
-                    toURIMethods(methodNumOfArtifact.get(), type.getMethods()),
+                    toURIMethods(type.getMethods()),
                     superClassesURIs,
                     toURIInterfaces(type.getSuperInterfaces())
                 )
             );
-            methodNumOfArtifact.addAndGet(type.getMethods().size());
         }
         return uriClassHierarchy;
     }
@@ -338,12 +350,11 @@ public class PartialCallGraph {
      * @param methods A list of org.obalj.br.Method
      * @return A Map of eu.fasten.core.data.FastenURIs
      */
-    public static Map<Integer, FastenURI> toURIMethods(final int startCount, final List<org.opalj.br.Method> methods) {
+    public static Map<Integer, FastenURI> toURIMethods(final Map<org.opalj.br.Method, Integer> methods) {
         final Map<Integer, FastenURI> methodsURIs = new HashMap<>();
-        final AtomicInteger counter = new AtomicInteger(startCount);
 
-        for (org.opalj.br.Method method : methods) {
-            methodsURIs.put(counter.get(),
+        methods.forEach((method, key) -> {
+            methodsURIs.put(key,
                 Method.toCanonicalSchemelessURI(
                     null,
                     method.declaringClassFile().thisType(),
@@ -351,8 +362,7 @@ public class PartialCallGraph {
                     method.descriptor()
                 )
             );
-            counter.addAndGet(1);
-        }
+        });
         return methodsURIs;
     }
 

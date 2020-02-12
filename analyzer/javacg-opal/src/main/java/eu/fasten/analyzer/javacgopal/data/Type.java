@@ -36,11 +36,11 @@ public class Type {
 
     private ObjectType type;
     private String sourceFileName;
-    private List<Method> methods;
+    private Map<Method,Integer> methods;
     private Chain<ObjectType> superClasses;
     private List<ObjectType> superInterfaces;
 
-    public void setMethods(final List<Method> methods) {
+    public void setMethods(final Map<Method, Integer> methods) {
         this.methods = methods;
     }
 
@@ -60,7 +60,7 @@ public class Type {
         this.superInterfaces = superInterfaces;
     }
 
-    public List<Method> getMethods() {
+    public Map<Method,Integer> getMethods() {
         return methods;
     }
 
@@ -72,7 +72,7 @@ public class Type {
         return superInterfaces;
     }
 
-    public Type(final ObjectType type, final List<Method> methods, final ClassHierarchy classHierarchy) {
+    public Type(final ObjectType type, final Map<Method,Integer> methods, final ClassHierarchy classHierarchy) {
         this.type = type;
         this.methods = methods;
         this.sourceFileName = extractSourceFile();
@@ -123,7 +123,7 @@ public class Type {
      */
     public String extractSourceFile() {
         final Set<SourceFile> allSourceFilesOfType = new HashSet<>();
-        for (org.opalj.br.Method method : this.getMethods()) {
+        for (org.opalj.br.Method method : this.getMethods().keySet()) {
             method.declaringClassFile().attributes().toList().foreach(
                 JavaToScalaConverter.asScalaFunction1(attribute -> {
                 if (attribute instanceof SourceFile) {
