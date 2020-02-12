@@ -25,6 +25,7 @@ import eu.fasten.core.data.RevisionCallGraph;
 import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -60,7 +61,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
             this.classHierarchy.forEach((fastenURI, type) -> {
                 fastenURI = null;
-                type.methods.parallelStream().forEach(i -> i = null);
+                type.methods.forEach((key, uri) ->{ key = null; uri = null;});
                 type.superClasses.parallelStream().forEach(i -> i = null);
                 type.superInterfaces.parallelStream().forEach(i -> i = null);
             });
@@ -81,20 +82,20 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      */
     public static class Type {
         //The source file name of this type.
-        private String sourceFileName;
+        final private String sourceFileName;
         //Methods that this type implements
-        private List<FastenURI> methods;
+        final private Map<Integer ,FastenURI> methods;
         //Classes that this type inherits from in the order of instantiation.
-        private LinkedList<FastenURI> superClasses;
+        final private LinkedList<FastenURI> superClasses;
         //Interfaces that this type or its super classes implement.
-        private List<FastenURI> superInterfaces;
+        final private List<FastenURI> superInterfaces;
 
         public String getSourceFileName() {
             return sourceFileName;
         }
 
         public List<FastenURI> getMethods() {
-            return methods;
+            return new ArrayList<>(methods.values());
         }
 
         public LinkedList<FastenURI> getSuperClasses() {
@@ -105,19 +106,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             return superInterfaces;
         }
 
-        public void setMethods(List<FastenURI> methods) {
-            this.methods = methods;
-        }
-
-        public void setSuperClasses(LinkedList<FastenURI> superClasses) {
-            this.superClasses = superClasses;
-        }
-
-        public void setSuperInterfaces(List<FastenURI> superInterfaces) {
-            this.superInterfaces = superInterfaces;
-        }
-
-        public Type(String sourceFile, List<FastenURI> methods, LinkedList<FastenURI> superClasses,
+        public Type(String sourceFile, Map<Integer,FastenURI> methods, LinkedList<FastenURI> superClasses,
                     List<FastenURI> superInterfaces) {
             this.sourceFileName = sourceFile;
             this.methods = methods;
@@ -162,6 +151,17 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         revisionCallGraphJSON.put("cha", chaJSON);
 
         return revisionCallGraphJSON;
+    }
+
+    public static List<List<String>> toListOfString(final Map<Integer, FastenURI> map) {
+        final List<List<String>> methods = new ArrayList<>();
+        map.forEach((integer, fastenURI) -> {
+            final List<String> method = new ArrayList<>();
+            method.add(integer.toString());
+            method.add(fastenURI.toString());
+            methods.add(method);
+        });
+        return methods;
     }
 
     public static List<String> toListOfString(final List<FastenURI> list) {

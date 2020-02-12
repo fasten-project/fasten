@@ -182,25 +182,26 @@ public class PartialCallGraphTest {
 
     @Test
     public void testToURIMethods() {
+        Map<Integer,FastenJavaURI> mock = new HashMap<>();
+        mock.put(0, new FastenJavaURI("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid"));
+        mock.put(1, new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"));
+        mock.put(2, new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid"));
 
-        assertEquals(Arrays.asList(
-                new FastenJavaURI("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid"),
-                new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
-                new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid")
-                ),
-                PartialCallGraph.toURIMethods(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getMethods())
+        assertEquals(mock,
+                PartialCallGraph.toURIMethods(0,callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getMethods())
         );
     }
 
     @Test
     public void testToURIHierarchy() {
 
-        assertEquals(Arrays.asList(
-                new FastenJavaURI("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid"),
-                new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
-                new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid")
-                ),
-                PartialCallGraph.toURIMethods(callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getMethods())
+        Map<Integer,FastenJavaURI> mock = new HashMap<>();
+        mock.put(0, new FastenJavaURI("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid"));
+        mock.put(1, new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"));
+        mock.put(2, new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid"));
+
+        assertEquals(mock,
+                PartialCallGraph.toURIMethods(0, callgraph.getClassHierarchy().get(callgraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType()).getMethods())
         );
 
         assertEquals(

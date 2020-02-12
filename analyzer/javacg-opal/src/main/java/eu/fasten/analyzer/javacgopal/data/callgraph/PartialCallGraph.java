@@ -275,7 +275,8 @@ public class PartialCallGraph {
      */
     public static Map<FastenURI, ExtendedRevisionCallGraph.Type> toURIHierarchy(final Map<ObjectType, Type> classHierarchy) {
 
-        final Map<FastenURI, ExtendedRevisionCallGraph.Type> URIclassHierarchy = new HashMap<>();
+        final Map<FastenURI, ExtendedRevisionCallGraph.Type> uriClassHierarchy = new HashMap<>();
+        final AtomicInteger methodNumOfArtifact = new AtomicInteger();
 
         for (ObjectType aClass : classHierarchy.keySet()) {
 
@@ -288,17 +289,18 @@ public class PartialCallGraph {
                 superClassesURIs = new LinkedList<>();
             }
 
-            URIclassHierarchy.put(
+            uriClassHierarchy.put(
                 Method.getTypeURI(aClass),
                 new ExtendedRevisionCallGraph.Type(
                     type.getSourceFileName(),
-                    toURIMethods(type.getMethods()),
+                    toURIMethods(methodNumOfArtifact.get(), type.getMethods()),
                     superClassesURIs,
                     toURIInterfaces(type.getSuperInterfaces())
                 )
             );
+            methodNumOfArtifact.addAndGet(type.getMethods().size());
         }
-        return URIclassHierarchy;
+        return uriClassHierarchy;
     }
 
     /**
@@ -334,12 +336,14 @@ public class PartialCallGraph {
      * Converts a list of methods to a list of FastenURIs.
      *
      * @param methods A list of org.obalj.br.Method
-     * @return A list of eu.fasten.core.data.FastenURIs.
+     * @return A Map of eu.fasten.core.data.FastenURIs
      */
-    public static List<FastenURI> toURIMethods(final List<org.opalj.br.Method> methods) {
-        final List<FastenURI> methodsURIs = new ArrayList<>();
+    public static Map<Integer, FastenURI> toURIMethods(final int startCount, final List<org.opalj.br.Method> methods) {
+        final Map<Integer, FastenURI> methodsURIs = new HashMap<>();
+        final AtomicInteger counter = new AtomicInteger(startCount);
+
         for (org.opalj.br.Method method : methods) {
-            methodsURIs.add(
+            methodsURIs.put(counter.get(),
                 Method.toCanonicalSchemelessURI(
                     null,
                     method.declaringClassFile().thisType(),
@@ -347,6 +351,7 @@ public class PartialCallGraph {
                     method.descriptor()
                 )
             );
+            counter.addAndGet(1);
         }
         return methodsURIs;
     }

@@ -47,15 +47,17 @@ public class ExtendedRevisionCallGraphTest {
 
         assertEquals(
                 firstGraph.toJSON().get("cha").toString(),
-                "{\"/name.space/DiffExampleFirst\":" +
-                        "{\"methods\":" +
-                        "[\"/name.space/DiffExampleFirst.DiffExampleFirst()%2Fjava.lang%2FVoid\"," +
-                        "\"/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoid\"," +
-                        "\"/name.space/DiffExampleFirst.b()%2Fjava.lang%2FVoid\"," +
-                        "\"/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoid\"," +
-                        "\"/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoid\"]," +
-                        "\"superInterfaces\":[]," +
-                        "\"superClasses\":[\"/java.lang/Object\"]}}"
+                "{\"/name.space/DiffExampleFirst\":{" +
+                            "\"methods\":[" +
+                                "[\"0\",\"/name.space/DiffExampleFirst.DiffExampleFirst()%2Fjava.lang%2FVoid\"]," +
+                                "[\"1\",\"/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoid\"]," +
+                                "[\"2\",\"/name.space/DiffExampleFirst.b()%2Fjava.lang%2FVoid\"]," +
+                                "[\"3\",\"/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoid\"]," +
+                                "[\"4\",\"/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoid\"]" +
+                            "]," +
+                            "\"superInterfaces\":[]," +
+                            "\"superClasses\":[\"/java.lang/Object\"]" +
+                        "}}"
         );
 
 //        var g = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("CallBack").getFile()));
