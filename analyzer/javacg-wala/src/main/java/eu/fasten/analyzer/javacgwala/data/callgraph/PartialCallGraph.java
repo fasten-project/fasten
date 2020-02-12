@@ -8,6 +8,7 @@ import eu.fasten.core.data.RevisionCallGraph;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class PartialCallGraph {
 
@@ -27,9 +28,14 @@ public class PartialCallGraph {
      */
     private List<Call> resolvedCalls;
 
+    /**
+     * Class hierarchy.
+     */
+    private Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
+
     //TODO: add class hierarchy analysis
 
-    protected PartialCallGraph(List<MavenResolvedCoordinate> coordinates) {
+    public PartialCallGraph(List<MavenResolvedCoordinate> coordinates) {
         this.resolvedCalls = new ArrayList<>();
         this.unresolvedCalls = new ArrayList<>();
         this.coordinates = coordinates;

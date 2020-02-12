@@ -11,6 +11,7 @@ import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.util.config.AnalysisScopeReader;
 import eu.fasten.analyzer.javacgwala.data.MavenResolvedCoordinate;
+import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,7 @@ public class CallGraphConstructor {
             long start = System.currentTimeMillis();
             var rawGraph = generateCallGraph(classPaths.get(0).jarPath.toString());
             logger.debug("Call graph construction took {}ms", System.currentTimeMillis() - start);
-            return WalaResultAnalysis.wrap(rawGraph, classPaths);
+            return WalaResultAnalyzer.wrap(rawGraph, classPaths);
         } catch (Exception e) {
             return null;
         }

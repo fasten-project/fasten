@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.javacgwala.data.callgraph;
+package eu.fasten.analyzer.javacgwala.data.callgraph.analyzer;
 
 import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.classLoader.IClass;
@@ -10,7 +10,7 @@ import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import eu.fasten.analyzer.javacgwala.data.ArtifactResolver;
-import eu.fasten.analyzer.javacgwala.data.MavenResolvedCoordinate;
+import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgwala.data.core.Call;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
 import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
@@ -18,11 +18,10 @@ import eu.fasten.analyzer.javacgwala.data.core.UnresolvedMethod;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.function.Predicate;
 import java.util.jar.JarFile;
 
-public class WalaResultAnalysis {
+public class CallGraphAnalyzer {
 
     private final CallGraph rawCallGraph;
 
@@ -32,26 +31,18 @@ public class WalaResultAnalysis {
 
     private final PartialCallGraph partialCallGraph;
 
-
     private final HashMap<String, ResolvedMethod> resolvedDictionary = new HashMap<>();
     private final HashMap<String, UnresolvedMethod> unresolvedDictionary = new HashMap<>();
 
-
-    private WalaResultAnalysis(CallGraph rawCallGraph, List<MavenResolvedCoordinate> coordinates) {
+    public CallGraphAnalyzer(CallGraph rawCallGraph, IClassHierarchy cha,
+                             PartialCallGraph partialCallGraph) {
         this.rawCallGraph = rawCallGraph;
-        this.cha = rawCallGraph.getClassHierarchy();
-        this.artifactResolver = new ArtifactResolver(this.cha);
-        this.partialCallGraph = new PartialCallGraph(coordinates);
+        this.cha = cha;
+        this.artifactResolver = new ArtifactResolver(cha);
+        this.partialCallGraph = partialCallGraph;
     }
 
-    public static PartialCallGraph wrap(CallGraph rawCallGraph,
-                                        List<MavenResolvedCoordinate> coordinates) {
-        WalaResultAnalysis walaResultAnalysis = new WalaResultAnalysis(rawCallGraph, coordinates);
-        walaResultAnalysis.resolveCalls();
-        return walaResultAnalysis.partialCallGraph;
-    }
-
-    private void resolveCalls() {
+    public void resolveCalls() {
         for (CGNode node : this.rawCallGraph) {
             MethodReference nodeReference = node.getMethod().getReference();
 
@@ -143,9 +134,9 @@ public class WalaResultAnalysis {
 
     }
 
-    private Call.CallType getInvocationLabel(CallSiteReference callsite) {
+    private Call.CallType getInvocationLabel(CallSiteReference callSite) {
 
-        switch ((IInvokeInstruction.Dispatch) callsite.getInvocationCode()) {
+        switch ((IInvokeInstruction.Dispatch) callSite.getInvocationCode()) {
             case INTERFACE:
                 return Call.CallType.INTERFACE;
             case VIRTUAL:

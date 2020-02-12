@@ -4,7 +4,7 @@ import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
-import eu.fasten.analyzer.javacgwala.data.callgraph.WalaResultAnalysis;
+import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -101,7 +101,7 @@ public class MethodTest {
     @Test
     public void toCanonicalJSONSingleSourceToTargetTest() {
 
-        var wrapped = WalaResultAnalysis.wrap(ssttgraph, null);
+        var wrapped = WalaResultAnalyzer.wrap(ssttgraph, null);
 
         assertEquals(1, wrapped.getResolvedCalls().size());
 
@@ -132,7 +132,7 @@ public class MethodTest {
     @Test
     public void toCanonicalJSONClassInitTest() {
 
-        var wrapped = WalaResultAnalysis.wrap(cigraph, null);
+        var wrapped = WalaResultAnalyzer.wrap(cigraph, null);
 
         assertEquals(1, wrapped.getResolvedCalls().size());
 
@@ -152,7 +152,7 @@ public class MethodTest {
     @Test
     public void toCanonicalJSONLambdaTest() {
 
-        var wrapped = WalaResultAnalysis.wrap(lambdagraph, null);
+        var wrapped = WalaResultAnalyzer.wrap(lambdagraph, null);
 
         assertEquals(2, wrapped.getUnresolvedCalls().size());
 
@@ -173,7 +173,7 @@ public class MethodTest {
     @Test
     public void toCanonicalJSONArrayTest() {
 
-        var wrapped = WalaResultAnalysis.wrap(arraygraph, null);
+        var wrapped = WalaResultAnalyzer.wrap(arraygraph, null);
 
         assertEquals(1, wrapped.getResolvedCalls().size());
 
@@ -197,7 +197,7 @@ public class MethodTest {
                 .getResource("SingleSourceToTarget.jar")
                 .getFile()).getAbsolutePath();
 
-        var wrapped = WalaResultAnalysis.wrap(ssttgraph, null);
+        var wrapped = WalaResultAnalyzer.wrap(ssttgraph, null);
 
         var resolvedCall = wrapped.getResolvedCalls().get(0);
         var unresolvedCall = wrapped.getUnresolvedCalls().get(0);
