@@ -22,7 +22,6 @@ package eu.fasten.analyzer.javacgwala.servercontact;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.UUID;
-
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;

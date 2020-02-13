@@ -1,7 +1,6 @@
 package eu.fasten.analyzer.javacgwala.data.core;
 
 import com.ibm.wala.types.Selector;
-
 import java.util.jar.JarFile;
 
 public class ResolvedMethod extends Method {
@@ -11,8 +10,8 @@ public class ResolvedMethod extends Method {
     /**
      * Construct a method given its reference.
      *
-     * @param namespace
-     * @param symbol
+     * @param namespace Namespace
+     * @param symbol    Selector
      */
     public ResolvedMethod(String namespace, Selector symbol, JarFile artifact) {
         super(namespace, symbol);

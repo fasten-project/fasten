@@ -8,8 +8,8 @@ public class UnresolvedMethod extends Method {
     /**
      * Construct a method given its reference.
      *
-     * @param namespace
-     * @param symbol
+     * @param namespace Namespace
+     * @param symbol    Selector
      */
     public UnresolvedMethod(String namespace, Selector symbol) {
         super(namespace, symbol);

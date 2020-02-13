@@ -24,6 +24,13 @@ public class Call {
     private Method target;
     private final CallType callType;
 
+    /**
+     * Construct call given source and target methods and call type.
+     *
+     * @param source   Caller
+     * @param target   Callee
+     * @param callType Call type
+     */
     public Call(Method source, Method target, CallType callType) {
         this.source = source;
         this.target = target;
@@ -63,12 +70,16 @@ public class Call {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Call call = (Call) o;
-        return Objects.equals(source, call.source) &&
-                Objects.equals(target, call.target) &&
-                callType == call.callType;
+        return Objects.equals(source, call.source)
+                && Objects.equals(target, call.target)
+                && callType == call.callType;
     }
 
     @Override

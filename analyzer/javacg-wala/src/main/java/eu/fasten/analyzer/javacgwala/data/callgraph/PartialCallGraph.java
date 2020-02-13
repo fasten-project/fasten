@@ -4,11 +4,9 @@ import eu.fasten.analyzer.javacgwala.data.MavenResolvedCoordinate;
 import eu.fasten.analyzer.javacgwala.data.core.Call;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 public class PartialCallGraph {
 
@@ -21,16 +19,18 @@ public class PartialCallGraph {
      * Calls that their target's packages are not still known and need to be resolved in
      * later on, e.g. in a merge phase.
      */
-    private List<Call> unresolvedCalls;
+    private final List<Call> unresolvedCalls;
 
     /**
      * Calls that their sources and targets are fully resolved.
      */
-    private List<Call> resolvedCalls;
+    private final List<Call> resolvedCalls;
 
-
-    //TODO: add class hierarchy analysis
-
+    /**
+     * Construct a partial call graph with empty lists of resolved / unresolved calls.
+     *
+     * @param coordinates List of {@link MavenResolvedCoordinate}
+     */
     public PartialCallGraph(List<MavenResolvedCoordinate> coordinates) {
         this.resolvedCalls = new ArrayList<>();
         this.unresolvedCalls = new ArrayList<>();
@@ -45,16 +45,22 @@ public class PartialCallGraph {
         return resolvedCalls;
     }
 
-    public List<MavenResolvedCoordinate> getCoordinates() {
-        return coordinates;
-    }
-
+    /**
+     * Add a new call to the list of resolved calls.
+     *
+     * @param call New call
+     */
     public void addResolvedCall(Call call) {
         if (!this.resolvedCalls.contains(call)) {
             this.resolvedCalls.add(call);
         }
     }
 
+    /**
+     * Add a new call to the list of unresolved calls.
+     *
+     * @param call New call
+     */
     public void addUnresolvedCall(Call call) {
         if (!this.unresolvedCalls.contains(call)) {
             this.unresolvedCalls.add(call);
@@ -90,7 +96,8 @@ public class PartialCallGraph {
      * @param coordinate MavenResolvedCoordinate to convert
      * @return List of FASTEN compatible dependencies
      */
-    private static List<RevisionCallGraph.Dependency> toFastenDep(MavenResolvedCoordinate coordinate) {
+    private static List<RevisionCallGraph.Dependency> toFastenDep(
+            MavenResolvedCoordinate coordinate) {
         var constraints = new RevisionCallGraph.Constraint(coordinate.version, coordinate.version);
         var result = new ArrayList<RevisionCallGraph.Dependency>();
         result.add(new RevisionCallGraph.Dependency("mvn",

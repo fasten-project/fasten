@@ -19,10 +19,8 @@
 
 package eu.fasten.analyzer.javacgwala.data;
 
-
 import java.io.Serializable;
 import java.util.Objects;
-
 
 public class MavenCoordinate implements Serializable {
 

@@ -1,9 +1,8 @@
 package eu.fasten.analyzer.javacgwala.data;
 
-import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
-
 import java.io.Serializable;
 import java.nio.file.Path;
+import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
 
 public final class MavenResolvedCoordinate extends MavenCoordinate implements Serializable {
     public final Path jarPath;

@@ -12,16 +12,15 @@ import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.util.config.AnalysisScopeReader;
 import eu.fasten.analyzer.javacgwala.data.MavenResolvedCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
-import org.jboss.shrinkwrap.resolver.api.maven.Maven;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.jboss.shrinkwrap.resolver.api.maven.Maven;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CallGraphConstructor {
 
@@ -72,7 +71,8 @@ public class CallGraphConstructor {
      * @throws ClassHierarchyException         Exception in making a class hierarchy
      * @throws CallGraphBuilderCancelException Exception of call graph creation process
      */
-    public static CallGraph generateCallGraph(String classpath) throws CallGraphBuilderCancelException, ClassHierarchyException, IOException {
+    public static CallGraph generateCallGraph(String classpath)
+            throws CallGraphBuilderCancelException, ClassHierarchyException, IOException {
         var classLoader = Thread.currentThread().getContextClassLoader();
         var exclusionFile = new File(Objects.requireNonNull(classLoader
                 .getResource("Java60RegressionExclusions.txt")).getFile());

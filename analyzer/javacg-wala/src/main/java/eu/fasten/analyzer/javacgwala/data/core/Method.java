@@ -4,7 +4,6 @@ import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeName;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
-
 import java.util.Objects;
 
 public abstract class Method {
@@ -13,27 +12,13 @@ public abstract class Method {
     Selector symbol;
 
     /**
-     * Construct a method given its reference.
+     * Construct a method.
      *
+     * @param namespace Namespace
+     * @param symbol    Selector
      */
     public Method(String namespace, Selector symbol) {
         this.namespace = namespace;
-        this.symbol = symbol;
-    }
-
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
-
-    public Selector getSymbol() {
-        return symbol;
-    }
-
-    public void setSymbol(Selector symbol) {
         this.symbol = symbol;
     }
 
@@ -170,7 +155,7 @@ public abstract class Method {
     }
 
     /**
-     * Perform encoding 3 times.
+     * Perform encoding 2 times.
      *
      * @param nonEncoded String to encode
      * @return Encoded string
@@ -182,11 +167,15 @@ public abstract class Method {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Method method = (Method) o;
-        return Objects.equals(namespace, method.namespace) &&
-                Objects.equals(symbol, method.symbol);
+        return Objects.equals(namespace, method.namespace)
+                && Objects.equals(symbol, method.symbol);
     }
 
     @Override
