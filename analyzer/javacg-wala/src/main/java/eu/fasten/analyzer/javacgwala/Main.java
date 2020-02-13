@@ -19,7 +19,10 @@
 
 package eu.fasten.analyzer.javacgwala;
 
-import eu.fasten.analyzer.javacgwala.data.type.MavenCoordinate;
+import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
+import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
+import java.io.FileNotFoundException;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "JavaCGWala")
@@ -65,18 +68,22 @@ public class Main implements Runnable {
     public void run() {
         MavenCoordinate mavenCoordinate;
         if (this.exclusive.mavenCoordStr != null) {
-            mavenCoordinate = MavenCoordinate.of(this.exclusive.mavenCoordStr);
+            mavenCoordinate = MavenCoordinate.fromString(this.exclusive.mavenCoordStr);
         } else {
             mavenCoordinate = new MavenCoordinate(this.exclusive.mavencoords.group,
                     this.exclusive.mavencoords.artifact,
                     this.exclusive.mavencoords.version);
         }
 
-        var revisionCallGraph = WalaJavaCGGen.generateCallGraph(mavenCoordinate.getCanonicalForm());
+        PartialCallGraph revisionCallGraph = null;
+        try {
+            revisionCallGraph = CallGraphConstructor.build(mavenCoordinate);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
-        //TODO something with the calculated RevesionCallGraph.
         assert revisionCallGraph != null;
-        System.out.println(revisionCallGraph.toJSON());
+        System.out.println(revisionCallGraph.toRevisionCallGraph(0).toJSON());
     }
 
     /**

@@ -23,6 +23,8 @@
 
   <properties>
     <wala.version>1.5.3</wala.version>
+    <checkstyle.version>8.27</checkstyle.version>
+    <checkstyle.plugin.version>3.1.0</checkstyle.plugin.version>
   </properties>
 
   <dependencies>
@@ -74,34 +76,44 @@
       <version>1.7.26</version>
     </dependency>
     <dependency>
+      <groupId>org.dom4j</groupId>
+      <artifactId>dom4j</artifactId>
+      <version>2.1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>jaxen</groupId>
+      <artifactId>jaxen</artifactId>
+      <version>1.2.0</version>
+    </dependency>
+    <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-engine</artifactId>
         <version>5.4.0</version>
         <scope>test</scope>
     </dependency>
-  </dependencies>
+</dependencies>
 
   <build>
-    <testSourceDirectory>${project.basedir}/src/test/java/eu/fasten/analyzer/javacgwala/</testSourceDirectory>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.2</version>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <addClasspath>true</addClasspath>
-              <classpathPrefix>${user.home}/.m2/repository/</classpathPrefix>
-              <classpathLayoutType>repository</classpathLayoutType>
-              <mainClass>eu.fasten.analyzer.javacgwala.Main</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
+  <testSourceDirectory>${project.basedir}/src/test/java/</testSourceDirectory>
+  <plugins>
+  <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <version>2.22.2</version>
+  </plugin>
+  <plugin>
+    <artifactId>maven-jar-plugin</artifactId>
+    <configuration>
+      <archive>
+        <manifest>
+          <addClasspath>true</addClasspath>
+          <classpathPrefix>${user.home}/.m2/repository/</classpathPrefix>
+          <classpathLayoutType>repository</classpathLayoutType>
+          <mainClass>eu.fasten.analyzer.javacgwala.Main</mainClass>
+        </manifest>
+      </archive>
+    </configuration>
+  </plugin>
+  </plugins>
   </build>
 </project>
