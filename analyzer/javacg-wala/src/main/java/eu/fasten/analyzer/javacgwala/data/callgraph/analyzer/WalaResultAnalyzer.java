@@ -35,6 +35,10 @@ public class WalaResultAnalyzer {
      */
     public static PartialCallGraph wrap(CallGraph rawCallGraph,
                                         List<MavenResolvedCoordinate> coordinates) {
+        if (rawCallGraph == null) {
+            return new PartialCallGraph(coordinates);
+        }
+
         WalaResultAnalyzer walaResultAnalyzer = new WalaResultAnalyzer(rawCallGraph, coordinates);
 
         CallGraphAnalyzer callGraphAnalyzer = new CallGraphAnalyzer(walaResultAnalyzer.rawCallGraph,

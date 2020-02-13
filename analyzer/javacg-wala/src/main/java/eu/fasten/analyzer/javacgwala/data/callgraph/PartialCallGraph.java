@@ -72,7 +72,7 @@ public class PartialCallGraph {
      *
      * @return FASTEN call graph
      */
-    public RevisionCallGraph toRevisionCallGraph(int date) {
+    public RevisionCallGraph toRevisionCallGraph(long date) {
 
         List<List<RevisionCallGraph.Dependency>> depArray = new ArrayList<>(coordinates.size());
 

@@ -21,6 +21,8 @@ package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
+import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
+import java.io.FileNotFoundException;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "JavaCGWala")
@@ -73,7 +75,12 @@ public class Main implements Runnable {
                     this.exclusive.mavencoords.version);
         }
 
-        var revisionCallGraph = CallGraphConstructor.build(mavenCoordinate.getCanonicalForm());
+        PartialCallGraph revisionCallGraph = null;
+        try {
+            revisionCallGraph = CallGraphConstructor.build(mavenCoordinate.getCanonicalForm());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
         assert revisionCallGraph != null;
         System.out.println(revisionCallGraph.toRevisionCallGraph(0).toJSON());
