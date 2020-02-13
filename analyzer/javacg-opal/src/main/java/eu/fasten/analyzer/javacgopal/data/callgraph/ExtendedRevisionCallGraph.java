@@ -94,6 +94,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         }
 
         public List<FastenURI> getMethods() {
+            //logger.info("Methods Size: {}", methods.size());
             return methods;
         }
 
@@ -150,6 +151,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
         this.getClassHierarchy().forEach((clas, type) -> {
 
+            //logger.info("CH: {}", clas.toString());
+
             final JSONObject typeJSON = new JSONObject();
 
             typeJSON.put("methods", toListOfString(type.methods));
@@ -167,7 +170,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     public static List<String> toListOfString(final List<FastenURI> list) {
         final List<String> result = new ArrayList<>();
         for (FastenURI fastenURI : list) {
-            result.add(fastenURI.toString());
+            //logger.info("FURI: {}", fastenURI.toString());
+            if (fastenURI !=null) { result.add(fastenURI.toString()); }
         }
         return result;
     }
