@@ -35,18 +35,18 @@ public class ResolvedCall {
     private org.opalj.br.Method source;
     private List<org.opalj.br.Method> targets;
 
-    public ResolvedCall(org.opalj.br.Method source, List<org.opalj.br.Method> targets) {
+    public ResolvedCall(final org.opalj.br.Method source, final List<org.opalj.br.Method> targets) {
         this.source = source;
         this.targets = targets;
     }
 
     public void clearTargets(){this.targets.clear();}
 
-    public void setSource(org.opalj.br.Method source) {
+    public void setSource(final org.opalj.br.Method source) {
         this.source = source;
     }
 
-    public void setTargets(List<org.opalj.br.Method> targets) {
+    public void setTargets(final List<org.opalj.br.Method> targets) {
         this.targets = targets;
     }
 
@@ -62,11 +62,11 @@ public class ResolvedCall {
      * @return List of two dimensional eu.fasten.core.data.FastenURIs[] which both dimensions of the array are
      * fully resolved methods.
      */
-    public static ArrayList<FastenURI[]> toURICalls(ResolvedCall resolvedCall) {
+    public static ArrayList<FastenURI[]> toURICalls(final ResolvedCall resolvedCall) {
 
-        var resolvedCallURIs = new ArrayList<FastenURI[]>();
+        final var resolvedCallURIs = new ArrayList<FastenURI[]>();
 
-        FastenURI sourceURI = Method.toCanonicalSchemelessURI(
+        final FastenURI sourceURI = Method.toCanonicalSchemelessURI(
             null,
             resolvedCall.getSource().declaringClassFile().thisType(),
             resolvedCall.getSource().name(),
@@ -75,7 +75,7 @@ public class ResolvedCall {
         if ( sourceURI != null) {
             resolvedCall.getTargets().stream().forEach( target -> {
 
-                var targetURI =  Method.toCanonicalSchemelessURI(
+                final var targetURI =  Method.toCanonicalSchemelessURI(
                     null,
                     target.declaringClassFile().thisType(),
                     target.name(),
@@ -86,7 +86,6 @@ public class ResolvedCall {
                 }
             });
         }
-
 
         return resolvedCallURIs;
     }

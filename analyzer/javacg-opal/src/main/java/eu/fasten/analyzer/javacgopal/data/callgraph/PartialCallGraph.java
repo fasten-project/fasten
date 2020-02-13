@@ -31,7 +31,6 @@ import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
@@ -47,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import scala.collection.Iterable;
 import scala.collection.JavaConversions;
+
 
 /**
  * Call graphs that are not still fully resolved.
@@ -116,15 +116,12 @@ public class PartialCallGraph {
             (Object method) -> putMethod(allMethods, (org.opalj.br.Method) method)))
         );
 
-        final Set<ObjectType> currentArtifactClasses = new HashSet<>(allMethods.keySet());
-        final Set<ObjectType> libraryClasses = new HashSet<>(JavaConversions.mapAsJavaMap(artifactInOpalFormat.classHierarchy().supertypes()).keySet());
+        final var currentArtifactClasses = new HashSet<>(allMethods.keySet());
+        final var libraryClasses = new HashSet<>(JavaConversions.mapAsJavaMap(artifactInOpalFormat.classHierarchy().supertypes()).keySet());
         libraryClasses.removeAll(currentArtifactClasses);
-
         for (ObjectType currentClass : currentArtifactClasses) {
-            final Type type = new Type();
-            type.setSupers(artifactInOpalFormat.classHierarchy(), currentClass);
-            type.getMethods().addAll(allMethods.get(currentClass));
-            this.classHierarchy.put(currentClass, type);
+            final var type = new Type(currentClass, allMethods.get(currentClass), artifactInOpalFormat.classHierarchy());
+            this.classHierarchy.put(type.getType(), type);
         }
 
 //        for (ObjectType libraryClass : libraryClasses) {
@@ -195,7 +192,6 @@ public class PartialCallGraph {
             new CHACallGraphAlgorithmConfiguration(artifactInOpalFormat, true));
 
 //        ComputedCallGraph callGraphInOpalFormat = (ComputedCallGraph) AnalysisModeConfigFactory.resetAnalysisMode(artifactInOpalFormat, AnalysisModes.OPA(),false).get(CHACallGraphKey$.MODULE$);
-
         return toPartialGraph(callGraphInOpalFormat);
 
     }
@@ -284,18 +280,18 @@ public class PartialCallGraph {
         for (ObjectType aClass : classHierarchy.keySet()) {
 
             final var type = classHierarchy.get(aClass);
-
             final LinkedList<FastenURI> superClassesURIs;
-            if(type.getSuperClasses() != null){
+            if (type.getSuperClasses() != null) {
                 superClassesURIs = toURIClasses(type.getSuperClasses());
-            }else {
+            } else {
                 logger.warn("There is no super type for {}", aClass);
                 superClassesURIs = new LinkedList<>();
             }
 
-                URIclassHierarchy.put(
+            URIclassHierarchy.put(
                 Method.getTypeURI(aClass),
                 new ExtendedRevisionCallGraph.Type(
+                    type.getSourceFileName(),
                     toURIMethods(type.getMethods()),
                     superClassesURIs,
                     toURIInterfaces(type.getSuperInterfaces())
@@ -325,11 +321,11 @@ public class PartialCallGraph {
      * @param classes A list of org.opalj.collection.immutable.Chain<org.obalj.br.ObjectType>
      * @return A list of eu.fasten.core.data.FastenURI.
      */
-    public static LinkedList<FastenURI> toURIClasses(final Chain<ObjectType> classes){
+    public static LinkedList<FastenURI> toURIClasses(final Chain<ObjectType> classes) {
         final LinkedList<FastenURI> classURIs = new LinkedList<>();
 
-            classes.foreach(JavaToScalaConverter.asScalaFunction1(
-                aClass -> classURIs.add(Method.getTypeURI((ObjectType) aClass))));
+        classes.foreach(JavaToScalaConverter.asScalaFunction1(
+            aClass -> classURIs.add(Method.getTypeURI((ObjectType) aClass))));
 
         return classURIs;
     }
@@ -403,6 +399,7 @@ public class PartialCallGraph {
 
     /**
      * Checks whether the environment is test.
+     *
      * @return true if tests are running, otherwise false.
      */
     public static boolean isJUnitTest() {

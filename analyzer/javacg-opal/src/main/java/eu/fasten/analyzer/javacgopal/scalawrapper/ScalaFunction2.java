@@ -28,5 +28,5 @@ import scala.collection.Map;
  * A functional interface that can help injecting java methods into scala.
  */
 public interface ScalaFunction2 {
-    Boolean execute(Method callee, Map<Object, Iterable<Method>> caller);
+    Boolean execute(final Method callee, final Map<Object, Iterable<Method>> caller);
 }

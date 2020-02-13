@@ -38,11 +38,11 @@ public class UnresolvedCall extends UnresolvedMethodCall {
      * @return List of two dimensional eu.fasten.core.data.FastenURIs[] which always the first dimension of the array is a
      * fully resolved method and the second one has an unknown product.
      */
-    public static FastenURI[] toURICall(UnresolvedMethodCall unresolvedCall) {
+    public static FastenURI[] toURICall(final UnresolvedMethodCall unresolvedCall) {
 
-        FastenURI[] fastenURI = new FastenURI[2];
+        final FastenURI[] fastenURI = new FastenURI[2];
 
-        var sourceURI = Method.toCanonicalSchemelessURI(
+        final var sourceURI = Method.toCanonicalSchemelessURI(
             null,
             unresolvedCall.caller().declaringClassFile().thisType(),
             unresolvedCall.caller().name(),
@@ -51,7 +51,7 @@ public class UnresolvedCall extends UnresolvedMethodCall {
 
         if (sourceURI != null) {
 
-            var targetURI = Method.toCanonicalSchemelessURI(
+            final var targetURI = Method.toCanonicalSchemelessURI(
                 null,
                 unresolvedCall.calleeClass(),
                 unresolvedCall.calleeName(),
@@ -78,8 +78,16 @@ public class UnresolvedCall extends UnresolvedMethodCall {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        var unresolvedCall = (UnresolvedCall) obj;
+    public boolean equals(final Object obj) {
+        if (obj == this) {
+            return true;
+        }
+
+        if (!(obj instanceof UnresolvedCall)) {
+            return false;
+        }
+
+        final var unresolvedCall = (UnresolvedCall) obj;
         if (this.calleeClass() == unresolvedCall.calleeClass()
             && this.calleeName() == unresolvedCall.calleeName()
             && this.calleeDescriptor() == unresolvedCall.calleeDescriptor()

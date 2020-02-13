@@ -33,8 +33,8 @@ public class JVMCallGraph {
      * Prints JVM-formated graphs like this "caller callee </br>".
      * @param partialCallGraph a partial graph.
      */
-    public static void printJVMGraph(PartialCallGraph partialCallGraph) throws IOException {
-        FileWriter writer = new FileWriter("output.txt");
+    public static void printJVMGraph(final PartialCallGraph partialCallGraph) throws IOException {
+        final FileWriter writer = new FileWriter("output.txt");
         for (ResolvedCall resolvedCall : partialCallGraph.getResolvedCalls()) {
             for (Method method : resolvedCall.getTargets()) {
                 writer.write(toJVMMethod(resolvedCall.getSource()) + " " + toJVMMethod(method) + "\n");
@@ -48,7 +48,7 @@ public class JVMCallGraph {
      * @param method OPAL method.
      * @return JVM method in string.
      */
-    public static String toJVMMethod(Method method) {
+    public static String toJVMMethod(final Method method) {
         return method.classFile().thisType().toJVMTypeName().replace(";", "/" + method.name()) + method.descriptor().toJVMDescriptor();
     }
 

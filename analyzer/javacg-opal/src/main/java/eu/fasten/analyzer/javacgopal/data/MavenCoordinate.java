@@ -43,19 +43,19 @@ public class MavenCoordinate {
     private String versionConstraint;
     private String timestamp;
 
-    public void setGroupID(String groupID) {
+    public void setGroupID(final String groupID) {
         this.groupID = groupID;
     }
 
-    public void setArtifactID(String artifactID) {
+    public void setArtifactID(final String artifactID) {
         this.artifactID = artifactID;
     }
 
-    public void setVersionConstraint(String versionConstraint) {
+    public void setVersionConstraint(final String versionConstraint) {
         this.versionConstraint = versionConstraint;
     }
 
-    public void setTimestamp(String timestamp) {
+    public void setTimestamp(final String timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -75,20 +75,20 @@ public class MavenCoordinate {
         return versionConstraint;
     }
 
-    public MavenCoordinate(String groupID, String artifactID, String version) {
+    public MavenCoordinate(final String groupID, final String artifactID, final String version) {
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
     }
 
-    public MavenCoordinate(String groupID, String artifactID, String version, String timestamp) {
+    public MavenCoordinate(final String groupID, final String artifactID, final String version, final String timestamp) {
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
         this.timestamp = timestamp;
     }
 
-    public static MavenCoordinate fromString(String coords) {
+    public static MavenCoordinate fromString(final String coords) {
         var coord = coords.split(":");
         return new MavenCoordinate(coord[0], coord[1], coord[2]);
     }
@@ -104,7 +104,7 @@ public class MavenCoordinate {
     public String getTimestamp() {return timestamp;}
 
     public String toURL()  {
-        StringBuilder url = new StringBuilder(MAVEN_REPO)
+        final StringBuilder url = new StringBuilder(MAVEN_REPO)
             .append(this.groupID.replace('.', '/'))
             .append("/")
             .append(this.artifactID)
@@ -114,7 +114,7 @@ public class MavenCoordinate {
     }
 
     public String toJarUrl() {
-        StringBuilder url = new StringBuilder(this.toURL())
+        final StringBuilder url = new StringBuilder(this.toURL())
             .append("/")
             .append(this.artifactID)
             .append("-")
@@ -124,7 +124,7 @@ public class MavenCoordinate {
     }
 
     public String toPomUrl() {
-        StringBuilder url = new StringBuilder(this.toURL())
+        final StringBuilder url = new StringBuilder(this.toURL())
             .append("/")
             .append(this.artifactID)
             .append("-")
@@ -145,34 +145,34 @@ public class MavenCoordinate {
          * @param mavenCoordinate Maven coordinate of an artifact.
          * @return A java List of a given artifact's dependencies in FastenJson Dependency format.
          */
-        public static List<List<RevisionCallGraph.Dependency>> resolveDependencies(String mavenCoordinate) {
+        public static List<List<RevisionCallGraph.Dependency>> resolveDependencies(final String mavenCoordinate) {
 
-            var dependencies = new ArrayList<List<RevisionCallGraph.Dependency>>();
+            final var dependencies = new ArrayList<List<RevisionCallGraph.Dependency>>();
 
             try {
-                var pom = new SAXReader().read(
+                final var pom = new SAXReader().read(
                     new ByteArrayInputStream(
                         downloadPom(mavenCoordinate).orElseThrow(RuntimeException::new).getBytes()
                     )
                 );
 
                 for (var depNode : pom.selectNodes("//*[local-name() = 'dependency']")) {
-                    var groupId = depNode.selectSingleNode("./*[local-name() = 'groupId']").getStringValue();
-                    var artifactId = depNode.selectSingleNode("./*[local-name() = 'artifactId']").getStringValue();
-                    var versionSpec = depNode.selectSingleNode("./*[local-name() = 'version']");
+                    final var groupId = depNode.selectSingleNode("./*[local-name() = 'groupId']").getStringValue();
+                    final var artifactId = depNode.selectSingleNode("./*[local-name() = 'artifactId']").getStringValue();
+                    final var versionSpec = depNode.selectSingleNode("./*[local-name() = 'version']");
 
-                    String version;
+                    final String version;
                     if (versionSpec != null) {
                         version = versionSpec.getStringValue();
                     } else {
                         version = "*";
                     }
 
-                    RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
+                    final RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
                         "mvn",
                         groupId + "." + artifactId,
                         Arrays.asList(new RevisionCallGraph.Constraint(version, version)));
-                    var depList = new ArrayList<RevisionCallGraph.Dependency>();
+                    final var depList = new ArrayList<RevisionCallGraph.Dependency>();
                     depList.add(dependency);
                     dependencies.add(depList);
                 }
@@ -187,7 +187,7 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return The contents of the downloaded POM file as a string
          */
-        public static Optional<String> downloadPom(String mavenCoordinate) throws FileNotFoundException {
+        public static Optional<String> downloadPom(final String mavenCoordinate) throws FileNotFoundException {
             return httpGetToFile(fromString(mavenCoordinate).toPomUrl(),".pom").
                 flatMap(f -> fileToString(f));
         }
@@ -198,7 +198,7 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return A temporary file on the filesystem
          */
-        public static Optional<File> downloadJar(String mavenCoordinate) throws FileNotFoundException {
+        public static Optional<File> downloadJar(final String mavenCoordinate) throws FileNotFoundException {
             logger.debug("Downloading JAR for " + mavenCoordinate);
             return httpGetToFile(fromString(mavenCoordinate).toJarUrl(),".jar");
         }
@@ -206,11 +206,11 @@ public class MavenCoordinate {
         /**
          * Utility function that reads the contents of a file to a String
          */
-        private static Optional<String> fileToString(File f) {
+        private static Optional<String> fileToString(final File f) {
             logger.trace("Loading file as string: " + f.toString());
             try {
-                var fr = new BufferedReader(new FileReader(f));
-                StringBuilder result = new StringBuilder();
+                final var fr = new BufferedReader(new FileReader(f));
+                final StringBuilder result = new StringBuilder();
                 String line;
                 while ((line = fr.readLine()) != null) {
                     result.append(line);
@@ -227,14 +227,14 @@ public class MavenCoordinate {
         /**
          * Utility function that stores the contents of GET request to a temporary file
          */
-        private static Optional<File> httpGetToFile(String url, String suffix) throws FileNotFoundException {
+        private static Optional<File> httpGetToFile(final String url, final String suffix) throws FileNotFoundException {
             logger.debug("HTTP GET: " + url);
 
             try {
                 //TODO: Download artifacts in configurable shared location
-                var tempFile = Files.createTempFile("fasten", suffix);
+                final var tempFile = Files.createTempFile("fasten", suffix);
 
-                InputStream in = new URL(url).openStream();
+                final InputStream in = new URL(url).openStream();
                 Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
                 in.close();
 
@@ -256,25 +256,25 @@ public class MavenCoordinate {
          * @param dest
          * @throws IOException
          */
-        public Date getFileAndTimeStamp(String fileURL, String dest) throws IOException {
+        public Date getFileAndTimeStamp(final String fileURL, final String dest) throws IOException {
 
-            String fileName = fileURL.substring(fileURL.lastIndexOf("/") + 1);
-            StringJoiner pathJoin = new StringJoiner(File.separator);
-            dest = pathJoin.add(dest).add(fileName).toString();
+            final String fileName = fileURL.substring(fileURL.lastIndexOf("/") + 1);
+            final StringJoiner pathJoin = new StringJoiner(File.separator);
+            final var destFile = pathJoin.add(dest).add(fileName).toString();
 
-            logger.debug("Filename: " + fileName + " | " + "dest: " + dest);
+            logger.debug("Filename: " + fileName + " | " + "dest: " + destFile);
 
-            URL url = new URL(fileURL);
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            final URL url = new URL(fileURL);
+            final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
-            Date timestamp = new Date(con.getLastModified());
+            final Date timestamp = new Date(con.getLastModified());
 
             if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
 
                 logger.debug("Okay status!");
 
-                BufferedReader input = new BufferedReader(new InputStreamReader(con.getInputStream()), 8192);
-                BufferedWriter output = new BufferedWriter(new FileWriter(new File(dest)));
+                final BufferedReader input = new BufferedReader(new InputStreamReader(con.getInputStream()), 8192);
+                final BufferedWriter output = new BufferedWriter(new FileWriter(new File(destFile)));
 
                 String line;
                 while((line = input.readLine()) != null) {

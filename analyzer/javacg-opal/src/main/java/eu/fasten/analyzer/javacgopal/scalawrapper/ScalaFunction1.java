@@ -23,5 +23,5 @@ package eu.fasten.analyzer.javacgopal.scalawrapper;
  * A functional interface that can help injecting java lambdas into scala.
  */
 public interface ScalaFunction1 {
-    Boolean execute(Object findEntryPoints);
+    Boolean execute(final Object findEntryPoints);
 }
