@@ -87,6 +87,7 @@ public class Type {
      */
     public void setSupers(final ClassHierarchy classHierarchy, final ObjectType currentClass) {
 
+        this.superInterfaces = new ArrayList<>();
         if (classHierarchy.supertypes().contains(currentClass)) {
 
             try {
@@ -106,7 +107,6 @@ public class Type {
                 superClasses.reverse();
             }
 
-            this.superInterfaces = new ArrayList<>();
             classHierarchy.allSuperinterfacetypes(currentClass, false).foreach(
                 JavaToScalaConverter.asScalaFunction1(anInterface -> this.superInterfaces.add((ObjectType) anInterface))
             );

@@ -43,7 +43,7 @@ public class CallGraphDifferentiatorTest {
                 "1.7.29",
                 1574072773,
                 Arrays.asList(),
-                DiffExampleFirst.toURIGraph(),
+                DiffExampleFirst.getMapedGraph(),
                 PartialCallGraph.toURIHierarchy(DiffExampleFirst.getClassHierarchy()));
 
         var DiffExampleSecond = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleSecond.class").getFile()));
@@ -53,7 +53,7 @@ public class CallGraphDifferentiatorTest {
                 "1.7.29",
                 1574072773,
                 Arrays.asList(),
-                DiffExampleSecond.toURIGraph(),
+                DiffExampleSecond.getMapedGraph(),
                 PartialCallGraph.toURIHierarchy(DiffExampleSecond.getClassHierarchy()));
 
     }

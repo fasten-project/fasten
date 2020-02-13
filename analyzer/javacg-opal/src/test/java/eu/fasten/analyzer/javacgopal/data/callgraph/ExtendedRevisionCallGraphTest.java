@@ -42,7 +42,7 @@ public class ExtendedRevisionCallGraphTest {
                 "1.7.29",
                 1574072773,
                 Arrays.asList(),
-                importerGraph.toURIGraph(),
+                importerGraph.getMapedGraph(),
                 PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy()));
 
         assertEquals(
@@ -83,7 +83,6 @@ public class ExtendedRevisionCallGraphTest {
                 )
         );
 
-        extendedRevisionCallGraph.toJSON();
         assertSLF4j(extendedRevisionCallGraph);
 
         var cg = ExtendedRevisionCallGraph.create("mvn",
@@ -102,7 +101,7 @@ public class ExtendedRevisionCallGraphTest {
         assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"), cg.uri);
         assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"), cg.forgelessUri);
         assertEquals("org.slf4j.slf4j-api", cg.product);
-        assertNotEquals(0, cg.graph.size());
+        assertNotEquals(0, cg.getGraph().size());
     }
 
 }

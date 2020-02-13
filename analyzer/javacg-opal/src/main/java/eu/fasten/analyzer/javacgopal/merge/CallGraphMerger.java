@@ -24,7 +24,9 @@ import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CallGraphMerger {
 
@@ -44,9 +46,14 @@ public class CallGraphMerger {
 
     public static ExtendedRevisionCallGraph mergeCallGraph(final ExtendedRevisionCallGraph artifact, final List<ExtendedRevisionCallGraph> dependencies) {
 
-        for (FastenURI[] fastenURIS : artifact.graph) {
-            final var source = fastenURIS[0];
-            final var target = fastenURIS[1];
+        final Map<Integer,FastenURI> mapOfAllMethods = new HashMap<>();
+        artifact.getClassHierarchy().forEach((fastenURI, type) -> {
+            mapOfAllMethods.putAll(type.getMethods());
+        });
+
+        artifact.getGraph().getUnresolvedCalls().forEach((sourceKey, fastenURI) ->{
+            final var source = mapOfAllMethods.get(sourceKey);
+            var target = fastenURI;
             final var isSuperClassMethod = artifact.getClassHierarchy().get(getTypeURI(source)).getSuperClasses().contains(getTypeURI(target));
             nextCall:
 
@@ -58,7 +65,7 @@ public class CallGraphMerger {
                     nextDependency:
                     //Check whether this method is inside the dependency
                     if (dependency.getClassHierarchy().containsKey(getTypeURI(target))) {
-                        if (dependency.getClassHierarchy().get(getTypeURI(target)).getMethods().contains(FastenURI.create(target.getRawPath()))) {
+                        if (dependency.getClassHierarchy().get(getTypeURI(target)).getMethods().values().contains(FastenURI.create(target.getRawPath()))) {
                             var resolvedMethod = target.toString().replace("///","//" + dependency.product + "/");
                             //Check if this call is related to a super class
                             if (isSuperClassMethod) {
@@ -66,7 +73,7 @@ public class CallGraphMerger {
                                 for (FastenURI superClass : artifact.getClassHierarchy().get(getTypeURI(source)).getSuperClasses()) {
                                     //Check if this dependency contains the super class that we want
                                     if (dependency.getClassHierarchy().containsKey(superClass)) {
-                                        fastenURIS[1] = new FastenJavaURI(resolvedMethod);
+                                        target = new FastenJavaURI(resolvedMethod);
                                         break nextCall;
                                     } else {
                                         break nextDependency;
@@ -74,14 +81,13 @@ public class CallGraphMerger {
                                 }
                             }
                             else {
-                                fastenURIS[1] = new FastenJavaURI(resolvedMethod);
+                                target = new FastenJavaURI(resolvedMethod);
                             }
                         }
                     }
                 }
             }
-        }
-
+        });
 
         return artifact;
     }

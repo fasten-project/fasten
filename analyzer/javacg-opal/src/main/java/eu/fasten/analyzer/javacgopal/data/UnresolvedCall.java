@@ -23,11 +23,43 @@ import eu.fasten.core.data.FastenURI;
 import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
 import org.opalj.br.MethodDescriptor;
 import org.opalj.br.ReferenceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UnresolvedCall extends UnresolvedMethodCall {
 
+    private static Logger logger = LoggerFactory.getLogger(UnresolvedMethodCall.class);
+
     public UnresolvedCall(org.opalj.br.Method caller, int pc, ReferenceType calleeClass, String calleeName, MethodDescriptor calleeDescriptor) {
         super(caller, pc, calleeClass, calleeName, calleeDescriptor);
+    }
+
+    /**
+     * Converts unresolved calls to URIs.
+     * @param unresolvedCall Calls without specified product name in their target. Source or callers of
+     *                        such calls are org.opalj.br.Method presented in the under investigation artifact,
+     *                        But targets or callees don't have a product.
+     * @return List of two dimensional eu.fasten.core.data.FastenURIs[] which always the first dimension of the array is a
+     * fully resolved method and the second one has an unknown product.
+     */
+    public static FastenURI getTargetURI(final UnresolvedMethodCall unresolvedCall) {
+
+            final var targetURI = Method.toCanonicalSchemelessURI(
+                null,
+                unresolvedCall.calleeClass(),
+                unresolvedCall.calleeName(),
+                unresolvedCall.calleeDescriptor()
+            );
+
+            if (targetURI == null) {
+                logger.warn("Problem occured while converting this node from outside of artifact to URI: {}.{},{}",
+                    unresolvedCall.calleeClass(),
+                    unresolvedCall.calleeName(),
+                    unresolvedCall.calleeDescriptor());
+                return null;
+            }
+
+        return FastenURI.create( "//" + targetURI.toString());
     }
 
     /**
@@ -68,13 +100,17 @@ public class UnresolvedCall extends UnresolvedMethodCall {
         return fastenURI;
     }
 
+    public FastenURI[] toURICall() {
+        return toURICall(this);
+    }
+
     /**
      * Converts unresolved calls to URIs.
      * @return List of two dimensional eu.fasten.core.data.FastenURIs[] which always the first dimension of the array is a
      * fully resolved method and the second one has an unknown product.
      */
-    public FastenURI[] toURICall() {
-        return toURICall(this);
+    public FastenURI getTargetURI() {
+        return getTargetURI(this);
     }
 
     @Override

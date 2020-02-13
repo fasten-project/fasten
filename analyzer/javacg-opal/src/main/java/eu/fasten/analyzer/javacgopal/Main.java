@@ -21,11 +21,13 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 
+import eu.fasten.analyzer.javacgopal.merge.CallGraphDifferentiator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -120,9 +122,9 @@ public class Main implements Runnable {
             revisionCallGraph = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(this.timestamp));
             logger.info("Generated the call graph in {} seconds.", timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
             //TODO something with the calculated RevesionCallGraph.
-            System.out.println(revisionCallGraph.toJSON());
+            CallGraphDifferentiator.writeToFile("",revisionCallGraph.toJSON().toString(),"graph");
 
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
             e.printStackTrace();
         }

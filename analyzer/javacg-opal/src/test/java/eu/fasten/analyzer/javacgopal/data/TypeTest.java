@@ -60,7 +60,7 @@ public class TypeTest {
                 "1.7.29",
                 1574072773,
                 Arrays.asList(),
-                callgraph.toURIGraph(),
+                callgraph.getMapedGraph(),
                 PartialCallGraph.toURIHierarchy(callgraph.getClassHierarchy()));
     }
 

@@ -25,8 +25,8 @@ import eu.fasten.core.data.RevisionCallGraph;
 import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.util.*;
-import java.util.stream.Collectors;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -36,13 +36,14 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     private static Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
     private Map<FastenURI, Type> classHierarchy;
+    private Graph graph;
 
     public Map<FastenURI, Type> getClassHierarchy() {
         return classHierarchy;
     }
 
-    public void setClassHierarchy(final Map<FastenURI, Type> classHierarchy) {
-        this.classHierarchy = classHierarchy;
+    public Graph getGraph() {
+        return graph;
     }
 
     /**
@@ -54,10 +55,6 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      */
     public void clear(final Boolean excessiveRemove) {
         if (excessiveRemove) {
-            this.graph.parallelStream().forEach(i -> {
-                i[0] = null;
-                i[1] = null;
-            });
 
             this.classHierarchy.forEach((fastenURI, type) -> {
                 fastenURI = null;
@@ -94,8 +91,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             return sourceFileName;
         }
 
-        public List<FastenURI> getMethods() {
-            return new ArrayList<>(methods.values());
+        public Map<Integer,FastenURI> getMethods() {
+            return this.methods;
         }
 
         public LinkedList<FastenURI> getSuperClasses() {
@@ -116,10 +113,11 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     }
 
     public ExtendedRevisionCallGraph(String forge, String product, String version, long timestamp,
-                                     List<List<Dependency>> depset, ArrayList<FastenURI[]> graph,
+                                     List<List<Dependency>> depset, Graph graph,
                                      Map<FastenURI, Type> classHierarchy) {
-        super(forge, product, version, timestamp, depset, graph);
+        super(forge, product, version, timestamp, depset, null);
         this.classHierarchy = classHierarchy;
+        this.graph = graph;
     }
 
     public ExtendedRevisionCallGraph(final JSONObject json, final boolean ignoreConstraints) throws JSONException,
@@ -134,7 +132,20 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      */
     @Override
     public JSONObject toJSON() {
-        final var revisionCallGraphJSON = super.toJSON();
+
+        final JSONObject result = new JSONObject();
+        result.put("forge", forge);
+        result.put("product", product);
+        result.put("version", version);
+        if (timestamp >= 0) result.put("timestamp", timestamp);
+        result.put("depset", Dependency.toJSON(depset));
+        final JSONArray graphJSONArray = new JSONArray();
+        for (final int[] arc: graph.resolvedCalls) graphJSONArray.put(new JSONArray(new int[] {arc[0], arc[1]}));
+        graph.unresolvedCalls.forEach((sourceKey, targetURI) -> {
+            graphJSONArray.put(new JSONArray(new String[] {sourceKey.toString(), targetURI.toString()}));
+        });
+        result.put("graph", graphJSONArray);
+
         final JSONObject chaJSON = new JSONObject();
 
         this.getClassHierarchy().forEach((clas, type) -> {
@@ -148,9 +159,9 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             chaJSON.put(clas.toString(), typeJSON);
         });
 
-        revisionCallGraphJSON.put("cha", chaJSON);
+        result.put("cha", chaJSON);
 
-        return revisionCallGraphJSON;
+        return result;
     }
 
     public static List<List<String>> toListOfString(final Map<Integer, FastenURI> map) {
@@ -180,7 +191,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             coordinate.getVersionConstraint(),
             timestamp,
             MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
-            partialCallGraph.toURIGraph(),
+            partialCallGraph.getMapedGraph(),
             PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy()));
     }
 
@@ -194,26 +205,18 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
         logger.info("Opal call graph has been generated.");
 
-        logger.info("Converting edges to URIs ...");
-
-        final var graph = partialCallGraph.toURIGraph();
-
-        logger.info("All edges of the graph have been converted to URIs.");
-        logger.info("Cleaning the opal call graph from memory ...");
-
-        partialCallGraph.clearGraph();
-
-        logger.info("The Opal call graph has been removed from memory.");
         logger.info("Converting class hierarchy to URIs ...");
 
         final var classHierarcy = PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy());
 
         logger.info("All entities of the class hierarchy have been converted to URIs.");
-        logger.info("Cleaning the opal call class hierarchy from memory ...");
 
-        partialCallGraph.clearClassHierarchy();
+        logger.info("Converting edges to URIs ...");
 
-        logger.info("The Opal call class hierarchy has been removed from memory.");
+        final var graph = partialCallGraph.getMapedGraph();
+
+        logger.info("All edges of the graph have been converted to URIs.");
+
         logger.info("Building the extended revision call graph ...");
 
         return new ExtendedRevisionCallGraph(forge,
@@ -232,12 +235,33 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      * @return boolean
      */
     public boolean isCallGraphEmpty() {
-        return this.graph.isEmpty();
+        return this.graph.resolvedCalls.isEmpty() && this.graph.unresolvedCalls.isEmpty();
     }
 
     public void sortGraphEdges() {
-        this.graph.sort(Comparator.comparing(o -> (o[0].toString() + o[1].toString())));
+//        this.graph.sort(Comparator.comparing(o -> (o[0] + o[1])));
     }
 
 
+    public static class Graph{
+        private List<int[]> resolvedCalls;
+        private Map<Integer,FastenURI> unresolvedCalls;
+
+        public List<int[]> getResolvedCalls() {
+            return resolvedCalls;
+        }
+
+        public Map<Integer, FastenURI> getUnresolvedCalls() {
+            return unresolvedCalls;
+        }
+
+        public Graph(List<int[]> resolvedCalls, Map<Integer, FastenURI> unresolvedCalls) {
+            this.resolvedCalls = resolvedCalls;
+            this.unresolvedCalls = unresolvedCalls;
+        }
+
+        public int size() {
+            return resolvedCalls.size()+unresolvedCalls.size();
+        }
+    }
 }
