@@ -28,10 +28,6 @@ public class PartialCallGraph {
      */
     private List<Call> resolvedCalls;
 
-    /**
-     * Class hierarchy.
-     */
-    private Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
 
     //TODO: add class hierarchy analysis
 
@@ -47,6 +43,10 @@ public class PartialCallGraph {
 
     public List<Call> getResolvedCalls() {
         return resolvedCalls;
+    }
+
+    public List<MavenResolvedCoordinate> getCoordinates() {
+        return coordinates;
     }
 
     public void addResolvedCall(Call call) {
