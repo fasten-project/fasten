@@ -25,12 +25,12 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
     private final Logger logger = LoggerFactory.getLogger(FastenKafkaConsumer.class.getName());
 
-    private final String errorLogTopic = "error_logs";
-    private final String cgsStatusTopic = "CGS_status";
+    private final String serverLogTopic = "fasten.server.logs";
+    private final String failedRecordsTopic = "fasten.failed.records";
 
     // This produces errors of a plug-in into a Kafka topic.
-    private KafkaProducer errorLog;
-    private KafkaProducer cgsStatus;
+    private KafkaProducer serverLog;
+    private KafkaProducer failedRecords;
     private org.apache.kafka.clients.consumer.KafkaConsumer<String, String> cgsStatusConsumer;
 
     // Constants for CGS_status topic
@@ -47,9 +47,9 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         this.kafkaConsumer = kc;
         this.skipOffsets = skipOffsets;
 
-        this.errorLog = new KafkaProducer<>(this.setKafkaProducer(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG),
+        this.serverLog = new KafkaProducer<>(this.setKafkaProducer(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG),
                 kc.getClass().getSimpleName() + "_errors"));
-        this.cgsStatus = new KafkaProducer<>(this.setKafkaProducer(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG),
+        this.failedRecords = new KafkaProducer<>(this.setKafkaProducer(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG),
                 kc.getClass().getSimpleName() + "_CGS_status"));
         this.setCGSStatusConn(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG), kc.getClass().getCanonicalName());
         super.setName(kc.getClass().getSimpleName() + "_consumer"); // Consumer's thread name
@@ -97,17 +97,17 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         p.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "1");
 
         this.cgsStatusConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer<>(p);
-        this.cgsStatusConsumer.subscribe(Collections.singletonList(this.cgsStatusTopic));
+        this.cgsStatusConsumer.subscribe(Collections.singletonList(this.failedRecordsTopic));
 
     }
 
-    private void sendRecord(KafkaProducer producer, String topic, String msg){
+    private void logToKafka(KafkaProducer producer, String topic, String msg){
 
         ProducerRecord<Object, String> errorRecord = new ProducerRecord<>(topic, msg);
 
         producer.send(errorRecord, (recordMetadata, e) -> {
             if (recordMetadata != null) {
-                logger.debug("Sent: {} to {}", msg, this.errorLogTopic);
+                logger.debug("Sent: {} to {}", msg, this.serverLogTopic);
             } else {
                 e.printStackTrace();
             }
@@ -121,7 +121,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
         for(String t: topics){
             for(PartitionInfo p: consumer.partitionsFor(t)){
-                sendRecord(this.errorLog, this.errorLogTopic, "T: " + t + " P: " + p.partition() + " OfC: " +
+                logToKafka(this.serverLog, this.serverLogTopic, "T: " + t + " P: " + p.partition() + " OfC: " +
                         consumer.committed(new TopicPartition(t, p.partition())).offset());
             }
         }
@@ -158,8 +158,8 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
     private void checkFailStatus(){
 
         ArrayList<TopicPartition> topicPartitions = new ArrayList<>();
-        for(PartitionInfo p: this.cgsStatusConsumer.partitionsFor(this.cgsStatusTopic)){
-            topicPartitions.add(new TopicPartition(this.cgsStatusTopic, p.partition()));
+        for(PartitionInfo p: this.cgsStatusConsumer.partitionsFor(this.failedRecordsTopic)){
+            topicPartitions.add(new TopicPartition(this.failedRecordsTopic, p.partition()));
         }
 
         ConsumerRecords<String, String> statusRecords = dummyPoll(this.cgsStatusConsumer);
@@ -233,14 +233,14 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
             for(TopicPartition tp : topicPartitions){
                 logger.info("Topic: {} | Current offset for partition {}: {}", this.kafkaConsumer.consumerTopics().get(0)
                         , tp, this.connection.position(tp));
-                sendRecord(this.errorLog, this.errorLogTopic, "Topic: " + this.kafkaConsumer.consumerTopics().get(0) +
+                logToKafka(this.serverLog, this.serverLogTopic, "Topic: " + this.kafkaConsumer.consumerTopics().get(0) +
                         "| Current offset for partition " + tp + ": " + this.connection.position(tp));
 
                 this.connection.seek(tp,  this.connection.position(tp) + 1);
 
                 logger.info("Topic: {} | Offset for partition {} is set to {}", this.kafkaConsumer.consumerTopics().get(0)
                         , tp, this.connection.position(tp));
-                sendRecord(this.errorLog, this.errorLogTopic, "Topic: " + this.kafkaConsumer.consumerTopics().get(0) +
+                logToKafka(this.serverLog, this.serverLogTopic, "Topic: " + this.kafkaConsumer.consumerTopics().get(0) +
                         "| Offset for partition " + tp + " is set to " + this.connection.position(tp));
 
             }
@@ -261,9 +261,9 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                 connection.subscribe(kafkaConsumer.consumerTopics());
             }
 
-            sendRecord(this.errorLog, this.errorLogTopic,new Date() + "| " + "Current Offset before running plug-in "
+            logToKafka(this.serverLog, this.serverLogTopic,new Date() + "| " + "Current Offset before running plug-in "
                     + kafkaConsumer.getClass().getCanonicalName());
-            getOffsetForPartitions(this.connection, kafkaConsumer.consumerTopics());
+            //getOffsetForPartitions(this.connection, kafkaConsumer.consumerTopics());
 
             //checkFailStatus();
             if(this.skipOffsets == 1){
@@ -275,11 +275,12 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
             do {
                 ConsumerRecords<String, String> records = connection.poll(Duration.ofMillis(100));
 
-                sendRecord(this.errorLog, this.errorLogTopic, new Date() + "| " + "Received " + records.count() + " records");
+                //sendRecord(this.errorLog, this.errorLogTopic, new Date() + "| " + "Received " + records.count() + " records");
+                logger.info("Received {} records", records.count());
 
                 for (String topic : topics) {
                     for (ConsumerRecord<String, String> r : records.records(topic)) {
-                        sendRecord(this.errorLog, this.errorLogTopic,new Date() + "| " + "T: " + r.topic() + " P: "
+                        logToKafka(this.serverLog, this.serverLogTopic,new Date() + "| " + "T: " + r.topic() + " P: "
                                 + r.partition() + " Of: " + r.offset() + " | Processing: " + r.key());
 
                         // Note that this is "at most once" strategy which values progress over completeness.
@@ -288,18 +289,18 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                         kafkaConsumer.consume(topic, r);
 
                         if(kafkaConsumer.recordProcessSuccessful()){
-                            sendRecord(this.errorLog, this.errorLogTopic, new Date() + "| " + "Plug-in " + kafkaConsumer.getClass().getSimpleName() +
+                            logToKafka(this.serverLog, this.serverLogTopic, new Date() + "| " + "Plug-in " + kafkaConsumer.getClass().getSimpleName() +
                                     " processed successfully record [in " + timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d) + " sec.]: " + r.value());
                         } else {
-                            sendRecord(this.cgsStatus, this.cgsStatusTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(),
+                            logToKafka(this.failedRecords, this.failedRecordsTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(),
                                     r, this.kafkaConsumer.getPluginError()));
                         }
-                        kafkaConsumer.freeResource();
+                        //kafkaConsumer.freeResource();
                     }
                 }
             } while (true);
         } catch (RuntimeException re) {
-            sendRecord(this.errorLog, kafkaConsumer.getClass().getSimpleName() + "_errors", new Date() +
+            logToKafka(this.serverLog, kafkaConsumer.getClass().getSimpleName() + "_errors", new Date() +
                     "| " + "Exception for plug-in:" +
                     kafkaConsumer.getClass().getCanonicalName() + "\n" + ExceptionUtils.getStackTrace(re));
 //        } catch (WakeupException e) {
@@ -322,7 +323,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
             // we're shutting down, but finish the commit first and then
             // rethrow the exception so that the main loop can exit
             doCommitSync();
-            //throw e;
+            throw e;
         } catch (CommitFailedException e) {
             // the commit failed with an unrecoverable error. if there is any
             // internal state which depended on the commit, you can clean it
