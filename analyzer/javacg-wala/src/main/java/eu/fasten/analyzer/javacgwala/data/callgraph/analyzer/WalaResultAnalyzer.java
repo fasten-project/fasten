@@ -17,7 +17,7 @@ public class WalaResultAnalyzer {
      * Analyze result produced by Wal plugin.
      *
      * @param rawCallGraph Raw call graph in Wala format
-     * @param coordinate  List of {@link MavenCoordinate}
+     * @param coordinate   List of {@link MavenCoordinate}
      */
     private WalaResultAnalyzer(CallGraph rawCallGraph, MavenCoordinate coordinate) {
         this.rawCallGraph = rawCallGraph;
@@ -29,7 +29,7 @@ public class WalaResultAnalyzer {
      * Convert raw Wala call graph to {@link PartialCallGraph}.
      *
      * @param rawCallGraph Raw call graph in Wala format
-     * @param coordinate  List of {@link MavenCoordinate}
+     * @param coordinate   List of {@link MavenCoordinate}
      * @return Partial call graph
      */
     public static PartialCallGraph wrap(CallGraph rawCallGraph,
