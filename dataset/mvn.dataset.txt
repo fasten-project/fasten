@@ -1,0 +1,100 @@
+{"groupId":"abbot","artifactId":"abbot","version":"0.12.3","date":"2005-09-20 05:44"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.13.0","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.5","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.7.0","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-adapters","version":"1.0.0-RC1","date":"2005-12-23 06:20"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.7.1","date":"2005-09-25 04:01"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.8.1.1","date":"2005-09-25 04:01"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.12.3","date":"2005-09-20 05:44"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.13.0","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.5","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.7.0","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-adapters","version":"1.0.0-RC1","date":"2005-12-23 06:20"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.7.1","date":"2005-09-25 04:01"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.8.1.1","date":"2005-09-25 04:01"}
+{"groupId":"activecluster","artifactId":"activecluster","version":"1.1-20050524.034300","date":"- -"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.12.3","date":"2005-09-20 05:44"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.13.0","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.5","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.7.0","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-adapters","version":"1.0.0-RC1","date":"2005-12-23 06:20"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.7.1","date":"2005-09-25 04:01"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.8.1.1","date":"2005-09-25 04:01"}
+{"groupId":"activecluster","artifactId":"activecluster","version":"1.1-20050524.034300","date":"- -"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.12.3","date":"1127187840"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.13.0","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.5","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.7.0","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-adapters","version":"1.0.0-RC1","date":"1135315200"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.7.1","date":"1127613660"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.8.1.1","date":"1127613660"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.12.3","date":"1127187840"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.13.0","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.5","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.7.0","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-adapters","version":"1.0.0-RC1","date":"1135315200"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.7.1","date":"1127613660"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.8.1.1","date":"1127613660"}
+{"groupId":"HTTPClient","artifactId":"HTTPClient","version":"0.3-3","date":"2005-09-21 03:35"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.7.1","date":"2005-09-25 04:01"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-cas","version":"0.7.1","date":"2005-09-25 04:01"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.8.1","date":"2005-09-20 05:44"}
+{"groupId":"HTTPClient","artifactId":"HTTPClient","version":"0.3-3","date":"2005-09-21 03:35"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.7.1","date":"2005-09-25 04:01"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-cas","version":"0.7.1","date":"2005-09-25 04:01"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.8.1","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-server","version":"0.6.1","date":"2005-09-20 05:44"}
+{"groupId":"activecluster","artifactId":"activecluster","version":"20040423.075722","date":"- -"}
+{"groupId":"HTTPClient","artifactId":"HTTPClient","version":"0.3-3","date":"2005-09-21 03:35"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.7.1","date":"2005-09-25 04:01"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-cas","version":"0.7.1","date":"2005-09-25 04:01"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.8.1","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-server","version":"0.6.1","date":"2005-09-20 05:44"}
+{"groupId":"activecluster","artifactId":"activecluster","version":"20040423.075722","date":"- -"}
+{"groupId":"HTTPClient","artifactId":"HTTPClient","version":"0.3-3","date":"1127266500"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.7.1","date":"1127613660"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-cas","version":"0.7.1","date":"1127613660"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.8.1","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-server","version":"0.6.1","date":"1127187840"}
+{"groupId":"HTTPClient","artifactId":"HTTPClient","version":"0.3-3","date":"1127266500"}
+{"groupId":"acegisecurity","artifactId":"acegi-security","version":"0.7.1","date":"1127613660"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-cas","version":"0.7.1","date":"1127613660"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.8.1","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-server","version":"0.6.1","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-common","version":"0.51","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-common","version":"0.6.1","date":"2005-09-20 05:44"}
+{"groupId":"activecluster","artifactId":"activecluster","version":"20040408.185106","date":"- -"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-common","version":"0.51","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-common","version":"0.6.1","date":"2005-09-20 05:44"}
+{"groupId":"activecluster","artifactId":"activecluster","version":"20040408.185106","date":"- -"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-common","version":"0.51","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-common","version":"0.6.1","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-common","version":"0.51","date":"1127187840"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina-common","version":"0.6.1","date":"1127187840"}
+{"groupId":"HTTPClient","artifactId":"HTTPClient","version":"0.3-3","date":"1127266500"}
+{"groupId":"abbot","artifactId":"abbot","version":"1.4.0","date":"1442930580"}
+{"groupId":"HTTPClient","artifactId":"HTTPClient","version":"0.3-3","date":"1127266500"}
+{"groupId":"abbot","artifactId":"abbot","version":"1.4.0","date":"1442930580"}
+{"groupId":"HTTPClient","artifactId":"HTTPClient","version":"0.3-3","date":"1127266500"}
+{"groupId":"abbot","artifactId":"abbot","version":"1.4.0","date":"1442930580"}
+{"groupId":"HTTPClient","artifactId":"HTTPClient","version":"0.3-3","date":"1127266500"}
+{"groupId":"abbot","artifactId":"abbot","version":"1.4.0","date":"1442930580"}
+{"groupId":"HTTPClient","artifactId":"HTTPClient","version":"0.3-3","date":"1127273700"}
+{"groupId":"abbot","artifactId":"abbot","version":"1.4.0","date":"1442937780"}
+{"groupId":"abbot","artifactId":"costello","version":"1.4.0","date":"1443079440"}
+{"groupId":"abbot","artifactId":"costello","version":"1.4.0","date":"1443079440"}
+{"groupId":"abbot","artifactId":"costello","version":"1.4.0","date":"1443079440"}
+{"groupId":"abbot","artifactId":"costello","version":"1.4.0","date":"1443079440"}
+{"groupId":"abbot","artifactId":"costello","version":"1.4.0","date":"1443086640"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.13.0","date":"1127187840"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.12.3","date":"1127187840"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.13.0","date":"1127187840"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.12.3","date":"1127187840"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.13.0","date":"1127187840"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.12.3","date":"1127187840"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.13.0","date":"1127187840"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.12.3","date":"1127187840"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.13.0","date":"1127195040"}
+{"groupId":"abbot","artifactId":"abbot","version":"0.12.3","date":"1127195040"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.7.0","date":"2005-09-20 05:44"}
+{"groupId":"acegisecurity","artifactId":"acegi-security-catalina","version":"0.7.0","date":"2005-09-20 05:44"}
