@@ -27,7 +27,7 @@ class WalaResultAnalyzerTest {
 
     @Test
     void wrap() {
-        var wrapped = WalaResultAnalyzer.wrap(graph, new ArrayList<>());
+        var wrapped = WalaResultAnalyzer.wrap(graph, null);
 
         assertEquals(1, wrapped.getResolvedCalls().size());
         assertEquals(1, wrapped.getUnresolvedCalls().size());

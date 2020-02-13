@@ -68,7 +68,7 @@ public class Main implements Runnable {
     public void run() {
         MavenCoordinate mavenCoordinate;
         if (this.exclusive.mavenCoordStr != null) {
-            mavenCoordinate = MavenCoordinate.of(this.exclusive.mavenCoordStr);
+            mavenCoordinate = MavenCoordinate.fromString(this.exclusive.mavenCoordStr);
         } else {
             mavenCoordinate = new MavenCoordinate(this.exclusive.mavencoords.group,
                     this.exclusive.mavencoords.artifact,
@@ -77,7 +77,7 @@ public class Main implements Runnable {
 
         PartialCallGraph revisionCallGraph = null;
         try {
-            revisionCallGraph = CallGraphConstructor.build(mavenCoordinate.getCanonicalForm());
+            revisionCallGraph = CallGraphConstructor.build(mavenCoordinate);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

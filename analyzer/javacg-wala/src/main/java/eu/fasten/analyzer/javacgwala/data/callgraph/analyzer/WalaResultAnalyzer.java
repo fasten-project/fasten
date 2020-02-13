@@ -2,9 +2,8 @@ package eu.fasten.analyzer.javacgwala.data.callgraph.analyzer;
 
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
-import eu.fasten.analyzer.javacgwala.data.MavenResolvedCoordinate;
+import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
-import java.util.List;
 
 public class WalaResultAnalyzer {
 
@@ -18,28 +17,28 @@ public class WalaResultAnalyzer {
      * Analyze result produced by Wal plugin.
      *
      * @param rawCallGraph Raw call graph in Wala format
-     * @param coordinates  List of {@link MavenResolvedCoordinate}
+     * @param coordinate  List of {@link MavenCoordinate}
      */
-    private WalaResultAnalyzer(CallGraph rawCallGraph, List<MavenResolvedCoordinate> coordinates) {
+    private WalaResultAnalyzer(CallGraph rawCallGraph, MavenCoordinate coordinate) {
         this.rawCallGraph = rawCallGraph;
         this.cha = rawCallGraph.getClassHierarchy();
-        this.partialCallGraph = new PartialCallGraph(coordinates);
+        this.partialCallGraph = new PartialCallGraph(coordinate);
     }
 
     /**
      * Convert raw Wala call graph to {@link PartialCallGraph}.
      *
      * @param rawCallGraph Raw call graph in Wala format
-     * @param coordinates  List of {@link MavenResolvedCoordinate}
+     * @param coordinate  List of {@link MavenCoordinate}
      * @return Partial call graph
      */
     public static PartialCallGraph wrap(CallGraph rawCallGraph,
-                                        List<MavenResolvedCoordinate> coordinates) {
+                                        MavenCoordinate coordinate) {
         if (rawCallGraph == null) {
-            return new PartialCallGraph(coordinates);
+            return new PartialCallGraph(coordinate);
         }
 
-        WalaResultAnalyzer walaResultAnalyzer = new WalaResultAnalyzer(rawCallGraph, coordinates);
+        WalaResultAnalyzer walaResultAnalyzer = new WalaResultAnalyzer(rawCallGraph, coordinate);
 
         CallGraphAnalyzer callGraphAnalyzer = new CallGraphAnalyzer(walaResultAnalyzer.rawCallGraph,
                 walaResultAnalyzer.cha, walaResultAnalyzer.partialCallGraph);

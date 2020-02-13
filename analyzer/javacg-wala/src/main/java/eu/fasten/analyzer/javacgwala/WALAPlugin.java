@@ -29,29 +29,31 @@ public class WALAPlugin extends Plugin {
 
         private static Logger logger = LoggerFactory.getLogger(WALAPlugin.class);
 
-        private static org.apache.kafka.clients.producer.
-                KafkaProducer<Object, String> kafkaProducer;
-        final String CONSUME_TOPIC = "maven.packages";
-        final String PRODUCE_TOPIC = "wala_callgraphs";
+        private static org.apache.kafka.clients.producer
+                .KafkaProducer<Object, String> kafkaProducer;
+        final String consumeTopic = "maven.packages";
+        final String produceTopic = "wala_callgraphs";
         private boolean processedRecord;
         private boolean writeCGToKafka = false;
         private String pluginError = "";
 
         @Override
         public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList(CONSUME_TOPIC));
+            return new ArrayList<>(Collections.singletonList(consumeTopic));
         }
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
             processedRecord = false;
             consume(record);
-            if(getPluginError().isEmpty()) { processedRecord = true; }
+            if (getPluginError().isEmpty()) {
+                processedRecord = true;
+            }
         }
 
         /**
          * Generates call graphs using OPAL for consumed maven coordinates in
-         * eu.fasten.core.data.RevisionCallGraph format, and produce them to the Producer that is
+         * {@link RevisionCallGraph} format, and produce them to the Producer that is
          * provided for this Object.
          *
          * @param kafkaRecord A record including maven coordinates in the JSON format.
@@ -73,19 +75,19 @@ public class WALAPlugin extends Plugin {
                         kafkaConsumedJson.get("artifactId").toString(),
                         kafkaConsumedJson.get("version").toString());
 
-                logger.info("Generating call graph for {}", mavenCoordinate.getCanonicalForm());
+                logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
 
-                cg = CallGraphConstructor.build(mavenCoordinate.getCanonicalForm())
+                cg = CallGraphConstructor.build(mavenCoordinate)
                         .toRevisionCallGraph(Long
                                 .parseLong(kafkaConsumedJson.get("date").toString()));
 
                 if (cg == null || cg.graph.size() == 0) {
-                    logger.warn("Empty call graph for {}", mavenCoordinate.getCanonicalForm());
+                    logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
                     return cg;
                 }
 
                 logger.info("Call graph successfully generated for {}!",
-                        mavenCoordinate.getCanonicalForm());
+                        mavenCoordinate.getCoordinate());
 
                 if (writeCGToKafka) {
                     sendToKafka(cg);
@@ -97,27 +99,32 @@ public class WALAPlugin extends Plugin {
             } catch (Exception e) {
                 setPluginError(e.getClass().getSimpleName());
                 logger.error("", e);
-            } finally {
-                return cg;
             }
+
+            return cg;
         }
 
+        /**
+         * Send {@link RevisionCallGraph} to Kafka.
+         *
+         * @param cg Call graph to send
+         */
         public void sendToKafka(RevisionCallGraph cg) {
             logger.debug("Writing call graph for {} to Kafka", cg.uri.toString());
 
-            var record = new ProducerRecord<Object, String>(this.PRODUCE_TOPIC,
+            var record = new ProducerRecord<Object, String>(this.produceTopic,
                     cg.uri.toString(),
                     cg.toJSON().toString()
             );
 
-            kafkaProducer.send(record, ((recordMetadata, e) -> {
+            kafkaProducer.send(record, (recordMetadata, e) -> {
                 if (recordMetadata != null) {
-                    logger.debug("Sent: {} to {}", cg.uri.toString(), this.PRODUCE_TOPIC);
+                    logger.debug("Sent: {} to {}", cg.uri.toString(), this.produceTopic);
                 } else {
                     setPluginError(e.getClass().getSimpleName());
                     logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
                 }
-            }));
+            });
         }
 
         @Override
@@ -127,7 +134,7 @@ public class WALAPlugin extends Plugin {
 
         @Override
         public String producerTopic() {
-            return this.PRODUCE_TOPIC;
+            return this.produceTopic;
         }
 
         @Override

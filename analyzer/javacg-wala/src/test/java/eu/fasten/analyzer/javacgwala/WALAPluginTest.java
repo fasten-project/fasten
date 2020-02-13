@@ -41,7 +41,7 @@ class WALAPluginTest {
 
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
         var revisionCallGraph =
-                CallGraphConstructor.build(coordinate.getCanonicalForm())
+                CallGraphConstructor.build(coordinate)
                         .toRevisionCallGraph(1574072773);
 
         assertEquals(revisionCallGraph.toJSON().toString(), cg.toJSON().toString());
@@ -76,23 +76,23 @@ class WALAPluginTest {
         assertFalse(walaPlugin.recordProcessSuccessful());
     }
 
-//    @Test
-//    public void testShouldNotFaceClassReadingError() throws JSONException, FileNotFoundException {
-//
-//        JSONObject coordinateJSON1 = new JSONObject("{\n" +
-//                "    \"groupId\": \"com.zarbosoft\",\n" +
-//                "    \"artifactId\": \"coroutines-core\",\n" +
-//                "    \"version\": \"0.0.3\",\n" +
-//                "    \"date\":\"1574072773\"\n" +
-//                "}");
-//
-//        var cg = walaPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()));
-//        var coordinate = new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3");
-//        var extendedRevisionCallGraph =
-//                CallGraphConstructor.build(coordinate.getCanonicalForm()).toRevisionCallGraph(1574072773);
-//
-//        assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString());
-//    }
+    @Test
+    public void testShouldNotFaceClassReadingError() throws JSONException, FileNotFoundException {
+
+        JSONObject coordinateJSON1 = new JSONObject("{\n" +
+                "    \"groupId\": \"com.zarbosoft\",\n" +
+                "    \"artifactId\": \"coroutines-core\",\n" +
+                "    \"version\": \"0.0.3\",\n" +
+                "    \"date\":\"1574072773\"\n" +
+                "}");
+
+        var cg = walaPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()));
+        var coordinate = new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3");
+        var extendedRevisionCallGraph =
+                CallGraphConstructor.build(coordinate).toRevisionCallGraph(1574072773);
+
+        assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString());
+    }
 
     @Test
     public void testProducerTopic() {

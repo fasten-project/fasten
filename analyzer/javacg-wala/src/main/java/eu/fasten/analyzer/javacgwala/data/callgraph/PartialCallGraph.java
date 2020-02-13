@@ -1,11 +1,10 @@
 package eu.fasten.analyzer.javacgwala.data.callgraph;
 
-import eu.fasten.analyzer.javacgwala.data.MavenResolvedCoordinate;
+import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.core.Call;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class PartialCallGraph {
@@ -13,7 +12,7 @@ public class PartialCallGraph {
     /**
      * List of maven coordinates of dependencies.
      */
-    private final List<MavenResolvedCoordinate> coordinates;
+    private final MavenCoordinate coordinate;
 
     /**
      * Calls that their target's packages are not still known and need to be resolved in
@@ -29,12 +28,12 @@ public class PartialCallGraph {
     /**
      * Construct a partial call graph with empty lists of resolved / unresolved calls.
      *
-     * @param coordinates List of {@link MavenResolvedCoordinate}
+     * @param coordinate List of {@link MavenCoordinate}
      */
-    public PartialCallGraph(List<MavenResolvedCoordinate> coordinates) {
+    public PartialCallGraph(MavenCoordinate coordinate) {
         this.resolvedCalls = new ArrayList<>();
         this.unresolvedCalls = new ArrayList<>();
-        this.coordinates = coordinates;
+        this.coordinate = coordinate;
     }
 
     public List<Call> getUnresolvedCalls() {
@@ -74,37 +73,18 @@ public class PartialCallGraph {
      */
     public RevisionCallGraph toRevisionCallGraph(long date) {
 
-        List<List<RevisionCallGraph.Dependency>> depArray = new ArrayList<>(coordinates.size());
+        List<List<RevisionCallGraph.Dependency>> depArray =
+                MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate());
 
-        for (MavenResolvedCoordinate dependency : coordinates) {
-            depArray.add(toFastenDep(dependency));
-        }
 
         var graph = toURIGraph();
 
         return new RevisionCallGraph(
                 "mvn",
-                coordinates.get(0).groupId + "." + coordinates.get(0).artifactId,
-                coordinates.get(0).version,
+                coordinate.getProduct(),
+                coordinate.getVersionConstraint(),
                 date, depArray, graph
         );
-    }
-
-    /**
-     * Converts MavenResolvedCoordinate to a list of FASTEN compatible dependencies.
-     *
-     * @param coordinate MavenResolvedCoordinate to convert
-     * @return List of FASTEN compatible dependencies
-     */
-    private static List<RevisionCallGraph.Dependency> toFastenDep(
-            MavenResolvedCoordinate coordinate) {
-        var constraints = new RevisionCallGraph.Constraint(coordinate.version, coordinate.version);
-        var result = new ArrayList<RevisionCallGraph.Dependency>();
-        result.add(new RevisionCallGraph.Dependency("mvn",
-                coordinate.groupId + ":" + coordinate.artifactId,
-                Collections.singletonList(constraints)
-        ));
-        return result;
     }
 
     /**

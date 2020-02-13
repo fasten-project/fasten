@@ -3,7 +3,7 @@ package eu.fasten.analyzer.javacgwala.data.callgraph;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.ibm.wala.types.Selector;
-import eu.fasten.analyzer.javacgwala.data.MavenResolvedCoordinate;
+import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.core.Call;
 import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
 import eu.fasten.analyzer.javacgwala.data.core.UnresolvedMethod;
@@ -44,10 +44,10 @@ class PartialCallGraphTest {
                 new UnresolvedMethod("java.lang.Object",
                         Selector.make("<init>()V"));
 
-        MavenResolvedCoordinate coordinate =
-                new MavenResolvedCoordinate("group", "artifact", "1.0", path);
+        MavenCoordinate coordinate =
+                new MavenCoordinate("group", "artifact", "1.0");
 
-        graph = new PartialCallGraph(Collections.singletonList(coordinate));
+        graph = new PartialCallGraph(coordinate);
 
         graph.addUnresolvedCall(new Call(initialUnresolvedSource, initialUnresolvedTarget,
                 Call.CallType.SPECIAL));
@@ -114,8 +114,6 @@ class PartialCallGraphTest {
         assertEquals("///name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid",
                 rcg.graph.get(0)[1].toString());
 
-        assertEquals("group:artifact", rcg.depset.get(0).get(0).product);
-        assertEquals("mvn", rcg.depset.get(0).get(0).forge);
-        assertEquals("[1.0]", rcg.depset.get(0).get(0).constraints.get(0).toString());
+        assertEquals(0, rcg.depset.size());
     }
 }
