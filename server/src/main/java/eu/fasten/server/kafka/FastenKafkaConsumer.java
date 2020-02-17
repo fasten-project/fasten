@@ -15,6 +15,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.Duration;
@@ -38,6 +40,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
     private final String FAIL_STATUS = "FAIL";
 
     private org.apache.kafka.clients.consumer.KafkaConsumer<String, String> connection;
+    private String consumerHostName = "";
     private int skipOffsets;
     private KafkaConsumer<String> kafkaConsumer;
     private CountDownLatch mLatch;
@@ -53,6 +56,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                 kc.getClass().getSimpleName() + "_CGS_status"));
         this.setCGSStatusConn(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG), kc.getClass().getCanonicalName());
         super.setName(kc.getClass().getSimpleName() + "_consumer"); // Consumer's thread name
+        this.consumerHostName = this.getConsumerHostName();
 
         this.mLatch = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -70,10 +74,19 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
     }
 
+    private String getConsumerHostName() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            logger.error("Could not find the consumer's hostname.");
+        }
+        return "Unknown";
+    }
+
     /*
     This methods sets up a connection for producing error logs of a plug-in into a Kafka topic.
      */
-    private Properties setKafkaProducer(String serverAddress, String clientID){
+    private Properties setKafkaProducer(String serverAddress, String clientID) {
 
         Properties p = new Properties();
         p.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, serverAddress);
@@ -84,7 +97,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         return p;
     }
 
-    private void setCGSStatusConn(String serverAddress, String clientID){
+    private void setCGSStatusConn(String serverAddress, String clientID) {
 
         Properties p = new Properties();
         p.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, serverAddress);
@@ -101,7 +114,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
     }
 
-    private void logToKafka(KafkaProducer producer, String topic, String msg){
+    private void logToKafka(KafkaProducer producer, String topic, String msg) {
 
         ProducerRecord<Object, String> errorRecord = new ProducerRecord<>(topic, msg);
 
@@ -112,6 +125,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                 e.printStackTrace();
             }
         });
+        producer.flush();
     }
 
     /**
@@ -242,10 +256,8 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                         , tp, this.connection.position(tp));
                 logToKafka(this.serverLog, this.serverLogTopic, "Topic: " + this.kafkaConsumer.consumerTopics().get(0) +
                         "| Offset for partition " + tp + " is set to " + this.connection.position(tp));
-
             }
         }
-
     }
 
     @Override
@@ -280,7 +292,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
                 for (String topic : topics) {
                     for (ConsumerRecord<String, String> r : records.records(topic)) {
-                        logToKafka(this.serverLog, this.serverLogTopic,new Date() + "| " + "T: " + r.topic() + " P: "
+                        logToKafka(this.serverLog, this.serverLogTopic,new Date() + "| [" + this.consumerHostName + "] T: " + r.topic() + " P: "
                                 + r.partition() + " Of: " + r.offset() + " | Processing: " + r.key());
 
                         // Note that this is "at most once" strategy which values progress over completeness.
@@ -289,7 +301,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                         kafkaConsumer.consume(topic, r);
 
                         if(kafkaConsumer.recordProcessSuccessful()){
-                            logToKafka(this.serverLog, this.serverLogTopic, new Date() + "| " + "Plug-in " + kafkaConsumer.getClass().getSimpleName() +
+                            logToKafka(this.serverLog, this.serverLogTopic, new Date() + "| [" + this.consumerHostName + "] Plug-in " + kafkaConsumer.getClass().getSimpleName() +
                                     " processed successfully record [in " + timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d) + " sec.]: " + r.value());
                         } else {
                             logToKafka(this.failedRecords, this.failedRecordsTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(),
