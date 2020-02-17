@@ -62,7 +62,7 @@ public class CallGraphMergerTest {
                 "1.7.29",
                 1574072773,
                 Arrays.asList(),
-                importerGraph.getMapedGraph(),
+                importerGraph.getMapedGraph(PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy())),
                 PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy()));
 
         /**
@@ -86,9 +86,8 @@ public class CallGraphMergerTest {
                 "1.7.29",
                 1574072773,
                 Arrays.asList(),
-                importedGraph.getMapedGraph(),
+                importedGraph.getMapedGraph(PartialCallGraph.toURIHierarchy(importedGraph.getClassHierarchy())),
                 PartialCallGraph.toURIHierarchy(importedGraph.getClassHierarchy()));
-
 
     }
 

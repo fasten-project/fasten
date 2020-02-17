@@ -42,7 +42,7 @@ public class ExtendedRevisionCallGraphTest {
                 "1.7.29",
                 1574072773,
                 Arrays.asList(),
-                importerGraph.getMapedGraph(),
+                importerGraph.getMapedGraph(PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy())),
                 PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy()));
 
         assertEquals(

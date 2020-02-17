@@ -23,13 +23,13 @@
         </dependency>
         <dependency>
             <groupId>de.opal-project</groupId>
-            <artifactId>bytecode-representation_2.11</artifactId>
-            <version>0.8.15</version>
+            <artifactId>bytecode-representation_2.12</artifactId>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>de.opal-project</groupId>
-            <artifactId>abstract-interpretation-framework_2.11</artifactId>
-            <version>0.8.15</version>
+            <artifactId>abstract-interpretation-framework_2.12</artifactId>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.dom4j</groupId>
@@ -52,16 +52,16 @@
             <artifactId>picocli</artifactId>
             <version>4.0.4</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.slf4j</groupId>-->
-<!--            <artifactId>slf4j-simple</artifactId>-->
-<!--            <version>1.7.30</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.slf4j</groupId>-->
-<!--            <artifactId>slf4j-api</artifactId>-->
-<!--            <version>1.7.30</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.30</version>
+        </dependency>
     </dependencies>
 
     <build>

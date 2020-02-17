@@ -52,10 +52,6 @@ public class UnresolvedCall extends UnresolvedMethodCall {
             );
 
             if (targetURI == null) {
-                logger.warn("Problem occured while converting this node from outside of artifact to URI: {}.{},{}",
-                    unresolvedCall.calleeClass(),
-                    unresolvedCall.calleeName(),
-                    unresolvedCall.calleeDescriptor());
                 return null;
             }
 

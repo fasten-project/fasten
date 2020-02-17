@@ -63,7 +63,8 @@ public class Method {
                 javaURI.getRawNamespace(), javaURI.getRawEntity());
 
         } catch (IllegalArgumentException | NullPointerException e) {
-            logger.error("{}", e.getMessage());
+            logger.error("Error in FastenURI for {}/{}/{}", product,clas,descriptor);
+            e.printStackTrace();
         }
         return null;
     }

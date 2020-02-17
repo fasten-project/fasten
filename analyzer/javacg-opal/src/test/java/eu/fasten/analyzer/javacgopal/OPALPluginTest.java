@@ -61,9 +61,7 @@ public class OPALPluginTest {
         var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()), false);
 
         var extendedRevisionCallGraph  = ExtendedRevisionCallGraph.create("mvn",
-                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773,
-                new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new))
-        );
+                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
 
         JSONAssert.assertEquals(extendedRevisionCallGraph.toJSON(), cg.toJSON(), false);
     }
@@ -81,9 +79,7 @@ public class OPALPluginTest {
         var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()), false);
 
         var extendedRevisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
-                new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"), 1574072773,
-                new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar("com.zarbosoft:coroutines-core:0.0.3").orElseThrow(RuntimeException::new))
-        );
+                new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"), 1574072773);
 
         JSONAssert.assertEquals(extendedRevisionCallGraph.toJSON(), cg.toJSON(), false);
     }

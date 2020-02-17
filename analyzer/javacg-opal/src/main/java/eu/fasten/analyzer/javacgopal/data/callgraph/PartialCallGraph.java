@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.data.callgraph;
 
+import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.data.Method;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.ResolvedCall;
@@ -32,12 +33,10 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import org.opalj.ai.analyses.cg.UnresolvedMethodCall;
-import org.opalj.ai.analyses.cg.CallGraphFactory;
-import org.opalj.ai.analyses.cg.ComputedCallGraph;
-import org.opalj.ai.analyses.cg.CHACallGraphAlgorithmConfiguration;
+import org.opalj.ai.analyses.cg.*;
+import org.opalj.br.ClassFile;
+import org.opalj.br.ClassHierarchy;
 import org.opalj.br.ObjectType;
 import org.opalj.br.analyses.Project;
 import org.opalj.collection.immutable.Chain;
@@ -95,13 +94,15 @@ public class PartialCallGraph {
      */
     public void setUnresolvedCalls(final List<UnresolvedMethodCall> unresolvedMethodCalls) {
         for (UnresolvedMethodCall unresolvedMethodCall : unresolvedMethodCalls) {
-            this.unresolvedCalls.add(new UnresolvedCall(unresolvedMethodCall.caller(), unresolvedMethodCall.pc(), unresolvedMethodCall.calleeClass(), unresolvedMethodCall.calleeName(), unresolvedMethodCall.calleeDescriptor()));
+            this.unresolvedCalls.add(new UnresolvedCall(
+                unresolvedMethodCall.caller(),
+                unresolvedMethodCall.pc(),
+                unresolvedMethodCall.calleeClass(),
+                unresolvedMethodCall.calleeName(),
+                unresolvedMethodCall.calleeDescriptor()));
         }
     }
 
-    public void setResolvedCalls(final List<ResolvedCall> resolvedCalls) {
-        this.resolvedCalls = resolvedCalls;
-    }
 
     /**
      * Sets classHierarchy of the current call graph.
@@ -112,38 +113,70 @@ public class PartialCallGraph {
      */
     public void setClassHierarchy(final Project artifactInOpalFormat) {
 
-        final Map<ObjectType, List<org.opalj.br.Method>> allMethods = new HashMap<>();
-        artifactInOpalFormat.allMethodsWithBody().foreach((JavaToScalaConverter.asScalaFunction1(
-            (Object method) -> putMethod(allMethods, (org.opalj.br.Method) method)))
-        );
-
-        final var currentArtifactClasses = new HashSet<>(allMethods.keySet());
-        final var libraryClasses = new HashSet<>(JavaConversions.mapAsJavaMap(artifactInOpalFormat.classHierarchy().supertypes()).keySet());
-        libraryClasses.removeAll(currentArtifactClasses);
-
+        logger.info("Start setting hierarchy ...");
         final AtomicInteger methodNum = new AtomicInteger();
-        currentArtifactClasses.forEach(currentClass -> {
 
-            final var methods = getMethodsMap(methodNum.get(), allMethods.get(currentClass));
-            final var type = new Type(currentClass, methods, artifactInOpalFormat.classHierarchy());
-            this.classHierarchy.put(type.getType(), type);
-            methodNum.addAndGet(methods.size());
+        logger.info("before loop");
+        for (final Object obj : sort(JavaConversions.asJavaIterable(artifactInOpalFormat.allProjectClassFiles()))) {
+            logger.info("Method number: {}", methodNum.get());
+            final var classFile = (ClassFile) obj;
+            final var currentClass = classFile.thisType();
+            final var methods = JavaConversions.asJavaIterable(classFile.methods());
+            logger.info("Before type");
+            final var type = new Type(getMethodsMap(methodNum.get(), methods),
+                getSuperClasses(artifactInOpalFormat.classHierarchy(),currentClass),
+                getSuperInterfaces(artifactInOpalFormat.classHierarchy(),currentClass));
+            logger.info("AfterType.");
+            this.classHierarchy.put(currentClass, type);
+            logger.info("After Hierarchy");
+            methodNum.addAndGet(((Collection<?>) methods).size());
+        }
 
-        });
-
-//        for (ObjectType libraryClass : libraryClasses) {
-//            Type type = new Type();
-//            type.setSupers(artifactInOpalFormat.classHierarchy(), libraryClass);
-//            this.classHierarchy.put(libraryClass, type);
-//        }
 
     }
 
-    private Map<org.opalj.br.Method, Integer> getMethodsMap(final int keyStartsFrom, final List<org.opalj.br.Method> methods) {
+    public Chain<ObjectType> getSuperClasses(final ClassHierarchy classHierarchy, final ObjectType currentClass) {
 
-        final int bound = keyStartsFrom + methods.size();
-        return IntStream.range(keyStartsFrom, bound).boxed().collect(Collectors.toMap(
-            i -> methods.get(i - keyStartsFrom), i -> i, (a, b) -> b));
+        try {
+            final Chain<ObjectType> superClasses = classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
+            if (superClasses != null) {
+                return superClasses.reverse();
+            }
+        } catch (NoSuchElementException e) {
+            logger.error("This type {} doesn't have allSuperclassTypesInInitializationOrder" +
+                " method.", currentClass, e);
+        } catch (OutOfMemoryError e) {
+            logger.error("This type {} made an out of memory Exception in calculation of its" +
+                "supper types!", currentClass, e);
+        } catch (Exception e) {
+            logger.error("This type made an Exception in calculation of its supper types!", e);
+        }
+        return null;
+
+    }
+
+    public List<ObjectType> getSuperInterfaces(final ClassHierarchy classHierarchy, final ObjectType currentClass) {
+
+        return Lists.newArrayList(JavaConversions.asJavaIterable(classHierarchy.allSuperinterfacetypes(currentClass, false)));
+    }
+
+    private List<?> sort(final java.lang.Iterable<?> iterable) {
+        logger.info("putting into list...");
+        final var list = Lists.newArrayList(iterable);
+        logger.info("sorting ... ");
+        list.sort(Comparator.comparing(Object::toString));
+        return list;
+    }
+
+    private Map<org.opalj.br.Method, Integer> getMethodsMap(final int keyStartsFrom, final java.lang.Iterable<org.opalj.br.Method> methods) {
+
+        final Map<org.opalj.br.Method, Integer> map = new HashMap<>();
+        final AtomicInteger i = new AtomicInteger(keyStartsFrom);
+        for (org.opalj.br.Method method : methods) {
+            map.put(method, i.get());
+            i.addAndGet(1);
+        }
+        return map;
     }
 
     /**
@@ -199,13 +232,12 @@ public class PartialCallGraph {
      */
     public PartialCallGraph generatePartialCallGraph(final File artifactFile) {
 
-        final Project artifactInOpalFormat = Project.apply(artifactFile);
+        final var artifactInOpalFormat = Project.apply(artifactFile);
 
-        final ComputedCallGraph callGraphInOpalFormat = CallGraphFactory.create(artifactInOpalFormat,
+        final var callGraphInOpalFormat = CallGraphFactory.create(artifactInOpalFormat,
             JavaToScalaConverter.asScalaFunction0(findEntryPoints(artifactInOpalFormat.allMethodsWithBody())),
-            new CHACallGraphAlgorithmConfiguration(artifactInOpalFormat, true));
-
-//        ComputedCallGraph callGraphInOpalFormat = (ComputedCallGraph) AnalysisModeConfigFactory.resetAnalysisMode(artifactInOpalFormat, AnalysisModes.OPA(),false).get(CHACallGraphKey$.MODULE$);
+            new CHACallGraphAlgorithmConfiguration(artifactInOpalFormat,true));
+//        ComputedCallGraph callGraphInOpalFormat = (ComputedCallGraph) AnalysisModeConfigFactory.resetAnalysisMode(artifactInOpalFormat, AnalysisModes.OPA()).get(CHACallGraphKey$.MODULE$);
         return toPartialGraph(callGraphInOpalFormat);
 
     }
@@ -372,153 +404,160 @@ public class PartialCallGraph {
      * @param partialCallGraph Partial graph with org.opalj.br.Method nodes.
      * @return A graph of all nodes in URI format represented in a List of eu.fasten.core.data.FastenURIs.
      */
-    public static ExtendedRevisionCallGraph.Graph getMapedGraph(final PartialCallGraph partialCallGraph) {
+    public static ExtendedRevisionCallGraph.Graph getMapedGraph(final PartialCallGraph partialCallGraph, final Map<FastenURI,ExtendedRevisionCallGraph.Type> cha) {
 
         partialCallGraph.removeDuplicateResolvedCall();
 
         final List<int[]> resolvedCalls = new ArrayList<>();
-        partialCallGraph.resolvedCalls.forEach(resolvedCall -> {
-            var type = partialCallGraph.getClassHierarchy().get(resolvedCall.getSource().declaringClassFile().thisType());
-            var sourceKey = type.getMethods().get(resolvedCall.getSource());
-            if(sourceKey !=null){
-                logger.warn("Could not find URI for {}", resolvedCall.getSource());
-            for (org.opalj.br.Method target : resolvedCall.getTargets()) {
-                var targetKey = type.getMethods().get(target);
-                if(targetKey != null){
-                    resolvedCalls.add(new int[]{sourceKey, targetKey});
-                }else {
-                    logger.warn("Could not find URI for {}", target);
+        for (ResolvedCall resolvedCall : partialCallGraph.resolvedCalls) {
+            var sourceType = partialCallGraph.getClassHierarchy().get(resolvedCall.getSource().declaringClassFile().thisType());
+            var sourceKey = sourceType.getMethods().get(resolvedCall.getSource());
+            if (sourceKey != null) {
+                for (org.opalj.br.Method target : resolvedCall.getTargets()) {
+                    var targetType = partialCallGraph.getClassHierarchy().get(target.declaringClassFile().thisType());
+                    var targetKey = targetType.getMethods().get(target);
+                    if (targetKey != null) {
+                        resolvedCalls.add(new int[]{sourceKey, targetKey});
+                    } else {
+                        logger.warn("Could not find URI for target node {}", target);
+//                        var uri = Method.toCanonicalSchemelessURI(
+//                            null,
+//                            target.declaringClassFile().thisType(),
+//                            target.name(),
+//                            target.descriptor());
+//                        final AtomicInteger tkey = new AtomicInteger();
+//                        cha.get(Method.getTypeURI(targetType.getType())).getMethods().forEach((key, fastenURI) -> {
+//                            if (fastenURI.equals(uri)){
+//                                tkey.set(key);
+//                            }
+//                        });
+//                        System.out.println(tkey);
+                    }
                 }
+            } else {
+                logger.warn("Could not find URI for source node {}", resolvedCall.getSource());
             }
-        }});
+        }
 
         final Map<Integer, FastenURI> unresolvedCalls = new HashMap<>();
         partialCallGraph.unresolvedCalls.stream().distinct().collect(Collectors.toList()).forEach(unresolvedCall -> {
             var type = partialCallGraph.getClassHierarchy().get(unresolvedCall.caller().declaringClassFile().thisType());
             var sourceKey = type.getMethods().get(unresolvedCall.caller());
-            var taragetURI = unresolvedCall.getTargetURI();
-            if (sourceKey != null && taragetURI != null) {
-                unresolvedCalls.put(sourceKey,taragetURI);
-            }
-        });
-
-        return new ExtendedRevisionCallGraph.Graph(resolvedCalls,unresolvedCalls);
-    }
-
-    /**
-     * Converts all nodes (entities) of a partial graph to URIs.
-     *
-     * @param partialCallGraph Partial graph with org.opalj.br.Method nodes.
-     * @return A graph of all nodes in URI format represented in a List of eu.fasten.core.data.FastenURIs.
-     */
-    public static ArrayList<FastenURI[]> toURIGraph(final PartialCallGraph partialCallGraph) {
-
-        final var graph = new ArrayList<FastenURI[]>();
-        final int resolvedSize = partialCallGraph.getResolvedCalls().size();
-        partialCallGraph.removeDuplicateResolvedCall();
-
-        logger.info("Converting resolved calls to URIs ...");
-        final AtomicInteger callNumber = new AtomicInteger();
-
-        partialCallGraph.resolvedCalls.forEach(resolvedCall -> {
-            final var URICalls = resolvedCall.toURICalls();
-            if (URICalls.size() != 0) {
-
-                callNumber.addAndGet(1);
-                graph.addAll(URICalls);
-
-                if (!isJUnitTest()) {
-                    System.out.printf("> Processed: %d %% -> %d / %d \r",
-                        (callNumber.get() * 100 / resolvedSize),
-                        callNumber.get(),
-                        resolvedSize);
+            if (sourceKey != null) {
+                var taragetURI = unresolvedCall.getTargetURI();
+                if (taragetURI != null) {
+                    unresolvedCalls.put(sourceKey, taragetURI);
+                } else {
+                    logger.warn("Could convert to URI {}/{}/{}", unresolvedCall.calleeClass(), unresolvedCall.calleeName(), unresolvedCall.calleeDescriptor());
                 }
-
+            } else {
+                logger.warn("Could not find URI for source node {}", unresolvedCall.caller());
             }
         });
-        logger.info("\nResolved calls have been converted to URIs");
 
-        logger.info("Converting unresolved calls to URIs ...");
-        partialCallGraph.unresolvedCalls.stream().distinct().collect(Collectors.toList()).forEach(unresolvedCall -> {
-            final FastenURI[] URICall = unresolvedCall.toURICall();
-            if (URICall[0] != null && URICall[1] != null) {
-
-                graph.add(URICall);
+                return new ExtendedRevisionCallGraph.Graph(resolvedCalls, unresolvedCalls);
             }
-        });
-        logger.info("Unresolved calls have been converted to URIs.");
 
-        return graph;
-    }
+            /**
+             * Converts all nodes (entities) of a partial graph to URIs.
+             *
+             * @param partialCallGraph Partial graph with org.opalj.br.Method nodes.
+             * @return A graph of all nodes in URI format represented in a List of eu.fasten.core.data.FastenURIs.
+             */
+        public static ArrayList<FastenURI[]> toURIGraph ( final PartialCallGraph partialCallGraph){
 
-    /**
-     * Checks whether the environment is test.
-     *
-     * @return true if tests are running, otherwise false.
-     */
-    public static boolean isJUnitTest() {
-        final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        final List<StackTraceElement> list = Arrays.asList(stackTrace);
-        for (StackTraceElement element : list) {
-            if (element.getClassName().startsWith("org.junit.")) {
-                return true;
-            }
+            final var graph = new ArrayList<FastenURI[]>();
+            final int resolvedSize = partialCallGraph.getResolvedCalls().size();
+            partialCallGraph.removeDuplicateResolvedCall();
+
+            logger.info("Converting resolved calls to URIs ...");
+            final AtomicInteger callNumber = new AtomicInteger();
+
+            partialCallGraph.resolvedCalls.forEach(resolvedCall -> {
+                final var URICalls = resolvedCall.toURICalls();
+                if (URICalls.size() != 0) {
+
+                    callNumber.addAndGet(1);
+                    graph.addAll(URICalls);
+
+                    if (!isJUnitTest()) {
+                        System.out.printf("> Processed: %d %% -> %d / %d \r",
+                            (callNumber.get() * 100 / resolvedSize),
+                            callNumber.get(),
+                            resolvedSize);
+                    }
+
+                }
+            });
+            logger.info("\nResolved calls have been converted to URIs");
+
+            logger.info("Converting unresolved calls to URIs ...");
+            partialCallGraph.unresolvedCalls.stream().distinct().collect(Collectors.toList()).forEach(unresolvedCall -> {
+                final FastenURI[] URICall = unresolvedCall.toURICall();
+                if (URICall[0] != null && URICall[1] != null) {
+
+                    graph.add(URICall);
+                }
+            });
+            logger.info("Unresolved calls have been converted to URIs.");
+
+            return graph;
         }
-        return false;
+
+        /**
+         * Checks whether the environment is test.
+         *
+         * @return true if tests are running, otherwise false.
+         */
+        public static boolean isJUnitTest () {
+            final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            final List<StackTraceElement> list = Arrays.asList(stackTrace);
+            for (StackTraceElement element : list) {
+                if (element.getClassName().startsWith("org.junit.")) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        /**
+         * Removes duplicate resolved calls generated by OPAL from this object.
+         *
+         * @return unique resolved calls of this object.
+         */
+        private List<ResolvedCall> removeDuplicateResolvedCall () {
+
+            final AtomicInteger numOfDups = new AtomicInteger();
+            final AtomicInteger numOfAllArcs = new AtomicInteger();
+            final AtomicInteger numOfUniqueArcs = new AtomicInteger();
+
+            logger.info("Removing duplicated arcs from resolved Calls ...");
+            this.resolvedCalls.forEach(currentCalls -> {
+                int numOfTargets = currentCalls.getTargets().size();
+                numOfAllArcs.addAndGet(numOfTargets);
+                currentCalls.setTargets(currentCalls.getTargets().stream().distinct().collect(Collectors.toList()));
+                numOfTargets = numOfTargets - currentCalls.getTargets().size();
+                numOfUniqueArcs.addAndGet(currentCalls.getTargets().size());
+                numOfDups.addAndGet(numOfTargets);
+            });
+            logger.info("From {} arcs in resolved Calls {} duplicated have been removed. number of unique arcs: {}. number of source nodes: {}", numOfAllArcs, numOfDups, numOfUniqueArcs, this.resolvedCalls.size());
+
+            return this.resolvedCalls;
+
+        }
+
+        /**
+         * Converts all nodes (entities) of a partial graph to URIs.
+         *
+         * @return A graph of all nodes in URI format represented in a List of eu.fasten.core.data.FastenURI.
+         */
+        public ExtendedRevisionCallGraph.Graph getMapedGraph (Map<FastenURI,ExtendedRevisionCallGraph.Type> cha) {
+            return getMapedGraph(this, cha);
+        }
+
+        public ArrayList<FastenURI[]> toURIGraph () {
+            return toURIGraph(this);
+        }
+
     }
-
-
-    /**
-     * Removes duplicate resolved calls generated by OPAL from this object.
-     *
-     * @return unique resolved calls of this object.
-     */
-    private List<ResolvedCall> removeDuplicateResolvedCall() {
-
-        final AtomicInteger numOfDups = new AtomicInteger();
-        final AtomicInteger numOfAllArcs = new AtomicInteger();
-        final AtomicInteger numOfUniqueArcs = new AtomicInteger();
-
-        logger.info("Removing duplicated arcs from resolved Calls ...");
-        this.resolvedCalls.forEach(currentCalls -> {
-            int numOfTargets = currentCalls.getTargets().size();
-            numOfAllArcs.addAndGet(numOfTargets);
-            currentCalls.setTargets(currentCalls.getTargets().stream().distinct().collect(Collectors.toList()));
-            numOfTargets = numOfTargets - currentCalls.getTargets().size();
-            numOfUniqueArcs.addAndGet(currentCalls.getTargets().size());
-            numOfDups.addAndGet(numOfTargets);
-        });
-        logger.info("From {} arcs in resolved Calls {} duplicated have been removed. number of unique arcs: {}. number of source nodes: {}", numOfAllArcs, numOfDups, numOfUniqueArcs, this.resolvedCalls.size());
-
-        return this.resolvedCalls;
-
-    }
-
-    /**
-     * Converts all nodes (entities) of a partial graph to URIs.
-     *
-     * @return A graph of all nodes in URI format represented in a List of eu.fasten.core.data.FastenURI.
-     */
-    public ExtendedRevisionCallGraph.Graph getMapedGraph() {
-        return getMapedGraph(this);
-    }
-
-    public ArrayList<FastenURI[]> toURIGraph() {
-        return toURIGraph(this);
-    }
-
-    public void clearGraph() {
-        this.resolvedCalls = null;
-        this.unresolvedCalls = null;
-    }
-
-    public void clearClassHierarchy() {
-        this.classHierarchy.forEach((objectType, type) -> {
-            objectType = null;
-            type.setMethods(null);
-            type.setSuperClasses(null);
-            type.setSuperInterfaces(null);
-        });
-        this.classHierarchy.clear();
-    }
-}

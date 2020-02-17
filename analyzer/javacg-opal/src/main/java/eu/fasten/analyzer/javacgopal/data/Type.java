@@ -34,33 +34,12 @@ public class Type {
 
     private static Logger logger = LoggerFactory.getLogger(Type.class);
 
-    private ObjectType type;
-    private String sourceFileName;
-    private Map<Method,Integer> methods;
-    private Chain<ObjectType> superClasses;
-    private List<ObjectType> superInterfaces;
+    final private String sourceFileName;
+    final private Map<Method, Integer> methods;
+    final private Chain<ObjectType> superClasses;
+    final private List<ObjectType> superInterfaces;
 
-    public void setMethods(final Map<Method, Integer> methods) {
-        this.methods = methods;
-    }
-
-    public void setSuperClasses(final Chain<ObjectType> superClasses) {
-        this.superClasses = superClasses;
-    }
-
-    public ObjectType getType() {
-        return type;
-    }
-
-    public String getSourceFileName() {
-        return sourceFileName;
-    }
-
-    public void setSuperInterfaces(final List<ObjectType> superInterfaces) {
-        this.superInterfaces = superInterfaces;
-    }
-
-    public Map<Method,Integer> getMethods() {
+    public Map<Method, Integer> getMethods() {
         return methods;
     }
 
@@ -72,73 +51,46 @@ public class Type {
         return superInterfaces;
     }
 
-    public Type(final ObjectType type, final Map<Method,Integer> methods, final ClassHierarchy classHierarchy) {
-        this.type = type;
+    public String getSourceFileName() { return sourceFileName; }
+
+    public Type(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses, final List<ObjectType> superInterfaces) {
         this.methods = methods;
+        this.superClasses = superClasses;
+        this.superInterfaces = superInterfaces;
         this.sourceFileName = extractSourceFile();
-        setSupers(classHierarchy,type);
     }
 
-    /**
-     * Sets super classes and super interfaces of this type
-     *
-     * @param classHierarchy org.opalj.br.ClassHierarchy
-     * @param currentClass org.opalj.br.ObjectType. The type that its supper types should be set.
-     */
-    public void setSupers(final ClassHierarchy classHierarchy, final ObjectType currentClass) {
-
-        this.superInterfaces = new ArrayList<>();
-        if (classHierarchy.supertypes().contains(currentClass)) {
-
-            try {
-                this.superClasses = classHierarchy
-                    .allSuperclassTypesInInitializationOrder(currentClass).s();
-            } catch (NoSuchElementException e) {
-                logger.error("This type {} doesn't have allSuperclassTypesInInitializationOrder" +
-                    " method.", currentClass, e);
-            } catch (OutOfMemoryError e) {
-                logger.error("This type {} made an out of memory Exception in calculation of its" +
-                    "supper types!", currentClass, e);
-            } catch (Exception e) {
-                logger.error("This type made an Exception in calculation of its supper types!", e);
-            }
-
-            if (superClasses != null) {
-                superClasses.reverse();
-            }
-
-            classHierarchy.allSuperinterfacetypes(currentClass, false).foreach(
-                JavaToScalaConverter.asScalaFunction1(anInterface -> this.superInterfaces.add((ObjectType) anInterface))
-            );
-        }else {
-            logger.warn("Opal class hierarchy didn't include super types of {}", currentClass);
-        }
-    }
 
     /**
      * Extracts the source file of this type. In order to track probable future bugs if there are
      * more than one source files for any reason it will show a warning, so that one can investigate
      * why it happened.
+     *
      * @return the String name of the source file (.java) that this type lives in it.
      */
     public String extractSourceFile() {
         final Set<SourceFile> allSourceFilesOfType = new HashSet<>();
-        for (org.opalj.br.Method method : this.getMethods().keySet()) {
+        final Set<ObjectType> thisType = new HashSet<>();
+        for (final org.opalj.br.Method method : this.getMethods().keySet()) {
             method.declaringClassFile().attributes().toList().foreach(
                 JavaToScalaConverter.asScalaFunction1(attribute -> {
-                if (attribute instanceof SourceFile) {
-                    allSourceFilesOfType.add((SourceFile) attribute);
-                }
-                return true;
-            }));
+                    if (attribute instanceof SourceFile) {
+                        allSourceFilesOfType.add((SourceFile) attribute);
+                    }
+                    return true;
+                }));
+            thisType.add(method.declaringClassFile().thisType());
+        }
+        if (thisType.size() > 1){
+            logger.warn("More than one classes found during checking for source file of a type {}", thisType);
         }
         if (allSourceFilesOfType.size() > 1) {
-            logger.warn("Two source files for type {}", this.type);
+            logger.warn("More than one source file found for this type {}", thisType.iterator().next());
         }
         if (!allSourceFilesOfType.isEmpty()) {
-            logger.warn("Could not find the source file of type {}", this.type);
             return allSourceFilesOfType.iterator().next().sourceFile();
         }
+//        logger.warn("Could not find the source file of type {}", thisType.iterator().next());
         return null;
     }
 }

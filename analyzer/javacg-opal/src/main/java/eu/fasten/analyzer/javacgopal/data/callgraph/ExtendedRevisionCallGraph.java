@@ -186,13 +186,14 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate,
                                                    final long timestamp, final PartialCallGraph partialCallGraph) {
 
+        var cha = PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy());
         return new ExtendedRevisionCallGraph(forge,
             coordinate.getProduct(),
             coordinate.getVersionConstraint(),
             timestamp,
             MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
-            partialCallGraph.getMapedGraph(),
-            PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy()));
+            partialCallGraph.getMapedGraph(cha),
+            cha);
     }
 
     public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate,
@@ -205,17 +206,17 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
         logger.info("Opal call graph has been generated.");
 
-        logger.info("Converting class hierarchy to URIs ...");
+        logger.info("Converting class hierarchy to URIs and assigning keys to them ...");
 
         final var classHierarcy = PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy());
 
         logger.info("All entities of the class hierarchy have been converted to URIs.");
 
-        logger.info("Converting edges to URIs ...");
+        logger.info("Mapping the graph to the CHA keys ...");
 
-        final var graph = partialCallGraph.getMapedGraph();
+        final var graph = partialCallGraph.getMapedGraph(classHierarcy);
 
-        logger.info("All edges of the graph have been converted to URIs.");
+        logger.info("All edges of the graph are indexed.");
 
         logger.info("Building the extended revision call graph ...");
 
