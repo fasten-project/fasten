@@ -5,7 +5,9 @@ import eu.fasten.analyzer.javacgwala.data.core.Call;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PartialCallGraph {
 
@@ -25,6 +27,8 @@ public class PartialCallGraph {
      */
     private final List<Call> resolvedCalls;
 
+    private final Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
+
     /**
      * Construct a partial call graph with empty lists of resolved / unresolved calls.
      *
@@ -33,6 +37,7 @@ public class PartialCallGraph {
     public PartialCallGraph(MavenCoordinate coordinate) {
         this.resolvedCalls = new ArrayList<>();
         this.unresolvedCalls = new ArrayList<>();
+        this.classHierarchy = new HashMap<>();
         this.coordinate = coordinate;
     }
 
@@ -42,6 +47,10 @@ public class PartialCallGraph {
 
     public List<Call> getResolvedCalls() {
         return resolvedCalls;
+    }
+
+    public Map<FastenURI, ExtendedRevisionCallGraph.Type> getClassHierarchy() {
+        return classHierarchy;
     }
 
     /**

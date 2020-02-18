@@ -22,16 +22,14 @@ import java.util.jar.JarFile;
 
 public class CallGraphAnalyzer {
 
+    private final AnalysisContext analysisContext;
+
     private final CallGraph rawCallGraph;
 
     private final IClassHierarchy cha;
 
-    private final ArtifactResolver artifactResolver;
-
     private final PartialCallGraph partialCallGraph;
 
-    private final HashMap<String, ResolvedMethod> resolvedDictionary = new HashMap<>();
-    private final HashMap<String, UnresolvedMethod> unresolvedDictionary = new HashMap<>();
 
     /**
      * Analyze raw call graph in Wala format.
@@ -44,8 +42,8 @@ public class CallGraphAnalyzer {
                              PartialCallGraph partialCallGraph) {
         this.rawCallGraph = rawCallGraph;
         this.cha = cha;
-        this.artifactResolver = new ArtifactResolver(cha);
         this.partialCallGraph = partialCallGraph;
+        this.analysisContext = new AnalysisContext(cha);
     }
 
     /**
@@ -60,7 +58,7 @@ public class CallGraphAnalyzer {
                 continue;
             }
 
-            Method methodNode = findOrCreate(nodeReference);
+            Method methodNode = analysisContext.findOrCreate(nodeReference);
 
             for (Iterator<CallSiteReference> callSites = node.iterateCallSites();
                  callSites.hasNext(); ) {
@@ -69,7 +67,8 @@ public class CallGraphAnalyzer {
                 MethodReference targetWithCorrectClassLoader = correctClassLoader(callSite
                         .getDeclaredTarget());
 
-                Method targetMethodNode = findOrCreate(targetWithCorrectClassLoader);
+                Method targetMethodNode =
+                        analysisContext.findOrCreate(targetWithCorrectClassLoader);
 
                 addCall(methodNode, targetMethodNode, getInvocationLabel(callSite));
             }
@@ -94,44 +93,6 @@ public class CallGraphAnalyzer {
         }
     }
 
-    /**
-     * Check if given method was already added to the list of calls. If call was already added,
-     * return this call.
-     *
-     * @param reference Method reference
-     * @return Duplicate or newly created method
-     */
-    private Method findOrCreate(MethodReference reference) {
-        String namespace = reference.getDeclaringClass().getName().toString().substring(1)
-                .replace('/', '.');
-        Selector symbol = reference.getSelector();
-
-        if (inApplicationScope(reference)) {
-
-            JarFile jarfile = artifactResolver.findJarFileUsingMethod(reference);
-            ResolvedMethod method = new ResolvedMethod(namespace, symbol, jarfile);
-            String key = method.toID();
-
-            ResolvedMethod val = resolvedDictionary.get(key);
-            if (val != null) {
-                return val;
-            }
-
-            resolvedDictionary.put(key, method);
-            return method;
-        } else {
-            UnresolvedMethod method = new UnresolvedMethod(namespace, symbol);
-            String key = method.toID();
-
-            UnresolvedMethod val = unresolvedDictionary.get(key);
-            if (val != null) {
-                return val;
-            }
-
-            unresolvedDictionary.put(key, method);
-            return method;
-        }
-    }
 
     /**
      * True if node "belongs" to application class loader.
@@ -142,16 +103,7 @@ public class CallGraphAnalyzer {
             .getReference()
             .equals(ClassLoaderReference.Application);
 
-    /**
-     * Check if given method "belongs" to application call.
-     *
-     * @param reference Method reference
-     * @return true if method "belongs" to application scope, false otherwise
-     */
-    private boolean inApplicationScope(MethodReference reference) {
-        return reference.getDeclaringClass().getClassLoader()
-                .equals(ClassLoaderReference.Application);
-    }
+
 
     /**
      * Get class loader with correct class loader.

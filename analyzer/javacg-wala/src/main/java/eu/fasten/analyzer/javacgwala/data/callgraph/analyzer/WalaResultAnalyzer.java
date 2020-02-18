@@ -44,6 +44,11 @@ public class WalaResultAnalyzer {
                 walaResultAnalyzer.cha, walaResultAnalyzer.partialCallGraph);
         callGraphAnalyzer.resolveCalls();
 
+        ClassHierarchyAnalyzer classHierarchyAnalyzer =
+                new ClassHierarchyAnalyzer(walaResultAnalyzer.cha,
+                        walaResultAnalyzer.partialCallGraph);
+        classHierarchyAnalyzer.resolveCHA();
+
         return walaResultAnalyzer.partialCallGraph;
     }
 }
