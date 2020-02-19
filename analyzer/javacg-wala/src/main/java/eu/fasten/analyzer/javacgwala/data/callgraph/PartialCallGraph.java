@@ -27,6 +27,9 @@ public class PartialCallGraph {
      */
     private final List<Call> resolvedCalls;
 
+    /**
+     * Class hierarchy.
+     */
     private final Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
 
     /**
@@ -52,6 +55,7 @@ public class PartialCallGraph {
     public Map<FastenURI, ExtendedRevisionCallGraph.Type> getClassHierarchy() {
         return classHierarchy;
     }
+
 
     /**
      * Add a new call to the list of resolved calls.
@@ -93,6 +97,27 @@ public class PartialCallGraph {
                 coordinate.getProduct(),
                 coordinate.getVersionConstraint(),
                 date, depArray, graph
+        );
+    }
+
+    /**
+     * Convert a {@link PartialCallGraph} to FASTEN compatible format.
+     *
+     * @return FASTEN call graph
+     */
+    public RevisionCallGraph toExtendedRevisionCallGraph(long date) {
+
+        List<List<RevisionCallGraph.Dependency>> depArray =
+                MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate());
+
+
+        var graph = toURIGraph();
+
+        return new ExtendedRevisionCallGraph(
+                "mvn",
+                coordinate.getProduct(),
+                coordinate.getVersionConstraint(),
+                date, depArray, graph, classHierarchy
         );
     }
 

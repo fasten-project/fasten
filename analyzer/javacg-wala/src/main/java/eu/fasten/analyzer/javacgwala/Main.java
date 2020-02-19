@@ -83,7 +83,7 @@ public class Main implements Runnable {
         }
 
         assert revisionCallGraph != null;
-        System.out.println(revisionCallGraph.toRevisionCallGraph(0).toJSON());
+        System.out.println(revisionCallGraph.toExtendedRevisionCallGraph(0).toJSON());
     }
 
     /**

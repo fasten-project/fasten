@@ -15,6 +15,7 @@ import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,12 +32,13 @@ public class ClassHierarchyAnalyzer {
 
     private final PartialCallGraph partialCallGraph;
 
-    Map<FastenURI, List<FastenURI>> methods = new HashMap<>();
+    private final Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
 
     public ClassHierarchyAnalyzer(IClassHierarchy cha, PartialCallGraph partialCallGraph) {
         this.cha = cha;
         this.partialCallGraph = partialCallGraph;
         this.analysisContext = new AnalysisContext(cha);
+        this.classHierarchy = new HashMap<>();
     }
 
     public void resolveCHA() {
@@ -57,13 +59,15 @@ public class ClassHierarchyAnalyzer {
                         Collectors.groupingBy(IMethod::getSelector)
                 );
 
-        List<FastenURI> methodURIs = new ArrayList<>();
-
-        FastenURI superClass = getClassURI(klass.getSuperclass());
-
         String sourceFileName = klass.getSourceFileName();
 
+        List<FastenURI> methodURIs = new ArrayList<>();
+
+        LinkedList<FastenURI> superClass = superClassHierarchy(klass.getSuperclass(),
+                new LinkedList<>());
+
         List<FastenURI> interfaces = new ArrayList<>();
+
 
         for (IClass implementedInterface : klass.getAllImplementedInterfaces()) {
             interfaces.add(getClassURI(implementedInterface));
@@ -81,7 +85,10 @@ public class ClassHierarchyAnalyzer {
             methodURIs.add(method.toCanonicalSchemalessURI());
             //processMethod(klass, declaredMethod, methodInterfaces);
         }
-        methods.put(getClassURI(klass), methodURIs);
+
+        partialCallGraph.getClassHierarchy().put(getClassURI(klass),
+                new ExtendedRevisionCallGraph.Type(sourceFileName,
+                methodURIs, superClass, interfaces));
 
 //        System.out.println();
 //        System.out.println("--------------- Class: " + getClassURI(klass) + " ---------------");
@@ -89,9 +96,18 @@ public class ClassHierarchyAnalyzer {
 //        System.out.println("==================================");
 //        System.out.println("INTERFACES: " + interfaces);
 //        System.out.println("==================================");
-//        System.out.println("SUPER CLASS: " + superClass);
+//        System.out.println("SUPER CLASSES: " + superClass);
 //        System.out.println("==================================");
 //        System.out.println("SOURCE FILE: " + sourceFileName);
+    }
+
+    private LinkedList<FastenURI> superClassHierarchy(IClass klass, LinkedList<FastenURI> aux) {
+        aux.add(getClassURI(klass));
+        if (klass.getSuperclass() == null) {
+            return aux;
+        }
+
+        return superClassHierarchy(klass.getSuperclass(), aux);
     }
 
     private void processMethod(IClass klass, IMethod declaredMethod, List<IMethod> methodInterfaces) {
