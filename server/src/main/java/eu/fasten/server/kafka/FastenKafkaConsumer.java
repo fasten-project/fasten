@@ -204,12 +204,12 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
             JSONObject lastStatusRecord = new JSONObject(splitRecord[1]);
 
             //System.out.println("Checking " + splitRecord[1]);
-            logger.info("Checking the status of record: " + splitRecord[1]);
+            logger.debug("Checking the status of record: " + splitRecord[1]);
 
             this.cgsStatusConsumer.close();
 
             if(!lastStatusRecord.get("status").toString().equals(this.OK_STATUS)){
-                logger.info("Increasing offset for skipping a record");
+                logger.debug("Increasing offset for skipping a record");
                 final long failedPartition = Long.parseLong(lastStatusRecord.get("partition").toString());
                 final long failedOffset = Long.parseLong(lastStatusRecord.get("offset").toString());
 
@@ -245,14 +245,14 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
         if(records.count() != 0){
             for(TopicPartition tp : topicPartitions){
-                logger.info("Topic: {} | Current offset for partition {}: {}", this.kafkaConsumer.consumerTopics().get(0)
+                logger.debug("Topic: {} | Current offset for partition {}: {}", this.kafkaConsumer.consumerTopics().get(0)
                         , tp, this.connection.position(tp));
                 logToKafka(this.serverLog, this.serverLogTopic, "Topic: " + this.kafkaConsumer.consumerTopics().get(0) +
                         "| Current offset for partition " + tp + ": " + this.connection.position(tp));
 
                 this.connection.seek(tp,  this.connection.position(tp) + 1);
 
-                logger.info("Topic: {} | Offset for partition {} is set to {}", this.kafkaConsumer.consumerTopics().get(0)
+                logger.debug("Topic: {} | Offset for partition {} is set to {}", this.kafkaConsumer.consumerTopics().get(0)
                         , tp, this.connection.position(tp));
                 logToKafka(this.serverLog, this.serverLogTopic, "Topic: " + this.kafkaConsumer.consumerTopics().get(0) +
                         "| Offset for partition " + tp + " is set to " + this.connection.position(tp));
@@ -288,7 +288,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                 ConsumerRecords<String, String> records = connection.poll(Duration.ofMillis(100));
 
                 //sendRecord(this.errorLog, this.errorLogTopic, new Date() + "| " + "Received " + records.count() + " records");
-                logger.info("Received {} records", records.count());
+                logger.debug("Received {} records", records.count());
 
                 for (String topic : topics) {
                     for (ConsumerRecord<String, String> r : records.records(topic)) {
@@ -340,7 +340,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
             // the commit failed with an unrecoverable error. if there is any
             // internal state which depended on the commit, you can clean it
             // up here. otherwise it's reasonable to ignore the error and go on
-            logger.debug("Commit failed", e);
+            logger.error("Commit failed", e);
         }
     }
 
