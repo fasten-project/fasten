@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
+import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import java.io.FileNotFoundException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONException;
@@ -37,12 +38,14 @@ class WALAPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        var cg = walaPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()));
+        ExtendedRevisionCallGraph cg = walaPlugin
+                .consume(new ConsumerRecord<>(topic, 1, 0, "foo",
+                coordinateJSON.toString()));
 
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
-        var revisionCallGraph =
+        ExtendedRevisionCallGraph revisionCallGraph =
                 CallGraphConstructor.build(coordinate)
-                        .toRevisionCallGraph(1574072773);
+                        .toExtendedRevisionCallGraph(1574072773);
 
         assertEquals(revisionCallGraph.toJSON().toString(), cg.toJSON().toString());
     }
@@ -56,7 +59,9 @@ class WALAPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        var cg = walaPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", emptyCGCoordinate.toString()));
+        ExtendedRevisionCallGraph cg = walaPlugin
+                .consume(new ConsumerRecord<>(topic, 1, 0, "bar",
+                        emptyCGCoordinate.toString()));
 
         assertEquals(0, cg.graph.size());
     }
@@ -86,10 +91,10 @@ class WALAPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        var cg = walaPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()));
+        ExtendedRevisionCallGraph cg = walaPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()));
         var coordinate = new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3");
-        var extendedRevisionCallGraph =
-                CallGraphConstructor.build(coordinate).toRevisionCallGraph(1574072773);
+        ExtendedRevisionCallGraph extendedRevisionCallGraph =
+                CallGraphConstructor.build(coordinate).toExtendedRevisionCallGraph(1574072773);
 
         assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString());
     }

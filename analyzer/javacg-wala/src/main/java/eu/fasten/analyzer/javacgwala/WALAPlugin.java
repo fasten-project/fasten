@@ -2,7 +2,7 @@ package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
-import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 import java.util.ArrayList;
@@ -53,7 +53,7 @@ public class WALAPlugin extends Plugin {
 
         /**
          * Generates call graphs using OPAL for consumed maven coordinates in
-         * {@link RevisionCallGraph} format, and produce them to the Producer that is
+         * {@link ExtendedRevisionCallGraph} format, and produce them to the Producer that is
          * provided for this Object.
          *
          * @param kafkaRecord A record including maven coordinates in the JSON format.
@@ -64,10 +64,10 @@ public class WALAPlugin extends Plugin {
          *                    "date": "1574072773"
          *                    }
          */
-        public RevisionCallGraph consume(ConsumerRecord<String, String> kafkaRecord) {
+        public ExtendedRevisionCallGraph consume(ConsumerRecord<String, String> kafkaRecord) {
 
-            MavenCoordinate mavenCoordinate = null;
-            RevisionCallGraph cg = null;
+            MavenCoordinate mavenCoordinate;
+            ExtendedRevisionCallGraph cg = null;
             try {
                 var kafkaConsumedJson = new JSONObject(kafkaRecord.value());
                 mavenCoordinate = new MavenCoordinate(
@@ -78,7 +78,7 @@ public class WALAPlugin extends Plugin {
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
 
                 cg = CallGraphConstructor.build(mavenCoordinate)
-                        .toRevisionCallGraph(Long
+                        .toExtendedRevisionCallGraph(Long
                                 .parseLong(kafkaConsumedJson.get("date").toString()));
 
                 if (cg == null || cg.graph.size() == 0) {
@@ -105,11 +105,11 @@ public class WALAPlugin extends Plugin {
         }
 
         /**
-         * Send {@link RevisionCallGraph} to Kafka.
+         * Send {@link ExtendedRevisionCallGraph} to Kafka.
          *
          * @param cg Call graph to send
          */
-        public void sendToKafka(RevisionCallGraph cg) {
+        public void sendToKafka(ExtendedRevisionCallGraph cg) {
             logger.debug("Writing call graph for {} to Kafka", cg.uri.toString());
 
             var record = new ProducerRecord<Object, String>(this.produceTopic,

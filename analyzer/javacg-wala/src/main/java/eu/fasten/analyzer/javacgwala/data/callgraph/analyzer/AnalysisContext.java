@@ -18,6 +18,11 @@ public class AnalysisContext {
     private final HashMap<String, ResolvedMethod> resolvedDictionary;
     private final HashMap<String, UnresolvedMethod> unresolvedDictionary;
 
+    /**
+     * Construct analysis context.
+     *
+     * @param cha Class hierarchy analysis
+     */
     public AnalysisContext(IClassHierarchy cha) {
         this.resolvedDictionary = new HashMap<>();
         this.unresolvedDictionary = new HashMap<>();
@@ -32,8 +37,11 @@ public class AnalysisContext {
      * @return Duplicate or newly created method
      */
     public Method findOrCreate(MethodReference reference) {
-        String namespace = reference.getDeclaringClass().getName().toString().substring(1)
-                .replace('/', '.');
+        var packageName = reference.getDeclaringClass().getName().getPackage().toString()
+                .replace("/", ".");
+        var className = reference.getDeclaringClass().getName().getClassName().toString();
+
+        String namespace = packageName + "." + className;
         Selector symbol = reference.getSelector();
 
         if (inApplicationScope(reference)) {

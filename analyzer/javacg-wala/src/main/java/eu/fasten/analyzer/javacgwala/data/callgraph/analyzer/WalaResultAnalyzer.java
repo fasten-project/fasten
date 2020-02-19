@@ -9,8 +9,6 @@ public class WalaResultAnalyzer {
 
     private final CallGraph rawCallGraph;
 
-    private final IClassHierarchy cha;
-
     private final PartialCallGraph partialCallGraph;
 
     /**
@@ -21,7 +19,6 @@ public class WalaResultAnalyzer {
      */
     private WalaResultAnalyzer(CallGraph rawCallGraph, MavenCoordinate coordinate) {
         this.rawCallGraph = rawCallGraph;
-        this.cha = rawCallGraph.getClassHierarchy();
         this.partialCallGraph = new PartialCallGraph(coordinate);
     }
 
@@ -41,13 +38,8 @@ public class WalaResultAnalyzer {
         WalaResultAnalyzer walaResultAnalyzer = new WalaResultAnalyzer(rawCallGraph, coordinate);
 
         CallGraphAnalyzer callGraphAnalyzer = new CallGraphAnalyzer(walaResultAnalyzer.rawCallGraph,
-                walaResultAnalyzer.cha, walaResultAnalyzer.partialCallGraph);
+                walaResultAnalyzer.partialCallGraph);
         callGraphAnalyzer.resolveCalls();
-
-        ClassHierarchyAnalyzer classHierarchyAnalyzer =
-                new ClassHierarchyAnalyzer(walaResultAnalyzer.cha,
-                        walaResultAnalyzer.partialCallGraph);
-        classHierarchyAnalyzer.resolveCHA();
 
         return walaResultAnalyzer.partialCallGraph;
     }

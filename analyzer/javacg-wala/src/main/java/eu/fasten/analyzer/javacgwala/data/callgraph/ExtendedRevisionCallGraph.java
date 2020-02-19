@@ -18,25 +18,106 @@
 
 package eu.fasten.analyzer.javacgwala.data.callgraph;
 
-import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
-import java.io.FileNotFoundException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.json.JSONException;
+import java.util.Objects;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
-    private static Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
+    /**
+     * Type can be a class or interface that inherits (implements) from others or implements methods.
+     */
+    public static class Type {
+        /**
+         * The source file name of this type.
+         */
+        private String sourceFileName;
+
+        /**
+         * Methods that this type implements.
+         */
+        private Map<FastenURI, Integer> methods;
+
+        /**
+         * Classes that this type inherits from in the order of instantiation.
+         */
+        private LinkedList<FastenURI> superClasses;
+
+        /**
+         * Interfaces that this type or its super classes implement.
+         */
+        private List<FastenURI> superInterfaces;
+
+        /**
+         * Construct a Type object from given data.
+         *
+         * @param sourceFile      Source file
+         * @param methods         List of methods
+         * @param superClasses    Super classes in the order of inheritance
+         * @param superInterfaces Implemented interfaces
+         */
+        public Type(String sourceFile, Map<FastenURI, Integer> methods, LinkedList<FastenURI> superClasses,
+                    List<FastenURI> superInterfaces) {
+            this.sourceFileName = sourceFile;
+            this.methods = methods;
+            this.superClasses = superClasses;
+            this.superInterfaces = superInterfaces;
+        }
+
+        public String getSourceFileName() {
+            return sourceFileName;
+        }
+
+        public Map<FastenURI, Integer> getMethods() {
+            return methods;
+        }
+
+        public LinkedList<FastenURI> getSuperClasses() {
+            return superClasses;
+        }
+
+        public List<FastenURI> getSuperInterfaces() {
+            return superInterfaces;
+        }
+
+        public void setMethods(Map<FastenURI, Integer> methods) {
+            this.methods = methods;
+        }
+
+        public void setSuperClasses(LinkedList<FastenURI> superClasses) {
+            this.superClasses = superClasses;
+        }
+
+        public void setSuperInterfaces(List<FastenURI> superInterfaces) {
+            this.superInterfaces = superInterfaces;
+        }
+    }
+
     private Map<FastenURI, Type> classHierarchy;
+
+    /**
+     * Creates a JSON call graph with given data.
+     *
+     * @param forge          the forge
+     * @param product        the product
+     * @param version        the version
+     * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present, \it
+     *                       is set to -1
+     * @param depset         the depset
+     * @param graph          the call graph (no control is done on the graph)
+     * @param classHierarchy class hierarchy
+     */
+    public ExtendedRevisionCallGraph(String forge, String product, String version, long timestamp,
+                                     List<List<Dependency>> depset, ArrayList<FastenURI[]> graph,
+                                     Map<FastenURI, Type> classHierarchy) {
+        super(forge, product, version, timestamp, depset, graph);
+        this.classHierarchy = classHierarchy;
+    }
 
     public Map<FastenURI, Type> getClassHierarchy() {
         return classHierarchy;
@@ -62,7 +143,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
             this.classHierarchy.forEach((fastenURI, type) -> {
                 fastenURI = null;
-                type.methods.parallelStream().forEach(i -> i = null);
+                type.methods.keySet().parallelStream().forEach(i -> i = null);
+                type.methods.values().parallelStream().forEach(i -> i = null);
                 type.superClasses.parallelStream().forEach(i -> i = null);
                 type.superInterfaces.parallelStream().forEach(i -> i = null);
             });
@@ -73,72 +155,11 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         }
     }
 
+    /**
+     * Removes the content of the revision call graph.
+     */
     public void clear() {
         clear(false);
-    }
-
-
-    /**
-     * Type can be a class or interface that inherits (implements) from others or implements methods.
-     */
-    public static class Type {
-        //The source file name of this type.
-        private String sourceFileName;
-        //Methods that this type implements
-        private List<FastenURI> methods;
-        //Classes that this type inherits from in the order of instantiation.
-        private LinkedList<FastenURI> superClasses;
-        //Interfaces that this type or its super classes implement.
-        private List<FastenURI> superInterfaces;
-
-        public String getSourceFileName() {
-            return sourceFileName;
-        }
-
-        public List<FastenURI> getMethods() {
-            //logger.info("Methods Size: {}", methods.size());
-            return methods;
-        }
-
-        public LinkedList<FastenURI> getSuperClasses() {
-            return superClasses;
-        }
-
-        public List<FastenURI> getSuperInterfaces() {
-            return superInterfaces;
-        }
-
-        public void setMethods(List<FastenURI> methods) {
-            this.methods = methods;
-        }
-
-        public void setSuperClasses(LinkedList<FastenURI> superClasses) {
-            this.superClasses = superClasses;
-        }
-
-        public void setSuperInterfaces(List<FastenURI> superInterfaces) {
-            this.superInterfaces = superInterfaces;
-        }
-
-        public Type(String sourceFile, List<FastenURI> methods, LinkedList<FastenURI> superClasses,
-                    List<FastenURI> superInterfaces) {
-            this.sourceFileName = sourceFile;
-            this.methods = methods;
-            this.superClasses = superClasses;
-            this.superInterfaces = superInterfaces;
-        }
-    }
-
-    public ExtendedRevisionCallGraph(String forge, String product, String version, long timestamp,
-                                     List<List<Dependency>> depset, ArrayList<FastenURI[]> graph,
-                                     Map<FastenURI, Type> classHierarchy) {
-        super(forge, product, version, timestamp, depset, graph);
-        this.classHierarchy = classHierarchy;
-    }
-
-    public ExtendedRevisionCallGraph(final JSONObject json, final boolean ignoreConstraints) throws JSONException,
-        URISyntaxException {
-        super(json, ignoreConstraints);
     }
 
     /**
@@ -153,11 +174,9 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
         this.getClassHierarchy().forEach((clas, type) -> {
 
-            //logger.info("CH: {}", clas.toString());
-
             final JSONObject typeJSON = new JSONObject();
 
-            typeJSON.put("methods", toListOfString(type.methods));
+            typeJSON.put("methods", toListOfString(new ArrayList<>(type.methods.keySet())));
             typeJSON.put("superClasses", toListOfString(type.superClasses));
             typeJSON.put("superInterfaces", toListOfString(type.superInterfaces));
 
@@ -169,81 +188,32 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         return revisionCallGraphJSON;
     }
 
+    /**
+     * Convert a list of FastenURIs to list of Strings.
+     *
+     * @param list List of FastenURIs
+     * @return List of Strings
+     */
     public static List<String> toListOfString(final List<FastenURI> list) {
         final List<String> result = new ArrayList<>();
         for (FastenURI fastenURI : list) {
-            //logger.info("FURI: {}", fastenURI.toString());
-            if (fastenURI !=null) { result.add(fastenURI.toString()); }
+            if (fastenURI != null) {
+                result.add(fastenURI.toString());
+            }
         }
         return result;
     }
 
-//    public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate,
-//                                                   final long timestamp, final PartialCallGraph partialCallGraph) {
-//
-//        return new ExtendedRevisionCallGraph(forge,
-//            coordinate.getProduct(),
-//            coordinate.getVersionConstraint(),
-//            timestamp,
-//            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
-//            partialCallGraph.toURIGraph(),
-//            PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy()));
-//    }
-//
-//    public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate,
-//                                                   final long timestamp) throws FileNotFoundException {
-//
-//        logger.info("Generating call graph using Opal ...");
-//        final var partialCallGraph = new PartialCallGraph(
-//            MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate()).orElseThrow(RuntimeException::new)
-//        );
-//
-//        logger.info("Opal call graph has been generated.");
-//
-//        logger.info("Converting edges to URIs ...");
-//
-//        final var graph = partialCallGraph.toURIGraph();
-//
-//        logger.info("All edges of the graph have been converted to URIs.");
-//        logger.info("Cleaning the opal call graph from memory ...");
-//
-//        partialCallGraph.clearGraph();
-//
-//        logger.info("The Opal call graph has been removed from memory.");
-//        logger.info("Converting class hierarchy to URIs ...");
-//
-//        final var classHierarcy = PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy());
-//
-//        logger.info("All entities of the class hierarchy have been converted to URIs.");
-//        logger.info("Cleaning the opal call class hierarchy from memory ...");
-//
-//        partialCallGraph.clearClassHierarchy();
-//
-//        logger.info("The Opal call class hierarchy has been removed from memory.");
-//        logger.info("Building the extended revision call graph ...");
-//
-//        return new ExtendedRevisionCallGraph(forge,
-//            coordinate.getProduct(),
-//            coordinate.getVersionConstraint(),
-//            timestamp,
-//            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
-//            graph,
-//            classHierarcy);
-//    }
-//
-//    /**
-//     * Note that this is a temporary method for finding a Maven coordinate that generates an empty
-//     * call graph. Later on, this method might be helpful for not sending an empty call graph.
-//     *
-//     * @return boolean
-//     */
-//    public boolean isCallGraphEmpty() {
-//        return this.graph.isEmpty();
-//    }
-//
-//    public void sortGraphEdges() {
-//        this.graph.sort(Comparator.comparing(o -> (o[0].toString() + o[1].toString())));
-//    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ExtendedRevisionCallGraph that = (ExtendedRevisionCallGraph) o;
+        return Objects.equals(classHierarchy, that.classHierarchy);
+    }
 
-
+    @Override
+    public int hashCode() {
+        return Objects.hash(classHierarchy);
+    }
 }

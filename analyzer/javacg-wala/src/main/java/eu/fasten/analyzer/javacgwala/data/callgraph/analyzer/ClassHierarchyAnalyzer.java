@@ -1,107 +1,98 @@
 package eu.fasten.analyzer.javacgwala.data.callgraph.analyzer;
 
 import com.ibm.wala.classLoader.IClass;
-import com.ibm.wala.classLoader.IClassLoader;
-import com.ibm.wala.classLoader.IMethod;
-import com.ibm.wala.ipa.cha.IClassHierarchy;
-import com.ibm.wala.types.ClassLoaderReference;
-import com.ibm.wala.types.Selector;
+import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.types.TypeReference;
 import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
-import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
-import eu.fasten.analyzer.javacgwala.data.core.UnresolvedMethod;
-import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 public class ClassHierarchyAnalyzer {
 
-    enum MethodType {
-        INTERFACE, ABSTRACT, IMPLEMENTATION
-    }
+    private final Set<FastenURI> processedClasses = new HashSet<>();
 
-    private final IClassHierarchy cha;
-
-    private final AnalysisContext analysisContext;
+    private final CallGraph rawCallGraph;
 
     private final PartialCallGraph partialCallGraph;
 
-    private final Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
+    private int counter;
 
-    public ClassHierarchyAnalyzer(IClassHierarchy cha, PartialCallGraph partialCallGraph) {
-        this.cha = cha;
+    /**
+     * Construct class hierarchy analyzer.
+     *
+     * @param rawCallGraph     Call graph in Wala format
+     * @param partialCallGraph Partial call graph
+     */
+    public ClassHierarchyAnalyzer(CallGraph rawCallGraph, PartialCallGraph partialCallGraph) {
+        this.rawCallGraph = rawCallGraph;
         this.partialCallGraph = partialCallGraph;
-        this.analysisContext = new AnalysisContext(cha);
-        this.classHierarchy = new HashMap<>();
+        this.counter = 0;
     }
 
-    public void resolveCHA() {
-        IClassLoader classLoader = cha.getLoader(ClassLoaderReference.Application);
+    /**
+     * Adds new method to class hierarchy. In case class in which given method is defined already
+     * exists in CHA - method is ust being appended to the list of methods of this class,
+     * otherwise a new class is created.
+     *
+     * @param method   Method to add
+     * @param klassRef Class reference
+     */
+    public void addMethodToCHA(Method method, TypeReference klassRef) {
+        var klass = this.rawCallGraph.getClassHierarchy().lookupClass(klassRef);
 
-        // Iterate all classes in Application scope
-        for (var it = classLoader.iterateAllClasses(); it.hasNext(); ) {
-            IClass klass = it.next();
-            processClass(klass);
+        if (!processedClasses.contains(getClassURI(method))) {
+            if (klass == null) {
+                processedClasses.add(getClassURI(method));
+                partialCallGraph.getClassHierarchy().put(getClassURI(method),
+                        new ExtendedRevisionCallGraph.Type(null,
+                                new HashMap<>(), new LinkedList<>(), new ArrayList<>()));
+            } else if (processedClasses.add(getClassURI(method))) {
+                processClass(method, klass);
+            }
         }
+        partialCallGraph.getClassHierarchy().get(getClassURI(method)).getMethods()
+                .putIfAbsent(method.toCanonicalSchemalessURI(), counter++);
     }
 
-    private void processClass(IClass klass) {
-        Map<Selector, List<IMethod>> interfaceMethods = klass.getDirectInterfaces()
-                .stream()
-                .flatMap(o -> o.getDeclaredMethods().stream())
-                .collect(
-                        Collectors.groupingBy(IMethod::getSelector)
-                );
-
+    /**
+     * Find super classes, interfaces and source file name of a given class.
+     *
+     * @param klass Class
+     */
+    private void processClass(Method method, IClass klass) {
         String sourceFileName = klass.getSourceFileName();
-
-        List<FastenURI> methodURIs = new ArrayList<>();
-
-        LinkedList<FastenURI> superClass = superClassHierarchy(klass.getSuperclass(),
-                new LinkedList<>());
-
         List<FastenURI> interfaces = new ArrayList<>();
-
 
         for (IClass implementedInterface : klass.getAllImplementedInterfaces()) {
             interfaces.add(getClassURI(implementedInterface));
         }
 
-        for (IMethod declaredMethod : klass.getDeclaredMethods()) {
-            String namespace =
-                    declaredMethod.getReference().getDeclaringClass().getName().toString().substring(1)
-                    .replace('/', '.');
-            Selector symbol = declaredMethod.getReference().getSelector();
+        LinkedList<FastenURI> superClasses = superClassHierarchy(klass.getSuperclass(),
+                new LinkedList<>());
 
-
-            List<IMethod> methodInterfaces = interfaceMethods.get(declaredMethod.getSelector());
-            var method = new UnresolvedMethod(namespace, symbol);
-            methodURIs.add(method.toCanonicalSchemalessURI());
-            //processMethod(klass, declaredMethod, methodInterfaces);
-        }
-
-        partialCallGraph.getClassHierarchy().put(getClassURI(klass),
+        partialCallGraph.getClassHierarchy().put(getClassURI(method),
                 new ExtendedRevisionCallGraph.Type(sourceFileName,
-                methodURIs, superClass, interfaces));
-
-//        System.out.println();
-//        System.out.println("--------------- Class: " + getClassURI(klass) + " ---------------");
-//        System.out.println("METHODS: " + methodURIs);
-//        System.out.println("==================================");
-//        System.out.println("INTERFACES: " + interfaces);
-//        System.out.println("==================================");
-//        System.out.println("SUPER CLASSES: " + superClass);
-//        System.out.println("==================================");
-//        System.out.println("SOURCE FILE: " + sourceFileName);
+                        new HashMap<>(), superClasses, interfaces));
     }
 
+    /**
+     * Recursively creates a list of super classes of a given class in the order of inheritance.
+     *
+     * @param klass Class
+     * @param aux   Auxiliary list
+     * @return List of super classes
+     */
     private LinkedList<FastenURI> superClassHierarchy(IClass klass, LinkedList<FastenURI> aux) {
+        if (klass == null || aux == null) {
+            return new LinkedList<>();
+        }
         aux.add(getClassURI(klass));
         if (klass.getSuperclass() == null) {
             return aux;
@@ -110,98 +101,25 @@ public class ClassHierarchyAnalyzer {
         return superClassHierarchy(klass.getSuperclass(), aux);
     }
 
-    private void processMethod(IClass klass, IMethod declaredMethod, List<IMethod> methodInterfaces) {
-        if (declaredMethod.isPrivate()) {
-            // Private methods cannot be overridden, so no need for them.
-            return;
-        }
-        IClass superKlass = klass.getSuperclass();
-
-        Method declaredMethodNode = analysisContext.findOrCreate(declaredMethod.getReference());
-
-        if (!(declaredMethodNode instanceof ResolvedMethod)) {
-            return;
-        }
-        ResolvedMethod resolvedMethod = (ResolvedMethod) declaredMethodNode;
-
-
-        IMethod superMethod = superKlass.getMethod(declaredMethod.getSelector());
-        if (superMethod != null) {
-            Method superMethodNode = analysisContext.findOrCreate(superMethod.getReference());
-
-            //TODO: CHA EDGE WAS ADDED HERE
-            //graph.addChaEdge(superMethodNode, resolvedMethod, ChaEdge.ChaEdgeType.OVERRIDE);
-        }
-
-
-        if (methodInterfaces != null) {
-            for (IMethod interfaceMethod : methodInterfaces) {
-                Method interfaceMethodNode =
-                        analysisContext.findOrCreate(interfaceMethod.getReference());
-
-                //TODO: CHA EDGE WAS ADDED HERE
-                //graph.addChaEdge(interfaceMethodNode, resolvedMethod,ChaEdge.ChaEdgeType.IMPLEMENTS);
-            }
-        }
-
-
-        // An abstract class doesn't have to define abstract method for interface methods
-        // So if this method doesn't have a super method or an interface method look for them in the interfaces of the abstract superclass
-        if (superKlass.isAbstract() && superMethod == null && methodInterfaces == null) {
-
-            Map<Selector, List<IMethod>> abstractSuperClassInterfacesByMethod = superKlass.getDirectInterfaces()
-                    .stream()
-                    .flatMap(o -> o.getDeclaredMethods().stream())
-                    .collect(Collectors.groupingBy(IMethod::getSelector));
-
-            List<IMethod> abstractSuperClassInterfaceMethods = abstractSuperClassInterfacesByMethod.get(declaredMethod.getSelector());
-            if (abstractSuperClassInterfaceMethods != null && abstractSuperClassInterfaceMethods.size() > 0) {
-                for (IMethod abstractSuperClassInterfaceMethod : abstractSuperClassInterfaceMethods) {
-                    Method abstractSuperClassInterfaceMethodNode = analysisContext
-                            .findOrCreate(abstractSuperClassInterfaceMethod.getReference());
-
-                    //TODO: CHA EDGE WAS ADDED HERE
-                    //graph.addChaEdge(abstractSuperClassInterfaceMethodNode, resolvedMethod,ChaEdge.ChaEdgeType.IMPLEMENTS);
-                }
-            }
-        }
-    }
-
-    private MethodType getMethodType(IClass klass, IMethod declaredMethod) {
-        if (declaredMethod.isAbstract()) {
-
-            if (klass.isInterface()) {
-                return MethodType.INTERFACE;
-            } else {
-                return MethodType.ABSTRACT;
-            }
-
-        } else {
-            return MethodType.IMPLEMENTATION;
-        }
-    }
-
+    /**
+     * Convert class to FastenURI format.
+     *
+     * @param klass Class
+     * @return URI of class
+     */
     private FastenURI getClassURI(IClass klass) {
-        String namespace = klass.getName().toString().substring(1).replace('/', '.');
-        return FastenURI.create("/" + getPackageName(namespace) + "/" + getClassName(namespace));
+        String packageName = klass.getName().getPackage().toString().replace("/", ".");
+        String className = klass.getName().getClassName().toString().replace("/", ".");
+        return FastenURI.create("/" + packageName + "/" + className);
     }
 
     /**
-     * Get name of the package.
+     * Convert class to FastenURI format.
      *
-     * @return Package name
+     * @param method Method in declaring class
+     * @return URI of class
      */
-    private String getPackageName(String namespace) {
-        return namespace.substring(0, namespace.lastIndexOf("."));
+    private FastenURI getClassURI(Method method) {
+        return FastenURI.create("/" + method.getPackageName() + "/" + method.getClassName());
     }
-
-    /**
-     * Get name of the class.
-     *
-     * @return Class name
-     */
-    private String getClassName(String namespace) {
-        return namespace.substring(namespace.lastIndexOf(".") + 1);
-    }
-
 }

@@ -64,7 +64,7 @@ public abstract class Method {
      *
      * @return Package name
      */
-    private String getPackageName() {
+    public String getPackageName() {
         return namespace.substring(0, this.namespace.lastIndexOf("."));
     }
 
@@ -73,7 +73,7 @@ public abstract class Method {
      *
      * @return Class name
      */
-    private String getClassName() {
+    public String getClassName() {
         return namespace.substring(namespace.lastIndexOf(".") + 1);
     }
 

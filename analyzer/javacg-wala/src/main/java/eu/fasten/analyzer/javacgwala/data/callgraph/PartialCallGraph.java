@@ -105,13 +105,13 @@ public class PartialCallGraph {
      *
      * @return FASTEN call graph
      */
-    public RevisionCallGraph toExtendedRevisionCallGraph(long date) {
+    public ExtendedRevisionCallGraph toExtendedRevisionCallGraph(long date) {
 
         List<List<RevisionCallGraph.Dependency>> depArray =
                 MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate());
 
 
-        var graph = toURIGraph();
+        var graph = toNumericalGraph();
 
         return new ExtendedRevisionCallGraph(
                 "mvn",
@@ -142,6 +142,26 @@ public class PartialCallGraph {
     }
 
     /**
+     * Converts all nodes {@link Call} of a Wala call graph to numbers.
+     *
+     * @return A graph of all nodes in numerical format represented in a List of {@link FastenURI}
+     */
+    private ArrayList<FastenURI[]> toNumericalGraph() {
+
+        var graph = new ArrayList<FastenURI[]>();
+
+        for (Call resolvedCall : resolvedCalls) {
+            addNumericalCall(graph, resolvedCall);
+        }
+
+        for (Call unresolvedCall : unresolvedCalls) {
+            addNumericalCall(graph, unresolvedCall);
+        }
+
+        return graph;
+    }
+
+    /**
      * Add call to a call graph.
      *
      * @param graph Call graph to add a call to
@@ -153,6 +173,38 @@ public class PartialCallGraph {
 
         if (uriCall[0] != null && uriCall[1] != null && !graph.contains(uriCall)) {
             graph.add(uriCall);
+        }
+    }
+
+    /**
+     * Add call numbers to a call graph.
+     *
+     * @param graph Call graph to add a call to
+     * @param call  Call to add
+     */
+    private void addNumericalCall(ArrayList<FastenURI[]> graph, Call call) {
+
+        var source = call.getSource();
+        var target = call.getTarget();
+        var type = call.getCallType();
+
+        FastenURI uriSourceType =
+                FastenURI.create("/" + source.getPackageName() + "/" + source.getClassName());
+        FastenURI uriTargetType =
+                FastenURI.create("/" + target.getPackageName() + "/" + target.getClassName());
+
+        var sourceData = this.classHierarchy.get(uriSourceType);
+        var targetData = this.classHierarchy.get(uriTargetType);
+
+        var sourceIndex = sourceData.getMethods().get(source.toCanonicalSchemalessURI());
+        var targetIndex = targetData.getMethods().get(target.toCanonicalSchemalessURI());
+
+        if (sourceIndex != null && targetIndex != null) {
+            var result = new FastenURI[3];
+            result[0] = FastenURI.create(String.valueOf(sourceIndex));
+            result[1] = FastenURI.create(String.valueOf(targetIndex));
+            result[2] = FastenURI.create(type.label);
+            graph.add(result);
         }
     }
 }

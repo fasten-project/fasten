@@ -8,17 +8,12 @@ import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.shrikeBT.IInvokeInstruction;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
-import com.ibm.wala.types.Selector;
-import eu.fasten.analyzer.javacgwala.data.ArtifactResolver;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgwala.data.core.Call;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
 import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
-import eu.fasten.analyzer.javacgwala.data.core.UnresolvedMethod;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.Predicate;
-import java.util.jar.JarFile;
 
 public class CallGraphAnalyzer {
 
@@ -26,24 +21,21 @@ public class CallGraphAnalyzer {
 
     private final CallGraph rawCallGraph;
 
-    private final IClassHierarchy cha;
-
     private final PartialCallGraph partialCallGraph;
 
+    private final ClassHierarchyAnalyzer classHierarchyAnalyzer;
 
     /**
      * Analyze raw call graph in Wala format.
      *
      * @param rawCallGraph     Raw call graph in Wala format
-     * @param cha              Class Hierarchy
      * @param partialCallGraph Partial call graph
      */
-    public CallGraphAnalyzer(CallGraph rawCallGraph, IClassHierarchy cha,
-                             PartialCallGraph partialCallGraph) {
+    public CallGraphAnalyzer(CallGraph rawCallGraph, PartialCallGraph partialCallGraph) {
         this.rawCallGraph = rawCallGraph;
-        this.cha = cha;
         this.partialCallGraph = partialCallGraph;
-        this.analysisContext = new AnalysisContext(cha);
+        this.analysisContext = new AnalysisContext(rawCallGraph.getClassHierarchy());
+        this.classHierarchyAnalyzer = new ClassHierarchyAnalyzer(rawCallGraph, partialCallGraph);
     }
 
     /**
@@ -60,6 +52,8 @@ public class CallGraphAnalyzer {
 
             Method methodNode = analysisContext.findOrCreate(nodeReference);
 
+            classHierarchyAnalyzer.addMethodToCHA(methodNode, nodeReference.getDeclaringClass());
+
             for (Iterator<CallSiteReference> callSites = node.iterateCallSites();
                  callSites.hasNext(); ) {
                 CallSiteReference callSite = callSites.next();
@@ -70,6 +64,8 @@ public class CallGraphAnalyzer {
                 Method targetMethodNode =
                         analysisContext.findOrCreate(targetWithCorrectClassLoader);
 
+                classHierarchyAnalyzer.addMethodToCHA(targetMethodNode, targetWithCorrectClassLoader
+                        .getDeclaringClass());
                 addCall(methodNode, targetMethodNode, getInvocationLabel(callSite));
             }
 
@@ -103,8 +99,6 @@ public class CallGraphAnalyzer {
             .getReference()
             .equals(ClassLoaderReference.Application);
 
-
-
     /**
      * Get class loader with correct class loader.
      *
@@ -112,7 +106,7 @@ public class CallGraphAnalyzer {
      * @return Method reference with correct class loader
      */
     private MethodReference correctClassLoader(MethodReference reference) {
-        IClass klass = cha.lookupClass(reference.getDeclaringClass());
+        IClass klass = rawCallGraph.getClassHierarchy().lookupClass(reference.getDeclaringClass());
 
         if (klass == null) {
             return MethodReference.findOrCreate(ClassLoaderReference.Extension,
