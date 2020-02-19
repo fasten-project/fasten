@@ -10,6 +10,8 @@ import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
 import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
+import eu.fasten.analyzer.javacgwala.data.core.UnresolvedMethod;
+import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,7 +31,7 @@ public class ClassHierarchyAnalyzer {
 
     private final PartialCallGraph partialCallGraph;
 
-    Map<IClass, List<IMethod>> methods = new HashMap<>();
+    Map<FastenURI, List<FastenURI>> methods = new HashMap<>();
 
     public ClassHierarchyAnalyzer(IClassHierarchy cha, PartialCallGraph partialCallGraph) {
         this.cha = cha;
@@ -54,15 +56,42 @@ public class ClassHierarchyAnalyzer {
                 .collect(
                         Collectors.groupingBy(IMethod::getSelector)
                 );
-        List<IMethod> methodList = new ArrayList<>();
+
+        List<FastenURI> methodURIs = new ArrayList<>();
+
+        FastenURI superClass = getClassURI(klass.getSuperclass());
+
+        String sourceFileName = klass.getSourceFileName();
+
+        List<FastenURI> interfaces = new ArrayList<>();
+
+        for (IClass implementedInterface : klass.getAllImplementedInterfaces()) {
+            interfaces.add(getClassURI(implementedInterface));
+        }
 
         for (IMethod declaredMethod : klass.getDeclaredMethods()) {
+            String namespace =
+                    declaredMethod.getReference().getDeclaringClass().getName().toString().substring(1)
+                    .replace('/', '.');
+            Selector symbol = declaredMethod.getReference().getSelector();
+
 
             List<IMethod> methodInterfaces = interfaceMethods.get(declaredMethod.getSelector());
-            methodList.add(declaredMethod);
-            processMethod(klass, declaredMethod, methodInterfaces);
+            var method = new UnresolvedMethod(namespace, symbol);
+            methodURIs.add(method.toCanonicalSchemalessURI());
+            //processMethod(klass, declaredMethod, methodInterfaces);
         }
-        methods.put(klass, methodList);
+        methods.put(getClassURI(klass), methodURIs);
+
+//        System.out.println();
+//        System.out.println("--------------- Class: " + getClassURI(klass) + " ---------------");
+//        System.out.println("METHODS: " + methodURIs);
+//        System.out.println("==================================");
+//        System.out.println("INTERFACES: " + interfaces);
+//        System.out.println("==================================");
+//        System.out.println("SUPER CLASS: " + superClass);
+//        System.out.println("==================================");
+//        System.out.println("SOURCE FILE: " + sourceFileName);
     }
 
     private void processMethod(IClass klass, IMethod declaredMethod, List<IMethod> methodInterfaces) {
@@ -135,4 +164,28 @@ public class ClassHierarchyAnalyzer {
             return MethodType.IMPLEMENTATION;
         }
     }
+
+    private FastenURI getClassURI(IClass klass) {
+        String namespace = klass.getName().toString().substring(1).replace('/', '.');
+        return FastenURI.create("/" + getPackageName(namespace) + "/" + getClassName(namespace));
+    }
+
+    /**
+     * Get name of the package.
+     *
+     * @return Package name
+     */
+    private String getPackageName(String namespace) {
+        return namespace.substring(0, namespace.lastIndexOf("."));
+    }
+
+    /**
+     * Get name of the class.
+     *
+     * @return Class name
+     */
+    private String getClassName(String namespace) {
+        return namespace.substring(namespace.lastIndexOf(".") + 1);
+    }
+
 }
