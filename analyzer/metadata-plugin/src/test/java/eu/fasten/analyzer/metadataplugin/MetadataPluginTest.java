@@ -1,0 +1,59 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package eu.fasten.analyzer.metadataplugin;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class MetadataPluginTest {
+
+    private MetadataDatabasePlugin.MetadataPlugin metadataPlugin;
+
+    @BeforeEach
+    public void setUp() {
+        metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin();
+    }
+
+    @Test
+    public void consumeTest() {
+        // TODO: Test if consumed data is correctly saved in the database
+    }
+
+    @Test
+    public void recordProcessSuccessfulTest() {
+        assertTrue(metadataPlugin.recordProcessSuccessful());
+    }
+
+    @Test
+    public void nameTest() {
+        String name = "Metadata plugin";
+        assertEquals(name, metadataPlugin.name());
+    }
+
+    @Test
+    public void descriptionTest() {
+        String description = "Metadata plugin. Connects to a Kafka topic and populates metadata database with consumed data.";
+        assertEquals(description, metadataPlugin.description());
+    }
+
+
+}
