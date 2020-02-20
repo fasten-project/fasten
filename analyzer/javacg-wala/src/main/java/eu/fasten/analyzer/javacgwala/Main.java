@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
