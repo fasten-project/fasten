@@ -1,10 +1,29 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
-import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +64,7 @@ public class WALAPlugin extends Plugin {
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
             processedRecord = false;
-            consume(record);
+            consume(record, true);
             if (getPluginError().isEmpty()) {
                 processedRecord = true;
             }
@@ -53,35 +72,28 @@ public class WALAPlugin extends Plugin {
 
         /**
          * Generates call graphs using OPAL for consumed maven coordinates in
-         * {@link RevisionCallGraph} format, and produce them to the Producer that is
+         * eu.fasten.core.data.RevisionCallGraph format, and produce them to the Producer that is
          * provided for this Object.
          *
-         * @param kafkaRecord A record including maven coordinates in the JSON format.
-         *                    e.g. {
-         *                    "groupId": "com.g2forge.alexandria",
-         *                    "artifactId": "alexandria",
-         *                    "version": "0.0.9",
-         *                    "date": "1574072773"
-         *                    }
+         * @param kafkaRecord    A record including maven coordinates in the JSON format.
+         *                       e.g. {
+         *                       "groupId": "com.g2forge.alexandria",
+         *                       "artifactId": "alexandria",
+         *                       "version": "0.0.9",
+         *                       "date": "1574072773"
+         *                       }
+         * @param writeCGToKafka If true, the generated call graph will be written into Kafka
          */
-        public RevisionCallGraph consume(ConsumerRecord<String, String> kafkaRecord) {
-
-            MavenCoordinate mavenCoordinate = null;
-            RevisionCallGraph cg = null;
+        public ExtendedRevisionCallGraph consume(final ConsumerRecord<String, String> kafkaRecord,
+                                                 final boolean writeCGToKafka) {
             try {
-                var kafkaConsumedJson = new JSONObject(kafkaRecord.value());
-                mavenCoordinate = new MavenCoordinate(
-                        kafkaConsumedJson.get("groupId").toString(),
-                        kafkaConsumedJson.get("artifactId").toString(),
-                        kafkaConsumedJson.get("version").toString());
+                final var kafkaConsumedJson = new JSONObject(kafkaRecord.value());
+                final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
 
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
+                final var cg = generateCallgraph(mavenCoordinate, kafkaConsumedJson);
 
-                cg = CallGraphConstructor.build(mavenCoordinate)
-                        .toRevisionCallGraph(Long
-                                .parseLong(kafkaConsumedJson.get("date").toString()));
-
-                if (cg == null || cg.graph.size() == 0) {
+                if (cg == null || cg.isCallGraphEmpty()) {
                     logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
                     return cg;
                 }
@@ -92,39 +104,58 @@ public class WALAPlugin extends Plugin {
                 if (writeCGToKafka) {
                     sendToKafka(cg);
                 }
+                return cg;
 
-            } catch (JSONException e) {
-                setPluginError(e.getClass().getSimpleName());
-                logger.error("Could not parse input coordinates: {}\n{}", kafkaRecord.value(), e);
             } catch (Exception e) {
                 setPluginError(e.getClass().getSimpleName());
                 logger.error("", e);
+                return null;
             }
-
-            return cg;
         }
 
-        /**
-         * Send {@link RevisionCallGraph} to Kafka.
-         *
-         * @param cg Call graph to send
-         */
-        public void sendToKafka(RevisionCallGraph cg) {
-            logger.debug("Writing call graph for {} to Kafka", cg.uri.toString());
+        public MavenCoordinate getMavenCoordinate(final JSONObject kafkaConsumedJson) {
 
-            var record = new ProducerRecord<Object, String>(this.produceTopic,
+            try {
+                return new MavenCoordinate(
+                        kafkaConsumedJson.get("groupId").toString(),
+                        kafkaConsumedJson.get("artifactId").toString(),
+                        kafkaConsumedJson.get("version").toString());
+            } catch (JSONException e) {
+                setPluginError(e.getClass().getSimpleName());
+                logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson, e);
+            }
+            return null;
+        }
+
+        public ExtendedRevisionCallGraph generateCallgraph(final MavenCoordinate mavenCoordinate,
+                                                           final JSONObject kafkaConsumedJson) {
+            try {
+                return CallGraphConstructor.build(mavenCoordinate).toExtendedRevisionCallGraph(
+                        Long.parseLong(kafkaConsumedJson.get("date").toString()));
+            } catch (FileNotFoundException e) {
+                setPluginError(e.getClass().getSimpleName());
+                logger.error("Could find JAR for Maven coordinate: {}",
+                        mavenCoordinate.getCoordinate(), e);
+            }
+            return null;
+        }
+
+        public void sendToKafka(final ExtendedRevisionCallGraph cg) {
+
+            logger.debug("Writing call graph for {} to Kafka", cg.uri.toString());
+            final var record = new ProducerRecord<Object, String>(this.produceTopic,
                     cg.uri.toString(),
                     cg.toJSON().toString()
             );
 
-            kafkaProducer.send(record, (recordMetadata, e) -> {
+            kafkaProducer.send(record, ((recordMetadata, e) -> {
                 if (recordMetadata != null) {
                     logger.debug("Sent: {} to {}", cg.uri.toString(), this.produceTopic);
                 } else {
                     setPluginError(e.getClass().getSimpleName());
                     logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
                 }
-            });
+            }));
         }
 
         @Override
