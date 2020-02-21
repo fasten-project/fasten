@@ -54,7 +54,7 @@ public class WalaJavaCGGen implements FastenPlugin {
     public void stop() { }
 
     @Override
-    public void setPluginError(String exceptionType) {
+    public void setPluginError(Throwable throwable) {
 
     }
 

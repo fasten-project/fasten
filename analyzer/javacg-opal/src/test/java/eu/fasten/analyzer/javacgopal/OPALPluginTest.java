@@ -113,8 +113,10 @@ public class OPALPluginTest {
                 "}");
 
         opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()), false);
+        JSONObject error = new JSONObject(opalPlugin.getPluginError());
 
-        assertEquals(FileNotFoundException.class.getSimpleName(), opalPlugin.getPluginError());
+        assertEquals(FileNotFoundException.class.getSimpleName(), error.get("type"));
+        assertEquals(opalPlugin.getClass().getSimpleName(), error.get("plugin"));
         assertFalse(opalPlugin.recordProcessSuccessful());
     }
 
