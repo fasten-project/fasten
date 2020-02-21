@@ -18,17 +18,9 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
-import eu.fasten.analyzer.metadataplugin.db.tables.Callables;
-import eu.fasten.analyzer.metadataplugin.db.tables.Dependencies;
-import eu.fasten.analyzer.metadataplugin.db.tables.Files;
-import eu.fasten.analyzer.metadataplugin.db.tables.PackageVersions;
-import eu.fasten.analyzer.metadataplugin.db.tables.Packages;
-import eu.fasten.analyzer.metadataplugin.db.tables.records.CallablesRecord;
-import eu.fasten.analyzer.metadataplugin.db.tables.records.DependenciesRecord;
-import eu.fasten.analyzer.metadataplugin.db.tables.records.FilesRecord;
-import eu.fasten.analyzer.metadataplugin.db.tables.records.PackageVersionsRecord;
-import eu.fasten.analyzer.metadataplugin.db.tables.records.PackagesRecord;
- import org.jooq.DSLContext;
+import eu.fasten.analyzer.metadataplugin.db.tables.*;
+import eu.fasten.analyzer.metadataplugin.db.tables.records.*;
+import org.jooq.DSLContext;
 import org.jooq.InsertResultStep;
 import org.jooq.InsertValuesStep3;
 import org.jooq.InsertValuesStep4;
@@ -116,7 +108,7 @@ public class MetadataDaoTest {
         long id = 1;
         long packageId = 42;
         String namespaces = "namespace1;namespace2";
-        byte[] sha256 = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        byte[] sha256 = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         Timestamp createdAt = new Timestamp(1);
         JSONObject metadata = new JSONObject("{\"foo\":\"bar\"}");
         InsertValuesStep5<FilesRecord, Long, String, byte[], Timestamp, JSONB> insertValues = Mockito.mock(InsertValuesStep5.class);
@@ -148,5 +140,22 @@ public class MetadataDaoTest {
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         long result = metadataDao.insertCallable(fileId, fastenUri, createdAt, metadata);
         assertEquals(id, result);
+    }
+
+    @Test
+    public void insertEdgeTest() {
+        long sourceId = 1;
+        long targetId = 2;
+        JSONObject metadata = new JSONObject("{\"foo\":\"bar\"}");
+        InsertValuesStep3<EdgesRecord, Long, Long, JSONB> insertValues = Mockito.mock(InsertValuesStep3.class);
+        Mockito.when(context.insertInto(Edges.EDGES, Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
+                Edges.EDGES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(sourceId, targetId, JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
+        InsertResultStep<EdgesRecord> insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(Edges.EDGES.SOURCE_ID)).thenReturn(insertResult);
+        EdgesRecord record = new EdgesRecord(sourceId, targetId, JSONB.valueOf(metadata.toString()));
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        long result = metadataDao.insertEdge(sourceId, targetId, metadata);
+        assertEquals(sourceId, result);
     }
 }

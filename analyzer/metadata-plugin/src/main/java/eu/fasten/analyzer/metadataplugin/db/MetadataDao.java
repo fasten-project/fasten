@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
+import eu.fasten.analyzer.metadataplugin.db.tables.Edges;
 import eu.fasten.analyzer.metadataplugin.db.tables.Callables;
 import eu.fasten.analyzer.metadataplugin.db.tables.Dependencies;
 import eu.fasten.analyzer.metadataplugin.db.tables.Files;
@@ -125,5 +126,22 @@ public class MetadataDao {
                 .values(fileId, fastenUri, createdAt, metadataJsonb)
                 .returning(Callables.CALLABLES.ID).fetchOne();
         return resultRecord.getValue(Callables.CALLABLES.ID);
+    }
+
+    /**
+     * Inserts a record in the 'edges' table in the database.
+     *
+     * @param sourceId ID of the source callable (references 'callables.id')
+     * @param targetId ID of the target callable (references 'callables.id')
+     * @param metadata Metadata of the edge between source and target
+     * @return ID of the source callable (sourceId)
+     */
+    public long insertEdge(long sourceId, long targetId, JSONObject metadata) {
+        JSONB metadataJsonb = JSONB.valueOf(metadata.toString());
+        Record resultRecord = context.insertInto(Edges.EDGES,
+                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.METADATA)
+                .values(sourceId, targetId, metadataJsonb)
+                .returning(Edges.EDGES.SOURCE_ID).fetchOne();
+        return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
     }
 }
