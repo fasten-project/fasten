@@ -40,10 +40,11 @@ public class MetadataDao {
 
     /**
      * Inserts a record in 'packages' table in the database.
+     *
      * @param packageName Name of the package
      * @param projectName Project name to which package belongs
-     * @param repository Repository to which package belongs
-     * @param createdAt Timestamp when package was created
+     * @param repository  Repository to which package belongs
+     * @param createdAt   Timestamp when package was created
      * @return ID of the new record
      */
     public long insertPackage(String packageName, String projectName, String repository, Timestamp createdAt) {
@@ -56,10 +57,11 @@ public class MetadataDao {
 
     /**
      * Inserts a record in 'package_versions' table in the database.
+     *
      * @param packageId ID of the package (references 'packages.id')
-     * @param version Version of the package
+     * @param version   Version of the package
      * @param createdAt Timestamp when the package version was created
-     * @param metadata Metadata of the package version
+     * @param metadata  Metadata of the package version
      * @return ID of the new record
      */
     public long insertPackageVersion(long packageId, String version, Timestamp createdAt, JSONObject metadata) {
@@ -74,7 +76,8 @@ public class MetadataDao {
 
     /**
      * Inserts a record in the 'dependencies' table in the database.
-     * @param packageId ID of the package (references 'package_versions.id')
+     *
+     * @param packageId    ID of the package (references 'package_versions.id')
      * @param dependencyId ID of the dependency package (references 'package_versions.id')
      * @param versionRange Range of valid versions
      * @return ID of the package (packageId)
@@ -89,11 +92,12 @@ public class MetadataDao {
 
     /**
      * Inserts a record in the 'files' table in the database.
-     * @param packageId ID of the package (version) where the file belongs (references 'package_versions.id')
+     *
+     * @param packageId  ID of the package (version) where the file belongs (references 'package_versions.id')
      * @param namespaces Namespaces of the file
-     * @param sha256 SHA256 of the file
-     * @param createdAt Timestamp when the file was created
-     * @param metadata Metadata of the file
+     * @param sha256     SHA256 of the file
+     * @param createdAt  Timestamp when the file was created
+     * @param metadata   Metadata of the file
      * @return ID of the new record
      */
     public long insertFile(long packageId, String namespaces, byte[] sha256, Timestamp createdAt, JSONObject metadata) {
@@ -107,10 +111,11 @@ public class MetadataDao {
 
     /**
      * Inserts a record in the 'callables' table in the database.
-     * @param fileId ID of the file where the callable belongs (references 'files.id')
+     *
+     * @param fileId    ID of the file where the callable belongs (references 'files.id')
      * @param fastenUri URI of the callable in FASTEN
      * @param createdAt Timestamp when the callable was created
-     * @param metadata Metadata of the callable
+     * @param metadata  Metadata of the callable
      * @return ID of the new record
      */
     public long insertCallable(long fileId, String fastenUri, Timestamp createdAt, JSONObject metadata) {

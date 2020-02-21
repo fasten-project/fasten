@@ -22,22 +22,36 @@ import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 
 public class PostgresConnector {
 
-    private static final String dbUrl = "jdbc:postgresql:postgres";
-    private static final String dbUser = "postgres";
-    private static final String dbPass = "pass123";
-
-    public static DSLContext getDSLContext() throws SQLException {
+    public static DSLContext getDSLContext() throws SQLException, IOException {
         Connection connection = getLocalConnection();
         return DSL.using(connection, SQLDialect.POSTGRES);
     }
 
-    public static Connection getLocalConnection() throws SQLException {
-        return DriverManager.getConnection(dbUrl, dbUser, dbPass);
+    public static Connection getLocalConnection() throws SQLException, IOException {
+        Properties dbProps = getPostgresProperties();
+        return DriverManager.getConnection(
+                dbProps.getProperty("dbUrl"), dbProps.getProperty("dbUser"), dbProps.getProperty("dbPass"));
+    }
+
+    private static Properties getPostgresProperties() throws IOException {
+        try (InputStream resource = PostgresConnector.class.getClassLoader().getResourceAsStream("postgres.properties")) {
+            Properties connectionsProps = new Properties();
+            if (resource != null) {
+                connectionsProps.load(resource);
+                return connectionsProps;
+            } else {
+                throw new FileNotFoundException("Cannot find 'postgres.properties' file");
+            }
+        }
     }
 }

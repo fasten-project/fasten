@@ -22,6 +22,7 @@ import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -31,13 +32,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class PostgresConnectorTest {
 
     @Test
-    public void getDSLContextTest() throws SQLException {
+    public void getDSLContextTest() throws SQLException, IOException {
         DSLContext dslContext = PostgresConnector.getDSLContext();
         assertEquals(SQLDialect.POSTGRES, dslContext.dialect());
     }
 
     @Test
-    public void getLocalConnectionTest() throws SQLException {
+    public void getLocalConnectionTest() throws SQLException, IOException {
         Connection connection = PostgresConnector.getLocalConnection();
         DatabaseMetaData metaData = connection.getMetaData();
         assertEquals("jdbc:postgresql:postgres", metaData.getURL());

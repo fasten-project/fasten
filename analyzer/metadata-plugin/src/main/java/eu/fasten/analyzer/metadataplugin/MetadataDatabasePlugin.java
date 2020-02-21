@@ -29,6 +29,7 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +44,7 @@ public class MetadataDatabasePlugin extends Plugin {
     @Extension
     public static class MetadataPlugin implements KafkaConsumer<String> {
         private final Logger logger = LoggerFactory.getLogger(MetadataPlugin.class.getName());
+
         @Override
         public List<String> consumerTopics() {
             return new ArrayList<>(Collections.singletonList("opal_callgraphs"));
@@ -56,6 +58,8 @@ public class MetadataDatabasePlugin extends Plugin {
                 // TODO: Insert consumed data in the metadata database using metadataDao
 
             } catch (SQLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
