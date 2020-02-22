@@ -170,18 +170,34 @@ public class MavenCoordinate {
                                 downloadPom(mavenCoordinate).orElseThrow(RuntimeException::new).getBytes()
                         )
                 );
-                List<Node> profiles = pom.selectNodes("//*[local-name() = 'profile']");
 
-                if (profiles.size() > 0) {
-                    for (var profile : profiles) {
-                        var dependenciesNode =
-                                profile.selectSingleNode("//*[local-name() ='dependencies']");
-                        dependencies.add(resolveDependencies(dependenciesNode));
+                var profilesRoot = pom.getRootElement()
+                        .selectSingleNode("./*[local-name() ='profiles']");
+
+                List<Node> profiles = new ArrayList<>();
+                if (profilesRoot != null) {
+                    profiles = profilesRoot.selectNodes("./*[local-name() ='profile']");
+                }
+
+                Node outerDeps = pom.getRootElement()
+                        .selectSingleNode("./*[local-name()='dependencies']");
+
+                if (outerDeps != null) {
+                    var resolved = resolveDependencies(outerDeps);
+                    if (resolved.size() != 0) {
+                        dependencies.add(resolved);
                     }
-                } else {
+                }
+
+                for (var profile : profiles) {
                     var dependenciesNode =
-                            pom.selectSingleNode("//*[local-name() ='dependencies']");
-                    dependencies.add(resolveDependencies(dependenciesNode));
+                            profile.selectSingleNode("./*[local-name() ='dependencies']");
+                    if (dependenciesNode != null) {
+                        var resolved = resolveDependencies(dependenciesNode);
+                        if (resolved.size() != 0) {
+                            dependencies.add(resolved);
+                        }
+                    }
                 }
 
             } catch (DocumentException | FileNotFoundException e) {
