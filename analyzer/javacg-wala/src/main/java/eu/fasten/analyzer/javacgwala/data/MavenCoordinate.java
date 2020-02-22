@@ -20,20 +20,27 @@ package eu.fasten.analyzer.javacgwala.data;
 
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.StringJoiner;
 import org.dom4j.DocumentException;
+import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,38 +49,61 @@ import org.slf4j.LoggerFactory;
  * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre"
  */
 public class MavenCoordinate {
-    final String mavenRepo = "https://repo.maven.apache.org/maven2/";
+    final String MAVEN_REPO = "https://repo.maven.apache.org/maven2/";
 
     private String groupID;
     private String artifactID;
     private String versionConstraint;
+    private String timestamp;
 
-    /**
-     * Construct new Maven Coordinate from groupID, artifactID, version.
-     *
-     * @param groupID    GroupID
-     * @param artifactID ArtifactID
-     * @param version    Version
-     */
-    public MavenCoordinate(String groupID, String artifactID, String version) {
+    public void setGroupID(final String groupID) {
+        this.groupID = groupID;
+    }
+
+    public void setArtifactID(final String artifactID) {
+        this.artifactID = artifactID;
+    }
+
+    public void setVersionConstraint(final String versionConstraint) {
+        this.versionConstraint = versionConstraint;
+    }
+
+    public void setTimestamp(final String timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getMAVEN_REPO() {
+        return MAVEN_REPO;
+    }
+
+    public String getGroupID() {
+        return groupID;
+    }
+
+    public String getArtifactID() {
+        return artifactID;
+    }
+
+    public String getVersionConstraint() {
+        return versionConstraint;
+    }
+
+    public MavenCoordinate(final String groupID, final String artifactID, final String version) {
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
     }
 
-    /**
-     * Create new Maven Coordinate from String.
-     *
-     * @param coords Coordinate String
-     * @return new Maven Coordinate
-     */
-    public static MavenCoordinate fromString(String coords) {
-        var coord = coords.split(":");
-        return new MavenCoordinate(coord[0], coord[1], coord[2]);
+    public MavenCoordinate(final String groupID, final String artifactID, final String version, final String timestamp) {
+        this.groupID = groupID;
+        this.artifactID = artifactID;
+        this.versionConstraint = version;
+        this.timestamp = timestamp;
     }
 
-    public String getVersionConstraint() {
-        return versionConstraint;
+    public static MavenCoordinate fromString(final String coords) {
+        var coord = coords.split(":");
+        return new MavenCoordinate(coord[0], coord[1], coord[2]);
     }
 
     public String getProduct() {
@@ -84,13 +114,12 @@ public class MavenCoordinate {
         return groupID + ":" + artifactID + ":" + versionConstraint;
     }
 
-    /**
-     * Convert to URL.
-     *
-     * @return - URL
-     */
+    public String getTimestamp() {
+        return timestamp;
+    }
+
     public String toURL() {
-        StringBuilder url = new StringBuilder(mavenRepo)
+        final StringBuilder url = new StringBuilder(MAVEN_REPO)
                 .append(this.groupID.replace('.', '/'))
                 .append("/")
                 .append(this.artifactID)
@@ -99,13 +128,8 @@ public class MavenCoordinate {
         return url.toString();
     }
 
-    /**
-     * Convert to JAR URL.
-     *
-     * @return JAR URL
-     */
     public String toJarUrl() {
-        StringBuilder url = new StringBuilder(this.toURL())
+        final StringBuilder url = new StringBuilder(this.toURL())
                 .append("/")
                 .append(this.artifactID)
                 .append("-")
@@ -114,13 +138,8 @@ public class MavenCoordinate {
         return url.toString();
     }
 
-    /**
-     * Convert to POM URL.
-     *
-     * @return POM URL
-     */
     public String toPomUrl() {
-        StringBuilder url = new StringBuilder(this.toURL())
+        final StringBuilder url = new StringBuilder(this.toURL())
                 .append("/")
                 .append(this.artifactID)
                 .append("-")
@@ -138,44 +157,33 @@ public class MavenCoordinate {
         /**
          * Returns information about the dependencies of the indicated artifact.
          *
-         * @param mavenCoordinate Maven coordinate of an artifact
-         * @return A java List of a given artifact's dependencies in FastenJson Dependency format
+         * @param mavenCoordinate Maven coordinate of an artifact.
+         * @return A java List of a given artifact's dependencies in FastenJson Dependency format.
          */
-        public static List<List<RevisionCallGraph.Dependency>> resolveDependencies(
-                String mavenCoordinate) {
+        public static List<List<RevisionCallGraph.Dependency>> resolveDependencies(final String mavenCoordinate) {
 
-            var dependencies = new ArrayList<List<RevisionCallGraph.Dependency>>();
+            final var dependencies = new ArrayList<List<RevisionCallGraph.Dependency>>();
 
             try {
-                var pom = new SAXReader().read(
+                final var pom = new SAXReader().read(
                         new ByteArrayInputStream(
-                                downloadPom(mavenCoordinate).orElseThrow(RuntimeException::new)
-                                        .getBytes()
+                                downloadPom(mavenCoordinate).orElseThrow(RuntimeException::new).getBytes()
                         )
                 );
+                List<Node> profiles = pom.selectNodes("//*[local-name() = 'profile']");
 
-                for (var depNode : pom.selectNodes("//*[local-name() = 'dependency']")) {
-                    var groupId = depNode.selectSingleNode("./*[local-name() = 'groupId']")
-                            .getStringValue();
-                    var artifactId = depNode.selectSingleNode("./*[local-name() = 'artifactId']")
-                            .getStringValue();
-                    var versionSpec = depNode.selectSingleNode("./*[local-name() = 'version']");
-
-                    String version;
-                    if (versionSpec != null) {
-                        version = versionSpec.getStringValue();
-                    } else {
-                        version = "*";
+                if (profiles.size() > 0) {
+                    for (var profile : profiles) {
+                        var dependenciesNode =
+                                profile.selectSingleNode("//*[local-name() ='dependencies']");
+                        dependencies.add(resolveDependencies(dependenciesNode));
                     }
-
-                    RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
-                            "mvn",
-                            groupId + "." + artifactId,
-                            Arrays.asList(new RevisionCallGraph.Constraint(version, version)));
-                    var depList = new ArrayList<RevisionCallGraph.Dependency>();
-                    depList.add(dependency);
-                    dependencies.add(depList);
+                } else {
+                    var dependenciesNode =
+                            pom.selectSingleNode("//*[local-name() ='dependencies']");
+                    dependencies.add(resolveDependencies(dependenciesNode));
                 }
+
             } catch (DocumentException | FileNotFoundException e) {
                 logger.error("Error parsing POM file for: " + mavenCoordinate, e);
             }
@@ -183,37 +191,67 @@ public class MavenCoordinate {
         }
 
         /**
-         * Download a POM file indicated by the provided Maven coordinate.
+         * Return a list of dependencies in given profile node or of the entire project if profiles
+         * were not present in pom.xml.
+         *
+         * @param node Dependencies node from profile or entire project
+         * @return List of dependencies
+         */
+        private static List<RevisionCallGraph.Dependency> resolveDependencies(Node node) {
+            final var depList = new ArrayList<RevisionCallGraph.Dependency>();
+
+            for (var depNode : node.selectNodes("./*[local-name() = 'dependency']")) {
+                final var groupId = depNode.selectSingleNode("./*[local-name() = 'groupId']").getStringValue();
+                final var artifactId = depNode.selectSingleNode("./*[local-name() = 'artifactId']").getStringValue();
+                final var versionSpec = depNode.selectSingleNode("./*[local-name() = 'version']");
+
+                final String version;
+                if (versionSpec != null) {
+                    version = versionSpec.getStringValue();
+                } else {
+                    version = "*";
+                }
+
+                final RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
+                        "mvn",
+                        groupId + "." + artifactId,
+                        Collections.singletonList(new RevisionCallGraph.Constraint(version, version)));
+                depList.add(dependency);
+            }
+
+            return depList;
+        }
+
+        /**
+         * Download a POM file indicated by the provided Maven coordinate
          *
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return The contents of the downloaded POM file as a string
          */
-        public static Optional<String> downloadPom(String mavenCoordinate)
-                throws FileNotFoundException {
-            return httpGetToFile(fromString(mavenCoordinate).toPomUrl(), ".pom")
-                    .flatMap(MavenResolver::fileToString);
+        public static Optional<String> downloadPom(final String mavenCoordinate) throws FileNotFoundException {
+            return httpGetToFile(fromString(mavenCoordinate).toPomUrl(), ".pom").
+                    flatMap(f -> fileToString(f));
         }
 
         /**
-         * Download a JAR file indicated by the provided Maven coordinate.
+         * Download a JAR file indicated by the provided Maven coordinate
          *
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return A temporary file on the filesystem
          */
-        public static Optional<File> downloadJar(String mavenCoordinate)
-                throws FileNotFoundException {
+        public static Optional<File> downloadJar(final String mavenCoordinate) throws FileNotFoundException {
             logger.debug("Downloading JAR for " + mavenCoordinate);
             return httpGetToFile(fromString(mavenCoordinate).toJarUrl(), ".jar");
         }
 
         /**
-         * Utility function that reads the contents of a file to a String.
+         * Utility function that reads the contents of a file to a String
          */
-        private static Optional<String> fileToString(File f) {
+        private static Optional<String> fileToString(final File f) {
             logger.trace("Loading file as string: " + f.toString());
             try {
-                var fr = new BufferedReader(new FileReader(f));
-                StringBuilder result = new StringBuilder();
+                final var fr = new BufferedReader(new FileReader(f));
+                final StringBuilder result = new StringBuilder();
                 String line;
                 while ((line = fr.readLine()) != null) {
                     result.append(line);
@@ -228,17 +266,16 @@ public class MavenCoordinate {
         }
 
         /**
-         * Utility function that stores the contents of GET request to a temporary file.
+         * Utility function that stores the contents of GET request to a temporary file
          */
-        private static Optional<File> httpGetToFile(String url, String suffix)
-                throws FileNotFoundException {
+        private static Optional<File> httpGetToFile(final String url, final String suffix) throws FileNotFoundException {
             logger.debug("HTTP GET: " + url);
 
             try {
                 //TODO: Download artifacts in configurable shared location
-                var tempFile = Files.createTempFile("fasten", suffix);
+                final var tempFile = Files.createTempFile("fasten", suffix);
 
-                InputStream in = new URL(url).openStream();
+                final InputStream in = new URL(url).openStream();
                 Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
                 in.close();
 
@@ -251,5 +288,49 @@ public class MavenCoordinate {
                 return Optional.empty();
             }
         }
+
+        /**
+         * A utility method to get a POM file and its timestamp from a URL
+         * Please note that this might not be the most efficient way but it works and can be improved
+         * later.
+         *
+         * @param fileURL
+         * @param dest
+         * @throws IOException
+         */
+        public Date getFileAndTimeStamp(final String fileURL, final String dest) throws IOException {
+
+            final String fileName = fileURL.substring(fileURL.lastIndexOf("/") + 1);
+            final StringJoiner pathJoin = new StringJoiner(File.separator);
+            final var destFile = pathJoin.add(dest).add(fileName).toString();
+
+            logger.debug("Filename: " + fileName + " | " + "dest: " + destFile);
+
+            final URL url = new URL(fileURL);
+            final HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+            final Date timestamp = new Date(con.getLastModified());
+
+            if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
+
+                logger.debug("Okay status!");
+
+                final BufferedReader input = new BufferedReader(new InputStreamReader(con.getInputStream()), 8192);
+                final BufferedWriter output = new BufferedWriter(new FileWriter(new File(destFile)));
+
+                String line;
+                while ((line = input.readLine()) != null) {
+                    output.write(line);
+                    output.newLine();
+                }
+
+                output.close();
+            }
+            con.disconnect();
+
+            return timestamp;
+        }
+
+
     }
 }
