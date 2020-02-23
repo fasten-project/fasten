@@ -95,8 +95,10 @@ class WALAPluginTest {
                 "}");
 
         walaPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()));
+        JSONObject error = new JSONObject(walaPlugin.getPluginError());
 
-        assertEquals(FileNotFoundException.class.getSimpleName(), walaPlugin.getPluginError());
+        assertEquals(FileNotFoundException.class.getSimpleName(), error.get("type"));
+        assertEquals(walaPlugin.getClass().getSimpleName(), error.get("plugin"));
         assertFalse(walaPlugin.recordProcessSuccessful());
     }
 

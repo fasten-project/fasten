@@ -53,7 +53,6 @@ public class WALAPlugin extends Plugin {
         final String consumeTopic = "maven.packages";
         final String produceTopic = "wala_callgraphs";
         private boolean processedRecord;
-        private boolean writeCGToKafka = false;
         private String pluginError = "";
 
         @Override
@@ -107,7 +106,7 @@ public class WALAPlugin extends Plugin {
                 return cg;
 
             } catch (Exception e) {
-                setPluginError(e.getClass().getSimpleName());
+                setPluginError(e);
                 logger.error("", e);
                 return null;
             }
@@ -121,7 +120,7 @@ public class WALAPlugin extends Plugin {
                         kafkaConsumedJson.get("artifactId").toString(),
                         kafkaConsumedJson.get("version").toString());
             } catch (JSONException e) {
-                setPluginError(e.getClass().getSimpleName());
+                setPluginError(e);
                 logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson, e);
             }
             return null;
@@ -133,7 +132,7 @@ public class WALAPlugin extends Plugin {
                 return CallGraphConstructor.build(mavenCoordinate).toExtendedRevisionCallGraph(
                         Long.parseLong(kafkaConsumedJson.get("date").toString()));
             } catch (FileNotFoundException e) {
-                setPluginError(e.getClass().getSimpleName());
+                setPluginError(e);
                 logger.error("Could find JAR for Maven coordinate: {}",
                         mavenCoordinate.getCoordinate(), e);
             }
@@ -152,7 +151,7 @@ public class WALAPlugin extends Plugin {
                 if (recordMetadata != null) {
                     logger.debug("Sent: {} to {}", cg.uri.toString(), this.produceTopic);
                 } else {
-                    setPluginError(e.getClass().getSimpleName());
+                    setPluginError(e);
                     logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
                 }
             }));
@@ -172,7 +171,6 @@ public class WALAPlugin extends Plugin {
         public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object,
                 String> producer) {
             kafkaProducer = producer;
-            this.writeCGToKafka = true;
         }
 
         @Override
@@ -196,8 +194,9 @@ public class WALAPlugin extends Plugin {
         }
 
         @Override
-        public void setPluginError(String exceptionType) {
-            this.pluginError = exceptionType;
+        public void setPluginError(Throwable throwable) {
+            this.pluginError = new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
+                    throwable.getMessage()).put("trace", throwable.getStackTrace()).put("type", throwable.getClass().getSimpleName()).toString();
         }
 
         @Override
