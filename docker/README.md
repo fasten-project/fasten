@@ -12,14 +12,14 @@ docker build -t fasten-server-dev -f server/Dockerfile .
 To start the FASTEN server and load the plug-ins, run the following command:
 
 ```
-docker run --user $(id -u):$(id -g) --network="host" -d fasten-server-dev -k localhost:30001
+docker run --user $(id -u):$(id -g) --network="host" --log-opt max-size=1g -d fasten-server-dev -k localhost:30001
 ```
 The above command runs the Docker container of the FASTEN server in background as non-root user.
 
 ### local
 To start the FASTEN server locally on a Mac system, run the following command:
 ```
-docker run -d fasten-server-dev -k host.docker.internal:9092
+docker run --log-opt max-size=1g -d fasten-server-dev -k host.docker.internal:9092
 ```
 
 ## Publish Docker images

@@ -191,34 +191,34 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     public static ExtendedRevisionCallGraph create(final String forge, final MavenCoordinate coordinate,
                                                    final long timestamp) throws FileNotFoundException {
 
-        logger.info("Generating call graph using Opal ...");
+        logger.debug("Generating call graph using Opal ...");
         final var partialCallGraph = new PartialCallGraph(
             MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate()).orElseThrow(RuntimeException::new)
         );
 
-        logger.info("Opal call graph has been generated.");
+        logger.debug("Opal call graph has been generated.");
 
-        logger.info("Converting edges to URIs ...");
+        logger.debug("Converting edges to URIs ...");
 
         final var graph = partialCallGraph.toURIGraph();
 
-        logger.info("All edges of the graph have been converted to URIs.");
-        logger.info("Cleaning the opal call graph from memory ...");
+        logger.debug("All edges of the graph have been converted to URIs.");
+        logger.debug("Cleaning the opal call graph from memory ...");
 
         partialCallGraph.clearGraph();
 
-        logger.info("The Opal call graph has been removed from memory.");
-        logger.info("Converting class hierarchy to URIs ...");
+        logger.debug("The Opal call graph has been removed from memory.");
+        logger.debug("Converting class hierarchy to URIs ...");
 
         final var classHierarcy = PartialCallGraph.toURIHierarchy(partialCallGraph.getClassHierarchy());
 
-        logger.info("All entities of the class hierarchy have been converted to URIs.");
-        logger.info("Cleaning the opal call class hierarchy from memory ...");
+        logger.debug("All entities of the class hierarchy have been converted to URIs.");
+        logger.debug("Cleaning the opal call class hierarchy from memory ...");
 
         partialCallGraph.clearClassHierarchy();
 
-        logger.info("The Opal call class hierarchy has been removed from memory.");
-        logger.info("Building the extended revision call graph ...");
+        logger.debug("The Opal call class hierarchy has been removed from memory.");
+        logger.debug("Building the extended revision call graph ...");
 
         return new ExtendedRevisionCallGraph(forge,
             coordinate.getProduct(),

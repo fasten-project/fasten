@@ -103,7 +103,7 @@ public class OPALPlugin extends Plugin {
                 return cg;
 
             } catch (Exception e) {
-                setPluginError(e.getClass().getSimpleName());
+                setPluginError(e);
                 logger.error("", e);
                 return null;
             }
@@ -117,7 +117,7 @@ public class OPALPlugin extends Plugin {
                     kafkaConsumedJson.get("artifactId").toString(),
                     kafkaConsumedJson.get("version").toString());
             } catch (JSONException e) {
-                setPluginError(e.getClass().getSimpleName());
+                setPluginError(e);
                 logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson, e);
             }
             return null;
@@ -129,7 +129,7 @@ public class OPALPlugin extends Plugin {
                 return ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
                     Long.parseLong(kafkaConsumedJson.get("date").toString()));
             } catch (FileNotFoundException e) {
-                setPluginError(e.getClass().getSimpleName());
+                setPluginError(e);
                 logger.error("Could find JAR for Maven coordinate: {}",
                     mavenCoordinate.getCoordinate(), e);
             }
@@ -148,7 +148,7 @@ public class OPALPlugin extends Plugin {
                 if (recordMetadata != null) {
                     logger.debug("Sent: {} to {}", cg.uri.toString(), this.PRODUCE_TOPIC);
                 } else {
-                    setPluginError(e.getClass().getSimpleName());
+                    setPluginError(e);
                     logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
                 }
             }));
@@ -194,8 +194,11 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public void setPluginError(String exceptionType) {
-            this.pluginError = exceptionType;
+        public void setPluginError(Throwable throwable) {
+
+            this.pluginError = new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
+                throwable.getMessage()).put("trace", throwable.getStackTrace()).put("type", throwable.getClass().getSimpleName()).toString();
+            System.out.println(this.pluginError);
         }
 
         @Override

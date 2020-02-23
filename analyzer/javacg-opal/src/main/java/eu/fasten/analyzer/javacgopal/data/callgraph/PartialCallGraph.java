@@ -363,7 +363,7 @@ public class PartialCallGraph {
         final int resolvedSize = partialCallGraph.getResolvedCalls().size();
         partialCallGraph.removeDuplicateResolvedCall();
 
-        logger.info("Converting resolved calls to URIs ...");
+        logger.debug("Converting resolved calls to URIs ...");
         final AtomicInteger callNumber = new AtomicInteger();
 
         partialCallGraph.resolvedCalls.forEach(resolvedCall -> {
@@ -373,18 +373,18 @@ public class PartialCallGraph {
                 callNumber.addAndGet(1);
                 graph.addAll(URICalls);
 
-                if (!isJUnitTest()) {
-                    System.out.printf("> Processed: %d %% -> %d / %d \r",
-                        (callNumber.get() * 100 / resolvedSize),
-                        callNumber.get(),
-                        resolvedSize);
-                }
+//                if (!isJUnitTest()) {
+//                    System.out.printf("> Processed: %d %% -> %d / %d \r",
+//                        (callNumber.get() * 100 / resolvedSize),
+//                        callNumber.get(),
+//                        resolvedSize);
+//                }
 
             }
         });
-        logger.info("\nResolved calls have been converted to URIs");
+        logger.debug("\nResolved calls have been converted to URIs");
 
-        logger.info("Converting unresolved calls to URIs ...");
+        logger.debug("Converting unresolved calls to URIs ...");
         partialCallGraph.unresolvedCalls.stream().distinct().collect(Collectors.toList()).forEach(unresolvedCall -> {
             final FastenURI[] URICall = unresolvedCall.toURICall();
             if (URICall[0] != null && URICall[1] != null) {
@@ -392,7 +392,7 @@ public class PartialCallGraph {
                 graph.add(URICall);
             }
         });
-        logger.info("Unresolved calls have been converted to URIs.");
+        logger.debug("Unresolved calls have been converted to URIs.");
 
         return graph;
     }
@@ -424,7 +424,7 @@ public class PartialCallGraph {
         final AtomicInteger numOfAllArcs = new AtomicInteger();
         final AtomicInteger numOfUniqueArcs = new AtomicInteger();
 
-        logger.info("Removing duplicated arcs from resolved Calls ...");
+        logger.debug("Removing duplicated arcs from resolved Calls ...");
         this.resolvedCalls.forEach(currentCalls -> {
             int numOfTargets = currentCalls.getTargets().size();
             numOfAllArcs.addAndGet(numOfTargets);
@@ -433,7 +433,7 @@ public class PartialCallGraph {
             numOfUniqueArcs.addAndGet(currentCalls.getTargets().size());
             numOfDups.addAndGet(numOfTargets);
         });
-        logger.info("From {} arcs in resolved Calls {} duplicated have been removed. number of unique arcs: {}. number of source nodes: {}", numOfAllArcs, numOfDups, numOfUniqueArcs, this.resolvedCalls.size());
+        logger.debug("From {} arcs in resolved Calls {} duplicated have been removed. number of unique arcs: {}. number of source nodes: {}", numOfAllArcs, numOfDups, numOfUniqueArcs, this.resolvedCalls.size());
 
         return this.resolvedCalls;
 

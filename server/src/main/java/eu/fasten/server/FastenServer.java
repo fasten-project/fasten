@@ -18,6 +18,7 @@
 
 package eu.fasten.server;
 
+import ch.qos.logback.classic.Level;
 import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
@@ -61,18 +62,24 @@ public class FastenServer implements Runnable {
     private List<FastenKafkaConsumer> consumers;
     private List<FastenKafkaProducer> producers;
 
+    public static void setLoggingLevel(Level level) {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+        root.setLevel(level);
+    }
+
     public void run() {
+
+        // TODO: Set log level based on an arg in CLI: either dev or deploy mode.
+        setLoggingLevel(Level.INFO);
 
         // Register shutdown actions
         // TODO: Fix the null pointer exception for the following ShutdownHook
-//        Runtime.getRuntime().addShutdownHook(new Thread() {
-//            public void run() {
-//                logger.debug("Shutting down...");
-//                if (consumers != null) {
-//                    consumers.forEach(c -> c.shutdown());
-//                }
-//            }
-//        });
+//        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+//                        logger.debug("Shutting down...");
+//                        if (consumers != null) {
+//                            consumers.forEach(c -> c.shutdown());
+//                        }
+//                    }));
 
         logger.debug("Loading plugins from: {}", pluginPath);
 
