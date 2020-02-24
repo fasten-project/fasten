@@ -66,8 +66,10 @@ public abstract class FastenKafkaConnection extends Thread {
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, serializer);
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, serializer);
         properties.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "100000000");
+        // The total bytes of memory the producer can use to buffer records waiting to be sent to the server
+        properties.setProperty(ProducerConfig.BUFFER_MEMORY_CONFIG, "100000000");
+        properties.setProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "gzip");
 
         return properties;
     }
-
 }

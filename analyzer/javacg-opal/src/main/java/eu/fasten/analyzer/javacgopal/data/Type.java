@@ -136,7 +136,7 @@ public class Type {
             logger.warn("Two source files for type {}", this.type);
         }
         if (!allSourceFilesOfType.isEmpty()) {
-            logger.warn("Could not find the source file of type {}", this.type);
+            //logger.warn("Could not find the source file of type {}", this.type);
             return allSourceFilesOfType.iterator().next().sourceFile();
         }
         return null;
