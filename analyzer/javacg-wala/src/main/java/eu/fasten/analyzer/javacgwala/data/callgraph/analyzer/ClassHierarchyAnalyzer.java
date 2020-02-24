@@ -126,8 +126,8 @@ public class ClassHierarchyAnalyzer {
      * @return URI of class
      */
     private FastenURI getClassURI(IClass klass) {
-        String packageName = Method.getPackageName2(klass.getReference());
-        String className = Method.getClassName2(klass.getReference());
+        String packageName = Method.getPackageName(klass.getReference());
+        String className = Method.getClassName(klass.getReference());
         return FastenURI.create("/" + packageName + "/" + className);
     }
 

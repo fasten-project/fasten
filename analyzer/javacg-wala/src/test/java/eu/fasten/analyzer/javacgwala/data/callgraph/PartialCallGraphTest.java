@@ -45,25 +45,25 @@ class PartialCallGraphTest {
                 .getFile()).getAbsolutePath());
 
         graph = WalaResultAnalyzer.wrap(CallGraphConstructor.generateCallGraph(path.toString()), null);
-
-        var source = new ResolvedMethod("name.space",
-                Selector.make("<init>()V"), null);
-        var target = new ResolvedMethod("name.space",
-                Selector.make("<init>()V"), null);
-        call = new Call(source, target, Call.CallType.STATIC);
-
-
-        var initialSource = new ResolvedMethod("name.space.SingleSourceToTarget",
-                Selector.make("sourceMethod()V"), null);
-        var initialTarget = new ResolvedMethod("name.space.SingleSourceToTarget",
-                Selector.make("targetMethod()V"), null);
-
-        var initialUnresolvedSource =
-                new ResolvedMethod("name.space.SingleSourceToTarget",
-                        Selector.make("<init>()V"), null);
-        var initialUnresolvedTarget =
-                new UnresolvedMethod("java.lang.Object",
-                        Selector.make("<init>()V"));
+//
+//        var source = new ResolvedMethod("name.space",
+//                Selector.make("<init>()V"), null);
+//        var target = new ResolvedMethod("name.space",
+//                Selector.make("<init>()V"), null);
+//        call = new Call(source, target, Call.CallType.STATIC);
+//
+//
+//        var initialSource = new ResolvedMethod("name.space.SingleSourceToTarget",
+//                Selector.make("sourceMethod()V"), null);
+//        var initialTarget = new ResolvedMethod("name.space.SingleSourceToTarget",
+//                Selector.make("targetMethod()V"), null);
+//
+//        var initialUnresolvedSource =
+//                new ResolvedMethod("name.space.SingleSourceToTarget",
+//                        Selector.make("<init>()V"), null);
+//        var initialUnresolvedTarget =
+//                new UnresolvedMethod("java.lang.Object",
+//                        Selector.make("<init>()V"));
 
         MavenCoordinate coordinate =
                 new MavenCoordinate("group", "artifact", "1.0");

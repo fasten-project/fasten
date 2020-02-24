@@ -20,7 +20,6 @@ package eu.fasten.analyzer.javacgwala.data.core;
 
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
-import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
@@ -33,20 +32,21 @@ public abstract class Method {
     Selector symbol;
     MethodReference reference;
 
-    /**
-     * Construct a method.
-     *
-     * @param namespace Namespace
-     * @param symbol    Selector
-     */
-    public Method(String namespace, Selector symbol) {
-        this.namespace = namespace;
-        this.symbol = symbol;
-    }
+//    /**
+//     * Construct a method.
+//     *
+//     * @param namespace Namespace
+//     * @param symbol    Selector
+//     */
+//    public Method(String namespace, Selector symbol) {
+//        this.namespace = namespace;
+//        this.symbol = symbol;
+//    }
 
     public Method(MethodReference reference) {
         this.reference = reference;
-        this.namespace = getPackageName2(reference.getDeclaringClass()) + "." + getClassName2(reference.getDeclaringClass());
+        this.namespace = getPackageName(reference.getDeclaringClass()) + "."
+                + getClassName(reference.getDeclaringClass());
         this.symbol = reference.getSelector();
     }
 
@@ -65,11 +65,11 @@ public abstract class Method {
     public FastenURI toCanonicalSchemalessURI() {
 
         FastenJavaURI javaURI = FastenJavaURI.create(null, null, null,
-                getPackageName2(reference.getDeclaringClass()),
-                getClassName2(reference.getDeclaringClass()),
-                getMethodName2(reference),
-                getParameters2(reference),
-                getReturnType2(reference)
+                getPackageName(reference.getDeclaringClass()),
+                getClassName(reference.getDeclaringClass()),
+                getMethodName(reference),
+                getParameters(reference),
+                getReturnType(reference)
         ).canonicalize();
 
         return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
@@ -78,40 +78,21 @@ public abstract class Method {
     }
 
     /**
-     * Creates a URI representation for method's namespace, typeName, functionName, arguments list,
-     * and return type.
+     * Get package name in which class is located.
      *
-     * @return URI representation of a method
-     */
-    private String getMethodInfo() {
-        String namespace = getPackageName2(reference.getDeclaringClass());
-        String typeName = getClassName2(reference.getDeclaringClass());
-        String methodName = getMethodName2(reference);
-        var parameters = getParameters2(reference);
-        var returnType = getReturnType2(reference);
-        return "/" + namespace + "/" + typeName + "." + methodName + "("
-                + parameters + ")" + returnType;
-    }
-
-    /**
-     * Get name of the package.
-     *
+     * @param reference Type Reference
      * @return Package name
      */
-    public String getPackageName() {
-        return namespace.substring(0, this.namespace.lastIndexOf("."));
-    }
-
-    public static String getPackageName2(TypeReference reference) {
+    public static String getPackageName(TypeReference reference) {
         if (reference.isPrimitiveType()) {
             return "java.lang";
 
         } else if (reference.isReferenceType()) {
             if (reference.isArrayType()) {
-                return Objects.requireNonNull(getPackageName2(reference.getArrayElementType()))
+                return Objects.requireNonNull(getPackageName(reference.getArrayElementType()))
                         .replace("/", ".");
 
-            } else if (reference.getName().getPackage() == null){
+            } else if (reference.getName().getPackage() == null) {
                 return null;
 
             } else {
@@ -124,13 +105,23 @@ public abstract class Method {
         return "";
     }
 
-    public static String getClassName2(TypeReference reference) {
+    public String getPackageName() {
+        return getPackageName(reference.getDeclaringClass());
+    }
+
+    /**
+     * Get class name in which method is declared.
+     *
+     * @param reference Type Reference
+     * @return Class name
+     */
+    public static String getClassName(TypeReference reference) {
         if (reference.isPrimitiveType()) {
             return resolvePrimitiveTypeEncoding(reference.getName().toString());
 
         } else if (reference.isReferenceType()) {
             if (reference.isArrayType()) {
-                return Objects.requireNonNull(getClassName2(reference.getArrayElementType()))
+                return Objects.requireNonNull(getClassName(reference.getArrayElementType()))
                         .concat(threeTimesPct("[]"));
             } else {
                 return reference.getName().getClassName().toString();
@@ -142,9 +133,19 @@ public abstract class Method {
         return "";
     }
 
-    public static String getMethodName2(MethodReference reference) {
+    public String getClassName() {
+        return getClassName(reference.getDeclaringClass());
+    }
+
+    /**
+     * Get method name.
+     *
+     * @param reference Method reference
+     * @return Method name
+     */
+    public static String getMethodName(MethodReference reference) {
         if (reference.getSelector().getName().toString().equals("<init>")) {
-            return getClassName2(reference.getDeclaringClass());
+            return getClassName(reference.getDeclaringClass());
 
         } else if (reference.getSelector().getName().toString().equals("<clinit>")) {
             return threeTimesPct("<init>");
@@ -154,116 +155,39 @@ public abstract class Method {
         }
     }
 
-    public static FastenJavaURI[] getParameters2(MethodReference reference) {
+    /**
+     * Get list of parameters of a method in the form of FastenJavaURI.
+     *
+     * @param reference Method reference
+     * @return List of parameters
+     */
+    public static FastenJavaURI[] getParameters(MethodReference reference) {
         final FastenJavaURI[] parameters = new FastenJavaURI[reference.getNumberOfParameters()];
 
-        IntStream.range(0, reference.getNumberOfParameters()).forEach(i -> parameters[i] = getType2(reference.getParameterType(i)));
+        IntStream.range(0, reference.getNumberOfParameters())
+                .forEach(i -> parameters[i] = getType(reference.getParameterType(i)));
 
         return parameters;
-
-//        var args = reference.getSelector().getDescriptor().getParameters();
-//        var argTypes = ;
-//        if (args != null) {
-//            for (int i = 0; i < args.length; i++) {
-//                argTypes = i == args.length - 1 ? getType2(reference.getDeclaringClass())
-//                        : getType2(reference.getDeclaringClass()) + ",";
-//            }
-//        }
-//        return argTypes;
-    }
-
-    public static FastenJavaURI getType2(TypeReference reference) {
-        return new FastenJavaURI("/" + getPackageName2(reference) + "/" + getClassName2(reference));
-    }
-
-    public static FastenJavaURI getReturnType2(MethodReference reference) {
-        return getType2(reference.getReturnType());
     }
 
     /**
-     * Get name of the class.
+     * Return Type in the form /namespace/class.
      *
-     * @return Class name
+     * @param reference Type Reference
+     * @return Type
      */
-    public String getClassName() {
-        return namespace.substring(namespace.lastIndexOf(".") + 1);
-    }
-
-    /**
-     * Get name of the method. Resolve < init > and < clinit > cases.
-     *
-     * @return Method name
-     */
-    private String getMethodName() {
-        if (symbol.getName().toString().equals("<init>")) {
-
-            if (getClassName().contains("Lambda")) {
-                return FastenJavaURI.pctEncodeArg(getClassName());
-            } else {
-                return getClassName();
-            }
-
-        } else if (symbol.getName().toString().equals("<clinit>")) {
-            return FastenJavaURI.pctEncodeArg("<init>");
-        } else {
-            return symbol.getName().toString();
-        }
-    }
-
-    /**
-     * Get  String representation of parameters.
-     *
-     * @return - Parameters
-     */
-    private String getParameters() {
-        TypeName[] args = this.symbol.getDescriptor().getParameters();
-        String argTypes = "";
-        if (args != null) {
-            for (int i = 0; i < args.length; i++) {
-                argTypes = i == args.length - 1 ? FastenJavaURI.pctEncodeArg(getType(args[i]))
-                        : FastenJavaURI.pctEncodeArg(getType(args[i])) + ",";
-            }
-        }
-        return argTypes;
+    public static FastenJavaURI getType(TypeReference reference) {
+        return new FastenJavaURI("/" + getPackageName(reference) + "/" + getClassName(reference));
     }
 
     /**
      * Get return type of a method.
      *
+     * @param reference Method Reference
      * @return Return type
      */
-    private String getReturnType() {
-        var type = getType(symbol.getDescriptor().getReturnType());
-        var elements = type.split("/");
-
-        if (elements[2].equals("V")) {
-            return "/java.lang/Void";
-        }
-        return type;
-    }
-
-    /**
-     * Getter for the type of a method.
-     *
-     * @param type TypeName to extract name from
-     * @return Method type
-     */
-    private static String getType(TypeName type) {
-        if (type == null) {
-            return "";
-        }
-        if (type.getClassName() == null) {
-            return "";
-        }
-        var packageName = type.getPackage() == null ? "" : type.getPackage().toString()
-                .replace("/", ".");
-        var classname = type.getClassName().toString();
-
-        if (type.isArrayType()) {
-            classname = classname.concat(threeTimesPct("[]"));
-        }
-
-        return "/" + packageName + "/" + classname;
+    public static FastenJavaURI getReturnType(MethodReference reference) {
+        return getType(reference.getReturnType());
     }
 
     /**
@@ -277,10 +201,12 @@ public abstract class Method {
                 .pctEncodeArg(FastenJavaURI.pctEncodeArg(nonEncoded)));
     }
 
-    private static String slashToDot(final String s) {
-        return s.replace("/", ".");
-    }
-
+    /**
+     * Returns wrapper object name of primitive types.
+     *
+     * @param encoded Encoded primitive type
+     * @return Wrapper object name
+     */
     private static String resolvePrimitiveTypeEncoding(String encoded) {
         switch (encoded) {
             case "Z":
