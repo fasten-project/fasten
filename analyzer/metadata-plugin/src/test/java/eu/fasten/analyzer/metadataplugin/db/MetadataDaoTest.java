@@ -43,9 +43,11 @@ import org.mockito.Mockito;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MetadataDaoTest {
 
@@ -79,7 +81,7 @@ public class MetadataDaoTest {
     }
 
     @Test
-    public void insertMultiplePackagesTest() throws IllegalAccessException {
+    public void insertMultiplePackagesTest() throws IllegalArgumentException {
         var ids = Arrays.asList(1L, 2L);
         var packageNames = Arrays.asList("package1",  "package2");
         var projectNames = Arrays.asList("project1", "project2");
@@ -98,6 +100,17 @@ public class MetadataDaoTest {
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
         List<Long> result = metadataDao.insertPackages(packageNames, projectNames, repositories, createdAt);
         assertEquals(ids, result);
+    }
+
+    @Test
+    public void insertMultiplePackagesErrorTest() {
+        var packageNames = Arrays.asList("package1",  "package2");
+        var projectNames = Collections.singletonList("project1");
+        var repositories = Arrays.asList("repository1", "repository2");
+        var createdAt = Collections.singletonList(new Timestamp(1));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertPackages(packageNames, projectNames, repositories, createdAt);
+        });
     }
 
     @Test
@@ -124,7 +137,7 @@ public class MetadataDaoTest {
     }
 
     @Test
-    public void insertMultiplePackageVersionsTest() throws IllegalAccessException {
+    public void insertMultiplePackageVersionsTest() throws IllegalArgumentException {
         var ids = Arrays.asList(1L, 2L);
         var packageId = 42L;
         var cgGenerators = Arrays.asList("OPAL", "WALA");
@@ -148,6 +161,18 @@ public class MetadataDaoTest {
     }
 
     @Test
+    public void insertMultiplePackageVersionsErrorTest() {
+        var packageId = 42L;
+        var cgGenerators = Arrays.asList("OPAL", "WALA");
+        var versions = Arrays.asList("1.0.0", "2.0.0");
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertPackageVersions(packageId, cgGenerators, versions, createdAt, metadata);
+        });
+    }
+
+    @Test
     public void insertDependencyTest() {
         long packageId = 8;
         long dependencyId = 42;
@@ -165,7 +190,7 @@ public class MetadataDaoTest {
     }
 
     @Test
-    public void insertMultipleDependenciesTest() throws IllegalAccessException {
+    public void insertMultipleDependenciesTest() throws IllegalArgumentException {
         var packageIds = Arrays.asList(1L, 2L);
         var dependencyIds = Arrays.asList(8L, 42L);
         var versionRanges = Arrays.asList("1.0.0-1.9.9", "2.1.0-2.1.9");
@@ -181,6 +206,16 @@ public class MetadataDaoTest {
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
         var result = metadataDao.insertDependencies(packageIds, dependencyIds, versionRanges);
         assertEquals(packageIds, result);
+    }
+
+    @Test
+    public void insertMultipleDependenciesErrorTest() {
+        var packageIds = Collections.singletonList(1L);
+        var dependencyIds = Arrays.asList(8L, 42L);
+        var versionRanges = Arrays.asList("1.0.0-1.9.9", "2.1.0-2.1.9");
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertDependencies(packageIds, dependencyIds, versionRanges);
+        });
     }
 
     @Test
@@ -204,7 +239,7 @@ public class MetadataDaoTest {
     }
 
     @Test
-    public void insertMultipleFilesTest() throws IllegalAccessException {
+    public void insertMultipleFilesTest() throws IllegalArgumentException {
         var ids = Arrays.asList(1L, 2L);
         long packageId = 42;
         var namespaces = Arrays.asList("namespace1;namespace2", "namespace3;namespace4");
@@ -226,7 +261,38 @@ public class MetadataDaoTest {
     }
 
     @Test
-    public void insertCallableTest() throws IllegalAccessException {
+    public void insertMultipleFilesErrorTest() {
+        long packageId = 42;
+        var namespaces = Arrays.asList("namespace1;namespace2", "namespace3;namespace4");
+        var sha256s = Collections.singletonList(new byte[]{0, 1, 2, 3, 4});
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertFiles(packageId, namespaces, sha256s, createdAt, metadata);
+        });
+    }
+
+    @Test
+    public void insertCallableTest() throws IllegalArgumentException {
+        var id = 1L;
+        long fileId = 42;
+        var fastenUri = "URI";
+        var createdAt = new Timestamp(1);
+        var metadata = new JSONObject("{\"foo\":\"bar\"}");
+        var insertValues = Mockito.mock(InsertValuesStep4.class);
+        Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI,
+                Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(fileId, fastenUri, createdAt, JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
+        var record = new CallablesRecord(id, fileId, fastenUri, createdAt, JSONB.valueOf(metadata.toString()));
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        var result = metadataDao.insertCallable(fileId, fastenUri, createdAt, metadata);
+        assertEquals(id, result);
+    }
+
+    @Test
+    public void insertCallablesTest() throws IllegalArgumentException {
         var ids = Arrays.asList(1L, 2L);
         long fileId = 42;
         var fastenUris = Arrays.asList("URI1", "URI2");
@@ -247,6 +313,17 @@ public class MetadataDaoTest {
     }
 
     @Test
+    public void insertMultipleCallablesErrorTest() {
+        long fileId = 42;
+        var fastenUris = Arrays.asList("URI1", "URI2");
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertCallables(fileId, fastenUris, createdAt, metadata);
+        });
+    }
+
+    @Test
     public void insertEdgeTest() {
         long sourceId = 1;
         long targetId = 2;
@@ -264,7 +341,7 @@ public class MetadataDaoTest {
     }
 
     @Test
-    public void insertMultipleEdgesTest() throws IllegalAccessException {
+    public void insertMultipleEdgesTest() throws IllegalArgumentException {
         var sourceIds = Arrays.asList(1L, 2L);
         var targetIds = Arrays.asList(3L, 4L);
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
@@ -280,5 +357,15 @@ public class MetadataDaoTest {
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
         var result = metadataDao.insertEdges(sourceIds, targetIds, metadata);
         assertEquals(sourceIds, result);
+    }
+
+    @Test
+    public void insertMultipleEdgesErrorTest() {
+        var sourceIds = Arrays.asList(1L);
+        var targetIds = Arrays.asList(3L, 4L);
+        var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertEdges(sourceIds, targetIds, metadata);
+        });
     }
 }

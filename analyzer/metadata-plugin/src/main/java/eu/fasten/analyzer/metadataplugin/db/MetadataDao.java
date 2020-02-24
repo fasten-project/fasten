@@ -65,11 +65,11 @@ public class MetadataDao {
      * @param repositories List of repositories
      * @param createdAt    List of timestamps
      * @return List of IDs of the new records
-     * @throws IllegalAccessException if lists are not of the same size
+     * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertPackages(List<String> packageNames, List<String> projectNames, List<String> repositories, List<Timestamp> createdAt) throws IllegalAccessException {
+    public List<Long> insertPackages(List<String> packageNames, List<String> projectNames, List<String> repositories, List<Timestamp> createdAt) throws IllegalArgumentException {
         if (packageNames.size() != projectNames.size() || projectNames.size() != repositories.size() || repositories.size() != createdAt.size()) {
-            throw new IllegalAccessException("All lists should have equal size");
+            throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = packageNames.size();
         var recordIds = new ArrayList<Long>(length);
@@ -110,11 +110,11 @@ public class MetadataDao {
      * @param createdAt    List of timestamps
      * @param metadata     List of metadata objects
      * @return List of IDs of the new records
-     * @throws IllegalAccessException if lists are not of the same size
+     * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertPackageVersions(long packageId, List<String> cgGenerators, List<String> versions, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalAccessException {
+    public List<Long> insertPackageVersions(long packageId, List<String> cgGenerators, List<String> versions, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalArgumentException {
         if (cgGenerators.size() != versions.size() || versions.size() != createdAt.size() || createdAt.size() != metadata.size()) {
-            throw new IllegalAccessException("All lists should have equal size");
+            throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = cgGenerators.size();
         var recordIds = new ArrayList<Long>(length);
@@ -148,11 +148,11 @@ public class MetadataDao {
      * @param dependenciesIds List of IDs of dependencies
      * @param versionRanges   List of version ranges
      * @return List of IDs of the packages (packageIds)
-     * @throws IllegalAccessException if lists are not of the same size
+     * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertDependencies(List<Long> packageIds, List<Long> dependenciesIds, List<String> versionRanges) throws IllegalAccessException {
+    public List<Long> insertDependencies(List<Long> packageIds, List<Long> dependenciesIds, List<String> versionRanges) throws IllegalArgumentException {
         if (packageIds.size() != dependenciesIds.size() || dependenciesIds.size() != versionRanges.size()) {
-            throw new IllegalAccessException("All lists should have equal size");
+            throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = packageIds.size();
         var recordIds = new ArrayList<Long>(length);
@@ -191,11 +191,11 @@ public class MetadataDao {
      * @param createdAt      List of timestamps
      * @param metadata       List of metadata objects
      * @return List of IDs of new records
-     * @throws IllegalAccessException if lists are not of the same size
+     * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertFiles(long packageId, List<String> namespacesList, List<byte[]> sha256s, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalAccessException {
+    public List<Long> insertFiles(long packageId, List<String> namespacesList, List<byte[]> sha256s, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalArgumentException {
         if (namespacesList.size() != sha256s.size() || sha256s.size() != createdAt.size() || createdAt.size() != metadata.size()) {
-            throw new IllegalAccessException("All lists should have equal size");
+            throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = namespacesList.size();
         var recordIds = new ArrayList<Long>(length);
@@ -232,11 +232,11 @@ public class MetadataDao {
      * @param createdAt  List of timestamps
      * @param metadata   List of metadata objects
      * @return List of IDs of the new records
-     * @throws IllegalAccessException if lists are not of the same size
+     * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertCallables(long fileId, List<String> fastenUris, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalAccessException {
+    public List<Long> insertCallables(long fileId, List<String> fastenUris, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalArgumentException {
         if (fastenUris.size() != metadata.size() || metadata.size() != createdAt.size()) {
-            throw new IllegalAccessException("All lists should have equal size");
+            throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = fastenUris.size();
         var recordIds = new ArrayList<Long>(length);
@@ -271,11 +271,11 @@ public class MetadataDao {
      * @param targetIds List of IDs of target callables
      * @param metadata  List of metadata objects
      * @return List of IDs of source callables (sourceIds)
-     * @throws IllegalAccessException if lists are not of the same size
+     * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertEdges(List<Long> sourceIds, List<Long> targetIds, List<JSONObject> metadata) throws IllegalAccessException {
+    public List<Long> insertEdges(List<Long> sourceIds, List<Long> targetIds, List<JSONObject> metadata) throws IllegalArgumentException {
         if (sourceIds.size() != targetIds.size() || targetIds.size() != metadata.size()) {
-            throw new IllegalAccessException("All lists should have equal size");
+            throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = sourceIds.size();
         var recordIds = new ArrayList<Long>(length);
