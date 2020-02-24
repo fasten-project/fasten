@@ -44,10 +44,6 @@ public class PartialCallGraphTest {
     @BeforeClass
     public static void generateCallGraph() {
 
-        lambdaCallGraph = new PartialCallGraph(
-                new File(Thread.currentThread().getContextClassLoader().getResource("TwoCalls.class").getFile())
-        );
-
         /**
          * SingleSourceToTarget is a java8 compiled bytecode of:
          *<pre>
