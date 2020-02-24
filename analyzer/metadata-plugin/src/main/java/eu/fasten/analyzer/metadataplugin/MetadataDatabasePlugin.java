@@ -88,8 +88,7 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public void setPluginError(String exceptionType) {
-
+        public void setPluginError(Throwable throwable) {
         }
 
         @Override

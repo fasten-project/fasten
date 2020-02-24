@@ -29,6 +29,8 @@ import org.jooq.JSONB;
 import org.json.JSONObject;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MetadataDao {
 
@@ -56,13 +58,36 @@ public class MetadataDao {
     }
 
     /**
+     * Inserts multiple records in the 'packages' table in the database.
+     *
+     * @param packageNames List of names of the packages
+     * @param projectNames List of names of the projects
+     * @param repositories List of repositories
+     * @param createdAt    List of timestamps
+     * @return List of IDs of the new records
+     * @throws IllegalAccessException if lists are not of the same size
+     */
+    public List<Long> insertPackages(List<String> packageNames, List<String> projectNames, List<String> repositories, List<Timestamp> createdAt) throws IllegalAccessException {
+        if (packageNames.size() != projectNames.size() || projectNames.size() != repositories.size() || repositories.size() != createdAt.size()) {
+            throw new IllegalAccessException("All lists should have equal size");
+        }
+        int length = packageNames.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertPackage(packageNames.get(i), projectNames.get(i), repositories.get(i), createdAt.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
+    }
+
+    /**
      * Inserts a record in 'package_versions' table in the database.
      *
-     * @param packageId ID of the package (references 'packages.id')
+     * @param packageId   ID of the package (references 'packages.id')
      * @param cgGenerator Tool used to generate this callgraph
-     * @param version   Version of the package
-     * @param createdAt Timestamp when the package version was created
-     * @param metadata  Metadata of the package version
+     * @param version     Version of the package
+     * @param createdAt   Timestamp when the package version was created
+     * @param metadata    Metadata of the package version
      * @return ID of the new record
      */
     public long insertPackageVersion(long packageId, String cgGenerator, String version, Timestamp createdAt, JSONObject metadata) {
@@ -74,6 +99,30 @@ public class MetadataDao {
                 .values(packageId, cgGenerator, version, createdAt, metadataJsonb)
                 .returning(PackageVersions.PACKAGE_VERSIONS.ID).fetchOne();
         return resultRecord.getValue(PackageVersions.PACKAGE_VERSIONS.ID);
+    }
+
+    /**
+     * Inserts multiple records in the 'package_versions' table in the database.
+     *
+     * @param packageId    ID of the common package (references 'packages.id')
+     * @param cgGenerators List of code generators
+     * @param versions     List of versions
+     * @param createdAt    List of timestamps
+     * @param metadata     List of metadata objects
+     * @return List of IDs of the new records
+     * @throws IllegalAccessException if lists are not of the same size
+     */
+    public List<Long> insertPackageVersions(long packageId, List<String> cgGenerators, List<String> versions, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalAccessException {
+        if (cgGenerators.size() != versions.size() || versions.size() != createdAt.size() || createdAt.size() != metadata.size()) {
+            throw new IllegalAccessException("All lists should have equal size");
+        }
+        int length = cgGenerators.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertPackageVersion(packageId, cgGenerators.get(i), versions.get(i), createdAt.get(i), metadata.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
     }
 
     /**
@@ -90,6 +139,28 @@ public class MetadataDao {
                 .values(packageId, dependencyId, versionRange)
                 .returning(Dependencies.DEPENDENCIES.PACKAGE_ID).fetchOne();
         return resultRecord.getValue(Dependencies.DEPENDENCIES.PACKAGE_ID);
+    }
+
+    /**
+     * Inserts multiple records in the 'dependencies' table in the database.
+     *
+     * @param packageIds      List of IDs of packages
+     * @param dependenciesIds List of IDs of dependencies
+     * @param versionRanges   List of version ranges
+     * @return List of IDs of the packages (packageIds)
+     * @throws IllegalAccessException if lists are not of the same size
+     */
+    public List<Long> insertDependencies(List<Long> packageIds, List<Long> dependenciesIds, List<String> versionRanges) throws IllegalAccessException {
+        if (packageIds.size() != dependenciesIds.size() || dependenciesIds.size() != versionRanges.size()) {
+            throw new IllegalAccessException("All lists should have equal size");
+        }
+        int length = packageIds.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertDependency(packageIds.get(i), dependenciesIds.get(i), versionRanges.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
     }
 
     /**
@@ -112,6 +183,30 @@ public class MetadataDao {
     }
 
     /**
+     * Inserts multiple records in the 'files' table in the database.
+     *
+     * @param packageId      ID of the common package
+     * @param namespacesList List of namespaces
+     * @param sha256s        List of SHA256s
+     * @param createdAt      List of timestamps
+     * @param metadata       List of metadata objects
+     * @return List of IDs of new records
+     * @throws IllegalAccessException if lists are not of the same size
+     */
+    public List<Long> insertFiles(long packageId, List<String> namespacesList, List<byte[]> sha256s, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalAccessException {
+        if (namespacesList.size() != sha256s.size() || sha256s.size() != createdAt.size() || createdAt.size() != metadata.size()) {
+            throw new IllegalAccessException("All lists should have equal size");
+        }
+        int length = namespacesList.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertFile(packageId, namespacesList.get(i), sha256s.get(i), createdAt.get(i), metadata.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
+    }
+
+    /**
      * Inserts a record in the 'callables' table in the database.
      *
      * @param fileId    ID of the file where the callable belongs (references 'files.id')
@@ -130,6 +225,29 @@ public class MetadataDao {
     }
 
     /**
+     * Inserts multiple records in the 'callables' table in the database.
+     *
+     * @param fileId     ID of the common file
+     * @param fastenUris List of FASTEN URIs
+     * @param createdAt  List of timestamps
+     * @param metadata   List of metadata objects
+     * @return List of IDs of the new records
+     * @throws IllegalAccessException if lists are not of the same size
+     */
+    public List<Long> insertCallables(long fileId, List<String> fastenUris, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalAccessException {
+        if (fastenUris.size() != metadata.size() || metadata.size() != createdAt.size()) {
+            throw new IllegalAccessException("All lists should have equal size");
+        }
+        int length = fastenUris.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertCallable(fileId, fastenUris.get(i), createdAt.get(i), metadata.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
+    }
+
+    /**
      * Inserts a record in the 'edges' table in the database.
      *
      * @param sourceId ID of the source callable (references 'callables.id')
@@ -144,5 +262,27 @@ public class MetadataDao {
                 .values(sourceId, targetId, metadataJsonb)
                 .returning(Edges.EDGES.SOURCE_ID).fetchOne();
         return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
+    }
+
+    /**
+     * Inserts multiple records in the 'edges' table in the database.
+     *
+     * @param sourceIds List of IDs of source callables
+     * @param targetIds List of IDs of target callables
+     * @param metadata  List of metadata objects
+     * @return List of IDs of source callables (sourceIds)
+     * @throws IllegalAccessException if lists are not of the same size
+     */
+    public List<Long> insertEdges(List<Long> sourceIds, List<Long> targetIds, List<JSONObject> metadata) throws IllegalAccessException {
+        if (sourceIds.size() != targetIds.size() || targetIds.size() != metadata.size()) {
+            throw new IllegalAccessException("All lists should have equal size");
+        }
+        int length = sourceIds.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertEdge(sourceIds.get(i), targetIds.get(i), metadata.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
     }
 }
