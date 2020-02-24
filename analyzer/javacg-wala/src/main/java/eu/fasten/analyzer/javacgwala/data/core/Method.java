@@ -32,17 +32,11 @@ public abstract class Method {
     Selector symbol;
     MethodReference reference;
 
-//    /**
-//     * Construct a method.
-//     *
-//     * @param namespace Namespace
-//     * @param symbol    Selector
-//     */
-//    public Method(String namespace, Selector symbol) {
-//        this.namespace = namespace;
-//        this.symbol = symbol;
-//    }
-
+    /**
+     * Construct Method from {@link MethodReference}.
+     *
+     * @param reference Method Reference
+     */
     public Method(MethodReference reference) {
         this.reference = reference;
         this.namespace = getPackageName(reference.getDeclaringClass()) + "."

@@ -90,7 +90,7 @@ public class WALAPlugin extends Plugin {
                 final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
 
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
-                final var cg = generateCallgraph(mavenCoordinate, kafkaConsumedJson);
+                final var cg = generateCallGraph(mavenCoordinate, kafkaConsumedJson);
 
                 if (cg == null || cg.isCallGraphEmpty()) {
                     logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
@@ -112,6 +112,12 @@ public class WALAPlugin extends Plugin {
             }
         }
 
+        /**
+         * Convert consumed JSON from Kafka to {@link MavenCoordinate}.
+         *
+         * @param kafkaConsumedJson Coordinate JSON
+         * @return MavenCoordinate
+         */
         public MavenCoordinate getMavenCoordinate(final JSONObject kafkaConsumedJson) {
 
             try {
@@ -126,7 +132,14 @@ public class WALAPlugin extends Plugin {
             return null;
         }
 
-        public ExtendedRevisionCallGraph generateCallgraph(final MavenCoordinate mavenCoordinate,
+        /**
+         * Generate an ExtendedRevisionCallGraph.
+         *
+         * @param mavenCoordinate   Maven coordinate
+         * @param kafkaConsumedJson Consumed JSON
+         * @return Generated ExtendedRevisionCallGraph
+         */
+        public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
                                                            final JSONObject kafkaConsumedJson) {
             try {
                 return CallGraphConstructor.build(mavenCoordinate).toExtendedRevisionCallGraph(
@@ -139,6 +152,11 @@ public class WALAPlugin extends Plugin {
             return null;
         }
 
+        /**
+         * Send ExtendedRevisionCallGraph to Kafka.
+         *
+         * @param cg Generated call graph
+         */
         public void sendToKafka(final ExtendedRevisionCallGraph cg) {
 
             logger.debug("Writing call graph for {} to Kafka", cg.uri.toString());
@@ -147,14 +165,14 @@ public class WALAPlugin extends Plugin {
                     cg.toJSON().toString()
             );
 
-            kafkaProducer.send(record, ((recordMetadata, e) -> {
+            kafkaProducer.send(record, (recordMetadata, e) -> {
                 if (recordMetadata != null) {
                     logger.debug("Sent: {} to {}", cg.uri.toString(), this.produceTopic);
                 } else {
                     setPluginError(e);
                     logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
                 }
-            }));
+            });
         }
 
         @Override
@@ -195,8 +213,10 @@ public class WALAPlugin extends Plugin {
 
         @Override
         public void setPluginError(Throwable throwable) {
-            this.pluginError = new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
-                    throwable.getMessage()).put("trace", throwable.getStackTrace()).put("type", throwable.getClass().getSimpleName()).toString();
+            this.pluginError = new JSONObject().put("plugin", this.getClass().getSimpleName())
+                    .put("msg", throwable.getMessage())
+                    .put("trace", throwable.getStackTrace())
+                    .put("type", throwable.getClass().getSimpleName()).toString();
         }
 
         @Override

@@ -21,7 +21,6 @@ package eu.fasten.analyzer.javacgwala.data.callgraph.analyzer;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
-import com.ibm.wala.types.Selector;
 import eu.fasten.analyzer.javacgwala.data.ArtifactResolver;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
 import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;

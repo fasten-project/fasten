@@ -30,7 +30,8 @@ import org.json.JSONObject;
 public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     /**
-     * Type can be a class or interface that inherits (implements) from others or implements methods.
+     * Type can be a class or interface that inherits (implements) from others or
+     * implements methods.
      */
     public static class Type {
         /**
@@ -61,7 +62,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
          * @param superClasses    Super classes in the order of inheritance
          * @param superInterfaces Implemented interfaces
          */
-        public Type(String sourceFile, Map<FastenURI, Integer> methods, LinkedList<FastenURI> superClasses,
+        public Type(String sourceFile, Map<FastenURI, Integer> methods,
+                    LinkedList<FastenURI> superClasses,
                     List<FastenURI> superInterfaces) {
             this.sourceFileName = sourceFile;
             this.methods = methods;
@@ -106,8 +108,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      * @param forge          the forge
      * @param product        the product
      * @param version        the version
-     * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present, \it
-     *                       is set to -1
+     * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
+     *                       it is set to -1
      * @param depset         the depset
      * @param graph          the call graph (no control is done on the graph)
      * @param classHierarchy class hierarchy
@@ -163,7 +165,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     }
 
     /**
-     * It overrides the toJSON method of the RevisionCallGraph class in order to add ClassHierarchy to it.
+     * It overrides the toJSON method of the RevisionCallGraph class in order to
+     * add ClassHierarchy to it.
      *
      * @return org.json.JSONObject of this type including the classHierarchy.
      */
@@ -216,8 +219,12 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         ExtendedRevisionCallGraph that = (ExtendedRevisionCallGraph) o;
         return Objects.equals(classHierarchy, that.classHierarchy);
     }
