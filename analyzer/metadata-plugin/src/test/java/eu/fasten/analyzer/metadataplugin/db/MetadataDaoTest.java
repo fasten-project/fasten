@@ -70,19 +70,22 @@ public class MetadataDaoTest {
     public void insertPackageVersionTest() {
         long id = 1;
         long packageId = 42;
+        var cgGenerator = "OPAL";
         var version = "1.0.0";
         var createdAt = new Timestamp(1);
         var metadata = new JSONObject("{\"foo\":\"bar\"}");
-        var insertValues = Mockito.mock(InsertValuesStep4.class);
+        var insertValues = Mockito.mock(InsertValuesStep5.class);
         Mockito.when(context.insertInto(PackageVersions.PACKAGE_VERSIONS,
-                PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.VERSION,
-                PackageVersions.PACKAGE_VERSIONS.CREATED_AT, PackageVersions.PACKAGE_VERSIONS.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(packageId, version, createdAt, JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
+                PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
+                PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
+                PackageVersions.PACKAGE_VERSIONS.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, cgGenerator, version, createdAt,
+                JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertValues.returning(PackageVersions.PACKAGE_VERSIONS.ID)).thenReturn(insertResult);
-        var record = new PackageVersionsRecord(id, packageId, version, createdAt, JSONB.valueOf(metadata.toString()));
+        var record = new PackageVersionsRecord(id, packageId, cgGenerator, version, createdAt, JSONB.valueOf(metadata.toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        long result = metadataDao.insertPackageVersion(packageId, version, createdAt, metadata);
+        long result = metadataDao.insertPackageVersion(packageId, cgGenerator, version, createdAt, metadata);
         assertEquals(id, result);
     }
 

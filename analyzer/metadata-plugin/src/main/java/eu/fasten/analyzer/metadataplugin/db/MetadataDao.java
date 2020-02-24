@@ -59,17 +59,19 @@ public class MetadataDao {
      * Inserts a record in 'package_versions' table in the database.
      *
      * @param packageId ID of the package (references 'packages.id')
+     * @param cgGenerator Tool used to generate this callgraph
      * @param version   Version of the package
      * @param createdAt Timestamp when the package version was created
      * @param metadata  Metadata of the package version
      * @return ID of the new record
      */
-    public long insertPackageVersion(long packageId, String version, Timestamp createdAt, JSONObject metadata) {
+    public long insertPackageVersion(long packageId, String cgGenerator, String version, Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = JSONB.valueOf(metadata.toString());
         var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
-                PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.VERSION,
-                PackageVersions.PACKAGE_VERSIONS.CREATED_AT, PackageVersions.PACKAGE_VERSIONS.METADATA)
-                .values(packageId, version, createdAt, metadataJsonb)
+                PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
+                PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
+                PackageVersions.PACKAGE_VERSIONS.METADATA)
+                .values(packageId, cgGenerator, version, createdAt, metadataJsonb)
                 .returning(PackageVersions.PACKAGE_VERSIONS.ID).fetchOne();
         return resultRecord.getValue(PackageVersions.PACKAGE_VERSIONS.ID);
     }
