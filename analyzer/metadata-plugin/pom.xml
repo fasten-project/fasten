@@ -27,12 +27,6 @@
             <artifactId>postgresql</artifactId>
             <version>9.4.1208</version>
         </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>3.2.4</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -152,7 +146,7 @@
                             <inputSchema>public</inputSchema>
                         </database>
                         <target>
-                            <packageName>eu.fasten.analyzer.metadataplugin.db</packageName>
+                            <packageName>eu.fasten.analyzer.metadataplugin.db.jooq</packageName>
                             <directory>target/generated-sources/jooq</directory>
                         </target>
                     </generator>

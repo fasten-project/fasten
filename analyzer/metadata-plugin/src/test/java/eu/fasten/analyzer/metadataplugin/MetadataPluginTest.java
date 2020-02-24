@@ -18,17 +18,8 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
-import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-
-import java.io.IOException;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
