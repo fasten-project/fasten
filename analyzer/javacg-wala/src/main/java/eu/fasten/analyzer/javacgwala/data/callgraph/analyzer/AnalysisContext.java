@@ -57,7 +57,9 @@ public class AnalysisContext {
     public Method findOrCreate(MethodReference reference) {
         var packageName = reference.getDeclaringClass().getName().getPackage().toString()
                 .replace("/", ".");
+        //var packageName = Method.getPackageName2(reference.getDeclaringClass());
         var className = reference.getDeclaringClass().getName().getClassName().toString();
+        //var className = Method.getClassName2(reference.getDeclaringClass());
 
         String namespace = packageName + "." + className;
         Selector symbol = reference.getSelector();

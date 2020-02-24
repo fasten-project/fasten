@@ -18,8 +18,10 @@
 
 package eu.fasten.analyzer.javacgwala.data.core;
 
+import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeName;
+import com.ibm.wala.types.TypeReference;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.util.Objects;
@@ -28,6 +30,7 @@ public abstract class Method {
 
     String namespace;
     Selector symbol;
+    MethodReference reference;
 
     /**
      * Construct a method.
@@ -38,6 +41,10 @@ public abstract class Method {
     public Method(String namespace, Selector symbol) {
         this.namespace = namespace;
         this.symbol = symbol;
+    }
+
+    public Method(MethodReference reference) {
+        this.reference = reference;
     }
 
     /**
@@ -84,6 +91,46 @@ public abstract class Method {
      */
     public String getPackageName() {
         return namespace.substring(0, this.namespace.lastIndexOf("."));
+    }
+
+    public static String getPackageName2(TypeReference reference) {
+        if (reference.isPrimitiveType()) {
+            return "java.lang";
+
+        } else if (reference.isReferenceType()) {
+            if (reference.isArrayType()) {
+                return Objects.requireNonNull(getPackageName2(reference.getArrayElementType()))
+                        .replace("/", ".");
+
+            } else if (reference.getName().getPackage() == null){
+                return null;
+
+            } else {
+                return reference.getName().getPackage().toString();
+            }
+
+        } else if (reference.getName().getClassName().toString().equals("V")) {
+            return "java.lang";
+        }
+        return "";
+    }
+
+    public static String getClassName2(TypeReference reference) {
+        if (reference.isPrimitiveType()) {
+            return resolvePrimitiveTypeEncoding(reference.getName().toString());
+
+        } else if (reference.isReferenceType()) {
+            if (reference.isArrayType()) {
+                return Objects.requireNonNull(getClassName2(reference.getArrayElementType()))
+                        .concat(twoTimesPct("[]"));
+            } else {
+                return reference.getName().getClassName().toString();
+            }
+
+        } else if (reference.getName().getClassName().toString().equals("V")) {
+            return "java.lang";
+        }
+        return "";
     }
 
     /**
@@ -181,6 +228,35 @@ public abstract class Method {
     private static String twoTimesPct(String nonEncoded) {
         return FastenJavaURI.pctEncodeArg(FastenJavaURI
                 .pctEncodeArg(nonEncoded));
+    }
+
+    private static String slashToDot(final String s) {
+        return s.replace("/", ".");
+    }
+
+    private static String resolvePrimitiveTypeEncoding(String encoded) {
+        switch (encoded) {
+            case "Z":
+                return "Boolean";
+            case "B":
+                return "Byte";
+            case "C":
+                return "Char";
+            case "D":
+                return "Double";
+            case "F":
+                return "Float";
+            case "I":
+                return "Integer";
+            case "J":
+                return "Long";
+            case "S":
+                return "Short";
+            case "V":
+                return "Void";
+            default:
+                return "";
+        }
     }
 
     @Override

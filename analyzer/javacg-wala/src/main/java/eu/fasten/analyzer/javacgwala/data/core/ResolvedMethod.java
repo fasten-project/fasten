@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgwala.data.core;
 
+import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import java.util.jar.JarFile;
 
@@ -33,6 +34,11 @@ public class ResolvedMethod extends Method {
      */
     public ResolvedMethod(String namespace, Selector symbol, JarFile artifact) {
         super(namespace, symbol);
+        this.artifact = artifact;
+    }
+
+    public ResolvedMethod(MethodReference reference, JarFile artifact) {
+        super(reference);
         this.artifact = artifact;
     }
 

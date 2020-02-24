@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgwala.data.core;
 
+import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 
 public class UnresolvedMethod extends Method {
@@ -31,6 +32,10 @@ public class UnresolvedMethod extends Method {
      */
     public UnresolvedMethod(String namespace, Selector symbol) {
         super(namespace, symbol);
+    }
+
+    public UnresolvedMethod(MethodReference reference) {
+        super(reference);
     }
 
     @Override
