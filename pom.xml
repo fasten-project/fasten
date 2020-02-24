@@ -204,6 +204,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${checkstyle.version}</version>
+                <inherited>true</inherited>
                 <configuration>
                     <configLocation>checkstyle.xml</configLocation>
                 </configuration>
