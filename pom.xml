@@ -42,7 +42,7 @@
     </properties>
 
     <scm>
-        <connection>https://github.com/fasten-project/core</connection>
+        <connection>scm:https://github.com/fasten-project/core</connection>
         <url>https://github.com/fasten-project/core</url>
     </scm>
 
