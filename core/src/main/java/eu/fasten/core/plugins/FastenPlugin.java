@@ -67,7 +67,18 @@ public interface FastenPlugin extends ExtensionPoint {
      * These two methods should be implemented so that the FASTEN server can retrieve the plug-in's error and its exception
      * type. This will help to reprocess certain types of failed records.
      */
-    public void setPluginError(String exceptionType);
+    public void setPluginError(Throwable throwable);
+
+    /**
+     * This method should return a JSON string with the following fields:
+     * - plugin: the name of the plugin
+     * - msg: the message of the exception
+     * - trace: the stack trace of the exception
+     * - type: the type of the exception, e.g. FileNotFoundException
+     *
+     * @return
+     */
+
     public String getPluginError();
 
     /**
