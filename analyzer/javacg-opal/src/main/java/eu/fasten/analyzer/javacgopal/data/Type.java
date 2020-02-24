@@ -18,14 +18,10 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
-
 import java.util.*;
 
-import org.opalj.br.ClassHierarchy;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
-import org.opalj.br.SourceFile;
 import org.opalj.collection.immutable.Chain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,18 +30,16 @@ public class Type {
 
     private static Logger logger = LoggerFactory.getLogger(Type.class);
 
-    final private String sourceFileName;
-    final private Map<Method, Integer> methods;
-    final private Chain<ObjectType> superClasses;
-    final private List<ObjectType> superInterfaces;
+    private final String sourceFileName;
+    private final Map<Method, Integer> methods;
+    private final Chain<ObjectType> superClasses;
+    private final List<ObjectType> superInterfaces;
 
     public Map<Method, Integer> getMethods() {
         return methods;
     }
 
-    public Chain<ObjectType> getSuperClasses() {
-        return superClasses;
-    }
+    public Chain<ObjectType> getSuperClasses() { return superClasses; }
 
     public List<ObjectType> getSuperInterfaces() {
         return superInterfaces;
@@ -53,44 +47,11 @@ public class Type {
 
     public String getSourceFileName() { return sourceFileName; }
 
-    public Type(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses, final List<ObjectType> superInterfaces) {
+    public Type(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses, final List<ObjectType> superInterfaces, final String sourceFileName) {
         this.methods = methods;
         this.superClasses = superClasses;
         this.superInterfaces = superInterfaces;
-        this.sourceFileName = extractSourceFile();
+        this.sourceFileName = sourceFileName;
     }
 
-
-    /**
-     * Extracts the source file of this type. In order to track probable future bugs if there are
-     * more than one source files for any reason it will show a warning, so that one can investigate
-     * why it happened.
-     *
-     * @return the String name of the source file (.java) that this type lives in it.
-     */
-    public String extractSourceFile() {
-        final Set<SourceFile> allSourceFilesOfType = new HashSet<>();
-        final Set<ObjectType> thisType = new HashSet<>();
-        for (final org.opalj.br.Method method : this.getMethods().keySet()) {
-            method.declaringClassFile().attributes().toList().foreach(
-                JavaToScalaConverter.asScalaFunction1(attribute -> {
-                    if (attribute instanceof SourceFile) {
-                        allSourceFilesOfType.add((SourceFile) attribute);
-                    }
-                    return true;
-                }));
-            thisType.add(method.declaringClassFile().thisType());
-        }
-        if (thisType.size() > 1){
-            logger.warn("More than one classes found during checking for source file of a type {}", thisType);
-        }
-        if (allSourceFilesOfType.size() > 1) {
-            logger.warn("More than one source file found for this type {}", thisType.iterator().next());
-        }
-        if (!allSourceFilesOfType.isEmpty()) {
-            return allSourceFilesOfType.iterator().next().sourceFile();
-        }
-//        logger.warn("Could not find the source file of type {}", thisType.iterator().next());
-        return null;
-    }
 }

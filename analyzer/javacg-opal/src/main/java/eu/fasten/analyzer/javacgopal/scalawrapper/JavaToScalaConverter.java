@@ -35,10 +35,20 @@ public final class JavaToScalaConverter {
 
     /**
      * Imitate a scala function0 in case of passing entrypoints as an scala function.
-     * @param entryPoints Scala Iterable of methods.
+     * @param defaultString Scala Iterable of methods.
      * @return An scala function including the results.
      */
-    public static Function0<Iterable<Method>> asScalaFunction0(final Iterable<Method> entryPoints) {
+    public static Function0<String> asScalaFunction0OptionString(final String defaultString) {
+        return new AbstractFunction0<>() {
+
+            @Override
+            public String apply() {
+                return defaultString;
+            }
+        };
+    }
+
+    public static Function0<Iterable<Method>> asScalaFunction0EntryPionts(final Iterable<Method> entryPoints) {
         return new AbstractFunction0<>() {
 
             @Override
@@ -47,7 +57,6 @@ public final class JavaToScalaConverter {
             }
         };
     }
-
     /**
      * Imitates a scala function1 in case of Lambda in java to be passed to scala.
      * @param lambdaFunction A java Lambda in order to do things on scala.

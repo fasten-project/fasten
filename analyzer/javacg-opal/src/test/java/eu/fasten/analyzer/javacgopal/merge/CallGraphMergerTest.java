@@ -57,13 +57,13 @@ public class CallGraphMergerTest {
          */
         var importerGraph = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("Importer.class").getFile()));
 
-        artifact = new ExtendedRevisionCallGraph("mvn",
-                "ImporterGroup.ImporterArtifact",
-                "1.7.29",
-                1574072773,
-                Arrays.asList(),
-                importerGraph.getMapedGraph(PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy())),
-                PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy()));
+//        artifact = new ExtendedRevisionCallGraph("mvn",
+//                "ImporterGroup.ImporterArtifact",
+//                "1.7.29",
+//                1574072773,
+//                Arrays.asList(),
+//                importerGraph.getMapedGraph(PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy())),
+//                PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy()));
 
         /**
          * Imported is a java8 compiled bytecode of:
@@ -81,13 +81,13 @@ public class CallGraphMergerTest {
          */
         var importedGraph = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("Imported.class").getFile()));
 
-        dependency = new ExtendedRevisionCallGraph("mvn",
-                "ImportedGroup.ImportedArtifact",
-                "1.7.29",
-                1574072773,
-                Arrays.asList(),
-                importedGraph.getMapedGraph(PartialCallGraph.toURIHierarchy(importedGraph.getClassHierarchy())),
-                PartialCallGraph.toURIHierarchy(importedGraph.getClassHierarchy()));
+//        dependency = new ExtendedRevisionCallGraph("mvn",
+//                "ImportedGroup.ImportedArtifact",
+//                "1.7.29",
+//                1574072773,
+//                Arrays.asList(),
+//                importedGraph.getMapedGraph(PartialCallGraph.toURIHierarchy(importedGraph.getClassHierarchy())),
+//                PartialCallGraph.toURIHierarchy(importedGraph.getClassHierarchy()));
 
     }
 

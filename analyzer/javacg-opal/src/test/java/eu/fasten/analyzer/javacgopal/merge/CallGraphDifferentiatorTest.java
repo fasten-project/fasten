@@ -38,23 +38,23 @@ public class CallGraphDifferentiatorTest {
 
         var DiffExampleFirst = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleFirst.class").getFile()));
 
-        firstGraph = new ExtendedRevisionCallGraph("mvn",
-                "DiffExample",
-                "1.7.29",
-                1574072773,
-                Arrays.asList(),
-                DiffExampleFirst.getMapedGraph(PartialCallGraph.toURIHierarchy(DiffExampleFirst.getClassHierarchy())),
-                PartialCallGraph.toURIHierarchy(DiffExampleFirst.getClassHierarchy()));
+//        firstGraph = new ExtendedRevisionCallGraph("mvn",
+//                "DiffExample",
+//                "1.7.29",
+//                1574072773,
+//                Arrays.asList(),
+//                DiffExampleFirst.getMapedGraph(PartialCallGraph.toURIHierarchy(DiffExampleFirst.getClassHierarchy())),
+//                PartialCallGraph.toURIHierarchy(DiffExampleFirst.getClassHierarchy()));
 
         var DiffExampleSecond = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleSecond.class").getFile()));
 
-        secondGraph = new ExtendedRevisionCallGraph("mvn",
-                "DiffExample",
-                "1.7.29",
-                1574072773,
-                Arrays.asList(),
-                DiffExampleSecond.getMapedGraph(PartialCallGraph.toURIHierarchy(DiffExampleSecond.getClassHierarchy())),
-                PartialCallGraph.toURIHierarchy(DiffExampleSecond.getClassHierarchy()));
+//        secondGraph = new ExtendedRevisionCallGraph("mvn",
+//                "DiffExample",
+//                "1.7.29",
+//                1574072773,
+//                Arrays.asList(),
+//                DiffExampleSecond.getMapedGraph(PartialCallGraph.toURIHierarchy(DiffExampleSecond.getClassHierarchy())),
+//                PartialCallGraph.toURIHierarchy(DiffExampleSecond.getClassHierarchy()));
 
     }
 

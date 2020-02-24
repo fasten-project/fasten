@@ -20,8 +20,8 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 
+import eu.fasten.analyzer.javacgopal.merge.CallGraphDifferentiator;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 import static org.junit.Assert.*;
 
@@ -58,12 +59,19 @@ public class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()), false);
+        final var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()), false);
 
-        var extendedRevisionCallGraph  = ExtendedRevisionCallGraph.create("mvn",
+        final var extendedRevisionCallGraph  = ExtendedRevisionCallGraph.createWithOPAL("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
+        try {
+            CallGraphDifferentiator.writeToFile("",extendedRevisionCallGraph.toJSON().toString(4),"plugin");
+            CallGraphDifferentiator.writeToFile("",cg.toJSON().toString(4),"direct");
 
-        JSONAssert.assertEquals(extendedRevisionCallGraph.toJSON(), cg.toJSON(), false);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        JSONAssert.assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString(), false);
     }
 
     @Test
@@ -78,10 +86,10 @@ public class OPALPluginTest {
 
         var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()), false);
 
-        var extendedRevisionCallGraph = ExtendedRevisionCallGraph.create("mvn",
+        var extendedRevisionCallGraph = ExtendedRevisionCallGraph.createWithOPAL("mvn",
                 new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"), 1574072773);
 
-        JSONAssert.assertEquals(extendedRevisionCallGraph.toJSON(), cg.toJSON(), false);
+        JSONAssert.assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString(), false);
     }
 
     @Test

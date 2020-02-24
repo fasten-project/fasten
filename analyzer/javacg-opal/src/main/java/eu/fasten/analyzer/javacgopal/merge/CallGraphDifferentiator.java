@@ -19,10 +19,8 @@
 package eu.fasten.analyzer.javacgopal.merge;
 
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.FastenURI;
 
 import java.io.*;
-import java.util.Comparator;
 
 public class CallGraphDifferentiator {
 
@@ -38,8 +36,8 @@ public class CallGraphDifferentiator {
 
         final String graphPath = resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
 
-        firstGraph.sortGraphEdges();
-        secondGraph.sortGraphEdges();
+        firstGraph.sortResolvedCalls();
+        secondGraph.sortResolvedCalls();
 
         writeToFile(firstGraph.toJSON().toString(4), graphPath, "_1.txt");
         writeToFile(secondGraph.toJSON().toString(4), graphPath, "_2.txt");

@@ -51,9 +51,9 @@ public class CallGraphMerger {
             mapOfAllMethods.putAll(type.getMethods());
         });
 
-        artifact.getGraph().getUnresolvedCalls().forEach((sourceKey, fastenURI) ->{
-            final var source = mapOfAllMethods.get(sourceKey);
-            var target = fastenURI;
+        artifact.getGraph().getUnresolvedCalls().forEach((call, metadata) ->{
+            final var source = mapOfAllMethods.get(call.getKey());
+            var target = call.getValue();
             final var isSuperClassMethod = artifact.getClassHierarchy().get(getTypeURI(source)).getSuperClasses().contains(getTypeURI(target));
             nextCall:
 

@@ -118,10 +118,10 @@ public class Main implements Runnable {
         try {
             logger.info("Generating call graph for the Maven coordinate: {}", this.fullCoordinate.mavenCoordStr);
             long startTime = System.currentTimeMillis();
-            revisionCallGraph = ExtendedRevisionCallGraph.create("mvn", mavenCoordinate, Long.parseLong(this.timestamp));
+            revisionCallGraph = ExtendedRevisionCallGraph.createWithOPAL("mvn", mavenCoordinate, Long.parseLong(this.timestamp));
             logger.info("Generated the call graph in {} seconds.", timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
             //TODO something with the calculated RevesionCallGraph.
-            CallGraphDifferentiator.writeToFile("",revisionCallGraph.toJSON().toString(),"graph");
+            CallGraphDifferentiator.writeToFile("",revisionCallGraph.toJSON().toString(4),"graph");
 
         } catch (IOException e) {
             logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());

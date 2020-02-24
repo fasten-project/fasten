@@ -126,7 +126,7 @@ public class OPALPlugin extends Plugin {
         public ExtendedRevisionCallGraph generateCallgraph(final MavenCoordinate mavenCoordinate,
                                                            final JSONObject kafkaConsumedJson) {
             try {
-                return ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
+                return ExtendedRevisionCallGraph.createWithOPAL("mvn", mavenCoordinate,
                     Long.parseLong(kafkaConsumedJson.get("date").toString()));
             } catch (FileNotFoundException e) {
                 setPluginError(e.getClass().getSimpleName());
