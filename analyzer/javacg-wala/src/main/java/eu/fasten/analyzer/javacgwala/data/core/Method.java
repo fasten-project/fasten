@@ -25,6 +25,7 @@ import com.ibm.wala.types.TypeReference;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 public abstract class Method {
 
@@ -45,6 +46,8 @@ public abstract class Method {
 
     public Method(MethodReference reference) {
         this.reference = reference;
+        this.namespace = getPackageName2(reference.getDeclaringClass()) + "." + getClassName2(reference.getDeclaringClass());
+        this.symbol = reference.getSelector();
     }
 
     /**
@@ -61,7 +64,13 @@ public abstract class Method {
      */
     public FastenURI toCanonicalSchemalessURI() {
 
-        FastenJavaURI javaURI = FastenJavaURI.create(getMethodInfo());
+        FastenJavaURI javaURI = FastenJavaURI.create(null, null, null,
+                getPackageName2(reference.getDeclaringClass()),
+                getClassName2(reference.getDeclaringClass()),
+                getMethodName2(reference),
+                getParameters2(reference),
+                getReturnType2(reference)
+        ).canonicalize();
 
         return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
                 javaURI.getRawVersion(),
@@ -75,11 +84,11 @@ public abstract class Method {
      * @return URI representation of a method
      */
     private String getMethodInfo() {
-        String namespace = getPackageName();
-        String typeName = getClassName();
-        String methodName = getMethodName();
-        String parameters = getParameters();
-        String returnType = FastenJavaURI.pctEncodeArg(getReturnType());
+        String namespace = getPackageName2(reference.getDeclaringClass());
+        String typeName = getClassName2(reference.getDeclaringClass());
+        String methodName = getMethodName2(reference);
+        var parameters = getParameters2(reference);
+        var returnType = getReturnType2(reference);
         return "/" + namespace + "/" + typeName + "." + methodName + "("
                 + parameters + ")" + returnType;
     }
@@ -106,7 +115,7 @@ public abstract class Method {
                 return null;
 
             } else {
-                return reference.getName().getPackage().toString();
+                return reference.getName().getPackage().toString().replace("/", ".");
             }
 
         } else if (reference.getName().getClassName().toString().equals("V")) {
@@ -122,7 +131,7 @@ public abstract class Method {
         } else if (reference.isReferenceType()) {
             if (reference.isArrayType()) {
                 return Objects.requireNonNull(getClassName2(reference.getArrayElementType()))
-                        .concat(twoTimesPct("[]"));
+                        .concat(threeTimesPct("[]"));
             } else {
                 return reference.getName().getClassName().toString();
             }
@@ -131,6 +140,44 @@ public abstract class Method {
             return "java.lang";
         }
         return "";
+    }
+
+    public static String getMethodName2(MethodReference reference) {
+        if (reference.getSelector().getName().toString().equals("<init>")) {
+            return getClassName2(reference.getDeclaringClass());
+
+        } else if (reference.getSelector().getName().toString().equals("<clinit>")) {
+            return threeTimesPct("<init>");
+
+        } else {
+            return reference.getSelector().getName().toString();
+        }
+    }
+
+    public static FastenJavaURI[] getParameters2(MethodReference reference) {
+        final FastenJavaURI[] parameters = new FastenJavaURI[reference.getNumberOfParameters()];
+
+        IntStream.range(0, reference.getNumberOfParameters()).forEach(i -> parameters[i] = getType2(reference.getParameterType(i)));
+
+        return parameters;
+
+//        var args = reference.getSelector().getDescriptor().getParameters();
+//        var argTypes = ;
+//        if (args != null) {
+//            for (int i = 0; i < args.length; i++) {
+//                argTypes = i == args.length - 1 ? getType2(reference.getDeclaringClass())
+//                        : getType2(reference.getDeclaringClass()) + ",";
+//            }
+//        }
+//        return argTypes;
+    }
+
+    public static FastenJavaURI getType2(TypeReference reference) {
+        return new FastenJavaURI("/" + getPackageName2(reference) + "/" + getClassName2(reference));
+    }
+
+    public static FastenJavaURI getReturnType2(MethodReference reference) {
+        return getType2(reference.getReturnType());
     }
 
     /**
@@ -213,7 +260,7 @@ public abstract class Method {
         var classname = type.getClassName().toString();
 
         if (type.isArrayType()) {
-            classname = classname.concat(twoTimesPct("[]"));
+            classname = classname.concat(threeTimesPct("[]"));
         }
 
         return "/" + packageName + "/" + classname;
@@ -225,9 +272,9 @@ public abstract class Method {
      * @param nonEncoded String to encode
      * @return Encoded string
      */
-    private static String twoTimesPct(String nonEncoded) {
+    private static String threeTimesPct(String nonEncoded) {
         return FastenJavaURI.pctEncodeArg(FastenJavaURI
-                .pctEncodeArg(nonEncoded));
+                .pctEncodeArg(FastenJavaURI.pctEncodeArg(nonEncoded)));
     }
 
     private static String slashToDot(final String s) {

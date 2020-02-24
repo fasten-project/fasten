@@ -51,7 +51,7 @@ class WalaResultAnalyzerTest {
         assertEquals(1, wrapped.getUnresolvedCalls().size());
 
         var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
-        var target = "/java.lang/Object.Object()%2Fjava.lang%2FVoid";
+        var target = "/java.lang/Object.Object()Void";
         var call = wrapped.getUnresolvedCalls().get(0);
 
         assertEquals(source, call.getSource().toCanonicalSchemalessURI().toString());

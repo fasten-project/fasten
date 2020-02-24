@@ -131,7 +131,7 @@ public class MethodTest {
         var actualTargetURI = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid";
         var actualSourceUnresolvedURI =
                 "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
-        var actualTargetUnresolvedURI = "/java.lang/Object.Object()%2Fjava.lang%2FVoid";
+        var actualTargetUnresolvedURI = "/java.lang/Object.Object()Void";
 
 
         assertEquals(actualSourceURI,

@@ -58,13 +58,13 @@ class CallTest {
         assertEquals(Call.CallType.STATIC, resolvedCall.getCallType());
     }
 
-    @Test
-    void toURICall() {
-        var fastenUri = resolvedCall.toURICall();
-
-        assertEquals("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid",
-                fastenUri[0].toString());
-        assertEquals("///name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid",
-                fastenUri[1].toString());
-    }
+//    @Test
+//    void toURICall() {
+//        var fastenUri = resolvedCall.toURICall();
+//
+//        assertEquals("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid",
+//                fastenUri[0].toString());
+//        assertEquals("///name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid",
+//                fastenUri[1].toString());
+//    }
 }
