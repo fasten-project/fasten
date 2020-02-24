@@ -45,13 +45,13 @@ public class MetadataPluginTest {
 
     @Test
     public void nameTest() {
-        String name = "Metadata plugin";
+        var name = "Metadata plugin";
         assertEquals(name, metadataPlugin.name());
     }
 
     @Test
     public void descriptionTest() {
-        String description = "Metadata plugin. Connects to a Kafka topic and populates metadata database with consumed data.";
+        var description = "Metadata plugin. Connects to a Kafka topic and populates metadata database with consumed data.";
         assertEquals(description, metadataPlugin.description());
     }
 

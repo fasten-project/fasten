@@ -26,7 +26,6 @@ import eu.fasten.analyzer.metadataplugin.db.tables.PackageVersions;
 import eu.fasten.analyzer.metadataplugin.db.tables.Packages;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
-import org.jooq.Record;
 import org.json.JSONObject;
 
 import java.sql.Timestamp;
@@ -49,7 +48,7 @@ public class MetadataDao {
      * @return ID of the new record
      */
     public long insertPackage(String packageName, String projectName, String repository, Timestamp createdAt) {
-        Record resultRecord = context.insertInto(Packages.PACKAGES,
+        var resultRecord = context.insertInto(Packages.PACKAGES,
                 Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.PROJECT_NAME, Packages.PACKAGES.REPOSITORY, Packages.PACKAGES.CREATED_AT)
                 .values(packageName, projectName, repository, createdAt)
                 .returning(Packages.PACKAGES.ID).fetchOne();
@@ -66,8 +65,8 @@ public class MetadataDao {
      * @return ID of the new record
      */
     public long insertPackageVersion(long packageId, String version, Timestamp createdAt, JSONObject metadata) {
-        JSONB metadataJsonb = JSONB.valueOf(metadata.toString());
-        Record resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
+        var metadataJsonb = JSONB.valueOf(metadata.toString());
+        var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
                 PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.VERSION,
                 PackageVersions.PACKAGE_VERSIONS.CREATED_AT, PackageVersions.PACKAGE_VERSIONS.METADATA)
                 .values(packageId, version, createdAt, metadataJsonb)
@@ -84,7 +83,7 @@ public class MetadataDao {
      * @return ID of the package (packageId)
      */
     public long insertDependency(long packageId, long dependencyId, String versionRange) {
-        Record resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
+        var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
                 Dependencies.DEPENDENCIES.PACKAGE_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)
                 .values(packageId, dependencyId, versionRange)
                 .returning(Dependencies.DEPENDENCIES.PACKAGE_ID).fetchOne();
@@ -102,8 +101,8 @@ public class MetadataDao {
      * @return ID of the new record
      */
     public long insertFile(long packageId, String namespaces, byte[] sha256, Timestamp createdAt, JSONObject metadata) {
-        JSONB metadataJsonb = JSONB.valueOf(metadata.toString());
-        Record resultRecord = context.insertInto(Files.FILES,
+        var metadataJsonb = JSONB.valueOf(metadata.toString());
+        var resultRecord = context.insertInto(Files.FILES,
                 Files.FILES.PACKAGE_ID, Files.FILES.NAMESPACES, Files.FILES.SHA256, Files.FILES.CREATED_AT, Files.FILES.METADATA)
                 .values(packageId, namespaces, sha256, createdAt, metadataJsonb)
                 .returning(Files.FILES.ID).fetchOne();
@@ -120,8 +119,8 @@ public class MetadataDao {
      * @return ID of the new record
      */
     public long insertCallable(long fileId, String fastenUri, Timestamp createdAt, JSONObject metadata) {
-        JSONB metadataJsonb = JSONB.valueOf(metadata.toString());
-        Record resultRecord = context.insertInto(Callables.CALLABLES,
+        var metadataJsonb = JSONB.valueOf(metadata.toString());
+        var resultRecord = context.insertInto(Callables.CALLABLES,
                 Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.METADATA)
                 .values(fileId, fastenUri, createdAt, metadataJsonb)
                 .returning(Callables.CALLABLES.ID).fetchOne();
@@ -137,8 +136,8 @@ public class MetadataDao {
      * @return ID of the source callable (sourceId)
      */
     public long insertEdge(long sourceId, long targetId, JSONObject metadata) {
-        JSONB metadataJsonb = JSONB.valueOf(metadata.toString());
-        Record resultRecord = context.insertInto(Edges.EDGES,
+        var metadataJsonb = JSONB.valueOf(metadata.toString());
+        var resultRecord = context.insertInto(Edges.EDGES,
                 Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.METADATA)
                 .values(sourceId, targetId, metadataJsonb)
                 .returning(Edges.EDGES.SOURCE_ID).fetchOne();

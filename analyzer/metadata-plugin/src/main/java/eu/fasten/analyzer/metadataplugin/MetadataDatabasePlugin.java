@@ -52,9 +52,9 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
-            JSONObject consumedJson = new JSONObject(record.value());
+            var consumedJson = new JSONObject(record.value());
             try {
-                MetadataDao metadataDao = new MetadataDao(PostgresConnector.getDSLContext());
+                var metadataDao = new MetadataDao(PostgresConnector.getDSLContext());
                 // TODO: Insert consumed data in the metadata database using metadataDao
 
             } catch (SQLException e) {
