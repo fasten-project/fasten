@@ -160,13 +160,13 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             partialCallGraph.getGENERATOR());
     }
 
-    /**
-     * @return org.json.JSONObject of this type including the classHierarchy.
+    /** Produces the JSON representation of this {@link ExtendedRevisionCallGraph}.
+     *
+     * @return the JSON representation.
      */
     @Override
     public JSONObject toJSON() {
 
-        logger.info("creating json");
         final var result = new JSONObject();
         result.put("forge", forge);
         result.put("product", product);
