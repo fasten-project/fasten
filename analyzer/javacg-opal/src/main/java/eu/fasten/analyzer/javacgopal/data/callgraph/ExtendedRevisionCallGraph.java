@@ -18,20 +18,24 @@
 
 package eu.fasten.analyzer.javacgopal.data.callgraph;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Int;
 
 public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
@@ -40,6 +44,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     private final Map<FastenURI, Type> classHierarchy;
     private final Graph graph;
     private final String cgGenerator;
+
+    public String getCgGenerator() { return cgGenerator; }
 
     public Map<FastenURI, Type> getClassHierarchy() {
         return classHierarchy;
@@ -69,6 +75,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         public int size() {
             return resolvedCalls.size()+unresolvedCalls.size();
         }
+
     }
 
     /**
@@ -119,13 +126,80 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         this.cgGenerator = cgGenerator;
     }
 
-    public ExtendedRevisionCallGraph(final JSONObject json, final boolean ignoreConstraints,final String cgGenerator) throws JSONException,
-        URISyntaxException {
-        super(json, ignoreConstraints);
-        this.cgGenerator = cgGenerator;
-        //TODO load ERCG from JSON
-        this.graph = new Graph(new ArrayList<>(), new HashMap<>());
-        this.classHierarchy = new HashMap<>();
+    public ExtendedRevisionCallGraph(final JSONObject json) throws JSONException,
+        URISyntaxException, IOException {
+        super(json.getString("forge"),
+            json.getString("product"),
+            json.getString("version"),
+            getTimeStamp(json),
+            Dependency.depset(json.getJSONArray("depset")),
+            new ArrayList<>());
+
+        this.cgGenerator = json.getString("generator");
+
+        final var resolvedCalls = json.getJSONObject("graph").getJSONArray("resolvedCalls");
+        final List<int[]> resolvedCallsList = new ArrayList<>();
+
+        final int numberOfArcs = resolvedCalls.length();
+        for (int i = 0; i < numberOfArcs; i++) {
+            final JSONArray pair = resolvedCalls.getJSONArray(i);
+            final int[] arc = new int[]{(Integer) pair.get(0),(Integer) pair.get(1)};
+            resolvedCallsList.add(arc);
+        }
+
+        final var unresolvedCalls = json.getJSONObject("graph").getJSONArray("unresolvedCalls");
+        final Map<Pair<Integer, FastenURI>, Map<String, Integer>> unresolvedCallsMap = new HashMap<>();
+
+        final int numberOfUnresolvedArcs = unresolvedCalls.length();
+        for (int i = 0; i < numberOfUnresolvedArcs; i++) {
+            final JSONArray call = unresolvedCalls.getJSONArray(i);
+            unresolvedCallsMap.put(new MutablePair<>(Integer.parseInt(call.getString(0)),
+                FastenURI.create(call.getString(1))),
+                new ObjectMapper().readValue(call.getJSONObject(2).toString(),
+                    HashMap.class));
+        }
+        this.graph = new Graph(resolvedCallsList,unresolvedCallsMap);
+
+        Map<FastenURI, Type> chaMAP = new HashMap<>();
+        final var cha = json.getJSONObject("cha");
+        for (String key : cha.keySet()) {
+            final var typeURI = FastenURI.create(key);
+            var typeJSON = cha.getJSONObject(key);
+            var methodsJson = typeJSON.getJSONObject("methods");
+            Map<Integer,FastenURI> methodsMap = new HashMap();
+            for (String methodKey : methodsJson.keySet()) {
+                methodsMap.put(Integer.parseInt(methodKey),
+                FastenURI.create(methodsJson.getString(methodKey)));
+            }
+            var source = typeJSON.getString("sourceFile");
+
+            var superClassesJSON = typeJSON.getJSONArray("superClasses");
+            var numberOfSuperClasses = superClassesJSON.length();
+            LinkedList<FastenURI> superClasses = new LinkedList<>();
+            for (int i = 0; i < numberOfSuperClasses; i++) {
+                superClasses.add(FastenURI.create(superClassesJSON.getString(i)));
+            }
+
+            var superInterfacesJSON = typeJSON.getJSONArray("superInterfaces");
+            var numberOfsuperInterfaces = superInterfacesJSON.length();
+            List<FastenURI> superInterfaces = new ArrayList<>();
+            for (int i = 0; i < numberOfsuperInterfaces; i++) {
+                superInterfaces.add(FastenURI.create(superInterfacesJSON.getString(i)));
+            }
+            final var type = new Type(source,methodsMap,superClasses,superInterfaces);
+            chaMAP.put(typeURI,type);
+        }
+        this.classHierarchy = chaMAP;
+
+    }
+
+    private static long getTimeStamp(JSONObject json) {
+        try {
+            return json.getLong("timestamp");
+        } catch (final JSONException exception) {
+            logger.warn("No timestamp provided: assuming -1");
+            return -1;
+        }
     }
 
     public static ExtendedRevisionCallGraph createWithOPAL(final String forge, final MavenCoordinate coordinate,
@@ -173,19 +247,23 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         result.put("version", version);
         if (timestamp >= 0) result.put("timestamp", timestamp);
         result.put("depset", Dependency.toJSON(depset));
-        result.put("Generator", cgGenerator);
+        result.put("generator", cgGenerator);
         final var graphJSON = new JSONObject();
         final var resolvedCallsArray = new JSONArray();
         for (final var entry : graph.resolvedCalls) {
             resolvedCallsArray.put(entry);
         }
-        final var unresolvedCallsObject = new JSONObject();
+        final var unresolvedCallsObject = new JSONArray();
         for (final var entry : graph.unresolvedCalls.entrySet()) {
-            unresolvedCallsObject.put(Arrays.toString(new String[]{entry.getKey().getKey().toString(), entry.getKey().getValue().toString()}), new JSONObject(entry.getValue()));
+            final var call = new JSONArray();
+            call.put(entry.getKey().getKey().toString());
+            call.put(entry.getKey().getValue().toString());
+            call.put(new JSONObject(entry.getValue()));
+            unresolvedCallsObject.put(call);
         }
 
         graphJSON.put("resolvedCalls", resolvedCallsArray);
-        graphJSON.put("unrisolvedCalls",unresolvedCallsObject);
+        graphJSON.put("unresolvedCalls",unresolvedCallsObject);
         result.put("graph", graphJSON);
 
         final var chaJSON = new JSONObject();
@@ -194,9 +272,10 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             final var type = entry.getValue();
             final var typeJSON = new JSONObject();
 
-            typeJSON.put("methods", toListOfString(type.methods));
+            typeJSON.put("methods", toMapOfString(type.methods));
             typeJSON.put("superClasses", toListOfString(type.superClasses));
             typeJSON.put("superInterfaces", toListOfString(type.superInterfaces));
+            typeJSON.put("sourceFile", type.sourceFileName);
 
             chaJSON.put(entry.getKey().toString(), typeJSON);
         }
@@ -206,13 +285,11 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         return result;
     }
 
-    public static List<List<String>> toListOfString(final Map<Integer, FastenURI> map) {
-        final List<List<String>> methods = new ArrayList<>();
+    public static Map<Integer,String> toMapOfString(final Map<Integer, FastenURI> map) {
+        final Map<Integer,String> methods = new HashMap<>();
         for (final var entry : map.entrySet()) {
-            final List<String> method = new ArrayList<>();
-            method.add(entry.getKey().toString());
-            method.add(entry.getValue().toString());
-            methods.add(method);
+
+            methods.put(entry.getKey(),entry.getValue().toString());
         }
         return methods;
     }
@@ -236,7 +313,6 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     }
 
     public void sortResolvedCalls() {
-//        this.graph.sort(Comparator.comparing(o -> (o[0] + o[1])));
         List<int[]> sortedList = new ArrayList<>(this.graph.resolvedCalls);
         Collections.sort(sortedList, (o1, o2) -> (Integer.toString(o1[0])+ o1[1]).compareTo(o2[0] +Integer.toString(o2[1])));
         this.graph.resolvedCalls.clear();

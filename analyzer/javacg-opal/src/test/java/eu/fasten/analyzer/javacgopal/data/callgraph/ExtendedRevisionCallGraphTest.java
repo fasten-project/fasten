@@ -20,21 +20,23 @@ package eu.fasten.analyzer.javacgopal.data.callgraph;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Arrays;
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.core.data.FastenJavaURI;
+import org.json.JSONObject;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 public class ExtendedRevisionCallGraphTest {
+    static ExtendedRevisionCallGraph cg;
+    static String cgString;
 
-    @Test
-    public void testToJSON() {
-
+    @BeforeClass
+    public static void generateCallGraph() {
         /**
          * package name.space;
          *
@@ -58,61 +60,51 @@ public class ExtendedRevisionCallGraphTest {
          *     }
          * }
          */
-        final var partialCG = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleFirst.class").getFile()));
-
-        final var cg = ExtendedRevisionCallGraph.createWithOPAL("mvn",
-                new MavenCoordinate("diff","example","0.0.1"),
+        cg = ExtendedRevisionCallGraph.createWithOPAL("mvn",
+                new MavenCoordinate("diff", "example", "0.0.1"),
                 1574072773,
-                partialCG);
+                new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleFirst.class").getFile())));
 
-        cg.sortResolvedCalls();
-        assertEquals(
-                cg.toJSON().toString(),
-                "{\"product\":\"diff.example\"," +
-                        "\"forge\":\"mvn\"," +
-                        "\"depset\":[]," +
-                        "\"version\":\"0.0.1\"," +
-                        "\"cha\":{" +
-                            "\"/name.space/DiffExampleFirst\":{" +
-                                "\"methods\":[" +
-                                    "[\"0\",\"/name.space/DiffExampleFirst.DiffExampleFirst()%2Fjava.lang%2FVoid\"]," +
-                                    "[\"1\",\"/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoid\"]," +
-                                    "[\"2\",\"/name.space/DiffExampleFirst.b()%2Fjava.lang%2FVoid\"]," +
-                                    "[\"3\",\"/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoid\"]," +
-                                    "[\"4\",\"/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoid\"]" +
-                                "]," +
-                        "\"superInterfaces\":[]," +
-                        "\"superClasses\":[\"/java.lang/Object\"]}}," +
-                        "\"graph\":{" +
-                            "\"resolvedCalls\":[" +
-                                "[1,2]," +
-                                "[2,3]," +
-                                "[3,4]" +
-                            "]," +
-                            "\"unrisolvedCalls\":{" +
-                                "\"[0, ///java.lang/Object.Object()Void]\":{\"invokespecial\":1}}" +
-                            "}," +
-                        "\"timestamp\":1574072773," +
-                        "\"Generator\":\"OPAL\"}"
+        cgString = "{\"product\":\"diff.example\"," +
+                "\"forge\":\"mvn\"," +
+                "\"generator\":\"OPAL\"," +
+                "\"depset\":[]," +
+                "\"version\":\"0.0.1\"," +
+                "\"cha\":{" +
+                "\"/name.space/DiffExampleFirst\":{" +
+                "\"methods\":{" +
+                "\"0\":\"/name.space/DiffExampleFirst.DiffExampleFirst()%2Fjava.lang%2FVoid\"," +
+                "\"1\":\"/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoid\"," +
+                "\"2\":\"/name.space/DiffExampleFirst.b()%2Fjava.lang%2FVoid\"," +
+                "\"3\":\"/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoid\"," +
+                "\"4\":\"/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoid\"" +
+                "}," +
+                "\"superInterfaces\":[]," +
+                "\"sourceFile\":\"DiffExampleFirst.java\"," +
+                "\"superClasses\":[\"/java.lang/Object\"]}" +
+                "}," +
+                "\"graph\":{" +
+                "\"resolvedCalls\":[" +
+                "[1,2]," +
+                "[2,3]," +
+                "[3,4]" +
+                "]," +
+                "\"unresolvedCalls\":[[\"0\",\"///java.lang/Object.Object()Void\",{\"invokespecial\":1}]]}," +
+                "\"timestamp\":1574072773}";
+    }
 
-        );
+    @Test
+    public void testToJSON() {
 
-//        var g = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("CallBack").getFile()));
-//        var s = new ExtendedRevisionCallGraph("mvn",
-//                "DiffExample",
-//                "1.7.29",
-//                1574072773,
-//                Arrays.asList(),
-//                g.toURIGraph(),
-//                PartialCallGraph.toURIHierarchy(g.getClassHierarchy()));
+        assertEquals(cgString, cg.toJSON().toString());
 
     }
 
     @Test
-    public void create() throws FileNotFoundException {
+    public void testCreateWithOPAL() throws FileNotFoundException {
 
         //tests both signature of method create of Extended revision call graph.
-        var extendedRevisionCallGraph = ExtendedRevisionCallGraph.createWithOPAL("mvn",
+        final var ercg1 = ExtendedRevisionCallGraph.createWithOPAL("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
                 1574072773,
                 new PartialCallGraph(
@@ -120,13 +112,12 @@ public class ExtendedRevisionCallGraphTest {
                 )
         );
 
-        assertSLF4j(extendedRevisionCallGraph);
+        assertSLF4j(ercg1);
 
-        var cg = ExtendedRevisionCallGraph.createWithOPAL("mvn",
+        final var ercg2 = ExtendedRevisionCallGraph.createWithOPAL("mvn",
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
 
-        assertSLF4j(cg);
-
+        assertSLF4j(ercg2);
 
     }
 
@@ -141,4 +132,29 @@ public class ExtendedRevisionCallGraphTest {
         assertNotEquals(0, cg.getGraph().size());
     }
 
+    @Test
+    public void testExtendedRevisionCallGraph() throws URISyntaxException, IOException {
+
+        final var cgFromJSON = new ExtendedRevisionCallGraph(new JSONObject(cgString));
+
+        assertEquals("mvn", cgFromJSON.forge);
+        assertEquals("diff.example", cgFromJSON.product);
+        assertEquals("0.0.1", cgFromJSON.version);
+        assertEquals(1574072773, cgFromJSON.timestamp);
+        assertEquals("OPAL", cgFromJSON.getCgGenerator());
+        assertEquals(0, cgFromJSON.depset.size());
+        assertArrayEquals(new int[]{1, 2}, cgFromJSON.getGraph().getResolvedCalls().get(0));
+        assertArrayEquals(new int[]{2, 3}, cgFromJSON.getGraph().getResolvedCalls().get(1));
+        assertArrayEquals(new int[]{3, 4}, cgFromJSON.getGraph().getResolvedCalls().get(2));
+
+        assertTrue(cgFromJSON.getGraph().getUnresolvedCalls().equals(cg.getGraph().getUnresolvedCalls()));
+
+        for (final var entry : cgFromJSON.getClassHierarchy().entrySet()) {
+            assertTrue(cg.getClassHierarchy().containsKey(entry.getKey()));
+            assertTrue(cg.getClassHierarchy().get(entry.getKey()).getMethods().equals(entry.getValue().getMethods()));
+            assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSourceFileName(), entry.getValue().getSourceFileName());
+            assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSuperClasses(), (entry.getValue().getSuperClasses()));
+            assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSuperInterfaces(), (entry.getValue().getSuperInterfaces()));
+        }
+    }
 }
