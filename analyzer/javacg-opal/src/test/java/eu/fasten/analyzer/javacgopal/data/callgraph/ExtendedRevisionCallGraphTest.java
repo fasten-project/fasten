@@ -64,6 +64,7 @@ public class ExtendedRevisionCallGraphTest {
                 new MavenCoordinate("diff", "example", "0.0.1"),
                 1574072773,
                 new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleFirst.class").getFile())));
+        cg.sortResolvedCalls();
 
         cgString = "{\"product\":\"diff.example\"," +
                 "\"forge\":\"mvn\"," +
