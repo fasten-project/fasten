@@ -22,6 +22,11 @@ import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "JavaCGWala")
@@ -61,11 +66,15 @@ public class Main implements Runnable {
         String mavenCoordStr;
     }
 
+    private static Logger logger = LoggerFactory.getLogger(Main.class);
+
     /**
      * Runs Wala Analyzer.
      */
     public void run() {
+        final NumberFormat timeFormatter = new DecimalFormat("#0.000");
         MavenCoordinate mavenCoordinate;
+
         if (this.exclusive.mavenCoordStr != null) {
             mavenCoordinate = MavenCoordinate.fromString(this.exclusive.mavenCoordStr);
         } else {
@@ -76,7 +85,10 @@ public class Main implements Runnable {
 
         PartialCallGraph revisionCallGraph = null;
         try {
+            logger.info("Generating call graph for the Maven coordinate using WALA: {}", mavenCoordinate.getCoordinate());
+            long startTime = System.currentTimeMillis();
             revisionCallGraph = CallGraphConstructor.build(mavenCoordinate);
+            logger.info("Generated the call graph in {} seconds.", timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
