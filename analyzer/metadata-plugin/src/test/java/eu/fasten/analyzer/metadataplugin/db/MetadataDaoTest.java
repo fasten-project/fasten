@@ -18,18 +18,18 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.Callables;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.Dependencies;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.Edges;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.Files;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.PackageVersions;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.Packages;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.records.CallablesRecord;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.records.DependenciesRecord;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.records.EdgesRecord;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.records.FilesRecord;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.records.PackageVersionsRecord;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.records.PackagesRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Callables;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Dependencies;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.CallablesRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.DependenciesRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.EdgesRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.FilesRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.PackageVersionsRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.PackagesRecord;
 import org.jooq.DSLContext;
 import org.jooq.InsertResultStep;
 import org.jooq.InsertValuesStep3;

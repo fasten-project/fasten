@@ -18,12 +18,12 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.Edges;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.Callables;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.Dependencies;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.Files;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.PackageVersions;
-import eu.fasten.analyzer.metadataplugin.db.jooq.tables.Packages;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Callables;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Dependencies;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.json.JSONObject;
