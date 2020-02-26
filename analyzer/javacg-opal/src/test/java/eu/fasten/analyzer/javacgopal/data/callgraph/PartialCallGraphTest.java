@@ -29,6 +29,8 @@ import java.util.*;
 import org.junit.Test;
 import org.junit.BeforeClass;
 import org.opalj.br.analyses.Project;
+import scala.collection.JavaConversions;
+import scala.collection.JavaConverters;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -39,7 +41,7 @@ public class PartialCallGraphTest {
 
     static PartialCallGraph singleSourceToTarget,lambdaCallGraph;
     static File jarFile;
-    static Project artifactInOpalFormat;
+    static Project<?> artifactInOpalFormat;
 
     @BeforeClass
     public static void generateCallGraph() {
@@ -66,7 +68,6 @@ public class PartialCallGraphTest {
         singleSourceToTarget = new PartialCallGraph(jarFile);
         artifactInOpalFormat = Project.apply(jarFile);
 
-
     }
 
     @Test
@@ -82,8 +83,7 @@ public class PartialCallGraphTest {
 
     @Test
     public void testFindEntryPoints() {
-
-        var entryPoints = PartialCallGraph.findEntryPoints(artifactInOpalFormat.allMethodsWithBody());
+        var entryPoints = PartialCallGraph.findEntryPoints(JavaConverters.asJavaIterable(artifactInOpalFormat.allMethodsWithBody()));
         assertEquals(3, entryPoints.size());
         assertEquals("public void <init>()", entryPoints.head().toString());
         assertEquals("public static void sourceMethod()", entryPoints.tail().head().toString());

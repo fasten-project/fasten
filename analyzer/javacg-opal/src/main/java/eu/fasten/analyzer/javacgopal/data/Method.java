@@ -29,7 +29,7 @@ import org.opalj.br.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import scala.collection.JavaConversions;
+import scala.collection.JavaConverters;
 
 /**
  * Analyze OPAL methods.
@@ -45,7 +45,7 @@ public class Method {
      * @param clas The class of the method in org.opalj.br.ReferenceType format.
      * @param method Name of the method in String.
      * @param descriptor Descriptor of the method in org.opalj.br.MethodDescriptor format.
-     * @return @return Canonicalized Schemeless eu.fasten.core.data.FastenURI of the given method.
+     * @return Canonicalized Schemeless eu.fasten.core.data.FastenURI of the given method.
      */
     public static FastenURI toCanonicalSchemelessURI(final String product, final ReferenceType clas, final String method, final MethodDescriptor descriptor) {
         final FastenJavaURI javaURI;
@@ -54,7 +54,7 @@ public class Method {
                     getPackageName(clas),
                     getClassName(clas),
                     getMethodName(getClassName(clas), method),
-                    getParametersURI(JavaConversions.seqAsJavaList(descriptor.parameterTypes())),
+                    getParametersURI(JavaConverters.seqAsJavaList(descriptor.parameterTypes())),
                     getTypeURI(descriptor.returnType())
                 ).canonicalize();
 

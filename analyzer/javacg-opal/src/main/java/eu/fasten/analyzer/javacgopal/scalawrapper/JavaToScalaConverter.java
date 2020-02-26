@@ -20,7 +20,9 @@ package eu.fasten.analyzer.javacgopal.scalawrapper;
 
 import org.opalj.br.Method;
 
+import org.opalj.br.ObjectType;
 import scala.Function0;
+import scala.Function1;
 import scala.collection.Iterable;
 import scala.collection.Map;
 import scala.runtime.AbstractFunction0;
@@ -62,8 +64,8 @@ public final class JavaToScalaConverter {
      * @param lambdaFunction A java Lambda in order to do things on scala.
      * @return Execution of java Lambda as scala function1.
      */
-    public static AbstractFunction1 asScalaFunction1(final ScalaFunction1 lambdaFunction) {
-        return new AbstractFunction1() {
+    public static Function1<ObjectType,Object> asScalaFunction1(final ScalaFunction1 lambdaFunction) {
+        return new Function1() {
 
             @Override
             public Object apply(Object v1) {

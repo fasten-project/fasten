@@ -23,8 +23,6 @@ import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.*;
 
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -43,16 +41,6 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     private final Graph graph;
     private final String cgGenerator;
 
-    public String getCgGenerator() { return cgGenerator; }
-
-    public Map<FastenURI, Type> getClassHierarchy() {
-        return classHierarchy;
-    }
-
-    public Graph getGraph() {
-        return graph;
-    }
-
     public static class Graph {
 
         private final List<int[]> resolvedCalls;
@@ -67,7 +55,6 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
             final var resolvedCalls = graph.getJSONArray("resolvedCalls");
             this.resolvedCalls = new ArrayList<>();
-
             final int numberOfArcs = resolvedCalls.length();
             for (int i = 0; i < numberOfArcs; i++) {
                 final var pair = resolvedCalls.getJSONArray(i);
@@ -76,7 +63,6 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
             final var unresolvedCalls = graph.getJSONArray("unresolvedCalls");
             this.unresolvedCalls = new HashMap<>();
-
             final int numberOfUnresolvedArcs = unresolvedCalls.length();
             for (int i = 0; i < numberOfUnresolvedArcs; i++) {
                 final var call = unresolvedCalls.getJSONArray(i);
@@ -113,17 +99,11 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             return result;
         }
 
-        public JSONObject toJSON(){
-            return toJSON(this);
-        }
+        public JSONObject toJSON(){ return toJSON(this); }
 
-        public List<int[]> getResolvedCalls() {
-            return resolvedCalls;
-        }
+        public List<int[]> getResolvedCalls() { return resolvedCalls; }
 
-        public Map<Pair<Integer, FastenURI>, Map<String, Integer>> getUnresolvedCalls() {
-            return unresolvedCalls;
-        }
+        public Map<Pair<Integer, FastenURI>, Map<String, Integer>> getUnresolvedCalls() { return unresolvedCalls; }
 
         public int size() {
             return resolvedCalls.size() + unresolvedCalls.size();
@@ -178,7 +158,6 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             }
         }
 
-
         public JSONObject toJSON(final Type type){
 
             final var result = new JSONObject();
@@ -193,6 +172,22 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
         public JSONObject toJSON(){
             return toJSON(this);
+        }
+        public static Map<Integer, String> toMapOfString(final Map<Integer, FastenURI> map) {
+            final Map<Integer, String> methods = new HashMap<>();
+            for (final var entry : map.entrySet()) {
+
+                methods.put(entry.getKey(), entry.getValue().toString());
+            }
+            return methods;
+        }
+
+        public static List<String> toListOfString(final List<FastenURI> list) {
+            final List<String> result = new ArrayList<>();
+            for (final var fastenURI : list) {
+                result.add(fastenURI.toString());
+            }
+            return result;
         }
 
         public String getSourceFileName() {
@@ -223,8 +218,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         this.cgGenerator = cgGenerator;
     }
 
-    public ExtendedRevisionCallGraph(final JSONObject json) throws JSONException,
-        URISyntaxException, IOException {
+    public ExtendedRevisionCallGraph(final JSONObject json) throws JSONException {
+
         super(json.getString("forge"),
             json.getString("product"),
             json.getString("version"),
@@ -259,12 +254,10 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     public static ExtendedRevisionCallGraph createWithOPAL(final String forge, final MavenCoordinate coordinate,
                                                            final long timestamp) throws FileNotFoundException {
-
-        logger.info("Generating call graph using Opal ...");
         final var partialCallGraph = new PartialCallGraph(
             MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate()).orElseThrow(RuntimeException::new)
         );
-        logger.info("Call graph generation is done, creating extended revision call graph ...");
+
         return new ExtendedRevisionCallGraph(forge,
             coordinate.getProduct(),
             coordinate.getVersionConstraint(),
@@ -322,34 +315,6 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     }
 
-
-    public static Map<Integer, String> toMapOfString(final Map<Integer, FastenURI> map) {
-        final Map<Integer, String> methods = new HashMap<>();
-        for (final var entry : map.entrySet()) {
-
-            methods.put(entry.getKey(), entry.getValue().toString());
-        }
-        return methods;
-    }
-
-    public static List<String> toListOfString(final List<FastenURI> list) {
-        final List<String> result = new ArrayList<>();
-        for (final var fastenURI : list) {
-            result.add(fastenURI.toString());
-        }
-        return result;
-    }
-
-    /**
-     * Note that this is a temporary method for finding a Maven coordinate that generates an empty
-     * call graph. Later on, this method might be helpful for not sending an empty call graph.
-     *
-     * @return boolean
-     */
-    public boolean isCallGraphEmpty() {
-        return this.graph.resolvedCalls.isEmpty() && this.graph.unresolvedCalls.isEmpty();
-    }
-
     public void sortResolvedCalls() {
         List<int[]> sortedList = new ArrayList<>(this.graph.resolvedCalls);
         Collections.sort(sortedList, (o1, o2) -> (Integer.toString(o1[0]) + o1[1]).compareTo(o2[0] + Integer.toString(o2[1])));
@@ -357,5 +322,16 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         this.graph.resolvedCalls.addAll(sortedList);
     }
 
+    public boolean isCallGraphEmpty() { return this.graph.resolvedCalls.isEmpty() && this.graph.unresolvedCalls.isEmpty(); }
+
+    public String getCgGenerator() { return cgGenerator; }
+
+    public Map<FastenURI, Type> getClassHierarchy() {
+        return classHierarchy;
+    }
+
+    public Graph getGraph() {
+        return graph;
+    }
 
 }
