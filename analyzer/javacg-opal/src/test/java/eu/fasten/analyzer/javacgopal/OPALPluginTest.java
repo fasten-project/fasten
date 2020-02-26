@@ -117,9 +117,29 @@ public class OPALPluginTest {
                 "}");
 
         opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()), false);
+        JSONObject error = new JSONObject(opalPlugin.getPluginError());
 
-        assertEquals(FileNotFoundException.class.getSimpleName(), opalPlugin.getPluginError());
+        assertEquals(FileNotFoundException.class.getSimpleName(), error.get("type"));
+        assertEquals(opalPlugin.getClass().getSimpleName(), error.get("plugin"));
         assertFalse(opalPlugin.recordProcessSuccessful());
+    }
+
+    @Test
+    public void testNullPointerException() {
+        JSONObject mvnCoordinate = new JSONObject("{\n" +
+                "    \"groupId\": \"ch.epfl.scala\",\n" +
+                "    \"artifactId\": \"collection-strawman_0.6\",\n" +
+                "    \"version\": \"0.8.0\",\n" +
+                "    \"date\":\"1521511260\"\n" +
+                "}");
+
+//        var cg = opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", mvnCoordinate.toString()),
+//                false);
+//        cg.toJSON();
+
+        // TODO: An assert is pointless here. Because we need to find the root cause of the NullPointerException in PartialCallGraph class.
+        // This test shows that FASTEN URIs of a type's methods can be null! Check out the method toListOfString in ExtendedRevisionCallGraph class.
+        // The described problem is patched at the very high level with a if block!
     }
 
     @Test

@@ -174,6 +174,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             for (int i = 0; i < numberOfsuperInterfaces; i++) {
                 this.superInterfaces.add(FastenURI.create(superInterfacesJSON.getString(i)));
             }
+
         }
 
         public JSONObject toJSON(final Type type){

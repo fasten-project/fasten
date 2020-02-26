@@ -19,3 +19,5 @@ spec:
           args: ["-k", "kafka-0.kafka-headless.codefeedr:9092"]
           ports:
             - containerPort: 3010
+      nodeSelector:
+        fasten.node: "true"
