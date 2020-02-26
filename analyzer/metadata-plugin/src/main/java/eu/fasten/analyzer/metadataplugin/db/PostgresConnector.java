@@ -18,38 +18,45 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
-import org.jooq.DSLContext;
-import org.jooq.SQLDialect;
-import org.jooq.impl.DSL;
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 
 public class PostgresConnector {
 
     public static DSLContext getDSLContext() throws SQLException, IOException {
-        var connection = getLocalConnection();
+        var connection = getConnection();
         return DSL.using(connection, SQLDialect.POSTGRES);
     }
 
-    public static Connection getLocalConnection() throws SQLException, IOException {
+    /**
+     * Create a connection to the database specified in 'postgres.properties'.
+     *
+     * @return SQL Connection object
+     * @throws SQLException if failed to set up connection
+     * @throws IOException  if failed to read the 'postgres.properties' file
+     */
+    public static Connection getConnection() throws SQLException, IOException {
         var dbProps = getPostgresProperties();
         return DriverManager.getConnection(
-                dbProps.getProperty("dbUrl"), dbProps.getProperty("dbUser"), dbProps.getProperty("dbPass"));
+                dbProps.getProperty("dbUrl"), dbProps.getProperty("dbUser"),
+                dbProps.getProperty("dbPass"));
     }
 
     private static Properties getPostgresProperties() throws IOException {
-        try (var resource = PostgresConnector.class.getClassLoader().getResourceAsStream("postgres.properties")) {
+        try (var resource = PostgresConnector.class.getClassLoader()
+                .getResourceAsStream("postgres.properties")) {
             var connectionsProps = new Properties();
             if (resource != null) {
                 connectionsProps.load(resource);
                 return connectionsProps;
             } else {
-                throw new FileNotFoundException("Cannot find 'postgres.properties' file");
+                throw new IOException("Cannot find 'postgres.properties' file");
             }
         }
     }

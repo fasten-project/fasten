@@ -35,7 +35,7 @@ public class PostgresConnectorTest {
 //    }
 //
 //    @Test
-//    public void getLocalConnectionTest() throws SQLException, IOException {
+//    public void getConnectionTest() throws SQLException, IOException {
 //        var connection = PostgresConnector.getLocalConnection();
 //        var metaData = connection.getMetaData();
 //        assertEquals("jdbc:postgresql:postgres", metaData.getURL());

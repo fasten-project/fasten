@@ -51,7 +51,8 @@ public class MetadataPluginTest {
 
     @Test
     public void descriptionTest() {
-        var description = "Metadata plugin. Connects to a Kafka topic and populates metadata database with consumed data.";
+        var description = "Metadata plugin. "
+                + "Consumes kafka topic and populates metadata database with consumed data.";
         assertEquals(description, metadataPlugin.description());
     }
 }

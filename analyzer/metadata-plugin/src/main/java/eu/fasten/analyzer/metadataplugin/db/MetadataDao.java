@@ -18,19 +18,18 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Callables;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Dependencies;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages;
-import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.json.JSONObject;
-
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import org.jooq.DSLContext;
+import org.jooq.JSONB;
+import org.json.JSONObject;
 
 public class MetadataDao {
 
@@ -49,9 +48,11 @@ public class MetadataDao {
      * @param createdAt   Timestamp when package was created
      * @return ID of the new record
      */
-    public long insertPackage(String packageName, String projectName, String repository, Timestamp createdAt) {
+    public long insertPackage(String packageName, String projectName, String repository,
+                              Timestamp createdAt) {
         var resultRecord = context.insertInto(Packages.PACKAGES,
-                Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.PROJECT_NAME, Packages.PACKAGES.REPOSITORY, Packages.PACKAGES.CREATED_AT)
+                Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.PROJECT_NAME,
+                Packages.PACKAGES.REPOSITORY, Packages.PACKAGES.CREATED_AT)
                 .values(packageName, projectName, repository, createdAt)
                 .returning(Packages.PACKAGES.ID).fetchOne();
         return resultRecord.getValue(Packages.PACKAGES.ID);
@@ -67,14 +68,19 @@ public class MetadataDao {
      * @return List of IDs of the new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertPackages(List<String> packageNames, List<String> projectNames, List<String> repositories, List<Timestamp> createdAt) throws IllegalArgumentException {
-        if (packageNames.size() != projectNames.size() || projectNames.size() != repositories.size() || repositories.size() != createdAt.size()) {
+    public List<Long> insertPackages(List<String> packageNames, List<String> projectNames,
+                                     List<String> repositories, List<Timestamp> createdAt)
+            throws IllegalArgumentException {
+        if (packageNames.size() != projectNames.size()
+                || projectNames.size() != repositories.size()
+                || repositories.size() != createdAt.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = packageNames.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertPackage(packageNames.get(i), projectNames.get(i), repositories.get(i), createdAt.get(i));
+            long result = insertPackage(packageNames.get(i), projectNames.get(i),
+                    repositories.get(i), createdAt.get(i));
             recordIds.add(result);
         }
         return recordIds;
@@ -90,11 +96,14 @@ public class MetadataDao {
      * @param metadata    Metadata of the package version
      * @return ID of the new record
      */
-    public long insertPackageVersion(long packageId, String cgGenerator, String version, Timestamp createdAt, JSONObject metadata) {
+    public long insertPackageVersion(long packageId, String cgGenerator, String version,
+                                     Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = JSONB.valueOf(metadata.toString());
         var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
-                PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
-                PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
+                PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID,
+                PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
+                PackageVersions.PACKAGE_VERSIONS.VERSION,
+                PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
                 PackageVersions.PACKAGE_VERSIONS.METADATA)
                 .values(packageId, cgGenerator, version, createdAt, metadataJsonb)
                 .returning(PackageVersions.PACKAGE_VERSIONS.ID).fetchOne();
@@ -112,14 +121,19 @@ public class MetadataDao {
      * @return List of IDs of the new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertPackageVersions(long packageId, List<String> cgGenerators, List<String> versions, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalArgumentException {
-        if (cgGenerators.size() != versions.size() || versions.size() != createdAt.size() || createdAt.size() != metadata.size()) {
+    public List<Long> insertPackageVersions(long packageId, List<String> cgGenerators,
+                                            List<String> versions, List<Timestamp> createdAt,
+                                            List<JSONObject> metadata)
+            throws IllegalArgumentException {
+        if (cgGenerators.size() != versions.size() || versions.size() != createdAt.size()
+                || createdAt.size() != metadata.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = cgGenerators.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertPackageVersion(packageId, cgGenerators.get(i), versions.get(i), createdAt.get(i), metadata.get(i));
+            long result = insertPackageVersion(packageId, cgGenerators.get(i), versions.get(i),
+                    createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;
@@ -135,7 +149,8 @@ public class MetadataDao {
      */
     public long insertDependency(long packageId, long dependencyId, String versionRange) {
         var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
-                Dependencies.DEPENDENCIES.PACKAGE_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)
+                Dependencies.DEPENDENCIES.PACKAGE_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID,
+                Dependencies.DEPENDENCIES.VERSION_RANGE)
                 .values(packageId, dependencyId, versionRange)
                 .returning(Dependencies.DEPENDENCIES.PACKAGE_ID).fetchOne();
         return resultRecord.getValue(Dependencies.DEPENDENCIES.PACKAGE_ID);
@@ -150,14 +165,18 @@ public class MetadataDao {
      * @return List of IDs of the packages (packageIds)
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertDependencies(List<Long> packageIds, List<Long> dependenciesIds, List<String> versionRanges) throws IllegalArgumentException {
-        if (packageIds.size() != dependenciesIds.size() || dependenciesIds.size() != versionRanges.size()) {
+    public List<Long> insertDependencies(List<Long> packageIds, List<Long> dependenciesIds,
+                                         List<String> versionRanges)
+            throws IllegalArgumentException {
+        if (packageIds.size() != dependenciesIds.size()
+                || dependenciesIds.size() != versionRanges.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = packageIds.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertDependency(packageIds.get(i), dependenciesIds.get(i), versionRanges.get(i));
+            long result = insertDependency(packageIds.get(i), dependenciesIds.get(i),
+                    versionRanges.get(i));
             recordIds.add(result);
         }
         return recordIds;
@@ -166,17 +185,20 @@ public class MetadataDao {
     /**
      * Inserts a record in the 'files' table in the database.
      *
-     * @param packageId  ID of the package (version) where the file belongs (references 'package_versions.id')
+     * @param packageId  ID of the package version where the file belongs
+     *                   (references 'package_versions.id')
      * @param namespaces Namespaces of the file
      * @param sha256     SHA256 of the file
      * @param createdAt  Timestamp when the file was created
      * @param metadata   Metadata of the file
      * @return ID of the new record
      */
-    public long insertFile(long packageId, String namespaces, byte[] sha256, Timestamp createdAt, JSONObject metadata) {
+    public long insertFile(long packageId, String namespaces, byte[] sha256, Timestamp createdAt,
+                           JSONObject metadata) {
         var metadataJsonb = JSONB.valueOf(metadata.toString());
         var resultRecord = context.insertInto(Files.FILES,
-                Files.FILES.PACKAGE_ID, Files.FILES.NAMESPACES, Files.FILES.SHA256, Files.FILES.CREATED_AT, Files.FILES.METADATA)
+                Files.FILES.PACKAGE_ID, Files.FILES.NAMESPACES, Files.FILES.SHA256,
+                Files.FILES.CREATED_AT, Files.FILES.METADATA)
                 .values(packageId, namespaces, sha256, createdAt, metadataJsonb)
                 .returning(Files.FILES.ID).fetchOne();
         return resultRecord.getValue(Files.FILES.ID);
@@ -193,14 +215,18 @@ public class MetadataDao {
      * @return List of IDs of new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertFiles(long packageId, List<String> namespacesList, List<byte[]> sha256s, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalArgumentException {
-        if (namespacesList.size() != sha256s.size() || sha256s.size() != createdAt.size() || createdAt.size() != metadata.size()) {
+    public List<Long> insertFiles(long packageId, List<String> namespacesList,
+                                  List<byte[]> sha256s, List<Timestamp> createdAt,
+                                  List<JSONObject> metadata) throws IllegalArgumentException {
+        if (namespacesList.size() != sha256s.size() || sha256s.size() != createdAt.size()
+                || createdAt.size() != metadata.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = namespacesList.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertFile(packageId, namespacesList.get(i), sha256s.get(i), createdAt.get(i), metadata.get(i));
+            long result = insertFile(packageId, namespacesList.get(i), sha256s.get(i),
+                    createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;
@@ -215,10 +241,12 @@ public class MetadataDao {
      * @param metadata  Metadata of the callable
      * @return ID of the new record
      */
-    public long insertCallable(long fileId, String fastenUri, Timestamp createdAt, JSONObject metadata) {
+    public long insertCallable(long fileId, String fastenUri, Timestamp createdAt,
+                               JSONObject metadata) {
         var metadataJsonb = JSONB.valueOf(metadata.toString());
         var resultRecord = context.insertInto(Callables.CALLABLES,
-                Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.METADATA)
+                Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI,
+                Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.METADATA)
                 .values(fileId, fastenUri, createdAt, metadataJsonb)
                 .returning(Callables.CALLABLES.ID).fetchOne();
         return resultRecord.getValue(Callables.CALLABLES.ID);
@@ -234,14 +262,17 @@ public class MetadataDao {
      * @return List of IDs of the new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertCallables(long fileId, List<String> fastenUris, List<Timestamp> createdAt, List<JSONObject> metadata) throws IllegalArgumentException {
+    public List<Long> insertCallables(long fileId, List<String> fastenUris,
+                                      List<Timestamp> createdAt, List<JSONObject> metadata)
+            throws IllegalArgumentException {
         if (fastenUris.size() != metadata.size() || metadata.size() != createdAt.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = fastenUris.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertCallable(fileId, fastenUris.get(i), createdAt.get(i), metadata.get(i));
+            long result = insertCallable(fileId, fastenUris.get(i), createdAt.get(i),
+                    metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;
@@ -273,7 +304,8 @@ public class MetadataDao {
      * @return List of IDs of source callables (sourceIds)
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertEdges(List<Long> sourceIds, List<Long> targetIds, List<JSONObject> metadata) throws IllegalArgumentException {
+    public List<Long> insertEdges(List<Long> sourceIds, List<Long> targetIds,
+                                  List<JSONObject> metadata) throws IllegalArgumentException {
         if (sourceIds.size() != targetIds.size() || targetIds.size() != metadata.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }

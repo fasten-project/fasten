@@ -21,19 +21,18 @@ package eu.fasten.analyzer.metadataplugin;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.json.JSONObject;
-import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.json.JSONObject;
+import org.pf4j.Extension;
+import org.pf4j.Plugin;
+import org.pf4j.PluginWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MetadataDatabasePlugin extends Plugin {
 
@@ -76,7 +75,8 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public String description() {
-            return "Metadata plugin. Connects to a Kafka topic and populates metadata database with consumed data.";
+            return "Metadata plugin. "
+                    + "Consumes kafka topic and populates metadata database with consumed data.";
         }
 
         @Override
