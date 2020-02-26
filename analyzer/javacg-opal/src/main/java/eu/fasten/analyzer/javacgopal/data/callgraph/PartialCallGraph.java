@@ -19,8 +19,8 @@
 package eu.fasten.analyzer.javacgopal.data.callgraph;
 
 import com.google.common.collect.Lists;
-import eu.fasten.analyzer.javacgopal.data.Method;
-import eu.fasten.analyzer.javacgopal.data.Type;
+import eu.fasten.analyzer.javacgopal.data.OPALMethod;
+import eu.fasten.analyzer.javacgopal.data.OPALType;
 import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
 
@@ -63,7 +63,7 @@ public class PartialCallGraph {
      *  Keys are {@link Pair} of Integers that indicate the source methods's id (available in the CHA)
      *  and a {@link FastenURI} of the target method. Values are a map between JVM call types and
      *  number of each call type for the corresponding edge */
-    private final Map<Pair<Integer, FastenURI>, Map<String, Integer>> unresolvedCalls;
+    private final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls;
 
     public PartialCallGraph(final File file) {
         logger.info("Generating call graph using OPAL ...");
@@ -82,20 +82,20 @@ public class PartialCallGraph {
     /** It creates a class hierarchy for the given call graph's artifact.
      *
      * @param cg {@link ComputedCallGraph}
-     * @return A Map of {@link ObjectType} and created {@link Type} for it.
-     * @implNote Inside {@link Type} all of the methods are indexed, it means one can use the ids
+     * @return A Map of {@link ObjectType} and created {@link OPALType} for it.
+     * @implNote Inside {@link OPALType} all of the methods are indexed, it means one can use the ids
      * assigned to each method instead of the method itself.
      */
-    private Map<ObjectType, Type> createCHA(final ComputedCallGraph cg) {
+    private Map<ObjectType, OPALType> createCHA(final ComputedCallGraph cg) {
 
         final var project = cg.callGraph().project();
         final AtomicInteger methodNum = new AtomicInteger();
-        final Map<ObjectType, Type> cha = new HashMap<>();
+        final Map<ObjectType, OPALType> cha = new HashMap<>();
         for (final var obj : sort(JavaConverters.asJavaIterable(project.allProjectClassFiles()))) {
             final var classFile = (ClassFile) obj;
             final var currentClass = classFile.thisType();
             final var methods = getMethodsMap(methodNum.get(), JavaConverters.asJavaIterable(classFile.methods()));
-            final var type = new Type(methods,
+            final var type = new OPALType(methods,
                 getSuperClasses(project.classHierarchy(), currentClass),
                 getSuperInterfaces(project.classHierarchy(), currentClass),
                 classFile.sourceFile().getOrElse(JavaToScalaConverter.asScalaFunction0OptionString("NotFound")));
@@ -115,7 +115,7 @@ public class PartialCallGraph {
      * the second one is the target method.
      */
     private List<int[]> getResolvedCalls(final ComputedCallGraph cg,
-                                         final Map<ObjectType, Type> cha)
+                                         final Map<ObjectType, OPALType> cha)
     {
         final Set<int[]> resultSet = new HashSet<>();
         for (final var source : JavaConverters.asJavaIterable(cg.callGraph().project().allMethods())) {
@@ -147,11 +147,11 @@ public class PartialCallGraph {
      * call types map's key is the name of JVM call type and the value is number of invocation
      * by this call type for this specific edge.
      */
-    private Map<Pair<Integer, FastenURI>, Map<String, Integer>> getUnresolvedCalls(final ComputedCallGraph cg,
-                                                                                   final Map<ObjectType, Type> cha)
+    private Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls(final ComputedCallGraph cg,
+                                                                                  final Map<ObjectType, OPALType> cha)
     {
         final var unresolvedCalls = cg.unresolvedMethodCalls();
-        final Map<Pair<Integer, FastenURI>, Map<String, Integer>> result = new HashMap<>();
+        final Map<Pair<Integer, FastenURI>, Map<String, String>> result = new HashMap<>();
 
         for (final var unresolvedCall : JavaConverters.asJavaIterable(unresolvedCalls)) {
             final var call = new MutablePair<>(
@@ -170,21 +170,21 @@ public class PartialCallGraph {
      *
      * @param result The result map that should be updated with the given call.
      * @param call Resolved or unresolved call.
-     * @param typeOfCall Type of JVM call: invodestatic, invokedynamic, invokevirtual, invokeinterface, invokespecial
+     * @param typeOfCall OPALType of JVM call: invodestatic, invokedynamic, invokevirtual, invokeinterface, invokespecial
      * @param <T> int[] if it's resolved call and {@link Pair} of Integer and {@link FastenURI} if unresolved.
      */
-    private <T> void putCall(final Map<T, Map<String, Integer>> result,
+    private <T> void putCall(final Map<T, Map<String, String>> result,
                              final T call,
                              final String typeOfCall)
     {
         if (result.containsKey(call)) {
             if (result.get(call).containsKey(typeOfCall)) {
-                result.get(call).put(typeOfCall, result.get(call).get(typeOfCall) + 1);
+                result.get(call).put(typeOfCall, String.valueOf((Integer.parseInt(result.get(call).get(typeOfCall)) + 1)));
             } else {
-                result.get(call).put(typeOfCall, 1);
+                result.get(call).put(typeOfCall, "1");
             }
         } else {
-            result.put(call, new HashMap<>(Map.of(typeOfCall, 1)));
+            result.put(call, new HashMap<>(Map.of(typeOfCall, "1")));
         }
     }
 
@@ -195,7 +195,7 @@ public class PartialCallGraph {
      */
     public static FastenURI getTargetURI(final UnresolvedMethodCall unresolvedCall) {
 
-        final var targetURI = Method.toCanonicalSchemelessURI(
+        final var targetURI = OPALMethod.toCanonicalSchemelessURI(
             null,
             unresolvedCall.calleeClass(),
             unresolvedCall.calleeName(),
@@ -319,10 +319,10 @@ public class PartialCallGraph {
 
     /** Converts all of the members of the classHierarchy to {@link FastenURI}.
      *
-     * @param classHierarchy Map<{@link ObjectType},{@link Type}>
+     * @param classHierarchy Map<{@link ObjectType},{@link OPALType}>
      * @return A {@link Map} of {@link FastenURI} as key and {@link ExtendedRevisionCallGraph.Type} as value.
      */
-    public static Map<FastenURI, ExtendedRevisionCallGraph.Type> asURIHierarchy(final Map<ObjectType, Type> classHierarchy) {
+    public static Map<FastenURI, ExtendedRevisionCallGraph.Type> asURIHierarchy(final Map<ObjectType, OPALType> classHierarchy) {
 
         final Map<FastenURI, ExtendedRevisionCallGraph.Type> result = new HashMap<>();
 
@@ -338,7 +338,7 @@ public class PartialCallGraph {
             }
 
             result.put(
-                Method.getTypeURI(aClass),
+                OPALMethod.getTypeURI(aClass),
                 new ExtendedRevisionCallGraph.Type(type.getSourceFileName(),
                     toURIMethods(type.getMethods()),
                     superClassesURIs,
@@ -352,7 +352,7 @@ public class PartialCallGraph {
     public static List<FastenURI> toURIInterfaces(final List<ObjectType> types) {
         final List<FastenURI> result = new ArrayList<>();
         for (final var aClass : types) {
-            result.add(Method.getTypeURI(aClass));
+            result.add(OPALMethod.getTypeURI(aClass));
         }
         return result;
     }
@@ -364,7 +364,7 @@ public class PartialCallGraph {
         final LinkedList<FastenURI> result = new LinkedList<>();
 
         types.foreach(JavaToScalaConverter.asScalaFunction1(
-            aClass -> result.add(Method.getTypeURI((ObjectType) aClass))));
+            aClass -> result.add(OPALMethod.getTypeURI((ObjectType) aClass))));
 
         return result;
     }
@@ -381,7 +381,7 @@ public class PartialCallGraph {
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
             result.put(entry.getValue(),
-                Method.toCanonicalSchemelessURI(
+                OPALMethod.toCanonicalSchemelessURI(
                     null,
                     method.declaringClassFile().thisType(),
                     method.name(),
@@ -407,7 +407,7 @@ public class PartialCallGraph {
         return false;
     }
 
-    public Map<Pair<Integer, FastenURI>, Map<String, Integer>> getUnresolvedCalls() { return this.unresolvedCalls; }
+    public Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls() { return this.unresolvedCalls; }
 
     public List<int[]> getResolvedCalls() {
         return this.resolvedCalls;

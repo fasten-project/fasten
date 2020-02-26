@@ -34,9 +34,9 @@ import scala.collection.JavaConverters;
 /**
  * Analyze OPAL methods.
  */
-public class Method {
+public class OPALMethod {
 
-    private static Logger logger = LoggerFactory.getLogger(Method.class);
+    private static Logger logger = LoggerFactory.getLogger(OPALMethod.class);
 
     /**
      * Converts a method to a Canonicalized Schemeless eu.fasten.core.data.FastenURI.
@@ -70,7 +70,7 @@ public class Method {
     }
 
     /**
-     * Find the String Method name that FastenURI supports.
+     * Find the String OPALMethod name that FastenURI supports.
      *
      * @param className Name of class that method belongs in String.
      * @param methodName Name of method in String.
@@ -102,7 +102,7 @@ public class Method {
     /**
      * Convert OPAL return types to FastenJavaURI.
      *
-     * @param returnType org.opalj.br.Type
+     * @param returnType org.opalj.br.OPALType
      * @return type in FastenJavaURI format.
      */
     public static FastenJavaURI getTypeURI(final org.opalj.br.Type returnType) {
@@ -163,7 +163,7 @@ public class Method {
      * Recursively figures out the OPAL types of parameters and convert them to FastenURI type
      * (class).
      *
-     * @param parameter OPAL parameter in org.opalj.br.Type format.
+     * @param parameter OPAL parameter in org.opalj.br.OPALType format.
      * @return String in eu.fasten.core.data.FastenURI format, for type of the given parameter.
      */
     public static String getClassName(final org.opalj.br.Type parameter) {

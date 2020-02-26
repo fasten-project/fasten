@@ -26,9 +26,9 @@ import org.opalj.collection.immutable.Chain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Type {
+public class OPALType {
 
-    private static Logger logger = LoggerFactory.getLogger(Type.class);
+    private static Logger logger = LoggerFactory.getLogger(OPALType.class);
 
     private final String sourceFileName;
     private final Map<Method, Integer> methods;
@@ -47,7 +47,7 @@ public class Type {
 
     public String getSourceFileName() { return sourceFileName; }
 
-    public Type(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses, final List<ObjectType> superInterfaces, final String sourceFileName) {
+    public OPALType(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses, final List<ObjectType> superInterfaces, final String sourceFileName) {
         this.methods = methods;
         this.superClasses = superClasses;
         this.superInterfaces = superInterfaces;

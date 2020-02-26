@@ -37,16 +37,34 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     private static Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
 
+    /** For each class in the revision, class hierarchy keeps a {@link Type}
+     *  that is accessible by the {@link FastenURI} of the class as a key.
+     *  @implNote each method in the revision has a unique id in this CHA. */
     private final Map<FastenURI, Type> classHierarchy;
+
+    /** Includes all the edges of the revision call graph (resolved & unresolved). */
     private final Graph graph;
+
+    /** Keeps the name of call graph generator using which
+     *  this revision call graph has been generated. */
     private final String cgGenerator;
+
 
     public static class Graph {
 
+        /** It keeps all the resolved calls of the call graph using the ids of source and target method.
+         * First element of the int[] is the id of the source method and the second one is the target's id.
+         * Ids are available in the class hierarchy.*/
         private final List<int[]> resolvedCalls;
-        private final Map<Pair<Integer, FastenURI>, Map<String, Integer>> unresolvedCalls;
 
-        public Graph(final List<int[]> resolvedCalls, final Map<Pair<Integer, FastenURI>, Map<String, Integer>> unresolvedCalls) {
+        /** Unresolved calls of the graph and key value metadata about each call.
+         * The {@link Pair} keeps the id of source method in the left element and the
+         * {@link FastenURI} of the target method in the right element.
+         * The meta data per call is stored as Map<String, String>. For example
+         * in case of java for each call it can keep (typeOfCall -> number_of_occurrence). */
+        private final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls;
+
+        public Graph(final List<int[]> resolvedCalls, final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls) {
             this.resolvedCalls = resolvedCalls;
             this.unresolvedCalls = unresolvedCalls;
         }
@@ -62,14 +80,14 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             }
 
             final var unresolvedCalls = graph.getJSONArray("unresolvedCalls");
-            this.unresolvedCalls = new HashMap<>();
+            this.unresolvedCalls = new HashMap<Pair<Integer, FastenURI>, Map<String, String>>();
             final int numberOfUnresolvedArcs = unresolvedCalls.length();
             for (int i = 0; i < numberOfUnresolvedArcs; i++) {
                 final var call = unresolvedCalls.getJSONArray(i);
                 final var callTypeJson = call.getJSONObject(2);
-                final Map<String, Integer> callType = new HashMap<>();
+                final Map<String, String> callType = new HashMap<>();
                 for (String type : callTypeJson.keySet()) {
-                    final var number = (Integer) callTypeJson.get(type);
+                    final String number = callTypeJson.getString(type);
                     callType.put(type, number);
                 }
                 this.unresolvedCalls.put(new MutablePair<>(Integer.parseInt(call.getString(0)),
@@ -86,7 +104,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             }
 
             final var unresolvedCallsJSON = new JSONArray();
-            for (final var entry : graph.unresolvedCalls.entrySet()) {
+            for (final Map.Entry<Pair<Integer, FastenURI>, Map<String, String>> entry : graph.unresolvedCalls.entrySet()) {
                 final var call = new JSONArray();
                 call.put(entry.getKey().getKey().toString());
                 call.put(entry.getKey().getValue().toString());
@@ -103,7 +121,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
         public List<int[]> getResolvedCalls() { return resolvedCalls; }
 
-        public Map<Pair<Integer, FastenURI>, Map<String, Integer>> getUnresolvedCalls() { return unresolvedCalls; }
+        public Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls() { return unresolvedCalls; }
 
         public int size() {
             return resolvedCalls.size() + unresolvedCalls.size();
@@ -112,7 +130,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     }
 
     /**
-     * Type can be a class or interface that inherits (implements) from others or implements methods.
+     * OPALType can be a class or interface that inherits (implements) from others or implements methods.
      */
     public static class Type {
         //The source file name of this type.
@@ -268,6 +286,14 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             partialCallGraph.getGENERATOR());
     }
 
+    /**
+     *
+     * @param forge
+     * @param coordinate
+     * @param timestamp
+     * @param partialCallGraph
+     * @return
+     */
     public static ExtendedRevisionCallGraph createWithOPAL(final String forge, final MavenCoordinate coordinate,
                                                            final long timestamp, final PartialCallGraph partialCallGraph) {
 

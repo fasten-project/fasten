@@ -29,7 +29,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
-public class TypeTest {
+public class OPALTypeTest {
     static PartialCallGraph callgraph;
     static ExtendedRevisionCallGraph extendedRevisionCallGraph;
 

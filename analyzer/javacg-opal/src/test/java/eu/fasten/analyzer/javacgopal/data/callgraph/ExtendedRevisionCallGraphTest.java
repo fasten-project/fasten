@@ -90,7 +90,7 @@ public class ExtendedRevisionCallGraphTest {
                 "[2,3]," +
                 "[3,4]" +
                 "]," +
-                "\"unresolvedCalls\":[[\"0\",\"///java.lang/Object.Object()Void\",{\"invokespecial\":1}]]}," +
+                "\"unresolvedCalls\":[[\"0\",\"///java.lang/Object.Object()Void\",{\"invokespecial\":\"1\"}]]}," +
                 "\"timestamp\":1574072773}";
     }
 

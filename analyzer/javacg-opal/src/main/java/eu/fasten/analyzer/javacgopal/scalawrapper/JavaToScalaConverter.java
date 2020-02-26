@@ -19,14 +19,13 @@
 package eu.fasten.analyzer.javacgopal.scalawrapper;
 
 import org.opalj.br.Method;
-
 import org.opalj.br.ObjectType;
+
 import scala.Function0;
 import scala.Function1;
 import scala.collection.Iterable;
 import scala.collection.Map;
 import scala.runtime.AbstractFunction0;
-import scala.runtime.AbstractFunction1;
 import scala.runtime.AbstractFunction2;
 
 /**
