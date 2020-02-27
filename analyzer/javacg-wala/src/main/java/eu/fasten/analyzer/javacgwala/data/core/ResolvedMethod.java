@@ -26,7 +26,7 @@ public class ResolvedMethod extends Method {
     private final JarFile artifact;
 
     /**
-     * Construct Unresolved method form {@link MethodReference} and artifact.
+     * Construct Resolved method form {@link MethodReference} and artifact.
      *
      * @param reference Method Reference
      * @param artifact  Artifact

@@ -93,8 +93,6 @@ public abstract class Method {
                 return reference.getName().getPackage().toString().replace("/", ".");
             }
 
-        } else if (reference.getName().getClassName().toString().equals("V")) {
-            return "java.lang";
         }
         return "";
     }
@@ -121,8 +119,6 @@ public abstract class Method {
                 return reference.getName().getClassName().toString();
             }
 
-        } else if (reference.getName().getClassName().toString().equals("V")) {
-            return "java.lang";
         }
         return "";
     }

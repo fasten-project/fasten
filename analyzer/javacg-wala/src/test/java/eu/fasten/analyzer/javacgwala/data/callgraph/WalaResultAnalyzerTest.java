@@ -22,6 +22,10 @@ import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+import java.net.URISyntaxException;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +39,7 @@ class WalaResultAnalyzerTest {
     private static CallGraph graph;
 
     @BeforeAll
-    static void setUp() throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {
+    static void setUp() {
         var path = new File(Thread.currentThread().getContextClassLoader()
                 .getResource("SingleSourceToTarget.jar")
                 .getFile()).getAbsolutePath();
@@ -45,23 +49,31 @@ class WalaResultAnalyzerTest {
 
     @Test
     void wrap() {
-        var wrapped = WalaResultAnalyzer.wrap(graph, null);
+        var wrapped = WalaResultAnalyzer.wrap(graph);
 
-        assertEquals(1, wrapped.getResolvedCalls().size());
-        assertEquals(1, wrapped.getUnresolvedCalls().size());
+        assertEquals(1, wrapped.getGraph().getResolvedCalls().size());
+        assertEquals(1, wrapped.getGraph().getUnresolvedCalls().size());
 
         var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
         var target = "/java.lang/Object.Object()Void";
-        var call = wrapped.getUnresolvedCalls().get(0);
 
-        assertEquals(source, call.getSource().toCanonicalSchemalessURI().toString());
-        assertEquals(target, call.getTarget().toCanonicalSchemalessURI().toString());
+        var callMetadata = wrapped.getGraph().getUnresolvedCalls().values().iterator().next();
+        var callValues = wrapped.getGraph().getUnresolvedCalls().keySet().iterator().next();
+
+        var type = wrapped.getClassHierarchy()
+                .get(new FastenJavaURI("/name.space/SingleSourceToTarget"));
+
+        assertEquals(source, type.getMethods().get(callValues.getKey()).toString());
+        assertEquals(target, callValues.getValue().toString());
+        assertEquals("invokespecial", callMetadata.keySet().iterator().next());
+        assertEquals("1", callMetadata.values().iterator().next());
 
         source = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid";
         target = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid";
-        call = wrapped.getResolvedCalls().get(0);
 
-        assertEquals(source, call.getSource().toCanonicalSchemalessURI().toString());
-        assertEquals(target, call.getTarget().toCanonicalSchemalessURI().toString());
+        var resolvedCall = wrapped.getGraph().getResolvedCalls().get(0);
+
+        assertEquals(source, type.getMethods().get(resolvedCall[0]).toString());
+        assertEquals(target, type.getMethods().get(resolvedCall[1]).toString());
     }
 }

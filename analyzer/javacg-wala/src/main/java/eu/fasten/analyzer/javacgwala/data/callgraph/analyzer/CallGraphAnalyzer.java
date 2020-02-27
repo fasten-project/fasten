@@ -26,7 +26,7 @@ import com.ibm.wala.shrikeBT.IInvokeInstruction;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
-import eu.fasten.analyzer.javacgwala.data.core.Call;
+import eu.fasten.analyzer.javacgwala.data.core.CallType;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
 import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
 import java.util.Iterator;
@@ -69,7 +69,8 @@ public class CallGraphAnalyzer {
 
             Method methodNode = analysisContext.findOrCreate(nodeReference);
 
-            classHierarchyAnalyzer.addMethodToCHA(methodNode, nodeReference.getDeclaringClass());
+            var callerID = classHierarchyAnalyzer.addMethodToCHA(methodNode,
+                    nodeReference.getDeclaringClass());
 
             for (Iterator<CallSiteReference> callSites = node.iterateCallSites();
                  callSites.hasNext(); ) {
@@ -81,9 +82,11 @@ public class CallGraphAnalyzer {
                 Method targetMethodNode =
                         analysisContext.findOrCreate(targetWithCorrectClassLoader);
 
-                classHierarchyAnalyzer.addMethodToCHA(targetMethodNode, targetWithCorrectClassLoader
-                        .getDeclaringClass());
-                addCall(methodNode, targetMethodNode, getInvocationLabel(callSite));
+                var calleeID = classHierarchyAnalyzer.addMethodToCHA(targetMethodNode,
+                        targetWithCorrectClassLoader
+                                .getDeclaringClass());
+                addCall(methodNode, callerID, targetMethodNode, calleeID,
+                        getInvocationLabel(callSite));
             }
 
         }
@@ -96,16 +99,16 @@ public class CallGraphAnalyzer {
      * @param target   Callee
      * @param callType Call type
      */
-    private void addCall(Method source, Method target, Call.CallType callType) {
-        Call call = new Call(source, target, callType);
+    private void addCall(Method source, int sourceID, Method target,
+                         int targetID, CallType callType) {
 
         if (source instanceof ResolvedMethod && target instanceof ResolvedMethod) {
-            partialCallGraph.addResolvedCall(call);
+            partialCallGraph.addResolvedCall(sourceID, targetID);
         } else {
-            partialCallGraph.addUnresolvedCall(call);
+            partialCallGraph.addUnresolvedCall(sourceID,
+                    target.toCanonicalSchemalessURI(), callType);
         }
     }
-
 
     /**
      * True if node "belongs" to application class loader.
@@ -142,19 +145,19 @@ public class CallGraphAnalyzer {
      * @param callSite Call site
      * @return Call type
      */
-    private Call.CallType getInvocationLabel(CallSiteReference callSite) {
+    private CallType getInvocationLabel(CallSiteReference callSite) {
 
         switch ((IInvokeInstruction.Dispatch) callSite.getInvocationCode()) {
             case INTERFACE:
-                return Call.CallType.INTERFACE;
+                return CallType.INTERFACE;
             case VIRTUAL:
-                return Call.CallType.VIRTUAL;
+                return CallType.VIRTUAL;
             case SPECIAL:
-                return Call.CallType.SPECIAL;
+                return CallType.SPECIAL;
             case STATIC:
-                return Call.CallType.STATIC;
+                return CallType.STATIC;
             default:
-                return Call.CallType.UNKNOWN;
+                return CallType.UNKNOWN;
         }
     }
 }

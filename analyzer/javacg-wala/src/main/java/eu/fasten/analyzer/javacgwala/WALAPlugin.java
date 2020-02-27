@@ -19,7 +19,6 @@
 package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
 import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
@@ -89,7 +88,6 @@ public class WALAPlugin extends Plugin {
                 final var kafkaConsumedJson = new JSONObject(kafkaRecord.value());
                 final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
 
-                logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
                 final var cg = generateCallGraph(mavenCoordinate, kafkaConsumedJson);
 
                 if (cg == null || cg.isCallGraphEmpty()) {
@@ -142,7 +140,7 @@ public class WALAPlugin extends Plugin {
         public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
                                                            final JSONObject kafkaConsumedJson) {
             try {
-                return CallGraphConstructor.build(mavenCoordinate).toExtendedRevisionCallGraph(
+                return ExtendedRevisionCallGraph.create(mavenCoordinate,
                         Long.parseLong(kafkaConsumedJson.get("date").toString()));
             } catch (FileNotFoundException e) {
                 setPluginError(e);

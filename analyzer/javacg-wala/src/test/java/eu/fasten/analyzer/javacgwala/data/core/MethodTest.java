@@ -19,24 +19,26 @@
 package eu.fasten.analyzer.javacgwala.data.core;
 
 import com.ibm.wala.ipa.callgraph.CallGraph;
-import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
-import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+import java.util.Map;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
-import java.io.IOException;
 
 public class MethodTest {
 
     private static CallGraph ssttgraph, cigraph, lambdagraph, arraygraph;
 
     @BeforeAll
-    public static void setUp() throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {
+    public static void setUp() {
         /**
          * SingleSourceToTarget:
          *
@@ -119,12 +121,10 @@ public class MethodTest {
     @Test
     public void toCanonicalJSONSingleSourceToTargetTest() {
 
-        var wrapped = WalaResultAnalyzer.wrap(ssttgraph, null);
+        var wrapped = WalaResultAnalyzer.wrap(ssttgraph);
 
         assertEquals(1, wrapped.getResolvedCalls().size());
-
-        var resolvedCall = wrapped.getResolvedCalls().get(0);
-        var unresolvedCall = wrapped.getUnresolvedCalls().get(0);
+        assertEquals(1, wrapped.getUnresolvedCalls().size());
 
         // Actual URIs
         var actualSourceURI = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid";
@@ -133,96 +133,96 @@ public class MethodTest {
                 "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
         var actualTargetUnresolvedURI = "/java.lang/Object.Object()Void";
 
+        var callMetadata = wrapped.getUnresolvedCalls().values().iterator().next();
+        var callValues = wrapped.getUnresolvedCalls().keySet().iterator().next();
 
-        assertEquals(actualSourceURI,
-                resolvedCall.getSource().toCanonicalSchemalessURI().toString());
+        var type = wrapped.getClassHierarchy()
+                .get(new FastenJavaURI("/name.space/SingleSourceToTarget"));
 
-        assertEquals(actualTargetURI,
-                resolvedCall.getTarget().toCanonicalSchemalessURI().toString());
 
-        assertEquals(actualSourceUnresolvedURI,
-                unresolvedCall.getSource().toCanonicalSchemalessURI().toString());
+        assertEquals(actualSourceUnresolvedURI, type.getMethods().get(callValues.getKey()).toString());
+        assertEquals(actualTargetUnresolvedURI, callValues.getValue().toString());
+        assertEquals("invokespecial", callMetadata.keySet().iterator().next());
+        assertEquals("1", callMetadata.values().iterator().next());
 
-        assertEquals(actualTargetUnresolvedURI,
-                unresolvedCall.getTarget().toCanonicalSchemalessURI().toString());
+        var resolvedCall = wrapped.getResolvedCalls().get(0);
+
+        assertEquals(actualSourceURI, type.getMethods().get(resolvedCall[0]).toString());
+        assertEquals(actualTargetURI, type.getMethods().get(resolvedCall[1]).toString());
     }
 
     @Test
     public void toCanonicalJSONClassInitTest() {
 
-        var wrapped = WalaResultAnalyzer.wrap(cigraph, null);
+        var wrapped = WalaResultAnalyzer.wrap(cigraph);
 
         assertEquals(1, wrapped.getResolvedCalls().size());
-
-        var resolvedCall = wrapped.getResolvedCalls().get(0);
 
         // Actual URIs
         var actualSourceURI = "/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2FVoid";
         var actualTargetURI = "/name.space/ClassInit.targetMethod()%2Fjava.lang%2FVoid";
 
-        assertEquals(actualSourceURI,
-                resolvedCall.getSource().toCanonicalSchemalessURI().toString());
+        var type = wrapped.getClassHierarchy()
+                .get(new FastenJavaURI("/name.space/ClassInit"));
 
-        assertEquals(actualTargetURI,
-                resolvedCall.getTarget().toCanonicalSchemalessURI().toString());
+        var resolvedCall = wrapped.getResolvedCalls().get(0);
+
+        assertEquals(actualSourceURI, type.getMethods().get(resolvedCall[0]).toString());
+        assertEquals(actualTargetURI, type.getMethods().get(resolvedCall[1]).toString());
     }
 
     @Test
     public void toCanonicalJSONLambdaTest() {
 
-        var wrapped = WalaResultAnalyzer.wrap(lambdagraph, null);
+        var wrapped = WalaResultAnalyzer.wrap(lambdagraph);
 
         assertEquals(2, wrapped.getUnresolvedCalls().size());
 
-        var unresolvedCall = wrapped.getUnresolvedCalls().get(1);
+        Pair<Integer, FastenURI> call = null;
+        Map<String, String> callMetadata = null;
+
+        for (var entry : wrapped.getUnresolvedCalls().entrySet()) {
+            if (entry.getKey().getValue().toString().contains("invoke")) {
+                call = entry.getKey();
+                callMetadata = entry.getValue();
+            }
+        }
 
         // Actual URIs
         var actualSourceURI = "/name.space/LambdaExample.LambdaExample()%2Fjava.lang%2FVoid";
         var actualTargetURI = "/java.lang.invoke/LambdaMetafactory.apply()%2Fjava"
                 + ".util.function%2FFunction";
 
-        assertEquals(actualSourceURI,
-                unresolvedCall.getSource().toCanonicalSchemalessURI().toString());
+        assertNotNull(call);
+        assertNotNull(callMetadata);
 
-        assertEquals(actualTargetURI,
-                unresolvedCall.getTarget().toCanonicalSchemalessURI().toString());
+        var type = wrapped.getClassHierarchy()
+                .get(new FastenJavaURI("/name.space/LambdaExample"));
+
+        assertEquals(actualSourceURI, type.getMethods().get(call.getKey()).toString());
+        assertEquals(actualTargetURI, call.getValue().toString());
+        assertEquals("invokestatic", callMetadata.keySet().iterator().next());
+        assertEquals("1", callMetadata.get("invokestatic"));
     }
 
     @Test
     public void toCanonicalJSONArrayTest() {
 
-        var wrapped = WalaResultAnalyzer.wrap(arraygraph, null);
+        var wrapped = WalaResultAnalyzer.wrap(arraygraph);
 
         assertEquals(1, wrapped.getResolvedCalls().size());
-
-        var resolvedCall = wrapped.getResolvedCalls().get(0);
 
         // Actual URIs
         var actualSourceURI = "/name.space/ArrayExample.sourceMethod()%2Fjava.lang%2FVoid";
         var actualTargetURI = "/name.space/ArrayExample.targetMethod(%2Fjava"
                 + ".lang%2FObject%25255B%25255D)%2Fjava.lang%2FObject%25255B%25255D";
 
-        assertEquals(actualSourceURI,
-                resolvedCall.getSource().toCanonicalSchemalessURI().toString());
-
-        assertEquals(actualTargetURI,
-                resolvedCall.getTarget().toCanonicalSchemalessURI().toString());
-    }
-
-    @Test
-    public void toID() {
-        var path = new File(Thread.currentThread().getContextClassLoader()
-                .getResource("SingleSourceToTarget.jar")
-                .getFile()).getAbsolutePath();
-
-        var wrapped = WalaResultAnalyzer.wrap(ssttgraph, null);
+        var type = wrapped.getClassHierarchy()
+                .get(new FastenJavaURI("/name.space/ArrayExample"));
 
         var resolvedCall = wrapped.getResolvedCalls().get(0);
-        var unresolvedCall = wrapped.getUnresolvedCalls().get(0);
 
-        assertEquals(path + "::name.space.SingleSourceToTarget.sourceMethod()V",
-                resolvedCall.getSource().toID());
-        assertEquals(path + "::name.space.SingleSourceToTarget.<init>()V",
-                unresolvedCall.getSource().toID());
+        assertEquals(actualSourceURI, type.getMethods().get(resolvedCall[0]).toString());
+        assertEquals(actualTargetURI, type.getMethods().get(resolvedCall[1]).toString());
     }
 }

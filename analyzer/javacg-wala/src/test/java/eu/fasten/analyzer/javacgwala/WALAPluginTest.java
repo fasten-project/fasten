@@ -31,6 +31,7 @@ import java.io.FileNotFoundException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 class WALAPluginTest {
 
@@ -62,9 +63,8 @@ class WALAPluginTest {
                 coordinateJSON.toString()), false);
 
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
-        ExtendedRevisionCallGraph revisionCallGraph =
-                CallGraphConstructor.build(coordinate)
-                        .toExtendedRevisionCallGraph(1574072773);
+        ExtendedRevisionCallGraph revisionCallGraph = ExtendedRevisionCallGraph.create(coordinate,
+                1574072773);
 
         assertEquals(revisionCallGraph.toJSON().toString(), cg.toJSON().toString());
     }
@@ -82,7 +82,7 @@ class WALAPluginTest {
                 .consume(new ConsumerRecord<>(topic, 1, 0, "bar",
                         emptyCGCoordinate.toString()), false);
 
-        assertEquals(0, cg.graph.size());
+        assertTrue(cg.isCallGraphEmpty());
     }
 
     @Test
@@ -116,7 +116,7 @@ class WALAPluginTest {
                 coordinateJSON1.toString()), false);
         var coordinate = new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3");
         ExtendedRevisionCallGraph extendedRevisionCallGraph =
-                CallGraphConstructor.build(coordinate).toExtendedRevisionCallGraph(1574072773);
+                ExtendedRevisionCallGraph.create(coordinate, 1574072773);
 
         assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString());
     }

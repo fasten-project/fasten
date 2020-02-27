@@ -62,7 +62,7 @@ public class ClassHierarchyAnalyzer {
      * @param method   Method to add
      * @param klassRef Class reference
      */
-    public void addMethodToCHA(Method method, TypeReference klassRef) {
+    public int addMethodToCHA(Method method, TypeReference klassRef) {
         var klass = this.rawCallGraph.getClassHierarchy().lookupClass(klassRef);
 
         if (!processedClasses.contains(getClassURI(method))) {
@@ -76,7 +76,9 @@ public class ClassHierarchyAnalyzer {
             }
         }
         partialCallGraph.getClassHierarchy().get(getClassURI(method)).getMethods()
-                .putIfAbsent(method.toCanonicalSchemalessURI(), counter++);
+                .putIfAbsent(counter++, method.toCanonicalSchemalessURI());
+
+        return counter - 1;
     }
 
     /**

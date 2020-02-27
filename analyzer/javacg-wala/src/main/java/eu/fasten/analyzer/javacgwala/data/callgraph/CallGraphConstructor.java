@@ -30,6 +30,8 @@ import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,13 +47,18 @@ public class CallGraphConstructor {
      * @return Partial call graph
      */
     public static PartialCallGraph build(MavenCoordinate coordinate) throws FileNotFoundException {
-        logger.debug("Building call graph....");
-        long start = System.currentTimeMillis();
+        final NumberFormat timeFormatter = new DecimalFormat("#0.000");
+        logger.info("Generating call graph for the Maven coordinate using WALA: {}",
+                coordinate.getCoordinate());
+        long startTime = System.currentTimeMillis();
+
         var rawGraph = generateCallGraph(MavenCoordinate.MavenResolver
                 .downloadJar(coordinate.getCoordinate()).orElseThrow(RuntimeException::new)
                 .getAbsolutePath());
-        logger.debug("Call graph construction took {}ms", System.currentTimeMillis() - start);
-        return WalaResultAnalyzer.wrap(rawGraph, coordinate);
+
+        logger.info("Generated the call graph in {} seconds.",
+                timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
+        return WalaResultAnalyzer.wrap(rawGraph);
     }
 
     /**

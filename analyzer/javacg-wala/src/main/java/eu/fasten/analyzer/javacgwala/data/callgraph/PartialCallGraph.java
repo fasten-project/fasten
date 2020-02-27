@@ -18,32 +18,28 @@
 
 package eu.fasten.analyzer.javacgwala.data.callgraph;
 
-import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgwala.data.core.Call;
+import eu.fasten.analyzer.javacgwala.data.core.CallType;
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.RevisionCallGraph;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class PartialCallGraph {
 
     /**
-     * List of maven coordinates of dependencies.
+     * Calls that their sources and targets are fully resolved.
      */
-    private final MavenCoordinate coordinate;
+    private final List<int[]> resolvedCalls;
 
     /**
      * Calls that their target's packages are not still known and need to be resolved in
      * later on, e.g. in a merge phase.
      */
-    private final List<Call> unresolvedCalls;
-
-    /**
-     * Calls that their sources and targets are fully resolved.
-     */
-    private final List<Call> resolvedCalls;
+    private final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls;
 
     /**
      * Class hierarchy.
@@ -52,177 +48,63 @@ public class PartialCallGraph {
 
     /**
      * Construct a partial call graph with empty lists of resolved / unresolved calls.
-     *
-     * @param coordinate List of {@link MavenCoordinate}
      */
-    public PartialCallGraph(MavenCoordinate coordinate) {
+    public PartialCallGraph() {
         this.resolvedCalls = new ArrayList<>();
-        this.unresolvedCalls = new ArrayList<>();
+        this.unresolvedCalls = new HashMap<>();
         this.classHierarchy = new HashMap<>();
-        this.coordinate = coordinate;
-    }
-
-    public List<Call> getUnresolvedCalls() {
-        return unresolvedCalls;
-    }
-
-    public List<Call> getResolvedCalls() {
-        return resolvedCalls;
     }
 
     public Map<FastenURI, ExtendedRevisionCallGraph.Type> getClassHierarchy() {
         return classHierarchy;
     }
 
+    public ExtendedRevisionCallGraph.Graph getGraph() {
+        return new ExtendedRevisionCallGraph.Graph(resolvedCalls, unresolvedCalls);
+    }
+
+    public List<int[]> getResolvedCalls() {
+        return resolvedCalls;
+    }
+
+    public Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls() {
+        return unresolvedCalls;
+    }
 
     /**
      * Add a new call to the list of resolved calls.
      *
-     * @param call New call
+     * @param caller Source method
+     * @param callee Target method
      */
-    public void addResolvedCall(Call call) {
-        if (!this.resolvedCalls.contains(call)) {
-            this.resolvedCalls.add(call);
+    public void addResolvedCall(int caller, int callee) {
+        for (final int[] item : resolvedCalls) {
+            if (Arrays.equals(item, new int[]{caller, callee})) {
+                return;
+            }
         }
+        this.resolvedCalls.add(new int[]{caller, callee});
     }
 
     /**
      * Add a new call to the list of unresolved calls.
      *
-     * @param call New call
+     * @param caller   Source method
+     * @param callee   Target method
+     * @param callType Call type
      */
-    public void addUnresolvedCall(Call call) {
-        if (!this.unresolvedCalls.contains(call)) {
-            this.unresolvedCalls.add(call);
-        }
-    }
+    public void addUnresolvedCall(int caller, FastenURI callee, CallType callType) {
+        var call = new MutablePair<>(caller, callee);
+        var previousCallMetadata = this.getUnresolvedCalls().get(call);
+        int count = 1;
 
-    /**
-     * Convert a {@link PartialCallGraph} to FASTEN compatible format.
-     *
-     * @return FASTEN call graph
-     */
-    public RevisionCallGraph toRevisionCallGraph(long date) {
-
-        List<List<RevisionCallGraph.Dependency>> depArray =
-                MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate());
-
-
-        var graph = toURIGraph();
-
-        return new RevisionCallGraph(
-                "mvn",
-                coordinate.getProduct(),
-                coordinate.getVersionConstraint(),
-                date, depArray, graph
-        );
-    }
-
-    /**
-     * Convert a {@link PartialCallGraph} to FASTEN compatible format.
-     *
-     * @return FASTEN call graph
-     */
-    public ExtendedRevisionCallGraph toExtendedRevisionCallGraph(long date) {
-
-        List<List<RevisionCallGraph.Dependency>> depArray =
-                MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate());
-
-
-        var graph = toNumericalGraph();
-
-        return new ExtendedRevisionCallGraph(
-                "mvn",
-                coordinate.getProduct(),
-                coordinate.getVersionConstraint(),
-                date, depArray, graph, classHierarchy
-        );
-    }
-
-    /**
-     * Converts all nodes {@link Call} of a Wala call graph to URIs.
-     *
-     * @return A graph of all nodes in URI format represented in a List of {@link FastenURI}
-     */
-    private ArrayList<FastenURI[]> toURIGraph() {
-
-        var graph = new ArrayList<FastenURI[]>();
-
-        for (Call resolvedCall : resolvedCalls) {
-            addCall(graph, resolvedCall);
-        }
-
-        for (Call unresolvedCall : unresolvedCalls) {
-            addCall(graph, unresolvedCall);
-        }
-
-        return graph;
-    }
-
-    /**
-     * Converts all nodes {@link Call} of a Wala call graph to numbers.
-     *
-     * @return A graph of all nodes in numerical format represented in a List of {@link FastenURI}
-     */
-    private ArrayList<FastenURI[]> toNumericalGraph() {
-
-        var graph = new ArrayList<FastenURI[]>();
-
-        for (Call resolvedCall : resolvedCalls) {
-            addNumericalCall(graph, resolvedCall);
-        }
-
-        for (Call unresolvedCall : unresolvedCalls) {
-            addNumericalCall(graph, unresolvedCall);
-        }
-
-        return graph;
-    }
-
-    /**
-     * Add call to a call graph.
-     *
-     * @param graph Call graph to add a call to
-     * @param call  Call to add
-     */
-    private static void addCall(ArrayList<FastenURI[]> graph, Call call) {
-
-        var uriCall = call.toURICall();
-
-        if (uriCall[0] != null && uriCall[1] != null && !graph.contains(uriCall)) {
-            graph.add(uriCall);
-        }
-    }
-
-    /**
-     * Add call numbers to a call graph.
-     *
-     * @param graph Call graph to add a call to
-     * @param call  Call to add
-     */
-    private void addNumericalCall(ArrayList<FastenURI[]> graph, Call call) {
-
-        var source = call.getSource();
-        var target = call.getTarget();
-        var type = call.getCallType();
-
-        FastenURI uriSourceType =
-                FastenURI.create("/" + source.getPackageName() + "/" + source.getClassName());
-        FastenURI uriTargetType =
-                FastenURI.create("/" + target.getPackageName() + "/" + target.getClassName());
-
-        var sourceData = this.classHierarchy.get(uriSourceType);
-        var targetData = this.classHierarchy.get(uriTargetType);
-
-        var sourceIndex = sourceData.getMethods().get(source.toCanonicalSchemalessURI());
-        var targetIndex = targetData.getMethods().get(target.toCanonicalSchemalessURI());
-
-        if (sourceIndex != null && targetIndex != null) {
-            var result = new FastenURI[3];
-            result[0] = FastenURI.create(String.valueOf(sourceIndex));
-            result[1] = FastenURI.create(String.valueOf(targetIndex));
-            result[2] = FastenURI.create(type.label);
-            graph.add(result);
+        if (previousCallMetadata != null) {
+            count += Integer.parseInt(previousCallMetadata.get(callType.label));
+            previousCallMetadata.put(callType.label, String.valueOf(count));
+        } else {
+            var metadata = new HashMap<String, String>();
+            metadata.put(callType.label, String.valueOf(count));
+            this.unresolvedCalls.put(call, metadata);
         }
     }
 }

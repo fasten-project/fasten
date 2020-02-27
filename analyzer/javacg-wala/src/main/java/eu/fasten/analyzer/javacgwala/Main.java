@@ -19,14 +19,8 @@
 package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
-import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
+import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import java.io.FileNotFoundException;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "JavaCGWala")
@@ -66,13 +60,10 @@ public class Main implements Runnable {
         String mavenCoordStr;
     }
 
-    private static Logger logger = LoggerFactory.getLogger(Main.class);
-
     /**
      * Runs Wala Analyzer.
      */
     public void run() {
-        final NumberFormat timeFormatter = new DecimalFormat("#0.000");
         MavenCoordinate mavenCoordinate;
 
         if (this.exclusive.mavenCoordStr != null) {
@@ -83,18 +74,11 @@ public class Main implements Runnable {
                     this.exclusive.mavencoords.version);
         }
 
-        PartialCallGraph revisionCallGraph = null;
         try {
-            logger.info("Generating call graph for the Maven coordinate using WALA: {}", mavenCoordinate.getCoordinate());
-            long startTime = System.currentTimeMillis();
-            revisionCallGraph = CallGraphConstructor.build(mavenCoordinate);
-            logger.info("Generated the call graph in {} seconds.", timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
+            System.out.println(ExtendedRevisionCallGraph.create(mavenCoordinate, 0).toJSON());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-
-        assert revisionCallGraph != null;
-        System.out.println(revisionCallGraph.toExtendedRevisionCallGraph(0).toJSON());
     }
 
     /**

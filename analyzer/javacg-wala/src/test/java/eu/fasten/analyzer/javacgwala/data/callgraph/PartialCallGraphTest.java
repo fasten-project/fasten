@@ -20,22 +20,21 @@ package eu.fasten.analyzer.javacgwala.data.callgraph;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.ibm.wala.types.Selector;
-import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
-import eu.fasten.analyzer.javacgwala.data.core.Call;
-import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
-import eu.fasten.analyzer.javacgwala.data.core.UnresolvedMethod;
+import eu.fasten.analyzer.javacgwala.data.core.CallType;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.Collections;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class PartialCallGraphTest {
 
     private static PartialCallGraph graph;
-    private static Call call;
+    private static ExtendedRevisionCallGraph.Type type;
 
 
     @BeforeAll
@@ -44,67 +43,44 @@ class PartialCallGraphTest {
                 .getResource("SingleSourceToTarget.jar")
                 .getFile()).getAbsolutePath());
 
-        graph = WalaResultAnalyzer.wrap(CallGraphConstructor.generateCallGraph(path.toString()), null);
-//
-//        var source = new ResolvedMethod("name.space",
-//                Selector.make("<init>()V"), null);
-//        var target = new ResolvedMethod("name.space",
-//                Selector.make("<init>()V"), null);
-//        call = new Call(source, target, Call.CallType.STATIC);
-//
-//
-//        var initialSource = new ResolvedMethod("name.space.SingleSourceToTarget",
-//                Selector.make("sourceMethod()V"), null);
-//        var initialTarget = new ResolvedMethod("name.space.SingleSourceToTarget",
-//                Selector.make("targetMethod()V"), null);
-//
-//        var initialUnresolvedSource =
-//                new ResolvedMethod("name.space.SingleSourceToTarget",
-//                        Selector.make("<init>()V"), null);
-//        var initialUnresolvedTarget =
-//                new UnresolvedMethod("java.lang.Object",
-//                        Selector.make("<init>()V"));
+        graph = WalaResultAnalyzer.wrap(CallGraphConstructor.generateCallGraph(path.toString()));
 
-        MavenCoordinate coordinate =
-                new MavenCoordinate("group", "artifact", "1.0");
-
-        //graph = new PartialCallGraph(coordinate);
-
-        //graph.addUnresolvedCall(new Call(initialUnresolvedSource, initialUnresolvedTarget,
-                //Call.CallType.SPECIAL));
-        //graph.addResolvedCall(new Call(initialSource, initialTarget, Call.CallType.STATIC));
+        type = graph.getClassHierarchy()
+                .get(new FastenJavaURI("/name.space/SingleSourceToTarget"));
     }
 
     @Test
     void getUnresolvedCalls() {
         var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
         var target = "/java.lang/Object.Object()Void";
-        var call = graph.getUnresolvedCalls().get(0);
 
-        assertEquals(source, call.getSource().toCanonicalSchemalessURI().toString());
-        assertEquals(target, call.getTarget().toCanonicalSchemalessURI().toString());
+        var call = graph.getGraph().getUnresolvedCalls().keySet().iterator().next();
+
+        assertEquals(source, type.getMethods().get(call.getKey()).toString());
+        assertEquals(target, call.getValue().toString());
     }
 
     @Test
     void getResolvedCalls() {
         var source = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid";
         var target = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid";
-        var call = graph.getResolvedCalls().get(0);
+        var call = graph.getGraph().getResolvedCalls().get(0);
 
-        assertEquals(source, call.getSource().toCanonicalSchemalessURI().toString());
-        assertEquals(target, call.getTarget().toCanonicalSchemalessURI().toString());
+        assertEquals(source, type.getMethods().get(call[0]).toString());
+        assertEquals(target, type.getMethods().get(call[1]).toString());
     }
 
     @Test
     void addResolvedCall() {
         assertEquals(1, graph.getResolvedCalls().size());
 
-        graph.addResolvedCall(call);
+        graph.addResolvedCall(100, 200);
 
         assertEquals(2, graph.getResolvedCalls().size());
-        assertEquals(call, graph.getResolvedCalls().get(1));
+        assertEquals(100, graph.getResolvedCalls().get(1)[0]);
+        assertEquals(200, graph.getResolvedCalls().get(1)[1]);
 
-        graph.addResolvedCall(call);
+        graph.addResolvedCall(100, 200);
         assertEquals(2, graph.getResolvedCalls().size());
     }
 
@@ -112,29 +88,17 @@ class PartialCallGraphTest {
     void addUnresolvedCall() {
         assertEquals(1, graph.getUnresolvedCalls().size());
 
-        graph.addUnresolvedCall(call);
+        graph.addUnresolvedCall(300, new FastenJavaURI("/name.space/Class"), CallType.STATIC);
+
+        Pair<Integer, FastenURI> selectKey = new MutablePair<>(300, new FastenJavaURI("/name.space/Class"));
 
         assertEquals(2, graph.getUnresolvedCalls().size());
-        assertEquals(call, graph.getUnresolvedCalls().get(1));
+        assertEquals(1, Integer.parseInt(
+                graph.getUnresolvedCalls().get(selectKey).get("invokestatic")));
 
-        graph.addUnresolvedCall(call);
+        graph.addUnresolvedCall(300, new FastenJavaURI("/name.space/Class"), CallType.STATIC);
         assertEquals(2, graph.getUnresolvedCalls().size());
+        assertEquals(2,
+                Integer.parseInt(graph.getUnresolvedCalls().get(selectKey).get("invokestatic")));
     }
-
-//    @Test
-//    void toRevisionCallGraph() {
-//        var rcg = graph.toRevisionCallGraph(-1);
-//
-//        assertEquals(-1, rcg.timestamp);
-//        assertEquals("group.artifact", rcg.product);
-//        assertEquals("mvn", rcg.forge);
-//        assertEquals("1.0", rcg.version);
-//
-//        assertEquals("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid",
-//                rcg.graph.get(0)[0].toString());
-//        assertEquals("///name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid",
-//                rcg.graph.get(0)[1].toString());
-//
-//        assertEquals(0, rcg.depset.size());
-//    }
 }

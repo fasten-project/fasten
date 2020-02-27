@@ -19,10 +19,15 @@
 package eu.fasten.analyzer.javacgwala.data.callgraph.analyzer;
 
 import com.ibm.wala.ipa.callgraph.CallGraph;
-import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WalaResultAnalyzer {
+
+    private static Logger logger = LoggerFactory.getLogger(WalaResultAnalyzer.class);
 
     private final CallGraph rawCallGraph;
 
@@ -32,31 +37,38 @@ public class WalaResultAnalyzer {
      * Analyze result produced by Wal plugin.
      *
      * @param rawCallGraph Raw call graph in Wala format
-     * @param coordinate   List of {@link MavenCoordinate}
      */
-    private WalaResultAnalyzer(CallGraph rawCallGraph, MavenCoordinate coordinate) {
+    private WalaResultAnalyzer(CallGraph rawCallGraph) {
         this.rawCallGraph = rawCallGraph;
-        this.partialCallGraph = new PartialCallGraph(coordinate);
+        this.partialCallGraph = new PartialCallGraph();
     }
 
     /**
      * Convert raw Wala call graph to {@link PartialCallGraph}.
      *
      * @param rawCallGraph Raw call graph in Wala format
-     * @param coordinate   List of {@link MavenCoordinate}
      * @return Partial call graph
      */
-    public static PartialCallGraph wrap(CallGraph rawCallGraph,
-                                        MavenCoordinate coordinate) {
+    public static PartialCallGraph wrap(CallGraph rawCallGraph) {
         if (rawCallGraph == null) {
-            return new PartialCallGraph(coordinate);
+            logger.info("Call graph is NULL");
+            return new PartialCallGraph();
         }
 
-        WalaResultAnalyzer walaResultAnalyzer = new WalaResultAnalyzer(rawCallGraph, coordinate);
+        final NumberFormat timeFormatter = new DecimalFormat("#0.000");
+        logger.info("Wrapping call graph with {} nodes...", rawCallGraph.getNumberOfNodes());
+        long startTime = System.currentTimeMillis();
+
+        WalaResultAnalyzer walaResultAnalyzer = new WalaResultAnalyzer(rawCallGraph);
 
         CallGraphAnalyzer callGraphAnalyzer = new CallGraphAnalyzer(walaResultAnalyzer.rawCallGraph,
                 walaResultAnalyzer.partialCallGraph);
         callGraphAnalyzer.resolveCalls();
+
+        logger.info("Wrapped call graph in {} seconds [Resolved calls: {}, Unresolved calls: {}]",
+                timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d),
+                walaResultAnalyzer.partialCallGraph.getResolvedCalls().size(),
+                walaResultAnalyzer.partialCallGraph.getUnresolvedCalls().size());
 
         return walaResultAnalyzer.partialCallGraph;
     }
