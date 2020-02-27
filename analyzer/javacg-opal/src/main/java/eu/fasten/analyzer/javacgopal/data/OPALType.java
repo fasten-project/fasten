@@ -18,8 +18,8 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import java.util.*;
-
+import java.util.List;
+import java.util.Map;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
 import org.opalj.collection.immutable.Chain;
@@ -35,23 +35,28 @@ public class OPALType {
     private final Chain<ObjectType> superClasses;
     private final List<ObjectType> superInterfaces;
 
+    public OPALType(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses,
+                    final List<ObjectType> superInterfaces, final String sourceFileName) {
+        this.methods = methods;
+        this.superClasses = superClasses;
+        this.superInterfaces = superInterfaces;
+        this.sourceFileName = sourceFileName;
+    }
+
     public Map<Method, Integer> getMethods() {
         return methods;
     }
 
-    public Chain<ObjectType> getSuperClasses() { return superClasses; }
+    public Chain<ObjectType> getSuperClasses() {
+        return superClasses;
+    }
 
     public List<ObjectType> getSuperInterfaces() {
         return superInterfaces;
     }
 
-    public String getSourceFileName() { return sourceFileName; }
-
-    public OPALType(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses, final List<ObjectType> superInterfaces, final String sourceFileName) {
-        this.methods = methods;
-        this.superClasses = superClasses;
-        this.superInterfaces = superInterfaces;
-        this.sourceFileName = sourceFileName;
+    public String getSourceFileName() {
+        return sourceFileName;
     }
 
 }

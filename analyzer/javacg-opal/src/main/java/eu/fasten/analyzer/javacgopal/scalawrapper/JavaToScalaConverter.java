@@ -20,7 +20,6 @@ package eu.fasten.analyzer.javacgopal.scalawrapper;
 
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
-
 import scala.Function0;
 import scala.Function1;
 import scala.collection.Iterable;
@@ -29,8 +28,8 @@ import scala.runtime.AbstractFunction0;
 import scala.runtime.AbstractFunction2;
 
 /**
- * A wrapper class that wraps java code to be passed to scala.
- * Especially in case of functional programing.
+ * A wrapper class that wraps java code to be passed to scala. Especially in case of functional
+ * programing.
  */
 public final class JavaToScalaConverter {
 
@@ -49,7 +48,8 @@ public final class JavaToScalaConverter {
         };
     }
 
-    public static Function0<Iterable<Method>> asScalaFunction0EntryPionts(final Iterable<Method> entryPoints) {
+    public static Function0<Iterable<Method>> asScalaFunction0EntryPionts(
+        final Iterable<Method> entryPoints) {
         return new AbstractFunction0<>() {
 
             @Override
@@ -58,12 +58,14 @@ public final class JavaToScalaConverter {
             }
         };
     }
+
     /**
      * Imitates a scala function1 in case of Lambda in java to be passed to scala.
      * @param lambdaFunction A java Lambda in order to do things on scala.
      * @return Execution of java Lambda as scala function1.
      */
-    public static Function1<ObjectType,Object> asScalaFunction1(final ScalaFunction1 lambdaFunction) {
+    public static Function1<ObjectType, Object> asScalaFunction1(
+        final ScalaFunction1 lambdaFunction) {
         return new Function1() {
 
             @Override
@@ -78,7 +80,8 @@ public final class JavaToScalaConverter {
      * @param javaFunction A java function in order to do things on scala.
      * @return Execution of java function as scala function2.
      */
-    public static AbstractFunction2<Method, Map<Object, Iterable<Method>>, Object> asScalaFunction2(final ScalaFunction2 javaFunction) {
+    public static AbstractFunction2<Method, Map<Object, Iterable<Method>>, Object> asScalaFunction2(
+        final ScalaFunction2 javaFunction) {
         return new AbstractFunction2<>() {
 
             @Override

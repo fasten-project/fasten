@@ -29,7 +29,12 @@ import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class ExtendedRevisionCallGraphTest {
     static ExtendedRevisionCallGraph cg;
@@ -60,38 +65,49 @@ public class ExtendedRevisionCallGraphTest {
          *     }
          * }
          */
-        cg = ExtendedRevisionCallGraph.createWithOPAL("mvn",
-                new MavenCoordinate("diff", "example", "0.0.1"),
-                1574072773,
-                new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleFirst.class").getFile())));
+        final var mavenCoordinate = new MavenCoordinate("diff", "example", "0.0.1");
+        final var partialCG = new PartialCallGraph(new File(
+            Thread.currentThread().getContextClassLoader().getResource("DiffExampleFirst.class")
+                .getFile()));
+
+        cg = ExtendedRevisionCallGraph.extendedBuilder()
+            .forge("mvn")
+            .product(mavenCoordinate.getProduct())
+            .cgGenerator(partialCG.getGENERATOR())
+            .version(mavenCoordinate.getVersionConstraint()).timestamp(1574072773)
+            .depset(MavenCoordinate.MavenResolver.resolveDependencies(mavenCoordinate.getCoordinate()))
+            .graph(partialCG.getGraph())
+            .classHierarchy(partialCG.getClassHierarchy())
+            .build();
+
         cg.sortResolvedCalls();
 
         cgString = "{\"product\":\"diff.example\"," +
-                "\"forge\":\"mvn\"," +
-                "\"generator\":\"OPAL\"," +
-                "\"depset\":[]," +
-                "\"version\":\"0.0.1\"," +
-                "\"cha\":{" +
-                "\"/name.space/DiffExampleFirst\":{" +
-                "\"methods\":{" +
-                "\"0\":\"/name.space/DiffExampleFirst.DiffExampleFirst()%2Fjava.lang%2FVoid\"," +
-                "\"1\":\"/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoid\"," +
-                "\"2\":\"/name.space/DiffExampleFirst.b()%2Fjava.lang%2FVoid\"," +
-                "\"3\":\"/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoid\"," +
-                "\"4\":\"/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoid\"" +
-                "}," +
-                "\"superInterfaces\":[]," +
-                "\"sourceFile\":\"DiffExampleFirst.java\"," +
-                "\"superClasses\":[\"/java.lang/Object\"]}" +
-                "}," +
-                "\"graph\":{" +
-                "\"resolvedCalls\":[" +
-                "[1,2]," +
-                "[2,3]," +
-                "[3,4]" +
-                "]," +
-                "\"unresolvedCalls\":[[\"0\",\"///java.lang/Object.Object()Void\",{\"invokespecial\":\"1\"}]]}," +
-                "\"timestamp\":1574072773}";
+            "\"forge\":\"mvn\"," +
+            "\"generator\":\"OPAL\"," +
+            "\"depset\":[]," +
+            "\"version\":\"0.0.1\"," +
+            "\"cha\":{" +
+            "\"/name.space/DiffExampleFirst\":{" +
+            "\"methods\":{" +
+            "\"0\":\"/name.space/DiffExampleFirst.DiffExampleFirst()%2Fjava.lang%2FVoid\"," +
+            "\"1\":\"/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoid\"," +
+            "\"2\":\"/name.space/DiffExampleFirst.b()%2Fjava.lang%2FVoid\"," +
+            "\"3\":\"/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoid\"," +
+            "\"4\":\"/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoid\"" +
+            "}," +
+            "\"superInterfaces\":[]," +
+            "\"sourceFile\":\"DiffExampleFirst.java\"," +
+            "\"superClasses\":[\"/java.lang/Object\"]}" +
+            "}," +
+            "\"graph\":{" +
+            "\"resolvedCalls\":[" +
+            "[1,2]," +
+            "[2,3]," +
+            "[3,4]" +
+            "]," +
+            "\"unresolvedCalls\":[[\"0\",\"///java.lang/Object.Object()Void\",{\"invokespecial\":\"1\"}]]}," +
+            "\"timestamp\":1574072773}";
     }
 
     @Test
@@ -102,24 +118,36 @@ public class ExtendedRevisionCallGraphTest {
     }
 
     @Test
-    public void testCreateWithOPAL() throws FileNotFoundException {
+    public void testCreate() throws FileNotFoundException {
 
-        //tests both signature of method create of Extended revision call graph.
-        final var ercg1 = ExtendedRevisionCallGraph.createWithOPAL("mvn",
-                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
-                1574072773,
-                new PartialCallGraph(
-                        MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29").orElseThrow(RuntimeException::new)
-                )
+        final var rcg = ExtendedRevisionCallGraph
+            .create(new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
+
+        assertSLF4j(rcg);
+
+    }
+
+    @Test
+    public void  testExtendedBuilder() throws FileNotFoundException {
+
+        final var coord = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
+        final var partialCG = new PartialCallGraph(
+            MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29")
+                .orElseThrow(RuntimeException::new)
         );
 
-        assertSLF4j(ercg1);
+        final var rcg = ExtendedRevisionCallGraph.extendedBuilder()
+            .forge("mvn")
+            .product(coord.getProduct())
+            .version(coord.getVersionConstraint())
+            .cgGenerator(partialCG.getGENERATOR())
+            .timestamp(1574072773)
+            .depset(MavenCoordinate.MavenResolver.resolveDependencies(coord.getCoordinate()))
+            .graph(partialCG.getGraph())
+            .classHierarchy(partialCG.getClassHierarchy())
+            .build();
 
-        final var ercg2 = ExtendedRevisionCallGraph.createWithOPAL("mvn",
-                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
-
-        assertSLF4j(ercg2);
-
+        assertSLF4j(rcg);
     }
 
     private void assertSLF4j(ExtendedRevisionCallGraph cg) {
@@ -144,18 +172,23 @@ public class ExtendedRevisionCallGraphTest {
         assertEquals(1574072773, cgFromJSON.timestamp);
         assertEquals("OPAL", cgFromJSON.getCgGenerator());
         assertEquals(0, cgFromJSON.depset.size());
-        assertArrayEquals(new int[]{1, 2}, cgFromJSON.getGraph().getResolvedCalls().get(0));
-        assertArrayEquals(new int[]{2, 3}, cgFromJSON.getGraph().getResolvedCalls().get(1));
-        assertArrayEquals(new int[]{3, 4}, cgFromJSON.getGraph().getResolvedCalls().get(2));
+        assertArrayEquals(new int[] {1, 2}, cgFromJSON.getGraph().getResolvedCalls().get(0));
+        assertArrayEquals(new int[] {2, 3}, cgFromJSON.getGraph().getResolvedCalls().get(1));
+        assertArrayEquals(new int[] {3, 4}, cgFromJSON.getGraph().getResolvedCalls().get(2));
 
-        assertTrue(cgFromJSON.getGraph().getUnresolvedCalls().equals(cg.getGraph().getUnresolvedCalls()));
+        assertTrue(
+            cgFromJSON.getGraph().getUnresolvedCalls().equals(cg.getGraph().getUnresolvedCalls()));
 
         for (final var entry : cgFromJSON.getClassHierarchy().entrySet()) {
             assertTrue(cg.getClassHierarchy().containsKey(entry.getKey()));
-            assertTrue(cg.getClassHierarchy().get(entry.getKey()).getMethods().equals(entry.getValue().getMethods()));
-            assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSourceFileName(), entry.getValue().getSourceFileName());
-            assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSuperClasses(), (entry.getValue().getSuperClasses()));
-            assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSuperInterfaces(), (entry.getValue().getSuperInterfaces()));
+            assertTrue(cg.getClassHierarchy().get(entry.getKey()).getMethods()
+                .equals(entry.getValue().getMethods()));
+            assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSourceFileName(),
+                entry.getValue().getSourceFileName());
+            assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSuperClasses(),
+                (entry.getValue().getSuperClasses()));
+            assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSuperInterfaces(),
+                (entry.getValue().getSuperInterfaces()));
         }
     }
 }

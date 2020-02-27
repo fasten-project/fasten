@@ -20,17 +20,15 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
-
 import eu.fasten.analyzer.javacgopal.merge.CallGraphDifferentiator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
-
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
 
 /**
  * Makes javacg-opal module runnable from command line.
@@ -38,62 +36,29 @@ import java.util.List;
 @CommandLine.Command(name = "JavaCGOpal")
 public class Main implements Runnable {
 
-    static class CoordinateComponents {
-        @CommandLine.Option(names = {"-g", "--group"},
-            paramLabel = "GROUP",
-            description = "Maven group id",
-            required = true)
-        String group;
-
-        @CommandLine.Option(names = {"-a", "--artifact"},
-            paramLabel = "ARTIFACT",
-            description = "Maven artifact id",
-            required = true)
-        String artifact;
-
-        @CommandLine.Option(names = {"-v", "--version"},
-            paramLabel = "VERSION",
-            description = "Maven version id",
-            required = true)
-        String version;
-    }
-
+    private static Logger logger = LoggerFactory.getLogger(Main.class);
     @CommandLine.ArgGroup(exclusive = true)
     FullCoordinate fullCoordinate;
-
-    static class FullCoordinate {
-        @CommandLine.ArgGroup(exclusive = false)
-        CoordinateComponents coordinateComponents;
-
-        @CommandLine.Option(names = {"-c", "--coord"},
-            paramLabel = "COORD",
-            description = "Maven coordinates string",
-            required = true)
-        String mavenCoordStr;
-    }
-
     @CommandLine.ArgGroup(exclusive = true)
     MergeGenerateDiff mgd;
-    static class MergeGenerateDiff{
-        @CommandLine.Option(names = {"-m", "--merge"},
-            paramLabel = "MERGE",
-            description = "Merge artifact with the passed dependencies")
-        boolean merge;
-    }
-
     @CommandLine.Option(names = {"-t", "--timestamp"},
         paramLabel = "TS",
         description = "Release TS",
         defaultValue = "0")
     String timestamp;
-
-
     @CommandLine.Option(names = {"-d", "--dependencies"},
         paramLabel = "DEPENDENCIES",
         description = "One or more dependency coordinate to merge with the artifact")
     String[] dependencies;
 
-    private static Logger logger = LoggerFactory.getLogger(Main.class);
+    /**
+     * Generates RevisionCallGraphs using Opal for the specified artifact in the command line
+     * parameters.
+     */
+    public static void main(String[] args) {
+        final int exitCode = new CommandLine(new Main()).execute(args);
+        System.exit(exitCode);
+    }
 
     public void run() {
         final NumberFormat timeFormatter = new DecimalFormat("#0.000");
@@ -116,26 +81,61 @@ public class Main implements Runnable {
 
         final ExtendedRevisionCallGraph revisionCallGraph;
         try {
-            logger.info("Generating call graph for the Maven coordinate: {}", this.fullCoordinate.mavenCoordStr);
+            logger.info("Generating call graph for the Maven coordinate: {}",
+                this.fullCoordinate.mavenCoordStr);
             long startTime = System.currentTimeMillis();
-            revisionCallGraph = ExtendedRevisionCallGraph.createWithOPAL("mvn", mavenCoordinate, Long.parseLong(this.timestamp));
-            logger.info("Generated the call graph in {} seconds.", timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
+            revisionCallGraph = ExtendedRevisionCallGraph
+                .create(mavenCoordinate, Long.parseLong(this.timestamp));
+            logger.info("Generated the call graph in {} seconds.",
+                timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
             //TODO something with the calculated RevesionCallGraph.
-            CallGraphDifferentiator.writeToFile("",revisionCallGraph.toJSON().toString(4),"graph");
+            CallGraphDifferentiator
+                .writeToFile("", revisionCallGraph.toJSON().toString(4), "graph");
 
         } catch (IOException e) {
-            logger.error("Could not download the JAR file of Maven coordinate: {}", mavenCoordinate.getCoordinate());
+            logger.error("Could not download the JAR file of Maven coordinate: {}",
+                mavenCoordinate.getCoordinate());
             e.printStackTrace();
         }
 
     }
 
-    /**
-     * Generates RevisionCallGraphs using Opal for the specified artifact in the command line parameters.
-     */
-    public static void main(String[] args) {
-        final int exitCode = new CommandLine(new Main()).execute(args);
-        System.exit(exitCode);
+    static class CoordinateComponents {
+        @CommandLine.Option(names = {"-g", "--group"},
+            paramLabel = "GROUP",
+            description = "Maven group id",
+            required = true)
+        String group;
+
+        @CommandLine.Option(names = {"-a", "--artifact"},
+            paramLabel = "ARTIFACT",
+            description = "Maven artifact id",
+            required = true)
+        String artifact;
+
+        @CommandLine.Option(names = {"-v", "--version"},
+            paramLabel = "VERSION",
+            description = "Maven version id",
+            required = true)
+        String version;
+    }
+
+    static class FullCoordinate {
+        @CommandLine.ArgGroup(exclusive = false)
+        CoordinateComponents coordinateComponents;
+
+        @CommandLine.Option(names = {"-c", "--coord"},
+            paramLabel = "COORD",
+            description = "Maven coordinates string",
+            required = true)
+        String mavenCoordStr;
+    }
+
+    static class MergeGenerateDiff {
+        @CommandLine.Option(names = {"-m", "--merge"},
+            paramLabel = "MERGE",
+            description = "Merge artifact with the passed dependencies")
+        boolean merge;
     }
 }
 
