@@ -25,6 +25,9 @@ import java.net.URISyntaxException;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.core.data.FastenJavaURI;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -172,17 +175,20 @@ public class ExtendedRevisionCallGraphTest {
         assertEquals(1574072773, cgFromJSON.timestamp);
         assertEquals("OPAL", cgFromJSON.getCgGenerator());
         assertEquals(0, cgFromJSON.depset.size());
-        assertArrayEquals(new int[] {1, 2}, cgFromJSON.getGraph().getResolvedCalls().get(0));
-        assertArrayEquals(new int[] {2, 3}, cgFromJSON.getGraph().getResolvedCalls().get(1));
-        assertArrayEquals(new int[] {3, 4}, cgFromJSON.getGraph().getResolvedCalls().get(2));
+        assertEquals(List.of( 1, 2),
+            cgFromJSON.getGraph().getResolvedCalls().get(0));
+        assertEquals(List.of( 2, 3),
+            cgFromJSON.getGraph().getResolvedCalls().get(1));
+        assertEquals(List.of( 3, 4),
+            cgFromJSON.getGraph().getResolvedCalls().get(2));
 
-        assertTrue(
-            cgFromJSON.getGraph().getUnresolvedCalls().equals(cg.getGraph().getUnresolvedCalls()));
+        assertEquals(cgFromJSON.getGraph().getUnresolvedCalls(),
+            cg.getGraph().getUnresolvedCalls());
 
         for (final var entry : cgFromJSON.getClassHierarchy().entrySet()) {
             assertTrue(cg.getClassHierarchy().containsKey(entry.getKey()));
-            assertTrue(cg.getClassHierarchy().get(entry.getKey()).getMethods()
-                .equals(entry.getValue().getMethods()));
+            assertEquals(cg.getClassHierarchy().get(entry.getKey()).getMethods(),
+                entry.getValue().getMethods());
             assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSourceFileName(),
                 entry.getValue().getSourceFileName());
             assertEquals(cg.getClassHierarchy().get(entry.getKey()).getSuperClasses(),

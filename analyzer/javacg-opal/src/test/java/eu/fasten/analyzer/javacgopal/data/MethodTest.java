@@ -33,56 +33,56 @@ import static org.junit.Assert.assertEquals;
 
 public class MethodTest {
 
-//    static PartialCallGraph singleSourceToTargetcallGraph, classInitCallGraph, lambdaCallGraph, arrayCallGraph;
-//    static String lambdaNumber;
-//
-//    @BeforeClass
-//    public static void generateCallGraph() {
-//
-//        /**
-//         * SingleSourceToTarget is a java8 compiled bytecode of:
-//         *<pre>
-//         * package name.space;
-//         *
-//         * public class SingleSourceToTarget{
-//         *
-//         *     public static void sourceMethod() { targetMethod(); }
-//         *
-//         *     public static void targetMethod() {}
-//         * }
-//         * </pre>
-//         * Including these edges:
-//         *  Resolved:[ public static void sourceMethod(),
-//         *             public static void targetMethod()]
-//         *  Unresolved:[ public void <init>() of current class,
-//         *               public void <init>() of Object class]
-//         */
-//        singleSourceToTargetcallGraph = new PartialCallGraph(
-//                new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())
-//        );
+    static PartialCallGraph singleSourceToTargetcallGraph, classInitCallGraph, lambdaCallGraph, arrayCallGraph;
+    static String lambdaNumber;
 
-//        /**
-//         * ClassInit is a java8 compiled bytecode of:
-//         *<pre>
-//         * package name.space;
-//         *
-//         * public class ClassInit{
-//         *
-//         * public static void targetMethod(){}
-//         *     static{
-//         *         targetMethod();
-//         *     }
-//         * }
-//         * </pre>
-//         * Including these edges:
-//         *  Resolved:[ static void <clinit>(),
-//         *             public static void targetMethod()]
-//         *  Unresolved:[ public void <init>() of current class,
-//         *               public void <init>() of Object class]
-//         */
-//        classInitCallGraph = new PartialCallGraph(
-//                new File(Thread.currentThread().getContextClassLoader().getResource("ClassInit.class").getFile())
-//        );
+    @BeforeClass
+    public static void generateCallGraph() {
+
+        /**
+         * SingleSourceToTarget is a java8 compiled bytecode of:
+         *<pre>
+         * package name.space;
+         *
+         * public class SingleSourceToTarget{
+         *
+         *     public static void sourceMethod() { targetMethod(); }
+         *
+         *     public static void targetMethod() {}
+         * }
+         * </pre>
+         * Including these edges:
+         *  Resolved:[ public static void sourceMethod(),
+         *             public static void targetMethod()]
+         *  Unresolved:[ public void <init>() of current class,
+         *               public void <init>() of Object class]
+         */
+        singleSourceToTargetcallGraph = new PartialCallGraph(
+                new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())
+        );
+
+        /**
+         * ClassInit is a java8 compiled bytecode of:
+         *<pre>
+         * package name.space;
+         *
+         * public class ClassInit{
+         *
+         * public static void targetMethod(){}
+         *     static{
+         *         targetMethod();
+         *     }
+         * }
+         * </pre>
+         * Including these edges:
+         *  Resolved:[ static void <clinit>(),
+         *             public static void targetMethod()]
+         *  Unresolved:[ public void <init>() of current class,
+         *               public void <init>() of Object class]
+         */
+        classInitCallGraph = new PartialCallGraph(
+                new File(Thread.currentThread().getContextClassLoader().getResource("ClassInit.class").getFile())
+        );
         /**
          * LambdaExample is a java8 compiled bytecode of:
          *<pre>
@@ -114,38 +114,38 @@ public class MethodTest {
          *                   public void <init>() of Object class}
          *              ]
          */
-//        lambdaCallGraph = new PartialCallGraph(
-//                new File(Thread.currentThread().getContextClassLoader().getResource("LambdaExample.class").getFile())
-//        );
-////        var lambdaFullName = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getSource().declaringClassFile().thisType().fqn();
-////        lambdaNumber = lambdaFullName.split("[$]")[1].split(":")[0];
-//
-//        /**
-//         * SingleSourceToTarget is a java8 compiled bytecode of:
-//         *<pre>
-//         *package name.space;
-//         *
-//         * public class ArrayExample{
-//         *     public static void sourceMethod() {
-//         *         Object[] object = new Object[1];
-//         *         targetMethod(object);
-//         *     }
-//         *
-//         *     public static Object[] targetMethod(Object[] obj) {
-//         *         return obj;
-//         *     }
-//         * }
-//         * </pre>
-//         * Including these edges:
-//         *  Resolved:[ public static void sourceMethod(),
-//         *             public static Object[] targetMethod(Object[])]
-//         *  Unresolved:[ public void <init>() of current class,
-//         *               public void <init>() of Object class]
-//         */
-//        arrayCallGraph = new PartialCallGraph(
-//                new File(Thread.currentThread().getContextClassLoader().getResource("ArrayExample.class").getFile())
-//        );
-//    }
+        lambdaCallGraph = new PartialCallGraph(
+                new File(Thread.currentThread().getContextClassLoader().getResource("LambdaExample.class").getFile())
+        );
+//        var lambdaFullName = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getSource().declaringClassFile().thisType().fqn();
+//        lambdaNumber = lambdaFullName.split("[$]")[1].split(":")[0];
+
+        /**
+         * SingleSourceToTarget is a java8 compiled bytecode of:
+         *<pre>
+         *package name.space;
+         *
+         * public class ArrayExample{
+         *     public static void sourceMethod() {
+         *         Object[] object = new Object[1];
+         *         targetMethod(object);
+         *     }
+         *
+         *     public static Object[] targetMethod(Object[] obj) {
+         *         return obj;
+         *     }
+         * }
+         * </pre>
+         * Including these edges:
+         *  Resolved:[ public static void sourceMethod(),
+         *             public static Object[] targetMethod(Object[])]
+         *  Unresolved:[ public void <init>() of current class,
+         *               public void <init>() of Object class]
+         */
+        arrayCallGraph = new PartialCallGraph(
+                new File(Thread.currentThread().getContextClassLoader().getResource("ArrayExample.class").getFile())
+        );
+    }
 //
 //    @Test
 //    public void testToCanonicalSchemelessURI() {

@@ -25,6 +25,7 @@ import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opalj.ai.analyses.cg.CHACallGraphAlgorithmConfiguration;
@@ -66,11 +68,16 @@ public class PartialCallGraph {
     private final Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
 
     /**
-     * Resolved calls of the call graph, each element is an int[] that the first element is the id
-     * of source method and the second one is the id of the target method. Ids are available in the
-     * class hierarchy.
+     * Resolved calls of the call graph, each element is a list of Integer that the first element is
+     * the id of source method and the second one is the id of the target method. Ids are available
+     * in the class hierarchy.
+     * @implNote Since this part of the graphs are most of the times bottleneck it is important
+     *     to use a proper data structure. using int[] for each edge will make things a bit
+     *     difficult in future because of the array equal and toString methods. Pair is also a good
+     *     option since it's representative of the functionality but the equal function works too
+     *     slow to be in such a critical place. So Lists are good trade of in every aspect.
      */
-    private final List<int[]> resolvedCalls;
+    private final List<List<Integer>> resolvedCalls;
 
     /**
      * Unresolved calls of the call graph. Each key of the map is an unresolved call. Keys are
@@ -80,9 +87,14 @@ public class PartialCallGraph {
      */
     private final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls;
 
+    /**
+     * Given a file it creates a {@link PartialCallGraph} for it using OPAL.
+     * @param file class files to be process, it can be jar file or a folder containing class
+     *             files.
+     */
     public PartialCallGraph(final File file) {
         logger.info("Generating call graph using OPAL ...");
-        final var cg = generatePartialCallGraph(file);
+        final var cg = generateCallGraph(file);
         logger.info("OPAL generated the call graph, creating the CHA ...");
         final var cha = createCHA(cg);
         logger.info("CHA is created, setting resolved calls ...");
@@ -139,7 +151,7 @@ public class PartialCallGraph {
      * Converts all of the members of the classHierarchy to {@link FastenURI}.
      * @param classHierarchy Map<{@link ObjectType},{@link OPALType}>
      * @return A {@link Map} of {@link FastenURI} as key and {@link ExtendedRevisionCallGraph.Type}
-     * as value.
+     *     as value.
      */
     public static Map<FastenURI, ExtendedRevisionCallGraph.Type> asURIHierarchy(
         final Map<ObjectType, OPALType> classHierarchy) {
@@ -186,7 +198,7 @@ public class PartialCallGraph {
         final LinkedList<FastenURI> result = new LinkedList<>();
 
         types.foreach(JavaToScalaConverter.asScalaFunction1(
-            aClass -> result.add(OPALMethod.getTypeURI((ObjectType) aClass))));
+            clas -> result.add(OPALMethod.getTypeURI((ObjectType) clas))));
 
         return result;
     }
@@ -197,7 +209,7 @@ public class PartialCallGraph {
      * @param methods {@link org.opalj.br.Method} are keys and their unique id in the artifact are
      *                values.
      * @return A Map in which the unique id of each method in the artifact is the key and the {@link
-     * FastenURI} of the method is the value.
+     *     FastenURI} of the method is the value.
      */
     public static Map<Integer, FastenURI> toURIMethods(
         final Map<org.opalj.br.Method, Integer> methods) {
@@ -236,10 +248,10 @@ public class PartialCallGraph {
      * It creates a class hierarchy for the given call graph's artifact.
      * @param cg {@link ComputedCallGraph}
      * @return A Map of {@link ObjectType} and created {@link OPALType} for it.
-     * @implNote Inside {@link OPALType} all of the methods are indexed, it means one can use the
-     * ids assigned to each method instead of the method itself.
+     * @implNote Inside {@link OPALType} all of the methods are indexed, it means one can use
+     *     the ids assigned to each method instead of the method itself.
      */
-    private Map<ObjectType, OPALType> createCHA(final ComputedCallGraph cg) {
+    public static Map<ObjectType, OPALType> createCHA(final ComputedCallGraph cg) {
 
         final var project = cg.callGraph().project();
         final AtomicInteger methodNum = new AtomicInteger();
@@ -250,8 +262,8 @@ public class PartialCallGraph {
             final var methods =
                 getMethodsMap(methodNum.get(), JavaConverters.asJavaIterable(classFile.methods()));
             final var type =
-                new OPALType(methods, getSuperClasses(project.classHierarchy(), currentClass),
-                    getSuperInterfaces(project.classHierarchy(), currentClass),
+                new OPALType(methods, extractSuperClasses(project.classHierarchy(), currentClass),
+                    extractSuperInterfaces(project.classHierarchy(), currentClass),
                     classFile.sourceFile()
                         .getOrElse(JavaToScalaConverter.asScalaFunction0OptionString("NotFound")));
             cha.put(currentClass, type);
@@ -262,34 +274,135 @@ public class PartialCallGraph {
     }
 
     /**
+     * Extract super classes of a given type from a given CHA.
+     * @param classHierarchy {@link ClassHierarchy} of the artifact to be investigated for super
+     *                       classes.
+     * @param currentClass   {@link ObjectType} the type that we are looking for it's super
+     *                       classes.
+     * @return A {@link Chain} of {@link ObjectType} as super classes of the passed type.
+     */
+    public static Chain<ObjectType> extractSuperClasses(final ClassHierarchy classHierarchy,
+                                                        final ObjectType currentClass) {
+        try {
+            if (classHierarchy.supertypes().contains(currentClass)) {
+                final var superClasses =
+                    classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
+                if (superClasses != null) {
+                    return superClasses.reverse();
+                }
+            }
+        } catch (NoSuchElementException e) {
+            logger.error("This type {} doesn't have allSuperclassTypesInInitializationOrder"
+                + " method.", currentClass, e);
+        } catch (OutOfMemoryError e) {
+            logger.error("This type {} made an out of memory Exception in calculation of its"
+                + "supper types!", currentClass, e);
+        } catch (Exception e) {
+            logger.error("This type made an Exception in calculation of its supper types!", e);
+        }
+        return null;
+    }
+
+    /**
+     * Extract super Interfaces of a given type from a given CHA.
+     * @param classHierarchy {@link ClassHierarchy} of the artifact to be investigated for super
+     *                       Interfaces.
+     * @param currentClass   {@link ObjectType} the type that we are looking for it's super
+     *                       interfaces.
+     * @return A list of {@link ObjectType} as super interfaces of the passed type.
+     */
+    public static List<ObjectType> extractSuperInterfaces(final ClassHierarchy classHierarchy,
+                                                          final ObjectType currentClass) {
+        return Lists.newArrayList(JavaConverters
+            .asJavaIterable(classHierarchy.allSuperinterfacetypes(currentClass, false)));
+    }
+
+    /**
+     * Sorts the given Iterable.
+     * @param iterable Iterable to be sorted.
+     * @return Sorted List.
+     */
+    private static List<?> sort(final java.lang.Iterable<?> iterable) {
+        final var result = Lists.newArrayList(iterable);
+        result.sort(Comparator.comparing(Object::toString));
+        return result;
+    }
+
+    /**
+     * Assign each method an id. Ids start from the the first parameter and increase by one number
+     * for every method.
+     * @param keyStartsFrom Starting point of the Methods's ids.
+     * @param methods       Iterable of {@link org.opalj.br.Method} to get mapped to ids.
+     * @return A map of passed methods and their ids.
+     * @implNote Methods are keys of the result map and values are the generated Integer keys.
+     */
+    private static Map<org.opalj.br.Method, Integer> getMethodsMap(
+        final int keyStartsFrom,
+        final java.lang.Iterable<org.opalj.br.Method> methods) {
+
+        final Map<org.opalj.br.Method, Integer> result = new HashMap<>();
+        final AtomicInteger i = new AtomicInteger(keyStartsFrom);
+        for (final var method : methods) {
+            result.put(method, i.get());
+            i.addAndGet(1);
+        }
+        return result;
+    }
+
+    /**
+     * Generates a call graph for a given file using {@link CallGraphFactory}.
+     * @param artifactFile {@link File} that can be jar or class files or a folder containing them.
+     * @return {@link ComputedCallGraph}
+     */
+    public static ComputedCallGraph generateCallGraph(final File artifactFile) {
+
+        final var artifactInOpalFormat = Project.apply(artifactFile);
+
+        //OPALLogger.updateLogger(artifactInOpalFormat.logContext(),
+        // new ConsoleOPALLogger(true, 0));
+        //ComputedCallGraph callGraphInOpalFormat = (ComputedCallGraph) AnalysisModeConfigFactory
+        //    .resetAnalysisMode(artifactInOpalFormat, AnalysisModes.OPA())
+        //    .get(CHACallGraphKey$.MODULE$);
+
+        return CallGraphFactory.create(artifactInOpalFormat,
+            JavaToScalaConverter.asScalaFunction0EntryPionts(findEntryPoints(
+                JavaConverters.asJavaIterable(artifactInOpalFormat.allMethodsWithBody()))),
+            new CHACallGraphAlgorithmConfiguration(artifactInOpalFormat, true));
+
+    }
+
+    /**
      * Given a call graph and a CHA it creates a list of resolved calls. This list indicates source
      * and target methods by their unique within artifact ids existing in the cha.
      * @param cg  {@link ComputedCallGraph}
      * @param cha A Map of {@link ObjectType} and {@link ExtendedRevisionCallGraph.Type}
-     * @return a list of int[] that the first element of each int[] is the source method and the
-     * second one is the target method.
+     * @return a list of List of Integers that the first element of each int[] is the source method
+     *     and the second one is the target method.
      */
-    private List<int[]> getResolvedCalls(final ComputedCallGraph cg,
-                                         final Map<ObjectType, OPALType> cha) {
-        final Set<int[]> resultSet = new HashSet<>();
+    private List<List<Integer>> getResolvedCalls(final ComputedCallGraph cg,
+                                                 final Map<ObjectType, OPALType> cha) {
+        final Set<List<Integer>> resultSet = new HashSet<>();
         for (final var source : JavaConverters
             .asJavaIterable(cg.callGraph().project().allMethods())) {
             final var targetsMap = cg.callGraph().calls((source));
             if (targetsMap != null && !targetsMap.isEmpty()) {
                 for (final var keyValue : JavaConverters.asJavaIterable(targetsMap)) {
                     for (final var target : JavaConverters.asJavaIterable(keyValue._2())) {
-                        final var call = new int[] {
+                        final var call = Arrays.asList(
                             cha.get(source.declaringClassFile().thisType()).getMethods().get(
                                 source),
                             cha.get(target.declaringClassFile().thisType()).getMethods().get(target)
-                        };
+                        );
                         resultSet.add(call);
                     }
                 }
             }
         }
-
         return new ArrayList<>(resultSet);
+    }
+
+    public List<List<Integer>> getResolvedCalls() {
+        return this.resolvedCalls;
     }
 
     /**
@@ -299,9 +412,9 @@ public class PartialCallGraph {
      * @param cg  {@link ComputedCallGraph}
      * @param cha A Map of {@link ObjectType} and {@link ExtendedRevisionCallGraph.Type}
      * @return A map that each each entry of it is a {@link Pair} of source method's id, and target
-     * method's {@link FastenURI} as key and a map that shows call types as value. call types map's
-     * key is the name of JVM call type and the value is number of invocation by this call type for
-     * this specific edge.
+     *     method's {@link FastenURI} as key and a map that shows call types as value. call types
+     *     map's key is the name of JVM call type and the value is number of invocation by this call
+     *     type for this specific edge.
      */
     private Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls(
         final ComputedCallGraph cg,
@@ -321,6 +434,10 @@ public class PartialCallGraph {
         }
 
         return result;
+    }
+
+    public Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls() {
+        return this.unresolvedCalls;
     }
 
     /**
@@ -348,108 +465,6 @@ public class PartialCallGraph {
         }
     }
 
-    /**
-     * Extract super classes of a given type from a given CHA.
-     * @param classHierarchy {@link ClassHierarchy} of the artifact to be investigated for super
-     *                       classes.
-     * @param currentClass   {@link ObjectType} the type that we are looking for it's super
-     *                       classes.
-     * @return A {@link Chain} of {@link ObjectType} as super classes of the passed type.
-     */
-    public Chain<ObjectType> getSuperClasses(final ClassHierarchy classHierarchy,
-                                             final ObjectType currentClass) {
-        try {
-            if (classHierarchy.supertypes().contains(currentClass)) {
-                final var superClasses =
-                    classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
-                if (superClasses != null) {
-                    return superClasses.reverse();
-                }
-            }
-        } catch (NoSuchElementException e) {
-            logger.error("This type {} doesn't have allSuperclassTypesInInitializationOrder" +
-                " method.", currentClass, e);
-        } catch (OutOfMemoryError e) {
-            logger.error("This type {} made an out of memory Exception in calculation of its" +
-                "supper types!", currentClass, e);
-        } catch (Exception e) {
-            logger.error("This type made an Exception in calculation of its supper types!", e);
-        }
-        return null;
-    }
-
-    /**
-     * Extract super Interfaces of a given type from a given CHA.
-     * @param classHierarchy {@link ClassHierarchy} of the artifact to be investigated for super
-     *                       Interfaces.
-     * @param currentClass   {@link ObjectType} the type that we are looking for it's super
-     *                       interfaces.
-     * @return A list of {@link ObjectType} as super interfaces of the passed type.
-     */
-    public List<ObjectType> getSuperInterfaces(final ClassHierarchy classHierarchy,
-                                               final ObjectType currentClass) {
-        return Lists.newArrayList(JavaConverters
-            .asJavaIterable(classHierarchy.allSuperinterfacetypes(currentClass, false)));
-    }
-
-    /**
-     * Sorts the given Iterable.
-     * @param iterable Iterable to be sorted.
-     * @return Sorted List.
-     */
-    private List<?> sort(final java.lang.Iterable<?> iterable) {
-        final var result = Lists.newArrayList(iterable);
-        result.sort(Comparator.comparing(Object::toString));
-        return result;
-    }
-
-    /**
-     * Assign each method an id. Ids start from the the first parameter and increase by one number
-     * for every method.
-     * @param keyStartsFrom Starting point of the Methods's ids.
-     * @param methods       Iterable of {@link org.opalj.br.Method} to get mapped to ids.
-     * @return A map of passed methods and their ids.
-     * @implNote Methods are keys of the result map and values are the generated Integer keys.
-     */
-    private Map<org.opalj.br.Method, Integer> getMethodsMap(final int keyStartsFrom,
-                                                            final java.lang.Iterable<org.opalj.br.Method> methods) {
-
-        final Map<org.opalj.br.Method, Integer> result = new HashMap<>();
-        final AtomicInteger i = new AtomicInteger(keyStartsFrom);
-        for (final var method : methods) {
-            result.put(method, i.get());
-            i.addAndGet(1);
-        }
-        return result;
-    }
-
-    /**
-     * Generates a call graph for a given file using {@link CallGraphFactory}.
-     * @param artifactFile {@link File} that can be jar or class files or a folder containing them.
-     * @return {@link ComputedCallGraph}
-     */
-    public ComputedCallGraph generatePartialCallGraph(final File artifactFile) {
-
-        final var artifactInOpalFormat = Project.apply(artifactFile);
-
-//        OPALLogger.updateLogger(artifactInOpalFormat.logContext(),new ConsoleOPALLogger(true, 0));
-//        ComputedCallGraph callGraphInOpalFormat = (ComputedCallGraph) AnalysisModeConfigFactory.resetAnalysisMode(artifactInOpalFormat, AnalysisModes.OPA()).get(CHACallGraphKey$.MODULE$);
-
-        return CallGraphFactory.create(artifactInOpalFormat,
-            JavaToScalaConverter.asScalaFunction0EntryPionts(findEntryPoints(
-                JavaConverters.asJavaIterable(artifactInOpalFormat.allMethodsWithBody()))),
-            new CHACallGraphAlgorithmConfiguration(artifactInOpalFormat, true));
-
-    }
-
-    public Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls() {
-        return this.unresolvedCalls;
-    }
-
-    public List<int[]> getResolvedCalls() {
-        return this.resolvedCalls;
-    }
-
     public Map<FastenURI, ExtendedRevisionCallGraph.Type> getClassHierarchy() {
         return classHierarchy;
     }
@@ -462,4 +477,26 @@ public class PartialCallGraph {
         return new ExtendedRevisionCallGraph.Graph(this.resolvedCalls, this.unresolvedCalls);
     }
 
+    /**
+     * Returns the map of all the methods in this partial call graph hierarchy.
+     * @return a Map of method ids and their corresponding {@link FastenURI}
+     */
+    public Map<Integer, FastenURI> mapOfAllMethods() {
+        Map<Integer, FastenURI> result = new HashMap<>();
+        for (final var aClass : this.getClassHierarchy().entrySet()) {
+            result.putAll(aClass.getValue().getMethods());
+        }
+        return result;
+    }
+
+    @Override public String toString() {
+
+        return "PartialCallGraph{"
+            + "classHierarchy=" + classHierarchy
+            + ", resolvedCalls="
+            + resolvedCalls.stream().map(call -> "[" + call.get(0) + "," + call.get(1)
+            + "]").collect(Collectors.joining())
+            + ", unresolvedCalls=" + unresolvedCalls
+            + '}';
+    }
 }

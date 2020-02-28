@@ -23,12 +23,15 @@ import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONArray;
@@ -207,9 +210,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      * doesn't keep the order it might be needed to sort the edges
      */
     public void sortResolvedCalls() {
-        List<int[]> sortedList = new ArrayList<>(this.graph.resolvedCalls);
-        sortedList.sort((o1, o2) -> (Integer.toString(o1[0]) + o1[1])
-            .compareTo(o2[0] + Integer.toString(o2[1])));
+        final var sortedList = new ArrayList<>(this.graph.resolvedCalls);
+        sortedList.sort(Comparator.comparing(o -> (o.get(0).toString() + o.get(1))));
         this.graph.resolvedCalls.clear();
         this.graph.resolvedCalls.addAll(sortedList);
     }
@@ -299,7 +301,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
          * method. First element of the int[] is the id of the source method and the second one is
          * the target's id. Ids are available in the class hierarchy.
          */
-        private final List<int[]> resolvedCalls;
+        private final List<List<Integer>> resolvedCalls;
 
         /**
          * Unresolved calls of the graph and key value metadata about each call. The {@link Pair}
@@ -311,7 +313,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
          */
         private final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls;
 
-        public Graph(final List<int[]> resolvedCalls,
+        public Graph(final List<List<Integer>> resolvedCalls,
                      final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls) {
             this.resolvedCalls = resolvedCalls;
             this.unresolvedCalls = unresolvedCalls;
@@ -328,7 +330,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             final int numberOfArcs = resolvedCalls.length();
             for (int i = 0; i < numberOfArcs; i++) {
                 final var pair = resolvedCalls.getJSONArray(i);
-                this.resolvedCalls.add(new int[] {(Integer) pair.get(0), (Integer) pair.get(1)});
+                this.resolvedCalls.add(Arrays.asList((Integer) pair.get(0), (Integer) pair.get(1)));
             }
 
             final var unresolvedCalls = graph.getJSONArray("unresolvedCalls");
@@ -354,12 +356,13 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
          */
         public JSONObject toJSON(final Graph graph) {
 
+            logger.info("putting resolved calls, size: {} ... ", graph.resolvedCalls.size());
             final var result = new JSONObject();
             final var resolvedCallsJSON = new JSONArray();
             for (final var entry : graph.resolvedCalls) {
                 resolvedCallsJSON.put(entry);
             }
-
+            logger.info("putting unresolved calls, size: {} ... ", graph.unresolvedCalls.size());
             final var unresolvedCallsJSON = new JSONArray();
             for (final var entry : graph.unresolvedCalls.entrySet()) {
                 final var call = new JSONArray();
@@ -378,7 +381,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             return toJSON(this);
         }
 
-        public List<int[]> getResolvedCalls() {
+        public List<List<Integer>> getResolvedCalls() {
             return resolvedCalls;
         }
 
@@ -503,6 +506,14 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             return superInterfaces;
         }
 
+        @Override public String toString() {
+            return "Type{" +
+                "sourceFileName='" + sourceFileName + '\'' +
+                ", methods=" + methods +
+                ", superClasses=" + superClasses +
+                ", superInterfaces=" + superInterfaces +
+                '}';
+        }
     }
 
 }

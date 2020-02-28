@@ -27,9 +27,8 @@ import java.io.IOException;
 public class CallGraphDifferentiator {
 
     /**
-     * It writes two ProposalRevisionCallGraphs together with their differences in the provided
+     * It writes two ProposalRevisionCallGraphs together with their differences in the provided.
      * path
-     *
      * @param resultPath  the path for the result diff
      * @param graphNumber the number of the graph this number will be written as a prefix to the
      *                    result files
@@ -51,10 +50,17 @@ public class CallGraphDifferentiator {
         writeToFile(secondGraph.toJSON().toString(4), graphPath, "_2.txt");
 
         Runtime.getRuntime().exec(new String[] {"sh", "-c",
-            "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath +
-                "_Diff.txt"});
+            "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath
+                + "_Diff.txt"});
     }
 
+    /**
+     * Writes Strings to files, can be used to output the graphs.
+     * @param path the path to write
+     * @param graph the String representation of graph or any other String to be written to a file
+     * @param suffix the suffix to put at the end of the path, most of the time file name
+     * @throws IOException throws if IO problems occur during writing in a file
+     */
     public static void writeToFile(final String path, final String graph, final String suffix)
         throws IOException {
         final BufferedWriter writer;

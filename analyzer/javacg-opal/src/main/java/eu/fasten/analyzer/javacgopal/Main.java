@@ -90,7 +90,7 @@ public class Main implements Runnable {
                 timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
             //TODO something with the calculated RevesionCallGraph.
             CallGraphDifferentiator
-                .writeToFile("", revisionCallGraph.toJSON().toString(4), "graph");
+                .writeToFile("", revisionCallGraph.toJSON().toString(), "graph");
 
         } catch (IOException e) {
             logger.error("Could not download the JAR file of Maven coordinate: {}",
