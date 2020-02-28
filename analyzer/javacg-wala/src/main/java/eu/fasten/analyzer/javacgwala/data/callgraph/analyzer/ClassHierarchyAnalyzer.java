@@ -75,10 +75,34 @@ public class ClassHierarchyAnalyzer {
                 processClass(method, klass);
             }
         }
-        partialCallGraph.getClassHierarchy().get(getClassURI(method)).getMethods()
-                .putIfAbsent(counter++, method.toCanonicalSchemalessURI());
 
-        return counter - 1;
+        if (!partialCallGraph.getClassHierarchy().get(getClassURI(method)).getMethods()
+                .containsValue(method.toCanonicalSchemalessURI())) {
+            partialCallGraph.getClassHierarchy().get(getClassURI(method)).getMethods()
+                    .putIfAbsent(counter++, method.toCanonicalSchemalessURI());
+
+            return counter - 1;
+        }
+
+        return getMethodID(method);
+    }
+
+    /**
+     * Finds ID of a given method.
+     *
+     * @param method Method
+     * @return ID of method
+     */
+    private int getMethodID(Method method) {
+        int index = -1;
+        for (var entry : partialCallGraph
+                .getClassHierarchy().get(getClassURI(method)).getMethods().entrySet()) {
+            if (entry.getValue().equals(method.toCanonicalSchemalessURI())) {
+                index = entry.getKey();
+                break;
+            }
+        }
+        return index;
     }
 
     /**
@@ -87,7 +111,7 @@ public class ClassHierarchyAnalyzer {
      * @param klass Class
      */
     private void processClass(Method method, IClass klass) {
-        String sourceFileName = klass.getSourceFileName();
+        String sourceFileName = "placeholderFileName.java";
         List<FastenURI> interfaces = new ArrayList<>();
 
         for (IClass implementedInterface : klass.getAllImplementedInterfaces()) {

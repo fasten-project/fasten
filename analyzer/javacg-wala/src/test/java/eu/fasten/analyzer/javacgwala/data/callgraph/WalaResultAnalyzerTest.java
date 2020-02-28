@@ -18,21 +18,14 @@
 
 package eu.fasten.analyzer.javacgwala.data.callgraph;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.ibm.wala.ipa.callgraph.CallGraph;
-import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
-import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import eu.fasten.core.data.FastenJavaURI;
-import eu.fasten.core.data.FastenURI;
-import java.net.URISyntaxException;
-import org.apache.commons.lang3.tuple.MutablePair;
+import java.io.File;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.io.File;
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class WalaResultAnalyzerTest {
 
@@ -55,7 +48,7 @@ class WalaResultAnalyzerTest {
         assertEquals(1, wrapped.getGraph().getUnresolvedCalls().size());
 
         var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
-        var target = "/java.lang/Object.Object()Void";
+        var target = "///java.lang/Object.Object()Void";
 
         var callMetadata = wrapped.getGraph().getUnresolvedCalls().values().iterator().next();
         var callValues = wrapped.getGraph().getUnresolvedCalls().keySet().iterator().next();

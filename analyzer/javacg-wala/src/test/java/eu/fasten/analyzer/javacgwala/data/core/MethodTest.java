@@ -18,20 +18,19 @@
 
 package eu.fasten.analyzer.javacgwala.data.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
+import java.io.File;
 import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.io.File;
 
 public class MethodTest {
 
@@ -131,7 +130,7 @@ public class MethodTest {
         var actualTargetURI = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid";
         var actualSourceUnresolvedURI =
                 "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
-        var actualTargetUnresolvedURI = "/java.lang/Object.Object()Void";
+        var actualTargetUnresolvedURI = "///java.lang/Object.Object()Void";
 
         var callMetadata = wrapped.getUnresolvedCalls().values().iterator().next();
         var callValues = wrapped.getUnresolvedCalls().keySet().iterator().next();
@@ -190,7 +189,7 @@ public class MethodTest {
 
         // Actual URIs
         var actualSourceURI = "/name.space/LambdaExample.LambdaExample()%2Fjava.lang%2FVoid";
-        var actualTargetURI = "/java.lang.invoke/LambdaMetafactory.apply()%2Fjava"
+        var actualTargetURI = "///java.lang.invoke/LambdaMetafactory.apply()%2Fjava"
                 + ".util.function%2FFunction";
 
         assertNotNull(call);

@@ -44,6 +44,10 @@ public abstract class Method {
         this.symbol = reference.getSelector();
     }
 
+    public MethodReference getReference() {
+        return reference;
+    }
+
     /**
      * Convert {@link Method} to ID representation.
      *

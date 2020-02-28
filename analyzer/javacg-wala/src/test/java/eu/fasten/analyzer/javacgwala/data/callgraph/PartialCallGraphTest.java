@@ -52,7 +52,7 @@ class PartialCallGraphTest {
     @Test
     void getUnresolvedCalls() {
         var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
-        var target = "/java.lang/Object.Object()Void";
+        var target = "///java.lang/Object.Object()Void";
 
         var call = graph.getGraph().getUnresolvedCalls().keySet().iterator().next();
 

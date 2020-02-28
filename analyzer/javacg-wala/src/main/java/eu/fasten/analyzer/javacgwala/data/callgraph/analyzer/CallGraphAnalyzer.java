@@ -29,6 +29,7 @@ import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgwala.data.core.CallType;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
 import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
+import eu.fasten.core.data.FastenJavaURI;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
@@ -69,7 +70,7 @@ public class CallGraphAnalyzer {
 
             Method methodNode = analysisContext.findOrCreate(nodeReference);
 
-            var callerID = classHierarchyAnalyzer.addMethodToCHA(methodNode,
+            classHierarchyAnalyzer.addMethodToCHA(methodNode,
                     nodeReference.getDeclaringClass());
 
             for (Iterator<CallSiteReference> callSites = node.iterateCallSites();
@@ -82,11 +83,13 @@ public class CallGraphAnalyzer {
                 Method targetMethodNode =
                         analysisContext.findOrCreate(targetWithCorrectClassLoader);
 
-                var calleeID = classHierarchyAnalyzer.addMethodToCHA(targetMethodNode,
-                        targetWithCorrectClassLoader
-                                .getDeclaringClass());
-                addCall(methodNode, callerID, targetMethodNode, calleeID,
-                        getInvocationLabel(callSite));
+                if (targetWithCorrectClassLoader.getDeclaringClass()
+                        .getClassLoader().equals(ClassLoaderReference.Application)) {
+                    classHierarchyAnalyzer.addMethodToCHA(targetMethodNode,
+                            targetWithCorrectClassLoader
+                                    .getDeclaringClass());
+                }
+                addCall(methodNode, targetMethodNode, getInvocationLabel(callSite));
             }
 
         }
@@ -99,14 +102,16 @@ public class CallGraphAnalyzer {
      * @param target   Callee
      * @param callType Call type
      */
-    private void addCall(Method source, int sourceID, Method target,
-                         int targetID, CallType callType) {
-
+    private void addCall(Method source, Method target, CallType callType) {
+        var sourceID = classHierarchyAnalyzer.addMethodToCHA(source,
+                source.getReference().getDeclaringClass());
         if (source instanceof ResolvedMethod && target instanceof ResolvedMethod) {
+            var targetID = classHierarchyAnalyzer.addMethodToCHA(target,
+                    target.getReference().getDeclaringClass());
             partialCallGraph.addResolvedCall(sourceID, targetID);
         } else {
             partialCallGraph.addUnresolvedCall(sourceID,
-                    target.toCanonicalSchemalessURI(), callType);
+                    new FastenJavaURI("//" + target.toCanonicalSchemalessURI()), callType);
         }
     }
 
