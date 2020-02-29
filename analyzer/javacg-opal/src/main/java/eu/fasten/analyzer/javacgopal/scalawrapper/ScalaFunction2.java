@@ -19,7 +19,6 @@
 package eu.fasten.analyzer.javacgopal.scalawrapper;
 
 import org.opalj.br.Method;
-
 import scala.collection.Iterable;
 import scala.collection.Map;
 

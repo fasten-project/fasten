@@ -253,6 +253,46 @@ public class PartialCallGraphTest {
     }
 
     @Test
-    public void testGetInvocationType() {
+    public void getTargetURI() {
+    }
+
+    @Test
+    public void createCHA() {
+    }
+
+    @Test
+    public void extractSuperClasses() {
+    }
+
+    @Test
+    public void extractSuperInterfaces() {
+    }
+
+    @Test
+    public void getResolvedCalls() {
+    }
+
+    @Test
+    public void getUnresolvedCalls() {
+    }
+
+    @Test
+    public void getClassHierarchy() {
+    }
+
+    @Test
+    public void getGENERATOR() {
+    }
+
+    @Test
+    public void getGraph() {
+    }
+
+    @Test
+    public void mapOfAllMethods() {
+    }
+
+    @Test
+    public void testToString() {
     }
 }

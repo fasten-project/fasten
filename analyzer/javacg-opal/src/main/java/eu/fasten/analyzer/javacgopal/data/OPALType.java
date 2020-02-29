@@ -35,6 +35,13 @@ public class OPALType {
     private final Chain<ObjectType> superClasses;
     private final List<ObjectType> superInterfaces;
 
+    /**
+     * Creates {@link OPALType} for the given data.
+     * @param methods a map of methods in this type together with their ids.
+     * @param superClasses a {@link Chain} of classes that this type extends.
+     * @param superInterfaces a list of interfaces that this type implements.
+     * @param sourceFileName name of the source file that this type belongs to.
+     */
     public OPALType(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses,
                     final List<ObjectType> superInterfaces, final String sourceFileName) {
         this.methods = methods;

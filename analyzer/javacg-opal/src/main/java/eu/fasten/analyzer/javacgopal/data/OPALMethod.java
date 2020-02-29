@@ -74,8 +74,8 @@ public class OPALMethod {
      * @param className  Name of class that method belongs in String.
      * @param methodName Name of method in String.
      * @return If the method is a constructor the output is the class name. For class initializer
-     * (static initialization blocks for the class, and static field initialization), it's
-     * pctEncoded "<"init">", otherwise the method name.
+     *     (static initialization blocks for the class, and static field initialization), it's
+     *     pctEncoded "<"init">", otherwise the method name.
      */
     public static String getMethodName(final String className, final String methodName) {
 

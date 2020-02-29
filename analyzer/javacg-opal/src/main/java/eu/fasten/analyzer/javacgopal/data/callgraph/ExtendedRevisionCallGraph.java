@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONArray;
@@ -156,7 +155,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      * Creates a class hierarchy for the given JSONObject.
      * @param cha JSONObject of a cha.
      */
-    private Map<FastenURI, Type> classHierarchy(final JSONObject cha) {
+    public static Map<FastenURI, Type> classHierarchy(final JSONObject cha) {
 
         final Map<FastenURI, Type> result = new HashMap<>();
 
@@ -206,8 +205,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
     /**
      * Sorts the resolved calls of this revision call graph.
-     * @implNote since we use {@link Set} in the process of computing the resolved calls and sets
-     * doesn't keep the order it might be needed to sort the edges
+     * @implNote since we use {@link Set} in the process of computing the resolved calls and
+     *     sets doesn't keep the order it might be needed to sort the edges
      */
     public void sortResolvedCalls() {
         final var sortedList = new ArrayList<>(this.graph.resolvedCalls);
@@ -306,8 +305,8 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         /**
          * Unresolved calls of the graph and key value metadata about each call. The {@link Pair}
          * keeps the id of source method in the left element and the {@link FastenURI} of the target
-         * method in the right element. The meta data per call is stored as <code> Map<String,
-         * String> </code>.
+         * method in the right element. The meta data per call is stored as
+         * a map that keys and values are {@link String}.
          * For example in case of java for each call it can keep (typeOfCall ->
          * number_of_occurrence).
          */
@@ -401,7 +400,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         /** The source file name of this type. */
         private final String sourceFileName;
 
-        /** Methods of this type and their unique ids (unique within the same artifact).*/
+        /** Methods of this type and their unique ids (unique within the same artifact). */
         private final Map<Integer, FastenURI> methods;
 
         /** Classes that this type inherits from in the order of instantiation. */
@@ -410,6 +409,13 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         /** Interfaces that this type or its super classes implement. */
         private final List<FastenURI> superInterfaces;
 
+        /**
+         * Creates {@link Type} for the given data.
+         * @param sourceFile      the name of this type's source file
+         * @param methods         a map of methods in this type with their indexed by their ids.
+         * @param superClasses    classes that this type extends.
+         * @param superInterfaces interfaces that this type implements.
+         */
         public Type(final String sourceFile, final Map<Integer, FastenURI> methods,
                     final LinkedList<FastenURI> superClasses,
                     final List<FastenURI> superInterfaces) {
@@ -507,12 +513,12 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         }
 
         @Override public String toString() {
-            return "Type{" +
-                "sourceFileName='" + sourceFileName + '\'' +
-                ", methods=" + methods +
-                ", superClasses=" + superClasses +
-                ", superInterfaces=" + superInterfaces +
-                '}';
+            return "Type{"
+                + "sourceFileName='" + sourceFileName + '\''
+                + ", methods=" + methods
+                + ", superClasses=" + superClasses
+                + ", superInterfaces=" + superInterfaces
+                + '}';
         }
     }
 
