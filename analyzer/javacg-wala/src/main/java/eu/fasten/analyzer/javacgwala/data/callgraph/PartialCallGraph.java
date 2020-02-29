@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class PartialCallGraph {
@@ -77,7 +77,7 @@ public class PartialCallGraph {
      * @param caller Source method
      * @param callee Target method
      */
-    public void addResolvedCall(int caller, int callee) {
+    public void addResolvedCall(final int caller, final int callee) {
         for (final int[] item : resolvedCalls) {
             if (Arrays.equals(item, new int[]{caller, callee})) {
                 return;
@@ -93,16 +93,17 @@ public class PartialCallGraph {
      * @param callee   Target method
      * @param callType Call type
      */
-    public void addUnresolvedCall(int caller, FastenURI callee, CallType callType) {
-        var call = new MutablePair<>(caller, callee);
-        var previousCallMetadata = this.getUnresolvedCalls().get(call);
+    public void addUnresolvedCall(final int caller, final FastenURI callee,
+                                  final CallType callType) {
+        final var call = new ImmutablePair<>(caller, callee);
+        final var previousCallMetadata = this.getUnresolvedCalls().get(call);
         int count = 1;
 
         if (previousCallMetadata != null) {
             count += Integer.parseInt(previousCallMetadata.get(callType.label));
             previousCallMetadata.put(callType.label, String.valueOf(count));
         } else {
-            var metadata = new HashMap<String, String>();
+            final var metadata = new HashMap<String, String>();
             metadata.put(callType.label, String.valueOf(count));
             this.unresolvedCalls.put(call, metadata);
         }

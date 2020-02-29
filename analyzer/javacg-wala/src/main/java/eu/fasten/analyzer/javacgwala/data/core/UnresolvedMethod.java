@@ -27,12 +27,12 @@ public class UnresolvedMethod extends Method {
      *
      * @param reference Method Reference
      */
-    public UnresolvedMethod(MethodReference reference) {
+    public UnresolvedMethod(final MethodReference reference) {
         super(reference);
     }
 
     @Override
     public String toID() {
-        return "__::" + namespace + "." + symbol.toString();
+        return "__::" + getNamespace() + "." + getSymbol().toString();
     }
 }

@@ -28,16 +28,16 @@ import java.util.stream.IntStream;
 
 public abstract class Method {
 
-    String namespace;
-    Selector symbol;
-    MethodReference reference;
+    private final String namespace;
+    private final Selector symbol;
+    private final MethodReference reference;
 
     /**
      * Construct Method from {@link MethodReference}.
      *
      * @param reference Method Reference
      */
-    public Method(MethodReference reference) {
+    public Method(final MethodReference reference) {
         this.reference = reference;
         this.namespace = getPackageName(reference.getDeclaringClass()) + "."
                 + getClassName(reference.getDeclaringClass());
@@ -46,6 +46,14 @@ public abstract class Method {
 
     public MethodReference getReference() {
         return reference;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public Selector getSymbol() {
+        return symbol;
     }
 
     /**
@@ -62,7 +70,7 @@ public abstract class Method {
      */
     public FastenURI toCanonicalSchemalessURI() {
 
-        FastenJavaURI javaURI = FastenJavaURI.create(null, null, null,
+        final var javaURI = FastenJavaURI.create(null, null, null,
                 getPackageName(reference.getDeclaringClass()),
                 getClassName(reference.getDeclaringClass()),
                 getMethodName(reference),
@@ -81,7 +89,7 @@ public abstract class Method {
      * @param reference Type Reference
      * @return Package name
      */
-    public static String getPackageName(TypeReference reference) {
+    public static String getPackageName(final TypeReference reference) {
         if (reference.isPrimitiveType()) {
             return "java.lang";
 
@@ -111,7 +119,7 @@ public abstract class Method {
      * @param reference Type Reference
      * @return Class name
      */
-    public static String getClassName(TypeReference reference) {
+    public static String getClassName(final TypeReference reference) {
         if (reference.isPrimitiveType()) {
             return resolvePrimitiveTypeEncoding(reference.getName().toString());
 
@@ -137,7 +145,7 @@ public abstract class Method {
      * @param reference Method reference
      * @return Method name
      */
-    public static String getMethodName(MethodReference reference) {
+    public static String getMethodName(final MethodReference reference) {
         if (reference.getSelector().getName().toString().equals("<init>")) {
             return getClassName(reference.getDeclaringClass());
 
@@ -155,7 +163,7 @@ public abstract class Method {
      * @param reference Method reference
      * @return List of parameters
      */
-    public static FastenJavaURI[] getParameters(MethodReference reference) {
+    public static FastenJavaURI[] getParameters(final MethodReference reference) {
         final FastenJavaURI[] parameters = new FastenJavaURI[reference.getNumberOfParameters()];
 
         IntStream.range(0, reference.getNumberOfParameters())
@@ -170,7 +178,7 @@ public abstract class Method {
      * @param reference Type Reference
      * @return Type
      */
-    public static FastenJavaURI getType(TypeReference reference) {
+    public static FastenJavaURI getType(final TypeReference reference) {
         return new FastenJavaURI("/" + getPackageName(reference) + "/" + getClassName(reference));
     }
 
@@ -180,7 +188,7 @@ public abstract class Method {
      * @param reference Method Reference
      * @return Return type
      */
-    public static FastenJavaURI getReturnType(MethodReference reference) {
+    public static FastenJavaURI getReturnType(final MethodReference reference) {
         return getType(reference.getReturnType());
     }
 
@@ -190,7 +198,7 @@ public abstract class Method {
      * @param nonEncoded String to encode
      * @return Encoded string
      */
-    private static String threeTimesPct(String nonEncoded) {
+    private static String threeTimesPct(final String nonEncoded) {
         return FastenJavaURI.pctEncodeArg(FastenJavaURI
                 .pctEncodeArg(FastenJavaURI.pctEncodeArg(nonEncoded)));
     }
@@ -201,7 +209,7 @@ public abstract class Method {
      * @param encoded Encoded primitive type
      * @return Wrapper object name
      */
-    private static String resolvePrimitiveTypeEncoding(String encoded) {
+    private static String resolvePrimitiveTypeEncoding(final String encoded) {
         switch (encoded) {
             case "Z":
                 return "Boolean";

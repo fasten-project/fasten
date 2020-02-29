@@ -40,7 +40,7 @@ public class AnalysisContext {
      *
      * @param cha Class hierarchy analysis
      */
-    public AnalysisContext(IClassHierarchy cha) {
+    public AnalysisContext(final IClassHierarchy cha) {
         this.resolvedDictionary = new HashMap<>();
         this.unresolvedDictionary = new HashMap<>();
         this.artifactResolver = new ArtifactResolver(cha);
@@ -53,14 +53,14 @@ public class AnalysisContext {
      * @param reference Method reference
      * @return Duplicate or newly created method
      */
-    public Method findOrCreate(MethodReference reference) {
+    public Method findOrCreate(final MethodReference reference) {
         if (inApplicationScope(reference)) {
 
-            JarFile jarfile = artifactResolver.findJarFileUsingMethod(reference);
-            ResolvedMethod method = new ResolvedMethod(reference, jarfile);
-            String key = method.toID();
+            final var jarfile = artifactResolver.findJarFileUsingMethod(reference);
+            final var method = new ResolvedMethod(reference, jarfile);
+            final var key = method.toID();
 
-            ResolvedMethod val = resolvedDictionary.get(key);
+            final var val = resolvedDictionary.get(key);
             if (val != null) {
                 return val;
             }
@@ -68,10 +68,10 @@ public class AnalysisContext {
             resolvedDictionary.put(key, method);
             return method;
         } else {
-            UnresolvedMethod method = new UnresolvedMethod(reference);
-            String key = method.toID();
+            final var method = new UnresolvedMethod(reference);
+            final var key = method.toID();
 
-            UnresolvedMethod val = unresolvedDictionary.get(key);
+            final var val = unresolvedDictionary.get(key);
             if (val != null) {
                 return val;
             }
@@ -87,7 +87,7 @@ public class AnalysisContext {
      * @param reference Method reference
      * @return true if method "belongs" to application scope, false otherwise
      */
-    private boolean inApplicationScope(MethodReference reference) {
+    private boolean inApplicationScope(final MethodReference reference) {
         return reference.getDeclaringClass().getClassLoader()
                 .equals(ClassLoaderReference.Application);
     }

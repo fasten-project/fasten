@@ -21,12 +21,65 @@ package eu.fasten.analyzer.javacgwala;
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import java.io.FileNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
+/**
+ * Makes javacg-wala module runnable from command line.
+ */
 @CommandLine.Command(name = "JavaCGWala")
 public class Main implements Runnable {
 
-    static class Dependent {
+    private static Logger logger = LoggerFactory.getLogger(Main.class);
+    @CommandLine.ArgGroup(exclusive = true)
+    FullCoordinate fullCoordinate;
+
+    @CommandLine.Option(names = {"-t", "--timestamp"},
+            paramLabel = "TS",
+            description = "Release TS",
+            defaultValue = "0")
+    String timestamp;
+
+    /**
+     * Generates RevisionCallGraphs using Opal for the specified artifact in the command line
+     * parameters.
+     */
+    public static void main(String[] args) {
+        final int exitCode = new CommandLine(new Main()).execute(args);
+        System.exit(exitCode);
+    }
+
+    /**
+     * Runs Wala plugin.
+     */
+    public void run() {
+        final MavenCoordinate mavenCoordinate;
+
+        if (this.fullCoordinate.mavenCoordStr != null) {
+            mavenCoordinate = MavenCoordinate.fromString(this.fullCoordinate.mavenCoordStr);
+        } else {
+            mavenCoordinate = new MavenCoordinate(this.fullCoordinate.coordinateComponents.group,
+                    this.fullCoordinate.coordinateComponents.artifact,
+                    this.fullCoordinate.coordinateComponents.version);
+        }
+
+
+        try {
+            final var revisionCallGraph = ExtendedRevisionCallGraph
+                    .create(mavenCoordinate, Long.parseLong(this.timestamp));
+
+            System.out.println(revisionCallGraph.toJSON());
+
+        } catch (FileNotFoundException e) {
+            logger.error("Could not download the JAR file of Maven coordinate: {}",
+                    mavenCoordinate.getCoordinate());
+        }
+
+
+    }
+
+    static class CoordinateComponents {
         @CommandLine.Option(names = {"-g", "--group"},
                 paramLabel = "GROUP",
                 description = "Maven group id",
@@ -46,12 +99,9 @@ public class Main implements Runnable {
         String version;
     }
 
-    @CommandLine.ArgGroup()
-    Exclusive exclusive;
-
-    static class Exclusive {
+    static class FullCoordinate {
         @CommandLine.ArgGroup(exclusive = false)
-        Dependent mavencoords;
+        CoordinateComponents coordinateComponents;
 
         @CommandLine.Option(names = {"-c", "--coord"},
                 paramLabel = "COORD",
@@ -59,34 +109,6 @@ public class Main implements Runnable {
                 required = true)
         String mavenCoordStr;
     }
-
-    /**
-     * Runs Wala Analyzer.
-     */
-    public void run() {
-        MavenCoordinate mavenCoordinate;
-
-        if (this.exclusive.mavenCoordStr != null) {
-            mavenCoordinate = MavenCoordinate.fromString(this.exclusive.mavenCoordStr);
-        } else {
-            mavenCoordinate = new MavenCoordinate(this.exclusive.mavencoords.group,
-                    this.exclusive.mavencoords.artifact,
-                    this.exclusive.mavencoords.version);
-        }
-
-        try {
-            System.out.println(ExtendedRevisionCallGraph.create(mavenCoordinate, 0).toJSON());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Generates RevisionCallGraphs using Wala for the specified artifact
-     * in the command line parameters.
-     */
-    public static void main(String[] args) {
-        int exitCode = new CommandLine(new Main()).execute(args);
-        System.exit(exitCode);
-    }
 }
+
+

@@ -51,26 +51,9 @@ import org.slf4j.LoggerFactory;
 public class MavenCoordinate {
     final String mavenRepo = "https://repo.maven.apache.org/maven2/";
 
-    private String groupID;
-    private String artifactID;
-    private String versionConstraint;
-    private String timestamp;
-
-    public void setGroupID(final String groupID) {
-        this.groupID = groupID;
-    }
-
-    public void setArtifactID(final String artifactID) {
-        this.artifactID = artifactID;
-    }
-
-    public void setVersionConstraint(final String versionConstraint) {
-        this.versionConstraint = versionConstraint;
-    }
-
-    public void setTimestamp(final String timestamp) {
-        this.timestamp = timestamp;
-    }
+    private final String groupID;
+    private final String artifactID;
+    private final String versionConstraint;
 
     public String getMavenRepo() {
         return mavenRepo;
@@ -102,22 +85,6 @@ public class MavenCoordinate {
     }
 
     /**
-     * Construct MavenCoordinate form groupID, artifactID, version, and timestamp.
-     *
-     * @param groupID    GroupID
-     * @param artifactID ArtifactID
-     * @param version    Version
-     * @param timestamp  Timestamp
-     */
-    public MavenCoordinate(final String groupID, final String artifactID,
-                           final String version, final String timestamp) {
-        this.groupID = groupID;
-        this.artifactID = artifactID;
-        this.versionConstraint = version;
-        this.timestamp = timestamp;
-    }
-
-    /**
      * Convert string to MavenCoordinate.
      *
      * @param coords String representation of a coordinate
@@ -136,23 +103,18 @@ public class MavenCoordinate {
         return groupID + ":" + artifactID + ":" + versionConstraint;
     }
 
-    public String getTimestamp() {
-        return timestamp;
-    }
-
     /**
      * Convert to URL.
      *
      * @return URL
      */
     public String toURL() {
-        final StringBuilder url = new StringBuilder(mavenRepo)
-                .append(this.groupID.replace('.', '/'))
-                .append("/")
-                .append(this.artifactID)
-                .append("/")
-                .append(this.versionConstraint);
-        return url.toString();
+        return mavenRepo +
+                this.groupID.replace('.', '/') +
+                "/" +
+                this.artifactID +
+                "/" +
+                this.versionConstraint;
     }
 
     /**
@@ -161,13 +123,12 @@ public class MavenCoordinate {
      * @return JAR URL
      */
     public String toJarUrl() {
-        final StringBuilder url = new StringBuilder(this.toURL())
-                .append("/")
-                .append(this.artifactID)
-                .append("-")
-                .append(this.versionConstraint)
-                .append(".jar");
-        return url.toString();
+        return this.toURL() +
+                "/" +
+                this.artifactID +
+                "-" +
+                this.versionConstraint +
+                ".jar";
     }
 
     /**
@@ -176,13 +137,12 @@ public class MavenCoordinate {
      * @return POM URL
      */
     public String toPomUrl() {
-        final StringBuilder url = new StringBuilder(this.toURL())
-                .append("/")
-                .append(this.artifactID)
-                .append("-")
-                .append(this.versionConstraint)
-                .append(".pom");
-        return url.toString();
+        return this.toURL() +
+                "/" +
+                this.artifactID +
+                "-" +
+                this.versionConstraint +
+                ".pom";
     }
 
     /**
@@ -218,7 +178,7 @@ public class MavenCoordinate {
                     profiles = profilesRoot.selectNodes("./*[local-name() ='profile']");
                 }
 
-                Node outerDeps = pom.getRootElement()
+                var outerDeps = pom.getRootElement()
                         .selectSingleNode("./*[local-name()='dependencies']");
 
                 if (outerDeps != null) {
@@ -228,7 +188,7 @@ public class MavenCoordinate {
                     }
                 }
 
-                for (var profile : profiles) {
+                for (final var profile : profiles) {
                     var dependenciesNode =
                             profile.selectSingleNode("./*[local-name() ='dependencies']");
                     if (dependenciesNode != null) {
@@ -252,10 +212,10 @@ public class MavenCoordinate {
          * @param node Dependencies node from profile or entire project
          * @return List of dependencies
          */
-        private static List<RevisionCallGraph.Dependency> resolveDependencies(Node node) {
+        private static List<RevisionCallGraph.Dependency> resolveDependencies(final Node node) {
             final var depList = new ArrayList<RevisionCallGraph.Dependency>();
 
-            for (var depNode : node.selectNodes("./*[local-name() = 'dependency']")) {
+            for (final var depNode : node.selectNodes("./*[local-name() = 'dependency']")) {
                 final var groupId = depNode
                         .selectSingleNode("./*[local-name() = 'groupId']").getStringValue();
                 final var artifactId = depNode
@@ -270,7 +230,7 @@ public class MavenCoordinate {
                     version = "*";
                 }
 
-                final RevisionCallGraph.Dependency dependency = new RevisionCallGraph.Dependency(
+                final var dependency = new RevisionCallGraph.Dependency(
                         "mvn",
                         groupId + "." + artifactId,
                         Collections.singletonList(new RevisionCallGraph
@@ -349,51 +309,6 @@ public class MavenCoordinate {
                 logger.error("Error retrieving URL: " + url, e);
                 return Optional.empty();
             }
-        }
-
-        /**
-         * A utility method to get a POM file and its timestamp from a URL
-         * Please note that this might not be the most efficient way but it works and can
-         * be improved later.
-         *
-         * @param fileURL URL of a file
-         * @param dest    Dest
-         * @throws IOException if file not found
-         */
-        public Date getFileAndTimeStamp(final String fileURL, final String dest)
-                throws IOException {
-
-            final String fileName = fileURL.substring(fileURL.lastIndexOf("/") + 1);
-            final StringJoiner pathJoin = new StringJoiner(File.separator);
-            final var destFile = pathJoin.add(dest).add(fileName).toString();
-
-            logger.debug("Filename: " + fileName + " | " + "dest: " + destFile);
-
-            final URL url = new URL(fileURL);
-            final HttpURLConnection con = (HttpURLConnection) url.openConnection();
-
-            final Date timestamp = new Date(con.getLastModified());
-
-            if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
-
-                logger.debug("Okay status!");
-
-                final BufferedReader input =
-                        new BufferedReader(new InputStreamReader(con.getInputStream()), 8192);
-                final BufferedWriter output =
-                        new BufferedWriter(new FileWriter(new File(destFile)));
-
-                String line;
-                while ((line = input.readLine()) != null) {
-                    output.write(line);
-                    output.newLine();
-                }
-
-                output.close();
-            }
-            con.disconnect();
-
-            return timestamp;
         }
     }
 }

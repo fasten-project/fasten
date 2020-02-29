@@ -37,7 +37,7 @@ public class ArtifactResolver {
      *
      * @param cha Class hierarchy
      */
-    public ArtifactResolver(IClassHierarchy cha) {
+    public ArtifactResolver(final IClassHierarchy cha) {
         this.cha = cha;
     }
 

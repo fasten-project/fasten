@@ -30,15 +30,14 @@ import java.util.stream.StreamSupport;
 
 public class EntryPointsGenerator {
 
-    private IClassHierarchy cha;
+    private final IClassHierarchy cha;
 
-    public EntryPointsGenerator(IClassHierarchy cha) {
+    public EntryPointsGenerator(final IClassHierarchy cha) {
         this.cha = cha;
     }
 
     /**
-     * Create entry points for call graph creation
-     * (stuff taken from  woutrrr/lapp).
+     * Create entry points for call graph creation.
      *
      * @return List of entry points
      */
@@ -57,7 +56,7 @@ public class EntryPointsGenerator {
      * @param klass Class to check
      * @return true if class is public, false otherwise
      */
-    private static boolean isPublicClass(IClass klass) {
+    private static boolean isPublicClass(final IClass klass) {
         return isApplication(klass)
                 && !klass.isInterface()
                 && klass.isPublic();
@@ -69,7 +68,7 @@ public class EntryPointsGenerator {
      * @param method Method to check
      * @return true if method is public, false otherwise
      */
-    private static boolean isPublicMethod(IMethod method) {
+    private static boolean isPublicMethod(final IMethod method) {
         return isApplication(method.getDeclaringClass())
                 && method.isPublic()
                 && !method.isAbstract();
@@ -81,7 +80,7 @@ public class EntryPointsGenerator {
      * @param klass Class to check
      * @return true if class "belongs", false otherwise
      */
-    private static Boolean isApplication(IClass klass) {
+    private static Boolean isApplication(final IClass klass) {
         return klass.getClassLoader().getReference().equals(ClassLoaderReference.Application);
     }
 }

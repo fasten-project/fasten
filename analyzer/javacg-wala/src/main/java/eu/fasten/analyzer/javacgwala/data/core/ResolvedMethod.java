@@ -31,7 +31,7 @@ public class ResolvedMethod extends Method {
      * @param reference Method Reference
      * @param artifact  Artifact
      */
-    public ResolvedMethod(MethodReference reference, JarFile artifact) {
+    public ResolvedMethod(final MethodReference reference, final JarFile artifact) {
         super(reference);
         this.artifact = artifact;
     }
@@ -39,6 +39,6 @@ public class ResolvedMethod extends Method {
     @Override
     public String toID() {
         return artifact == null ? "Unknown"
-                : artifact.getName() + "::" + namespace + "." + symbol.toString();
+                : artifact.getName() + "::" + getNamespace() + "." + getSymbol().toString();
     }
 }

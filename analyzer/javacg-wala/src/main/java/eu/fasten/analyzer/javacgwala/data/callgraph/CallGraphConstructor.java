@@ -46,13 +46,14 @@ public class CallGraphConstructor {
      * @param coordinate Coordinate
      * @return Partial call graph
      */
-    public static PartialCallGraph build(MavenCoordinate coordinate) throws FileNotFoundException {
+    public static PartialCallGraph build(final MavenCoordinate coordinate)
+            throws FileNotFoundException {
         final NumberFormat timeFormatter = new DecimalFormat("#0.000");
         logger.info("Generating call graph for the Maven coordinate using WALA: {}",
                 coordinate.getCoordinate());
-        long startTime = System.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
 
-        var rawGraph = generateCallGraph(MavenCoordinate.MavenResolver
+        final var rawGraph = generateCallGraph(MavenCoordinate.MavenResolver
                 .downloadJar(coordinate.getCoordinate()).orElseThrow(RuntimeException::new)
                 .getAbsolutePath());
 
@@ -67,23 +68,23 @@ public class CallGraphConstructor {
      * @param classpath Path to class or jar file
      * @return Call Graph
      */
-    public static CallGraph generateCallGraph(String classpath) {
+    public static CallGraph generateCallGraph(final String classpath) {
         try {
-            var classLoader = Thread.currentThread().getContextClassLoader();
-            var exclusionFile = new File(Objects.requireNonNull(classLoader
+            final var classLoader = Thread.currentThread().getContextClassLoader();
+            final var exclusionFile = new File(Objects.requireNonNull(classLoader
                     .getResource("Java60RegressionExclusions.txt")).getFile());
 
-            AnalysisScope scope = AnalysisScopeReader
+            final var scope = AnalysisScopeReader
                     .makeJavaBinaryAnalysisScope(classpath, exclusionFile);
 
-            var cha = ClassHierarchyFactory.makeWithRoot(scope);
+            final var cha = ClassHierarchyFactory.makeWithRoot(scope);
 
-            EntryPointsGenerator entryPointsGenerator = new EntryPointsGenerator(cha);
-            var entryPoints = entryPointsGenerator.getEntryPoints();
-            var options = new AnalysisOptions(scope, entryPoints);
-            var cache = new AnalysisCacheImpl();
+            final var entryPointsGenerator = new EntryPointsGenerator(cha);
+            final var entryPoints = entryPointsGenerator.getEntryPoints();
+            final var options = new AnalysisOptions(scope, entryPoints);
+            final var cache = new AnalysisCacheImpl();
 
-            var builder = Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha, scope);
+            final var builder = Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha, scope);
 
             return builder.makeCallGraph(options, null);
         } catch (Exception e) {

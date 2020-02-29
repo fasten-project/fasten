@@ -49,7 +49,8 @@ public class CallGraphAnalyzer {
      * @param rawCallGraph     Raw call graph in Wala format
      * @param partialCallGraph Partial call graph
      */
-    public CallGraphAnalyzer(CallGraph rawCallGraph, PartialCallGraph partialCallGraph) {
+    public CallGraphAnalyzer(final CallGraph rawCallGraph,
+                             final PartialCallGraph partialCallGraph) {
         this.rawCallGraph = rawCallGraph;
         this.partialCallGraph = partialCallGraph;
         this.analysisContext = new AnalysisContext(rawCallGraph.getClassHierarchy());
@@ -61,26 +62,25 @@ public class CallGraphAnalyzer {
      * loader to lists of resolved / unresolved calls of partial call graph.
      */
     public void resolveCalls() {
-        for (CGNode node : this.rawCallGraph) {
-            MethodReference nodeReference = node.getMethod().getReference();
+        for (final CGNode node : this.rawCallGraph) {
+            final var nodeReference = node.getMethod().getReference();
 
             if (applicationClassLoaderFilter.test(node)) {
                 continue;
             }
 
-            Method methodNode = analysisContext.findOrCreate(nodeReference);
+            final var methodNode = analysisContext.findOrCreate(nodeReference);
 
             classHierarchyAnalyzer.addMethodToCHA(methodNode,
                     nodeReference.getDeclaringClass());
 
-            for (Iterator<CallSiteReference> callSites = node.iterateCallSites();
-                 callSites.hasNext(); ) {
-                CallSiteReference callSite = callSites.next();
+            for (final var callSites = node.iterateCallSites(); callSites.hasNext(); ) {
+                final var callSite = callSites.next();
 
-                MethodReference targetWithCorrectClassLoader = correctClassLoader(callSite
-                        .getDeclaredTarget());
+                final var targetWithCorrectClassLoader =
+                        correctClassLoader(callSite.getDeclaredTarget());
 
-                Method targetMethodNode =
+                final var targetMethodNode =
                         analysisContext.findOrCreate(targetWithCorrectClassLoader);
 
                 if (targetWithCorrectClassLoader.getDeclaringClass()
@@ -102,7 +102,7 @@ public class CallGraphAnalyzer {
      * @param target   Callee
      * @param callType Call type
      */
-    private void addCall(Method source, Method target, CallType callType) {
+    private void addCall(final Method source, final Method target, final CallType callType) {
         var sourceID = classHierarchyAnalyzer.addMethodToCHA(source,
                 source.getReference().getDeclaringClass());
         if (source instanceof ResolvedMethod && target instanceof ResolvedMethod) {
@@ -130,7 +130,7 @@ public class CallGraphAnalyzer {
      * @param reference Method reference
      * @return Method reference with correct class loader
      */
-    private MethodReference correctClassLoader(MethodReference reference) {
+    private MethodReference correctClassLoader(final MethodReference reference) {
         IClass klass = rawCallGraph.getClassHierarchy().lookupClass(reference.getDeclaringClass());
 
         if (klass == null) {
@@ -150,7 +150,7 @@ public class CallGraphAnalyzer {
      * @param callSite Call site
      * @return Call type
      */
-    private CallType getInvocationLabel(CallSiteReference callSite) {
+    private CallType getInvocationLabel(final CallSiteReference callSite) {
 
         switch ((IInvokeInstruction.Dispatch) callSite.getInvocationCode()) {
             case INTERFACE:

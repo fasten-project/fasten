@@ -38,7 +38,7 @@ public class WalaResultAnalyzer {
      *
      * @param rawCallGraph Raw call graph in Wala format
      */
-    private WalaResultAnalyzer(CallGraph rawCallGraph) {
+    private WalaResultAnalyzer(final CallGraph rawCallGraph) {
         this.rawCallGraph = rawCallGraph;
         this.partialCallGraph = new PartialCallGraph();
     }
@@ -49,7 +49,7 @@ public class WalaResultAnalyzer {
      * @param rawCallGraph Raw call graph in Wala format
      * @return Partial call graph
      */
-    public static PartialCallGraph wrap(CallGraph rawCallGraph) {
+    public static PartialCallGraph wrap(final CallGraph rawCallGraph) {
         if (rawCallGraph == null) {
             logger.info("Call graph is NULL");
             return new PartialCallGraph();
@@ -57,11 +57,11 @@ public class WalaResultAnalyzer {
 
         final NumberFormat timeFormatter = new DecimalFormat("#0.000");
         logger.info("Wrapping call graph with {} nodes...", rawCallGraph.getNumberOfNodes());
-        long startTime = System.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
 
-        WalaResultAnalyzer walaResultAnalyzer = new WalaResultAnalyzer(rawCallGraph);
+        final var walaResultAnalyzer = new WalaResultAnalyzer(rawCallGraph);
 
-        CallGraphAnalyzer callGraphAnalyzer = new CallGraphAnalyzer(walaResultAnalyzer.rawCallGraph,
+        final var callGraphAnalyzer = new CallGraphAnalyzer(walaResultAnalyzer.rawCallGraph,
                 walaResultAnalyzer.partialCallGraph);
         callGraphAnalyzer.resolveCalls();
 

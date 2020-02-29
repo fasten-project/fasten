@@ -48,7 +48,8 @@ public class ClassHierarchyAnalyzer {
      * @param rawCallGraph     Call graph in Wala format
      * @param partialCallGraph Partial call graph
      */
-    public ClassHierarchyAnalyzer(CallGraph rawCallGraph, PartialCallGraph partialCallGraph) {
+    public ClassHierarchyAnalyzer(final CallGraph rawCallGraph,
+                                  final PartialCallGraph partialCallGraph) {
         this.rawCallGraph = rawCallGraph;
         this.partialCallGraph = partialCallGraph;
         this.counter = 0;
@@ -62,8 +63,8 @@ public class ClassHierarchyAnalyzer {
      * @param method   Method to add
      * @param klassRef Class reference
      */
-    public int addMethodToCHA(Method method, TypeReference klassRef) {
-        var klass = this.rawCallGraph.getClassHierarchy().lookupClass(klassRef);
+    public int addMethodToCHA(final Method method, final TypeReference klassRef) {
+        final var klass = this.rawCallGraph.getClassHierarchy().lookupClass(klassRef);
 
         if (!processedClasses.contains(getClassURI(method))) {
             if (klass == null) {
@@ -93,9 +94,9 @@ public class ClassHierarchyAnalyzer {
      * @param method Method
      * @return ID of method
      */
-    private int getMethodID(Method method) {
+    private int getMethodID(final Method method) {
         int index = -1;
-        for (var entry : partialCallGraph
+        for (final var entry : partialCallGraph
                 .getClassHierarchy().get(getClassURI(method)).getMethods().entrySet()) {
             if (entry.getValue().equals(method.toCanonicalSchemalessURI())) {
                 index = entry.getKey();
@@ -110,15 +111,15 @@ public class ClassHierarchyAnalyzer {
      *
      * @param klass Class
      */
-    private void processClass(Method method, IClass klass) {
-        String sourceFileName = "placeholderFileName.java";
-        List<FastenURI> interfaces = new ArrayList<>();
+    private void processClass(final Method method, final IClass klass) {
+        final String sourceFileName = "placeholderFileName.java";
+        final List<FastenURI> interfaces = new ArrayList<>();
 
-        for (IClass implementedInterface : klass.getAllImplementedInterfaces()) {
+        for (final var implementedInterface : klass.getAllImplementedInterfaces()) {
             interfaces.add(getClassURI(implementedInterface));
         }
 
-        LinkedList<FastenURI> superClasses = superClassHierarchy(klass.getSuperclass(),
+        final LinkedList<FastenURI> superClasses = superClassHierarchy(klass.getSuperclass(),
                 new LinkedList<>());
 
         partialCallGraph.getClassHierarchy().put(getClassURI(method),
@@ -133,7 +134,8 @@ public class ClassHierarchyAnalyzer {
      * @param aux   Auxiliary list
      * @return List of super classes
      */
-    private LinkedList<FastenURI> superClassHierarchy(IClass klass, LinkedList<FastenURI> aux) {
+    private LinkedList<FastenURI> superClassHierarchy(final IClass klass,
+                                                      final LinkedList<FastenURI> aux) {
         if (klass == null || aux == null) {
             return new LinkedList<>();
         }
@@ -151,9 +153,9 @@ public class ClassHierarchyAnalyzer {
      * @param klass Class
      * @return URI of class
      */
-    private FastenURI getClassURI(IClass klass) {
-        String packageName = Method.getPackageName(klass.getReference());
-        String className = Method.getClassName(klass.getReference());
+    private FastenURI getClassURI(final IClass klass) {
+        final String packageName = Method.getPackageName(klass.getReference());
+        final String className = Method.getClassName(klass.getReference());
         return FastenURI.create("/" + packageName + "/" + className);
     }
 
@@ -163,7 +165,7 @@ public class ClassHierarchyAnalyzer {
      * @param method Method in declaring class
      * @return URI of class
      */
-    private FastenURI getClassURI(Method method) {
+    private FastenURI getClassURI(final Method method) {
         return FastenURI.create("/" + method.getPackageName() + "/" + method.getClassName());
     }
 }
