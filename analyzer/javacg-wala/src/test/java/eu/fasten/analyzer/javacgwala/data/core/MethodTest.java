@@ -19,14 +19,21 @@
 package eu.fasten.analyzer.javacgwala.data.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.types.ClassLoaderReference;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
+import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.AnalysisContext;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,7 +41,7 @@ import org.junit.jupiter.api.Test;
 
 public class MethodTest {
 
-    private static CallGraph ssttgraph, cigraph, lambdagraph, arraygraph;
+    private static CallGraph ssttgraph, cigraph, lambdagraph, arraygraph, aegraph;
 
     @BeforeAll
     public static void setUp() {
@@ -115,6 +122,18 @@ public class MethodTest {
                 .getFile()).getAbsolutePath();
 
         arraygraph = CallGraphConstructor.generateCallGraph(arraypath);
+
+        /**
+         * ArrayExtensiveTest:
+         *
+         *
+         */
+
+        var aepath = new File(Thread.currentThread().getContextClassLoader()
+                .getResource("arrayExtensiveTest.jar")
+                .getFile()).getAbsolutePath();
+
+        aegraph = CallGraphConstructor.generateCallGraph(aepath);
     }
 
     @Test
@@ -223,5 +242,41 @@ public class MethodTest {
 
         assertEquals(actualSourceURI, type.getMethods().get(resolvedCall[0]).toString());
         assertEquals(actualTargetURI, type.getMethods().get(resolvedCall[1]).toString());
+    }
+
+    @Test
+    public void toCanonicalJSONArrayExtensiveTest() {
+        var wrapped = WalaResultAnalyzer.wrap(aegraph);
+        //TODO: finish tests and change the jar to include all primitive operations.
+        assertEquals(2, wrapped.getUnresolvedCalls().size());
+    }
+
+    @Test
+    public void equalsTest() {
+        final var analysisContext = new AnalysisContext(ssttgraph.getClassHierarchy());
+
+        List<Method> methods = new ArrayList<>();
+
+        for (final CGNode node : ssttgraph) {
+            final var nodeReference = node.getMethod().getReference();
+            methods.add(analysisContext.findOrCreate(nodeReference));
+        }
+
+        assertEquals(12, methods.size());
+
+        final var refMethod = methods.get(3);
+        final var methodSameNamespaceDiffSymbol = methods.get(5);
+        final var methodDiffNamespaceDiffSymbol = methods.get(0);
+        final var methodDiffNamespaceSameSymbol = methods.get(7);
+        final var methodSameReference = new ResolvedMethod(refMethod.getReference(), null);
+
+
+        assertEquals(refMethod, refMethod);
+        assertEquals(refMethod, methodSameReference);
+        assertNotEquals(refMethod, null);
+        assertNotEquals(refMethod, new Object());
+        assertNotEquals(refMethod, methodSameNamespaceDiffSymbol);
+        assertNotEquals(refMethod, methodDiffNamespaceDiffSymbol);
+        assertNotEquals(refMethod, methodDiffNamespaceSameSymbol);
     }
 }

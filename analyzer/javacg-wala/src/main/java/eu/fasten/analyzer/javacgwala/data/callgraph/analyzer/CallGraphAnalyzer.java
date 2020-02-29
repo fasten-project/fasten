@@ -30,7 +30,6 @@ import eu.fasten.analyzer.javacgwala.data.core.CallType;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
 import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
 import eu.fasten.core.data.FastenJavaURI;
-import java.util.Iterator;
 import java.util.function.Predicate;
 
 public class CallGraphAnalyzer {

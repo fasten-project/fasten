@@ -26,7 +26,6 @@ import eu.fasten.analyzer.javacgwala.data.core.Method;
 import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
 import eu.fasten.analyzer.javacgwala.data.core.UnresolvedMethod;
 import java.util.HashMap;
-import java.util.jar.JarFile;
 
 public class AnalysisContext {
 

@@ -26,10 +26,12 @@ import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import java.io.FileNotFoundException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class WALAPluginTest {
 
@@ -58,7 +60,7 @@ class WALAPluginTest {
 
         ExtendedRevisionCallGraph cg = walaPlugin
                 .consume(new ConsumerRecord<>(topic, 1, 0, "foo",
-                coordinateJSON.toString()), false);
+                        coordinateJSON.toString()), false);
 
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
         ExtendedRevisionCallGraph revisionCallGraph = ExtendedRevisionCallGraph.create(coordinate,
@@ -128,4 +130,30 @@ class WALAPluginTest {
     public void testName() {
         assertEquals("eu.fasten.analyzer.javacgwala.WALAPlugin.WALA", walaPlugin.name());
     }
+
+    @Test
+    public void sendToKafkaTest() throws FileNotFoundException {
+        KafkaProducer<Object, String> producer = Mockito.mock(KafkaProducer.class);
+        walaPlugin.setKafkaProducer(producer);
+
+        Mockito.when(producer.send(Mockito.any())).thenReturn(null);
+
+        JSONObject coordinateJSON = new JSONObject("{\n" +
+                "    \"groupId\": \"org.slf4j\",\n" +
+                "    \"artifactId\": \"slf4j-api\",\n" +
+                "    \"version\": \"1.7.29\",\n" +
+                "    \"date\":\"1574072773\"\n" +
+                "}");
+
+        ExtendedRevisionCallGraph cg = walaPlugin
+                .consume(new ConsumerRecord<>(topic, 1, 0, "foo",
+                        coordinateJSON.toString()), true);
+
+        var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
+        ExtendedRevisionCallGraph revisionCallGraph = ExtendedRevisionCallGraph.create(coordinate,
+                1574072773);
+
+        assertEquals(revisionCallGraph.toJSON().toString(), cg.toJSON().toString());
+    }
+
 }

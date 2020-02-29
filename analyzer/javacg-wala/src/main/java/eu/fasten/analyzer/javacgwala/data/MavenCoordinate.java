@@ -20,25 +20,19 @@ package eu.fasten.analyzer.javacgwala.data;
 
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.StringJoiner;
 import org.dom4j.DocumentException;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
@@ -109,12 +103,12 @@ public class MavenCoordinate {
      * @return URL
      */
     public String toURL() {
-        return mavenRepo +
-                this.groupID.replace('.', '/') +
-                "/" +
-                this.artifactID +
-                "/" +
-                this.versionConstraint;
+        return mavenRepo
+                + this.groupID.replace('.', '/')
+                + "/"
+                + this.artifactID
+                + "/"
+                + this.versionConstraint;
     }
 
     /**
@@ -123,12 +117,12 @@ public class MavenCoordinate {
      * @return JAR URL
      */
     public String toJarUrl() {
-        return this.toURL() +
-                "/" +
-                this.artifactID +
-                "-" +
-                this.versionConstraint +
-                ".jar";
+        return this.toURL()
+                + "/"
+                + this.artifactID
+                + "-"
+                + this.versionConstraint
+                + ".jar";
     }
 
     /**
@@ -137,12 +131,12 @@ public class MavenCoordinate {
      * @return POM URL
      */
     public String toPomUrl() {
-        return this.toURL() +
-                "/" +
-                this.artifactID +
-                "-" +
-                this.versionConstraint +
-                ".pom";
+        return this.toURL()
+                + "/"
+                + this.artifactID
+                + "-"
+                + this.versionConstraint
+                + ".pom";
     }
 
     /**
