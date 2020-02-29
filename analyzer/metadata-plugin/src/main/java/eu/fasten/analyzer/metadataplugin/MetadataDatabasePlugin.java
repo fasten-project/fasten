@@ -84,6 +84,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
             if (saved && getPluginError().isEmpty()) {
                 processedRecord = true;
+                logger.info("Saved the callgraph metadata to the database");
             }
         }
 
