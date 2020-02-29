@@ -42,6 +42,9 @@ public class MetadataDatabasePlugin extends Plugin {
 
     @Extension
     public static class MetadataPlugin implements KafkaConsumer<String> {
+
+        private boolean processedRecord = false;
+        private String pluginError = "";
         private final Logger logger = LoggerFactory.getLogger(MetadataPlugin.class.getName());
 
         @Override
@@ -52,20 +55,41 @@ public class MetadataDatabasePlugin extends Plugin {
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
             var consumedJson = new JSONObject(record.value());
+            this.processedRecord = false;
+            this.pluginError = "";
             try {
                 var metadataDao = new MetadataDao(PostgresConnector.getDSLContext());
-                // TODO: Insert consumed data in the metadata database using metadataDao
-
+                saveToDatabase(consumedJson, metadataDao);
             } catch (SQLException e) {
-                e.printStackTrace();
+                this.processedRecord = false;
+                setPluginError(e);
+                logger.error("Could not connect to the database", e);
             } catch (IOException e) {
-                e.printStackTrace();
+                this.processedRecord = false;
+                setPluginError(e);
+                logger.error("Could not find 'postgres.properties' file with database connection "
+                        + "parameters", e);
+            }
+        }
+
+        /**
+         * Saves consumed JSON to the database to appropriate tables.
+         *
+         * @param json JSON Object consumed by Kafka
+         * @param metadataDao Data Access Object to insert records in the database.
+         */
+        public void saveToDatabase(JSONObject json, MetadataDao metadataDao) {
+            boolean saved = false;
+            // TODO: Insert consumed data in the metadata database using metadataDao
+
+            if (saved && getPluginError().isEmpty()) {
+                processedRecord = true;
             }
         }
 
         @Override
         public boolean recordProcessSuccessful() {
-            return true;
+            return this.processedRecord;
         }
 
         @Override
@@ -89,11 +113,16 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public void setPluginError(Throwable throwable) {
+            this.pluginError =
+                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
+                            throwable.getMessage()).put("trace", throwable.getStackTrace())
+                            .put("type", throwable.getClass().getSimpleName()).toString();
+            System.out.println(this.pluginError);
         }
 
         @Override
         public String getPluginError() {
-            return "";
+            return this.pluginError;
         }
 
         @Override

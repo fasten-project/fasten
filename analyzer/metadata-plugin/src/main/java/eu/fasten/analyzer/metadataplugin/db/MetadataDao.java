@@ -183,7 +183,7 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts a record in the 'files' table in the database.
+     * Inserts a record in  'files' table in the database.
      *
      * @param packageId  ID of the package version where the file belongs
      *                   (references 'package_versions.id')
