@@ -63,11 +63,9 @@ public class PartialCallGraphTest {
      *     public static void targetMethod() {}
      * }
      * </pre>
-     * Including these edges:
-     *  Resolved:[ public static void sourceMethod(),
-     *             public static void targetMethod()]
-     *  Unresolved:[ public void "<"init">"() of current class,
-     *               public void "<"init">"() of Object class]
+     * Including these edges: Resolved:[ public static void sourceMethod(), public static void
+     * targetMethod()] Unresolved:[ public void "<"init">"() of current class, public void
+     * "<"init">"() of Object class]
      */
     @BeforeClass
     public static void generateCallGraph() {
@@ -83,12 +81,76 @@ public class PartialCallGraphTest {
             new ArrayList<>(JavaConverters.asJavaCollection(cg.callGraph().project().allMethods()));
         methodsMap = new HashMap<>(Map.of(
             0, FastenURI.create(
-                "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid"),
+                "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType"),
             1,
-            FastenURI.create("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
+            FastenURI.create("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava"
+                + ".lang%2FVoidType"),
             2, FastenURI
-                .create("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid")));
+                .create("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType")));
 
+    }
+
+    /**
+     * Given an unresolved arc and a graph returns the number of that arc in the graph.
+     * @param cg call graph
+     * @param source String of FastenURI of source node
+     * @param target String of FastenURI of target node
+     * @return number of the given arc in the given call graph
+     */
+    public static int numberOfThisUnresolvedArc(PartialCallGraph cg, String source, String target) {
+
+        final List<FastenURI[]> arcs = new ArrayList<>();
+        for (final var method : cg.mapOfAllMethods().entrySet()) {
+            if (method.getValue().toString().equals(source)) {
+                for (final var call : cg.getUnresolvedCalls().entrySet()) {
+                    if (call.getKey().getLeft().equals(method.getKey())) {
+                        arcs.add(new FastenURI[] {
+                            method.getValue(),
+                            call.getKey().getRight()}
+                        );
+                    }
+                }
+            }
+        }
+        final List<FastenURI[]> duplicateArcs = new ArrayList<>();
+        for (final var arc : arcs) {
+            if (arc[1].toString().equals(target)) {
+                duplicateArcs.add(arc);
+            }
+        }
+        return duplicateArcs.size();
+    }
+
+    /**
+     * Given an resolved arc and a graph returns the number of that arc in the graph.
+     * @param cg call graph
+     * @param source String of FastenURI of source node
+     * @param target String of FastenURI of target node
+     * @return number of the given arc in the given call graph
+     */
+    public static int numberOfThisResolvedArc(final PartialCallGraph cg, final String source,
+                                              final String target) {
+
+        final List<FastenURI[]> arcs = new ArrayList<>();
+        for (final var method : cg.mapOfAllMethods().entrySet()) {
+            if (method.getValue().toString().equals(source)) {
+                for (final var call : cg.getResolvedCalls()) {
+                    if (call.get(0).equals(method.getKey())) {
+                        arcs.add(new FastenURI[] {
+                            method.getValue(),
+                            cg.mapOfAllMethods().get(call.get(1))}
+                        );
+                    }
+                }
+            }
+        }
+        final List<FastenURI[]> duplicateArcs = new ArrayList<>();
+        for (final var arc : arcs) {
+            if (arc[1].toString().equals(target)) {
+                duplicateArcs.add(arc);
+            }
+        }
+        return duplicateArcs.size();
     }
 
     @Test
@@ -133,13 +195,14 @@ public class PartialCallGraphTest {
                 + "Type{"
                 + "sourceFileName='SingleSourceToTarget.java', "
                 + "methods={"
-                + "0=/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid, "
-                + "1=/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid, "
-                + "2=/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid}, "
+                + "0=/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava"
+                + ".lang%2FVoidType, "
+                + "1=/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoidType, "
+                + "2=/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType}, "
                 + "superClasses=[/java.lang/Object], "
                 + "superInterfaces=[]}}, "
                 + "resolvedCalls=[1,2], "
-                + "unresolvedCalls={(0,///java.lang/Object.Object()Void)={invokespecial=1}}}",
+                + "unresolvedCalls={(0,///java.lang/Object.Object()VoidType)={invokespecial=1}}}",
             singleSourceToTarget.toString());
 
     }
@@ -154,63 +217,36 @@ public class PartialCallGraphTest {
                 + ":HTTPClient"
                 + ":0.3-3").orElseThrow(RuntimeException::new));
 
+        final var cg1 = new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(
+            "ca.eandb.util:eandb-util:0.2.2").orElseThrow(RuntimeException::new));
 
         //Based on logs this arc of the resolved calls was duplicated.
         //Before removing duplicates the size of this duplicate arcs was 32.
-        final List<FastenURI[]> arcs = new ArrayList<>();
-        for (final var method : cg.mapOfAllMethods().entrySet()) {
-            if (method.getValue().toString().equals("/HTTPClient/IdempotentSequence.main(%2Fjava"
-                + ".lang%2FString%25255B%25255D)%2Fjava.lang%2FVoid")) {
-                for (final var call : cg.getResolvedCalls()) {
-                    if (call.get(0).equals(method.getKey())) {
-                        arcs.add(new FastenURI[] {
-                            method.getValue(),
-                            cg.mapOfAllMethods().get(call.get(1))}
-                        );
-                    }
-                }
-            }
-        }
-        final List<FastenURI[]> duplicateArcs = new ArrayList<>();
-        for (final var arc : arcs) {
-            if (arc[1].toString().equals("/HTTPClient/Request.Request(HTTPConnection,%2Fjava"
-                + ".lang%2FString,%2Fjava.lang%2FString,NVPair%25255B%25255D,%2Fjava"
-                + ".lang%2FByte%25255B%25255D,HttpOutputStream,"
-                + "%2Fjava.lang%2FBoolean)%2Fjava.lang%2FVoid")) {
-                duplicateArcs.add(arc);
-            }
-        }
-        assertEquals(1, duplicateArcs.size());
-
+        assertEquals(1, numberOfThisResolvedArc(cg,
+            "/HTTPClient/IdempotentSequence.main(%2Fjava.lang%2FString%25255B%25255D)%2Fjava"
+                + ".lang%2FVoidType",
+            "/HTTPClient/Request.Request(HTTPConnection,%2Fjava.lang%2FString,%2Fjava"
+                + ".lang%2FString,NVPair%25255B%25255D,%2Fjava.lang%2FByteType%25255B%25255D,"
+                + "HttpOutputStream,%2Fjava.lang%2FBooleanType)%2Fjava.lang%2FVoidType"));
 
         //Based on logs this arc of the unresolved calls was duplicated.
         //Before removing duplicates the size of this duplicate arcs was 3.
-        arcs.clear();
-        for (final var method : cg.mapOfAllMethods().entrySet()) {
-            if (method.getValue().toString().contains(
-                "/HTTPClient/UncompressInputStream.read(%2Fjava.lang%2FByte%25255B%25255D,%2Fjava"
-                    + ".lang%2FInteger,%2Fjava.lang%2FInteger)%2Fjava.lang%2FInteger")) {
-                for (final var call : cg.getUnresolvedCalls().entrySet()) {
-                    if (call.getKey().getLeft().equals(method.getKey())) {
-                        arcs.add(new FastenURI[] {
-                            method.getValue(),
-                            call.getKey().getRight()}
-                        );
-                    }
-                }
-            }
-        }
-        duplicateArcs.clear();
-        for (final var arc : arcs) {
-            if (arc[1].toString().contains(
-                "///java.lang/System.arraycopy(Object,Integer,Object,Integer,Integer)Void")) {
-                duplicateArcs.add(arc);
-            }
-        }
-        assertEquals(1, duplicateArcs.size());
+        assertEquals(1, numberOfThisUnresolvedArc(cg,
+            "/HTTPClient/UncompressInputStream.read(%2Fjava.lang%2FByteType%25255B%25255D,%2Fjava"
+                + ".lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FIntegerType",
+            "///java.lang/System.arraycopy(Object,IntegerType,Object,IntegerType,IntegerType)"
+                + "VoidType"));
+
+        //Due to same name of Wrapper and primitive it was a confusion in overloaded methods in CHA
+        assertEquals(1, numberOfThisUnresolvedArc(cg1,
+            "/ca.eandb.util/FloatArray.add(%2Fjava.lang%2FFloatType)%2Fjava.lang%2FBooleanType",
+            "///java.lang/NullPointerException.NullPointerException()VoidType"));
+        assertEquals(1, numberOfThisUnresolvedArc(cg1,
+            "/ca.eandb.util/FloatArray.add(%2Fjava.lang%2FFloat)%2Fjava.lang%2FBooleanType",
+            "///java.lang/NullPointerException.NullPointerException()VoidType"));
+
 
     }
-
 
     @Test
     public void testToURIInterfaces() {

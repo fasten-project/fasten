@@ -419,15 +419,17 @@ public class PartialCallGraph {
     private Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls(
         final ComputedCallGraph cg,
         final Map<ObjectType, OPALType> cha) {
+        List<UnresolvedMethodCall> v = new ArrayList<>();
+
         final var unresolvedCalls = cg.unresolvedMethodCalls();
         final Map<Pair<Integer, FastenURI>, Map<String, String>> result = new HashMap<>();
 
         for (final var unresolvedCall : JavaConverters.asJavaIterable(unresolvedCalls)) {
+
             final var call = new MutablePair<>(
                 cha.get(unresolvedCall.caller().declaringClassFile().thisType()).getMethods()
                     .get(unresolvedCall.caller()),
                 getTargetURI(unresolvedCall));
-
             final var typeOfCall =
                 unresolvedCall.caller().instructionsOption().get()[unresolvedCall.pc()].mnemonic();
             putCall(result, call, typeOfCall);

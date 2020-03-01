@@ -92,6 +92,7 @@ public class Main implements Runnable {
             CallGraphDifferentiator
                 .writeToFile("", revisionCallGraph.toJSON().toString(), "graph");
 
+
         } catch (IOException e) {
             logger.error("Could not download the JAR file of Maven coordinate: {}",
                 mavenCoordinate.getCoordinate());

@@ -169,7 +169,9 @@ public class OPALMethod {
 
 
         if (parameter.isBaseType()) {
-            return parameter.asBaseType().WrapperType().simpleName();
+
+            return parameter.asBaseType().toString();
+
         } else if (parameter.isReferenceType()) {
 
             if (parameter.isArrayType()) {
@@ -180,11 +182,12 @@ public class OPALMethod {
                 return FastenJavaURI.pctEncodeArg(
                     FastenJavaURI.pctEncodeArg(parameter.asObjectType().simpleName()));
             } else {
+
                 return parameter.asObjectType().simpleName();
             }
 
         } else if (parameter.isVoidType()) {
-            return "Void";
+            return "VoidType";
         }
 
         return "";

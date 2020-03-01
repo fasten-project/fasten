@@ -40,14 +40,17 @@ public class MethodTest {
     static ComputedCallGraph classInitCG;
     static ComputedCallGraph arrayCG;
     static ComputedCallGraph lambdaCG;
+    static ComputedCallGraph typesCG;
     static Map<ObjectType, OPALType> oneEdgeCHA;
     static Map<ObjectType, OPALType> classInitCHA;
     static Map<ObjectType, OPALType> arrayCHA;
     static Map<ObjectType, OPALType> lambdaCHA;
+    static Map<ObjectType, OPALType> typesCHA;
     static List<Method> oneEdgeMethods;
     static List<Method> classInitMethods;
     static List<Method> arrayMethods;
     static List<Method> lambdaMethods;
+    static List<Method> typesMethods;
     static String lambdaNumber;
 
     /**
@@ -55,6 +58,27 @@ public class MethodTest {
      */
     @BeforeClass
     public static void generateCallGraph() {
+
+        /*
+         * package resources;
+         *
+         * public class PremetivesWrappers{
+         *     public static void allTypes(byte b, char c, short s, int i, long l, float f, double d,
+         *                                 boolean bool, Byte b1, Character c1, Short s1, Integer i1, Long l1,
+         *                                 Float f1, Double d1, Boolean bool1, Void v){
+         *         target();
+         *     }
+         *     public static void target(){}
+         * }
+         */
+        typesCG = PartialCallGraph.generateCallGraph(new File(
+            Thread.currentThread().getContextClassLoader().getResource("PremetivesWrappers.class")
+                .getFile()));
+        typesCHA = PartialCallGraph.createCHA(typesCG);
+        typesMethods =
+            typesCHA.values().stream()
+                .flatMap(opalType -> opalType.getMethods().keySet().stream())
+                .collect(Collectors.toList());
 
         /*
          * SingleSourceToTarget is a java8 compiled bytecode of:
@@ -192,7 +216,8 @@ public class MethodTest {
             oneEdgeMethods.stream().filter(i -> i.name().equals("sourceMethod")).findFirst()
                 .orElseThrow();
         assertEquals(
-            new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
+            new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava" +
+                ".lang%2FVoidType"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
@@ -201,7 +226,8 @@ public class MethodTest {
             oneEdgeMethods.stream().filter(i -> i.name().equals("targetMethod")).findFirst()
                 .orElseThrow();
         assertEquals(
-            new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid"),
+            new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava" +
+                ".lang%2FVoidType"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
@@ -211,14 +237,14 @@ public class MethodTest {
                 .orElseThrow();
         assertEquals(
             new FastenJavaURI(
-                "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid"),
+                "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
 
         var unresolvedMethod = oneEdgeCG.unresolvedMethodCalls().apply(0);
         assertEquals(
-            new FastenJavaURI("/java.lang/Object.Object()Void"),
+            new FastenJavaURI("/java.lang/Object.Object()VoidType"),
             OPALMethod.toCanonicalSchemelessURI(null, unresolvedMethod.calleeClass(),
                 unresolvedMethod.calleeName(), unresolvedMethod.calleeDescriptor())
         );
@@ -240,7 +266,7 @@ public class MethodTest {
             classInitMethods.stream().filter(i -> i.name().equals("<clinit>")).findFirst()
                 .orElseThrow();
         assertEquals(
-            new FastenJavaURI("/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2FVoid"),
+            new FastenJavaURI("/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2FVoidType"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
@@ -283,7 +309,7 @@ public class MethodTest {
                 .orElseThrow();
         assertEquals(
             new FastenJavaURI("/null/Lambda$" + lambdaNumber + "%3A0.Lambda$" + lambdaNumber
-                + "%3A0()%2Fjava.lang%2FVoid"),
+                + "%3A0()%2Fjava.lang%2FVoidType"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
@@ -329,7 +355,7 @@ public class MethodTest {
     public void testGetReturnTypeURI() {
 
         assertEquals(
-            new FastenJavaURI("/java.lang/Void"),
+            new FastenJavaURI("/java.lang/VoidType"),
             OPALMethod.getTypeURI(oneEdgeMethods.get(0)
                 .returnType())
         );
@@ -376,35 +402,59 @@ public class MethodTest {
     @Test
     public void testGetClassName() {
 
+
+
+        assertEquals("ByteType", getType(0));
+        assertEquals("CharType", getType(1));
+        assertEquals("ShortType", getType(2));
+        assertEquals("IntegerType", getType(3));
+        assertEquals("LongType", getType(4));
+        assertEquals("FloatType", getType(5));
+        assertEquals("DoubleType", getType(6));
+        assertEquals("BooleanType", getType(7));
+        assertEquals("Byte", getType(8));
+        assertEquals("Character", getType(9));
+        assertEquals("Short", getType(10));
+        assertEquals("Integer", getType(11));
+        assertEquals("Long", getType(12));
+        assertEquals("Float", getType(13));
+        assertEquals("Double", getType(14));
+        assertEquals("Boolean", getType(15));
+        assertEquals("Void", getType(16));
+
+        assertEquals("VoidType",
+            OPALMethod.getClassName(typesMethods.stream().filter(i -> i.name().equals(
+                "allTypes")).findFirst().orElseThrow().returnType()));
+
         assertEquals(
-            "Void",
+            "VoidType",
             OPALMethod.getClassName(oneEdgeMethods.stream().filter(i -> i.name().equals(
-                "targetMethod")).findFirst().orElseThrow().returnType())
-        );
+                "targetMethod")).findFirst().orElseThrow().returnType()));
 
         assertEquals(
             "SingleSourceToTarget",
             OPALMethod.getClassName(oneEdgeMethods.stream().filter(i -> i.name().equals(
-                "targetMethod")).findFirst().orElseThrow().declaringClassFile().thisType())
-        );
+                "targetMethod")).findFirst().orElseThrow().declaringClassFile().thisType()));
 
         assertEquals(
             "Object",
-            OPALMethod.getClassName(oneEdgeCG.unresolvedMethodCalls().apply(0).calleeClass())
-        );
+            OPALMethod.getClassName(oneEdgeCG.unresolvedMethodCalls().apply(0).calleeClass()));
 
         assertEquals(
             "ClassInit",
             OPALMethod.getClassName(classInitMethods.stream().filter(i -> i.name().equals(
-                "targetMethod")).findFirst().orElseThrow().declaringClassFile().thisType())
-        );
+                "targetMethod")).findFirst().orElseThrow().declaringClassFile().thisType()));
 
         assertEquals(
             "Object%25255B%25255D",
             OPALMethod.getClassName(arrayMethods.stream().filter(i -> i.name().equals(
-                "targetMethod")).findFirst().orElseThrow().returnType())
-        );
+                "targetMethod")).findFirst().orElseThrow().returnType()));
 
+    }
+
+    private String getType(int paremeterIndex) {
+        return OPALMethod.getClassName(typesMethods.stream().filter(i -> i.name().equals(
+            "allTypes")).findFirst().orElseThrow().parameterTypes().apply(paremeterIndex));
     }
 
 }
