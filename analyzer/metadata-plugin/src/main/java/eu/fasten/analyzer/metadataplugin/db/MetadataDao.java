@@ -98,7 +98,7 @@ public class MetadataDao {
      */
     public long insertPackageVersion(long packageId, String cgGenerator, String version,
                                      Timestamp createdAt, JSONObject metadata) {
-        var metadataJsonb = JSONB.valueOf(metadata.toString());
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
                 PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID,
                 PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
@@ -195,7 +195,7 @@ public class MetadataDao {
      */
     public long insertFile(long packageId, String namespaces, byte[] sha256, Timestamp createdAt,
                            JSONObject metadata) {
-        var metadataJsonb = JSONB.valueOf(metadata.toString());
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Files.FILES,
                 Files.FILES.PACKAGE_ID, Files.FILES.NAMESPACES, Files.FILES.SHA256,
                 Files.FILES.CREATED_AT, Files.FILES.METADATA)
@@ -243,7 +243,7 @@ public class MetadataDao {
      */
     public long insertCallable(long fileId, String fastenUri, Timestamp createdAt,
                                JSONObject metadata) {
-        var metadataJsonb = JSONB.valueOf(metadata.toString());
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Callables.CALLABLES,
                 Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.METADATA)
@@ -287,7 +287,7 @@ public class MetadataDao {
      * @return ID of the source callable (sourceId)
      */
     public long insertEdge(long sourceId, long targetId, JSONObject metadata) {
-        var metadataJsonb = JSONB.valueOf(metadata.toString());
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Edges.EDGES,
                 Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.METADATA)
                 .values(sourceId, targetId, metadataJsonb)

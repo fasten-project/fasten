@@ -23,10 +23,12 @@ import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -43,9 +45,19 @@ public class MetadataDatabasePlugin extends Plugin {
     @Extension
     public static class MetadataPlugin implements KafkaConsumer<String> {
 
+        private DSLContext dslContext;
         private boolean processedRecord = false;
         private String pluginError = "";
         private final Logger logger = LoggerFactory.getLogger(MetadataPlugin.class.getName());
+
+        public MetadataPlugin() throws IOException, SQLException {
+            this(PostgresConnector.getDSLContext());
+        }
+
+        public MetadataPlugin(DSLContext dslContext) {
+            super();
+            this.dslContext = dslContext;
+        }
 
         @Override
         public List<String> consumerTopics() {
@@ -57,34 +69,43 @@ public class MetadataDatabasePlugin extends Plugin {
             var consumedJson = new JSONObject(record.value());
             this.processedRecord = false;
             this.pluginError = "";
-            try {
-                var metadataDao = new MetadataDao(PostgresConnector.getDSLContext());
-                saveToDatabase(consumedJson, metadataDao);
-            } catch (SQLException e) {
-                this.processedRecord = false;
-                setPluginError(e);
-                logger.error("Could not connect to the database", e);
-            } catch (IOException e) {
-                this.processedRecord = false;
-                setPluginError(e);
-                logger.error("Could not find 'postgres.properties' file with database connection "
-                        + "parameters", e);
-            }
+            var metadataDao = new MetadataDao(this.dslContext);
+            saveToDatabase(consumedJson, metadataDao);
         }
 
         /**
          * Saves consumed JSON to the database to appropriate tables.
          *
-         * @param json JSON Object consumed by Kafka
+         * @param json        JSON Object consumed by Kafka
          * @param metadataDao Data Access Object to insert records in the database.
          */
         public void saveToDatabase(JSONObject json, MetadataDao metadataDao) {
             boolean saved = false;
-            // TODO: Insert consumed data in the metadata database using metadataDao
+            try {
+                var packageName = json.getString("product");
+                var project = json.has("project") ? json.getString("project") : null;
+                var repository = json.has("repository") ? json.getString("repository") : null;
+                var timestamp = json.has("timestamp") ? new Timestamp(json.getLong("timestamp"))
+                        : null;
+                long packageId = metadataDao
+                        .insertPackage(packageName, project, repository, timestamp);
 
+                var generator = json.getString("Generator");
+                var version = json.getString("version");
+
+                long packageVersionId = metadataDao.insertPackageVersion(packageId, generator,
+                        version, timestamp, null);
+
+                saved = true;
+            } catch (Exception e) {
+                logger.error("Error saving to the database", e);
+                setPluginError(e);
+            }
             if (saved && getPluginError().isEmpty()) {
                 processedRecord = true;
                 logger.info("Saved the callgraph metadata to the database");
+            } else {
+                processedRecord = false;
             }
         }
 

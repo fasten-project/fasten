@@ -18,10 +18,18 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
+import java.sql.Timestamp;
+import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.jooq.DSLContext;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mockito;
 
 public class MetadataDatabasePluginTest {
 
@@ -29,12 +37,39 @@ public class MetadataDatabasePluginTest {
 
     @BeforeEach
     public void setUp() {
-        metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin();
+        DSLContext context = Mockito.mock(DSLContext.class);
+        metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin(context);
     }
 
     @Test
     public void consumeTest() {
-        // TODO: Test if consumed data is correctly saved in the database
+        var topic = "opal_callgraphs";
+        var record = new ConsumerRecord<>(topic, 0, 0L, "test", "{\"foo\":\"bar\"}");
+        metadataPlugin.consume(topic, record);
+        assertFalse(metadataPlugin.recordProcessSuccessful());
+    }
+
+    @Test
+    public void saveToDatabaseTest() {
+        var metadataDao = Mockito.mock(MetadataDao.class);
+        var json = new JSONObject("{\"product\": \"test.product\", "
+                + "\"version\": \"1.0.0\", \"timestamp\": 0, \"Generator\": \"OPAL\"}");
+        long packageId = 8;
+        Mockito.when(metadataDao.insertPackage(json.getString("product"), null, null,
+                new Timestamp(json.getLong("timestamp")))).thenReturn(packageId);
+        long packageVersionId = 42;
+        Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("Generator"),
+                json.getString("version"), new Timestamp(json.getLong("timestamp")), null))
+                .thenReturn(packageVersionId);
+        metadataPlugin.saveToDatabase(json, metadataDao);
+        assertTrue(metadataPlugin.recordProcessSuccessful());
+        assertTrue(metadataPlugin.getPluginError().isEmpty());
+    }
+
+    @Test
+    public void consumerTopicsTest() {
+        var topics = Collections.singletonList("opal_callgraphs");
+        assertEquals(topics, metadataPlugin.consumerTopics());
     }
 
     @Test
