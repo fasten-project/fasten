@@ -91,11 +91,10 @@ public class ExtendedRevisionCallGraphTest {
                 "\"/name.space/DiffExampleFirst\":{" +
                 "\"methods\":{" +
                 "\"0\":\"/name.space/DiffExampleFirst.DiffExampleFirst()%2Fjava.lang%2FVoid\"," +
-                "\"1\":\"/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoid\"," +
-                "\"2\":\"/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoid\"," +
+                "\"1\":\"/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoid\"," +
+                "\"2\":\"/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoid\"," +
                 "\"3\":\"/name.space/DiffExampleFirst.b()%2Fjava.lang%2FVoid\"," +
-                "\"4\":\"/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoid\"," +
-                "\"5\":\"/name.space/DiffExampleFirst.main(%2Fjava.lang%2FString%25255B%25255D)%2Fjava.lang%2FVoid\"" +
+                "\"4\":\"/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoid\"" +
                 "}," +
                 "\"superInterfaces\":[]," +
                 "\"sourceFile\":\"placeholderFileName.java\"," +
@@ -103,8 +102,8 @@ public class ExtendedRevisionCallGraphTest {
                 "}," +
                 "\"graph\":{" +
                 "\"resolvedCalls\":[" +
-                "[2,1]," +
-                "[3,2]," +
+                "[1,2]," +
+                "[3,1]," +
                 "[4,3]" +
                 "]," +
                 "\"unresolvedCalls\":[[\"0\",\"///java.lang/Object.Object()Void\",{\"invokespecial\":\"1\"}]]}," +
@@ -170,8 +169,8 @@ public class ExtendedRevisionCallGraphTest {
         assertEquals(1574072773, cgFromJSON.timestamp);
         assertEquals("WALA", cgFromJSON.getCgGenerator());
         assertEquals(0, cgFromJSON.depset.size());
-        assertArrayEquals(new int[]{2, 1}, cgFromJSON.getGraph().getResolvedCalls().get(0));
-        assertArrayEquals(new int[]{3, 2}, cgFromJSON.getGraph().getResolvedCalls().get(1));
+        assertArrayEquals(new int[]{1, 2}, cgFromJSON.getGraph().getResolvedCalls().get(0));
+        assertArrayEquals(new int[]{3, 1}, cgFromJSON.getGraph().getResolvedCalls().get(1));
         assertArrayEquals(new int[]{4, 3}, cgFromJSON.getGraph().getResolvedCalls().get(2));
 
         assertEquals(cgFromJSON.getGraph().getUnresolvedCalls(), cg.getGraph().getUnresolvedCalls());

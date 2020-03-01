@@ -70,9 +70,6 @@ public class CallGraphAnalyzer {
 
             final var methodNode = analysisContext.findOrCreate(nodeReference);
 
-            classHierarchyAnalyzer.addMethodToCHA(methodNode,
-                    nodeReference.getDeclaringClass());
-
             for (final var callSites = node.iterateCallSites(); callSites.hasNext(); ) {
                 final var callSite = callSites.next();
 
@@ -82,12 +79,6 @@ public class CallGraphAnalyzer {
                 final var targetMethodNode =
                         analysisContext.findOrCreate(targetWithCorrectClassLoader);
 
-                if (targetWithCorrectClassLoader.getDeclaringClass()
-                        .getClassLoader().equals(ClassLoaderReference.Application)) {
-                    classHierarchyAnalyzer.addMethodToCHA(targetMethodNode,
-                            targetWithCorrectClassLoader
-                                    .getDeclaringClass());
-                }
                 addCall(methodNode, targetMethodNode, getInvocationLabel(callSite));
             }
 
@@ -104,10 +95,12 @@ public class CallGraphAnalyzer {
     private void addCall(final Method source, final Method target, final CallType callType) {
         var sourceID = classHierarchyAnalyzer.addMethodToCHA(source,
                 source.getReference().getDeclaringClass());
+
         if (source instanceof ResolvedMethod && target instanceof ResolvedMethod) {
             var targetID = classHierarchyAnalyzer.addMethodToCHA(target,
                     target.getReference().getDeclaringClass());
             partialCallGraph.addResolvedCall(sourceID, targetID);
+
         } else {
             partialCallGraph.addUnresolvedCall(sourceID,
                     new FastenJavaURI("//" + target.toCanonicalSchemalessURI()), callType);

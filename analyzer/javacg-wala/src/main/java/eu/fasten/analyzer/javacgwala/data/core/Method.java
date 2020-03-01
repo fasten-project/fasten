@@ -93,7 +93,7 @@ public abstract class Method {
         if (reference.isPrimitiveType()) {
             return "java.lang";
 
-        } else if (reference.isReferenceType()) {
+        } else {
             if (reference.isArrayType()) {
                 return Objects.requireNonNull(getPackageName(reference.getArrayElementType()))
                         .replace("/", ".");
@@ -106,7 +106,6 @@ public abstract class Method {
             }
 
         }
-        return "";
     }
 
     public String getPackageName() {
@@ -123,7 +122,7 @@ public abstract class Method {
         if (reference.isPrimitiveType()) {
             return resolvePrimitiveTypeEncoding(reference.getName().toString());
 
-        } else if (reference.isReferenceType()) {
+        } else {
             if (reference.isArrayType()) {
                 return Objects.requireNonNull(getClassName(reference.getArrayElementType()))
                         .concat(threeTimesPct("[]"));
@@ -132,7 +131,6 @@ public abstract class Method {
             }
 
         }
-        return "";
     }
 
     public String getClassName() {
@@ -216,7 +214,7 @@ public abstract class Method {
             case "B":
                 return "Byte";
             case "C":
-                return "Char";
+                return "Character";
             case "D":
                 return "Double";
             case "F":
@@ -227,10 +225,8 @@ public abstract class Method {
                 return "Long";
             case "S":
                 return "Short";
-            case "V":
-                return "Void";
             default:
-                return "";
+                return "Void";
         }
     }
 

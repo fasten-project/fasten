@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
-import com.ibm.wala.types.ClassLoaderReference;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.AnalysisContext;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
@@ -124,13 +123,10 @@ public class MethodTest {
         arraygraph = CallGraphConstructor.generateCallGraph(arraypath);
 
         /**
-         * ArrayExtensiveTest:
-         *
-         *
+         * Contains arrays of all primitive types including two arrays of types Integer and Object.
          */
-
         var aepath = new File(Thread.currentThread().getContextClassLoader()
-                .getResource("arrayExtensiveTest.jar")
+                .getResource("ArrayExtensiveTest.jar")
                 .getFile()).getAbsolutePath();
 
         aegraph = CallGraphConstructor.generateCallGraph(aepath);
@@ -247,8 +243,41 @@ public class MethodTest {
     @Test
     public void toCanonicalJSONArrayExtensiveTest() {
         var wrapped = WalaResultAnalyzer.wrap(aegraph);
-        //TODO: finish tests and change the jar to include all primitive operations.
-        assertEquals(2, wrapped.getUnresolvedCalls().size());
+
+        List<String> listOfMethodNames = new ArrayList<>();
+        listOfMethodNames.add("short");
+        listOfMethodNames.add("integer");
+        listOfMethodNames.add("int");
+        listOfMethodNames.add("object");
+        listOfMethodNames.add("bool");
+        listOfMethodNames.add("long");
+        listOfMethodNames.add("double");
+        listOfMethodNames.add("float");
+        listOfMethodNames.add("char");
+        listOfMethodNames.add("byte");
+
+        List<String> listOfMethodTypes = new ArrayList<>();
+        listOfMethodTypes.add("Short");
+        listOfMethodTypes.add("Integer");
+        listOfMethodTypes.add("Integer");
+        listOfMethodTypes.add("Object");
+        listOfMethodTypes.add("Boolean");
+        listOfMethodTypes.add("Long");
+        listOfMethodTypes.add("Double");
+        listOfMethodTypes.add("Float");
+        listOfMethodTypes.add("Character");
+        listOfMethodTypes.add("Byte");
+
+
+        var methods = wrapped.getClassHierarchy().values().iterator().next().getMethods();
+        for (int pos = 0; pos < listOfMethodNames.size(); pos++) {
+            var method = methods.get(pos + 1).toString();
+
+            if (method.contains(listOfMethodNames.get(pos))) {
+                assertTrue(method.contains(
+                        "%2Fjava.lang%2F" + listOfMethodTypes.get(pos) + "%25255B%25255D"));
+            }
+        }
     }
 
     @Test
@@ -261,7 +290,7 @@ public class MethodTest {
             final var nodeReference = node.getMethod().getReference();
             methods.add(analysisContext.findOrCreate(nodeReference));
         }
-        
+
 
         final var refMethod = methods.get(3);
         final var methodSameNamespaceDiffSymbol = methods.get(5);

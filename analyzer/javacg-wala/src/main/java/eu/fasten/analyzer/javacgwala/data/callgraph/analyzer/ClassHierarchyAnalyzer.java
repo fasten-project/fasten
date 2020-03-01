@@ -67,12 +67,7 @@ public class ClassHierarchyAnalyzer {
         final var klass = this.rawCallGraph.getClassHierarchy().lookupClass(klassRef);
 
         if (!processedClasses.contains(getClassURI(method))) {
-            if (klass == null) {
-                processedClasses.add(getClassURI(method));
-                partialCallGraph.getClassHierarchy().put(getClassURI(method),
-                        new ExtendedRevisionCallGraph.Type(null,
-                                new HashMap<>(), new LinkedList<>(), new ArrayList<>()));
-            } else if (processedClasses.add(getClassURI(method))) {
+            if (processedClasses.add(getClassURI(method))) {
                 processClass(method, klass);
             }
         }
@@ -136,7 +131,7 @@ public class ClassHierarchyAnalyzer {
      */
     private LinkedList<FastenURI> superClassHierarchy(final IClass klass,
                                                       final LinkedList<FastenURI> aux) {
-        if (klass == null || aux == null) {
+        if (klass == null) {
             return new LinkedList<>();
         }
         aux.add(getClassURI(klass));
