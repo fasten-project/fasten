@@ -210,21 +210,21 @@ public abstract class Method {
     private static String resolvePrimitiveTypeEncoding(final String encoded) {
         switch (encoded) {
             case "Z":
-                return "Boolean";
+                return "BooleanType";
             case "B":
-                return "Byte";
+                return "ByteType";
             case "C":
-                return "Character";
+                return "CharacterType";
             case "D":
-                return "Double";
+                return "DoubleType";
             case "F":
-                return "Float";
+                return "FloatType";
             case "I":
-                return "Integer";
+                return "IntegerType";
             case "J":
-                return "Long";
+                return "LongType";
             case "S":
-                return "Short";
+                return "ShortType";
             default:
                 return "Void";
         }

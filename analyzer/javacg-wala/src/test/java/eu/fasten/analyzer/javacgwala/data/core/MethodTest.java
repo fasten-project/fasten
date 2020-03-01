@@ -257,16 +257,16 @@ public class MethodTest {
         listOfMethodNames.add("byte");
 
         List<String> listOfMethodTypes = new ArrayList<>();
-        listOfMethodTypes.add("Short");
+        listOfMethodTypes.add("ShortType");
         listOfMethodTypes.add("Integer");
-        listOfMethodTypes.add("Integer");
+        listOfMethodTypes.add("IntegerType");
         listOfMethodTypes.add("Object");
-        listOfMethodTypes.add("Boolean");
-        listOfMethodTypes.add("Long");
-        listOfMethodTypes.add("Double");
-        listOfMethodTypes.add("Float");
-        listOfMethodTypes.add("Character");
-        listOfMethodTypes.add("Byte");
+        listOfMethodTypes.add("BooleanType");
+        listOfMethodTypes.add("LongType");
+        listOfMethodTypes.add("DoubleType");
+        listOfMethodTypes.add("FloatType");
+        listOfMethodTypes.add("CharacterType");
+        listOfMethodTypes.add("ByteType");
 
 
         var methods = wrapped.getClassHierarchy().values().iterator().next().getMethods();
