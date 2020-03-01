@@ -145,8 +145,8 @@
 <!--                            <inputSchema>public</inputSchema>-->
 <!--                        </database>-->
 <!--                        <target>-->
-<!--                            <packageName>eu.fasten.analyzer.metadataplugin.db.jooq</packageName>-->
-<!--                            <directory>target/generated-sources/jooq</directory>-->
+<!--                            <packageName>eu.fasten.analyzer.metadataplugin.db.codegen</packageName>-->
+<!--                            <directory>src/main/java</directory>-->
 <!--                        </target>-->
 <!--                    </generator>-->
 <!--                </configuration>-->
@@ -155,4 +155,19 @@
         </plugins>
     </build>
 
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.2</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/codegen/**/*</exclude>
+                        <exclude>**/PostgresConnector.*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>
