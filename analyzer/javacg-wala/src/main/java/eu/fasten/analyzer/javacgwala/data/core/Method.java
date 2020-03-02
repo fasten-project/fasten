@@ -226,7 +226,7 @@ public abstract class Method {
             case "S":
                 return "ShortType";
             default:
-                return "Void";
+                return "VoidType";
         }
     }
 

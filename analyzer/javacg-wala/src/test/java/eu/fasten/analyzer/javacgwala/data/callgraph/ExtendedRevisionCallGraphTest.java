@@ -90,14 +90,14 @@ public class ExtendedRevisionCallGraphTest {
                 "\"cha\":{" +
                 "\"/name.space/DiffExampleFirst\":{" +
                 "\"methods\":{" +
-                "\"0\":\"/name.space/DiffExampleFirst.DiffExampleFirst()%2Fjava.lang%2FVoid\"," +
-                "\"1\":\"/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoid\"," +
-                "\"2\":\"/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoid\"," +
-                "\"3\":\"/name.space/DiffExampleFirst.b()%2Fjava.lang%2FVoid\"," +
-                "\"4\":\"/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoid\"" +
+                "\"0\":\"/name.space/DiffExampleFirst.DiffExampleFirst()%2Fjava.lang%2FVoidType\"," +
+                "\"1\":\"/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoidType\"," +
+                "\"2\":\"/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoidType\"," +
+                "\"3\":\"/name.space/DiffExampleFirst.b()%2Fjava.lang%2FVoidType\"," +
+                "\"4\":\"/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoidType\"" +
                 "}," +
                 "\"superInterfaces\":[]," +
-                "\"sourceFile\":\"placeholderFileName.java\"," +
+                "\"sourceFile\":\"DiffExampleFirst.java\"," +
                 "\"superClasses\":[\"/java.lang/Object\"]}" +
                 "}," +
                 "\"graph\":{" +
@@ -106,7 +106,8 @@ public class ExtendedRevisionCallGraphTest {
                 "[3,1]," +
                 "[4,3]" +
                 "]," +
-                "\"unresolvedCalls\":[[\"0\",\"///java.lang/Object.Object()Void\",{\"invokespecial\":\"1\"}]]}," +
+                "\"unresolvedCalls\":[[\"0\",\"///java.lang/Object.Object()VoidType\"," +
+                "{\"invokespecial\":\"1\"}]]}," +
                 "\"timestamp\":1574072773}";
     }
 

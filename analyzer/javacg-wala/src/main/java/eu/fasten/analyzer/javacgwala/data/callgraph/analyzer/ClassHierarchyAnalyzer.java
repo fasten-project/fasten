@@ -107,7 +107,9 @@ public class ClassHierarchyAnalyzer {
      * @param klass Class
      */
     private void processClass(final Method method, final IClass klass) {
-        final String sourceFileName = "placeholderFileName.java";
+        final var className = Method.getClassName(klass.getReference());
+
+        final var sourceFileName = className.split("[$%]")[0] + ".java";
         final List<FastenURI> interfaces = new ArrayList<>();
 
         for (final var implementedInterface : klass.getAllImplementedInterfaces()) {

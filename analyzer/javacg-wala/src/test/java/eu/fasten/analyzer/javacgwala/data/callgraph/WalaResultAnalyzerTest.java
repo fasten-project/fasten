@@ -47,8 +47,8 @@ class WalaResultAnalyzerTest {
         assertEquals(1, wrapped.getGraph().getResolvedCalls().size());
         assertEquals(1, wrapped.getGraph().getUnresolvedCalls().size());
 
-        var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
-        var target = "///java.lang/Object.Object()Void";
+        var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType";
+        var target = "///java.lang/Object.Object()VoidType";
 
         var callMetadata = wrapped.getGraph().getUnresolvedCalls().values().iterator().next();
         var callValues = wrapped.getGraph().getUnresolvedCalls().keySet().iterator().next();
@@ -61,8 +61,8 @@ class WalaResultAnalyzerTest {
         assertEquals("invokespecial", callMetadata.keySet().iterator().next());
         assertEquals("1", callMetadata.values().iterator().next());
 
-        source = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid";
-        target = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid";
+        source = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoidType";
+        target = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType";
 
         var resolvedCall = wrapped.getGraph().getResolvedCalls().get(0);
 

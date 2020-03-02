@@ -51,8 +51,8 @@ class PartialCallGraphTest {
 
     @Test
     void getUnresolvedCalls() {
-        var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
-        var target = "///java.lang/Object.Object()Void";
+        var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType";
+        var target = "///java.lang/Object.Object()VoidType";
 
         var call = graph.getGraph().getUnresolvedCalls().keySet().iterator().next();
 
@@ -62,8 +62,8 @@ class PartialCallGraphTest {
 
     @Test
     void getResolvedCalls() {
-        var source = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid";
-        var target = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid";
+        var source = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoidType";
+        var target = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType";
         var call = graph.getGraph().getResolvedCalls().get(0);
 
         assertEquals(source, type.getMethods().get(call[0]).toString());

@@ -141,11 +141,11 @@ public class MethodTest {
         assertEquals(1, wrapped.getUnresolvedCalls().size());
 
         // Actual URIs
-        var actualSourceURI = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid";
-        var actualTargetURI = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid";
+        var actualSourceURI = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoidType";
+        var actualTargetURI = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType";
         var actualSourceUnresolvedURI =
-                "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid";
-        var actualTargetUnresolvedURI = "///java.lang/Object.Object()Void";
+                "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType";
+        var actualTargetUnresolvedURI = "///java.lang/Object.Object()VoidType";
 
         var callMetadata = wrapped.getUnresolvedCalls().values().iterator().next();
         var callValues = wrapped.getUnresolvedCalls().keySet().iterator().next();
@@ -173,8 +173,8 @@ public class MethodTest {
         assertEquals(1, wrapped.getResolvedCalls().size());
 
         // Actual URIs
-        var actualSourceURI = "/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2FVoid";
-        var actualTargetURI = "/name.space/ClassInit.targetMethod()%2Fjava.lang%2FVoid";
+        var actualSourceURI = "/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2FVoidType";
+        var actualTargetURI = "/name.space/ClassInit.targetMethod()%2Fjava.lang%2FVoidType";
 
         var type = wrapped.getClassHierarchy()
                 .get(new FastenJavaURI("/name.space/ClassInit"));
@@ -203,7 +203,7 @@ public class MethodTest {
         }
 
         // Actual URIs
-        var actualSourceURI = "/name.space/LambdaExample.LambdaExample()%2Fjava.lang%2FVoid";
+        var actualSourceURI = "/name.space/LambdaExample.LambdaExample()%2Fjava.lang%2FVoidType";
         var actualTargetURI = "///java.lang.invoke/LambdaMetafactory.apply()%2Fjava"
                 + ".util.function%2FFunction";
 
@@ -227,7 +227,7 @@ public class MethodTest {
         assertEquals(1, wrapped.getResolvedCalls().size());
 
         // Actual URIs
-        var actualSourceURI = "/name.space/ArrayExample.sourceMethod()%2Fjava.lang%2FVoid";
+        var actualSourceURI = "/name.space/ArrayExample.sourceMethod()%2Fjava.lang%2FVoidType";
         var actualTargetURI = "/name.space/ArrayExample.targetMethod(%2Fjava"
                 + ".lang%2FObject%25255B%25255D)%2Fjava.lang%2FObject%25255B%25255D";
 
