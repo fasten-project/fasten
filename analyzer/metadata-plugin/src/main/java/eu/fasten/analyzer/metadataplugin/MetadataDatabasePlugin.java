@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
@@ -95,6 +96,41 @@ public class MetadataDatabasePlugin extends Plugin {
 
                 long packageVersionId = metadataDao.insertPackageVersion(packageId, generator,
                         version, timestamp, null);
+
+                var cha = json.getJSONObject("cha");
+                var fileNames = new ArrayList<String>(cha.keySet().size());
+                cha.keys().forEachRemaining(fileNames::add);
+                var globalIdsMap = new HashMap<Long, Long>();
+                for (var file : fileNames) {
+                    var jsonFile = cha.getJSONObject(file);
+                    var metadata = new JSONObject();
+                    metadata.append("superInterfaces", jsonFile.getJSONArray("superInterfaces"));
+                    metadata.append("superClasses", jsonFile.getJSONArray("superClasses"));
+                    long fileId = metadataDao.insertFile(packageVersionId, file, null, null,
+                            metadata);
+                    var methods = jsonFile.getJSONArray("methods");
+                    for (int i = 0; i < methods.length(); i++) {
+                        var localId = methods.getJSONArray(i).getString(0);
+                        var name = methods.getJSONArray(i).getString(1);
+                        long callableId = metadataDao.insertCallable(fileId, name, null, null);
+                        globalIdsMap.put(Long.parseLong(localId), callableId);
+                    }
+
+                }
+
+                var graph = json.getJSONObject("graph");
+                var resolvedCalls = graph.getJSONArray("resolvedCalls");
+                for (int i = 0; i < resolvedCalls.length(); i++) {
+                    var resolvedCall = resolvedCalls.getJSONArray(i);
+                    var sourceLocalId = resolvedCall.getLong(0);
+                    var targetLocalId = resolvedCall.getLong(1);
+                    var sourceGlobalId = globalIdsMap.get(sourceLocalId);
+                    var targetGlobalId = globalIdsMap.get(targetLocalId);
+                    metadataDao.insertEdge(sourceGlobalId, targetGlobalId, null);
+                }
+
+                var unresolvedCalls = graph.getJSONObject("unresolvedCalls");
+
 
                 saved = true;
             } catch (Exception e) {
