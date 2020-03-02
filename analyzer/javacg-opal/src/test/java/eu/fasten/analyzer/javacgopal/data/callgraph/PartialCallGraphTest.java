@@ -92,7 +92,7 @@ public class PartialCallGraphTest {
 
     /**
      * Given an unresolved arc and a graph returns the number of that arc in the graph.
-     * @param cg call graph
+     * @param cg     call graph
      * @param source String of FastenURI of source node
      * @param target String of FastenURI of target node
      * @return number of the given arc in the given call graph
@@ -123,7 +123,7 @@ public class PartialCallGraphTest {
 
     /**
      * Given an resolved arc and a graph returns the number of that arc in the graph.
-     * @param cg call graph
+     * @param cg     call graph
      * @param source String of FastenURI of source node
      * @param target String of FastenURI of target node
      * @return number of the given arc in the given call graph
@@ -244,6 +244,12 @@ public class PartialCallGraphTest {
         assertEquals(1, numberOfThisUnresolvedArc(cg1,
             "/ca.eandb.util/FloatArray.add(%2Fjava.lang%2FFloat)%2Fjava.lang%2FBooleanType",
             "///java.lang/NullPointerException.NullPointerException()VoidType"));
+
+        assertEquals(1, numberOfThisUnresolvedArc(cg1,
+            "/ca.eandb.util/ByteArray.add(%2Fjava.lang%2FIntegerType,"
+                + "%2Fjava.lang%2FByteType)%2Fjava.lang%2FVoidType",
+            "///java.lang/NullPointerException.NullPointerException()"
+                + "VoidType"));
 
 
     }
