@@ -25,6 +25,7 @@ import java.util.Properties;
 import org.rocksdb.RocksDBException;
 
 import com.google.common.math.StatsAccumulator;
+import com.martiansoftware.jsap.FlaggedOption;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPException;
 import com.martiansoftware.jsap.JSAPResult;
@@ -46,12 +47,14 @@ public class KBStats {
 		final SimpleJSAP jsap = new SimpleJSAP( Indexer.class.getName(),
 				"Creates or updates a knowledge base (associated to a given database), indexing either a list of JSON files or a Kafka topic where JSON object are published",
 				new Parameter[] {
+						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'm', "min", "Consider only graphs with at least this number of nodes" ),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 		});
 
 		final JSAPResult jsapResult = jsap.parse(args);
 		if ( jsap.messagePrinted() ) return;
 
+		final int minNodes = jsapResult.getInt("min");
 		final String kbDir = jsapResult.getString("kb");
 		if (!new File(kbDir).exists()) throw new IllegalArgumentException("No such directory: " + kbDir);
 		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir);
@@ -60,8 +63,12 @@ public class KBStats {
 		final StatsAccumulator arcs = new StatsAccumulator();
 		final StatsAccumulator bitsPerLink = new StatsAccumulator();
 		final StatsAccumulator bitsPerLinkt = new StatsAccumulator();
+		int totGraphs = 0, statGraphs = 0;
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
 			graph = callGraph.graphs();
+			totGraphs++;
+			if (graph[0].numNodes() < minNodes) continue;
+			statGraphs++;
 			nodes.add(graph[0].numNodes());
 			arcs.add(graph[0].numArcs());
 			property = callGraph.graphProperties();
@@ -72,7 +79,8 @@ public class KBStats {
 		}
 
 		kb.close();
-
+		System.out.println("Graphs in the kb: " + totGraphs);
+		System.out.println("Graphs considered for the stats: " + statGraphs);
 		System.out.println("Nodes: " + nodes.snapshot());
 		System.out.println("Arcs: " + arcs.snapshot());
 		System.out.println("Bits/link: " + bitsPerLink.snapshot());
