@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 import java.io.FileNotFoundException;
@@ -124,7 +125,7 @@ public class OPALPlugin extends Plugin {
         public ExtendedRevisionCallGraph generateCallgraph(final MavenCoordinate mavenCoordinate,
                                                            final JSONObject kafkaConsumedJson) {
             try {
-                return ExtendedRevisionCallGraph.create(mavenCoordinate,
+                return PartialCallGraph.createExtendedRevisionCallGraph(mavenCoordinate,
                     Long.parseLong(kafkaConsumedJson.get("date").toString()));
             } catch (FileNotFoundException e) {
                 setPluginError(e);

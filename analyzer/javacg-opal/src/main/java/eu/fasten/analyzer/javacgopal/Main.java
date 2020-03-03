@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.merge.CallGraphDifferentiator;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -84,8 +85,8 @@ public class Main implements Runnable {
             logger.info("Generating call graph for the Maven coordinate: {}",
                 this.fullCoordinate.mavenCoordStr);
             long startTime = System.currentTimeMillis();
-            revisionCallGraph = ExtendedRevisionCallGraph
-                .create(mavenCoordinate, Long.parseLong(this.timestamp));
+            revisionCallGraph = PartialCallGraph
+                .createExtendedRevisionCallGraph(mavenCoordinate, Long.parseLong(this.timestamp));
             logger.info("Generated the call graph in {} seconds.",
                 timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
             //TODO something with the calculated RevesionCallGraph.

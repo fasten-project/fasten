@@ -18,10 +18,8 @@
 
 package eu.fasten.analyzer.javacgopal.data.callgraph;
 
-import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -117,30 +115,6 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             logger.warn("No timestamp provided: assuming -1");
             return -1;
         }
-    }
-
-    /**
-     * Creates {@link ExtendedRevisionCallGraph} using OPAL call graph generator for a given maven
-     * coordinate. It also sets the forge to "mvn".
-     * @param coordinate maven coordinate of the revision to be processed.
-     * @param timestamp  timestamp of the revision release.
-     * @return {@link ExtendedRevisionCallGraph} of the given coordinate.
-     * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
-     *                               Maven central it throws this exception.
-     */
-    public static ExtendedRevisionCallGraph create(final MavenCoordinate coordinate,
-                                                   final long timestamp)
-        throws FileNotFoundException {
-        final var partialCallGraph = new PartialCallGraph(
-            MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate())
-                .orElseThrow(RuntimeException::new)
-        );
-
-        return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
-            coordinate.getVersionConstraint(), timestamp, partialCallGraph.getGENERATOR(),
-            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
-            partialCallGraph.getClassHierarchy(),
-            partialCallGraph.getGraph());
     }
 
     /**
@@ -305,10 +279,9 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         /**
          * Unresolved calls of the graph and key value metadata about each call. The {@link Pair}
          * keeps the id of source method in the left element and the {@link FastenURI} of the target
-         * method in the right element. The meta data per call is stored as
-         * a map that keys and values are {@link String}.
-         * For example in case of java for each call it can keep (typeOfCall ->
-         * number_of_occurrence).
+         * method in the right element. The meta data per call is stored as a map that keys and
+         * values are {@link String}. For example in case of java for each call it can keep
+         * (typeOfCall -> number_of_occurrence).
          */
         private final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls;
 

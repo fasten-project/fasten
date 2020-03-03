@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.merge.CallGraphDifferentiator;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -63,7 +63,7 @@ public class OPALPluginTest {
         final var cg = opalPlugin
             .consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()), false);
 
-        final var extendedRevisionCallGraph = ExtendedRevisionCallGraph.create(
+        final var extendedRevisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(
             new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
         try {
             CallGraphDifferentiator
@@ -92,7 +92,7 @@ public class OPALPluginTest {
         var cg = opalPlugin
             .consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()), false);
 
-        var extendedRevisionCallGraph = ExtendedRevisionCallGraph.create(
+        var extendedRevisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(
             new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"), 1574072773);
 
         JSONAssert

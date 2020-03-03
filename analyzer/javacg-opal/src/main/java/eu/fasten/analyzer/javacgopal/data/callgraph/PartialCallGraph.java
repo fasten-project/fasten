@@ -19,11 +19,13 @@
 package eu.fasten.analyzer.javacgopal.data.callgraph;
 
 import com.google.common.collect.Lists;
+import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.OPALType;
 import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -369,6 +371,31 @@ public class PartialCallGraph {
                 JavaConverters.asJavaIterable(artifactInOpalFormat.allMethodsWithBody()))),
             new CHACallGraphAlgorithmConfiguration(artifactInOpalFormat, true));
 
+    }
+
+
+    /**
+     * Creates {@link ExtendedRevisionCallGraph} using OPAL call graph generator for a given maven
+     * coordinate. It also sets the forge to "mvn".
+     * @param coordinate maven coordinate of the revision to be processed.
+     * @param timestamp  timestamp of the revision release.
+     * @return {@link ExtendedRevisionCallGraph} of the given coordinate.
+     * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
+     *                               Maven central it throws this exception.
+     */
+    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(final MavenCoordinate coordinate,
+                                                                            final long timestamp)
+        throws FileNotFoundException {
+        final var partialCallGraph = new PartialCallGraph(
+            MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate())
+                .orElseThrow(RuntimeException::new)
+        );
+
+        return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
+            coordinate.getVersionConstraint(), timestamp, partialCallGraph.getGENERATOR(),
+            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+            partialCallGraph.getClassHierarchy(),
+            partialCallGraph.getGraph());
     }
 
     /**

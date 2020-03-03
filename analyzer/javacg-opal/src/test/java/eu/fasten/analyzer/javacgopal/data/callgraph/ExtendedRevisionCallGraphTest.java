@@ -114,15 +114,6 @@ public class ExtendedRevisionCallGraphTest {
 
     }
 
-    @Test
-    public void testCreate() throws FileNotFoundException {
-
-        final var rcg = ExtendedRevisionCallGraph
-            .create(new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
-
-        assertSLF4j(rcg);
-
-    }
 
     @Test
     public void testExtendedBuilder() throws FileNotFoundException {
@@ -147,7 +138,7 @@ public class ExtendedRevisionCallGraphTest {
         assertSLF4j(rcg);
     }
 
-    private void assertSLF4j(ExtendedRevisionCallGraph cg) {
+    public static void assertSLF4j(ExtendedRevisionCallGraph cg) {
         assertNotNull(cg);
         assertEquals("mvn", cg.forge);
         assertEquals("1.7.29", cg.version);

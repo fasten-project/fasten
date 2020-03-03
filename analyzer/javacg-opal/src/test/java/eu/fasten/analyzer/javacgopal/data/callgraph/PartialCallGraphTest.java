@@ -90,6 +90,16 @@ public class PartialCallGraphTest {
 
     }
 
+    @Test
+    public void testCreate() throws FileNotFoundException {
+
+        final var rcg = PartialCallGraph
+            .createExtendedRevisionCallGraph(new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
+
+        ExtendedRevisionCallGraphTest.assertSLF4j(rcg);
+
+    }
+
     /**
      * Given an unresolved arc and a graph returns the number of that arc in the graph.
      * @param cg     call graph
