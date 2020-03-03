@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 import java.io.FileNotFoundException;
@@ -140,12 +141,12 @@ public class WALAPlugin extends Plugin {
         public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
                                                            final JSONObject kafkaConsumedJson) {
             try {
-                return ExtendedRevisionCallGraph.create(mavenCoordinate,
+                return PartialCallGraph.createExtendedRevisionCallGraph(mavenCoordinate,
                         Long.parseLong(kafkaConsumedJson.get("date").toString()));
             } catch (FileNotFoundException e) {
                 setPluginError(e);
                 logger.error("Could find JAR for Maven coordinate: {}",
-                        mavenCoordinate.getCoordinate(), e);
+                        mavenCoordinate.getCoordinate());
             }
             return null;
         }
@@ -168,7 +169,7 @@ public class WALAPlugin extends Plugin {
                     logger.debug("Sent: {} to {}", cg.uri.toString(), this.produceTopic);
                 } else {
                     setPluginError(e);
-                    logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
+                    logger.error("Failed to write message to Kafka: " + e.getMessage());
                 }
             });
         }

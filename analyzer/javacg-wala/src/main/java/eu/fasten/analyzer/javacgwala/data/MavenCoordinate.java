@@ -194,7 +194,7 @@ public class MavenCoordinate {
                 }
 
             } catch (DocumentException | FileNotFoundException e) {
-                logger.error("Error parsing POM file for: " + mavenCoordinate, e);
+                logger.error("Error parsing POM file for: " + mavenCoordinate);
             }
             return dependencies;
         }
@@ -297,10 +297,10 @@ public class MavenCoordinate {
 
                 return Optional.of(new File(tempFile.toAbsolutePath().toString()));
             } catch (FileNotFoundException e) {
-                logger.error("Could not find URL: " + url, e);
+                logger.error("Could not find URL: " + url);
                 throw e;
             } catch (Exception e) {
-                logger.error("Error retrieving URL: " + url, e);
+                logger.error("Error retrieving URL: " + url);
                 return Optional.empty();
             }
         }

@@ -18,8 +18,10 @@
 
 package eu.fasten.analyzer.javacgwala.data.callgraph;
 
+import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.core.CallType;
 import eu.fasten.core.data.FastenURI;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -107,5 +109,28 @@ public class PartialCallGraph {
             metadata.put(callType.label, String.valueOf(count));
             this.unresolvedCalls.put(call, metadata);
         }
+    }
+
+    /**
+     * Creates {@link ExtendedRevisionCallGraph} using WALA call graph generator for a given maven
+     * coordinate. It also sets the forge to "mvn".
+     *
+     * @param coordinate maven coordinate of the revision to be processed.
+     * @param timestamp  timestamp of the revision release.
+     * @return {@link ExtendedRevisionCallGraph} of the given coordinate.
+     * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
+     *                               Maven central it throws this exception.
+     */
+    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(
+            final MavenCoordinate coordinate,
+            final long timestamp) throws FileNotFoundException {
+
+        final var partialCallGraph = CallGraphConstructor.build(coordinate);
+
+        return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
+                coordinate.getVersionConstraint(), timestamp, "WALA",
+                MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+                partialCallGraph.getClassHierarchy(),
+                partialCallGraph.getGraph());
     }
 }

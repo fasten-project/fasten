@@ -18,10 +18,8 @@
 
 package eu.fasten.analyzer.javacgwala.data.callgraph;
 
-import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -124,28 +122,6 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             logger.warn("No timestamp provided: assuming -1");
             return -1;
         }
-    }
-
-    /**
-     * Creates {@link ExtendedRevisionCallGraph} using OPAL call graph generator for a given maven
-     * coordinate. It also sets the forge to "mvn".
-     *
-     * @param coordinate maven coordinate of the revision to be processed.
-     * @param timestamp  timestamp of the revision release.
-     * @return {@link ExtendedRevisionCallGraph} of the given coordinate.
-     * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
-     *                               Maven central it throws this exception.
-     */
-    public static ExtendedRevisionCallGraph create(final MavenCoordinate coordinate,
-                                                   final long timestamp)
-            throws FileNotFoundException {
-        final var partialCallGraph = CallGraphConstructor.build(coordinate);
-
-        return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
-                coordinate.getVersionConstraint(), timestamp, "WALA",
-                MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
-                partialCallGraph.getClassHierarchy(),
-                partialCallGraph.getGraph());
     }
 
     /**

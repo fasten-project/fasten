@@ -66,11 +66,11 @@ public class ClassHierarchyAnalyzer {
     public int addMethodToCHA(final Method method, final TypeReference klassRef) {
         final var klass = this.rawCallGraph.getClassHierarchy().lookupClass(klassRef);
 
-        if (!processedClasses.contains(getClassURI(method))) {
-            if (processedClasses.add(getClassURI(method))) {
-                processClass(method, klass);
-            }
+
+        if (processedClasses.add(getClassURI(method))) {
+            processClass(method, klass);
         }
+
 
         if (!partialCallGraph.getClassHierarchy().get(getClassURI(method)).getMethods()
                 .containsValue(method.toCanonicalSchemalessURI())) {

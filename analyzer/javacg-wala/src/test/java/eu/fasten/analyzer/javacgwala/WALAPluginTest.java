@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import java.io.FileNotFoundException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -63,7 +64,7 @@ class WALAPluginTest {
                         coordinateJSON.toString()), false);
 
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
-        ExtendedRevisionCallGraph revisionCallGraph = ExtendedRevisionCallGraph.create(coordinate,
+        var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
                 1574072773);
 
         assertEquals(revisionCallGraph.toJSON().toString(), cg.toJSON().toString());
@@ -116,7 +117,7 @@ class WALAPluginTest {
                 coordinateJSON1.toString()), false);
         var coordinate = new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3");
         ExtendedRevisionCallGraph extendedRevisionCallGraph =
-                ExtendedRevisionCallGraph.create(coordinate, 1574072773);
+                PartialCallGraph.createExtendedRevisionCallGraph(coordinate, 1574072773);
 
         assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString());
     }
@@ -150,7 +151,7 @@ class WALAPluginTest {
                         coordinateJSON.toString()), true);
 
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
-        ExtendedRevisionCallGraph revisionCallGraph = ExtendedRevisionCallGraph.create(coordinate,
+        var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
                 1574072773);
 
         assertEquals(revisionCallGraph.toJSON().toString(), cg.toJSON().toString());
