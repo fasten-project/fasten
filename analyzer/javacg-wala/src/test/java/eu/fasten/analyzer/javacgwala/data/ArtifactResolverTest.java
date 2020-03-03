@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.types.ClassLoaderReference;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
 import java.io.File;
@@ -37,7 +39,7 @@ class ArtifactResolverTest {
     private static File jar;
 
     @BeforeAll
-    static void setUp() {
+    static void setUp() throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {
         jar = new File(Thread.currentThread().getContextClassLoader()
                 .getResource("SingleSourceToTarget.jar")
                 .getFile());

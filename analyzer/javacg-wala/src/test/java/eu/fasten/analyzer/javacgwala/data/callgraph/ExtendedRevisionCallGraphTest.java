@@ -24,11 +24,14 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,7 +41,7 @@ public class ExtendedRevisionCallGraphTest {
     static String cgString;
 
     @BeforeAll
-    public static void generateCallGraph() {
+    public static void generateCallGraph() throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {
         /**
          * package name.space;
          *
@@ -119,7 +122,7 @@ public class ExtendedRevisionCallGraphTest {
     }
 
     @Test
-    public void testCreate() throws FileNotFoundException {
+    public void testCreate() throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
 
         final var rcg = PartialCallGraph.createExtendedRevisionCallGraph(
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"),
@@ -130,7 +133,7 @@ public class ExtendedRevisionCallGraphTest {
     }
 
     @Test
-    public void testExtendedBuilder() throws FileNotFoundException {
+    public void testExtendedBuilder() throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
 
         final var coord = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
         final var partialCG = CallGraphConstructor.build(coord);

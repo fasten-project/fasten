@@ -18,10 +18,13 @@
 
 package eu.fasten.analyzer.javacgwala.data.callgraph;
 
+import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.core.CallType;
 import eu.fasten.core.data.FastenURI;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -123,7 +126,8 @@ public class PartialCallGraph {
      */
     public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(
             final MavenCoordinate coordinate,
-            final long timestamp) throws FileNotFoundException {
+            final long timestamp)
+            throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
 
         final var partialCallGraph = CallGraphConstructor.build(coordinate);
 

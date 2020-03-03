@@ -18,12 +18,14 @@
 
 package eu.fasten.analyzer.javacgwala;
 
+import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -104,9 +106,9 @@ public class WALAPlugin extends Plugin {
                 }
                 return cg;
 
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 setPluginError(e);
-                logger.error("", e);
+                logger.error("Failed to generate a call graph for {}", kafkaRecord);
                 return null;
             }
         }
@@ -117,18 +119,12 @@ public class WALAPlugin extends Plugin {
          * @param kafkaConsumedJson Coordinate JSON
          * @return MavenCoordinate
          */
-        public MavenCoordinate getMavenCoordinate(final JSONObject kafkaConsumedJson) {
-
-            try {
-                return new MavenCoordinate(
-                        kafkaConsumedJson.get("groupId").toString(),
-                        kafkaConsumedJson.get("artifactId").toString(),
-                        kafkaConsumedJson.get("version").toString());
-            } catch (JSONException e) {
-                setPluginError(e);
-                logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson, e);
-            }
-            return null;
+        public MavenCoordinate getMavenCoordinate(final JSONObject kafkaConsumedJson)
+                throws JSONException {
+            return new MavenCoordinate(
+                    kafkaConsumedJson.get("groupId").toString(),
+                    kafkaConsumedJson.get("artifactId").toString(),
+                    kafkaConsumedJson.get("version").toString());
         }
 
         /**
@@ -139,16 +135,11 @@ public class WALAPlugin extends Plugin {
          * @return Generated ExtendedRevisionCallGraph
          */
         public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
-                                                           final JSONObject kafkaConsumedJson) {
-            try {
-                return PartialCallGraph.createExtendedRevisionCallGraph(mavenCoordinate,
-                        Long.parseLong(kafkaConsumedJson.get("date").toString()));
-            } catch (FileNotFoundException e) {
-                setPluginError(e);
-                logger.error("Could find JAR for Maven coordinate: {}",
-                        mavenCoordinate.getCoordinate());
-            }
-            return null;
+                                                           final JSONObject kafkaConsumedJson)
+                throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {
+
+            return PartialCallGraph.createExtendedRevisionCallGraph(mavenCoordinate,
+                    Long.parseLong(kafkaConsumedJson.get("date").toString()));
         }
 
         /**

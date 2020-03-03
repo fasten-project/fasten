@@ -22,13 +22,15 @@ import com.ibm.wala.classLoader.Language;
 import com.ibm.wala.ipa.callgraph.AnalysisCacheImpl;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.callgraph.impl.Util;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.util.config.AnalysisScopeReader;
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Objects;
@@ -46,7 +48,7 @@ public class CallGraphConstructor {
      * @return Partial call graph
      */
     public static PartialCallGraph build(final MavenCoordinate coordinate)
-            throws FileNotFoundException {
+            throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
         final NumberFormat timeFormatter = new DecimalFormat("#0.000");
         logger.info("Generating call graph for the Maven coordinate using WALA: {}",
                 coordinate.getCoordinate());
@@ -67,27 +69,24 @@ public class CallGraphConstructor {
      * @param classpath Path to class or jar file
      * @return Call Graph
      */
-    public static CallGraph generateCallGraph(final String classpath) {
-        try {
-            final var classLoader = Thread.currentThread().getContextClassLoader();
-            final var exclusionFile = new File(Objects.requireNonNull(classLoader
-                    .getResource("Java60RegressionExclusions.txt")).getFile());
+    public static CallGraph generateCallGraph(final String classpath)
+            throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
+        final var classLoader = Thread.currentThread().getContextClassLoader();
+        final var exclusionFile = new File(Objects.requireNonNull(classLoader
+                .getResource("Java60RegressionExclusions.txt")).getFile());
 
-            final var scope = AnalysisScopeReader
-                    .makeJavaBinaryAnalysisScope(classpath, exclusionFile);
+        final var scope = AnalysisScopeReader
+                .makeJavaBinaryAnalysisScope(classpath, exclusionFile);
 
-            final var cha = ClassHierarchyFactory.makeWithRoot(scope);
+        final var cha = ClassHierarchyFactory.makeWithRoot(scope);
 
-            final var entryPointsGenerator = new EntryPointsGenerator(cha);
-            final var entryPoints = entryPointsGenerator.getEntryPoints();
-            final var options = new AnalysisOptions(scope, entryPoints);
-            final var cache = new AnalysisCacheImpl();
+        final var entryPointsGenerator = new EntryPointsGenerator(cha);
+        final var entryPoints = entryPointsGenerator.getEntryPoints();
+        final var options = new AnalysisOptions(scope, entryPoints);
+        final var cache = new AnalysisCacheImpl();
 
-            final var builder = Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha, scope);
+        final var builder = Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha, scope);
 
-            return builder.makeCallGraph(options, null);
-        } catch (Exception e) {
-            return null;
-        }
+        return builder.makeCallGraph(options, null);
     }
 }

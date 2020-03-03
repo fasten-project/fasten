@@ -22,10 +22,10 @@ import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +80,7 @@ public class Main implements Runnable {
                         this.setRunner.fullCoordinate.coordinateComponents.artifact,
                         this.setRunner.fullCoordinate.coordinateComponents.version);
             }
-            
+
             try {
                 final var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(
                         mavenCoordinate,
@@ -88,9 +88,9 @@ public class Main implements Runnable {
 
                 System.out.println(revisionCallGraph.toJSON());
 
-            } catch (FileNotFoundException e) {
-                logger.error("Could not download the JAR file of Maven coordinate: {}",
-                        mavenCoordinate.getCoordinate());
+            } catch (Throwable e) {
+                logger.error("Failed to generate a call graph for Maven coordinate: {}, Error: {}",
+                        mavenCoordinate.getCoordinate(), e.getClass().getSimpleName());
             }
         }
     }
@@ -123,7 +123,7 @@ public class Main implements Runnable {
                 logger.info("Call graph successfully generated for {}!",
                         mavenCoordinate.getCoordinate());
 
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 JSONObject error = new JSONObject().put("plugin", this.getClass().getSimpleName())
                         .put("msg", e.getMessage())
                         .put("trace", e.getStackTrace())
@@ -176,7 +176,7 @@ public class Main implements Runnable {
 
         var sortedErrorMap = errorOccurrences.entrySet()
                 .stream()
-                .sorted(Map.Entry.comparingByValue())
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, HashMap::new));
 

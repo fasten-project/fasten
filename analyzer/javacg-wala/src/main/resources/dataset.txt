@@ -85,6 +85,8 @@
 {"groupId":"au.net.zeus.jgdms.tools","artifactId":"computedigest","version":"3.0.1-RC-07","date":"1545411540","url":"https://repo1.maven.org/maven2/au/net/zeus/jgdms/tools/computedigest/3.0.1-RC-07/computedigest-3.0.1-RC-07.pom"}
 {"groupId":"au.net.zeus.jgdms.tools","artifactId":"classserver","version":"3.1.0","date":"1546602720","url":"https://repo1.maven.org/maven2/au/net/zeus/jgdms/tools/classserver/3.1.0/classserver-3.1.0.pom"}
 {"groupId":"au.net.zeus.jgdms.tools","artifactId":"classserver","version":"3.0.1-RC-07","date":"1545411600","url":"https://repo1.maven.org/maven2/au/net/zeus/jgdms/tools/classserver/3.0.1-RC-07/classserver-3.0.1-RC-07.pom"}
+{"groupId":"au.net.zeus.jgdms.tools","artifactId":"classdep","version":"3.1.0","date":"1546602420","url":"https://repo1.maven.org/maven2/au/net/zeus/jgdms/tools/classdep/3.1.0/classdep-3.1.0.pom"}
+{"groupId":"au.net.zeus.jgdms.tools","artifactId":"classdep","version":"3.0.1-RC-07","date":"1545411540","url":"https://repo1.maven.org/maven2/au/net/zeus/jgdms/tools/classdep/3.0.1-RC-07/classdep-3.0.1-RC-07.pom"}
 {"groupId":"au.net.zeus.jgdms.tools","artifactId":"checkser","version":"3.1.0","date":"1546602660","url":"https://repo1.maven.org/maven2/au/net/zeus/jgdms/tools/checkser/3.1.0/checkser-3.1.0.pom"}
 {"groupId":"au.net.zeus.jgdms.tools","artifactId":"checkser","version":"3.0.1-RC-07","date":"1545411600","url":"https://repo1.maven.org/maven2/au/net/zeus/jgdms/tools/checkser/3.0.1-RC-07/checkser-3.0.1-RC-07.pom"}
 {"groupId":"au.net.zeus.jgdms.tools","artifactId":"checkconfigurationfile","version":"3.1.0","date":"1546602180","url":"https://repo1.maven.org/maven2/au/net/zeus/jgdms/tools/checkconfigurationfile/3.1.0/checkconfigurationfile-3.1.0.pom"}

@@ -21,9 +21,12 @@ package eu.fasten.analyzer.javacgwala.data.callgraph;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +35,7 @@ class WalaResultAnalyzerTest {
     private static CallGraph graph;
 
     @BeforeAll
-    static void setUp() {
+    static void setUp() throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {
         var path = new File(Thread.currentThread().getContextClassLoader()
                 .getResource("SingleSourceToTarget.jar")
                 .getFile()).getAbsolutePath();

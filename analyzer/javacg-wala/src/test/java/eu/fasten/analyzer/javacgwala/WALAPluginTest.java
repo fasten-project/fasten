@@ -20,12 +20,15 @@ package eu.fasten.analyzer.javacgwala;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.json.JSONException;
@@ -50,7 +53,7 @@ class WALAPluginTest {
     }
 
     @Test
-    public void testConsume() throws JSONException, FileNotFoundException {
+    public void testConsume() throws JSONException, IOException, ClassHierarchyException, CallGraphBuilderCancelException {
 
         JSONObject coordinateJSON = new JSONObject("{\n" +
                 "    \"groupId\": \"org.slf4j\",\n" +
@@ -83,7 +86,7 @@ class WALAPluginTest {
                 .consume(new ConsumerRecord<>(topic, 1, 0, "bar",
                         emptyCGCoordinate.toString()), false);
 
-        assertTrue(cg.isCallGraphEmpty());
+        assertNull(cg);
     }
 
     @Test
@@ -104,7 +107,7 @@ class WALAPluginTest {
     }
 
     @Test
-    public void testShouldNotFaceClassReadingError() throws JSONException, FileNotFoundException {
+    public void testShouldNotFaceClassReadingError() throws JSONException, IOException, ClassHierarchyException, CallGraphBuilderCancelException {
 
         JSONObject coordinateJSON1 = new JSONObject("{\n" +
                 "    \"groupId\": \"com.zarbosoft\",\n" +
@@ -133,7 +136,7 @@ class WALAPluginTest {
     }
 
     @Test
-    public void sendToKafkaTest() throws FileNotFoundException {
+    public void sendToKafkaTest() throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
         KafkaProducer<Object, String> producer = Mockito.mock(KafkaProducer.class);
         walaPlugin.setKafkaProducer(producer);
 

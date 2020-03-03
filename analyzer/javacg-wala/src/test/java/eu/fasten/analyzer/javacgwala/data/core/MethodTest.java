@@ -25,12 +25,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.callgraph.CallGraphConstructor;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.AnalysisContext;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +46,7 @@ public class MethodTest {
     private static CallGraph ssttgraph, cigraph, lambdagraph, arraygraph, aegraph;
 
     @BeforeAll
-    public static void setUp() {
+    public static void setUp() throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {
         /**
          * SingleSourceToTarget:
          *
