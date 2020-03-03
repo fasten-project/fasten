@@ -91,31 +91,49 @@ public class MetadataDatabasePlugin extends Plugin {
                 long packageId = metadataDao
                         .insertPackage(packageName, project, repository, timestamp);
 
-                var generator = json.getString("Generator");
+                var generator = json.getString("generator");
                 var version = json.getString("version");
 
                 long packageVersionId = metadataDao.insertPackageVersion(packageId, generator,
                         version, timestamp, null);
+
+                var depset = json.getJSONArray("depset").optJSONArray(0);
+                if (depset != null) {
+                    var depIds = new ArrayList<Long>(depset.length());
+                    var depVersions = new ArrayList<String>(depset.length());
+                    for (int i = 0; i < depset.length(); i++) {
+                        // TODO: Check if dependency is already in the database to avoid duplicates
+                        var dependency = depset.getJSONObject(i);
+                        var depName = dependency.getString("product");
+                        var depVersion = dependency.getJSONArray("constraints").getString(0);
+                        depVersions.add(depVersion);
+                        long depPackageId = metadataDao.insertPackage(depName, null, null, null);
+                        depIds.add(metadataDao.insertPackageVersion(depPackageId, generator,
+                                depVersion, null, null));
+                    }
+                    metadataDao.insertDependencies(packageId, depIds, depVersions);
+                }
 
                 var cha = json.getJSONObject("cha");
                 var fileNames = new ArrayList<String>(cha.keySet().size());
                 cha.keys().forEachRemaining(fileNames::add);
                 var globalIdsMap = new HashMap<Long, Long>();
                 for (var file : fileNames) {
-                    var jsonFile = cha.getJSONObject(file);
+                    var fileJson = cha.getJSONObject(file);
                     var metadata = new JSONObject();
-                    metadata.append("superInterfaces", jsonFile.getJSONArray("superInterfaces"));
-                    metadata.append("superClasses", jsonFile.getJSONArray("superClasses"));
+                    metadata.append("superInterfaces", fileJson.getJSONArray("superInterfaces"));
+                    metadata.append("sourceFile", fileJson.getString("sourceFile"));
+                    metadata.append("superClasses", fileJson.getJSONArray("superClasses"));
                     long fileId = metadataDao.insertFile(packageVersionId, file, null, null,
                             metadata);
-                    var methods = jsonFile.getJSONArray("methods");
-                    for (int i = 0; i < methods.length(); i++) {
-                        var localId = methods.getJSONArray(i).getString(0);
-                        var name = methods.getJSONArray(i).getString(1);
-                        long callableId = metadataDao.insertCallable(fileId, name, null, null);
-                        globalIdsMap.put(Long.parseLong(localId), callableId);
+                    var methods = fileJson.getJSONObject("methods");
+                    var methodIds = new ArrayList<String>(methods.keySet().size());
+                    methods.keys().forEachRemaining(methodIds::add);
+                    for (var method : methodIds) {
+                        var uri = methods.getString(method);
+                        long callableId = metadataDao.insertCallable(fileId, uri, null, null);
+                        globalIdsMap.put(Long.parseLong(method), callableId);
                     }
-
                 }
 
                 var graph = json.getJSONObject("graph");
@@ -129,7 +147,8 @@ public class MetadataDatabasePlugin extends Plugin {
                     metadataDao.insertEdge(sourceGlobalId, targetGlobalId, null);
                 }
 
-                var unresolvedCalls = graph.getJSONObject("unresolvedCalls");
+                // TODO: Save unresolved calls
+                // var unresolvedCalls = graph.getJSONObject("unresolvedCalls");
 
 
                 saved = true;

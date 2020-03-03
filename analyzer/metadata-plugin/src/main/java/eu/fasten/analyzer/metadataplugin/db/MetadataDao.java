@@ -157,29 +157,25 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts multiple records in the 'dependencies' table in the database.
+     * Inserts multiple 'dependencies' int the database for certain package.
      *
-     * @param packageIds      List of IDs of packages
+     * @param packageId       ID of the package
      * @param dependenciesIds List of IDs of dependencies
      * @param versionRanges   List of version ranges
-     * @return List of IDs of the packages (packageIds)
+     * @return ID of the package (packageId)
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertDependencies(List<Long> packageIds, List<Long> dependenciesIds,
-                                         List<String> versionRanges)
+    public long insertDependencies(long packageId, List<Long> dependenciesIds,
+                                   List<String> versionRanges)
             throws IllegalArgumentException {
-        if (packageIds.size() != dependenciesIds.size()
-                || dependenciesIds.size() != versionRanges.size()) {
+        if (dependenciesIds.size() != versionRanges.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
-        int length = packageIds.size();
-        var recordIds = new ArrayList<Long>(length);
+        int length = dependenciesIds.size();
         for (int i = 0; i < length; i++) {
-            long result = insertDependency(packageIds.get(i), dependenciesIds.get(i),
-                    versionRanges.get(i));
-            recordIds.add(result);
+            insertDependency(packageId, dependenciesIds.get(i), versionRanges.get(i));
         }
-        return recordIds;
+        return packageId;
     }
 
     /**

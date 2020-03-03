@@ -191,30 +191,30 @@ public class MetadataDaoTest {
 
     @Test
     public void insertMultipleDependenciesTest() throws IllegalArgumentException {
-        var packageIds = Arrays.asList(1L, 2L);
+        var packageId = 1L;
         var dependencyIds = Arrays.asList(8L, 42L);
         var versionRanges = Arrays.asList("1.0.0-1.9.9", "2.1.0-2.1.9");
         var insertValues = Mockito.mock(InsertValuesStep3.class);
         Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(packageIds.get(0), dependencyIds.get(0), versionRanges.get(0))).thenReturn(insertValues);
-        Mockito.when(insertValues.values(packageIds.get(1), dependencyIds.get(1), versionRanges.get(1))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, dependencyIds.get(0), versionRanges.get(0))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, dependencyIds.get(1), versionRanges.get(1))).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertValues.returning(Dependencies.DEPENDENCIES.PACKAGE_ID)).thenReturn(insertResult);
-        var record1 = new DependenciesRecord(packageIds.get(0), dependencyIds.get(0), versionRanges.get(0));
-        var record2 = new DependenciesRecord(packageIds.get(1), dependencyIds.get(1), versionRanges.get(1));
+        var record1 = new DependenciesRecord(packageId, dependencyIds.get(0), versionRanges.get(0));
+        var record2 = new DependenciesRecord(packageId, dependencyIds.get(1), versionRanges.get(1));
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
-        var result = metadataDao.insertDependencies(packageIds, dependencyIds, versionRanges);
-        assertEquals(packageIds, result);
+        var result = metadataDao.insertDependencies(packageId, dependencyIds, versionRanges);
+        assertEquals(packageId, result);
     }
 
     @Test
     public void insertMultipleDependenciesErrorTest() {
-        var packageIds = Collections.singletonList(1L);
-        var dependencyIds = Arrays.asList(8L, 42L);
+        var packageId = 1L;
+        var dependencyIds = Collections.singletonList(8L);
         var versionRanges = Arrays.asList("1.0.0-1.9.9", "2.1.0-2.1.9");
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertDependencies(packageIds, dependencyIds, versionRanges);
+            metadataDao.insertDependencies(packageId, dependencyIds, versionRanges);
         });
     }
 

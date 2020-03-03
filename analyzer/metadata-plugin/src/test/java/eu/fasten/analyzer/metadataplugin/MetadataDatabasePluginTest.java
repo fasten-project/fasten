@@ -49,23 +49,69 @@ public class MetadataDatabasePluginTest {
         assertFalse(metadataPlugin.recordProcessSuccessful());
     }
 
-//    @Test TODO: Rewrite according to the new parsing
-//    public void saveToDatabaseTest() {
-//        var metadataDao = Mockito.mock(MetadataDao.class);
-//        var json = new JSONObject("{\"product\": \"test.product\", "
-//                + "\"version\": \"1.0.0\", \"timestamp\": 0, \"Generator\": \"OPAL\", \"cha\": " +
-//                "{}}");
-//        long packageId = 8;
-//        Mockito.when(metadataDao.insertPackage(json.getString("product"), null, null,
-//                new Timestamp(json.getLong("timestamp")))).thenReturn(packageId);
-//        long packageVersionId = 42;
-//        Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("Generator"),
-//                json.getString("version"), new Timestamp(json.getLong("timestamp")), null))
-//                .thenReturn(packageVersionId);
-//        metadataPlugin.saveToDatabase(json, metadataDao);
-//        assertTrue(metadataPlugin.recordProcessSuccessful());
-//        assertTrue(metadataPlugin.getPluginError().isEmpty());
-//    }
+    @Test
+    public void saveToDatabaseTest() {
+        var metadataDao = Mockito.mock(MetadataDao.class);
+        var json = new JSONObject("{\n" +
+                "  \"product\": \"test.product\",\n" +
+                "  \"forge\": \"mvn\",\n" +
+                "  \"generator\": \"OPAL\",\n" +
+                "  \"depset\": [],\n" +
+                "  \"version\": \"1.0.0\",\n" +
+                "  \"cha\": {\n" +
+                "    \"/package/class\": {\n" +
+                "      \"methods\": {\n" +
+                "        \"1\": \"/package/class.method()%2Fjava.lang%2FVoid\",\n" +
+                "        \"2\": \"/package/class.toString()%2Fjava.lang%2FString\"\n" +
+                "      },\n" +
+                "      \"superInterfaces\": [],\n" +
+                "      \"sourceFile\": \"file.java\",\n" +
+                "      \"superClasses\": [\n" +
+                "        \"/java.lang/Object\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  },\n" +
+                "  \"graph\": {\n" +
+                "    \"resolvedCalls\": [\n" +
+                "      [\n" +
+                "        1,\n" +
+                "        2\n" +
+                "      ]\n" +
+                "    ],\n" +
+                "    \"unresolvedCalls\": [\n" +
+                "      [\n" +
+                "        \"1\",\n" +
+                "        \"///dep/service.call()%2Fjava.lang%2FObject\",\n" +
+                "        {\n" +
+                "          \"invokevirtual\": \"1\"\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    ]\n" +
+                "  },\n" +
+                "  \"timestamp\": 123\n" +
+                "}");
+        long packageId = 8;
+        Mockito.when(metadataDao.insertPackage(json.getString("product"), null, null,
+                new Timestamp(json.getLong("timestamp")))).thenReturn(packageId);
+        long packageVersionId = 42;
+        Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
+                json.getString("version"), new Timestamp(json.getLong("timestamp")), null))
+                .thenReturn(packageVersionId);
+        long fileId = 10;
+        var metadata = new JSONObject("{\"superInterfaces\": [],\n" +
+                "      \"sourceFile\": \"file.java\",\n" +
+                "      \"superClasses\": [\n" +
+                "        \"/java.lang/Object\"\n" +
+                "      ]}");
+        Mockito.when(metadataDao.insertFile(packageVersionId, "package/class", null, null,
+                metadata)).thenReturn(fileId);
+        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.method()%2Fjava.lang%2FVoid", null, null)).thenReturn(64L);
+        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.toString()%2Fjava.lang%2FString", null, null)).thenReturn(65L);
+        Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
+        metadataPlugin.saveToDatabase(json, metadataDao);
+        assertTrue(metadataPlugin.recordProcessSuccessful());
+        assertTrue(metadataPlugin.getPluginError().isEmpty());
+    }
 
     @Test
     public void consumerTopicsTest() {
