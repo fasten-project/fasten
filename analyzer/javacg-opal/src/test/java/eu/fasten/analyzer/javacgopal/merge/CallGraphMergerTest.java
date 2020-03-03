@@ -57,13 +57,15 @@ public class CallGraphMergerTest {
          */
         var importerGraph = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("Importer.class").getFile()));
 
-//        artifact = new ExtendedRevisionCallGraph("mvn",
-//                "ImporterGroup.ImporterArtifact",
-//                "1.7.29",
-//                1574072773,
-//                Arrays.asList(),
-//                importerGraph.getMapedGraph(PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy())),
-//                PartialCallGraph.toURIHierarchy(importerGraph.getClassHierarchy()));
+        artifact = ExtendedRevisionCallGraph.extendedBuilder()
+            .forge("mvn")
+            .product("ImporterGroup.ImporterArtifact")
+            .version("1.7.29")
+            .cgGenerator(importerGraph.getGENERATOR())
+            .timestamp(1574072773)
+            .graph(importerGraph.getGraph())
+            .classHierarchy(importerGraph.getClassHierarchy())
+            .build();
 
         /**
          * Imported is a java8 compiled bytecode of:
@@ -81,14 +83,15 @@ public class CallGraphMergerTest {
          */
         var importedGraph = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("Imported.class").getFile()));
 
-//        dependency = new ExtendedRevisionCallGraph("mvn",
-//                "ImportedGroup.ImportedArtifact",
-//                "1.7.29",
-//                1574072773,
-//                Arrays.asList(),
-//                importedGraph.getMapedGraph(PartialCallGraph.toURIHierarchy(importedGraph.getClassHierarchy())),
-//                PartialCallGraph.toURIHierarchy(importedGraph.getClassHierarchy()));
-
+        dependency = ExtendedRevisionCallGraph.extendedBuilder()
+            .forge("mvn")
+            .product("ImportedGroup.ImportedArtifact")
+            .version("1.7.29")
+            .cgGenerator(importedGraph.getGENERATOR())
+            .timestamp(1574072773)
+            .graph(importedGraph.getGraph())
+            .classHierarchy(importedGraph.getClassHierarchy())
+            .build();
     }
 
     @Test
@@ -99,13 +102,16 @@ public class CallGraphMergerTest {
     @Test
     public void testMergeCallGraphs() {
 
-//        assertEquals(new FastenJavaURI("///depen.dency/Imported.targetMethod()%2Fjava.lang%2FVoid"),
-//                artifact.getGraph().toStream().filter(i -> i[1].toString().contains("targetMethod")).findFirst().get()[1]);
-//
-//        assertEquals(new FastenJavaURI("//ImportedGroup.ImportedArtifact/depen.dency/Imported.targetMethod()%2Fjava.lang%2FVoid"),
-//                CallGraphMerger.mergeCallGraph(artifact, Arrays.asList(dependency))
-//                        .graph.stream().filter(i -> i[1].toString().contains("targetMethod")).findFirst().get()[1]);
+        assertEquals(new FastenJavaURI("///depen.dency/Imported.targetMethod()%2Fjava" +
+                ".lang%2FVoidType"),
+                artifact.getGraph().getUnresolvedCalls().keySet().stream().filter(i -> i.getRight().toString().contains(
+                    "targetMethod")).findFirst().orElseThrow().getRight());
 
+        assertEquals(new FastenJavaURI("//ImportedGroup.ImportedArtifact/depen.dency/Imported" +
+                ".targetMethod()%2Fjava.lang%2FVoidType"),
+                CallGraphMerger.mergeCallGraph(artifact, Arrays.asList(dependency))
+                    .getGraph().getUnresolvedCalls().keySet().stream().filter(i -> i.getRight().toString().contains(
+                    "targetMethod")).findFirst().orElseThrow().getRight());
 
     }
 }

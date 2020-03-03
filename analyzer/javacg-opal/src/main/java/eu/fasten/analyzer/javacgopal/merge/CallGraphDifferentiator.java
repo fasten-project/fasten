@@ -46,8 +46,8 @@ public class CallGraphDifferentiator {
         firstGraph.sortResolvedCalls();
         secondGraph.sortResolvedCalls();
 
-        writeToFile(firstGraph.toJSON().toString(4), graphPath, "_1.txt");
-        writeToFile(secondGraph.toJSON().toString(4), graphPath, "_2.txt");
+        writeToFile(graphPath, firstGraph.toJSON().toString(4),"_1.txt");
+        writeToFile(graphPath, secondGraph.toJSON().toString(4),"_2.txt");
 
         Runtime.getRuntime().exec(new String[] {"sh", "-c",
             "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath

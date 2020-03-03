@@ -189,6 +189,18 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         this.graph.resolvedCalls.addAll(sortedList);
     }
 
+    /**
+     * Returns the map of all the methods of this object.
+     * @return a Map of method ids and their corresponding {@link FastenURI}
+     */
+    public Map<Integer, FastenURI> mapOfAllMethods() {
+        Map<Integer, FastenURI> result = new HashMap<>();
+        for (final var aClass : this.getClassHierarchy().entrySet()) {
+            result.putAll(aClass.getValue().getMethods());
+        }
+        return result;
+    }
+
     public boolean isCallGraphEmpty() {
         return this.graph.resolvedCalls.isEmpty() && this.graph.unresolvedCalls.isEmpty();
     }
@@ -328,13 +340,11 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
          */
         public JSONObject toJSON(final Graph graph) {
 
-            logger.info("putting resolved calls, size: {} ... ", graph.resolvedCalls.size());
             final var result = new JSONObject();
             final var resolvedCallsJSON = new JSONArray();
             for (final var entry : graph.resolvedCalls) {
                 resolvedCallsJSON.put(entry);
             }
-            logger.info("putting unresolved calls, size: {} ... ", graph.unresolvedCalls.size());
             final var unresolvedCallsJSON = new JSONArray();
             for (final var entry : graph.unresolvedCalls.entrySet()) {
                 final var call = new JSONArray();

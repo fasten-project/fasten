@@ -26,6 +26,8 @@ import eu.fasten.core.data.RevisionCallGraph;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class CallGraphMerger {
 
@@ -50,14 +52,16 @@ public class CallGraphMerger {
                                                            final List<ExtendedRevisionCallGraph>
                                                                dependencies) {
 
-        final Map<Integer, FastenURI> mapOfAllMethods = new HashMap<>();
-        artifact.getClassHierarchy().forEach((fastenURI, type) -> {
-            mapOfAllMethods.putAll(type.getMethods());
-        });
+        final var mapOfAllMethods = artifact.mapOfAllMethods();
 
-        artifact.getGraph().getUnresolvedCalls().forEach((call, metadata) -> {
+        final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls = new HashMap<>();
+
+        for (final var entry : artifact.getGraph()
+            .getUnresolvedCalls().entrySet()) {
+            Pair<Integer, FastenURI> call = entry.getKey();
+            Map<String, String> metadata = entry.getValue();
             final var source = mapOfAllMethods.get(call.getKey());
-            var target = call.getValue();
+            final var target = call.getValue();
             final var isSuperClassMethod =
                 artifact.getClassHierarchy().get(getTypeURI(source)).getSuperClasses()
                     .contains(getTypeURI(target));
@@ -68,12 +72,14 @@ public class CallGraphMerger {
 
                 //Go through all dependencies
                 for (ExtendedRevisionCallGraph dependency : dependencies) {
+                    var resolvedMethod = target.toString();
+
                     nextDependency:
                     //Check whether this method is inside the dependency
                     if (dependency.getClassHierarchy().containsKey(getTypeURI(target))) {
                         if (dependency.getClassHierarchy().get(getTypeURI(target)).getMethods()
-                            .values().contains(FastenURI.create(target.getRawPath()))) {
-                            var resolvedMethod =
+                            .containsValue(FastenURI.create(target.getRawPath()))) {
+                            resolvedMethod =
                                 target.toString().replace("///", "//" +
                                     dependency.product + "/");
                             //Check if this call is related to a super class
@@ -84,22 +90,32 @@ public class CallGraphMerger {
                                     .get(getTypeURI(source)).getSuperClasses()) {
                                     //Check if this dependency contains the super class that we want
                                     if (dependency.getClassHierarchy().containsKey(superClass)) {
-                                        target = new FastenJavaURI(resolvedMethod);
+                                        unresolvedCalls.put(new MutablePair<>(call.getKey(), new FastenJavaURI(resolvedMethod)), metadata);
                                         break nextCall;
                                     } else {
+                                        unresolvedCalls.put(new MutablePair<>(call.getKey(), target), metadata);
                                         break nextDependency;
                                     }
                                 }
                             } else {
-                                target = new FastenJavaURI(resolvedMethod);
+                                unresolvedCalls.put(new MutablePair<>(call.getKey(), new FastenJavaURI(resolvedMethod)), metadata);
                             }
                         }
                     }
                 }
             }
-        });
+        }
 
-        return artifact;
+        return ExtendedRevisionCallGraph.extendedBuilder().forge(artifact.forge)
+            .cgGenerator(artifact.getCgGenerator())
+            .classHierarchy(artifact.getClassHierarchy())
+            .depset(artifact.depset)
+            .product(artifact.product)
+            .timestamp(artifact.timestamp)
+            .version(artifact.version)
+            .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraph().getResolvedCalls(),
+                unresolvedCalls))
+            .build();
     }
 
 
