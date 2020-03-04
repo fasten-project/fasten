@@ -25,8 +25,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -176,9 +177,9 @@ public class Main implements Runnable {
 
         var sortedErrorMap = errorOccurrences.entrySet()
                 .stream()
-                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, HashMap::new));
+                .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                        (e1, e2) -> e1, LinkedHashMap::new));
 
         for (var entry : sortedErrorMap.entrySet()) {
             System.out.println("\t [" + entry.getKey() + " - " + entry.getValue() + "]");
