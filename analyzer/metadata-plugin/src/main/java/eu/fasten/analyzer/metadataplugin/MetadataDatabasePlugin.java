@@ -81,11 +81,10 @@ public class MetadataDatabasePlugin extends Plugin {
          * @param metadataDao Data Access Object to insert records in the database.
          */
         public void saveToDatabase(JSONObject json, MetadataDao metadataDao) {
-            boolean saved = false;
             try {
                 var packageName = json.getString("product");
-                var project = json.has("project") ? json.getString("project") : null;
-                var repository = json.has("repository") ? json.getString("repository") : null;
+                var project = json.optString("project");
+                var repository = json.optString("repository");
                 var timestamp = json.has("timestamp") ? new Timestamp(json.getLong("timestamp"))
                         : null;
                 long packageId = metadataDao
@@ -151,12 +150,11 @@ public class MetadataDatabasePlugin extends Plugin {
                 // var unresolvedCalls = graph.getJSONObject("unresolvedCalls");
 
 
-                saved = true;
             } catch (Exception e) {
                 logger.error("Error saving to the database", e);
                 setPluginError(e);
             }
-            if (saved && getPluginError().isEmpty()) {
+            if (getPluginError().isEmpty()) {
                 processedRecord = true;
                 logger.info("Saved the callgraph metadata to the database");
             } else {
