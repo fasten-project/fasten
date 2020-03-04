@@ -81,6 +81,23 @@ public class MetadataDaoTest {
     }
 
     @Test
+    public void insertPackageNullTest() {
+        long id = 1;
+        var packageName = "package1";
+        var insertValues = Mockito.mock(InsertValuesStep4.class);
+        Mockito.when(context.insertInto(Packages.PACKAGES,
+                Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.PROJECT_NAME, Packages.PACKAGES.REPOSITORY,
+                Packages.PACKAGES.CREATED_AT)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageName, null, null, null)).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(Packages.PACKAGES.ID)).thenReturn(insertResult);
+        var record = new PackagesRecord(id, packageName, null, null, null);
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        long result = metadataDao.insertPackage(packageName, null, null, null);
+        assertEquals(id, result);
+    }
+
+    @Test
     public void insertMultiplePackagesTest() throws IllegalArgumentException {
         var ids = Arrays.asList(1L, 2L);
         var packageNames = Arrays.asList("package1",  "package2");
@@ -114,6 +131,28 @@ public class MetadataDaoTest {
     }
 
     @Test
+    public void insertMultiplePackagesErrorTest2() {
+        var packageNames = Arrays.asList("package1",  "package2");
+        var projectNames = Arrays.asList("project1",  "project2");
+        var repositories = Collections.singletonList("repo");
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertPackages(packageNames, projectNames, repositories, createdAt);
+        });
+    }
+
+    @Test
+    public void insertMultiplePackagesErrorTest3() {
+        var packageNames = Arrays.asList("package1",  "package2");
+        var projectNames = Arrays.asList("project1",  "project2");
+        var repositories = Arrays.asList("repo1", "repo2");
+        var createdAt = Collections.singletonList(new Timestamp(1));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertPackages(packageNames, projectNames, repositories, createdAt);
+        });
+    }
+
+    @Test
     public void insertPackageVersionTest() {
         long id = 1;
         long packageId = 42;
@@ -133,6 +172,27 @@ public class MetadataDaoTest {
         var record = new PackageVersionsRecord(id, packageId, cgGenerator, version, createdAt, JSONB.valueOf(metadata.toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         long result = metadataDao.insertPackageVersion(packageId, cgGenerator, version, createdAt, metadata);
+        assertEquals(id, result);
+    }
+
+    @Test
+    public void insertPackageVersionNullTest() {
+        long id = 1;
+        long packageId = 42;
+        var cgGenerator = "OPAL";
+        var version = "1.0.0";
+        var insertValues = Mockito.mock(InsertValuesStep5.class);
+        Mockito.when(context.insertInto(PackageVersions.PACKAGE_VERSIONS,
+                PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
+                PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
+                PackageVersions.PACKAGE_VERSIONS.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, cgGenerator, version, null,
+                null)).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(PackageVersions.PACKAGE_VERSIONS.ID)).thenReturn(insertResult);
+        var record = new PackageVersionsRecord(id, packageId, cgGenerator, version, null, null);
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        long result = metadataDao.insertPackageVersion(packageId, cgGenerator, version, null, null);
         assertEquals(id, result);
     }
 
@@ -167,6 +227,45 @@ public class MetadataDaoTest {
         var versions = Arrays.asList("1.0.0", "2.0.0");
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertPackageVersions(packageId, cgGenerators, versions, createdAt, metadata);
+        });
+    }
+
+    @Test
+    public void insertMultiplePackageVersionsErrorTest2() {
+        var packageId = 42L;
+        var cgGenerators = Collections.singletonList("OPAL");
+        var versions = Arrays.asList("1.0.0", "2.0.0");
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"),
+                new JSONObject("{\"hello\":\"world\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertPackageVersions(packageId, cgGenerators, versions, createdAt, metadata);
+        });
+    }
+
+    @Test
+    public void insertMultiplePackageVersionsErrorTest3() {
+        var packageId = 42L;
+        var cgGenerators = Arrays.asList("OPAL", "WALA");
+        var versions = Collections.singletonList("1.0.0");
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"),
+                new JSONObject("{\"hello\":\"world\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertPackageVersions(packageId, cgGenerators, versions, createdAt, metadata);
+        });
+    }
+
+    @Test
+    public void insertMultiplePackageVersionsErrorTest4() {
+        var packageId = 42L;
+        var cgGenerators = Arrays.asList("OPAL", "WALA");
+        var versions = Arrays.asList("1.0.0", "2.0.0");
+        var createdAt = Collections.singletonList(new Timestamp(1));
+        var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"),
+                new JSONObject("{\"hello\":\"world\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
             metadataDao.insertPackageVersions(packageId, cgGenerators, versions, createdAt, metadata);
         });
@@ -239,6 +338,23 @@ public class MetadataDaoTest {
     }
 
     @Test
+    public void insertFileNullTest() {
+        long id = 1;
+        long packageId = 42;
+        var namespaces = "namespace1;namespace2";
+        var insertValues = Mockito.mock(InsertValuesStep5.class);
+        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_ID, Files.FILES.NAMESPACES, Files.FILES.SHA256,
+                Files.FILES.CREATED_AT, Files.FILES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, namespaces, null, null, null)).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(Files.FILES.ID)).thenReturn(insertResult);
+        var record = new FilesRecord(id, packageId, namespaces, null, null, null);
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        long result = metadataDao.insertFile(packageId, namespaces, null, null, null);
+        assertEquals(id, result);
+    }
+
+    @Test
     public void insertMultipleFilesTest() throws IllegalArgumentException {
         var ids = Arrays.asList(1L, 2L);
         long packageId = 42;
@@ -273,6 +389,30 @@ public class MetadataDaoTest {
     }
 
     @Test
+    public void insertMultipleFilesErrorTest2() {
+        long packageId = 42;
+        var namespaces = Arrays.asList("namespace1;namespace2", "namespace3;namespace4");
+        var sha256s = Arrays.asList(new byte[]{0, 1, 2, 3, 4}, new byte[]{5, 6, 7, 8, 9});
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertFiles(packageId, namespaces, sha256s, createdAt, metadata);
+        });
+    }
+
+    @Test
+    public void insertMultipleFilesErrorTest3() {
+        long packageId = 42;
+        var namespaces = Arrays.asList("namespace1;namespace2", "namespace3;namespace4");
+        var sha256s = Arrays.asList(new byte[]{0, 1, 2, 3, 4}, new byte[]{5, 6, 7, 8, 9});
+        var createdAt = Collections.singletonList(new Timestamp(1));
+        var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertFiles(packageId, namespaces, sha256s, createdAt, metadata);
+        });
+    }
+
+    @Test
     public void insertCallableTest() throws IllegalArgumentException {
         var id = 1L;
         long fileId = 42;
@@ -288,6 +428,23 @@ public class MetadataDaoTest {
         var record = new CallablesRecord(id, fileId, fastenUri, createdAt, JSONB.valueOf(metadata.toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         var result = metadataDao.insertCallable(fileId, fastenUri, createdAt, metadata);
+        assertEquals(id, result);
+    }
+
+    @Test
+    public void insertCallableNullTest() throws IllegalArgumentException {
+        var id = 1L;
+        long fileId = 42;
+        var fastenUri = "URI";
+        var insertValues = Mockito.mock(InsertValuesStep4.class);
+        Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI,
+                Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(fileId, fastenUri, null, null)).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
+        var record = new CallablesRecord(id, fileId, fastenUri, null, null);
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        var result = metadataDao.insertCallable(fileId, fastenUri, null, null);
         assertEquals(id, result);
     }
 
@@ -324,6 +481,17 @@ public class MetadataDaoTest {
     }
 
     @Test
+    public void insertMultipleCallablesErrorTest2() {
+        long fileId = 42;
+        var fastenUris = Collections.singletonList("URI1");
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertCallables(fileId, fastenUris, createdAt, metadata);
+        });
+    }
+
+    @Test
     public void insertEdgeTest() {
         long sourceId = 1;
         long targetId = 2;
@@ -337,6 +505,22 @@ public class MetadataDaoTest {
         var record = new EdgesRecord(sourceId, targetId, JSONB.valueOf(metadata.toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         long result = metadataDao.insertEdge(sourceId, targetId, metadata);
+        assertEquals(sourceId, result);
+    }
+
+    @Test
+    public void insertEdgeNullTest() {
+        long sourceId = 1;
+        long targetId = 2;
+        var insertValues = Mockito.mock(InsertValuesStep3.class);
+        Mockito.when(context.insertInto(Edges.EDGES, Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
+                Edges.EDGES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(sourceId, targetId, null)).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(Edges.EDGES.SOURCE_ID)).thenReturn(insertResult);
+        var record = new EdgesRecord(sourceId, targetId, null);
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        long result = metadataDao.insertEdge(sourceId, targetId, null);
         assertEquals(sourceId, result);
     }
 
@@ -361,9 +545,19 @@ public class MetadataDaoTest {
 
     @Test
     public void insertMultipleEdgesErrorTest() {
-        var sourceIds = Arrays.asList(1L);
+        var sourceIds = Collections.singletonList(1L);
         var targetIds = Arrays.asList(3L, 4L);
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertEdges(sourceIds, targetIds, metadata);
+        });
+    }
+
+    @Test
+    public void insertMultipleEdgesErrorTest2() {
+        var sourceIds = Arrays.asList(1L, 2L);
+        var targetIds = Arrays.asList(3L, 4L);
+        var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
             metadataDao.insertEdges(sourceIds, targetIds, metadata);
         });
