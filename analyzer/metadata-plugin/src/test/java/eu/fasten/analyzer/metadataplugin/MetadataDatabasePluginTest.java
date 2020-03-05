@@ -29,7 +29,6 @@ import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 public class MetadataDatabasePluginTest {
@@ -120,8 +119,8 @@ public class MetadataDatabasePluginTest {
                 new Timestamp(json.getLong("timestamp")));
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
                 json.getString("version"), null, null);
-        Mockito.verify(metadataDao).insertFile(packageVersionId, "package", null, null,
-                metadata);
+//        Mockito.verify(metadataDao).insertFile(packageVersionId, "package", null, null,
+//                metadata);
 //        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.method()%2Fjava" +
 //                ".lang%2FVoid", null, null);
 //        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.toString()%2Fjava" +
