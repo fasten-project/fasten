@@ -83,8 +83,8 @@ public class MetadataDatabasePlugin extends Plugin {
         public void saveToDatabase(JSONObject json, MetadataDao metadataDao) {
             try {
                 var packageName = json.getString("product");
-                var project = json.optString("project");
-                var repository = json.optString("repository");
+                var project = json.optString("project", null);
+                var repository = json.optString("repository", null);
                 var timestamp = json.has("timestamp") ? new Timestamp(json.getLong("timestamp"))
                         : null;
                 long packageId = metadataDao
@@ -94,7 +94,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 var version = json.getString("version");
 
                 long packageVersionId = metadataDao.insertPackageVersion(packageId, generator,
-                        version, timestamp, null);
+                        version, null, null);
 
                 var depset = json.getJSONArray("depset").optJSONArray(0);
                 if (depset != null) {
@@ -120,10 +120,11 @@ public class MetadataDatabasePlugin extends Plugin {
                 for (var file : fileNames) {
                     var fileJson = cha.getJSONObject(file);
                     var metadata = new JSONObject();
-                    metadata.append("superInterfaces", fileJson.getJSONArray("superInterfaces"));
-                    metadata.append("sourceFile", fileJson.getString("sourceFile"));
-                    metadata.append("superClasses", fileJson.getJSONArray("superClasses"));
-                    long fileId = metadataDao.insertFile(packageVersionId, file, null, null,
+                    metadata.put("superInterfaces", fileJson.getJSONArray("superInterfaces"));
+                    metadata.put("sourceFile", fileJson.getString("sourceFile"));
+                    metadata.put("superClasses", fileJson.getJSONArray("superClasses"));
+                    String namespace = file.split("/")[1];
+                    long fileId = metadataDao.insertFile(packageVersionId, namespace, null, null,
                             metadata);
                     var methods = fileJson.getJSONObject("methods");
                     var methodIds = new ArrayList<String>(methods.keySet().size());
