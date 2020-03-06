@@ -5,11 +5,17 @@ package eu.fasten.analyzer.metadataplugin.db.codegen.tables.records;
 
 
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
-import org.jooq.*;
-import org.jooq.impl.UpdatableRecordImpl;
+
+import java.sql.Timestamp;
 
 import javax.annotation.processing.Generated;
-import java.sql.Timestamp;
+
+import org.jooq.Field;
+import org.jooq.JSONB;
+import org.jooq.Record1;
+import org.jooq.Record6;
+import org.jooq.Row6;
+import org.jooq.impl.UpdatableRecordImpl;
 
 
 /**
@@ -25,7 +31,7 @@ import java.sql.Timestamp;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class PackageVersionsRecord extends UpdatableRecordImpl<PackageVersionsRecord> implements Record6<Long, Long, String, String, Timestamp, JSONB> {
 
-    private static final long serialVersionUID = -295063883;
+    private static final long serialVersionUID = -794570873;
 
     /**
      * Setter for <code>public.package_versions.id</code>.

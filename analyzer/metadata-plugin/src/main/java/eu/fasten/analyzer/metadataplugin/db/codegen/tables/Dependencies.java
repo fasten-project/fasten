@@ -7,13 +7,22 @@ package eu.fasten.analyzer.metadataplugin.db.codegen.tables;
 import eu.fasten.analyzer.metadataplugin.db.codegen.Keys;
 import eu.fasten.analyzer.metadataplugin.db.codegen.Public;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.DependenciesRecord;
-import org.jooq.*;
-import org.jooq.impl.DSL;
-import org.jooq.impl.TableImpl;
 
-import javax.annotation.processing.Generated;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.annotation.processing.Generated;
+
+import org.jooq.Field;
+import org.jooq.ForeignKey;
+import org.jooq.Name;
+import org.jooq.Record;
+import org.jooq.Row3;
+import org.jooq.Schema;
+import org.jooq.Table;
+import org.jooq.TableField;
+import org.jooq.impl.DSL;
+import org.jooq.impl.TableImpl;
 
 
 /**
@@ -29,7 +38,7 @@ import java.util.List;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dependencies extends TableImpl<DependenciesRecord> {
 
-    private static final long serialVersionUID = -731074850;
+    private static final long serialVersionUID = -1694685579;
 
     /**
      * The reference instance of <code>public.dependencies</code>
@@ -102,12 +111,12 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
         return Arrays.<ForeignKey<DependenciesRecord, ?>>asList(Keys.DEPENDENCIES__DEPENDENCIES_PACKAGE_ID_FKEY, Keys.DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY);
     }
 
-    public PackageVersions dependencies_DependenciesPackageIdFkey() {
+    public PackageVersions packageVersions() {
         return new PackageVersions(this, Keys.DEPENDENCIES__DEPENDENCIES_PACKAGE_ID_FKEY);
     }
 
-    public PackageVersions dependencies_DependenciesDependencyIdFkey() {
-        return new PackageVersions(this, Keys.DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY);
+    public Packages packages() {
+        return new Packages(this, Keys.DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY);
     }
 
     @Override

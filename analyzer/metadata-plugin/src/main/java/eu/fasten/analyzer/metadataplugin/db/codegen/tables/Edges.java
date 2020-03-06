@@ -7,13 +7,23 @@ package eu.fasten.analyzer.metadataplugin.db.codegen.tables;
 import eu.fasten.analyzer.metadataplugin.db.codegen.Keys;
 import eu.fasten.analyzer.metadataplugin.db.codegen.Public;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.EdgesRecord;
-import org.jooq.*;
-import org.jooq.impl.DSL;
-import org.jooq.impl.TableImpl;
 
-import javax.annotation.processing.Generated;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.annotation.processing.Generated;
+
+import org.jooq.Field;
+import org.jooq.ForeignKey;
+import org.jooq.JSONB;
+import org.jooq.Name;
+import org.jooq.Record;
+import org.jooq.Row3;
+import org.jooq.Schema;
+import org.jooq.Table;
+import org.jooq.TableField;
+import org.jooq.impl.DSL;
+import org.jooq.impl.TableImpl;
 
 
 /**
@@ -29,7 +39,7 @@ import java.util.List;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Edges extends TableImpl<EdgesRecord> {
 
-    private static final long serialVersionUID = 311261566;
+    private static final long serialVersionUID = -1704452902;
 
     /**
      * The reference instance of <code>public.edges</code>

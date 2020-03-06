@@ -43,17 +43,19 @@ public class MetadataDao {
      * Inserts a record in 'packages' table in the database.
      *
      * @param packageName Name of the package
+     * @param forge Forge of the package
      * @param projectName Project name to which package belongs
      * @param repository  Repository to which package belongs
      * @param createdAt   Timestamp when package was created
      * @return ID of the new record
      */
-    public long insertPackage(String packageName, String projectName, String repository,
-                              Timestamp createdAt) {
+    public long insertPackage(String packageName, String forge, String projectName,
+                              String repository, Timestamp createdAt) {
         var resultRecord = context.insertInto(Packages.PACKAGES,
-                Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.PROJECT_NAME,
-                Packages.PACKAGES.REPOSITORY, Packages.PACKAGES.CREATED_AT)
-                .values(packageName, projectName, repository, createdAt)
+                Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.FORGE,
+                Packages.PACKAGES.PROJECT_NAME, Packages.PACKAGES.REPOSITORY,
+                Packages.PACKAGES.CREATED_AT)
+                .values(packageName, forge, projectName, repository, createdAt)
                 .returning(Packages.PACKAGES.ID).fetchOne();
         return resultRecord.getValue(Packages.PACKAGES.ID);
     }
@@ -62,16 +64,18 @@ public class MetadataDao {
      * Inserts multiple records in the 'packages' table in the database.
      *
      * @param packageNames List of names of the packages
+     * @param forges List of forges of the packages
      * @param projectNames List of names of the projects
      * @param repositories List of repositories
      * @param createdAt    List of timestamps
      * @return List of IDs of the new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertPackages(List<String> packageNames, List<String> projectNames,
+    public List<Long> insertPackages(List<String> packageNames,
+                                     List<String> forges, List<String> projectNames,
                                      List<String> repositories, List<Timestamp> createdAt)
             throws IllegalArgumentException {
-        if (packageNames.size() != projectNames.size()
+        if (packageNames.size() != forges.size() || forges.size() != projectNames.size()
                 || projectNames.size() != repositories.size()
                 || repositories.size() != createdAt.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
@@ -79,7 +83,7 @@ public class MetadataDao {
         int length = packageNames.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertPackage(packageNames.get(i), projectNames.get(i),
+            long result = insertPackage(packageNames.get(i), forges.get(i), projectNames.get(i),
                     repositories.get(i), createdAt.get(i));
             recordIds.add(result);
         }
@@ -143,7 +147,7 @@ public class MetadataDao {
      * Inserts a record in the 'dependencies' table in the database.
      *
      * @param packageId    ID of the package (references 'package_versions.id')
-     * @param dependencyId ID of the dependency package (references 'package_versions.id')
+     * @param dependencyId ID of the dependency package (references 'packages.id')
      * @param versionRange Range of valid versions
      * @return ID of the package (packageId)
      */
@@ -233,17 +237,19 @@ public class MetadataDao {
      *
      * @param fileId    ID of the file where the callable belongs (references 'files.id')
      * @param fastenUri URI of the callable in FASTEN
+     * @param isResolvedCall 'true' if call is resolved, 'false' otherwise
      * @param createdAt Timestamp when the callable was created
      * @param metadata  Metadata of the callable
      * @return ID of the new record
      */
-    public long insertCallable(long fileId, String fastenUri, Timestamp createdAt,
-                               JSONObject metadata) {
+    public long insertCallable(long fileId, String fastenUri, boolean isResolvedCall,
+                               Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Callables.CALLABLES,
                 Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI,
-                Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.METADATA)
-                .values(fileId, fastenUri, createdAt, metadataJsonb)
+                Callables.CALLABLES.IS_RESOLVED_CALL, Callables.CALLABLES.CREATED_AT,
+                Callables.CALLABLES.METADATA)
+                .values(fileId, fastenUri, isResolvedCall, createdAt, metadataJsonb)
                 .returning(Callables.CALLABLES.ID).fetchOne();
         return resultRecord.getValue(Callables.CALLABLES.ID);
     }
@@ -253,22 +259,25 @@ public class MetadataDao {
      *
      * @param fileId     ID of the common file
      * @param fastenUris List of FASTEN URIs
+     * @param areResolvedCalls List of IsResolvedCall booleans
      * @param createdAt  List of timestamps
      * @param metadata   List of metadata objects
      * @return List of IDs of the new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public List<Long> insertCallables(long fileId, List<String> fastenUris,
-                                      List<Timestamp> createdAt, List<JSONObject> metadata)
-            throws IllegalArgumentException {
-        if (fastenUris.size() != metadata.size() || metadata.size() != createdAt.size()) {
+                                      List<Boolean> areResolvedCalls, List<Timestamp> createdAt,
+                                      List<JSONObject> metadata) throws IllegalArgumentException {
+        if (fastenUris.size() != areResolvedCalls.size()
+                || areResolvedCalls.size() != metadata.size()
+                || metadata.size() != createdAt.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = fastenUris.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertCallable(fileId, fastenUris.get(i), createdAt.get(i),
-                    metadata.get(i));
+            long result = insertCallable(fileId, fastenUris.get(i),
+                    areResolvedCalls.get(i), createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;

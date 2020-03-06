@@ -4,16 +4,23 @@
 package eu.fasten.analyzer.metadataplugin.db.codegen;
 
 
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.*;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Callables;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Dependencies;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.annotation.processing.Generated;
+
 import org.jooq.Catalog;
 import org.jooq.Sequence;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
-
-import javax.annotation.processing.Generated;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 /**
@@ -29,7 +36,7 @@ import java.util.List;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = 2050143495;
+    private static final long serialVersionUID = -956499609;
 
     /**
      * The reference instance of <code>public</code>
@@ -39,32 +46,32 @@ public class Public extends SchemaImpl {
     /**
      * The table <code>public.callables</code>.
      */
-    public final Callables CALLABLES = Callables.CALLABLES;
+    public final Callables CALLABLES = eu.fasten.analyzer.metadataplugin.db.codegen.tables.Callables.CALLABLES;
 
     /**
      * The table <code>public.dependencies</code>.
      */
-    public final Dependencies DEPENDENCIES = Dependencies.DEPENDENCIES;
+    public final Dependencies DEPENDENCIES = eu.fasten.analyzer.metadataplugin.db.codegen.tables.Dependencies.DEPENDENCIES;
 
     /**
      * The table <code>public.edges</code>.
      */
-    public final Edges EDGES = Edges.EDGES;
+    public final Edges EDGES = eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges.EDGES;
 
     /**
      * The table <code>public.files</code>.
      */
-    public final Files FILES = Files.FILES;
+    public final Files FILES = eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files.FILES;
 
     /**
      * The table <code>public.package_versions</code>.
      */
-    public final PackageVersions PACKAGE_VERSIONS = PackageVersions.PACKAGE_VERSIONS;
+    public final PackageVersions PACKAGE_VERSIONS = eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions.PACKAGE_VERSIONS;
 
     /**
      * The table <code>public.packages</code>.
      */
-    public final Packages PACKAGES = Packages.PACKAGES;
+    public final Packages PACKAGES = eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages.PACKAGES;
 
     /**
      * No further instances allowed

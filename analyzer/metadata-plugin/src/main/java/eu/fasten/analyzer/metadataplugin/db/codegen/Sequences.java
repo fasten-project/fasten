@@ -4,10 +4,10 @@
 package eu.fasten.analyzer.metadataplugin.db.codegen;
 
 
+import javax.annotation.processing.Generated;
+
 import org.jooq.Sequence;
 import org.jooq.impl.SequenceImpl;
-
-import javax.annotation.processing.Generated;
 
 
 /**

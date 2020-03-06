@@ -5,12 +5,13 @@ package eu.fasten.analyzer.metadataplugin.db.codegen.tables.records;
 
 
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Dependencies;
+
+import javax.annotation.processing.Generated;
+
 import org.jooq.Field;
 import org.jooq.Record3;
 import org.jooq.Row3;
 import org.jooq.impl.TableRecordImpl;
-
-import javax.annotation.processing.Generated;
 
 
 /**
@@ -26,7 +27,7 @@ import javax.annotation.processing.Generated;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class DependenciesRecord extends TableRecordImpl<DependenciesRecord> implements Record3<Long, Long, String> {
 
-    private static final long serialVersionUID = 1815693170;
+    private static final long serialVersionUID = -1828240060;
 
     /**
      * Setter for <code>public.dependencies.package_id</code>.

@@ -83,12 +83,13 @@ public class MetadataDatabasePlugin extends Plugin {
         public void saveToDatabase(JSONObject json, MetadataDao metadataDao) {
             try {
                 var packageName = json.getString("product");
+                var forge = json.getString("forge");
                 var project = json.optString("project", null);
                 var repository = json.optString("repository", null);
                 var timestamp = json.has("timestamp") ? new Timestamp(json.getLong("timestamp"))
                         : null;
                 long packageId = metadataDao
-                        .insertPackage(packageName, project, repository, timestamp);
+                        .insertPackage(packageName, forge, project, repository, timestamp);
 
                 var generator = json.getString("generator");
                 var version = json.getString("version");
@@ -104,11 +105,10 @@ public class MetadataDatabasePlugin extends Plugin {
                         // TODO: Check if dependency is already in the database to avoid duplicates
                         var dependency = depset.getJSONObject(i);
                         var depName = dependency.getString("product");
-                        var depVersion = dependency.getJSONArray("constraints").getString(0);
-                        depVersions.add(depVersion);
-                        long depPackageId = metadataDao.insertPackage(depName, null, null, null);
-                        depIds.add(metadataDao.insertPackageVersion(depPackageId, generator,
-                                depVersion, null, null));
+                        var depForge = dependency.getString("forge");
+                        depVersions.add(dependency.getJSONArray("constraints").getString(0));
+                        depIds.add(metadataDao.insertPackage(depName, depForge, null,
+                                null, null));
                     }
                     metadataDao.insertDependencies(packageId, depIds, depVersions);
                 }
@@ -131,7 +131,8 @@ public class MetadataDatabasePlugin extends Plugin {
                     methods.keys().forEachRemaining(methodIds::add);
                     for (var method : methodIds) {
                         var uri = methods.getString(method);
-                        long callableId = metadataDao.insertCallable(fileId, uri, null, null);
+                        long callableId = metadataDao.insertCallable(fileId, uri, true, null,
+                                null);
                         globalIdsMap.put(Long.parseLong(method), callableId);
                     }
                 }

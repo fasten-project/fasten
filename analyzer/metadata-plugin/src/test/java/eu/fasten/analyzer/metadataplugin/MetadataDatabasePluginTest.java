@@ -91,7 +91,7 @@ public class MetadataDatabasePluginTest {
                 "  \"timestamp\": 123\n" +
                 "}");
         long packageId = 8;
-        Mockito.when(metadataDao.insertPackage(json.getString("product"), null, null,
+        Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
                 new Timestamp(json.getLong("timestamp")))).thenReturn(packageId);
 
         long packageVersionId = 42;
@@ -106,8 +106,10 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertFile(packageVersionId, "package", null, null,
                 metadata)).thenReturn(fileId);
 
-        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.method()%2Fjava.lang%2FVoid", null, null)).thenReturn(64L);
-        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.toString()%2Fjava.lang%2FString", null, null)).thenReturn(65L);
+        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.method()%2Fjava" +
+                ".lang%2FVoid", true, null, null)).thenReturn(64L);
+        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.toString()%2Fjava" +
+                ".lang%2FString", true, null, null)).thenReturn(65L);
         Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
 
         metadataPlugin.saveToDatabase(json, metadataDao);
@@ -115,7 +117,7 @@ public class MetadataDatabasePluginTest {
         assertTrue(metadataPlugin.recordProcessSuccessful());
         assertTrue(metadataPlugin.getPluginError().isEmpty());
 
-        Mockito.verify(metadataDao).insertPackage(json.getString("product"), null, null,
+        Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 new Timestamp(json.getLong("timestamp")));
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
                 json.getString("version"), null, null);
@@ -179,7 +181,8 @@ public class MetadataDatabasePluginTest {
                 "  },\n" +
                 "}");
         long packageId = 8;
-        Mockito.when(metadataDao.insertPackage(json.getString("product"), null, null, null)).thenReturn(packageId);
+        Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
+                null)).thenReturn(packageId);
 
         long packageVersionId = 42;
         Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
@@ -187,12 +190,8 @@ public class MetadataDatabasePluginTest {
                 .thenReturn(packageVersionId);
 
         long depPackageId = 128;
-        Mockito.when(metadataDao.insertPackage("test.dependency", null, null, null))
+        Mockito.when(metadataDao.insertPackage("test.dependency", "mvn", null, null, null))
                 .thenReturn(depPackageId);
-
-        long depPackageVersionId = 256;
-        Mockito.when(metadataDao.insertPackageVersion(depPackageId, "OPAL", "[1.0.0]", null, null))
-                .thenReturn(depPackageVersionId);
 
         long fileId = 10;
         var metadata = new JSONObject("{\"superInterfaces\": [],\n" +
@@ -203,8 +202,10 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertFile(packageVersionId, "package", null, null,
                 metadata)).thenReturn(fileId);
 
-        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.method()%2Fjava.lang%2FVoid", null, null)).thenReturn(64L);
-        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.toString()%2Fjava.lang%2FString", null, null)).thenReturn(65L);
+        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.method()%2Fjava" +
+                ".lang%2FVoid", true, null, null)).thenReturn(64L);
+        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.toString()%2Fjava" +
+                ".lang%2FString", true, null, null)).thenReturn(65L);
         Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
 
         metadataPlugin.saveToDatabase(json, metadataDao);
@@ -212,12 +213,13 @@ public class MetadataDatabasePluginTest {
         assertTrue(metadataPlugin.recordProcessSuccessful());
         assertTrue(metadataPlugin.getPluginError().isEmpty());
 
-        Mockito.verify(metadataDao).insertPackage(json.getString("product"), null, null, null);
+        Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
+                null);
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
                 json.getString("version"), null, null);
-        Mockito.verify(metadataDao).insertPackage("test.dependency", null, null, null);
-        Mockito.verify(metadataDao).insertPackageVersion(depPackageId, "OPAL", "[1.0.0]", null,
-                null);
+        Mockito.verify(metadataDao).insertPackage("test.dependency", "mvn", null, null, null);
+        Mockito.verify(metadataDao).insertDependencies(packageId,
+                Collections.singletonList(depPackageId), Collections.singletonList("[1.0.0]"));
 //        Mockito.verify(metadataDao).insertFile(packageVersionId, "package", null, null,
 //                metadata);
 //        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.method()%2Fjava" +

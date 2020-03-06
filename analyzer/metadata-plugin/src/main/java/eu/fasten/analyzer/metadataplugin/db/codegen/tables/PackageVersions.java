@@ -8,14 +8,27 @@ import eu.fasten.analyzer.metadataplugin.db.codegen.Indexes;
 import eu.fasten.analyzer.metadataplugin.db.codegen.Keys;
 import eu.fasten.analyzer.metadataplugin.db.codegen.Public;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.PackageVersionsRecord;
-import org.jooq.*;
-import org.jooq.impl.DSL;
-import org.jooq.impl.TableImpl;
 
-import javax.annotation.processing.Generated;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.annotation.processing.Generated;
+
+import org.jooq.Field;
+import org.jooq.ForeignKey;
+import org.jooq.Identity;
+import org.jooq.Index;
+import org.jooq.JSONB;
+import org.jooq.Name;
+import org.jooq.Record;
+import org.jooq.Row6;
+import org.jooq.Schema;
+import org.jooq.Table;
+import org.jooq.TableField;
+import org.jooq.UniqueKey;
+import org.jooq.impl.DSL;
+import org.jooq.impl.TableImpl;
 
 
 /**
@@ -31,7 +44,7 @@ import java.util.List;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class PackageVersions extends TableImpl<PackageVersionsRecord> {
 
-    private static final long serialVersionUID = -718451794;
+    private static final long serialVersionUID = -1520119248;
 
     /**
      * The reference instance of <code>public.package_versions</code>
@@ -49,7 +62,7 @@ public class PackageVersions extends TableImpl<PackageVersionsRecord> {
     /**
      * The column <code>public.package_versions.id</code>.
      */
-    public final TableField<PackageVersionsRecord, Long> ID = createField(DSL.name("id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field("nextval('package_versions_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
+    public final TableField<PackageVersionsRecord, Long> ID = createField(DSL.name("id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('package_versions_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
 
     /**
      * The column <code>public.package_versions.package_id</code>.

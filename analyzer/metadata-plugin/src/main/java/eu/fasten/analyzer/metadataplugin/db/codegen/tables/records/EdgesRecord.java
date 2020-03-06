@@ -5,13 +5,14 @@ package eu.fasten.analyzer.metadataplugin.db.codegen.tables.records;
 
 
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
+
+import javax.annotation.processing.Generated;
+
 import org.jooq.Field;
 import org.jooq.JSONB;
 import org.jooq.Record3;
 import org.jooq.Row3;
 import org.jooq.impl.TableRecordImpl;
-
-import javax.annotation.processing.Generated;
 
 
 /**
@@ -27,7 +28,7 @@ import javax.annotation.processing.Generated;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class EdgesRecord extends TableRecordImpl<EdgesRecord> implements Record3<Long, Long, JSONB> {
 
-    private static final long serialVersionUID = -603317677;
+    private static final long serialVersionUID = 1452815041;
 
     /**
      * Setter for <code>public.edges.source_id</code>.

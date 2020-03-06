@@ -5,11 +5,17 @@ package eu.fasten.analyzer.metadataplugin.db.codegen.tables.records;
 
 
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
-import org.jooq.*;
-import org.jooq.impl.UpdatableRecordImpl;
+
+import java.sql.Timestamp;
 
 import javax.annotation.processing.Generated;
-import java.sql.Timestamp;
+
+import org.jooq.Field;
+import org.jooq.JSONB;
+import org.jooq.Record1;
+import org.jooq.Record6;
+import org.jooq.Row6;
+import org.jooq.impl.UpdatableRecordImpl;
 
 
 /**
@@ -25,7 +31,7 @@ import java.sql.Timestamp;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class FilesRecord extends UpdatableRecordImpl<FilesRecord> implements Record6<Long, Long, String, byte[], Timestamp, JSONB> {
 
-    private static final long serialVersionUID = 879486628;
+    private static final long serialVersionUID = -1121982318;
 
     /**
      * Setter for <code>public.files.id</code>.

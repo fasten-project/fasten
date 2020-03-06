@@ -8,14 +8,27 @@ import eu.fasten.analyzer.metadataplugin.db.codegen.Indexes;
 import eu.fasten.analyzer.metadataplugin.db.codegen.Keys;
 import eu.fasten.analyzer.metadataplugin.db.codegen.Public;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.CallablesRecord;
-import org.jooq.*;
-import org.jooq.impl.DSL;
-import org.jooq.impl.TableImpl;
 
-import javax.annotation.processing.Generated;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.annotation.processing.Generated;
+
+import org.jooq.Field;
+import org.jooq.ForeignKey;
+import org.jooq.Identity;
+import org.jooq.Index;
+import org.jooq.JSONB;
+import org.jooq.Name;
+import org.jooq.Record;
+import org.jooq.Row6;
+import org.jooq.Schema;
+import org.jooq.Table;
+import org.jooq.TableField;
+import org.jooq.UniqueKey;
+import org.jooq.impl.DSL;
+import org.jooq.impl.TableImpl;
 
 
 /**
@@ -31,7 +44,7 @@ import java.util.List;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Callables extends TableImpl<CallablesRecord> {
 
-    private static final long serialVersionUID = 1947267073;
+    private static final long serialVersionUID = 1424304027;
 
     /**
      * The reference instance of <code>public.callables</code>
@@ -49,17 +62,22 @@ public class Callables extends TableImpl<CallablesRecord> {
     /**
      * The column <code>public.callables.id</code>.
      */
-    public final TableField<CallablesRecord, Long> ID = createField(DSL.name("id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field("nextval('callables_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
+    public final TableField<CallablesRecord, Long> ID = createField(DSL.name("id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('callables_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
 
     /**
      * The column <code>public.callables.file_id</code>.
      */
-    public final TableField<CallablesRecord, Long> FILE_ID = createField(DSL.name("file_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
+    public final TableField<CallablesRecord, Long> FILE_ID = createField(DSL.name("file_id"), org.jooq.impl.SQLDataType.BIGINT, this, "");
 
     /**
      * The column <code>public.callables.fasten_uri</code>.
      */
     public final TableField<CallablesRecord, String> FASTEN_URI = createField(DSL.name("fasten_uri"), org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
+
+    /**
+     * The column <code>public.callables.is_resolved_call</code>.
+     */
+    public final TableField<CallablesRecord, Boolean> IS_RESOLVED_CALL = createField(DSL.name("is_resolved_call"), org.jooq.impl.SQLDataType.BOOLEAN.nullable(false), this, "");
 
     /**
      * The column <code>public.callables.created_at</code>.
@@ -165,11 +183,11 @@ public class Callables extends TableImpl<CallablesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row5 type methods
+    // Row6 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Long, Long, String, Timestamp, JSONB> fieldsRow() {
-        return (Row5) super.fieldsRow();
+    public Row6<Long, Long, String, Boolean, Timestamp, JSONB> fieldsRow() {
+        return (Row6) super.fieldsRow();
     }
 }

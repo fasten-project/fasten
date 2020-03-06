@@ -4,7 +4,12 @@
 package eu.fasten.analyzer.metadataplugin.db.codegen;
 
 
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.*;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Callables;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Dependencies;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages;
 
 import javax.annotation.processing.Generated;
 

@@ -8,11 +8,12 @@ import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Callables;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages;
+
+import javax.annotation.processing.Generated;
+
 import org.jooq.Index;
 import org.jooq.OrderField;
 import org.jooq.impl.Internal;
-
-import javax.annotation.processing.Generated;
 
 
 /**

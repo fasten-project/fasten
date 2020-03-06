@@ -4,14 +4,25 @@
 package eu.fasten.analyzer.metadataplugin.db.codegen;
 
 
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.*;
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.*;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Callables;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Dependencies;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.CallablesRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.DependenciesRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.EdgesRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.FilesRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.PackageVersionsRecord;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.PackagesRecord;
+
+import javax.annotation.processing.Generated;
+
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
 import org.jooq.UniqueKey;
 import org.jooq.impl.Internal;
-
-import javax.annotation.processing.Generated;
 
 
 /**
@@ -52,7 +63,7 @@ public class Keys {
 
     public static final ForeignKey<CallablesRecord, FilesRecord> CALLABLES__CALLABLES_FILE_ID_FKEY = ForeignKeys0.CALLABLES__CALLABLES_FILE_ID_FKEY;
     public static final ForeignKey<DependenciesRecord, PackageVersionsRecord> DEPENDENCIES__DEPENDENCIES_PACKAGE_ID_FKEY = ForeignKeys0.DEPENDENCIES__DEPENDENCIES_PACKAGE_ID_FKEY;
-    public static final ForeignKey<DependenciesRecord, PackageVersionsRecord> DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY = ForeignKeys0.DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY;
+    public static final ForeignKey<DependenciesRecord, PackagesRecord> DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY = ForeignKeys0.DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY;
     public static final ForeignKey<EdgesRecord, CallablesRecord> EDGES__EDGES_SOURCE_ID_FKEY = ForeignKeys0.EDGES__EDGES_SOURCE_ID_FKEY;
     public static final ForeignKey<EdgesRecord, CallablesRecord> EDGES__EDGES_TARGET_ID_FKEY = ForeignKeys0.EDGES__EDGES_TARGET_ID_FKEY;
     public static final ForeignKey<FilesRecord, PackageVersionsRecord> FILES__FILES_PACKAGE_ID_FKEY = ForeignKeys0.FILES__FILES_PACKAGE_ID_FKEY;
@@ -77,12 +88,12 @@ public class Keys {
     }
 
     private static class ForeignKeys0 {
-        public static final ForeignKey<CallablesRecord, FilesRecord> CALLABLES__CALLABLES_FILE_ID_FKEY = Internal.createForeignKey(Keys.FILES_PKEY, Callables.CALLABLES, "callables__callables_file_id_fkey", Callables.CALLABLES.FILE_ID);
-        public static final ForeignKey<DependenciesRecord, PackageVersionsRecord> DEPENDENCIES__DEPENDENCIES_PACKAGE_ID_FKEY = Internal.createForeignKey(Keys.PACKAGE_VERSIONS_PKEY, Dependencies.DEPENDENCIES, "dependencies__dependencies_package_id_fkey", Dependencies.DEPENDENCIES.PACKAGE_ID);
-        public static final ForeignKey<DependenciesRecord, PackageVersionsRecord> DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY = Internal.createForeignKey(Keys.PACKAGE_VERSIONS_PKEY, Dependencies.DEPENDENCIES, "dependencies__dependencies_dependency_id_fkey", Dependencies.DEPENDENCIES.DEPENDENCY_ID);
-        public static final ForeignKey<EdgesRecord, CallablesRecord> EDGES__EDGES_SOURCE_ID_FKEY = Internal.createForeignKey(Keys.CALLABLES_PKEY, Edges.EDGES, "edges__edges_source_id_fkey", Edges.EDGES.SOURCE_ID);
-        public static final ForeignKey<EdgesRecord, CallablesRecord> EDGES__EDGES_TARGET_ID_FKEY = Internal.createForeignKey(Keys.CALLABLES_PKEY, Edges.EDGES, "edges__edges_target_id_fkey", Edges.EDGES.TARGET_ID);
-        public static final ForeignKey<FilesRecord, PackageVersionsRecord> FILES__FILES_PACKAGE_ID_FKEY = Internal.createForeignKey(Keys.PACKAGE_VERSIONS_PKEY, Files.FILES, "files__files_package_id_fkey", Files.FILES.PACKAGE_ID);
-        public static final ForeignKey<PackageVersionsRecord, PackagesRecord> PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY = Internal.createForeignKey(Keys.PACKAGES_PKEY, PackageVersions.PACKAGE_VERSIONS, "package_versions__package_versions_package_id_fkey", PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID);
+        public static final ForeignKey<CallablesRecord, FilesRecord> CALLABLES__CALLABLES_FILE_ID_FKEY = Internal.createForeignKey(eu.fasten.analyzer.metadataplugin.db.codegen.Keys.FILES_PKEY, Callables.CALLABLES, "callables__callables_file_id_fkey", Callables.CALLABLES.FILE_ID);
+        public static final ForeignKey<DependenciesRecord, PackageVersionsRecord> DEPENDENCIES__DEPENDENCIES_PACKAGE_ID_FKEY = Internal.createForeignKey(eu.fasten.analyzer.metadataplugin.db.codegen.Keys.PACKAGE_VERSIONS_PKEY, Dependencies.DEPENDENCIES, "dependencies__dependencies_package_id_fkey", Dependencies.DEPENDENCIES.PACKAGE_ID);
+        public static final ForeignKey<DependenciesRecord, PackagesRecord> DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY = Internal.createForeignKey(eu.fasten.analyzer.metadataplugin.db.codegen.Keys.PACKAGES_PKEY, Dependencies.DEPENDENCIES, "dependencies__dependencies_dependency_id_fkey", Dependencies.DEPENDENCIES.DEPENDENCY_ID);
+        public static final ForeignKey<EdgesRecord, CallablesRecord> EDGES__EDGES_SOURCE_ID_FKEY = Internal.createForeignKey(eu.fasten.analyzer.metadataplugin.db.codegen.Keys.CALLABLES_PKEY, Edges.EDGES, "edges__edges_source_id_fkey", Edges.EDGES.SOURCE_ID);
+        public static final ForeignKey<EdgesRecord, CallablesRecord> EDGES__EDGES_TARGET_ID_FKEY = Internal.createForeignKey(eu.fasten.analyzer.metadataplugin.db.codegen.Keys.CALLABLES_PKEY, Edges.EDGES, "edges__edges_target_id_fkey", Edges.EDGES.TARGET_ID);
+        public static final ForeignKey<FilesRecord, PackageVersionsRecord> FILES__FILES_PACKAGE_ID_FKEY = Internal.createForeignKey(eu.fasten.analyzer.metadataplugin.db.codegen.Keys.PACKAGE_VERSIONS_PKEY, Files.FILES, "files__files_package_id_fkey", Files.FILES.PACKAGE_ID);
+        public static final ForeignKey<PackageVersionsRecord, PackagesRecord> PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY = Internal.createForeignKey(eu.fasten.analyzer.metadataplugin.db.codegen.Keys.PACKAGES_PKEY, PackageVersions.PACKAGE_VERSIONS, "package_versions__package_versions_package_id_fkey", PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID);
     }
 }

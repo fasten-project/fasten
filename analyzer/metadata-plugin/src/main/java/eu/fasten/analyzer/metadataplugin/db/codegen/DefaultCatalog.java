@@ -4,13 +4,14 @@
 package eu.fasten.analyzer.metadataplugin.db.codegen;
 
 
-import org.jooq.Schema;
-import org.jooq.impl.CatalogImpl;
-
-import javax.annotation.processing.Generated;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.annotation.processing.Generated;
+
+import org.jooq.Schema;
+import org.jooq.impl.CatalogImpl;
 
 
 /**
@@ -26,7 +27,7 @@ import java.util.List;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class DefaultCatalog extends CatalogImpl {
 
-    private static final long serialVersionUID = 616273929;
+    private static final long serialVersionUID = -1776957763;
 
     /**
      * The reference instance of <code></code>
@@ -36,7 +37,7 @@ public class DefaultCatalog extends CatalogImpl {
     /**
      * The schema <code>public</code>.
      */
-    public final Public PUBLIC = Public.PUBLIC;
+    public final Public PUBLIC = eu.fasten.analyzer.metadataplugin.db.codegen.Public.PUBLIC;
 
     /**
      * No further instances allowed
