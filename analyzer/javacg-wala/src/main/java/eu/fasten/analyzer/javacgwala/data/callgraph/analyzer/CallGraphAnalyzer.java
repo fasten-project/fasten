@@ -49,11 +49,13 @@ public class CallGraphAnalyzer {
      * @param partialCallGraph Partial call graph
      */
     public CallGraphAnalyzer(final CallGraph rawCallGraph,
-                             final PartialCallGraph partialCallGraph) {
+                             final PartialCallGraph partialCallGraph,
+                             final AnalysisContext analysisContext) {
         this.rawCallGraph = rawCallGraph;
         this.partialCallGraph = partialCallGraph;
-        this.analysisContext = new AnalysisContext(rawCallGraph.getClassHierarchy());
-        this.classHierarchyAnalyzer = new ClassHierarchyAnalyzer(rawCallGraph, partialCallGraph);
+        this.analysisContext = analysisContext;
+        this.classHierarchyAnalyzer =
+                new ClassHierarchyAnalyzer(rawCallGraph, partialCallGraph, analysisContext);
     }
 
     /**
@@ -95,10 +97,13 @@ public class CallGraphAnalyzer {
     private void addCall(final Method source, final Method target, final CallType callType) {
         var sourceID = classHierarchyAnalyzer.addMethodToCHA(source,
                 source.getReference().getDeclaringClass());
-
+        //var sourceID = classHierarchyAnalyzer.getMethodID(source);
+        assert(sourceID != -1);
         if (source instanceof ResolvedMethod && target instanceof ResolvedMethod) {
             var targetID = classHierarchyAnalyzer.addMethodToCHA(target,
                     target.getReference().getDeclaringClass());
+            //var targetID = classHierarchyAnalyzer.getMethodID(target);
+            assert(targetID != -1);
             partialCallGraph.addResolvedCall(sourceID, targetID);
 
         } else {

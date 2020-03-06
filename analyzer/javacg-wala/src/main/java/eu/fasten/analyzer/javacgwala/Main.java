@@ -91,7 +91,7 @@ public class Main implements Runnable {
 
             } catch (Throwable e) {
                 logger.error("Failed to generate a call graph for Maven coordinate: {}, Error: {}",
-                        mavenCoordinate.getCoordinate(), e.getClass().getSimpleName());
+                        mavenCoordinate.getCoordinate(), e.getClass().getSimpleName(), e);
             }
         }
     }

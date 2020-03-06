@@ -60,9 +60,13 @@ public class WalaResultAnalyzer {
         final long startTime = System.currentTimeMillis();
 
         final var walaResultAnalyzer = new WalaResultAnalyzer(rawCallGraph);
+        final var analysisContext = new AnalysisContext(rawCallGraph.getClassHierarchy());
+        final var classHierarchyAnalyzer = new ClassHierarchyAnalyzer(walaResultAnalyzer.rawCallGraph,
+                walaResultAnalyzer.partialCallGraph, analysisContext);
+        //classHierarchyAnalyzer.resolveCHA();
 
         final var callGraphAnalyzer = new CallGraphAnalyzer(walaResultAnalyzer.rawCallGraph,
-                walaResultAnalyzer.partialCallGraph);
+                walaResultAnalyzer.partialCallGraph, analysisContext);
         callGraphAnalyzer.resolveCalls();
 
         logger.info("Wrapped call graph in {} seconds [Resolved calls: {}, Unresolved calls: {}]",
