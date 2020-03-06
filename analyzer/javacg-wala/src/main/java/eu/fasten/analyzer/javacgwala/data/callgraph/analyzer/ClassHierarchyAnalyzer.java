@@ -22,6 +22,7 @@ import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IClassLoader;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
@@ -30,13 +31,15 @@ import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
 import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
 import eu.fasten.core.data.FastenURI;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ClassHierarchyAnalyzer {
-
-    private final Set<FastenURI> processedClasses = new HashSet<>();
 
     private final CallGraph rawCallGraph;
 
@@ -61,27 +64,52 @@ public class ClassHierarchyAnalyzer {
         this.counter = 0;
     }
 
+    /**
+     * Add all classes in application scope to class hierarchy.
+     */
     public void resolveCHA() {
-        IClassLoader classLoader = rawCallGraph.getClassHierarchy().getLoader(ClassLoaderReference.Application);
+        IClassLoader classLoader = rawCallGraph.getClassHierarchy()
+                .getLoader(ClassLoaderReference.Application);
 
-        // Iterate all classes in Application scope
         for (Iterator<IClass> it = classLoader.iterateAllClasses(); it.hasNext(); ) {
             IClass klass = it.next();
-            processClass2(klass);
+            processClass(klass);
         }
-//        for (var klass : rawCallGraph.getClassHierarchy()) {
-//            processClass(klass);
-//            for (var method : klass.getDeclaredMethods()) {
-//                var newMethod = analysisContext.findOrCreate(method.getReference());
-//                partialCallGraph.getClassHierarchy().get(getClassURI(klass)).getMethods()
-//                        .putIfAbsent(counter++, newMethod.toCanonicalSchemalessURI());
-//            }
-//        }
     }
 
-    private void processClass2(IClass klass) {
+    /**
+     * Adds new method to class hierarchy. In case class in which given method is defined already
+     * exists in CHA - method is ust being appended to the list of methods of this class,
+     * otherwise a new class is created.
+     *
+     * @param method   Method to add
+     * @param klassRef Class reference
+     */
+    public int addMethodToCHA(final Method method, final TypeReference klassRef)
+            throws ClassHierarchyException {
+        final var klass = this.rawCallGraph.getClassHierarchy().lookupClass(klassRef);
 
+        if (!partialCallGraph.getClassHierarchy().containsKey(getClassURI(method))) {
+            addClassToCHA(klass);
+        }
 
+        if (!partialCallGraph.getClassHierarchy().get(getClassURI(method)).getMethods()
+                .containsValue(method.toCanonicalSchemalessURI())) {
+            partialCallGraph.getClassHierarchy().get(getClassURI(method)).getMethods()
+                    .putIfAbsent(counter++, method.toCanonicalSchemalessURI());
+
+            return counter - 1;
+        }
+
+        return getMethodID(method);
+    }
+
+    /**
+     * Process class.
+     *
+     * @param klass Class
+     */
+    private void processClass(IClass klass) {
         Map<Selector, List<IMethod>> interfaceMethods = klass.getDirectInterfaces()
                 .stream()
                 .flatMap(o -> o.getDeclaredMethods().stream())
@@ -97,97 +125,65 @@ public class ClassHierarchyAnalyzer {
         }
     }
 
-    private void processMethod(IClass klass, IMethod declaredMethod, List<IMethod> methodInterfaces) {
+    /**
+     * Process method, it's super methods and interfaces.
+     *
+     * @param klass            Class
+     * @param declaredMethod   Method
+     * @param interfaces Interfaces implemented by method
+     */
+    private void processMethod(IClass klass, IMethod declaredMethod, List<IMethod> interfaces) {
         if (declaredMethod.isPrivate()) {
-            // Private methods cannot be overridden, so no need for them.
             return;
         }
         IClass superKlass = klass.getSuperclass();
-
-        Method declaredMethodNode = analysisContext.findOrCreate(declaredMethod.getReference());
-
-        if (!(declaredMethodNode instanceof ResolvedMethod)) {
-            return;
-        }
-        ResolvedMethod resolvedMethod = (ResolvedMethod) declaredMethodNode;
-        addMethodToCHA(resolvedMethod, klass.getReference());
-//        partialCallGraph.getClassHierarchy().get(getClassURI(resolvedMethod)).getMethods()
-//                .putIfAbsent(counter++, resolvedMethod.toCanonicalSchemalessURI());
-
+        addMethod(declaredMethod);
 
         IMethod superMethod = superKlass.getMethod(declaredMethod.getSelector());
         if (superMethod != null) {
-            Method superMethodNode = analysisContext.findOrCreate(superMethod.getReference());
-            if (superMethodNode instanceof ResolvedMethod) {
-                addMethodToCHA(superMethodNode, klass.getReference());
-            }
-//            partialCallGraph.getClassHierarchy().get(getClassURI(superMethodNode)).getMethods()
-//                    .putIfAbsent(counter++, superMethodNode.toCanonicalSchemalessURI());
-            //graph.addChaEdge(superMethodNode, resolvedMethod, ChaEdge.ChaEdgeType.OVERRIDE);
+            addMethod(superMethod);
         }
 
-
-        if (methodInterfaces != null) {
-            for (IMethod interfaceMethod : methodInterfaces) {
-                Method interfaceMethodNode = analysisContext.findOrCreate(interfaceMethod.getReference());
-                if (interfaceMethodNode instanceof ResolvedMethod) {
-                    addMethodToCHA(interfaceMethodNode, klass.getReference());
-                }
-//                partialCallGraph.getClassHierarchy().get(getClassURI(interfaceMethodNode)).getMethods()
-//                        .putIfAbsent(counter++, interfaceMethodNode.toCanonicalSchemalessURI());
-                //graph.addChaEdge(interfaceMethodNode, resolvedMethod, ChaEdge.ChaEdgeType.IMPLEMENTS);
+        if (interfaces != null) {
+            for (IMethod interfaceMethod : interfaces) {
+                addMethod(interfaceMethod);
             }
         }
 
+        if (superKlass.isAbstract() && superMethod == null && interfaces == null) {
 
-        // An abstract class doesn't have to define abstract method for interface methods
-        // So if this method doesn't have a super method or an interface method look for them in the interfaces of the abstract superclass
-        if (superKlass.isAbstract() && superMethod == null && methodInterfaces == null) {
-
-            Map<Selector, List<IMethod>> abstractSuperClassInterfacesByMethod = superKlass.getDirectInterfaces()
+            Map<Selector, List<IMethod>> derivedInterfaces = superKlass.getDirectInterfaces()
                     .stream()
                     .flatMap(o -> o.getDeclaredMethods().stream())
                     .collect(Collectors.groupingBy(IMethod::getSelector));
 
-            List<IMethod> abstractSuperClassInterfaceMethods = abstractSuperClassInterfacesByMethod.get(declaredMethod.getSelector());
-            if (abstractSuperClassInterfaceMethods != null && abstractSuperClassInterfaceMethods.size() > 0) {
-                for (IMethod abstractSuperClassInterfaceMethod : abstractSuperClassInterfaceMethods) {
-                    Method abstractSuperClassInterfaceMethodNode = analysisContext.findOrCreate(abstractSuperClassInterfaceMethod.getReference());
-                    if (abstractSuperClassInterfaceMethodNode instanceof ResolvedMethod) {
-                        addMethodToCHA(abstractSuperClassInterfaceMethodNode, klass.getReference());
-                    }
-//                    partialCallGraph.getClassHierarchy().get(getClassURI(abstractSuperClassInterfaceMethodNode)).getMethods()
-//                            .putIfAbsent(counter++, abstractSuperClassInterfaceMethodNode.toCanonicalSchemalessURI());
-                    //graph.addChaEdge(abstractSuperClassInterfaceMethodNode, resolvedMethod, ChaEdge.ChaEdgeType.IMPLEMENTS);
+            List<IMethod> derivedInterfacesMethods =
+                    derivedInterfaces.get(declaredMethod.getSelector());
+
+            if (derivedInterfacesMethods != null
+                    && derivedInterfacesMethods.size() > 0) {
+                for (IMethod method : derivedInterfacesMethods) {
+                    addMethod(method);
                 }
             }
         }
     }
 
     /**
-     * Adds new method to class hierarchy. In case class in which given method is defined already
-     * exists in CHA - method is ust being appended to the list of methods of this class,
-     * otherwise a new class is created.
+     * Add method to class hierarchy.
      *
-     * @param method   Method to add
-     * @param klassRef Class reference
+     * @param method Method
      */
-    public int addMethodToCHA(final Method method, final TypeReference klassRef) {
-        final var klass = this.rawCallGraph.getClassHierarchy().lookupClass(klassRef);
-
-        if (!partialCallGraph.getClassHierarchy().containsKey((getClassURI(method)))) {
-            processClass(klass);
+    private void addMethod(IMethod method) {
+        Method methodNode = analysisContext.findOrCreate(method.getReference());
+        if (methodNode instanceof ResolvedMethod) {
+            if (!partialCallGraph.getClassHierarchy()
+                    .containsKey(getClassURI(method.getDeclaringClass()))) {
+                addClassToCHA(method.getDeclaringClass());
+            }
+            partialCallGraph.getClassHierarchy().get(getClassURI(method.getDeclaringClass()))
+                    .getMethods().putIfAbsent(counter++, methodNode.toCanonicalSchemalessURI());
         }
-
-        if (!partialCallGraph.getClassHierarchy().get(getClassURI(method)).getMethods()
-                .containsValue(method.toCanonicalSchemalessURI())) {
-            partialCallGraph.getClassHierarchy().get(getClassURI(method)).getMethods()
-                    .putIfAbsent(counter++, method.toCanonicalSchemalessURI());
-
-            return counter - 1;
-        }
-
-        return getMethodID(method);
     }
 
     /**
@@ -196,8 +192,11 @@ public class ClassHierarchyAnalyzer {
      * @param method Method
      * @return ID of method
      */
-    public int getMethodID(final Method method) {
+    public int getMethodID(final Method method) throws ClassHierarchyException {
         int index = -1;
+        if (partialCallGraph.getClassHierarchy().get(getClassURI(method)) == null) {
+            throw new ClassHierarchyException("Couldn't find class in CHA");
+        }
         for (final var entry : partialCallGraph
                 .getClassHierarchy().get(getClassURI(method)).getMethods().entrySet()) {
             if (entry.getValue().equals(method.toCanonicalSchemalessURI())) {
@@ -213,7 +212,7 @@ public class ClassHierarchyAnalyzer {
      *
      * @param klass Class
      */
-    private void processClass(final IClass klass) {
+    private void addClassToCHA(final IClass klass) {
         final var className = Method.getClassName(klass.getReference());
 
         final var sourceFileName = className.split("[$%]")[0] + ".java";

@@ -136,7 +136,7 @@ public class MethodTest {
     }
 
     @Test
-    public void toCanonicalJSONSingleSourceToTargetTest() {
+    public void toCanonicalJSONSingleSourceToTargetTest() throws ClassHierarchyException {
 
         var wrapped = WalaResultAnalyzer.wrap(ssttgraph);
 
@@ -169,7 +169,7 @@ public class MethodTest {
     }
 
     @Test
-    public void toCanonicalJSONClassInitTest() {
+    public void toCanonicalJSONClassInitTest() throws ClassHierarchyException {
 
         var wrapped = WalaResultAnalyzer.wrap(cigraph);
 
@@ -189,7 +189,7 @@ public class MethodTest {
     }
 
     @Test
-    public void toCanonicalJSONLambdaTest() {
+    public void toCanonicalJSONLambdaTest() throws ClassHierarchyException {
 
         var wrapped = WalaResultAnalyzer.wrap(lambdagraph);
 
@@ -223,7 +223,7 @@ public class MethodTest {
     }
 
     @Test
-    public void toCanonicalJSONArrayTest() {
+    public void toCanonicalJSONArrayTest() throws ClassHierarchyException {
 
         var wrapped = WalaResultAnalyzer.wrap(arraygraph);
 
@@ -244,7 +244,7 @@ public class MethodTest {
     }
 
     @Test
-    public void toCanonicalJSONArrayExtensiveTest() {
+    public void toCanonicalJSONArrayExtensiveTest() throws ClassHierarchyException {
         var wrapped = WalaResultAnalyzer.wrap(aegraph);
 
         List<String> listOfMethodNames = new ArrayList<>();

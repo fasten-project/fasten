@@ -22,6 +22,7 @@ import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.shrikeBT.IInvokeInstruction;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
@@ -62,7 +63,7 @@ public class CallGraphAnalyzer {
      * Iterate over nodes in Wala call graph and add calls that "belong" to application class
      * loader to lists of resolved / unresolved calls of partial call graph.
      */
-    public void resolveCalls() {
+    public void resolveCalls() throws ClassHierarchyException {
         for (final CGNode node : this.rawCallGraph) {
             final var nodeReference = node.getMethod().getReference();
 
@@ -94,16 +95,19 @@ public class CallGraphAnalyzer {
      * @param target   Callee
      * @param callType Call type
      */
-    private void addCall(final Method source, final Method target, final CallType callType) {
+    private void addCall(final Method source, final Method target, final CallType callType)
+            throws ClassHierarchyException {
         var sourceID = classHierarchyAnalyzer.addMethodToCHA(source,
                 source.getReference().getDeclaringClass());
-        //var sourceID = classHierarchyAnalyzer.getMethodID(source);
-        assert(sourceID != -1);
+        if (sourceID == -1) {
+            throw new ClassHierarchyException("Not found source in class hierarchy");
+        }
         if (source instanceof ResolvedMethod && target instanceof ResolvedMethod) {
             var targetID = classHierarchyAnalyzer.addMethodToCHA(target,
                     target.getReference().getDeclaringClass());
-            //var targetID = classHierarchyAnalyzer.getMethodID(target);
-            assert(targetID != -1);
+            if (targetID == -1) {
+                throw new ClassHierarchyException("Not found target in class hierarchy");
+            }
             partialCallGraph.addResolvedCall(sourceID, targetID);
 
         } else {

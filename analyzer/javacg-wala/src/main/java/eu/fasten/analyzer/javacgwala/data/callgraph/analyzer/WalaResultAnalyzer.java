@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.javacgwala.data.callgraph.analyzer;
 
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -49,7 +50,8 @@ public class WalaResultAnalyzer {
      * @param rawCallGraph Raw call graph in Wala format
      * @return Partial call graph
      */
-    public static PartialCallGraph wrap(final CallGraph rawCallGraph) {
+    public static PartialCallGraph wrap(final CallGraph rawCallGraph)
+            throws ClassHierarchyException {
         if (rawCallGraph == null) {
             logger.info("Call graph is NULL");
             return new PartialCallGraph();
@@ -61,9 +63,10 @@ public class WalaResultAnalyzer {
 
         final var walaResultAnalyzer = new WalaResultAnalyzer(rawCallGraph);
         final var analysisContext = new AnalysisContext(rawCallGraph.getClassHierarchy());
-        final var classHierarchyAnalyzer = new ClassHierarchyAnalyzer(walaResultAnalyzer.rawCallGraph,
-                walaResultAnalyzer.partialCallGraph, analysisContext);
-        //classHierarchyAnalyzer.resolveCHA();
+        final var classHierarchyAnalyzer =
+                new ClassHierarchyAnalyzer(walaResultAnalyzer.rawCallGraph,
+                        walaResultAnalyzer.partialCallGraph, analysisContext);
+        classHierarchyAnalyzer.resolveCHA();
 
         final var callGraphAnalyzer = new CallGraphAnalyzer(walaResultAnalyzer.rawCallGraph,
                 walaResultAnalyzer.partialCallGraph, analysisContext);

@@ -44,7 +44,7 @@ class WalaResultAnalyzerTest {
     }
 
     @Test
-    void wrap() {
+    void wrap() throws ClassHierarchyException {
         var wrapped = WalaResultAnalyzer.wrap(graph);
 
         assertEquals(1, wrapped.getGraph().getResolvedCalls().size());

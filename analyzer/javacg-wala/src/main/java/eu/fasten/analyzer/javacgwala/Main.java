@@ -178,8 +178,8 @@ public class Main implements Runnable {
         var sortedErrorMap = errorOccurrences.entrySet()
                 .stream()
                 .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
-                        (e1, e2) -> e1, LinkedHashMap::new));
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
         for (var entry : sortedErrorMap.entrySet()) {
             System.out.println("\t [" + entry.getKey() + " - " + entry.getValue() + "]");
