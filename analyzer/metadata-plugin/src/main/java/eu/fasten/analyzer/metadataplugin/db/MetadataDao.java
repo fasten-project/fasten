@@ -43,7 +43,7 @@ public class MetadataDao {
      * Inserts a record in 'packages' table in the database.
      *
      * @param packageName Name of the package
-     * @param forge Forge of the package
+     * @param forge       Forge of the package
      * @param projectName Project name to which package belongs
      * @param repository  Repository to which package belongs
      * @param createdAt   Timestamp when package was created
@@ -64,7 +64,7 @@ public class MetadataDao {
      * Inserts multiple records in the 'packages' table in the database.
      *
      * @param packageNames List of names of the packages
-     * @param forges List of forges of the packages
+     * @param forges       List of forges of the packages
      * @param projectNames List of names of the projects
      * @param repositories List of repositories
      * @param createdAt    List of timestamps
@@ -235,14 +235,14 @@ public class MetadataDao {
     /**
      * Inserts a record in the 'callables' table in the database.
      *
-     * @param fileId    ID of the file where the callable belongs (references 'files.id')
-     * @param fastenUri URI of the callable in FASTEN
+     * @param fileId         ID of the file where the callable belongs (references 'files.id')
+     * @param fastenUri      URI of the callable in FASTEN
      * @param isResolvedCall 'true' if call is resolved, 'false' otherwise
-     * @param createdAt Timestamp when the callable was created
-     * @param metadata  Metadata of the callable
+     * @param createdAt      Timestamp when the callable was created
+     * @param metadata       Metadata of the callable
      * @return ID of the new record
      */
-    public long insertCallable(long fileId, String fastenUri, boolean isResolvedCall,
+    public long insertCallable(Long fileId, String fastenUri, boolean isResolvedCall,
                                Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Callables.CALLABLES,
@@ -257,11 +257,11 @@ public class MetadataDao {
     /**
      * Inserts multiple records in the 'callables' table in the database.
      *
-     * @param fileId     ID of the common file
-     * @param fastenUris List of FASTEN URIs
+     * @param fileId           ID of the common file
+     * @param fastenUris       List of FASTEN URIs
      * @param areResolvedCalls List of IsResolvedCall booleans
-     * @param createdAt  List of timestamps
-     * @param metadata   List of metadata objects
+     * @param createdAt        List of timestamps
+     * @param metadata         List of metadata objects
      * @return List of IDs of the new records
      * @throws IllegalArgumentException if lists are not of the same size
      */

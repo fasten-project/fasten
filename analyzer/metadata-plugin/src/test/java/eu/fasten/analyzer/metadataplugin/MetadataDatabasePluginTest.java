@@ -98,19 +98,24 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
                 json.getString("version"), null, null)).thenReturn(packageVersionId);
         long fileId = 10;
-        var metadata = new JSONObject("{\"superInterfaces\": [],\n" +
+        var fileMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
                 "      \"sourceFile\": \"file.java\",\n" +
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
         Mockito.when(metadataDao.insertFile(packageVersionId, "package", null, null,
-                metadata)).thenReturn(fileId);
+                fileMetadata)).thenReturn(fileId);
 
         Mockito.when(metadataDao.insertCallable(fileId, "/package/class.method()%2Fjava" +
                 ".lang%2FVoid", true, null, null)).thenReturn(64L);
         Mockito.when(metadataDao.insertCallable(fileId, "/package/class.toString()%2Fjava" +
                 ".lang%2FString", true, null, null)).thenReturn(65L);
         Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
+
+        Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
+                ".lang%2FObject", false, null, null)).thenReturn(100L);
+        var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
+        Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
         metadataPlugin.saveToDatabase(json, metadataDao);
 
@@ -128,6 +133,9 @@ public class MetadataDatabasePluginTest {
 //        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.toString()%2Fjava" +
 //                ".lang%2FString", null, null);
 //        Mockito.verify(metadataDao).insertEdge(64L, 65L, null);
+//        Mockito.verify(metadataDao).insertCallable(null, "///dep/service.call()%2Fjava" +
+//                ".lang%2FObject", false, null, null);
+//        Mockito.verify(metadataDao).insertEdge(64L, 100L, callMetadata);
     }
 
     @Test
@@ -194,19 +202,24 @@ public class MetadataDatabasePluginTest {
                 .thenReturn(depPackageId);
 
         long fileId = 10;
-        var metadata = new JSONObject("{\"superInterfaces\": [],\n" +
+        var fileMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
                 "      \"sourceFile\": \"file.java\",\n" +
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
         Mockito.when(metadataDao.insertFile(packageVersionId, "package", null, null,
-                metadata)).thenReturn(fileId);
+                fileMetadata)).thenReturn(fileId);
 
         Mockito.when(metadataDao.insertCallable(fileId, "/package/class.method()%2Fjava" +
                 ".lang%2FVoid", true, null, null)).thenReturn(64L);
         Mockito.when(metadataDao.insertCallable(fileId, "/package/class.toString()%2Fjava" +
                 ".lang%2FString", true, null, null)).thenReturn(65L);
         Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
+
+        Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
+                ".lang%2FObject", false, null, null)).thenReturn(100L);
+        var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
+        Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
         metadataPlugin.saveToDatabase(json, metadataDao);
 
@@ -227,6 +240,9 @@ public class MetadataDatabasePluginTest {
 //        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.toString()%2Fjava" +
 //                ".lang%2FString", null, null);
 //        Mockito.verify(metadataDao).insertEdge(64L, 65L, null);
+//        Mockito.verify(metadataDao).insertCallable(null, "///dep/service.call()%2Fjava" +
+//                ".lang%2FObject", false, null, null);
+//        Mockito.verify(metadataDao).insertEdge(64L, 100L, callMetadata);
     }
 
     @Test

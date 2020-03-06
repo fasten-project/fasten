@@ -105,7 +105,7 @@ public class MetadataDaoTest {
     @Test
     public void insertMultiplePackagesTest() throws IllegalArgumentException {
         var ids = Arrays.asList(1L, 2L);
-        var packageNames = Arrays.asList("package1",  "package2");
+        var packageNames = Arrays.asList("package1", "package2");
         var forges = Arrays.asList("mvn", "mvn");
         var projectNames = Arrays.asList("project1", "project2");
         var repositories = Arrays.asList("repository1", "repository2");
@@ -133,7 +133,7 @@ public class MetadataDaoTest {
 
     @Test
     public void insertMultiplePackagesErrorTest() {
-        var packageNames = Arrays.asList("package1",  "package2");
+        var packageNames = Arrays.asList("package1", "package2");
         var forges = Collections.singletonList("mvn");
         var projectNames = Arrays.asList("project1", "project2");
         var repositories = Arrays.asList("repository1", "repository2");
@@ -145,7 +145,7 @@ public class MetadataDaoTest {
 
     @Test
     public void insertMultiplePackagesErrorTest1() {
-        var packageNames = Arrays.asList("package1",  "package2");
+        var packageNames = Arrays.asList("package1", "package2");
         var forges = Arrays.asList("mvn", "mvn");
         var projectNames = Collections.singletonList("project1");
         var repositories = Arrays.asList("repository1", "repository2");
@@ -157,9 +157,9 @@ public class MetadataDaoTest {
 
     @Test
     public void insertMultiplePackagesErrorTest2() {
-        var packageNames = Arrays.asList("package1",  "package2");
+        var packageNames = Arrays.asList("package1", "package2");
         var forges = Arrays.asList("mvn", "mvn");
-        var projectNames = Arrays.asList("project1",  "project2");
+        var projectNames = Arrays.asList("project1", "project2");
         var repositories = Collections.singletonList("repo");
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         assertThrows(IllegalArgumentException.class, () -> {
@@ -169,9 +169,9 @@ public class MetadataDaoTest {
 
     @Test
     public void insertMultiplePackagesErrorTest3() {
-        var packageNames = Arrays.asList("package1",  "package2");
+        var packageNames = Arrays.asList("package1", "package2");
         var forges = Arrays.asList("mvn", "mvn");
-        var projectNames = Arrays.asList("project1",  "project2");
+        var projectNames = Arrays.asList("project1", "project2");
         var repositories = Arrays.asList("repo1", "repo2");
         var createdAt = Collections.singletonList(new Timestamp(1));
         assertThrows(IllegalArgumentException.class, () -> {
@@ -386,7 +386,7 @@ public class MetadataDaoTest {
         var ids = Arrays.asList(1L, 2L);
         long packageId = 42;
         var namespaces = Arrays.asList("namespace1;namespace2", "namespace3;namespace4");
-        var sha256s = Arrays.asList(new byte[]{0, 1, 2, 3, 4}, new byte[] {5, 6, 7, 8, 9});
+        var sha256s = Arrays.asList(new byte[]{0, 1, 2, 3, 4}, new byte[]{5, 6, 7, 8, 9});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
         var insertValues = Mockito.mock(InsertValuesStep5.class);

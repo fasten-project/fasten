@@ -148,8 +148,16 @@ public class MetadataDatabasePlugin extends Plugin {
                     metadataDao.insertEdge(sourceGlobalId, targetGlobalId, null);
                 }
 
-                // TODO: Save unresolved calls
-                // var unresolvedCalls = graph.getJSONObject("unresolvedCalls");
+                var unresolvedCalls = graph.getJSONArray("unresolvedCalls");
+                for (int i = 0; i < unresolvedCalls.length(); i++) {
+                    var unresolvedCall = unresolvedCalls.getJSONArray(i);
+                    var sourceLocalId = Long.parseLong(unresolvedCall.getString(0));
+                    var sourceGlobalId = globalIdsMap.get(sourceLocalId);
+                    var uri = unresolvedCall.getString(1);
+                    var metadata = unresolvedCall.getJSONObject(2);
+                    var targetId = metadataDao.insertCallable(null, uri, false, null, null);
+                    metadataDao.insertEdge(sourceGlobalId, targetId, metadata);
+                }
 
 
             } catch (Exception e) {
