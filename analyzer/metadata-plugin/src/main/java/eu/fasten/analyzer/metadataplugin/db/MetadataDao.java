@@ -24,6 +24,7 @@ import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages;
+import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.PackagesRecord;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -321,5 +322,19 @@ public class MetadataDao {
             recordIds.add(result);
         }
         return recordIds;
+    }
+
+    /**
+     * Searches 'packages' table for the package with certain package name and forge.
+     *
+     * @param packageName Name of the package to search
+     * @param forge       Forge of the package to search
+     * @return ID of the package if found, otherwise -1
+     */
+    public long getPackageIdByNameAndForge(String packageName, String forge) {
+        var resultRecord = (PackagesRecord) context.select(Packages.PACKAGES.ID)
+                .from(Packages.PACKAGES).where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+                .and(Packages.PACKAGES.FORGE.eq(forge)).fetchOne();
+        return resultRecord != null ? resultRecord.getValue(Packages.PACKAGES.ID) : -1L;
     }
 }

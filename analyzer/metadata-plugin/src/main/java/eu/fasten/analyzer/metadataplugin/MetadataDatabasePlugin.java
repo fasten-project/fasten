@@ -102,13 +102,15 @@ public class MetadataDatabasePlugin extends Plugin {
                     var depIds = new ArrayList<Long>(depset.length());
                     var depVersions = new ArrayList<String>(depset.length());
                     for (int i = 0; i < depset.length(); i++) {
-                        // TODO: Check if dependency is already in the database to avoid duplicates
                         var dependency = depset.getJSONObject(i);
                         var depName = dependency.getString("product");
                         var depForge = dependency.getString("forge");
                         depVersions.add(dependency.getJSONArray("constraints").getString(0));
-                        depIds.add(metadataDao.insertPackage(depName, depForge, null,
-                                null, null));
+                        var depId = metadataDao.getPackageIdByNameAndForge(depName, depForge);
+                        if (depId == -1L) {
+                            depId = metadataDao.insertPackage(depName, depForge, null, null, null);
+                        }
+                        depIds.add(depId);
                     }
                     metadataDao.insertDependencies(packageId, depIds, depVersions);
                 }
@@ -158,7 +160,6 @@ public class MetadataDatabasePlugin extends Plugin {
                     var targetId = metadataDao.insertCallable(null, uri, false, null, null);
                     metadataDao.insertEdge(sourceGlobalId, targetId, metadata);
                 }
-
 
             } catch (Exception e) {
                 logger.error("Error saving to the database", e);
