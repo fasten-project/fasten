@@ -93,7 +93,7 @@ public class WALAPlugin extends Plugin {
 
                 final var cg = generateCallGraph(mavenCoordinate, kafkaConsumedJson);
 
-                if (cg == null || cg.isCallGraphEmpty()) {
+                if (cg.isCallGraphEmpty()) {
                     logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
                     return cg;
                 }

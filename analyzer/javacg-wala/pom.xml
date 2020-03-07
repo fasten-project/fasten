@@ -67,16 +67,16 @@
         </dependency>
 
         <!-- Uncomment the slf4j package only if you wanna use WALA module outside the FASTEN server -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.30</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.30</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-simple</artifactId>-->
+<!--            <version>1.7.30</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-api</artifactId>-->
+<!--            <version>1.7.30</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.dom4j</groupId>
@@ -179,10 +179,10 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-<!--                    <annotationProcessors>-->
-<!--                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor-->
-<!--                        </annotationProcessor>-->
-<!--                    </annotationProcessors>-->
+                    <annotationProcessors>
+                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor
+                        </annotationProcessor>
+                    </annotationProcessors>
                     <source>1.11</source>
                     <target>1.11</target>
                 </configuration>

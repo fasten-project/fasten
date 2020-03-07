@@ -22,7 +22,6 @@ import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IClassLoader;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.callgraph.CallGraph;
-import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
@@ -67,7 +66,7 @@ public class ClassHierarchyAnalyzer {
     /**
      * Add all classes in application scope to class hierarchy.
      */
-    public void resolveCHA() {
+    public void resolveCHA() throws NullPointerException {
         IClassLoader classLoader = rawCallGraph.getClassHierarchy()
                 .getLoader(ClassLoaderReference.Application);
 
@@ -86,7 +85,7 @@ public class ClassHierarchyAnalyzer {
      * @param klassRef Class reference
      */
     public int addMethodToCHA(final Method method, final TypeReference klassRef)
-            throws ClassHierarchyException {
+            throws NullPointerException {
         final var klass = this.rawCallGraph.getClassHierarchy().lookupClass(klassRef);
 
         if (!partialCallGraph.getClassHierarchy().containsKey(getClassURI(method))) {
@@ -128,9 +127,9 @@ public class ClassHierarchyAnalyzer {
     /**
      * Process method, it's super methods and interfaces.
      *
-     * @param klass            Class
-     * @param declaredMethod   Method
-     * @param interfaces Interfaces implemented by method
+     * @param klass          Class
+     * @param declaredMethod Method
+     * @param interfaces     Interfaces implemented by method
      */
     private void processMethod(IClass klass, IMethod declaredMethod, List<IMethod> interfaces) {
         if (declaredMethod.isPrivate()) {
@@ -192,11 +191,8 @@ public class ClassHierarchyAnalyzer {
      * @param method Method
      * @return ID of method
      */
-    public int getMethodID(final Method method) throws ClassHierarchyException {
-        int index = -1;
-        if (partialCallGraph.getClassHierarchy().get(getClassURI(method)) == null) {
-            throw new ClassHierarchyException("Couldn't find class in CHA");
-        }
+    public int getMethodID(final Method method) throws NullPointerException {
+        Integer index = null;
         for (final var entry : partialCallGraph
                 .getClassHierarchy().get(getClassURI(method)).getMethods().entrySet()) {
             if (entry.getValue().equals(method.toCanonicalSchemalessURI())) {
@@ -204,7 +200,7 @@ public class ClassHierarchyAnalyzer {
                 break;
             }
         }
-        return index;
+        return Integer.valueOf(index);
     }
 
     /**
@@ -238,10 +234,8 @@ public class ClassHierarchyAnalyzer {
      * @return List of super classes
      */
     private LinkedList<FastenURI> superClassHierarchy(final IClass klass,
-                                                      final LinkedList<FastenURI> aux) {
-        if (klass == null) {
-            return new LinkedList<>();
-        }
+                                                      final LinkedList<FastenURI> aux)
+            throws NullPointerException {
         aux.add(getClassURI(klass));
         if (klass.getSuperclass() == null) {
             return aux;

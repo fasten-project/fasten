@@ -51,12 +51,7 @@ public class WalaResultAnalyzer {
      * @return Partial call graph
      */
     public static PartialCallGraph wrap(final CallGraph rawCallGraph)
-            throws ClassHierarchyException {
-        if (rawCallGraph == null) {
-            logger.info("Call graph is NULL");
-            return new PartialCallGraph();
-        }
-
+            throws ClassHierarchyException, NullPointerException {
         final NumberFormat timeFormatter = new DecimalFormat("#0.000");
         logger.info("Wrapping call graph with {} nodes...", rawCallGraph.getNumberOfNodes());
         final long startTime = System.currentTimeMillis();

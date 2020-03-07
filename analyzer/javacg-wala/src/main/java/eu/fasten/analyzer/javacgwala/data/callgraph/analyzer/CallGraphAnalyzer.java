@@ -96,18 +96,12 @@ public class CallGraphAnalyzer {
      * @param callType Call type
      */
     private void addCall(final Method source, final Method target, final CallType callType)
-            throws ClassHierarchyException {
+            throws NullPointerException {
         var sourceID = classHierarchyAnalyzer.addMethodToCHA(source,
                 source.getReference().getDeclaringClass());
-        if (sourceID == -1) {
-            throw new ClassHierarchyException("Not found source in class hierarchy");
-        }
         if (source instanceof ResolvedMethod && target instanceof ResolvedMethod) {
             var targetID = classHierarchyAnalyzer.addMethodToCHA(target,
                     target.getReference().getDeclaringClass());
-            if (targetID == -1) {
-                throw new ClassHierarchyException("Not found target in class hierarchy");
-            }
             partialCallGraph.addResolvedCall(sourceID, targetID);
 
         } else {
