@@ -49,6 +49,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MetadataDaoTest {
@@ -60,6 +61,14 @@ public class MetadataDaoTest {
     public void setUp() {
         context = Mockito.mock(DSLContext.class);
         metadataDao = new MetadataDao(context);
+    }
+
+    @Test
+    public void changeContextTest() {
+        var newContext = Mockito.mock(DSLContext.class);
+        metadataDao.setContext(newContext);
+        assertEquals(newContext, metadataDao.getContext());
+        assertNotEquals(context, metadataDao.getContext());
     }
 
     @Test

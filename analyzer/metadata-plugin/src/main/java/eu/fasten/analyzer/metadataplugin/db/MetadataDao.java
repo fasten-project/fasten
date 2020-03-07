@@ -34,9 +34,17 @@ import org.json.JSONObject;
 
 public class MetadataDao {
 
-    private final DSLContext context;
+    private DSLContext context;
 
     public MetadataDao(DSLContext context) {
+        this.context = context;
+    }
+
+    public DSLContext getContext() {
+        return this.context;
+    }
+
+    public void setContext(DSLContext context) {
         this.context = context;
     }
 

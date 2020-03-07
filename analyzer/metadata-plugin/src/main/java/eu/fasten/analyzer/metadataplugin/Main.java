@@ -56,7 +56,13 @@ public class Main implements Runnable {
         try {
             var metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin();
             var metadataDao = new MetadataDao(PostgresConnector.getDSLContext());
-            metadataPlugin.saveToDatabase(jsonCallgraph, metadataDao);
+            while (!metadataPlugin.recordProcessSuccessful()) {
+                try {
+                    metadataPlugin.saveToDatabase(jsonCallgraph, metadataDao);
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
+            }
         } catch (SQLException e) {
             logger.error("Could not connect to the database", e);
         } catch (IOException e) {
