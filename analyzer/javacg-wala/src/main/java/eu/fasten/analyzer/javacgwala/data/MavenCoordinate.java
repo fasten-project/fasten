@@ -148,21 +148,31 @@ public class MavenCoordinate {
         /**
          * Returns information about the dependencies of the indicated artifact.
          *
-         * @param mavenCoordinate Maven coordinate of an artifact.
-         * @return A java List of a given artifact's dependencies in FastenJson Dependency format.
+         * @param mavenCoordinate Maven Coordinate
+         * @return A java List of a given artifact's dependencies in FastenJson Dependency format
          */
         public static List<List<RevisionCallGraph.Dependency>> resolveDependencies(
+                final String mavenCoordinate) {
+
+            var resolver = new MavenResolver();
+            return resolver.getDependencies(mavenCoordinate);
+        }
+
+        /**
+         * Returns information about the dependencies of the indicated artifact.
+         *
+         * @param mavenCoordinate Maven Coordinate
+         * @return A java List of a given artifact's dependencies in FastenJson Dependency format
+         */
+        public List<List<RevisionCallGraph.Dependency>> getDependencies(
                 final String mavenCoordinate) {
 
             final var dependencies = new ArrayList<List<RevisionCallGraph.Dependency>>();
 
             try {
-                final var pom = new SAXReader().read(
-                        new ByteArrayInputStream(
-                                downloadPom(mavenCoordinate)
-                                        .orElseThrow(RuntimeException::new).getBytes()
-                        )
-                );
+                var pom = new SAXReader().read(new ByteArrayInputStream(
+                        this.downloadPom(mavenCoordinate)
+                                .orElseThrow(RuntimeException::new).getBytes()));
 
                 var profilesRoot = pom.getRootElement()
                         .selectSingleNode("./*[local-name() ='profiles']");
@@ -176,7 +186,7 @@ public class MavenCoordinate {
                         .selectSingleNode("./*[local-name()='dependencies']");
 
                 if (outerDeps != null) {
-                    var resolved = resolveDependencies(outerDeps);
+                    var resolved = resolveLocalDependencies(outerDeps);
                     if (resolved.size() != 0) {
                         dependencies.add(resolved);
                     }
@@ -186,16 +196,16 @@ public class MavenCoordinate {
                     var dependenciesNode =
                             profile.selectSingleNode("./*[local-name() ='dependencies']");
                     if (dependenciesNode != null) {
-                        var resolved = resolveDependencies(dependenciesNode);
+                        var resolved = resolveLocalDependencies(dependenciesNode);
                         if (resolved.size() != 0) {
                             dependencies.add(resolved);
                         }
                     }
                 }
-
-            } catch (DocumentException | FileNotFoundException e) {
+            } catch (FileNotFoundException | DocumentException e) {
                 logger.error("Error parsing POM file for: " + mavenCoordinate);
             }
+
             return dependencies;
         }
 
@@ -206,7 +216,7 @@ public class MavenCoordinate {
          * @param node Dependencies node from profile or entire project
          * @return List of dependencies
          */
-        private static List<RevisionCallGraph.Dependency> resolveDependencies(final Node node) {
+        private List<RevisionCallGraph.Dependency> resolveLocalDependencies(final Node node) {
             final var depList = new ArrayList<RevisionCallGraph.Dependency>();
 
             for (final var depNode : node.selectNodes("./*[local-name() = 'dependency']")) {
@@ -241,7 +251,7 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return The contents of the downloaded POM file as a string
          */
-        public static Optional<String> downloadPom(final String mavenCoordinate)
+        public Optional<String> downloadPom(final String mavenCoordinate)
                 throws FileNotFoundException {
             return httpGetToFile(fromString(mavenCoordinate).toPomUrl(), ".pom")
                     .flatMap(MavenResolver::fileToString);

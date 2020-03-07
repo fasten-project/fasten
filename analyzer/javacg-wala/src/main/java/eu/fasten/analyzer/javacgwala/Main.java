@@ -91,7 +91,7 @@ public class Main implements Runnable {
 
             } catch (Throwable e) {
                 logger.error("Failed to generate a call graph for Maven coordinate: {}, Error: {}",
-                        mavenCoordinate.getCoordinate(), e.getClass().getSimpleName(), e);
+                        mavenCoordinate.getCoordinate(), e.getClass().getSimpleName());
             }
         }
     }
@@ -108,7 +108,6 @@ public class Main implements Runnable {
 
         for (var coordinate : getCoordinates(path)) {
             final var mavenCoordinate = getMavenCoordinate(coordinate);
-            assert mavenCoordinate != null;
 
             try {
                 var cg = PartialCallGraph.createExtendedRevisionCallGraph(
@@ -132,7 +131,14 @@ public class Main implements Runnable {
 
                 String errorType = error.get("type").toString();
 
-                failedRecords.put(mavenCoordinate.getCoordinate(), errorType);
+                if (mavenCoordinate != null) {
+                    failedRecords.put(mavenCoordinate.getCoordinate(), errorType);
+                    logger.info("Failed to generate a call graph for {}!",
+                            mavenCoordinate.getCoordinate());
+                } else {
+                    failedRecords.put("UNKNOWN COORDINATE", errorType);
+                    logger.info("Failed to generate a call graph for UNKNOWN COORDINATE!");
+                }
 
 
                 if (errorOccurrences.containsKey(errorType)) {
@@ -140,9 +146,6 @@ public class Main implements Runnable {
                 } else {
                     errorOccurrences.put(errorType, 1);
                 }
-
-                logger.info("Failed to generate a call graph for {}!",
-                        mavenCoordinate.getCoordinate());
             }
         }
 
@@ -185,8 +188,10 @@ public class Main implements Runnable {
             System.out.println("\t [" + entry.getKey() + " - " + entry.getValue() + "]");
         }
 
-        System.out.println("Success rate: \t\t\t\t\t\t\t"
-                + 100 * successfulRecords.size() / total + "%");
+        if (total > 0) {
+            System.out.println("Success rate: \t\t\t\t\t\t\t"
+                    + 100 * successfulRecords.size() / total + "%");
+        }
     }
 
     /**
@@ -203,7 +208,7 @@ public class Main implements Runnable {
                     kafkaConsumedJson.get("artifactId").toString(),
                     kafkaConsumedJson.get("version").toString());
         } catch (JSONException e) {
-            logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson, e);
+            logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson);
         }
         return null;
     }
@@ -226,8 +231,8 @@ public class Main implements Runnable {
                     .collect(Collectors.toList());
 
 
-        } catch (IOException e) {
-            System.out.println("Couldn't parse a file with coordinates");
+        } catch (IOException | StringIndexOutOfBoundsException e) {
+            logger.error("Couldn't parse a file with coordinates");
         }
 
         return new ArrayList<>();

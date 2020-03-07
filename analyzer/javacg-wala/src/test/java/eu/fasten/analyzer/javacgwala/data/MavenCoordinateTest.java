@@ -21,7 +21,15 @@ package eu.fasten.analyzer.javacgwala.data;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.junit.Test;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
 
 public class MavenCoordinateTest {
 
@@ -29,10 +37,33 @@ public class MavenCoordinateTest {
     public void testResolveDependencies() {
         var deps = MavenCoordinate.MavenResolver.resolveDependencies("com.ibm.wala:com.ibm.wala.core:1.5.4");
         assertNotNull(deps);
-        assertEquals(2, deps.size());
+        assertEquals(1, deps.size());
         assertEquals(1, deps.get(0).stream().filter(x -> x.product.contains("shrike")).toArray().length);
-        assertEquals(1, deps.get(1).stream().filter(x -> x.product.contains("util")).toArray().length);
+        assertEquals(1, deps.get(0).stream().filter(x -> x.product.contains("util")).toArray().length);
         assertEquals("[1.5.4]", deps.get(0).get(0).constraints.get(0).toString());
+    }
+
+    @Test
+    public void testResolveDependenciesWithProfile() throws IOException {
+        var file = new File(Thread.currentThread().getContextClassLoader()
+                .getResource("testpom.txt")
+                .getFile()).getAbsolutePath();
+
+        FileInputStream inputStream = new FileInputStream(file);
+        var pomText = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+
+        MavenCoordinate.MavenResolver resolver = Mockito.mock(MavenCoordinate.MavenResolver.class);
+        Mockito.when(resolver.downloadPom("coordinate")).thenReturn(java.util.Optional.of(pomText));
+        Mockito.doCallRealMethod().when(resolver).getDependencies("coordinate");
+
+        var deps = resolver.getDependencies("coordinate");
+        assertNotNull(deps);
+        assertEquals("mvn", deps.get(0).get(0).forge);
+        assertEquals("mvn", deps.get(0).get(1).forge);
+        assertEquals("org.slf4j.slf4j-simple", deps.get(0).get(0).product);
+        assertEquals("org.dom4j.dom4j", deps.get(0).get(1).product);
+        assertEquals("[1.7.30]", deps.get(0).get(0).constraints.get(0).toString());
+        assertEquals("[*]", deps.get(0).get(1).constraints.get(0).toString());
     }
 
     @Test
