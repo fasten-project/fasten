@@ -94,25 +94,26 @@ public class PartialCallGraphTest {
     public void testCreate() throws FileNotFoundException {
 
         final var rcg = PartialCallGraph
-            .createExtendedRevisionCallGraph(new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
+            .createExtendedRevisionCallGraph(
+                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
 
         ExtendedRevisionCallGraphTest.assertSLF4j(rcg);
 
     }
 
     /**
-     * Given an unresolved arc and a graph returns the number of that arc in the graph.
+     * Given an external arc and a graph returns the number of that arc in the graph.
      * @param cg     call graph
      * @param source String of FastenURI of source node
      * @param target String of FastenURI of target node
      * @return number of the given arc in the given call graph
      */
-    public static int numberOfThisUnresolvedArc(PartialCallGraph cg, String source, String target) {
+    public static int numberOfThisExternalArc(PartialCallGraph cg, String source, String target) {
 
         final List<FastenURI[]> arcs = new ArrayList<>();
         for (final var method : cg.mapOfAllMethods().entrySet()) {
             if (method.getValue().toString().equals(source)) {
-                for (final var call : cg.getUnresolvedCalls().entrySet()) {
+                for (final var call : cg.getExternalCalls().entrySet()) {
                     if (call.getKey().getLeft().equals(method.getKey())) {
                         arcs.add(new FastenURI[] {
                             method.getValue(),
@@ -132,19 +133,19 @@ public class PartialCallGraphTest {
     }
 
     /**
-     * Given an resolved arc and a graph returns the number of that arc in the graph.
+     * Given an internal arc and a graph returns the number of that arc in the graph.
      * @param cg     call graph
      * @param source String of FastenURI of source node
      * @param target String of FastenURI of target node
      * @return number of the given arc in the given call graph
      */
-    public static int numberOfThisResolvedArc(final PartialCallGraph cg, final String source,
+    public static int numberOfThisInternalArc(final PartialCallGraph cg, final String source,
                                               final String target) {
 
         final List<FastenURI[]> arcs = new ArrayList<>();
         for (final var method : cg.mapOfAllMethods().entrySet()) {
             if (method.getValue().toString().equals(source)) {
-                for (final var call : cg.getResolvedCalls()) {
+                for (final var call : cg.getInternalCalls()) {
                     if (call.get(0).equals(method.getKey())) {
                         arcs.add(new FastenURI[] {
                             method.getValue(),
@@ -173,12 +174,12 @@ public class PartialCallGraphTest {
         assertEquals("public static void sourceMethod()", allMethods.get(1).toString());
         assertEquals("public static void targetMethod()", allMethods.get(2).toString());
 
-        final var unresolvedCalls =
+        final var ExternalCalls =
             new ArrayList<>(JavaConverters.asJavaCollection(cg.unresolvedMethodCalls()));
-        assertEquals("public void <init>()", unresolvedCalls.get(0).caller().toString());
-        assertEquals("java.lang.Object", unresolvedCalls.get(0).calleeClass().toJava());
-        assertEquals("<init>", unresolvedCalls.get(0).calleeName());
-        assertEquals("(): void", unresolvedCalls.get(0).calleeDescriptor().valueToString());
+        assertEquals("public void <init>()", ExternalCalls.get(0).caller().toString());
+        assertEquals("java.lang.Object", ExternalCalls.get(0).calleeClass().toJava());
+        assertEquals("<init>", ExternalCalls.get(0).calleeName());
+        assertEquals("(): void", ExternalCalls.get(0).calleeDescriptor().valueToString());
 
     }
 
@@ -211,8 +212,8 @@ public class PartialCallGraphTest {
                 + "2=/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType}, "
                 + "superClasses=[/java.lang/Object], "
                 + "superInterfaces=[]}}, "
-                + "resolvedCalls=[1,2], "
-                + "unresolvedCalls={(0,///java.lang/Object.Object()VoidType)={invokespecial=1}}}",
+                + "internalCalls=[1,2], "
+                + "externalCalls={(0,///java.lang/Object.Object()VoidType)={invokespecial=1}}}",
             singleSourceToTarget.toString());
 
     }
@@ -230,32 +231,32 @@ public class PartialCallGraphTest {
         final var cg1 = new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(
             "ca.eandb.util:eandb-util:0.2.2").orElseThrow(RuntimeException::new));
 
-        //Based on logs this arc of the resolved calls was duplicated.
+        //Based on logs this arc of the internal calls was duplicated.
         //Before removing duplicates the size of this duplicate arcs was 32.
-        assertEquals(1, numberOfThisResolvedArc(cg,
+        assertEquals(1, numberOfThisInternalArc(cg,
             "/HTTPClient/IdempotentSequence.main(%2Fjava.lang%2FString%25255B%25255D)%2Fjava"
                 + ".lang%2FVoidType",
             "/HTTPClient/Request.Request(HTTPConnection,%2Fjava.lang%2FString,%2Fjava"
                 + ".lang%2FString,NVPair%25255B%25255D,%2Fjava.lang%2FByteType%25255B%25255D,"
                 + "HttpOutputStream,%2Fjava.lang%2FBooleanType)%2Fjava.lang%2FVoidType"));
 
-        //Based on logs this arc of the unresolved calls was duplicated.
+        //Based on logs this arc of the external calls was duplicated.
         //Before removing duplicates the size of this duplicate arcs was 3.
-        assertEquals(1, numberOfThisUnresolvedArc(cg,
+        assertEquals(1, numberOfThisExternalArc(cg,
             "/HTTPClient/UncompressInputStream.read(%2Fjava.lang%2FByteType%25255B%25255D,%2Fjava"
                 + ".lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FIntegerType",
             "///java.lang/System.arraycopy(Object,IntegerType,Object,IntegerType,IntegerType)"
                 + "VoidType"));
 
         //Due to same name of Wrapper and primitive it was a confusion in overloaded methods in CHA
-        assertEquals(1, numberOfThisUnresolvedArc(cg1,
+        assertEquals(1, numberOfThisExternalArc(cg1,
             "/ca.eandb.util/FloatArray.add(%2Fjava.lang%2FFloatType)%2Fjava.lang%2FBooleanType",
             "///java.lang/NullPointerException.NullPointerException()VoidType"));
-        assertEquals(1, numberOfThisUnresolvedArc(cg1,
+        assertEquals(1, numberOfThisExternalArc(cg1,
             "/ca.eandb.util/FloatArray.add(%2Fjava.lang%2FFloat)%2Fjava.lang%2FBooleanType",
             "///java.lang/NullPointerException.NullPointerException()VoidType"));
 
-        assertEquals(1, numberOfThisUnresolvedArc(cg1,
+        assertEquals(1, numberOfThisExternalArc(cg1,
             "/ca.eandb.util/ByteArray.add(%2Fjava.lang%2FIntegerType,"
                 + "%2Fjava.lang%2FByteType)%2Fjava.lang%2FVoidType",
             "///java.lang/NullPointerException.NullPointerException()"
@@ -304,47 +305,4 @@ public class PartialCallGraphTest {
 
     }
 
-    @Test
-    public void getTargetURI() {
-    }
-
-    @Test
-    public void createCHA() {
-    }
-
-    @Test
-    public void extractSuperClasses() {
-    }
-
-    @Test
-    public void extractSuperInterfaces() {
-    }
-
-    @Test
-    public void getResolvedCalls() {
-    }
-
-    @Test
-    public void getUnresolvedCalls() {
-    }
-
-    @Test
-    public void getClassHierarchy() {
-    }
-
-    @Test
-    public void getGENERATOR() {
-    }
-
-    @Test
-    public void getGraph() {
-    }
-
-    @Test
-    public void mapOfAllMethods() {
-    }
-
-    @Test
-    public void testToString() {
-    }
 }

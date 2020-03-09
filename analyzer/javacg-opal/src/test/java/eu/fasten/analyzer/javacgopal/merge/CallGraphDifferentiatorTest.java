@@ -21,14 +21,11 @@ package eu.fasten.analyzer.javacgopal.merge;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
-
-import org.junit.Test;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class CallGraphDifferentiatorTest {
 
@@ -38,7 +35,9 @@ public class CallGraphDifferentiatorTest {
     @BeforeClass
     public static void generateCallGraph() throws FileNotFoundException {
 
-        var DiffExampleFirst = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleFirst.class").getFile()));
+        var diffExampleFirst = new PartialCallGraph(new File(
+            Thread.currentThread().getContextClassLoader().getResource("DiffExampleFirst.class")
+                .getFile()));
 
         final var coord = new MavenCoordinate("mvn", "DiffExample", "1.7.29");
 
@@ -46,29 +45,29 @@ public class CallGraphDifferentiatorTest {
             .forge("mvn")
             .product(coord.getProduct())
             .version(coord.getVersionConstraint())
-            .cgGenerator(DiffExampleFirst.getGENERATOR())
+            .cgGenerator(diffExampleFirst.getGENERATOR())
             .timestamp(1574072773)
-            .graph(DiffExampleFirst.getGraph())
-            .classHierarchy(DiffExampleFirst.getClassHierarchy())
+            .graph(diffExampleFirst.getGraph())
+            .classHierarchy(diffExampleFirst.getClassHierarchy())
             .build();
 
-        var DiffExampleSecond = new PartialCallGraph(new File(Thread.currentThread().getContextClassLoader().getResource("DiffExampleSecond.class").getFile()));
+        var diffExampleSecond = new PartialCallGraph(new File(
+            Thread.currentThread().getContextClassLoader().getResource("DiffExampleSecond.class")
+                .getFile()));
 
         secondGraph = ExtendedRevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product(coord.getProduct())
             .version(coord.getVersionConstraint())
-            .cgGenerator(DiffExampleSecond.getGENERATOR())
+            .cgGenerator(diffExampleSecond.getGENERATOR())
             .timestamp(1574072773)
-            .graph(DiffExampleSecond.getGraph())
-            .classHierarchy(DiffExampleSecond.getClassHierarchy())
+            .graph(diffExampleSecond.getGraph())
+            .classHierarchy(diffExampleSecond.getClassHierarchy())
             .build();
-
-
     }
 
     @Test
     public void testDiff() throws IOException {
-        CallGraphDifferentiator.diffInFile("",1, firstGraph, secondGraph);
+        CallGraphDifferentiator.diffInFile("", 1, firstGraph, secondGraph);
     }
 }

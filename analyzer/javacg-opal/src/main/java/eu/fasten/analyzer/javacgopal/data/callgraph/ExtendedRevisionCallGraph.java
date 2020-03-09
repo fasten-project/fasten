@@ -48,7 +48,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      */
     private final Map<FastenURI, Type> classHierarchy;
 
-    /** Includes all the edges of the revision call graph (resolved & unresolved). */
+    /** Includes all the edges of the revision call graph (internal & external). */
     private final Graph graph;
 
     /** Keeps the name of call graph generator that generated this revision call graph. */
@@ -66,7 +66,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
-     *                       including resolved and unresolved calls of the revision.
+     *                       including internal and external calls of the revision.
      */
     public ExtendedRevisionCallGraph(final String forge, final String product, final String version,
                                      final long timestamp, final String cgGenerator,
@@ -103,7 +103,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
 
         this.cgGenerator = json.getString("generator");
         this.graph = new Graph(json.getJSONObject("graph"));
-        this.classHierarchy = classHierarchy(json.getJSONObject("cha"));
+        this.classHierarchy = getCHAFromJSON(json.getJSONObject("cha"));
 
     }
 
@@ -129,7 +129,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
      * Creates a class hierarchy for the given JSONObject.
      * @param cha JSONObject of a cha.
      */
-    public static Map<FastenURI, Type> classHierarchy(final JSONObject cha) {
+    public static Map<FastenURI, Type> getCHAFromJSON(final JSONObject cha) {
 
         final Map<FastenURI, Type> result = new HashMap<>();
 
@@ -178,15 +178,15 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     }
 
     /**
-     * Sorts the resolved calls of this revision call graph.
-     * @implNote since we use {@link Set} in the process of computing the resolved calls and
+     * Sorts the internal calls of this revision call graph.
+     * @implNote since we use {@link Set} in the process of computing the internal calls and
      *     sets doesn't keep the order it might be needed to sort the edges
      */
-    public void sortResolvedCalls() {
-        final var sortedList = new ArrayList<>(this.graph.resolvedCalls);
+    public void sortInternalCalls() {
+        final var sortedList = new ArrayList<>(this.graph.internalCalls);
         sortedList.sort(Comparator.comparing(o -> (o.get(0).toString() + o.get(1))));
-        this.graph.resolvedCalls.clear();
-        this.graph.resolvedCalls.addAll(sortedList);
+        this.graph.internalCalls.clear();
+        this.graph.internalCalls.addAll(sortedList);
     }
 
     /**
@@ -202,7 +202,7 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     }
 
     public boolean isCallGraphEmpty() {
-        return this.graph.resolvedCalls.isEmpty() && this.graph.unresolvedCalls.isEmpty();
+        return this.graph.internalCalls.isEmpty() && this.graph.externalCalls.isEmpty();
     }
 
     public String getCgGenerator() {
@@ -282,53 +282,53 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
     public static class Graph {
 
         /**
-         * It keeps all the resolved calls of the call graph using the ids of source and target
+         * It keeps all the internal calls of the call graph using the ids of source and target
          * method. First element of the int[] is the id of the source method and the second one is
          * the target's id. Ids are available in the class hierarchy.
          */
-        private final List<List<Integer>> resolvedCalls;
+        private final List<List<Integer>> internalCalls;
 
         /**
-         * Unresolved calls of the graph and key value metadata about each call. The {@link Pair}
+         * External calls of the graph and key value metadata about each call. The {@link Pair}
          * keeps the id of source method in the left element and the {@link FastenURI} of the target
          * method in the right element. The meta data per call is stored as a map that keys and
          * values are {@link String}. For example in case of java for each call it can keep
          * (typeOfCall -> number_of_occurrence).
          */
-        private final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls;
+        private final Map<Pair<Integer, FastenURI>, Map<String, String>> externalCalls;
 
-        public Graph(final List<List<Integer>> resolvedCalls,
-                     final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls) {
-            this.resolvedCalls = resolvedCalls;
-            this.unresolvedCalls = unresolvedCalls;
+        public Graph(final List<List<Integer>> internalCalls,
+                     final Map<Pair<Integer, FastenURI>, Map<String, String>> externalCalls) {
+            this.internalCalls = internalCalls;
+            this.externalCalls = externalCalls;
         }
 
         /**
          * Creates {@link Graph} for the given JSONObject.
-         * @param graph JSONObject of a graph including its resolved calls and unresolved calls.
+         * @param graph JSONObject of a graph including its internal calls and external calls.
          */
         public Graph(final JSONObject graph) {
 
-            final var resolvedCalls = graph.getJSONArray("resolvedCalls");
-            this.resolvedCalls = new ArrayList<>();
-            final int numberOfArcs = resolvedCalls.length();
+            final var internalCalls = graph.getJSONArray("internalCalls");
+            this.internalCalls = new ArrayList<>();
+            final int numberOfArcs = internalCalls.length();
             for (int i = 0; i < numberOfArcs; i++) {
-                final var pair = resolvedCalls.getJSONArray(i);
-                this.resolvedCalls.add(Arrays.asList((Integer) pair.get(0), (Integer) pair.get(1)));
+                final var pair = internalCalls.getJSONArray(i);
+                this.internalCalls.add(Arrays.asList((Integer) pair.get(0), (Integer) pair.get(1)));
             }
 
-            final var unresolvedCalls = graph.getJSONArray("unresolvedCalls");
-            this.unresolvedCalls = new HashMap<>();
-            final int numberOfUnresolvedArcs = unresolvedCalls.length();
-            for (int i = 0; i < numberOfUnresolvedArcs; i++) {
-                final var call = unresolvedCalls.getJSONArray(i);
+            final var externalCalls = graph.getJSONArray("externalCalls");
+            this.externalCalls = new HashMap<>();
+            final int numberOfExternalArcs = externalCalls.length();
+            for (int i = 0; i < numberOfExternalArcs; i++) {
+                final var call = externalCalls.getJSONArray(i);
                 final var callTypeJson = call.getJSONObject(2);
                 final Map<String, String> callType = new HashMap<>();
                 for (final var type : callTypeJson.keySet()) {
                     final String number = callTypeJson.getString(type);
                     callType.put(type, number);
                 }
-                this.unresolvedCalls.put(new MutablePair<>(Integer.parseInt(call.getString(0)),
+                this.externalCalls.put(new MutablePair<>(Integer.parseInt(call.getString(0)),
                     FastenURI.create(call.getString(1))), callType);
             }
         }
@@ -341,21 +341,21 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
         public JSONObject toJSON(final Graph graph) {
 
             final var result = new JSONObject();
-            final var resolvedCallsJSON = new JSONArray();
-            for (final var entry : graph.resolvedCalls) {
-                resolvedCallsJSON.put(entry);
+            final var internalCallsJSON = new JSONArray();
+            for (final var entry : graph.internalCalls) {
+                internalCallsJSON.put(entry);
             }
-            final var unresolvedCallsJSON = new JSONArray();
-            for (final var entry : graph.unresolvedCalls.entrySet()) {
+            final var externalCallsJSON = new JSONArray();
+            for (final var entry : graph.externalCalls.entrySet()) {
                 final var call = new JSONArray();
                 call.put(entry.getKey().getKey().toString());
                 call.put(entry.getKey().getValue().toString());
                 call.put(new JSONObject(entry.getValue()));
-                unresolvedCallsJSON.put(call);
+                externalCallsJSON.put(call);
             }
 
-            result.put("resolvedCalls", resolvedCallsJSON);
-            result.put("unresolvedCalls", unresolvedCallsJSON);
+            result.put("internalCalls", internalCallsJSON);
+            result.put("externalCalls", externalCallsJSON);
             return result;
         }
 
@@ -363,16 +363,16 @@ public class ExtendedRevisionCallGraph extends RevisionCallGraph {
             return toJSON(this);
         }
 
-        public List<List<Integer>> getResolvedCalls() {
-            return resolvedCalls;
+        public List<List<Integer>> getInternalCalls() {
+            return internalCalls;
         }
 
-        public Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls() {
-            return unresolvedCalls;
+        public Map<Pair<Integer, FastenURI>, Map<String, String>> getExternalCalls() {
+            return externalCalls;
         }
 
         public int size() {
-            return resolvedCalls.size() + unresolvedCalls.size();
+            return internalCalls.size() + externalCalls.size();
         }
 
     }

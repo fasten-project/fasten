@@ -54,10 +54,10 @@ public class CallGraphMerger {
 
         final var mapOfAllMethods = artifact.mapOfAllMethods();
 
-        final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls = new HashMap<>();
+        final Map<Pair<Integer, FastenURI>, Map<String, String>> externalCalls = new HashMap<>();
 
         for (final var entry : artifact.getGraph()
-            .getUnresolvedCalls().entrySet()) {
+            .getExternalCalls().entrySet()) {
             Pair<Integer, FastenURI> call = entry.getKey();
             Map<String, String> metadata = entry.getValue();
             final var source = mapOfAllMethods.get(call.getKey());
@@ -67,21 +67,21 @@ public class CallGraphMerger {
                     .contains(getTypeURI(target));
             nextCall:
 
-            //Foreach unresolved call
+            //Foreach external call
             if (target.toString().startsWith("///")) {
 
                 //Go through all dependencies
                 for (ExtendedRevisionCallGraph dependency : dependencies) {
-                    var resolvedMethod = target.toString();
+                    var internalMethod = target.toString();
 
                     nextDependency:
                     //Check whether this method is inside the dependency
                     if (dependency.getClassHierarchy().containsKey(getTypeURI(target))) {
                         if (dependency.getClassHierarchy().get(getTypeURI(target)).getMethods()
                             .containsValue(FastenURI.create(target.getRawPath()))) {
-                            resolvedMethod =
-                                target.toString().replace("///", "//" +
-                                    dependency.product + "/");
+                            internalMethod =
+                                target.toString().replace("///", "//"
+                                    + dependency.product + "/");
                             //Check if this call is related to a super class
                             if (isSuperClassMethod) {
                                 //Find that super class. in case there are two, pick the first one
@@ -90,15 +90,18 @@ public class CallGraphMerger {
                                     .get(getTypeURI(source)).getSuperClasses()) {
                                     //Check if this dependency contains the super class that we want
                                     if (dependency.getClassHierarchy().containsKey(superClass)) {
-                                        unresolvedCalls.put(new MutablePair<>(call.getKey(), new FastenJavaURI(resolvedMethod)), metadata);
+                                        externalCalls.put(new MutablePair<>(call.getKey(),
+                                            new FastenJavaURI(internalMethod)), metadata);
                                         break nextCall;
                                     } else {
-                                        unresolvedCalls.put(new MutablePair<>(call.getKey(), target), metadata);
+                                        externalCalls.put(new MutablePair<>(call.getKey(), target),
+                                            metadata);
                                         break nextDependency;
                                     }
                                 }
                             } else {
-                                unresolvedCalls.put(new MutablePair<>(call.getKey(), new FastenJavaURI(resolvedMethod)), metadata);
+                                externalCalls.put(new MutablePair<>(call.getKey(),
+                                    new FastenJavaURI(internalMethod)), metadata);
                             }
                         }
                     }
@@ -113,15 +116,15 @@ public class CallGraphMerger {
             .product(artifact.product)
             .timestamp(artifact.timestamp)
             .version(artifact.version)
-            .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraph().getResolvedCalls(),
-                unresolvedCalls))
+            .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraph().getInternalCalls(),
+                externalCalls))
             .build();
     }
 
 
     private static FastenURI getTypeURI(final FastenURI callee) {
-        return new FastenJavaURI("/" + callee.getNamespace() + "/" +
-            callee.getEntity().substring(0, callee.getEntity().indexOf(".")));
+        return new FastenJavaURI("/" + callee.getNamespace() + "/"
+            + callee.getEntity().substring(0, callee.getEntity().indexOf(".")));
     }
 
     private static List<ExtendedRevisionCallGraph> loadRevisionCallGraph(

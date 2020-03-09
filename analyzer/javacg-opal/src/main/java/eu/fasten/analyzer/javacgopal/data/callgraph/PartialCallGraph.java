@@ -56,8 +56,7 @@ import scala.collection.JavaConverters;
 
 /**
  * Call graphs that are not still fully resolved. i.e. isolated call graphs which within-artifact
- * calls (edges) are known as resolved calls and Cross-artifact calls are known as unresolved
- * calls.
+ * calls (edges) are known as internal calls and Cross-artifact calls are known as external. calls.
  */
 public class PartialCallGraph {
 
@@ -70,7 +69,7 @@ public class PartialCallGraph {
     private final Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
 
     /**
-     * Resolved calls of the call graph, each element is a list of Integer that the first element is
+     * Internal calls of the call graph, each element is a list of Integer that the first element is
      * the id of source method and the second one is the id of the target method. Ids are available
      * in the class hierarchy.
      * @implNote Since this part of the graphs are most of the times bottleneck it is important
@@ -79,15 +78,15 @@ public class PartialCallGraph {
      *     option since it's representative of the functionality but the equal function works too
      *     slow to be in such a critical place. So Lists are good trade of in every aspect.
      */
-    private final List<List<Integer>> resolvedCalls;
+    private final List<List<Integer>> internalCalls;
 
     /**
-     * Unresolved calls of the call graph. Each key of the map is an unresolved call. Keys are
-     * {@link Pair} of Integers that indicate the source methods's id (available in the CHA) and a
-     * {@link FastenURI} of the target method. Values are a map between JVM call types and number of
-     * each call type for the corresponding edge
+     * External calls of the call graph. Each key of the map is an external call. Keys are {@link
+     * Pair} of Integers that indicate the source methods's id (available in the CHA) and a {@link
+     * FastenURI} of the target method. Values are a map between JVM call types and number of each
+     * call type for the corresponding edge
      */
-    private final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls;
+    private final Map<Pair<Integer, FastenURI>, Map<String, String>> externalCalls;
 
     /**
      * Given a file it creates a {@link PartialCallGraph} for it using OPAL.
@@ -99,27 +98,27 @@ public class PartialCallGraph {
         final var cg = generateCallGraph(file);
         logger.info("OPAL generated the call graph, creating the CHA ...");
         final var cha = createCHA(cg);
-        logger.info("CHA is created, setting resolved calls ...");
-        this.resolvedCalls = getResolvedCalls(cg, cha);
-        logger.info("Resolved calls are set, setting unresolved calls ...");
-        this.unresolvedCalls = getUnresolvedCalls(cg, cha);
-        logger.info("Unresolved calls are set, converting CHA entities to URIs ...");
+        logger.info("CHA is created, setting internal calls ...");
+        this.internalCalls = getInternalCalls(cg, cha);
+        logger.info("Internal calls are set, setting external calls ...");
+        this.externalCalls = getExternalCalls(cg, cha);
+        logger.info("External calls are set, converting CHA entities to URIs ...");
         this.classHierarchy = asURIHierarchy(cha);
         logger.info("CHA entities has been converted to URIs.");
     }
 
     /**
-     * Given an unresolved call it generates a FastenURI for the target method of the call.
-     * @param unresolvedCall {@link UnresolvedMethodCall}
+     * Given an external call it generates a FastenURI for the target method of the call.
+     * @param externalCall {@link UnresolvedMethodCall}
      * @return {@link FastenURI} with empty product.
      */
-    public static FastenURI getTargetURI(final UnresolvedMethodCall unresolvedCall) {
+    public static FastenURI getTargetURI(final UnresolvedMethodCall externalCall) {
 
         final var targetURI = OPALMethod.toCanonicalSchemelessURI(
             null,
-            unresolvedCall.calleeClass(),
-            unresolvedCall.calleeName(),
-            unresolvedCall.calleeDescriptor()
+            externalCall.calleeClass(),
+            externalCall.calleeName(),
+            externalCall.calleeDescriptor()
         );
 
         if (targetURI == null) {
@@ -383,8 +382,8 @@ public class PartialCallGraph {
      * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
      *                               Maven central it throws this exception.
      */
-    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(final MavenCoordinate coordinate,
-                                                                            final long timestamp)
+    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(
+        final MavenCoordinate coordinate, final long timestamp)
         throws FileNotFoundException {
         final var partialCallGraph = new PartialCallGraph(
             MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate())
@@ -399,14 +398,14 @@ public class PartialCallGraph {
     }
 
     /**
-     * Given a call graph and a CHA it creates a list of resolved calls. This list indicates source
+     * Given a call graph and a CHA it creates a list of internal calls. This list indicates source
      * and target methods by their unique within artifact ids existing in the cha.
      * @param cg  {@link ComputedCallGraph}
      * @param cha A Map of {@link ObjectType} and {@link ExtendedRevisionCallGraph.Type}
      * @return a list of List of Integers that the first element of each int[] is the source method
      *     and the second one is the target method.
      */
-    private List<List<Integer>> getResolvedCalls(final ComputedCallGraph cg,
+    private List<List<Integer>> getInternalCalls(final ComputedCallGraph cg,
                                                  final Map<ObjectType, OPALType> cha) {
         final Set<List<Integer>> resultSet = new HashSet<>();
         for (final var source : JavaConverters
@@ -428,14 +427,14 @@ public class PartialCallGraph {
         return new ArrayList<>(resultSet);
     }
 
-    public List<List<Integer>> getResolvedCalls() {
-        return this.resolvedCalls;
+    public List<List<Integer>> getInternalCalls() {
+        return this.internalCalls;
     }
 
     /**
-     * Given a call graph and a CHA it creates a map of unresolved calls and their call type. This
-     * map indicates the source methods by their unique within artifact id existing in the cha,
-     * target methods by their {@link FastenURI}, and a map that indicates the call type.
+     * Given a call graph and a CHA it creates a map of external calls and their call type. This map
+     * indicates the source methods by their unique within artifact id existing in the cha, target
+     * methods by their {@link FastenURI}, and a map that indicates the call type.
      * @param cg  {@link ComputedCallGraph}
      * @param cha A Map of {@link ObjectType} and {@link ExtendedRevisionCallGraph.Type}
      * @return A map that each each entry of it is a {@link Pair} of source method's id, and target
@@ -443,41 +442,41 @@ public class PartialCallGraph {
      *     map's key is the name of JVM call type and the value is number of invocation by this call
      *     type for this specific edge.
      */
-    private Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls(
+    private Map<Pair<Integer, FastenURI>, Map<String, String>> getExternalCalls(
         final ComputedCallGraph cg,
         final Map<ObjectType, OPALType> cha) {
         List<UnresolvedMethodCall> v = new ArrayList<>();
 
-        final var unresolvedCalls = cg.unresolvedMethodCalls();
+        final var externlCalls = cg.unresolvedMethodCalls();
         final Map<Pair<Integer, FastenURI>, Map<String, String>> result = new HashMap<>();
 
-        for (final var unresolvedCall : JavaConverters.asJavaIterable(unresolvedCalls)) {
+        for (final var externalCall : JavaConverters.asJavaIterable(externlCalls)) {
 
             final var call = new MutablePair<>(
-                cha.get(unresolvedCall.caller().declaringClassFile().thisType()).getMethods()
-                    .get(unresolvedCall.caller()),
-                getTargetURI(unresolvedCall));
+                cha.get(externalCall.caller().declaringClassFile().thisType()).getMethods()
+                    .get(externalCall.caller()),
+                getTargetURI(externalCall));
             final var typeOfCall =
-                unresolvedCall.caller().instructionsOption().get()[unresolvedCall.pc()].mnemonic();
+                externalCall.caller().instructionsOption().get()[externalCall.pc()].mnemonic();
             putCall(result, call, typeOfCall);
         }
 
         return result;
     }
 
-    public Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls() {
-        return this.unresolvedCalls;
+    public Map<Pair<Integer, FastenURI>, Map<String, String>> getExternalCalls() {
+        return this.externalCalls;
     }
 
     /**
      * It puts the given call to the given map if it doesn't exist and if call already exists in the
      * map it will be updated with the passed call extra information.
      * @param result     The result map that should be updated with the given call.
-     * @param call       Resolved or unresolved call.
+     * @param call       Internal or external call.
      * @param typeOfCall OPALType of JVM call: invodestatic, invokedynamic, invokevirtual,
      *                   invokeinterface, invokespecial
-     * @param <T>        int[] if it's resolved call and {@link Pair} of Integer and {@link
-     *                   FastenURI} if unresolved.
+     * @param <T>        int[] if it's internal call and {@link Pair} of Integer and {@link
+     *                   FastenURI} if external.
      */
     private <T> void putCall(final Map<T, Map<String, String>> result,
                              final T call,
@@ -503,7 +502,7 @@ public class PartialCallGraph {
     }
 
     public ExtendedRevisionCallGraph.Graph getGraph() {
-        return new ExtendedRevisionCallGraph.Graph(this.resolvedCalls, this.unresolvedCalls);
+        return new ExtendedRevisionCallGraph.Graph(this.internalCalls, this.externalCalls);
     }
 
     /**
@@ -522,10 +521,10 @@ public class PartialCallGraph {
 
         return "PartialCallGraph{"
             + "classHierarchy=" + classHierarchy
-            + ", resolvedCalls="
-            + resolvedCalls.stream().map(call -> "[" + call.get(0) + "," + call.get(1)
+            + ", internalCalls="
+            + internalCalls.stream().map(call -> "[" + call.get(0) + "," + call.get(1)
             + "]").collect(Collectors.joining())
-            + ", unresolvedCalls=" + unresolvedCalls
+            + ", externalCalls=" + externalCalls
             + '}';
     }
 }

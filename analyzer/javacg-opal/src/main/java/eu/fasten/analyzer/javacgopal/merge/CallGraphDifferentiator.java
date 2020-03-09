@@ -43,8 +43,8 @@ public class CallGraphDifferentiator {
         final String graphPath =
             resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
 
-        firstGraph.sortResolvedCalls();
-        secondGraph.sortResolvedCalls();
+        firstGraph.sortInternalCalls();
+        secondGraph.sortInternalCalls();
 
         writeToFile(graphPath, firstGraph.toJSON().toString(4),"_1.txt");
         writeToFile(graphPath, secondGraph.toJSON().toString(4),"_2.txt");

@@ -22,6 +22,7 @@ import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.merge.CallGraphDifferentiator;
+import eu.fasten.core.data.RevisionCallGraph;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -91,7 +92,7 @@ public class Main implements Runnable {
                 timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d));
             //TODO something with the calculated RevesionCallGraph.
             CallGraphDifferentiator
-                .writeToFile("", revisionCallGraph.toJSON().toString(), "graph");
+                .writeToFile("", revisionCallGraph.toJSON().toString(4), "graph");
 
 
         } catch (IOException e) {
