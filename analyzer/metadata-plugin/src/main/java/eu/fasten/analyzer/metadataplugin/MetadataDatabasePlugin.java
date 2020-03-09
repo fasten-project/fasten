@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -131,7 +132,6 @@ public class MetadataDatabasePlugin extends Plugin {
                     }
                     metadataDao.insertDependencies(packageVersionId, depIds, depVersions);
                 }
-
                 var cha = json.getJSONObject("cha");
                 var fileNames = new ArrayList<String>(cha.keySet().size());
                 cha.keys().forEachRemaining(fileNames::add);
@@ -182,6 +182,12 @@ public class MetadataDatabasePlugin extends Plugin {
                 logger.error("Error saving to the database", e);
                 processedRecord = false;
                 setPluginError(e);
+                if (e instanceof DataAccessException) {
+                    logger.info("Restarting transaction");
+                    this.restartTransaction = true;
+                } else {
+                    this.restartTransaction = false;
+                }
                 throw e;
             }
             if (getPluginError().isEmpty()) {
