@@ -43,8 +43,6 @@ public class CallGraphConstructor {
 
     private static Logger logger = LoggerFactory.getLogger(CallGraphConstructor.class);
 
-    private static boolean setProperties = true;
-
     /**
      * Build a {@link PartialCallGraph} given classpath.
      *
@@ -75,9 +73,6 @@ public class CallGraphConstructor {
      */
     public static CallGraph generateCallGraph(final String classpath)
             throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
-        if (setProperties) {
-            setProperties();
-        }
         final var classLoader = Thread.currentThread().getContextClassLoader();
         final var exclusionFile = new File(Objects.requireNonNull(classLoader
                 .getResource("Java60RegressionExclusions.txt")).getFile());
@@ -95,20 +90,5 @@ public class CallGraphConstructor {
         final var builder = Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha, scope);
 
         return builder.makeCallGraph(options, null);
-    }
-
-    private static void setProperties() {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("wala.properties").getFile());
-
-        try {
-            PropertiesConfiguration conf = new PropertiesConfiguration("wala.properties");
-            conf.setProperty("java_runtime_dir", file.getAbsolutePath().substring(0,
-                    file.getAbsolutePath().lastIndexOf("/")) + "/jdk1.8.0_241.jdk/Contents/Home");
-            conf.save();
-            setProperties = false;
-        } catch (ConfigurationException ex) {
-            logger.error("Wrong configuration for Wala plugin");
-        }
     }
 }

@@ -62,7 +62,6 @@ public class WALAPlugin extends Plugin {
         final String produceTopic = "wala_callgraphs";
         private boolean processedRecord;
         private String pluginError = "";
-        private boolean propertiesSet = false;
 
         @Override
         public List<String> consumerTopics() {
