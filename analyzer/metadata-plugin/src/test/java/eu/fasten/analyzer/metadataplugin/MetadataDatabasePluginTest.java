@@ -22,10 +22,12 @@ import java.sql.Timestamp;
 import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,16 +128,6 @@ public class MetadataDatabasePluginTest {
                 new Timestamp(json.getLong("timestamp")));
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
                 json.getString("version"), null, null);
-//        Mockito.verify(metadataDao).insertFile(packageVersionId, "package", null, null,
-//                metadata);
-//        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.method()%2Fjava" +
-//                ".lang%2FVoid", null, null);
-//        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.toString()%2Fjava" +
-//                ".lang%2FString", null, null);
-//        Mockito.verify(metadataDao).insertEdge(64L, 65L, null);
-//        Mockito.verify(metadataDao).insertCallable(null, "///dep/service.call()%2Fjava" +
-//                ".lang%2FObject", false, null, null);
-//        Mockito.verify(metadataDao).insertEdge(64L, 100L, callMetadata);
     }
 
     @Test
@@ -233,18 +225,8 @@ public class MetadataDatabasePluginTest {
                 json.getString("version"), null, null);
         Mockito.verify(metadataDao).getPackageIdByNameAndForge("test.dependency", "mvn");
         Mockito.verify(metadataDao).insertPackage("test.dependency", "mvn", null, null, null);
-        Mockito.verify(metadataDao).insertDependencies(packageId,
+        Mockito.verify(metadataDao).insertDependencies(packageVersionId,
                 Collections.singletonList(depPackageId), Collections.singletonList("[1.0.0]"));
-//        Mockito.verify(metadataDao).insertFile(packageVersionId, "package", null, null,
-//                metadata);
-//        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.method()%2Fjava" +
-//                ".lang%2FVoid", null, null);
-//        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.toString()%2Fjava" +
-//                ".lang%2FString", null, null);
-//        Mockito.verify(metadataDao).insertEdge(64L, 65L, null);
-//        Mockito.verify(metadataDao).insertCallable(null, "///dep/service.call()%2Fjava" +
-//                ".lang%2FObject", false, null, null);
-//        Mockito.verify(metadataDao).insertEdge(64L, 100L, callMetadata);
     }
 
     @Test
@@ -341,25 +323,15 @@ public class MetadataDatabasePluginTest {
         Mockito.verify(metadataDao).getPackageIdByNameAndForge("test.dependency", "mvn");
         Mockito.verify(metadataDao, Mockito.never()).insertPackage("test.dependency", "mvn", null, null,
                 null);
-        Mockito.verify(metadataDao).insertDependencies(packageId,
+        Mockito.verify(metadataDao).insertDependencies(packageVersionId,
                 Collections.singletonList(depPackageId), Collections.singletonList("[1.0.0]"));
-//        Mockito.verify(metadataDao).insertFile(packageVersionId, "package", null, null,
-//                metadata);
-//        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.method()%2Fjava" +
-//                ".lang%2FVoid", null, null);
-//        Mockito.verify(metadataDao).insertCallable(fileId, "/package/class.toString()%2Fjava" +
-//                ".lang%2FString", null, null);
-//        Mockito.verify(metadataDao).insertEdge(64L, 65L, null);
-//        Mockito.verify(metadataDao).insertCallable(null, "///dep/service.call()%2Fjava" +
-//                ".lang%2FObject", false, null, null);
-//        Mockito.verify(metadataDao).insertEdge(64L, 100L, callMetadata);
     }
 
     @Test
     public void saveToDatabaseEmptyJsonTest() {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject();
-        metadataPlugin.saveToDatabase(json, metadataDao);
+        assertThrows(JSONException.class, () -> metadataPlugin.saveToDatabase(json, metadataDao));
         assertFalse(metadataPlugin.recordProcessSuccessful());
         assertFalse(metadataPlugin.getPluginError().isEmpty());
     }
