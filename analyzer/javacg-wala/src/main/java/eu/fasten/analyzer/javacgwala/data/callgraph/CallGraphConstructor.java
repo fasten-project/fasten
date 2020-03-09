@@ -104,7 +104,7 @@ public class CallGraphConstructor {
         try {
             PropertiesConfiguration conf = new PropertiesConfiguration("wala.properties");
             conf.setProperty("java_runtime_dir", file.getAbsolutePath().substring(0,
-                    file.getAbsolutePath().lastIndexOf("/")) + "/jre");
+                    file.getAbsolutePath().lastIndexOf("/")) + "/jdk1.8.0_241.jdk/Contents/Home");
             conf.save();
             setProperties = false;
         } catch (ConfigurationException ex) {
