@@ -64,7 +64,6 @@ public class Main implements Runnable {
      * parameters.
      */
     public static void main(String[] args) {
-        setProperties();
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }
@@ -284,20 +283,6 @@ public class Main implements Runnable {
                 description = "Set of maven coordinates",
                 required = true)
         String set;
-    }
-
-    private static void setProperties() {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("wala.properties").getFile());
-
-        try {
-            PropertiesConfiguration conf = new PropertiesConfiguration("wala.properties");
-            conf.setProperty("java_runtime_dir", file.getAbsolutePath().substring(0,
-                    file.getAbsolutePath().lastIndexOf("/")) + "/jdk1.8.0_241.jdk/Contents/Home");
-            conf.save();
-        } catch (ConfigurationException ex) {
-            logger.error("Wrong configuration for Wala plugin");
-        }
     }
 }
 

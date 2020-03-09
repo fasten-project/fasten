@@ -66,17 +66,11 @@ public class WALAPlugin extends Plugin {
 
         @Override
         public List<String> consumerTopics() {
-            if (!propertiesSet) {
-                setProperties();
-            }
             return new ArrayList<>(Collections.singletonList(consumeTopic));
         }
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
-            if (!propertiesSet) {
-                setProperties();
-            }
             processedRecord = false;
             consume(record, true);
             if (getPluginError().isEmpty()) {
@@ -230,20 +224,6 @@ public class WALAPlugin extends Plugin {
         @Override
         public void freeResource() {
 
-        }
-
-        private static void setProperties() {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            File file = new File(classLoader.getResource("wala.properties").getFile());
-
-            try {
-                PropertiesConfiguration conf = new PropertiesConfiguration("wala.properties");
-                conf.setProperty("java_runtime_dir", file.getAbsolutePath().substring(0,
-                        file.getAbsolutePath().lastIndexOf("/")) + "/jdk1.8.0_241.jdk/Contents/Home");
-                conf.save();
-            } catch (ConfigurationException ex) {
-                logger.error("Wrong configuration for Wala plugin");
-            }
         }
     }
 }
