@@ -25,10 +25,16 @@ import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONException;
@@ -56,14 +62,21 @@ public class WALAPlugin extends Plugin {
         final String produceTopic = "wala_callgraphs";
         private boolean processedRecord;
         private String pluginError = "";
+        private boolean propertiesSet = false;
 
         @Override
         public List<String> consumerTopics() {
+            if (!propertiesSet) {
+                setProperties();
+            }
             return new ArrayList<>(Collections.singletonList(consumeTopic));
         }
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
+            if (!propertiesSet) {
+                setProperties();
+            }
             processedRecord = false;
             consume(record, true);
             if (getPluginError().isEmpty()) {
@@ -217,6 +230,20 @@ public class WALAPlugin extends Plugin {
         @Override
         public void freeResource() {
 
+        }
+
+        private static void setProperties() {
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            File file = new File(classLoader.getResource("wala.properties").getFile());
+
+            try {
+                PropertiesConfiguration conf = new PropertiesConfiguration("wala.properties");
+                conf.setProperty("java_runtime_dir", file.getAbsolutePath().substring(0,
+                        file.getAbsolutePath().lastIndexOf("/")) + "/jdk1.8.0_241.jdk/Contents/Home");
+                conf.save();
+            } catch (ConfigurationException ex) {
+                logger.error("Wrong configuration for Wala plugin");
+            }
         }
     }
 }

@@ -22,15 +22,20 @@ import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -59,6 +64,7 @@ public class Main implements Runnable {
      * parameters.
      */
     public static void main(String[] args) {
+        setProperties();
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }
@@ -278,6 +284,20 @@ public class Main implements Runnable {
                 description = "Set of maven coordinates",
                 required = true)
         String set;
+    }
+
+    private static void setProperties() {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("wala.properties").getFile());
+
+        try {
+            PropertiesConfiguration conf = new PropertiesConfiguration("wala.properties");
+            conf.setProperty("java_runtime_dir", file.getAbsolutePath().substring(0,
+                    file.getAbsolutePath().lastIndexOf("/")) + "/jdk1.8.0_241.jdk/Contents/Home");
+            conf.save();
+        } catch (ConfigurationException ex) {
+            logger.error("Wrong configuration for Wala plugin");
+        }
     }
 }
 
