@@ -225,8 +225,6 @@ public class MetadataDatabasePluginTest {
                 json.getString("version"), null, null);
         Mockito.verify(metadataDao).getPackageIdByNameAndForge("test.dependency", "mvn");
         Mockito.verify(metadataDao).insertPackage("test.dependency", "mvn", null, null, null);
-        Mockito.verify(metadataDao).insertDependencies(packageVersionId,
-                Collections.singletonList(depPackageId), Collections.singletonList("[1.0.0]"));
     }
 
     @Test
@@ -311,10 +309,11 @@ public class MetadataDatabasePluginTest {
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
+        metadataPlugin.setPluginError(new RuntimeException());
         metadataPlugin.saveToDatabase(json, metadataDao);
 
-        assertTrue(metadataPlugin.recordProcessSuccessful());
-        assertTrue(metadataPlugin.getPluginError().isEmpty());
+        assertFalse(metadataPlugin.recordProcessSuccessful());
+        assertFalse(metadataPlugin.getPluginError().isEmpty());
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 null);
@@ -323,8 +322,6 @@ public class MetadataDatabasePluginTest {
         Mockito.verify(metadataDao).getPackageIdByNameAndForge("test.dependency", "mvn");
         Mockito.verify(metadataDao, Mockito.never()).insertPackage("test.dependency", "mvn", null, null,
                 null);
-        Mockito.verify(metadataDao).insertDependencies(packageVersionId,
-                Collections.singletonList(depPackageId), Collections.singletonList("[1.0.0]"));
     }
 
     @Test

@@ -38,7 +38,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dependencies extends TableImpl<DependenciesRecord> {
 
-    private static final long serialVersionUID = -1694685579;
+    private static final long serialVersionUID = 60071850;
 
     /**
      * The reference instance of <code>public.dependencies</code>
@@ -66,7 +66,7 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
     /**
      * The column <code>public.dependencies.version_range</code>.
      */
-    public final TableField<DependenciesRecord, String> VERSION_RANGE = createField(DSL.name("version_range"), org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
+    public final TableField<DependenciesRecord, String[]> VERSION_RANGE = createField(DSL.name("version_range"), org.jooq.impl.SQLDataType.CLOB.getArrayDataType(), this, "");
 
     /**
      * Create a <code>public.dependencies</code> table reference
@@ -150,7 +150,7 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<Long, Long, String> fieldsRow() {
+    public Row3<Long, Long, String[]> fieldsRow() {
         return (Row3) super.fieldsRow();
     }
 }

@@ -111,12 +111,18 @@ public class MetadataDatabasePlugin extends Plugin {
                 var depset = json.getJSONArray("depset").optJSONArray(0);
                 if (depset != null) {
                     var depIds = new ArrayList<Long>(depset.length());
-                    var depVersions = new ArrayList<String>(depset.length());
+                    var depVersions = new ArrayList<String[]>(depset.length());
                     for (int i = 0; i < depset.length(); i++) {
                         var dependency = depset.getJSONObject(i);
                         var depName = dependency.getString("product");
                         var depForge = dependency.getString("forge");
-                        depVersions.add(dependency.getJSONArray("constraints").getString(0));
+                        var constraints = dependency.getJSONArray("constraints");
+                        var versionRange = new String[constraints.length()];
+                        for (int j = 0; j < constraints.length(); j++) {
+                            versionRange[j] = constraints.getString(j);
+                        }
+                        depVersions.add(versionRange);
+
                         var depId = metadataDao.getPackageIdByNameAndForge(depName, depForge);
                         if (depId == -1L) {
                             depId = metadataDao.insertPackage(depName, depForge, null, null, null);

@@ -314,7 +314,7 @@ public class MetadataDaoTest {
     public void insertDependencyTest() {
         long packageId = 8;
         long dependencyId = 42;
-        var versionRange = "1.0.0-1.9.9";
+        var versionRange = new String[]{"1.0.0-1.9.9"};
         var insertValues = Mockito.mock(InsertValuesStep3.class);
         Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)).thenReturn(insertValues);
@@ -331,7 +331,7 @@ public class MetadataDaoTest {
     public void insertMultipleDependenciesTest() throws IllegalArgumentException {
         var packageId = 1L;
         var dependencyIds = Arrays.asList(8L, 42L);
-        var versionRanges = Arrays.asList("1.0.0-1.9.9", "2.1.0-2.1.9");
+        var versionRanges = Arrays.asList(new String[]{"1.0.0-1.9.9"}, new String[]{"2.1.0-2.1.9"});
         var insertValues = Mockito.mock(InsertValuesStep3.class);
         Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)).thenReturn(insertValues);
@@ -350,7 +350,7 @@ public class MetadataDaoTest {
     public void insertMultipleDependenciesErrorTest() {
         var packageId = 1L;
         var dependencyIds = Collections.singletonList(8L);
-        var versionRanges = Arrays.asList("1.0.0-1.9.9", "2.1.0-2.1.9");
+        var versionRanges = Arrays.asList(new String[]{"1.0.0-1.9.9"}, new String[]{"2.1.0-2.1.9"});
         assertThrows(IllegalArgumentException.class, () -> {
             metadataDao.insertDependencies(packageId, dependencyIds, versionRanges);
         });

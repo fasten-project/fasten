@@ -165,6 +165,7 @@
                     <excludes>
                         <exclude>**/codegen/**/*</exclude>
                         <exclude>**/PostgresConnector.*</exclude>
+                        <exclude>**/Main.*</exclude>
                     </excludes>
                 </configuration>
             </plugin>

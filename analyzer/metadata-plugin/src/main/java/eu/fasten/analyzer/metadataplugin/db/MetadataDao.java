@@ -157,14 +157,14 @@ public class MetadataDao {
      *
      * @param packageId    ID of the package (references 'package_versions.id')
      * @param dependencyId ID of the dependency package (references 'packages.id')
-     * @param versionRange Range of valid versions
+     * @param versionRanges Ranges of valid versions
      * @return ID of the package (packageId)
      */
-    public long insertDependency(long packageId, long dependencyId, String versionRange) {
+    public long insertDependency(long packageId, long dependencyId, String[] versionRanges) {
         var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
                 Dependencies.DEPENDENCIES.PACKAGE_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID,
                 Dependencies.DEPENDENCIES.VERSION_RANGE)
-                .values(packageId, dependencyId, versionRange)
+                .values(packageId, dependencyId, versionRanges)
                 .returning(Dependencies.DEPENDENCIES.PACKAGE_ID).fetchOne();
         return resultRecord.getValue(Dependencies.DEPENDENCIES.PACKAGE_ID);
     }
@@ -179,7 +179,7 @@ public class MetadataDao {
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public long insertDependencies(long packageId, List<Long> dependenciesIds,
-                                   List<String> versionRanges)
+                                   List<String[]> versionRanges)
             throws IllegalArgumentException {
         if (dependenciesIds.size() != versionRanges.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
