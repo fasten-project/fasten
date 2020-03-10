@@ -23,6 +23,7 @@ import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.OPALType;
 import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.io.FileNotFoundException;

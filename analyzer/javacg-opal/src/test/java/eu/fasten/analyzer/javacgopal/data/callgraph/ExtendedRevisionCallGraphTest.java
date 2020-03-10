@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
 import java.io.FileNotFoundException;

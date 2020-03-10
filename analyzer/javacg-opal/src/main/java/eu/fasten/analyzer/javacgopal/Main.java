@@ -19,10 +19,10 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.merge.CallGraphDifferentiator;
-import eu.fasten.core.data.RevisionCallGraph;
+
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;

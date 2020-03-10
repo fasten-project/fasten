@@ -16,10 +16,8 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data.callgraph;
+package eu.fasten.core.data;
 
-import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.RevisionCallGraph;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

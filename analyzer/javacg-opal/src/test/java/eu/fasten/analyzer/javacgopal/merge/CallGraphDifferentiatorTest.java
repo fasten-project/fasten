@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.javacgopal.merge;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import java.io.File;
 import java.io.FileNotFoundException;

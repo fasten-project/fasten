@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.OPALType;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;

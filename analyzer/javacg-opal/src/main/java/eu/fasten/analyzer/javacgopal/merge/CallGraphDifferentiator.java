@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.merge;
 
-import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;

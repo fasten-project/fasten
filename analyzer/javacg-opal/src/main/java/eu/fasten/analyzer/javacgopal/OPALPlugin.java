@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;

@@ -20,7 +20,7 @@ package eu.fasten.analyzer.javacgopal.merge;
 
 import static org.junit.Assert.assertEquals;
 
-import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
