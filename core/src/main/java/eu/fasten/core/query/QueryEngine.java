@@ -79,14 +79,16 @@ public class QueryEngine {
 				"Searches a given knowledge base (associated to a database)",
 				new Parameter[] {
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
+						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
 		});
 
 		final JSAPResult jsapResult = jsap.parse(args);
 		if ( jsap.messagePrinted() ) return;
 
 		final String kbDir = jsapResult.getString("kb");
+		final String kbMetadataFilename = jsapResult.getString("kbmeta");
 
-		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir);
+		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
 
 		final BufferedReader br = new BufferedReader( new InputStreamReader( jsapResult.userSpecified( "input" ) ? new FileInputStream( jsapResult.getString( "input") ) : System.in ) );
 

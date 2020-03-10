@@ -2,6 +2,7 @@ package eu.fasten.core.index;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -30,7 +31,8 @@ public class IndexerTest {
 
 	public void testKnowledgeBase(final String[] jsonSpec) throws JSONException, IOException, RocksDBException, URISyntaxException, ClassNotFoundException {
 		final Path kbDir = Files.createTempDirectory(Indexer.class.getSimpleName());
-		KnowledgeBase kb = KnowledgeBase.getInstance(kbDir.toString());
+		FileUtils.forceDeleteOnExit(new File("kb.meta"));
+		KnowledgeBase kb = KnowledgeBase.getInstance(kbDir.toString(), "kb.meta");
 
 		for (int index = 0; index < jsonSpec.length; index++)
 			kb.add(new RevisionCallGraph(new JSONObject(jsonSpec[index]), false), index);
@@ -57,7 +59,7 @@ public class IndexerTest {
 				}
 			}
 			kb.close();
-			kb = KnowledgeBase.getInstance(kbDir.toString());
+			kb = KnowledgeBase.getInstance(kbDir.toString(), "kb.meta");
 		}
 
 

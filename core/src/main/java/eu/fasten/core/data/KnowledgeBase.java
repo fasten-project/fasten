@@ -51,7 +51,6 @@ import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.io.BinIO;
-import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -478,14 +477,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 		this.callGraphDB = db;
 	}
 
-	public static KnowledgeBase getInstance(final String kbDir) throws RocksDBException, ClassNotFoundException, IOException {
+	public static KnowledgeBase getInstance(final String kbDir, final String kbMetadataFilename) throws RocksDBException, ClassNotFoundException, IOException {
 		RocksDB.loadLibrary();
 		final Options options = new Options();
 		options.setCreateIfMissing(true);
 
-		final RocksDB db = RocksDB.open(options, kbDir);
-		final byte[] array = db.get(KB_KEY);
-		final KnowledgeBase kb = array != null ? (KnowledgeBase)BinIO.loadObject(new FastByteArrayInputStream(array)) : new KnowledgeBase();
+		final RocksDB db = RocksDB.open(options, kbDir);		
+		final KnowledgeBase kb = new File(kbMetadataFilename).exists() ? (KnowledgeBase)BinIO.loadObject("kb.meta") :  new KnowledgeBase();
 		kb.callGraphDB(db);
 		return kb;
 	}
