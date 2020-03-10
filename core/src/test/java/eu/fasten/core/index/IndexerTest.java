@@ -31,8 +31,8 @@ public class IndexerTest {
 
 	public void testKnowledgeBase(final String[] jsonSpec) throws JSONException, IOException, RocksDBException, URISyntaxException, ClassNotFoundException {
 		final Path kbDir = Files.createTempDirectory(Indexer.class.getSimpleName());
-		FileUtils.forceDeleteOnExit(new File("kb.meta"));
-		KnowledgeBase kb = KnowledgeBase.getInstance(kbDir.toString(), "kb.meta");
+		String meta = Files.createTempFile(Indexer.class.getSimpleName(), "meta").getFileName().toString();
+		KnowledgeBase kb = KnowledgeBase.getInstance(kbDir.toString(), meta);
 
 		for (int index = 0; index < jsonSpec.length; index++)
 			kb.add(new RevisionCallGraph(new JSONObject(jsonSpec[index]), false), index);
@@ -59,14 +59,15 @@ public class IndexerTest {
 				}
 			}
 			kb.close();
-			kb = KnowledgeBase.getInstance(kbDir.toString(), "kb.meta");
+			kb = KnowledgeBase.getInstance(kbDir.toString(), meta);
 		}
 
 
 		FileUtils.deleteDirectory(kbDir.toFile());
+		FileUtils.deleteQuietly(new File("kb.meta"));
 	}
 
-	//@Test
+	@Test
 	public void testSmallIndex() throws JSONException, IOException, RocksDBException, URISyntaxException, ClassNotFoundException {
 		testKnowledgeBase(JSON_SPECS);
 	}
