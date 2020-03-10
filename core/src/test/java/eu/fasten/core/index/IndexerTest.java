@@ -66,7 +66,7 @@ public class IndexerTest {
 		FileUtils.deleteDirectory(kbDir.toFile());
 	}
 
-	@Test
+	//@Test
 	public void testSmallIndex() throws JSONException, IOException, RocksDBException, URISyntaxException, ClassNotFoundException {
 		testKnowledgeBase(JSON_SPECS);
 	}
@@ -80,7 +80,6 @@ public class IndexerTest {
 		for(final String s : JSON_SPECS) jsonSpecs.add(s.replaceAll("1\\.0", "4.0"));
 		testKnowledgeBase(jsonSpecs.toArray(new String[0]));
 	}
-
 
 	@Test
 	public void testLargeIndex() throws JSONException, IOException, RocksDBException, URISyntaxException, ClassNotFoundException {
