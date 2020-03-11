@@ -44,6 +44,8 @@ import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.CallGraph;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.webgraph.ImmutableGraph;
+import it.unimi.dsi.webgraph.LazyIntIterator;
+import it.unimi.dsi.webgraph.NodeIterator;
 
 
 public class KBStats {
@@ -58,6 +60,7 @@ public class KBStats {
 				"Creates or updates a knowledge base (associated to a given database), indexing either a list of JSON files or a Kafka topic where JSON object are published",
 				new Parameter[] {
 						new FlaggedOption("gsd", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'g', "gsd", "Graph-size distribution (number of nodes  [int], one per graph, written in binary)." ),
+						new FlaggedOption("od", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'o', "od", "Outdegree distribution (graph id  [int], internal / external / total outdegree [int, int, int]; one 4-tuple for every (graph,function) pair, written in binary)." ),
 						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'm', "min", "Consider only graphs with at least this number of nodes." ),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
@@ -84,6 +87,9 @@ public class KBStats {
 		final boolean gsdFlag = jsapResult.userSpecified("gsd");
 		DataOutputStream gsdStream = gsdFlag? new DataOutputStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("gsd")))) : null;
 		
+		final boolean odFlag = jsapResult.userSpecified("od");
+		DataOutputStream odStream = gsdFlag? new DataOutputStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("od")))) : null;
+
 		final StatsAccumulator nodes = new StatsAccumulator();
 		final StatsAccumulator arcs = new StatsAccumulator();
 		final StatsAccumulator bitsPerLink = new StatsAccumulator();
@@ -103,9 +109,28 @@ public class KBStats {
 			if (! Double.isNaN(bpl)) bitsPerLink.add(bpl);
 			final double bplt = Double.parseDouble((property[1].getProperty("bitsperlink")));
 			if (! Double.isNaN(bplt)) bitsPerLinkt.add(bplt);
+			if (odFlag) {
+				NodeIterator nodeIterator = graph[0].nodeIterator();
+				int internalCalls = 0, externalCalls = 0, totalCalls = 0;
+				while (nodeIterator.hasNext()) {
+					nodeIterator.nextInt();
+					LazyIntIterator successors = nodeIterator.successors();
+					int called;
+					while ((called = successors.nextInt()) >= 0) {
+						if (called < callGraph.nInternal) internalCalls++;
+						else externalCalls++;
+						totalCalls++;
+					}
+				}
+				odStream.writeInt(totGraphs);
+				odStream.writeInt(internalCalls);
+				odStream.writeInt(externalCalls);
+				odStream.writeInt(totalCalls);
+			}
 		}
 
 		if (gsdFlag) gsdStream.close();
+		if (odFlag) odStream.close();
 		pl.done();
 		LOGGER.info("Closing KnowledgeBase");
 		kb.close();
