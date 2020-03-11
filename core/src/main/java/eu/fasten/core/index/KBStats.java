@@ -59,6 +59,7 @@ public class KBStats {
 				new Parameter[] {
 						new FlaggedOption("gsd", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'g', "gsd", "Graph-size distribution (number of nodes  [int], one per graph, written in binary)." ),
 						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'm', "min", "Consider only graphs with at least this number of nodes." ),
+						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 		});
 
@@ -68,8 +69,10 @@ public class KBStats {
 		final int minNodes = jsapResult.getInt("min");
 		final String kbDir = jsapResult.getString("kb");
 		if (!new File(kbDir).exists()) throw new IllegalArgumentException("No such directory: " + kbDir);
+		final String kbMetadataFilename = jsapResult.getString("kbmeta");
+		if (!new File(kbMetadataFilename).exists()) throw new IllegalArgumentException("No such file: " + kbMetadataFilename);
 		LOGGER.info("Loading KnowledgeBase metadata");
-		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir);
+		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
 		LOGGER.info("Number of graphs: " + kb.callGraphs.size());
 		
 		ProgressLogger pl = new ProgressLogger();
