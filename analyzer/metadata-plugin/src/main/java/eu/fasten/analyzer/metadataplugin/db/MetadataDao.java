@@ -155,8 +155,8 @@ public class MetadataDao {
     /**
      * Inserts a record in the 'dependencies' table in the database.
      *
-     * @param packageId    ID of the package (references 'package_versions.id')
-     * @param dependencyId ID of the dependency package (references 'packages.id')
+     * @param packageId     ID of the package (references 'package_versions.id')
+     * @param dependencyId  ID of the dependency package (references 'packages.id')
      * @param versionRanges Ranges of valid versions
      * @return ID of the package (packageId)
      */
@@ -340,8 +340,8 @@ public class MetadataDao {
      * @return ID of the package if found, otherwise -1
      */
     public long getPackageIdByNameAndForge(String packageName, String forge) {
-        var resultRecord = (PackagesRecord) context.select(Packages.PACKAGES.ID)
-                .from(Packages.PACKAGES).where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+        var resultRecord = context.selectFrom(Packages.PACKAGES)
+                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
                 .and(Packages.PACKAGES.FORGE.eq(forge)).fetchOne();
         return resultRecord != null ? resultRecord.getValue(Packages.PACKAGES.ID) : -1L;
     }

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,14 +56,9 @@ public class Main implements Runnable {
         }
         try {
             var metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin();
-            var metadataDao = new MetadataDao(PostgresConnector.getDSLContext());
-            while (!metadataPlugin.recordProcessSuccessful()) {
-                try {
-                    metadataPlugin.saveToDatabase(jsonCallgraph, metadataDao);
-                } catch (Exception e) {
-                    e.printStackTrace(System.err);
-                }
-            }
+            var topic = "opal_callgraphs";
+            var record = new ConsumerRecord<>(topic, 0, 0L, "test", jsonCallgraph.toString());
+            metadataPlugin.consume(topic, record);
         } catch (SQLException e) {
             logger.error("Could not connect to the database", e);
         } catch (IOException e) {

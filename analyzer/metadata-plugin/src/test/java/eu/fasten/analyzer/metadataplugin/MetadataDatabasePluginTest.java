@@ -23,7 +23,6 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
@@ -121,9 +120,6 @@ public class MetadataDatabasePluginTest {
 
         metadataPlugin.saveToDatabase(json, metadataDao);
 
-        assertTrue(metadataPlugin.recordProcessSuccessful());
-        assertTrue(metadataPlugin.getPluginError().isEmpty());
-
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 new Timestamp(json.getLong("timestamp")));
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
@@ -215,9 +211,6 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
         metadataPlugin.saveToDatabase(json, metadataDao);
-
-        assertTrue(metadataPlugin.recordProcessSuccessful());
-        assertTrue(metadataPlugin.getPluginError().isEmpty());
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 null);
@@ -312,9 +305,6 @@ public class MetadataDatabasePluginTest {
         metadataPlugin.setPluginError(new RuntimeException());
         metadataPlugin.saveToDatabase(json, metadataDao);
 
-        assertFalse(metadataPlugin.recordProcessSuccessful());
-        assertFalse(metadataPlugin.getPluginError().isEmpty());
-
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 null);
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
@@ -329,8 +319,6 @@ public class MetadataDatabasePluginTest {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject();
         assertThrows(JSONException.class, () -> metadataPlugin.saveToDatabase(json, metadataDao));
-        assertFalse(metadataPlugin.recordProcessSuccessful());
-        assertFalse(metadataPlugin.getPluginError().isEmpty());
     }
 
     @Test
