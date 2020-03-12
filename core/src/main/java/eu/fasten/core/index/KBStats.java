@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.PrintStream;
 import java.util.Properties;
 
 import org.rocksdb.RocksDBException;
@@ -59,8 +60,8 @@ public class KBStats {
 		final SimpleJSAP jsap = new SimpleJSAP(KBStats.class.getName(),
 				"Creates or updates a knowledge base (associated to a given database), indexing either a list of JSON files or a Kafka topic where JSON object are published",
 				new Parameter[] {
-						new FlaggedOption("gsd", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'g', "gsd", "Graph-size distribution (number of nodes  [int], one per graph, written in binary)." ),
-						new FlaggedOption("od", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'o', "od", "Outdegree distribution (graph id  [int], internal / external / total outdegree [int, int, int]; one 4-tuple for every (graph,function) pair, written in binary)." ),
+						new FlaggedOption("gsd", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'g', "gsd", "Graph-size distribution: number of nodes (one per graph)." ),
+						new FlaggedOption("od", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'o', "od", "Outdegree distribution: unique graph identifier, internal outdegree, external outdegree, total outdegree (tab-separated, one per graph)." ),
 						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'm', "min", "Consider only graphs with at least this number of nodes." ),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
@@ -85,10 +86,10 @@ public class KBStats {
 		pl.start("Enumerating graphs");
 		
 		final boolean gsdFlag = jsapResult.userSpecified("gsd");
-		DataOutputStream gsdStream = gsdFlag? new DataOutputStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("gsd")))) : null;
+		PrintStream gsdStream = gsdFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("gsd")))) : null;
 		
 		final boolean odFlag = jsapResult.userSpecified("od");
-		DataOutputStream odStream = gsdFlag? new DataOutputStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("od")))) : null;
+		PrintStream odStream = gsdFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("od")))) : null;
 
 		final StatsAccumulator nodes = new StatsAccumulator();
 		final StatsAccumulator arcs = new StatsAccumulator();
@@ -100,7 +101,7 @@ public class KBStats {
 			graph = callGraph.graphs();
 			totGraphs++;
 			if (graph[0].numNodes() < minNodes) continue;
-			if (gsdFlag) gsdStream.writeInt(graph[0].numNodes());
+			if (gsdFlag) gsdStream.println(graph[0].numNodes());
 			statGraphs++;
 			nodes.add(graph[0].numNodes());
 			arcs.add(graph[0].numArcs());
@@ -122,10 +123,7 @@ public class KBStats {
 						totalCalls++;
 					}
 				}
-				odStream.writeInt(totGraphs);
-				odStream.writeInt(internalCalls);
-				odStream.writeInt(externalCalls);
-				odStream.writeInt(totalCalls);
+				odStream.printf("%d\t%d\t%d\t%d\n", totGraphs, internalCalls, externalCalls, totalCalls);
 			}
 		}
 
