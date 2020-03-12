@@ -26,10 +26,12 @@ import java.util.Properties;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.postgresql.Driver;
 
 public class PostgresConnector {
 
-    public static DSLContext getDSLContext() throws SQLException, IOException {
+    public static DSLContext getDSLContext()
+            throws SQLException, IOException, IllegalArgumentException {
         var connection = getConnection();
         return DSL.using(connection, SQLDialect.POSTGRES);
     }
@@ -38,11 +40,16 @@ public class PostgresConnector {
      * Create a connection to the database specified in 'postgres.properties'.
      *
      * @return SQL Connection object
-     * @throws SQLException if failed to set up connection
-     * @throws IOException  if failed to read the 'postgres.properties' file
+     * @throws SQLException             if failed to set up connection
+     * @throws IOException              if failed to read the 'postgres.properties' file
+     * @throws IllegalArgumentException if in 'postgres.properties' is unparsable database URL
      */
-    public static Connection getConnection() throws SQLException, IOException {
+    public static Connection getConnection()
+            throws SQLException, IOException, IllegalArgumentException {
         var dbProps = getPostgresProperties();
+        if (!new Driver().acceptsURL(dbProps.getProperty("dbUrl"))) {
+            throw new IllegalArgumentException("Incorrect database URI");
+        }
         return DriverManager.getConnection(
                 dbProps.getProperty("dbUrl"), dbProps.getProperty("dbUser"),
                 dbProps.getProperty("dbPass"));

@@ -64,6 +64,8 @@ public class Main implements Runnable {
         } catch (IOException e) {
             logger.error("Could not find 'postgres.properties' file with database connection "
                     + "parameters", e);
+        } catch (IllegalArgumentException e) {
+            logger.error("Incorrect database URL", e);
         }
     }
 }

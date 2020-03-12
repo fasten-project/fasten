@@ -55,7 +55,7 @@ public class MetadataDatabasePlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(MetadataPlugin.class.getName());
         private boolean restartTransaction = false;
 
-        public MetadataPlugin() throws IOException, SQLException {
+        public MetadataPlugin() throws IOException, SQLException, IllegalArgumentException {
             this(PostgresConnector.getDSLContext());
         }
 
