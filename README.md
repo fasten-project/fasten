@@ -1,5 +1,7 @@
 ## Fasten-core 
+
 [![Build Status](https://travis-ci.org/fasten-project/fasten.svg?branch=master)](https://travis-ci.org/fasten-project/fasten)
+![Gitter](https://img.shields.io/gitter/room/fasten-project/fasten)
 
 ### Creating a workspace with IntelliJ
 
