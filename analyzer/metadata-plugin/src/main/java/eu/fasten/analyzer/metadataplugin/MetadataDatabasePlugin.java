@@ -49,6 +49,9 @@ public class MetadataDatabasePlugin extends Plugin {
     @Extension
     public static class MetadataPlugin implements KafkaConsumer<String> {
 
+        private final String topic = "opal_callgraphs";
+        private final int transactionRestartLimit = 3;
+
         private DSLContext dslContext;
         private boolean processedRecord = false;
         private String pluginError = "";
@@ -66,7 +69,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList("opal_callgraphs"));
+            return new ArrayList<>(Collections.singletonList(topic));
         }
 
         @Override
@@ -75,6 +78,7 @@ public class MetadataDatabasePlugin extends Plugin {
             this.processedRecord = false;
             this.restartTransaction = false;
             this.pluginError = "";
+            int transactionRestartCount = 0;
             do {
                 try {
                     var metadataDao = new MetadataDao(this.dslContext);
@@ -102,7 +106,9 @@ public class MetadataDatabasePlugin extends Plugin {
                     });
                 } catch (Exception expected) {
                 }
-            } while (restartTransaction && !processedRecord);
+                transactionRestartCount++;
+            } while (restartTransaction && !processedRecord
+                    && transactionRestartCount < transactionRestartLimit);
         }
 
         /**
