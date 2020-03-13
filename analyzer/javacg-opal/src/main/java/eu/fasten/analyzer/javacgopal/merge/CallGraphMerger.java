@@ -19,62 +19,89 @@
 package eu.fasten.analyzer.javacgopal.merge;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
-
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class CallGraphMerger {
 
     public static CallGraphMerger resolve(final MavenCoordinate coordinate) {
 
-        final var PDN = MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate());
+        final var PDN =
+            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate());
 
         final List<List<FastenURI>> depencencyList = getDependenciesURI(PDN);
 
         for (List<FastenURI> fastenURIS : depencencyList) {
-            final List<ExtendedRevisionCallGraph> revisionCallGraphs = loadRevisionCallGraph(fastenURIS);
-//                List<ExtendedRevisionCallGraph> resolvedCallGraphs = mergeCallGraphs(revisionCallGraphs);
+            final List<ExtendedRevisionCallGraph> revisionCallGraphs =
+                loadRevisionCallGraph(fastenURIS);
+//                List<ExtendedRevisionCallGraph> resolvedCallGraphs =
+//                mergeCallGraphs(revisionCallGraphs);
         }
 
         return null;
     }
 
-    public static ExtendedRevisionCallGraph mergeCallGraph(final ExtendedRevisionCallGraph artifact, final List<ExtendedRevisionCallGraph> dependencies) {
+    public static ExtendedRevisionCallGraph mergeCallGraph(final ExtendedRevisionCallGraph artifact,
+                                                           final List<ExtendedRevisionCallGraph>
+                                                               dependencies) {
 
-        for (FastenURI[] fastenURIS : artifact.graph) {
-            final var source = fastenURIS[0];
-            final var target = fastenURIS[1];
-            final var isSuperClassMethod = artifact.getClassHierarchy().get(getTypeURI(source)).getSuperClasses().contains(getTypeURI(target));
+        final var mapOfAllMethods = artifact.mapOfAllMethods();
+
+        final Map<Pair<Integer, FastenURI>, Map<String, String>> externalCalls = new HashMap<>();
+
+        for (final var entry : artifact.getGraph()
+            .getExternalCalls().entrySet()) {
+            Pair<Integer, FastenURI> call = entry.getKey();
+            Map<String, String> metadata = entry.getValue();
+            final var source = mapOfAllMethods.get(call.getKey());
+            final var target = call.getValue();
+            final var isSuperClassMethod =
+                artifact.getClassHierarchy().get(getTypeURI(source)).getSuperClasses()
+                    .contains(getTypeURI(target));
             nextCall:
 
-            //Foreach unresolved call
+            //Foreach external call
             if (target.toString().startsWith("///")) {
 
                 //Go through all dependencies
                 for (ExtendedRevisionCallGraph dependency : dependencies) {
+                    var internalMethod = target.toString();
+
                     nextDependency:
                     //Check whether this method is inside the dependency
                     if (dependency.getClassHierarchy().containsKey(getTypeURI(target))) {
-                        if (dependency.getClassHierarchy().get(getTypeURI(target)).getMethods().contains(FastenURI.create(target.getRawPath()))) {
-                            var resolvedMethod = target.toString().replace("///","//" + dependency.product + "/");
+                        if (dependency.getClassHierarchy().get(getTypeURI(target)).getMethods()
+                            .containsValue(FastenURI.create(target.getRawPath()))) {
+                            internalMethod =
+                                target.toString().replace("///", "//"
+                                    + dependency.product + "/");
                             //Check if this call is related to a super class
                             if (isSuperClassMethod) {
-                                //Find that super class. in case there are two, pick the first one since the order of instantiation matters
-                                for (FastenURI superClass : artifact.getClassHierarchy().get(getTypeURI(source)).getSuperClasses()) {
+                                //Find that super class. in case there are two, pick the first one
+                                // since the order of instantiation matters
+                                for (FastenURI superClass : artifact.getClassHierarchy()
+                                    .get(getTypeURI(source)).getSuperClasses()) {
                                     //Check if this dependency contains the super class that we want
                                     if (dependency.getClassHierarchy().containsKey(superClass)) {
-                                        fastenURIS[1] = new FastenJavaURI(resolvedMethod);
+                                        externalCalls.put(new MutablePair<>(call.getKey(),
+                                            new FastenJavaURI(internalMethod)), metadata);
                                         break nextCall;
                                     } else {
+                                        externalCalls.put(new MutablePair<>(call.getKey(), target),
+                                            metadata);
                                         break nextDependency;
                                     }
                                 }
-                            }
-                            else {
-                                fastenURIS[1] = new FastenJavaURI(resolvedMethod);
+                            } else {
+                                externalCalls.put(new MutablePair<>(call.getKey(),
+                                    new FastenJavaURI(internalMethod)), metadata);
                             }
                         }
                     }
@@ -82,22 +109,33 @@ public class CallGraphMerger {
             }
         }
 
-
-        return artifact;
+        return ExtendedRevisionCallGraph.extendedBuilder().forge(artifact.forge)
+            .cgGenerator(artifact.getCgGenerator())
+            .classHierarchy(artifact.getClassHierarchy())
+            .depset(artifact.depset)
+            .product(artifact.product)
+            .timestamp(artifact.timestamp)
+            .version(artifact.version)
+            .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraph().getInternalCalls(),
+                externalCalls))
+            .build();
     }
 
 
     private static FastenURI getTypeURI(final FastenURI callee) {
-        return new FastenJavaURI("/" + callee.getNamespace() + "/" + callee.getEntity().substring(0, callee.getEntity().indexOf(".")));
+        return new FastenJavaURI("/" + callee.getNamespace() + "/"
+            + callee.getEntity().substring(0, callee.getEntity().indexOf(".")));
     }
 
-    private static List<ExtendedRevisionCallGraph> loadRevisionCallGraph(final List<FastenURI> uri) {
+    private static List<ExtendedRevisionCallGraph> loadRevisionCallGraph(
+        final List<FastenURI> uri) {
 
         //TODO load RevisionCallGraphs
         return null;
     }
 
-    private static List<List<FastenURI>> getDependenciesURI(final List<List<RevisionCallGraph.Dependency>> PDN) {
+    private static List<List<FastenURI>> getDependenciesURI(
+        final List<List<RevisionCallGraph.Dependency>> PDN) {
 
         final List<List<FastenURI>> allProfilesDependenices = null;
 
@@ -105,7 +143,8 @@ public class CallGraphMerger {
 
             final List<FastenURI> oneProfileDependencies = null;
             for (RevisionCallGraph.Dependency dependency : dependencies) {
-                oneProfileDependencies.add(FastenURI.create("fasten://mvn" + "!" + dependency.product + "$" + dependency.constraints));
+                oneProfileDependencies.add(FastenURI.create(
+                    "fasten://mvn" + "!" + dependency.product + "$" + dependency.constraints));
             }
 
             allProfilesDependenices.add(oneProfileDependencies);
@@ -114,7 +153,8 @@ public class CallGraphMerger {
         return allProfilesDependenices;
     }
 
-    public static CallGraphMerger resolve(final List<List<RevisionCallGraph.Dependency>> packageDependencyNetwork) {
+    public static CallGraphMerger resolve(
+        final List<List<RevisionCallGraph.Dependency>> packageDependencyNetwork) {
         return null;
     }
 }

@@ -18,28 +18,69 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
-import eu.fasten.core.data.FastenJavaURI;
-
-import java.io.File;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import scala.collection.JavaConversions;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
+import eu.fasten.core.data.FastenJavaURI;
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.opalj.ai.analyses.cg.ComputedCallGraph;
+import org.opalj.br.Method;
+import org.opalj.br.ObjectType;
+import scala.collection.JavaConverters;
+
 public class MethodTest {
 
-    static PartialCallGraph singleSourceToTargetcallGraph, classInitCallGraph, lambdaCallGraph, arrayCallGraph;
+    static ComputedCallGraph oneEdgeCG;
+    static ComputedCallGraph classInitCG;
+    static ComputedCallGraph arrayCG;
+    static ComputedCallGraph lambdaCG;
+    static ComputedCallGraph typesCG;
+    static Map<ObjectType, OPALType> oneEdgeCHA;
+    static Map<ObjectType, OPALType> classInitCHA;
+    static Map<ObjectType, OPALType> arrayCHA;
+    static Map<ObjectType, OPALType> lambdaCHA;
+    static Map<ObjectType, OPALType> typesCHA;
+    static List<Method> oneEdgeMethods;
+    static List<Method> classInitMethods;
+    static List<Method> arrayMethods;
+    static List<Method> lambdaMethods;
+    static List<Method> typesMethods;
     static String lambdaNumber;
 
+    /**
+     * Creates all the mock objects needed for this class.
+     */
     @BeforeClass
     public static void generateCallGraph() {
 
-        /**
+        /*
+         * package resources;
+         *
+         * public class PremetivesWrappers{
+         *     public static void allTypes(byte b, char c, short s, int i, long l, float f, double d,
+         *                                 boolean bool, Byte b1, Character c1, Short s1, Integer i1, Long l1,
+         *                                 Float f1, Double d1, Boolean bool1, Void v){
+         *         target();
+         *     }
+         *     public static void target(){}
+         * }
+         */
+        typesCG = PartialCallGraph.generateCallGraph(new File(
+            Thread.currentThread().getContextClassLoader().getResource("PremetivesWrappers.class")
+                .getFile()));
+        typesCHA = PartialCallGraph.createCHA(typesCG);
+        typesMethods =
+            typesCHA.values().stream()
+                .flatMap(opalType -> opalType.getMethods().keySet().stream())
+                .collect(Collectors.toList());
+
+        /*
          * SingleSourceToTarget is a java8 compiled bytecode of:
          *<pre>
          * package name.space;
@@ -57,11 +98,16 @@ public class MethodTest {
          *  Unresolved:[ public void <init>() of current class,
          *               public void <init>() of Object class]
          */
-        singleSourceToTargetcallGraph = new PartialCallGraph(
-                new File(Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class").getFile())
-        );
+        oneEdgeCG = PartialCallGraph.generateCallGraph(new File(
+            Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class")
+                .getFile()));
+        oneEdgeCHA = PartialCallGraph.createCHA(oneEdgeCG);
+        oneEdgeMethods =
+            oneEdgeCHA.values().stream()
+                .flatMap(opalType -> opalType.getMethods().keySet().stream())
+                .collect(Collectors.toList());
 
-        /**
+        /*
          * ClassInit is a java8 compiled bytecode of:
          *<pre>
          * package name.space;
@@ -80,10 +126,16 @@ public class MethodTest {
          *  Unresolved:[ public void <init>() of current class,
          *               public void <init>() of Object class]
          */
-        classInitCallGraph = new PartialCallGraph(
-                new File(Thread.currentThread().getContextClassLoader().getResource("ClassInit.class").getFile())
-        );
-        /**
+        classInitCG = PartialCallGraph.generateCallGraph(new File(
+            Thread.currentThread().getContextClassLoader().getResource("ClassInit.class")
+                .getFile()));
+        classInitCHA = PartialCallGraph.createCHA(classInitCG);
+        classInitMethods =
+            classInitCHA.values().stream()
+                .flatMap(opalType -> opalType.getMethods().keySet().stream())
+                .collect(Collectors.toList());
+
+        /*
          * LambdaExample is a java8 compiled bytecode of:
          *<pre>
          * package name.space;
@@ -114,13 +166,19 @@ public class MethodTest {
          *                   public void <init>() of Object class}
          *              ]
          */
-        lambdaCallGraph = new PartialCallGraph(
-                new File(Thread.currentThread().getContextClassLoader().getResource("LambdaExample.class").getFile())
-        );
-        var lambdaFullName = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getSource().declaringClassFile().thisType().fqn();
-        lambdaNumber = lambdaFullName.split("[$]")[1].split(":")[0];
+        lambdaCG = PartialCallGraph.generateCallGraph(new File(
+            Thread.currentThread().getContextClassLoader().getResource("LambdaExample.class")
+                .getFile()));
+        lambdaCHA = PartialCallGraph.createCHA(lambdaCG);
+        lambdaMethods =
+            lambdaCHA.values().stream().flatMap(opalType -> opalType.getMethods().keySet().stream())
+                .collect(Collectors.toList());
+        lambdaNumber =
+            lambdaMethods.stream().filter(method -> method.toString().contains("apply")).findAny()
+                .orElseThrow().declaringClassFile().thisType().fqn().split("[$]")[1].split(":")[0];
 
-        /**
+
+        /*
          * SingleSourceToTarget is a java8 compiled bytecode of:
          *<pre>
          *package name.space;
@@ -142,73 +200,118 @@ public class MethodTest {
          *  Unresolved:[ public void <init>() of current class,
          *               public void <init>() of Object class]
          */
-        arrayCallGraph = new PartialCallGraph(
-                new File(Thread.currentThread().getContextClassLoader().getResource("ArrayExample.class").getFile())
-        );
+        arrayCG = PartialCallGraph.generateCallGraph(new File(
+            Thread.currentThread().getContextClassLoader().getResource("ArrayExample.class")
+                .getFile()));
+        arrayCHA = PartialCallGraph.createCHA(arrayCG);
+        arrayMethods =
+            arrayCHA.values().stream().flatMap(opalType -> opalType.getMethods().keySet().stream())
+                .collect(Collectors.toList());
     }
 
     @Test
     public void testToCanonicalSchemelessURI() {
 
-        var method = singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource();
+        var method =
+            oneEdgeMethods.stream().filter(i -> i.name().equals("sourceMethod")).findFirst()
+                .orElseThrow();
         assertEquals(
-                new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoid"),
-                Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+            new FastenJavaURI("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava" +
+                ".lang%2FVoidType"),
+            OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                method.name(), method.descriptor())
         );
 
-        method = singleSourceToTargetcallGraph.getResolvedCalls().get(0).getTargets().get(0);
+        method =
+            oneEdgeMethods.stream().filter(i -> i.name().equals("targetMethod")).findFirst()
+                .orElseThrow();
         assertEquals(
-                new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoid"),
-                Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+            new FastenJavaURI("/name.space/SingleSourceToTarget.targetMethod()%2Fjava" +
+                ".lang%2FVoidType"),
+            OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                method.name(), method.descriptor())
         );
 
-        method = singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).caller();
+        method =
+            oneEdgeMethods.stream().filter(i -> i.name().equals("<init>")).findFirst()
+                .orElseThrow();
         assertEquals(
-                new FastenJavaURI("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoid"),
-                Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+            new FastenJavaURI(
+                "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType"),
+            OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                method.name(), method.descriptor())
         );
 
-        var unresolvedMethod = singleSourceToTargetcallGraph.getUnresolvedCalls().get(0);
+        var unresolvedMethod = oneEdgeCG.unresolvedMethodCalls().apply(0);
         assertEquals(
-                new FastenJavaURI("/java.lang/Object.Object()Void"),
-                Method.toCanonicalSchemelessURI(null, unresolvedMethod.calleeClass(), unresolvedMethod.calleeName(), unresolvedMethod.calleeDescriptor())
+            new FastenJavaURI("/java.lang/Object.Object()VoidType"),
+            OPALMethod.toCanonicalSchemelessURI(null, unresolvedMethod.calleeClass(),
+                unresolvedMethod.calleeName(), unresolvedMethod.calleeDescriptor())
         );
 
-        method = arrayCallGraph.getResolvedCalls().get(0).getTargets().get(0);
+        method =
+            arrayMethods.stream().filter(i -> i.name().equals("targetMethod")).findFirst()
+                .orElseThrow();
         assertEquals(
-                //  [] is pctEncoded three times, It should stay encoded during creating  1- type's URI, 2- Method's URI and 3- Canonicalization.
-                new FastenJavaURI("/name.space/ArrayExample.targetMethod(%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FObject%25255B%25255D"),
-                Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+            //  [] is pctEncoded three times, It should stay encoded during creating  1- type's
+            //  URI, 2- OPALMethod's URI and 3- Canonicalization.
+            new FastenJavaURI(
+                "/name.space/ArrayExample.targetMethod(%2Fjava.lang%2FObject%25255B%25255D)"
+                    + "%2Fjava.lang%2FObject%25255B%25255D"),
+            OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                method.name(), method.descriptor())
         );
 
-        method = classInitCallGraph.getResolvedCalls().get(0).getSource();
+        method =
+            classInitMethods.stream().filter(i -> i.name().equals("<clinit>")).findFirst()
+                .orElseThrow();
         assertEquals(
-                new FastenJavaURI("/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2FVoid"),
-                Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+            new FastenJavaURI("/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2FVoidType"),
+            OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                method.name(), method.descriptor())
         );
 
-        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getSource();
+        method =
+            lambdaMethods.stream().filter(i -> i.name().equals("apply")).findFirst().orElseThrow();
         assertEquals(
-                new FastenJavaURI("/null/Lambda$"+lambdaNumber+"%3A0.apply(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
-                Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+            new FastenJavaURI("/null/Lambda$" + lambdaNumber
+                + "%3A0.apply(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
+            OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                method.name(), method.descriptor())
         );
 
-        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("apply")).findFirst().get().getTargets().get(0);
+        method =
+            lambdaMethods.stream().filter(i -> i.name().contains("lambda$new")).findFirst()
+                .orElseThrow();
         assertEquals(
-                new FastenJavaURI("/name.space/LambdaExample.lambda$new$0(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
-                Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+            new FastenJavaURI(
+                "/name.space/LambdaExample"
+                    + ".lambda$new$0(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
+            OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                method.name(), method.descriptor())
         );
 
-        method = lambdaCallGraph.getResolvedCalls().stream().filter(i -> i.getSource().toString().contains("$newInstance")).findFirst().get().getSource();
+        method =
+            lambdaMethods.stream().filter(i -> i.name().contains("$newInstance")).findFirst()
+                .orElseThrow();
+
         assertEquals(
-                new FastenJavaURI("/null/Lambda$"+lambdaNumber+"%3A0.$newInstance()Lambda$"+lambdaNumber+"%25253A0"),
-                Method.toCanonicalSchemelessURI( null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+            new FastenJavaURI(
+                "/null/Lambda$" + lambdaNumber + "%3A0.$newInstance()Lambda$" + lambdaNumber
+                    + "%25253A0"),
+            OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                method.name(), method.descriptor())
         );
 
-        method = lambdaCallGraph.getUnresolvedCalls().stream().filter(i -> i.caller().declaringClassFile().thisType().packageName().equals("")).findFirst().get().caller();
+        method =
+            lambdaMethods.stream().filter(i -> i.name().equals("<init>")
+                && i.declaringClassFile().thisType().simpleName().contains("Lambda$")).findFirst()
+                .orElseThrow();
         assertEquals(
-                new FastenJavaURI("/null/Lambda$"+lambdaNumber+"%3A0.Lambda$"+lambdaNumber+"%3A0()%2Fjava.lang%2FVoid"),
-                Method.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(), method.name(), method.descriptor())
+            new FastenJavaURI("/null/Lambda$" + lambdaNumber + "%3A0.Lambda$" + lambdaNumber
+                + "%3A0()%2Fjava.lang%2FVoidType"),
+            OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                method.name(), method.descriptor())
         );
 
     }
@@ -216,50 +319,68 @@ public class MethodTest {
     @Test
     public void testGetMethodName() {
 
-        var method = singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).caller();
-        assertEquals("SingleSourceToTarget", Method.getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
+        var method =
+            oneEdgeMethods.stream().filter(i -> i.name().equals("<init>")).findFirst()
+                .orElseThrow();
+        assertEquals("SingleSourceToTarget", OPALMethod
+            .getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
 
-        method = classInitCallGraph.getResolvedCalls().get(0).getSource();
-        //Three times pctEncoding! It should stay encoded during creating FastenJavaURI and Canonicalization otherwise it throws exception!
-        assertEquals("%25253Cinit%25253E", Method.getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
+        method =
+            classInitMethods.stream().filter(i -> i.name().equals("<clinit>")).findFirst()
+                .orElseThrow();
+        //Three times pctEncoding! It should stay encoded during creating FastenJavaURI and
+        // Canonicalization otherwise it throws exception!
+        assertEquals("%25253Cinit%25253E", OPALMethod
+            .getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
 
-        method = singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource();
-        assertEquals("sourceMethod", Method.getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
+        method =
+            oneEdgeMethods.stream().filter(i -> i.name().equals("sourceMethod")).findFirst()
+                .orElseThrow();
+        assertEquals("sourceMethod", OPALMethod
+            .getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
 
-        method = singleSourceToTargetcallGraph.getResolvedCalls().get(0).getTargets().get(0);
-        assertEquals("targetMethod", Method.getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
+        method =
+            classInitMethods.stream().filter(i -> i.name().equals("targetMethod")).findFirst()
+                .orElseThrow();
+        assertEquals("targetMethod", OPALMethod
+            .getMethodName(method.declaringClassFile().thisType().simpleName(), method.name()));
 
-        var unresolvedMethod = singleSourceToTargetcallGraph.getUnresolvedCalls().get(0);
-        assertEquals("Object", Method.getMethodName(unresolvedMethod.calleeClass().asObjectType().simpleName(), unresolvedMethod.calleeName()));
+        var unresolvedMethod = oneEdgeCG.unresolvedMethodCalls().apply(0);
+        assertEquals("Object",
+            OPALMethod.getMethodName(unresolvedMethod.calleeClass().asObjectType().simpleName(),
+                unresolvedMethod.calleeName()));
     }
 
     @Test
     public void testGetReturnTypeURI() {
 
         assertEquals(
-                new FastenJavaURI("/java.lang/Void"),
-                Method.getTypeURI(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource()
-                        .returnType())
+            new FastenJavaURI("/java.lang/VoidType"),
+            OPALMethod.getTypeURI(oneEdgeMethods.get(0)
+                .returnType())
         );
 
         assertEquals(
-                new FastenJavaURI("/java.lang/Object%25255B%25255D"),
-                Method.getTypeURI(arrayCallGraph.getResolvedCalls().get(0).getTargets().get(0).returnType())
-        );
+            new FastenJavaURI("/java.lang/Object%25255B%25255D"),
+            OPALMethod.getTypeURI(arrayMethods.stream().filter(i -> i.name().equals(
+                "targetMethod")).findFirst().orElseThrow().returnType()));
     }
 
     @Test
     public void testGetParametersURI() {
 
         assertArrayEquals(
-                new FastenJavaURI[0],
-                Method.getParametersURI(JavaConversions.seqAsJavaList(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource().parameterTypes()))
-        );
+            new FastenJavaURI[0],
+            OPALMethod.getParametersURI(JavaConverters.seqAsJavaList(
+                oneEdgeMethods.stream().filter(i -> i.name().equals("sourceMethod")).findFirst()
+                    .orElseThrow().parameterTypes())));
+
 
         assertArrayEquals(
-                new FastenJavaURI[]{new FastenJavaURI("/java.lang/Object%25255B%25255D")},
-                Method.getParametersURI(JavaConversions.seqAsJavaList(arrayCallGraph.getResolvedCalls().get(0).getTargets().get(0).parameterTypes()))
-        );
+            new FastenJavaURI[] {new FastenJavaURI("/java.lang/Object%25255B%25255D")},
+            OPALMethod.getParametersURI(
+                JavaConverters.seqAsJavaList(arrayMethods.stream().filter(i -> i.name().equals(
+                    "targetMethod")).findFirst().orElseThrow().parameterTypes())));
 
     }
 
@@ -267,44 +388,73 @@ public class MethodTest {
     public void testGetPackageName() {
 
         assertEquals(
-                "java.lang",
-                Method.getPackageName(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource().returnType())
-        );
+            "java.lang",
+            OPALMethod.getPackageName(arrayMethods.stream().filter(i -> i.name().equals(
+                "targetMethod")).findFirst().orElseThrow().returnType()));
 
         assertEquals(
-                "name.space",
-                Method.getPackageName(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType())
+            "name.space",
+            OPALMethod.getPackageName(arrayMethods.stream().filter(i -> i.name().equals(
+                "targetMethod")).findFirst().orElseThrow().declaringClassFile().thisType())
         );
     }
 
     @Test
     public void testGetClassName() {
 
-        assertEquals(
-                "Void",
-                Method.getClassName(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource().returnType())
-        );
+
+
+        assertEquals("ByteType", getType(0));
+        assertEquals("CharType", getType(1));
+        assertEquals("ShortType", getType(2));
+        assertEquals("IntegerType", getType(3));
+        assertEquals("LongType", getType(4));
+        assertEquals("FloatType", getType(5));
+        assertEquals("DoubleType", getType(6));
+        assertEquals("BooleanType", getType(7));
+        assertEquals("Byte", getType(8));
+        assertEquals("Character", getType(9));
+        assertEquals("Short", getType(10));
+        assertEquals("Integer", getType(11));
+        assertEquals("Long", getType(12));
+        assertEquals("Float", getType(13));
+        assertEquals("Double", getType(14));
+        assertEquals("Boolean", getType(15));
+        assertEquals("Void", getType(16));
+
+        assertEquals("VoidType",
+            OPALMethod.getClassName(typesMethods.stream().filter(i -> i.name().equals(
+                "allTypes")).findFirst().orElseThrow().returnType()));
 
         assertEquals(
-                "SingleSourceToTarget",
-                Method.getClassName(singleSourceToTargetcallGraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType())
-        );
+            "VoidType",
+            OPALMethod.getClassName(oneEdgeMethods.stream().filter(i -> i.name().equals(
+                "targetMethod")).findFirst().orElseThrow().returnType()));
 
         assertEquals(
-                "Object",
-                Method.getClassName(singleSourceToTargetcallGraph.getUnresolvedCalls().get(0).calleeClass())
-        );
+            "SingleSourceToTarget",
+            OPALMethod.getClassName(oneEdgeMethods.stream().filter(i -> i.name().equals(
+                "targetMethod")).findFirst().orElseThrow().declaringClassFile().thisType()));
 
         assertEquals(
-                "ClassInit",
-                Method.getClassName(classInitCallGraph.getResolvedCalls().get(0).getSource().declaringClassFile().thisType())
-        );
+            "Object",
+            OPALMethod.getClassName(oneEdgeCG.unresolvedMethodCalls().apply(0).calleeClass()));
 
         assertEquals(
-                "Object%25255B%25255D",
-                Method.getClassName(arrayCallGraph.getResolvedCalls().get(0).getTargets().get(0).returnType())
-        );
+            "ClassInit",
+            OPALMethod.getClassName(classInitMethods.stream().filter(i -> i.name().equals(
+                "targetMethod")).findFirst().orElseThrow().declaringClassFile().thisType()));
 
+        assertEquals(
+            "Object%25255B%25255D",
+            OPALMethod.getClassName(arrayMethods.stream().filter(i -> i.name().equals(
+                "targetMethod")).findFirst().orElseThrow().returnType()));
+
+    }
+
+    private String getType(int paremeterIndex) {
+        return OPALMethod.getClassName(typesMethods.stream().filter(i -> i.name().equals(
+            "allTypes")).findFirst().orElseThrow().parameterTypes().apply(paremeterIndex));
     }
 
 }

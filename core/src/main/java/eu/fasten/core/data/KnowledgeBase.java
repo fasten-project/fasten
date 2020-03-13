@@ -51,7 +51,6 @@ import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.io.BinIO;
-import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -188,6 +187,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 	/** The {@link Kryo} object used to serialize data to the database. */
 	private transient Kryo kryo;
+
+	/** The pathname of the file containing the metadate of this knowledgebase. */
+	private String metadataPathname;
 
 	/** Instances represent call graphs and the associated metadata. Each call
 	 *  graph corresponds to a specific release (product, version, forge), and has a unique
@@ -478,14 +480,14 @@ public class KnowledgeBase implements Serializable, Closeable {
 		this.callGraphDB = db;
 	}
 
-	public static KnowledgeBase getInstance(final String kbDir) throws RocksDBException, ClassNotFoundException, IOException {
+	public static KnowledgeBase getInstance(final String kbDir, final String kbMetadataPathname) throws RocksDBException, ClassNotFoundException, IOException {
 		RocksDB.loadLibrary();
 		final Options options = new Options();
 		options.setCreateIfMissing(true);
 
-		final RocksDB db = RocksDB.open(options, kbDir);
-		final byte[] array = db.get(KB_KEY);
-		final KnowledgeBase kb = array != null ? (KnowledgeBase)BinIO.loadObject(new FastByteArrayInputStream(array)) : new KnowledgeBase();
+		final RocksDB db = RocksDB.open(options, kbDir);		
+		final KnowledgeBase kb = new File(kbMetadataPathname).exists() ? (KnowledgeBase)BinIO.loadObject(kbMetadataPathname) :  new KnowledgeBase();
+		kb.metadataPathname = kbMetadataPathname;
 		kb.callGraphDB(db);
 		return kb;
 	}
@@ -715,9 +717,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	@Override
 	public void close() throws IOException {
 		try {
-			callGraphDB.put(KB_KEY, SerializationUtils.serialize(this));
-		} catch (final RocksDBException e) {
-			throw new IOException(e);
+			BinIO.storeObject(this, metadataPathname);
 		} finally {
 			callGraphDB.close();
 		}

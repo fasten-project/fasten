@@ -28,7 +28,7 @@
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>webgraph</artifactId>
-            <version>3.6.1</version>
+            <version>3.6.3</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jgit</groupId>

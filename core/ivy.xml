@@ -9,7 +9,7 @@
 	</configurations>
 	
     <dependencies>
-		<dependency org="it.unimi.dsi" name="webgraph" rev="3.6.1" />
+		<dependency org="it.unimi.dsi" name="webgraph" rev="3.6.3" />
 		<dependency org="it.unimi.dsi" name="dsiutils" rev="2.6.0" />
 		<dependency org="org.rocksdb" name="rocksdbjni" rev="latest.release" />
 		<dependency org="com.esotericsoftware" name="kryo" rev="5.0.0-RC4" />

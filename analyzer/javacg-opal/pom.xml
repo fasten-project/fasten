@@ -23,13 +23,13 @@
         </dependency>
         <dependency>
             <groupId>de.opal-project</groupId>
-            <artifactId>bytecode-representation_2.11</artifactId>
-            <version>0.8.15</version>
+            <artifactId>bytecode-representation_2.12</artifactId>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>de.opal-project</groupId>
-            <artifactId>abstract-interpretation-framework_2.11</artifactId>
-            <version>0.8.15</version>
+            <artifactId>abstract-interpretation-framework_2.12</artifactId>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.dom4j</groupId>
