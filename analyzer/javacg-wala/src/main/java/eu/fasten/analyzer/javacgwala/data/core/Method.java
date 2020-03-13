@@ -29,7 +29,9 @@ import java.util.stream.IntStream;
 public abstract class Method {
 
     private final String namespace;
+
     private final Selector symbol;
+
     private final MethodReference reference;
 
     /**
@@ -108,6 +110,11 @@ public abstract class Method {
         }
     }
 
+    /**
+     * Get package name in which this class is located.
+     *
+     * @return Package name
+     */
     public String getPackageName() {
         return getPackageName(reference.getDeclaringClass());
     }
@@ -133,6 +140,11 @@ public abstract class Method {
         }
     }
 
+    /**
+     * Get class name in which this method is declared.
+     *
+     * @return Class name
+     */
     public String getClassName() {
         return getClassName(reference.getDeclaringClass());
     }

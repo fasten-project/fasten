@@ -22,20 +22,15 @@ import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -119,8 +114,8 @@ public class Main implements Runnable {
                         mavenCoordinate,
                         Long.parseLong(coordinate.get("date").toString()));
 
-                int totalCalls = cg.getGraph().getUnresolvedCalls().size()
-                        + cg.getGraph().getResolvedCalls().size();
+                int totalCalls = cg.getGraph().getExternalCalls().size()
+                        + cg.getGraph().getInternalCalls().size();
 
                 successfulRecords.add("Number of calls: " + totalCalls
                         + " COORDINATE: " + mavenCoordinate.getCoordinate());

@@ -24,6 +24,7 @@ import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import eu.fasten.analyzer.javacgwala.data.core.CallType;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
@@ -57,7 +58,7 @@ class PartialCallGraphTest {
         var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType";
         var target = "///java.lang/Object.Object()VoidType";
 
-        var call = graph.getGraph().getUnresolvedCalls().keySet().iterator().next();
+        var call = graph.getGraph().getExternalCalls().keySet().iterator().next();
 
         assertEquals(source, type.getMethods().get(call.getKey()).toString());
         assertEquals(target, call.getValue().toString());
@@ -67,41 +68,41 @@ class PartialCallGraphTest {
     void getResolvedCalls() {
         var source = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoidType";
         var target = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType";
-        var call = graph.getGraph().getResolvedCalls().get(0);
+        var call = graph.getGraph().getInternalCalls().get(0);
 
-        assertEquals(source, type.getMethods().get(call[0]).toString());
-        assertEquals(target, type.getMethods().get(call[1]).toString());
+        assertEquals(source, type.getMethods().get(call.get(0)).toString());
+        assertEquals(target, type.getMethods().get(call.get(1)).toString());
     }
 
     @Test
     void addResolvedCall() {
-        assertEquals(1, graph.getResolvedCalls().size());
+        assertEquals(1, graph.getInternalCalls().size());
 
-        graph.addResolvedCall(100, 200);
+        graph.addInternalCall(100, 200);
 
-        assertEquals(2, graph.getResolvedCalls().size());
-        assertEquals(100, graph.getResolvedCalls().get(1)[0]);
-        assertEquals(200, graph.getResolvedCalls().get(1)[1]);
+        assertEquals(2, graph.getInternalCalls().size());
+        assertEquals(100, graph.getInternalCalls().get(1).get(0));
+        assertEquals(200, graph.getInternalCalls().get(1).get(1));
 
-        graph.addResolvedCall(100, 200);
-        assertEquals(2, graph.getResolvedCalls().size());
+        graph.addInternalCall(100, 200);
+        assertEquals(2, graph.getInternalCalls().size());
     }
 
     @Test
     void addUnresolvedCall() {
-        assertEquals(1, graph.getUnresolvedCalls().size());
+        assertEquals(1, graph.getExternalCalls().size());
 
-        graph.addUnresolvedCall(300, new FastenJavaURI("/name.space/Class"), CallType.STATIC);
+        graph.addExternalCall(300, new FastenJavaURI("/name.space/Class"), CallType.STATIC);
 
         Pair<Integer, FastenURI> selectKey = new MutablePair<>(300, new FastenJavaURI("/name.space/Class"));
 
-        assertEquals(2, graph.getUnresolvedCalls().size());
+        assertEquals(2, graph.getExternalCalls().size());
         assertEquals(1, Integer.parseInt(
-                graph.getUnresolvedCalls().get(selectKey).get("invokestatic")));
+                graph.getExternalCalls().get(selectKey).get("invokestatic")));
 
-        graph.addUnresolvedCall(300, new FastenJavaURI("/name.space/Class"), CallType.STATIC);
-        assertEquals(2, graph.getUnresolvedCalls().size());
+        graph.addExternalCall(300, new FastenJavaURI("/name.space/Class"), CallType.STATIC);
+        assertEquals(2, graph.getExternalCalls().size());
         assertEquals(2,
-                Integer.parseInt(graph.getUnresolvedCalls().get(selectKey).get("invokestatic")));
+                Integer.parseInt(graph.getExternalCalls().get(selectKey).get("invokestatic")));
     }
 }

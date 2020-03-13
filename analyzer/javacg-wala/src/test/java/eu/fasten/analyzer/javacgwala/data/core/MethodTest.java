@@ -136,12 +136,12 @@ public class MethodTest {
     }
 
     @Test
-    public void toCanonicalJSONSingleSourceToTargetTest() throws ClassHierarchyException {
+    public void toCanonicalJSONSingleSourceToTargetTest() {
 
         var wrapped = WalaResultAnalyzer.wrap(ssttgraph);
 
-        assertEquals(1, wrapped.getResolvedCalls().size());
-        assertEquals(1, wrapped.getUnresolvedCalls().size());
+        assertEquals(1, wrapped.getInternalCalls().size());
+        assertEquals(1, wrapped.getExternalCalls().size());
 
         // Actual URIs
         var actualSourceURI = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoidType";
@@ -150,8 +150,8 @@ public class MethodTest {
                 "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType";
         var actualTargetUnresolvedURI = "///java.lang/Object.Object()VoidType";
 
-        var callMetadata = wrapped.getUnresolvedCalls().values().iterator().next();
-        var callValues = wrapped.getUnresolvedCalls().keySet().iterator().next();
+        var callMetadata = wrapped.getExternalCalls().values().iterator().next();
+        var callValues = wrapped.getExternalCalls().keySet().iterator().next();
 
         var type = wrapped.getClassHierarchy()
                 .get(new FastenJavaURI("/name.space/SingleSourceToTarget"));
@@ -162,18 +162,18 @@ public class MethodTest {
         assertEquals("invokespecial", callMetadata.keySet().iterator().next());
         assertEquals("1", callMetadata.values().iterator().next());
 
-        var resolvedCall = wrapped.getResolvedCalls().get(0);
+        var resolvedCall = wrapped.getInternalCalls().get(0);
 
-        assertEquals(actualSourceURI, type.getMethods().get(resolvedCall[0]).toString());
-        assertEquals(actualTargetURI, type.getMethods().get(resolvedCall[1]).toString());
+        assertEquals(actualSourceURI, type.getMethods().get(resolvedCall.get(0)).toString());
+        assertEquals(actualTargetURI, type.getMethods().get(resolvedCall.get(1)).toString());
     }
 
     @Test
-    public void toCanonicalJSONClassInitTest() throws ClassHierarchyException {
+    public void toCanonicalJSONClassInitTest() {
 
         var wrapped = WalaResultAnalyzer.wrap(cigraph);
 
-        assertEquals(1, wrapped.getResolvedCalls().size());
+        assertEquals(1, wrapped.getInternalCalls().size());
 
         // Actual URIs
         var actualSourceURI = "/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2FVoidType";
@@ -182,23 +182,23 @@ public class MethodTest {
         var type = wrapped.getClassHierarchy()
                 .get(new FastenJavaURI("/name.space/ClassInit"));
 
-        var resolvedCall = wrapped.getResolvedCalls().get(0);
+        var resolvedCall = wrapped.getInternalCalls().get(0);
 
-        assertEquals(actualSourceURI, type.getMethods().get(resolvedCall[0]).toString());
-        assertEquals(actualTargetURI, type.getMethods().get(resolvedCall[1]).toString());
+        assertEquals(actualSourceURI, type.getMethods().get(resolvedCall.get(0)).toString());
+        assertEquals(actualTargetURI, type.getMethods().get(resolvedCall.get(1)).toString());
     }
 
     @Test
-    public void toCanonicalJSONLambdaTest() throws ClassHierarchyException {
+    public void toCanonicalJSONLambdaTest() {
 
         var wrapped = WalaResultAnalyzer.wrap(lambdagraph);
 
-        assertEquals(2, wrapped.getUnresolvedCalls().size());
+        assertEquals(2, wrapped.getExternalCalls().size());
 
         Pair<Integer, FastenURI> call = null;
         Map<String, String> callMetadata = null;
 
-        for (var entry : wrapped.getUnresolvedCalls().entrySet()) {
+        for (var entry : wrapped.getExternalCalls().entrySet()) {
             if (entry.getKey().getValue().toString().contains("invoke")) {
                 call = entry.getKey();
                 callMetadata = entry.getValue();
@@ -223,11 +223,11 @@ public class MethodTest {
     }
 
     @Test
-    public void toCanonicalJSONArrayTest() throws ClassHierarchyException {
+    public void toCanonicalJSONArrayTest() {
 
         var wrapped = WalaResultAnalyzer.wrap(arraygraph);
 
-        assertEquals(1, wrapped.getResolvedCalls().size());
+        assertEquals(1, wrapped.getInternalCalls().size());
 
         // Actual URIs
         var actualSourceURI = "/name.space/ArrayExample.sourceMethod()%2Fjava.lang%2FVoidType";
@@ -237,14 +237,14 @@ public class MethodTest {
         var type = wrapped.getClassHierarchy()
                 .get(new FastenJavaURI("/name.space/ArrayExample"));
 
-        var resolvedCall = wrapped.getResolvedCalls().get(0);
+        var resolvedCall = wrapped.getInternalCalls().get(0);
 
-        assertEquals(actualSourceURI, type.getMethods().get(resolvedCall[0]).toString());
-        assertEquals(actualTargetURI, type.getMethods().get(resolvedCall[1]).toString());
+        assertEquals(actualSourceURI, type.getMethods().get(resolvedCall.get(0)).toString());
+        assertEquals(actualTargetURI, type.getMethods().get(resolvedCall.get(1)).toString());
     }
 
     @Test
-    public void toCanonicalJSONArrayExtensiveTest() throws ClassHierarchyException {
+    public void toCanonicalJSONArrayExtensiveTest() {
         var wrapped = WalaResultAnalyzer.wrap(aegraph);
 
         List<String> listOfMethodNames = new ArrayList<>();
@@ -299,7 +299,7 @@ public class MethodTest {
         final var methodSameNamespaceDiffSymbol = methods.get(5);
         final var methodDiffNamespaceDiffSymbol = methods.get(0);
         final var methodDiffNamespaceSameSymbol = methods.get(7);
-        final var methodSameReference = new ResolvedMethod(refMethod.getReference(), null);
+        final var methodSameReference = new InternalMethod(refMethod.getReference(), null);
 
 
         assertEquals(refMethod, refMethod);

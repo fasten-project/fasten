@@ -20,14 +20,14 @@ package eu.fasten.analyzer.javacgwala.data.core;
 
 import com.ibm.wala.types.MethodReference;
 
-public class UnresolvedMethod extends Method {
+public class ExternalMethod extends Method {
 
     /**
-     * Construct Unresolved method form {@link MethodReference}.
+     * Construct External method form {@link MethodReference}.
      *
      * @param reference Method Reference
      */
-    public UnresolvedMethod(final MethodReference reference) {
+    public ExternalMethod(final MethodReference reference) {
         super(reference);
     }
 

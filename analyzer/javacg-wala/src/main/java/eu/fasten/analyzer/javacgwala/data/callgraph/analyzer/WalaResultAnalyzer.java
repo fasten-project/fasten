@@ -19,7 +19,6 @@
 package eu.fasten.analyzer.javacgwala.data.callgraph.analyzer;
 
 import com.ibm.wala.ipa.callgraph.CallGraph;
-import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -50,8 +49,7 @@ public class WalaResultAnalyzer {
      * @param rawCallGraph Raw call graph in Wala format
      * @return Partial call graph
      */
-    public static PartialCallGraph wrap(final CallGraph rawCallGraph)
-            throws ClassHierarchyException, NullPointerException {
+    public static PartialCallGraph wrap(final CallGraph rawCallGraph) throws NullPointerException {
         final NumberFormat timeFormatter = new DecimalFormat("#0.000");
         logger.info("Wrapping call graph with {} nodes...", rawCallGraph.getNumberOfNodes());
         final long startTime = System.currentTimeMillis();
@@ -67,10 +65,10 @@ public class WalaResultAnalyzer {
                 walaResultAnalyzer.partialCallGraph, analysisContext);
         callGraphAnalyzer.resolveCalls();
 
-        logger.info("Wrapped call graph in {} seconds [Resolved calls: {}, Unresolved calls: {}]",
+        logger.info("Wrapped call graph in {} seconds [Internal calls: {}, External calls: {}]",
                 timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d),
-                walaResultAnalyzer.partialCallGraph.getResolvedCalls().size(),
-                walaResultAnalyzer.partialCallGraph.getUnresolvedCalls().size());
+                walaResultAnalyzer.partialCallGraph.getInternalCalls().size(),
+                walaResultAnalyzer.partialCallGraph.getExternalCalls().size());
 
         return walaResultAnalyzer.partialCallGraph;
     }

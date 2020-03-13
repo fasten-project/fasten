@@ -22,11 +22,11 @@ import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.core.CallType;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,28 +35,18 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class PartialCallGraph {
 
-    /**
-     * Calls that their sources and targets are fully resolved.
-     */
-    private final List<int[]> resolvedCalls;
+    private final List<List<Integer>> internalCalls;
 
-    /**
-     * Calls that their target's packages are not still known and need to be resolved in
-     * later on, e.g. in a merge phase.
-     */
-    private final Map<Pair<Integer, FastenURI>, Map<String, String>> unresolvedCalls;
+    private final Map<Pair<Integer, FastenURI>, Map<String, String>> externalCalls;
 
-    /**
-     * Class hierarchy.
-     */
     private final Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
 
     /**
      * Construct a partial call graph with empty lists of resolved / unresolved calls.
      */
     public PartialCallGraph() {
-        this.resolvedCalls = new ArrayList<>();
-        this.unresolvedCalls = new HashMap<>();
+        this.internalCalls = new ArrayList<>();
+        this.externalCalls = new HashMap<>();
         this.classHierarchy = new HashMap<>();
     }
 
@@ -65,15 +55,15 @@ public class PartialCallGraph {
     }
 
     public ExtendedRevisionCallGraph.Graph getGraph() {
-        return new ExtendedRevisionCallGraph.Graph(resolvedCalls, unresolvedCalls);
+        return new ExtendedRevisionCallGraph.Graph(internalCalls, externalCalls);
     }
 
-    public List<int[]> getResolvedCalls() {
-        return resolvedCalls;
+    public List<List<Integer>> getInternalCalls() {
+        return internalCalls;
     }
 
-    public Map<Pair<Integer, FastenURI>, Map<String, String>> getUnresolvedCalls() {
-        return unresolvedCalls;
+    public Map<Pair<Integer, FastenURI>, Map<String, String>> getExternalCalls() {
+        return externalCalls;
     }
 
     /**
@@ -82,13 +72,14 @@ public class PartialCallGraph {
      * @param caller Source method
      * @param callee Target method
      */
-    public void addResolvedCall(final int caller, final int callee) {
-        for (final int[] item : resolvedCalls) {
-            if (Arrays.equals(item, new int[]{caller, callee})) {
-                return;
-            }
+    public void addInternalCall(final int caller, final int callee) {
+        List<Integer> call = new ArrayList<>();
+        call.add(caller);
+        call.add(callee);
+        if (internalCalls.contains(call)) {
+            return;
         }
-        this.resolvedCalls.add(new int[]{caller, callee});
+        this.internalCalls.add(call);
     }
 
     /**
@@ -98,10 +89,10 @@ public class PartialCallGraph {
      * @param callee   Target method
      * @param callType Call type
      */
-    public void addUnresolvedCall(final int caller, final FastenURI callee,
-                                  final CallType callType) {
+    public void addExternalCall(final int caller, final FastenURI callee,
+                                final CallType callType) {
         final var call = new ImmutablePair<>(caller, callee);
-        final var previousCallMetadata = this.getUnresolvedCalls().get(call);
+        final var previousCallMetadata = this.getExternalCalls().get(call);
         int count = 1;
 
         if (previousCallMetadata != null) {
@@ -110,7 +101,7 @@ public class PartialCallGraph {
         } else {
             final var metadata = new HashMap<String, String>();
             metadata.put(callType.label, String.valueOf(count));
-            this.unresolvedCalls.put(call, metadata);
+            this.externalCalls.put(call, metadata);
         }
     }
 

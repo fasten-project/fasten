@@ -22,14 +22,13 @@ import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
-import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.shrikeBT.IInvokeInstruction;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgwala.data.core.CallType;
+import eu.fasten.analyzer.javacgwala.data.core.InternalMethod;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
-import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
 import eu.fasten.core.data.FastenJavaURI;
 import java.util.function.Predicate;
 
@@ -63,7 +62,7 @@ public class CallGraphAnalyzer {
      * Iterate over nodes in Wala call graph and add calls that "belong" to application class
      * loader to lists of resolved / unresolved calls of partial call graph.
      */
-    public void resolveCalls() throws ClassHierarchyException {
+    public void resolveCalls() {
         for (final CGNode node : this.rawCallGraph) {
             final var nodeReference = node.getMethod().getReference();
 
@@ -99,13 +98,13 @@ public class CallGraphAnalyzer {
             throws NullPointerException {
         var sourceID = classHierarchyAnalyzer.addMethodToCHA(source,
                 source.getReference().getDeclaringClass());
-        if (source instanceof ResolvedMethod && target instanceof ResolvedMethod) {
+        if (source instanceof InternalMethod && target instanceof InternalMethod) {
             var targetID = classHierarchyAnalyzer.addMethodToCHA(target,
                     target.getReference().getDeclaringClass());
-            partialCallGraph.addResolvedCall(sourceID, targetID);
+            partialCallGraph.addInternalCall(sourceID, targetID);
 
         } else {
-            partialCallGraph.addUnresolvedCall(sourceID,
+            partialCallGraph.addExternalCall(sourceID,
                     new FastenJavaURI("//" + target.toCanonicalSchemalessURI()), callType);
         }
     }

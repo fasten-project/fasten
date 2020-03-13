@@ -25,10 +25,10 @@ import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
-import eu.fasten.analyzer.javacgwala.data.callgraph.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
+import eu.fasten.analyzer.javacgwala.data.core.InternalMethod;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
-import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -175,7 +175,7 @@ public class ClassHierarchyAnalyzer {
      */
     private void addMethod(IMethod method) {
         Method methodNode = analysisContext.findOrCreate(method.getReference());
-        if (methodNode instanceof ResolvedMethod) {
+        if (methodNode instanceof InternalMethod) {
             if (!partialCallGraph.getClassHierarchy()
                     .containsKey(getClassURI(method.getDeclaringClass()))) {
                 addClassToCHA(method.getDeclaringClass());

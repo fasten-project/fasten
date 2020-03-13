@@ -79,13 +79,14 @@ public class ArtifactResolver {
             }
         }
 
-        try {
-            ShrikeClass shrikeKlass = (ShrikeClass) klass;
-            JarFileEntry moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();
+        if (klass instanceof ShrikeClass) {
+            var shrikeKlass = (ShrikeClass) klass;
+            var moduleEntry = shrikeKlass.getModuleEntry();
 
-            return moduleEntry.getJarFile();
-        } catch (ClassCastException e) {
-            return null;
+            return ((JarFileEntry) moduleEntry).getJarFile();
+
         }
+
+        return null;
     }
 }

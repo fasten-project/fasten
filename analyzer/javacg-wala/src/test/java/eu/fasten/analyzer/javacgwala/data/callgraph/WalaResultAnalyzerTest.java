@@ -44,17 +44,17 @@ class WalaResultAnalyzerTest {
     }
 
     @Test
-    void wrap() throws ClassHierarchyException {
+    void wrap() {
         var wrapped = WalaResultAnalyzer.wrap(graph);
 
-        assertEquals(1, wrapped.getGraph().getResolvedCalls().size());
-        assertEquals(1, wrapped.getGraph().getUnresolvedCalls().size());
+        assertEquals(1, wrapped.getGraph().getInternalCalls().size());
+        assertEquals(1, wrapped.getGraph().getExternalCalls().size());
 
         var source = "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType";
         var target = "///java.lang/Object.Object()VoidType";
 
-        var callMetadata = wrapped.getGraph().getUnresolvedCalls().values().iterator().next();
-        var callValues = wrapped.getGraph().getUnresolvedCalls().keySet().iterator().next();
+        var callMetadata = wrapped.getGraph().getExternalCalls().values().iterator().next();
+        var callValues = wrapped.getGraph().getExternalCalls().keySet().iterator().next();
 
         var type = wrapped.getClassHierarchy()
                 .get(new FastenJavaURI("/name.space/SingleSourceToTarget"));
@@ -67,9 +67,9 @@ class WalaResultAnalyzerTest {
         source = "/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoidType";
         target = "/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType";
 
-        var resolvedCall = wrapped.getGraph().getResolvedCalls().get(0);
+        var resolvedCall = wrapped.getGraph().getInternalCalls().get(0);
 
-        assertEquals(source, type.getMethods().get(resolvedCall[0]).toString());
-        assertEquals(target, type.getMethods().get(resolvedCall[1]).toString());
+        assertEquals(source, type.getMethods().get(resolvedCall.get(0)).toString());
+        assertEquals(target, type.getMethods().get(resolvedCall.get(1)).toString());
     }
 }

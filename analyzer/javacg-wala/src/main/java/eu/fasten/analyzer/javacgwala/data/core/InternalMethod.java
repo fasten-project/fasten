@@ -21,17 +21,17 @@ package eu.fasten.analyzer.javacgwala.data.core;
 import com.ibm.wala.types.MethodReference;
 import java.util.jar.JarFile;
 
-public class ResolvedMethod extends Method {
+public class InternalMethod extends Method {
 
     private final JarFile artifact;
 
     /**
-     * Construct Resolved method form {@link MethodReference} and artifact.
+     * Construct Internal method form {@link MethodReference} and artifact.
      *
      * @param reference Method Reference
      * @param artifact  Artifact
      */
-    public ResolvedMethod(final MethodReference reference, final JarFile artifact) {
+    public InternalMethod(final MethodReference reference, final JarFile artifact) {
         super(reference);
         this.artifact = artifact;
     }

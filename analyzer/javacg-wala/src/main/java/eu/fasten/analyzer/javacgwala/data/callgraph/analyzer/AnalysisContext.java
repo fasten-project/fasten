@@ -22,17 +22,17 @@ import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import eu.fasten.analyzer.javacgwala.data.ArtifactResolver;
+import eu.fasten.analyzer.javacgwala.data.core.ExternalMethod;
+import eu.fasten.analyzer.javacgwala.data.core.InternalMethod;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
-import eu.fasten.analyzer.javacgwala.data.core.ResolvedMethod;
-import eu.fasten.analyzer.javacgwala.data.core.UnresolvedMethod;
 import java.util.HashMap;
 
 public class AnalysisContext {
 
     private final ArtifactResolver artifactResolver;
 
-    private final HashMap<String, ResolvedMethod> resolvedDictionary;
-    private final HashMap<String, UnresolvedMethod> unresolvedDictionary;
+    private final HashMap<String, InternalMethod> internalDictionary;
+    private final HashMap<String, ExternalMethod> externalDictionary;
 
     /**
      * Construct analysis context.
@@ -40,8 +40,8 @@ public class AnalysisContext {
      * @param cha Class hierarchy analysis
      */
     public AnalysisContext(final IClassHierarchy cha) {
-        this.resolvedDictionary = new HashMap<>();
-        this.unresolvedDictionary = new HashMap<>();
+        this.internalDictionary = new HashMap<>();
+        this.externalDictionary = new HashMap<>();
         this.artifactResolver = new ArtifactResolver(cha);
     }
 
@@ -56,26 +56,26 @@ public class AnalysisContext {
         if (inApplicationScope(reference)) {
 
             final var jarfile = artifactResolver.findJarFileUsingMethod(reference);
-            final var method = new ResolvedMethod(reference, jarfile);
+            final var method = new InternalMethod(reference, jarfile);
             final var key = method.toID();
 
-            final var val = resolvedDictionary.get(key);
+            final var val = internalDictionary.get(key);
             if (val != null) {
                 return val;
             }
 
-            resolvedDictionary.put(key, method);
+            internalDictionary.put(key, method);
             return method;
         } else {
-            final var method = new UnresolvedMethod(reference);
+            final var method = new ExternalMethod(reference);
             final var key = method.toID();
 
-            final var val = unresolvedDictionary.get(key);
+            final var val = externalDictionary.get(key);
             if (val != null) {
                 return val;
             }
 
-            unresolvedDictionary.put(key, method);
+            externalDictionary.put(key, method);
             return method;
         }
     }

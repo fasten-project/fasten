@@ -199,7 +199,6 @@
                 <configuration>
                     <excludes>
                         <exclude>**/Main.*</exclude>
-                        <exclude>**/ExtendedRevisionCallGraph*</exclude>
                     </excludes>
                 </configuration>
             </plugin>
