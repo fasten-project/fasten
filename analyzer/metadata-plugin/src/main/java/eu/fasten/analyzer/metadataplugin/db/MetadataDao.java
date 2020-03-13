@@ -24,7 +24,6 @@ import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages;
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.PackagesRecord;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;

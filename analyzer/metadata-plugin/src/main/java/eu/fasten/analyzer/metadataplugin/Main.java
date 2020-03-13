@@ -18,8 +18,6 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
-import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;

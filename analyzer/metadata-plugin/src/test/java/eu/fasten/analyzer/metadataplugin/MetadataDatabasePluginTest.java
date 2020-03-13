@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
 import org.json.JSONException;
@@ -73,13 +74,13 @@ public class MetadataDatabasePluginTest {
                 "    }\n" +
                 "  },\n" +
                 "  \"graph\": {\n" +
-                "    \"resolvedCalls\": [\n" +
+                "    \"internalCalls\": [\n" +
                 "      [\n" +
                 "        1,\n" +
                 "        2\n" +
                 "      ]\n" +
                 "    ],\n" +
-                "    \"unresolvedCalls\": [\n" +
+                "    \"externalCalls\": [\n" +
                 "      [\n" +
                 "        \"1\",\n" +
                 "        \"///dep/service.call()%2Fjava.lang%2FObject\",\n" +
@@ -118,7 +119,7 @@ public class MetadataDatabasePluginTest {
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
-        metadataPlugin.saveToDatabase(json, metadataDao);
+        metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 new Timestamp(json.getLong("timestamp")));
@@ -159,13 +160,13 @@ public class MetadataDatabasePluginTest {
                 "    }\n" +
                 "  },\n" +
                 "  \"graph\": {\n" +
-                "    \"resolvedCalls\": [\n" +
+                "    \"internalCalls\": [\n" +
                 "      [\n" +
                 "        1,\n" +
                 "        2\n" +
                 "      ]\n" +
                 "    ],\n" +
-                "    \"unresolvedCalls\": [\n" +
+                "    \"externalCalls\": [\n" +
                 "      [\n" +
                 "        \"1\",\n" +
                 "        \"///dep/service.call()%2Fjava.lang%2FObject\",\n" +
@@ -210,7 +211,7 @@ public class MetadataDatabasePluginTest {
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
-        metadataPlugin.saveToDatabase(json, metadataDao);
+        metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 null);
@@ -253,13 +254,13 @@ public class MetadataDatabasePluginTest {
                 "    }\n" +
                 "  },\n" +
                 "  \"graph\": {\n" +
-                "    \"resolvedCalls\": [\n" +
+                "    \"internalCalls\": [\n" +
                 "      [\n" +
                 "        1,\n" +
                 "        2\n" +
                 "      ]\n" +
                 "    ],\n" +
-                "    \"unresolvedCalls\": [\n" +
+                "    \"externalCalls\": [\n" +
                 "      [\n" +
                 "        \"1\",\n" +
                 "        \"///dep/service.call()%2Fjava.lang%2FObject\",\n" +
@@ -303,7 +304,7 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
         metadataPlugin.setPluginError(new RuntimeException());
-        metadataPlugin.saveToDatabase(json, metadataDao);
+        metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 null);
@@ -318,7 +319,8 @@ public class MetadataDatabasePluginTest {
     public void saveToDatabaseEmptyJsonTest() {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject();
-        assertThrows(JSONException.class, () -> metadataPlugin.saveToDatabase(json, metadataDao));
+        assertThrows(JSONException.class, () -> metadataPlugin
+                .saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao));
     }
 
     @Test

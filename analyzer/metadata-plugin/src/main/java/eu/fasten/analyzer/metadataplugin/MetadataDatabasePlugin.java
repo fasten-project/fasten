@@ -20,6 +20,7 @@ package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -81,11 +82,12 @@ public class MetadataDatabasePlugin extends Plugin {
             int transactionRestartCount = 0;
             do {
                 try {
+                    var callgraph = new ExtendedRevisionCallGraph(consumedJson);
                     var metadataDao = new MetadataDao(this.dslContext);
                     this.dslContext.transaction(transaction -> {
                         metadataDao.setContext(DSL.using(transaction));
                         try {
-                            saveToDatabase(consumedJson, metadataDao);
+                            saveToDatabase(callgraph, metadataDao);
                         } catch (RuntimeException e) {
                             logger.error("Error saving to the database", e);
                             processedRecord = false;
@@ -104,6 +106,11 @@ public class MetadataDatabasePlugin extends Plugin {
                             logger.info("Saved the callgraph metadata to the database");
                         }
                     });
+                } catch (JSONException e) {
+                    logger.error("Error parsing JSON callgraph", e);
+                    processedRecord = false;
+                    setPluginError(e);
+                    return;
                 } catch (Exception expected) {
                 }
                 transactionRestartCount++;
@@ -112,94 +119,83 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         /**
-         * Saves consumed JSON to the database to appropriate tables.
+         * Saves a callgraph to the database to appropriate tables.
          *
-         * @param json        JSON Object consumed by Kafka
+         * @param callGraph   Call graph to save to the database.
          * @param metadataDao Data Access Object to insert records in the database
          */
-        public void saveToDatabase(JSONObject json, MetadataDao metadataDao) {
-            var packageName = json.getString("product");
-            var forge = json.getString("forge");
-            var project = json.optString("project", null);
-            var repository = json.optString("repository", null);
-            var timestamp = json.has("timestamp") ? new Timestamp(json.getLong("timestamp"))
-                    : null;
-            long packageId = metadataDao
-                    .insertPackage(packageName, forge, project, repository, timestamp);
+        public void saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
+            var timestamp = (callGraph.timestamp != -1) ? new Timestamp(callGraph.timestamp) : null;
+            long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge, null,
+                    null, timestamp);
 
-            var generator = json.getString("generator");
-            var version = json.getString("version");
+            long packageVersionId = metadataDao.insertPackageVersion(packageId,
+                    callGraph.getCgGenerator(), callGraph.version, null, null);
 
-            long packageVersionId = metadataDao.insertPackageVersion(packageId, generator,
-                    version, null, null);
-
-            var depset = json.getJSONArray("depset").optJSONArray(0);
-            if (depset != null) {
-                var depIds = new ArrayList<Long>(depset.length());
-                var depVersions = new ArrayList<String[]>(depset.length());
-                for (int i = 0; i < depset.length(); i++) {
-                    var dependency = depset.getJSONObject(i);
-                    var depName = dependency.getString("product");
-                    var depForge = dependency.getString("forge");
-                    var constraints = dependency.getJSONArray("constraints");
-                    var versionRange = new String[constraints.length()];
-                    for (int j = 0; j < constraints.length(); j++) {
-                        versionRange[j] = constraints.getString(j);
+            var depIds = new ArrayList<Long>();
+            var depVersions = new ArrayList<String[]>();
+            for (var depList : callGraph.depset) {
+                for (var dependency : depList) {
+                    var constraints = dependency.constraints;
+                    var versions = new String[constraints.size()];
+                    for (int i = 0; i < constraints.size(); i++) {
+                        versions[i] = constraints.get(i).lowerBound + " - "
+                                + constraints.get(i).upperBound;
                     }
-                    depVersions.add(versionRange);
+                    depVersions.add(versions);
 
-                    var depId = metadataDao.getPackageIdByNameAndForge(depName, depForge);
+                    var depId = metadataDao.getPackageIdByNameAndForge(dependency.product,
+                            dependency.forge);
                     if (depId == -1L) {
-                        depId = metadataDao.insertPackage(depName, depForge, null, null, null);
+                        depId = metadataDao.insertPackage(dependency.product, dependency.forge,
+                                null, null, null);
                     }
                     depIds.add(depId);
                 }
+            }
+            if (depIds.size() > 0) {
                 metadataDao.insertDependencies(packageVersionId, depIds, depVersions);
             }
-            var cha = json.getJSONObject("cha");
-            var fileNames = new ArrayList<String>(cha.keySet().size());
-            cha.keys().forEachRemaining(fileNames::add);
-            var globalIdsMap = new HashMap<Long, Long>();
-            for (var file : fileNames) {
-                var fileJson = cha.getJSONObject(file);
-                var metadata = new JSONObject();
-                metadata.put("superInterfaces", fileJson.getJSONArray("superInterfaces"));
-                metadata.put("sourceFile", fileJson.getString("sourceFile"));
-                metadata.put("superClasses", fileJson.getJSONArray("superClasses"));
-                String namespace = file.split("/")[1];
-                long fileId = metadataDao.insertFile(packageVersionId, namespace, null, null,
-                        metadata);
-                var methods = fileJson.getJSONObject("methods");
-                var methodIds = new ArrayList<String>(methods.keySet().size());
-                methods.keys().forEachRemaining(methodIds::add);
-                for (var method : methodIds) {
-                    var uri = methods.getString(method);
-                    long callableId = metadataDao.insertCallable(fileId, uri, true, null,
-                            null);
-                    globalIdsMap.put(Long.parseLong(method), callableId);
+
+            var cha = callGraph.getClassHierarchy();
+            var globalIdsMap = new HashMap<Integer, Long>();
+            for (var fastenUri : cha.keySet()) {
+                var type = cha.get(fastenUri);
+                var fileMetadata = new JSONObject();
+                fileMetadata.put("superInterfaces",
+                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
+                fileMetadata.put("sourceFile", type.getSourceFileName());
+                fileMetadata.put("superClasses",
+                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
+                long fileId = metadataDao.insertFile(packageVersionId, fastenUri.getNamespace(),
+                        null, null, fileMetadata);
+                for (var methodEntry : type.getMethods().entrySet()) {
+                    var uri = methodEntry.getValue().toString();
+                    long callableId = metadataDao.insertCallable(fileId, uri, true, null, null);
+                    globalIdsMap.put(methodEntry.getKey(), callableId);
                 }
             }
 
-            var graph = json.getJSONObject("graph");
-            var resolvedCalls = graph.getJSONArray("resolvedCalls");
-            for (int i = 0; i < resolvedCalls.length(); i++) {
-                var resolvedCall = resolvedCalls.getJSONArray(i);
-                var sourceLocalId = resolvedCall.getLong(0);
-                var targetLocalId = resolvedCall.getLong(1);
+            var graph = callGraph.getGraph();
+
+            var internalCalls = graph.getInternalCalls();
+            for (var call : internalCalls) {
+                var sourceLocalId = call.get(0);
+                var targetLocalId = call.get(1);
                 var sourceGlobalId = globalIdsMap.get(sourceLocalId);
                 var targetGlobalId = globalIdsMap.get(targetLocalId);
                 metadataDao.insertEdge(sourceGlobalId, targetGlobalId, null);
             }
 
-            var unresolvedCalls = graph.getJSONArray("unresolvedCalls");
-            for (int i = 0; i < unresolvedCalls.length(); i++) {
-                var unresolvedCall = unresolvedCalls.getJSONArray(i);
-                var sourceLocalId = Long.parseLong(unresolvedCall.getString(0));
+            var externalCalls = graph.getExternalCalls();
+            for (var callEntry : externalCalls.entrySet()) {
+                var call = callEntry.getKey();
+                var sourceLocalId = call.getKey();
                 var sourceGlobalId = globalIdsMap.get(sourceLocalId);
-                var uri = unresolvedCall.getString(1);
-                var metadata = unresolvedCall.getJSONObject(2);
+                var uri = call.getValue().toString();
                 var targetId = metadataDao.insertCallable(null, uri, false, null, null);
-                metadataDao.insertEdge(sourceGlobalId, targetId, metadata);
+                var edgeMetadata = new JSONObject(callEntry.getValue());
+                metadataDao.insertEdge(sourceGlobalId, targetId, edgeMetadata);
             }
         }
 
