@@ -139,7 +139,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     var constraints = dependency.constraints;
                     var versions = new String[constraints.size()];
                     for (int i = 0; i < constraints.size(); i++) {
-                        versions[i] = constraints.get(i).lowerBound + " - "
+                        versions[i] = constraints.get(i).lowerBound + ".."
                                 + constraints.get(i).upperBound;
                     }
                     depVersions.add(versions);
