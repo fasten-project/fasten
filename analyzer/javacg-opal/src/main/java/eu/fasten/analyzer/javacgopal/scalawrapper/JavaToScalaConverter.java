@@ -19,26 +19,42 @@
 package eu.fasten.analyzer.javacgopal.scalawrapper;
 
 import org.opalj.br.Method;
-
+import org.opalj.br.ObjectType;
 import scala.Function0;
+import scala.Function1;
 import scala.collection.Iterable;
 import scala.collection.Map;
 import scala.runtime.AbstractFunction0;
-import scala.runtime.AbstractFunction1;
 import scala.runtime.AbstractFunction2;
 
 /**
- * A wrapper class that wraps java code to be passed to scala.
- * Especially in case of functional programing.
+ * A wrapper class that wraps java code to be passed to scala. Especially in case of functional
+ * programing.
  */
 public final class JavaToScalaConverter {
+
+    /**
+     * Imitate a scala function0 in case of passing Optional for String as an scala function.
+     * @param defaultString String.
+     * @return An scala function including the results.
+     */
+    public static Function0<String> asScalaFunction0OptionString(final String defaultString) {
+        return new AbstractFunction0<>() {
+
+            @Override
+            public String apply() {
+                return defaultString;
+            }
+        };
+    }
 
     /**
      * Imitate a scala function0 in case of passing entrypoints as an scala function.
      * @param entryPoints Scala Iterable of methods.
      * @return An scala function including the results.
      */
-    public static Function0<Iterable<Method>> asScalaFunction0(final Iterable<Method> entryPoints) {
+    public static Function0<Iterable<Method>> asScalaFunction0EntryPionts(
+        final Iterable<Method> entryPoints) {
         return new AbstractFunction0<>() {
 
             @Override
@@ -53,8 +69,9 @@ public final class JavaToScalaConverter {
      * @param lambdaFunction A java Lambda in order to do things on scala.
      * @return Execution of java Lambda as scala function1.
      */
-    public static AbstractFunction1 asScalaFunction1(final ScalaFunction1 lambdaFunction) {
-        return new AbstractFunction1() {
+    public static Function1<ObjectType, Object> asScalaFunction1(
+        final ScalaFunction1 lambdaFunction) {
+        return new Function1() {
 
             @Override
             public Object apply(Object v1) {
@@ -68,7 +85,8 @@ public final class JavaToScalaConverter {
      * @param javaFunction A java function in order to do things on scala.
      * @return Execution of java function as scala function2.
      */
-    public static AbstractFunction2<Method, Map<Object, Iterable<Method>>, Object> asScalaFunction2(final ScalaFunction2 javaFunction) {
+    public static AbstractFunction2<Method, Map<Object, Iterable<Method>>, Object> asScalaFunction2(
+        final ScalaFunction2 javaFunction) {
         return new AbstractFunction2<>() {
 
             @Override

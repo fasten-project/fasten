@@ -2,6 +2,7 @@ package eu.fasten.core.index;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -30,7 +31,8 @@ public class IndexerTest {
 
 	public void testKnowledgeBase(final String[] jsonSpec) throws JSONException, IOException, RocksDBException, URISyntaxException, ClassNotFoundException {
 		final Path kbDir = Files.createTempDirectory(Indexer.class.getSimpleName());
-		KnowledgeBase kb = KnowledgeBase.getInstance(kbDir.toString());
+		String meta = Files.createTempFile(Indexer.class.getSimpleName(), "meta").getFileName().toString();
+		KnowledgeBase kb = KnowledgeBase.getInstance(kbDir.toString(), meta);
 
 		for (int index = 0; index < jsonSpec.length; index++)
 			kb.add(new RevisionCallGraph(new JSONObject(jsonSpec[index]), false), index);
@@ -57,11 +59,12 @@ public class IndexerTest {
 				}
 			}
 			kb.close();
-			kb = KnowledgeBase.getInstance(kbDir.toString());
+			kb = KnowledgeBase.getInstance(kbDir.toString(), meta);
 		}
 
 
 		FileUtils.deleteDirectory(kbDir.toFile());
+		FileUtils.deleteQuietly(new File("kb.meta"));
 	}
 
 	@Test
@@ -78,7 +81,6 @@ public class IndexerTest {
 		for(final String s : JSON_SPECS) jsonSpecs.add(s.replaceAll("1\\.0", "4.0"));
 		testKnowledgeBase(jsonSpecs.toArray(new String[0]));
 	}
-
 
 	@Test
 	public void testLargeIndex() throws JSONException, IOException, RocksDBException, URISyntaxException, ClassNotFoundException {

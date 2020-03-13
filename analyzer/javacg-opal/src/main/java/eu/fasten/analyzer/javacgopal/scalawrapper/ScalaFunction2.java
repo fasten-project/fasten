@@ -19,13 +19,11 @@
 package eu.fasten.analyzer.javacgopal.scalawrapper;
 
 import org.opalj.br.Method;
-
 import scala.collection.Iterable;
 import scala.collection.Map;
 
 /**
- * Mocks scala Function1.
- * A functional interface that can help injecting java methods into scala.
+ * Mocks scala Function1. A functional interface that can help injecting java methods into scala.
  */
 public interface ScalaFunction2 {
     Boolean execute(final Method callee, final Map<Object, Iterable<Method>> caller);

@@ -19,13 +19,14 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
-
 import java.io.FileNotFoundException;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONException;
@@ -47,7 +48,8 @@ public class OPALPlugin extends Plugin {
 
         private static Logger logger = LoggerFactory.getLogger(OPALPlugin.class);
 
-        private static org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
+        private static org.apache.kafka.clients.producer.KafkaProducer<Object, String>
+            kafkaProducer;
         final String CONSUME_TOPIC = "maven.packages";
         final String PRODUCE_TOPIC = "opal_callgraphs";
         private boolean processedRecord;
@@ -63,21 +65,18 @@ public class OPALPlugin extends Plugin {
             pluginError = "";
             processedRecord = false;
             consume(kafkaRecord, true);
-            if(getPluginError().isEmpty()) { processedRecord = true; }
+            if (getPluginError().isEmpty()) {
+                processedRecord = true;
+            }
         }
 
         /**
          * Generates call graphs using OPAL for consumed maven coordinates in
          * eu.fasten.core.data.RevisionCallGraph format, and produce them to the Producer that is
          * provided for this Object.
-         *
-         * @param kafkaRecord    A record including maven coordinates in the JSON format.
-         *                       e.g. {
-         *                       "groupId": "com.g2forge.alexandria",
-         *                       "artifactId": "alexandria",
-         *                       "version": "0.0.9",
-         *                       "date": "1574072773"
-         *                       }
+         * @param kafkaRecord    A record including maven coordinates in the JSON format. e.g. {
+         *                       "groupId": "com.g2forge.alexandria", "artifactId": "alexandria",
+         *                       "version": "0.0.9", "date": "1574072773" }
          * @param writeCGToKafka If true, the generated call graph will be written into Kafka
          */
         public ExtendedRevisionCallGraph consume(final ConsumerRecord<String, String> kafkaRecord,
@@ -126,7 +125,7 @@ public class OPALPlugin extends Plugin {
         public ExtendedRevisionCallGraph generateCallgraph(final MavenCoordinate mavenCoordinate,
                                                            final JSONObject kafkaConsumedJson) {
             try {
-                return ExtendedRevisionCallGraph.create("mvn", mavenCoordinate,
+                return PartialCallGraph.createExtendedRevisionCallGraph(mavenCoordinate,
                     Long.parseLong(kafkaConsumedJson.get("date").toString()));
             } catch (FileNotFoundException e) {
                 setPluginError(e);
@@ -161,13 +160,13 @@ public class OPALPlugin extends Plugin {
         }
 
         /**
-         * This method should be called before calling consume method.
-         * It sets the KafkaProducer of this Object to what is passed to it.
-         *
+         * This method should be called before calling consume method. It sets the KafkaProducer of
+         * this Object to what is passed to it.
          * @param producer org.apache.kafka.clients.producer.KafkaProducer.
          */
         @Override
-        public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
+        public void setKafkaProducer(
+            org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
             this.kafkaProducer = producer;
         }
 
@@ -194,16 +193,18 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public void setPluginError(Throwable throwable) {
-
-            this.pluginError = new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
-                throwable.getMessage()).put("trace", throwable.getStackTrace()).put("type", throwable.getClass().getSimpleName()).toString();
-            System.out.println(this.pluginError);
+        public String getPluginError() {
+            return this.pluginError;
         }
 
         @Override
-        public String getPluginError() {
-            return this.pluginError;
+        public void setPluginError(Throwable throwable) {
+
+            this.pluginError =
+                new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
+                    throwable.getMessage()).put("trace", throwable.getStackTrace())
+                    .put("type", throwable.getClass().getSimpleName()).toString();
+            System.out.println(this.pluginError);
         }
 
         @Override

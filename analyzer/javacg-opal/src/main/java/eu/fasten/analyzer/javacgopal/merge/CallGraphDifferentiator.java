@@ -18,36 +18,51 @@
 
 package eu.fasten.analyzer.javacgopal.merge;
 
-import eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
-import java.io.*;
-import java.util.Comparator;
 
 public class CallGraphDifferentiator {
 
     /**
-     * It writes two ProposalRevisionCallGraphs together with their differences in the provided path
-     * @param resultPath the path for the result diff
-     * @param graphNumber the number of the graph this number will be written as a prefix to the result files
-     * @param firstGraph first graph to be compared
+     * It writes two ProposalRevisionCallGraphs together with their differences in the provided.
+     * path
+     * @param resultPath  the path for the result diff
+     * @param graphNumber the number of the graph this number will be written as a prefix to the
+     *                    result files
+     * @param firstGraph  first graph to be compared
      * @param secondGraph second graph to be compared
-     * @throws IOException
+     * @throws IOException throws IOException.
      */
-    public static void diffInFile(final String resultPath, final int graphNumber, final ExtendedRevisionCallGraph firstGraph, final ExtendedRevisionCallGraph secondGraph) throws IOException {
+    public static void diffInFile(final String resultPath, final int graphNumber,
+                                  final ExtendedRevisionCallGraph firstGraph,
+                                  final ExtendedRevisionCallGraph secondGraph) throws IOException {
 
-        final String graphPath = resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
+        final String graphPath =
+            resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
 
-        firstGraph.sortGraphEdges();
-        secondGraph.sortGraphEdges();
+        firstGraph.sortInternalCalls();
+        secondGraph.sortInternalCalls();
 
-        writeToFile(firstGraph.toJSON().toString(4), graphPath, "_1.txt");
-        writeToFile(secondGraph.toJSON().toString(4), graphPath, "_2.txt");
+        writeToFile(graphPath, firstGraph.toJSON().toString(4),"_1.txt");
+        writeToFile(graphPath, secondGraph.toJSON().toString(4),"_2.txt");
 
-        Runtime.getRuntime().exec(new String[]{"sh", "-c", "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath + "_Diff.txt"});
+        Runtime.getRuntime().exec(new String[] {"sh", "-c",
+            "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath
+                + "_Diff.txt"});
     }
 
-    public static void writeToFile(final String path, final String graph, final String suffix) throws IOException {
+    /**
+     * Writes Strings to files, can be used to output the graphs.
+     * @param path the path to write
+     * @param graph the String representation of graph or any other String to be written to a file
+     * @param suffix the suffix to put at the end of the path, most of the time file name
+     * @throws IOException throws if IO problems occur during writing in a file
+     */
+    public static void writeToFile(final String path, final String graph, final String suffix)
+        throws IOException {
         final BufferedWriter writer;
         writer = new BufferedWriter(new FileWriter(path + suffix));
         writer.write(graph);

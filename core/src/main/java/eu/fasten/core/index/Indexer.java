@@ -131,6 +131,7 @@ public class Indexer {
 						new FlaggedOption("port", JSAP.INTEGER_PARSER, "30001", JSAP.NOT_REQUIRED, 'p', "port", "The port of the Kafka server." ),
 						new FlaggedOption("max", JSAP.LONG_PARSER, String.valueOf(Long.MAX_VALUE), JSAP.NOT_REQUIRED, 'm', "max", "The maximum number of call graphs that will be indexed." ),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
+						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
 						new UnflaggedOption("filename", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.GREEDY, "The name of the file containing the JSON object." ),
 		});
 
@@ -138,8 +139,9 @@ public class Indexer {
 		if ( jsap.messagePrinted() ) return;
 
 		final String kbDir = jsapResult.getString("kb");
+		final String kbMetadataFilename = jsapResult.getString("kbmeta");
 
-		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir);
+		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
 
 		final Indexer indexer = new Indexer(kb);
 
