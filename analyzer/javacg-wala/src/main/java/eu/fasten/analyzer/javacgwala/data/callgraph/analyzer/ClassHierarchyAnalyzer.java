@@ -180,8 +180,12 @@ public class ClassHierarchyAnalyzer {
                     .containsKey(getClassURI(method.getDeclaringClass()))) {
                 addClassToCHA(method.getDeclaringClass());
             }
-            partialCallGraph.getClassHierarchy().get(getClassURI(method.getDeclaringClass()))
-                    .getMethods().putIfAbsent(counter++, methodNode.toCanonicalSchemalessURI());
+            var methods = partialCallGraph.getClassHierarchy()
+                    .get(getClassURI(method.getDeclaringClass())).getMethods();
+
+            if (!methods.containsValue(methodNode.toCanonicalSchemalessURI())) {
+                methods.put(counter++, methodNode.toCanonicalSchemalessURI());
+            }
         }
     }
 
