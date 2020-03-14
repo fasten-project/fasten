@@ -44,7 +44,7 @@ public class MetadataDatabasePluginTest {
     }
 
     @Test
-    public void consumeTest() {
+    public void consumeJsonErrorTest() {
         var topic = "opal_callgraphs";
         var record = new ConsumerRecord<>(topic, 0, 0L, "test", "{\"foo\":\"bar\"}");
         metadataPlugin.consume(topic, record);
