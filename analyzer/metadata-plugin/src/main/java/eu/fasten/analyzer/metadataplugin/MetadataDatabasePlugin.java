@@ -91,8 +91,8 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
-            var consumedJson = new JSONObject(record.value());
-            var product = consumedJson.optString("product");
+            final var consumedJson = new JSONObject(record.value());
+            final var product = consumedJson.optString("product");
             this.processedRecord = false;
             this.restartTransaction = false;
             this.pluginError = "";
@@ -148,11 +148,12 @@ public class MetadataDatabasePlugin extends Plugin {
          * @return Package ID saved in the database
          */
         public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
-            var timestamp = (callGraph.timestamp != -1) ? new Timestamp(callGraph.timestamp) : null;
-            long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge, null,
-                    null, timestamp);
+            final var timestamp = (callGraph.timestamp != -1) ? new Timestamp(callGraph.timestamp)
+                    : null;
+            final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
+                    null, null, timestamp);
 
-            long packageVersionId = metadataDao.insertPackageVersion(packageId,
+            final long packageVersionId = metadataDao.insertPackageVersion(packageId,
                     callGraph.getCgGenerator(), callGraph.version, null, null);
 
             var depIds = new ArrayList<Long>();
@@ -179,7 +180,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 metadataDao.insertDependencies(packageVersionId, depIds, depVersions);
             }
 
-            var cha = callGraph.getClassHierarchy();
+            final var cha = callGraph.getClassHierarchy();
             var globalIdsMap = new HashMap<Integer, Long>();
             for (var fastenUri : cha.keySet()) {
                 var type = cha.get(fastenUri);
@@ -198,9 +199,9 @@ public class MetadataDatabasePlugin extends Plugin {
                 }
             }
 
-            var graph = callGraph.getGraph();
+            final var graph = callGraph.getGraph();
 
-            var internalCalls = graph.getInternalCalls();
+            final var internalCalls = graph.getInternalCalls();
             for (var call : internalCalls) {
                 var sourceLocalId = call.get(0);
                 var targetLocalId = call.get(1);
@@ -209,7 +210,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 metadataDao.insertEdge(sourceGlobalId, targetGlobalId, null);
             }
 
-            var externalCalls = graph.getExternalCalls();
+            final var externalCalls = graph.getExternalCalls();
             for (var callEntry : externalCalls.entrySet()) {
                 var call = callEntry.getKey();
                 var sourceLocalId = call.getKey();

@@ -35,25 +35,30 @@ public class Main implements Runnable {
     private static Logger logger = LoggerFactory.getLogger(Main.class);
 
     @CommandLine.Option(names = {"-t", "--topic"},
+            paramLabel = "topic",
             description = "Kafka topic from which to consume call graphs",
             defaultValue = "opal_callgraphs")
     String topic;
 
     @CommandLine.Option(names = {"-f", "--file"},
+            paramLabel = "JSON",
             description = "Path to JSON file which contains the callgraph")
     String jsonFile;
 
     @CommandLine.Option(names = {"-d", "--database"},
+            paramLabel = "dbURL",
             description = "Database URL for connection",
             defaultValue = "jdbc:postgresql:postgres")
     String dbUrl;
 
     @CommandLine.Option(names = {"-u", "--user"},
+            paramLabel = "dbUser",
             description = "Database user name",
             defaultValue = "postgres")
     String dbUser;
 
     @CommandLine.Option(names = {"-p", "--pass"},
+            paramLabel = "dbPass",
             description = "Database user password",
             defaultValue = "pass123")
     String dbPass;
@@ -67,7 +72,7 @@ public class Main implements Runnable {
     public void run() {
         if (jsonFile == null || jsonFile.isEmpty()) {
             try {
-                var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
+                final var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
                 var metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin(topic, context);
                 metadataPlugin.start();
             } catch (SQLException e) {
@@ -76,7 +81,7 @@ public class Main implements Runnable {
                 logger.error("Incorrect database URL", e);
             }
         } else {
-            var filePath = Paths.get(jsonFile);
+            final var filePath = Paths.get(jsonFile);
             var jsonCallgraph = new JSONObject();
             try {
                 jsonCallgraph = new JSONObject(Files.readString(filePath));
@@ -85,9 +90,10 @@ public class Main implements Runnable {
                 return;
             }
             try {
-                var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
+                final var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
                 var metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin(topic, context);
-                var record = new ConsumerRecord<>(topic, 0, 0L, "test", jsonCallgraph.toString());
+                final var record = new ConsumerRecord<>(topic, 0, 0L, "test",
+                        jsonCallgraph.toString());
                 metadataPlugin.consume(topic, record);
             } catch (SQLException e) {
                 logger.error("Could not connect to the database", e);
