@@ -92,6 +92,7 @@ public class MetadataDatabasePlugin extends Plugin {
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
             var consumedJson = new JSONObject(record.value());
+            var product = consumedJson.optString("product");
             this.processedRecord = false;
             this.restartTransaction = false;
             this.pluginError = "";
@@ -102,14 +103,15 @@ public class MetadataDatabasePlugin extends Plugin {
                     var metadataDao = new MetadataDao(this.dslContext);
                     this.dslContext.transaction(transaction -> {
                         metadataDao.setContext(DSL.using(transaction));
+                        long id;
                         try {
-                            saveToDatabase(callgraph, metadataDao);
+                            id = saveToDatabase(callgraph, metadataDao);
                         } catch (RuntimeException e) {
-                            logger.error("Error saving to the database", e);
+                            logger.error("Error saving to the database: " + product, e);
                             processedRecord = false;
                             setPluginError(e);
                             if (e instanceof DataAccessException) {
-                                logger.info("Restarting transaction");
+                                logger.info("Restarting transaction for " + product);
                                 restartTransaction = true;
                             } else {
                                 restartTransaction = false;
@@ -119,11 +121,12 @@ public class MetadataDatabasePlugin extends Plugin {
                         if (getPluginError().isEmpty()) {
                             processedRecord = true;
                             restartTransaction = false;
-                            logger.info("Saved the callgraph metadata to the database");
+                            logger.info("Saved the " + product + " callgraph metadata "
+                                    + "to the database with package ID = " + id);
                         }
                     });
                 } catch (JSONException e) {
-                    logger.error("Error parsing JSON callgraph", e);
+                    logger.error("Error parsing JSON callgraph for " + product, e);
                     processedRecord = false;
                     setPluginError(e);
                     return;
@@ -139,8 +142,9 @@ public class MetadataDatabasePlugin extends Plugin {
          *
          * @param callGraph   Call graph to save to the database.
          * @param metadataDao Data Access Object to insert records in the database
+         * @return Package ID saved in the database
          */
-        public void saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
+        public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
             var timestamp = (callGraph.timestamp != -1) ? new Timestamp(callGraph.timestamp) : null;
             long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge, null,
                     null, timestamp);
@@ -212,6 +216,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 var edgeMetadata = new JSONObject(callEntry.getValue());
                 metadataDao.insertEdge(sourceGlobalId, targetId, edgeMetadata);
             }
+            return packageId;
         }
 
         @Override
@@ -227,7 +232,8 @@ public class MetadataDatabasePlugin extends Plugin {
         @Override
         public String description() {
             return "Metadata plugin. "
-                    + "Consumes kafka topic and populates metadata database with consumed data.";
+                    + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
+                    + " and populates metadata database with consumed data.";
         }
 
         @Override

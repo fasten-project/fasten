@@ -119,7 +119,8 @@ public class MetadataDatabasePluginTest {
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
-        metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        assertEquals(packageId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 new Timestamp(json.getLong("timestamp")));
@@ -211,7 +212,8 @@ public class MetadataDatabasePluginTest {
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
-        metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        assertEquals(packageId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 null);
@@ -304,7 +306,8 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
         metadataPlugin.setPluginError(new RuntimeException());
-        metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        assertEquals(packageId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 null);
@@ -343,7 +346,8 @@ public class MetadataDatabasePluginTest {
     @Test
     public void descriptionTest() {
         var description = "Metadata plugin. "
-                + "Consumes kafka topic and populates metadata database with consumed data.";
+                + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
+                + " and populates metadata database with consumed data.";
         assertEquals(description, metadataPlugin.description());
     }
 }
