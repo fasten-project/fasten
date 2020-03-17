@@ -96,10 +96,18 @@ public class MetadataDatabasePlugin extends Plugin {
             this.processedRecord = false;
             this.restartTransaction = false;
             this.pluginError = "";
+            ExtendedRevisionCallGraph callgraph;
+            try {
+                callgraph = new ExtendedRevisionCallGraph(consumedJson);
+            } catch (JSONException e) {
+                logger.error("Error parsing JSON callgraph for " + product, e);
+                processedRecord = false;
+                setPluginError(e);
+                return;
+            }
             int transactionRestartCount = 0;
             do {
                 try {
-                    var callgraph = new ExtendedRevisionCallGraph(consumedJson);
                     var metadataDao = new MetadataDao(this.dslContext);
                     this.dslContext.transaction(transaction -> {
                         metadataDao.setContext(DSL.using(transaction));
@@ -125,11 +133,6 @@ public class MetadataDatabasePlugin extends Plugin {
                                     + "to the database with package ID = " + id);
                         }
                     });
-                } catch (JSONException e) {
-                    logger.error("Error parsing JSON callgraph for " + product, e);
-                    processedRecord = false;
-                    setPluginError(e);
-                    return;
                 } catch (Exception expected) {
                 }
                 transactionRestartCount++;
