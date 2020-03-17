@@ -19,10 +19,15 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
+import eu.fasten.server.kafka.FastenKafkaConnection;
+import eu.fasten.server.kafka.FastenKafkaConsumer;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.List;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -39,6 +44,18 @@ public class Main implements Runnable {
             description = "Kafka topic from which to consume call graphs",
             defaultValue = "opal_callgraphs")
     String topic;
+
+    @CommandLine.Option(names = {"-s", "--skip_offsets"},
+            paramLabel = "skip",
+            description = "Adds one to offset of all the partitions of the consumers.",
+            defaultValue = "0")
+    int skipOffsets;
+
+    @CommandLine.Option(names = {"-k", "--kafka_server"},
+            paramLabel = "server.name:port",
+            description = "Kafka server to connect to. Use multiple times for clusters.",
+            defaultValue = "localhost:9092")
+    List<String> kafkaServers;
 
     @CommandLine.Option(names = {"-f", "--file"},
             paramLabel = "JSON",
@@ -74,7 +91,9 @@ public class Main implements Runnable {
             try {
                 final var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
                 var metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin(topic, context);
-                metadataPlugin.start();
+                var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
+                        this.getClass().getCanonicalName());
+                new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
             } catch (SQLException e) {
                 logger.error("Could not connect to the database", e);
             } catch (IllegalArgumentException e) {
