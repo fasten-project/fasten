@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
+import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -33,9 +34,29 @@ public class Main implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(Main.class);
 
+    @CommandLine.Option(names = {"-t", "--topic"},
+            description = "Kafka topic from which to consume call graphs",
+            defaultValue = "opal_callgraphs")
+    String topic;
+
     @CommandLine.Option(names = {"-f", "--file"},
             description = "Path to JSON file which contains the callgraph")
     String jsonFile;
+
+    @CommandLine.Option(names = {"-d", "--database"},
+            description = "Database URL for connection",
+            defaultValue = "jdbc:postgresql:postgres")
+    String dbUrl;
+
+    @CommandLine.Option(names = {"-u", "--user"},
+            description = "Database user name",
+            defaultValue = "postgres")
+    String dbUser;
+
+    @CommandLine.Option(names = {"-p", "--pass"},
+            description = "Database user password",
+            defaultValue = "pass123")
+    String dbPass;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
@@ -44,26 +65,35 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var filePath = Paths.get(jsonFile);
-        var jsonCallgraph = new JSONObject();
-        try {
-            jsonCallgraph = new JSONObject(Files.readString(filePath));
-        } catch (IOException e) {
-            logger.error("Could not find the JSON file at " + jsonFile, e);
-            return;
-        }
-        try {
-            var metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin();
-            var topic = "opal_callgraphs";
-            var record = new ConsumerRecord<>(topic, 0, 0L, "test", jsonCallgraph.toString());
-            metadataPlugin.consume(topic, record);
-        } catch (SQLException e) {
-            logger.error("Could not connect to the database", e);
-        } catch (IOException e) {
-            logger.error("Could not find 'postgres.properties' file with database connection "
-                    + "parameters", e);
-        } catch (IllegalArgumentException e) {
-            logger.error("Incorrect database URL", e);
+        if (jsonFile == null || jsonFile.isEmpty()) {
+            try {
+                var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
+                var metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin(topic, context);
+                metadataPlugin.start();
+            } catch (SQLException e) {
+                logger.error("Could not connect to the database", e);
+            } catch (IllegalArgumentException e) {
+                logger.error("Incorrect database URL", e);
+            }
+        } else {
+            var filePath = Paths.get(jsonFile);
+            var jsonCallgraph = new JSONObject();
+            try {
+                jsonCallgraph = new JSONObject(Files.readString(filePath));
+            } catch (IOException e) {
+                logger.error("Could not find the JSON file at " + jsonFile, e);
+                return;
+            }
+            try {
+                var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
+                var metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin(topic, context);
+                var record = new ConsumerRecord<>(topic, 0, 0L, "test", jsonCallgraph.toString());
+                metadataPlugin.consume(topic, record);
+            } catch (SQLException e) {
+                logger.error("Could not connect to the database", e);
+            } catch (IllegalArgumentException e) {
+                logger.error("Incorrect database URL", e);
+            }
         }
     }
 }

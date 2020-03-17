@@ -1,0 +1,42 @@
+7c7
+<     "cha": {"/name.space/DiffExampleFirst": {
+---
+>     "cha": {"/name.space/DiffExampleSecond": {
+9,13c9,16
+<             "0": "/name.space/DiffExampleFirst.DiffExampleFirst()%2Fjava.lang%2FVoidType",
+<             "1": "/name.space/DiffExampleFirst.a()%2Fjava.lang%2FVoidType",
+<             "2": "/name.space/DiffExampleFirst.b()%2Fjava.lang%2FVoidType",
+<             "3": "/name.space/DiffExampleFirst.c()%2Fjava.lang%2FVoidType",
+<             "4": "/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoidType"
+---
+>             "0": "/name.space/DiffExampleSecond.DiffExampleSecond()%2Fjava.lang%2FVoidType",
+>             "1": "/name.space/DiffExampleSecond.a()%2Fjava.lang%2FVoidType",
+>             "2": "/name.space/DiffExampleSecond.b()%2Fjava.lang%2FVoidType",
+>             "3": "/name.space/DiffExampleSecond.c()%2Fjava.lang%2FVoidType",
+>             "4": "/name.space/DiffExampleSecond.e()%2Fjava.lang%2FVoidType",
+>             "5": "/name.space/DiffExampleSecond.f()%2Fjava.lang%2FVoidType",
+>             "6": "/name.space/DiffExampleSecond.g()%2Fjava.lang%2FVoidType",
+>             "7": "/name.space/DiffExampleSecond.h()%2Fjava.lang%2FVoidType"
+16c19
+<         "sourceFile": "DiffExampleFirst.java",
+---
+>         "sourceFile": "DiffExampleSecond.java",
+26,27c29,30
+<                 2,
+<                 3
+---
+>                 3,
+>                 2
+30c33
+<                 3,
+---
+>                 5,
+31a35,42
+>             ],
+>             [
+>                 6,
+>                 5
+>             ],
+>             [
+>                 7,
+>                 6

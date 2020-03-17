@@ -19,7 +19,6 @@
 package eu.fasten.analyzer.metadataplugin.db;
 
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -30,29 +29,43 @@ import org.postgresql.Driver;
 
 public class PostgresConnector {
 
-    public static DSLContext getDSLContext()
-            throws SQLException, IOException, IllegalArgumentException {
-        var connection = getConnection();
+    /**
+     * Establishes database connection.
+     *
+     * @param dbUrl URL of the database to connect
+     * @param user  Database user name
+     * @param pass  Database user password
+     * @return DSLContext for jOOQ to query the database
+     * @throws SQLException             if failed to set up connection
+     * @throws IllegalArgumentException if database URL has incorrect format and cannot be parsed
+     */
+    public static DSLContext getDSLContext(String dbUrl, String user, String pass)
+            throws SQLException, IllegalArgumentException {
+        if (!new Driver().acceptsURL(dbUrl)) {
+            throw new IllegalArgumentException("Incorrect database URI");
+        }
+        var connection = DriverManager.getConnection(dbUrl, user, pass);
         return DSL.using(connection, SQLDialect.POSTGRES);
     }
 
     /**
-     * Create a connection to the database specified in 'postgres.properties'.
+     * Establishes database connection.
      *
-     * @return SQL Connection object
+     * @return DSLContext for jOOQ to query the database
      * @throws SQLException             if failed to set up connection
      * @throws IOException              if failed to read the 'postgres.properties' file
-     * @throws IllegalArgumentException if in 'postgres.properties' is unparsable database URL
+     * @throws IllegalArgumentException if database URL has incorrect format and cannot be parsed
      */
-    public static Connection getConnection()
+    public static DSLContext getDSLContext()
             throws SQLException, IOException, IllegalArgumentException {
         var dbProps = getPostgresProperties();
         if (!new Driver().acceptsURL(dbProps.getProperty("dbUrl"))) {
             throw new IllegalArgumentException("Incorrect database URI");
         }
-        return DriverManager.getConnection(
+        var connection = DriverManager.getConnection(
                 dbProps.getProperty("dbUrl"), dbProps.getProperty("dbUser"),
                 dbProps.getProperty("dbPass"));
+        return DSL.using(connection, SQLDialect.POSTGRES);
     }
 
     private static Properties getPostgresProperties() throws IOException {

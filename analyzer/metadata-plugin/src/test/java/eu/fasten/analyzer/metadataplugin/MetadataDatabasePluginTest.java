@@ -40,7 +40,7 @@ public class MetadataDatabasePluginTest {
     @BeforeEach
     public void setUp() {
         DSLContext context = Mockito.mock(DSLContext.class);
-        metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin(context);
+        metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin("opal_callgraphs", context);
     }
 
     @Test

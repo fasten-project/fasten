@@ -27,6 +27,21 @@
             <artifactId>postgresql</artifactId>
             <version>9.4.1208</version>
         </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.0.4</version>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-simple</artifactId>-->
+<!--            <version>1.7.30</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-api</artifactId>-->
+<!--            <version>1.7.30</version>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -109,48 +124,48 @@
                 </configuration>
             </plugin>
 
-<!--            <plugin>-->
-<!--                <groupId>org.jooq</groupId>-->
-<!--                <artifactId>jooq-codegen-maven</artifactId>-->
-<!--                <version>3.12.3</version>-->
+            <!--            <plugin>-->
+            <!--                <groupId>org.jooq</groupId>-->
+            <!--                <artifactId>jooq-codegen-maven</artifactId>-->
+            <!--                <version>3.12.3</version>-->
 
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <goals>-->
-<!--                            <goal>generate</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <goals>-->
+            <!--                            <goal>generate</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
 
-<!--                <dependencies>-->
-<!--                    <dependency>-->
-<!--                        <groupId>org.postgresql</groupId>-->
-<!--                        <artifactId>postgresql</artifactId>-->
-<!--                        <version>9.4.1208</version>-->
-<!--                    </dependency>-->
-<!--                </dependencies>-->
+            <!--                <dependencies>-->
+            <!--                    <dependency>-->
+            <!--                        <groupId>org.postgresql</groupId>-->
+            <!--                        <artifactId>postgresql</artifactId>-->
+            <!--                        <version>9.4.1208</version>-->
+            <!--                    </dependency>-->
+            <!--                </dependencies>-->
 
-<!--                <configuration>-->
-<!--                    <jdbc>-->
-<!--                        <driver>org.postgresql.Driver</driver>-->
-<!--                        <url>jdbc:postgresql:postgres</url>-->
-<!--                        <user>postgres</user>-->
-<!--                        <password>pass123</password>-->
-<!--                    </jdbc>-->
+            <!--                <configuration>-->
+            <!--                    <jdbc>-->
+            <!--                        <driver>org.postgresql.Driver</driver>-->
+            <!--                        <url>jdbc:postgresql:postgres</url>-->
+            <!--                        <user>postgres</user>-->
+            <!--                        <password>pass123</password>-->
+            <!--                    </jdbc>-->
 
-<!--                    <generator>-->
-<!--                        <database>-->
-<!--                            <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
-<!--                            <includes>.*</includes>-->
-<!--                            <inputSchema>public</inputSchema>-->
-<!--                        </database>-->
-<!--                        <target>-->
-<!--                            <packageName>eu.fasten.analyzer.metadataplugin.db.codegen</packageName>-->
-<!--                            <directory>src/main/java</directory>-->
-<!--                        </target>-->
-<!--                    </generator>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
+            <!--                    <generator>-->
+            <!--                        <database>-->
+            <!--                            <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
+            <!--                            <includes>.*</includes>-->
+            <!--                            <inputSchema>public</inputSchema>-->
+            <!--                        </database>-->
+            <!--                        <target>-->
+            <!--                            <packageName>eu.fasten.analyzer.metadataplugin.db.codegen</packageName>-->
+            <!--                            <directory>src/main/java</directory>-->
+            <!--                        </target>-->
+            <!--                    </generator>-->
+            <!--                </configuration>-->
+            <!--            </plugin>-->
 
         </plugins>
     </build>
