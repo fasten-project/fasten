@@ -167,6 +167,7 @@ fabric.properties
 # When using Gradle or Maven with auto-import, you should exclude module files,
 # since they will be recreated, and may cause churn.  Uncomment if using
 # auto-import.
+.idea/*
 .idea/modules.xml
 .idea/*.iml
 .idea/modules
@@ -180,3 +181,5 @@ modules.xml
 .idea/misc.xml
 
 # End of https://www.gitignore.io/api/intellij
+
+!/analyzer/javacg-wala/src/test/resources/*.jar
