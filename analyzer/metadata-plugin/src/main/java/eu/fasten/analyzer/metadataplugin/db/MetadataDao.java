@@ -339,9 +339,13 @@ public class MetadataDao {
      * @return ID of the package if found, otherwise -1
      */
     public long getPackageIdByNameAndForge(String packageName, String forge) {
-        var resultRecord = context.selectFrom(Packages.PACKAGES)
+        var resultRecords = context.selectFrom(Packages.PACKAGES)
                 .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                .and(Packages.PACKAGES.FORGE.eq(forge)).fetchOne();
-        return resultRecord != null ? resultRecord.getValue(Packages.PACKAGES.ID) : -1L;
+                .and(Packages.PACKAGES.FORGE.eq(forge)).fetch();
+        if (resultRecords == null || resultRecords.isEmpty()) {
+            return -1L;
+        } else {
+            return resultRecords.getValues(Packages.PACKAGES.ID).get(0);
+        }
     }
 }

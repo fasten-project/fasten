@@ -30,15 +30,7 @@ import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.EdgesRecord;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.FilesRecord;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.PackageVersionsRecord;
 import eu.fasten.analyzer.metadataplugin.db.codegen.tables.records.PackagesRecord;
-import org.jooq.DSLContext;
-import org.jooq.InsertResultStep;
-import org.jooq.InsertValuesStep3;
-import org.jooq.InsertValuesStep5;
-import org.jooq.JSONB;
-import org.jooq.SelectConditionStep;
-import org.jooq.SelectJoinStep;
-import org.jooq.SelectSelectStep;
-import org.jooq.SelectWhereStep;
+import org.jooq.*;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -639,15 +631,16 @@ public class MetadataDaoTest {
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
         Mockito.when(selectStep.where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Packages.PACKAGES.FORGE.eq(forge))).thenReturn(selectCondStep);
-        var record = new PackagesRecord();
-        record.setId(id);
-        Mockito.when(selectCondStep.fetchOne()).thenReturn(record);
+        var resultSet = Mockito.mock(Result.class);
+        Mockito.when(resultSet.isEmpty()).thenReturn(false);
+        Mockito.when(resultSet.getValues(Packages.PACKAGES.ID)).thenReturn(Collections.singletonList(id));
+        Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
         var result = metadataDao.getPackageIdByNameAndForge(packageName, forge);
         assertEquals(id, result);
     }
 
     @Test
-    public void getPackageIdByNameAndForgeNotFoundTest() {
+    public void getPackageIdByNameAndForgeNotFoundTest1() {
         var notFound = -1L;
         var packageName = "package";
         var forge = "mvn";
@@ -656,7 +649,24 @@ public class MetadataDaoTest {
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
         Mockito.when(selectStep.where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Packages.PACKAGES.FORGE.eq(forge))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.fetchOne()).thenReturn(null);
+        Mockito.when(selectCondStep.fetch()).thenReturn(null);
+        var result = metadataDao.getPackageIdByNameAndForge(packageName, forge);
+        assertEquals(notFound, result);
+    }
+
+    @Test
+    public void getPackageIdByNameAndForgeNotFoundTest2() {
+        var notFound = -1L;
+        var packageName = "package";
+        var forge = "mvn";
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(Packages.PACKAGES)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(Packages.PACKAGES.FORGE.eq(forge))).thenReturn(selectCondStep);
+        var resultSet = Mockito.mock(Result.class);
+        Mockito.when(resultSet.isEmpty()).thenReturn(true);
+        Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
         var result = metadataDao.getPackageIdByNameAndForge(packageName, forge);
         assertEquals(notFound, result);
     }
