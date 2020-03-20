@@ -35,20 +35,20 @@ import org.mockito.Mockito;
 
 public class MetadataDatabasePluginTest {
 
-    private MetadataDatabasePlugin.MetadataPlugin metadataPlugin;
+    private MetadataDatabasePlugin.MetadataDBExtension metadataDBExtension;
 
     @BeforeEach
     public void setUp() {
         DSLContext context = Mockito.mock(DSLContext.class);
-        metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin("opal_callgraphs", context);
+        metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension("opal_callgraphs", context);
     }
 
     @Test
     public void consumeJsonErrorTest() {
         var topic = "opal_callgraphs";
         var record = new ConsumerRecord<>(topic, 0, 0L, "test", "{\"foo\":\"bar\"}");
-        metadataPlugin.consume(topic, record);
-        assertFalse(metadataPlugin.recordProcessSuccessful());
+        metadataDBExtension.consume(topic, record);
+        assertFalse(metadataDBExtension.recordProcessSuccessful());
     }
 
     @Test
@@ -119,7 +119,7 @@ public class MetadataDatabasePluginTest {
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
-        long id = metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
@@ -212,7 +212,7 @@ public class MetadataDatabasePluginTest {
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
-        long id = metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
@@ -305,8 +305,8 @@ public class MetadataDatabasePluginTest {
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
-        metadataPlugin.setPluginError(new RuntimeException());
-        long id = metadataPlugin.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        metadataDBExtension.setPluginError(new RuntimeException());
+        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
@@ -322,25 +322,25 @@ public class MetadataDatabasePluginTest {
     public void saveToDatabaseEmptyJsonTest() {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject();
-        assertThrows(JSONException.class, () -> metadataPlugin
+        assertThrows(JSONException.class, () -> metadataDBExtension
                 .saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao));
     }
 
     @Test
     public void consumerTopicsTest() {
         var topics = Collections.singletonList("opal_callgraphs");
-        assertEquals(topics, metadataPlugin.consumerTopics());
+        assertEquals(topics, metadataDBExtension.consumerTopics());
     }
 
     @Test
     public void recordProcessSuccessfulTest() {
-        assertFalse(metadataPlugin.recordProcessSuccessful());
+        assertFalse(metadataDBExtension.recordProcessSuccessful());
     }
 
     @Test
     public void nameTest() {
         var name = "Metadata plugin";
-        assertEquals(name, metadataPlugin.name());
+        assertEquals(name, metadataDBExtension.name());
     }
 
     @Test
@@ -348,6 +348,6 @@ public class MetadataDatabasePluginTest {
         var description = "Metadata plugin. "
                 + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
                 + " and populates metadata database with consumed data.";
-        assertEquals(description, metadataPlugin.description());
+        assertEquals(description, metadataDBExtension.description());
     }
 }

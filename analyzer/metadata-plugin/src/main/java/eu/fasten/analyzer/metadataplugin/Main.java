@@ -88,7 +88,7 @@ public class Main implements Runnable {
         if (jsonFile == null || jsonFile.isEmpty()) {
             try {
                 final var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
-                var metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin(topic, context);
+                var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension(topic, context);
                 var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
                         this.getClass().getCanonicalName());
                 new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
@@ -108,7 +108,7 @@ public class Main implements Runnable {
             }
             try {
                 final var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
-                var metadataPlugin = new MetadataDatabasePlugin.MetadataPlugin(topic, context);
+                var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension(topic, context);
                 final var record = new ConsumerRecord<>(topic, 0, 0L, "test",
                         jsonCallgraph.toString());
                 metadataPlugin.consume(topic, record);

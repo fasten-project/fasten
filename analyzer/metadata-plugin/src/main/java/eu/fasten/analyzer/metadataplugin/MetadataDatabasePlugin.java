@@ -48,13 +48,13 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataPlugin implements KafkaConsumer<String> {
+    public static class MetadataDBExtension implements KafkaConsumer<String> {
 
         private String topic;
         private DSLContext dslContext;
         private boolean processedRecord = false;
         private String pluginError = "";
-        private final Logger logger = LoggerFactory.getLogger(MetadataPlugin.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
 
@@ -67,7 +67,7 @@ public class MetadataDatabasePlugin extends Plugin {
          * @throws SQLException             if cannot connect to the database
          * @throws IllegalArgumentException if database URL in `postgres.properties` is malformed
          */
-        public MetadataPlugin(String callgraphTopic) throws IOException, SQLException,
+        public MetadataDBExtension(String callgraphTopic) throws IOException, SQLException,
                 IllegalArgumentException {
             this(callgraphTopic, PostgresConnector.getDSLContext());
         }
@@ -78,7 +78,7 @@ public class MetadataDatabasePlugin extends Plugin {
          * @param callgraphTopic Topic from which to consume call graphs
          * @param dslContext     DSLContext for jOOQ to query the database
          */
-        public MetadataPlugin(String callgraphTopic, DSLContext dslContext) {
+        public MetadataDBExtension(String callgraphTopic, DSLContext dslContext) {
             super();
             this.dslContext = dslContext;
             this.topic = callgraphTopic;
@@ -87,6 +87,11 @@ public class MetadataDatabasePlugin extends Plugin {
         @Override
         public List<String> consumerTopics() {
             return new ArrayList<>(Collections.singletonList(topic));
+        }
+
+        @Override
+        public void setTopic(String topicName) {
+            this.topic = topicName;
         }
 
         @Override
