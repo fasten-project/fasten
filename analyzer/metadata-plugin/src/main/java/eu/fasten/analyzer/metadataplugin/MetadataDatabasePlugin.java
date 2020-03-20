@@ -81,7 +81,7 @@ public class MetadataDatabasePlugin extends Plugin {
         public MetadataDBExtension(String callgraphTopic, DSLContext dslContext) {
             super();
             this.dslContext = dslContext;
-            this.topic = callgraphTopic;
+            this.setTopic(callgraphTopic);
         }
 
         @Override
