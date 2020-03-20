@@ -34,6 +34,8 @@
         <property name="optional" value="true"/>
     </module>
 
+    <module name="SuppressWarningsFilter" />
+
     <!-- Checks for whitespace                               -->
     <!-- See http://checkstyle.org/config_whitespace.html -->
     <module name="FileTabCharacter">
@@ -47,6 +49,10 @@
     </module>
 
     <module name="TreeWalker">
+        <module name="SuppressWarningsHolder" />
+        <module name="SuppressionXpathSingleFilter">
+            <property name="files" value="codegen"/>
+        </module>
         <module name="OuterTypeFilename"/>
         <module name="IllegalTokenText">
             <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>
