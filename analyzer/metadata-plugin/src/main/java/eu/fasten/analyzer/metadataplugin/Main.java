@@ -85,38 +85,44 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        if (jsonFile == null || jsonFile.isEmpty()) {
-            try {
-                final var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
-                var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension(topic, context);
-                var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
-                        this.getClass().getCanonicalName());
-                new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
-            } catch (SQLException e) {
-                logger.error("Could not connect to the database", e);
-            } catch (IllegalArgumentException e) {
-                logger.error("Incorrect database URL", e);
+
+        try {
+            var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
+            metadataPlugin.setTopic(topic);
+            metadataPlugin.getDBAccess(dbUrl, dbUser, dbPass);
+
+            if (jsonFile == null || jsonFile.isEmpty()) {
+                try {
+
+                    var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
+                            this.getClass().getCanonicalName());
+                    new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
+
+                    // TODO: IllegalArgumentException should be removed from here?
+                    //  since the plug-in constructor has changed
+                } catch (IllegalArgumentException e) {
+                    logger.error("Incorrect database URL", e);
+                }
+            } else {
+                final var filePath = Paths.get(jsonFile);
+                var jsonCallgraph = new JSONObject();
+                try {
+                    jsonCallgraph = new JSONObject(Files.readString(filePath));
+                } catch (IOException e) {
+                    logger.error("Could not find the JSON file at " + jsonFile, e);
+                    return;
+                }
+                try {
+                    final var record = new ConsumerRecord<>(topic, 0, 0L, "test",
+                            jsonCallgraph.toString());
+                    metadataPlugin.consume(topic, record);
+                } catch (IllegalArgumentException e) {
+                    logger.error("Incorrect database URL", e);
+                }
             }
-        } else {
-            final var filePath = Paths.get(jsonFile);
-            var jsonCallgraph = new JSONObject();
-            try {
-                jsonCallgraph = new JSONObject(Files.readString(filePath));
-            } catch (IOException e) {
-                logger.error("Could not find the JSON file at " + jsonFile, e);
-                return;
-            }
-            try {
-                final var context = PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass);
-                var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension(topic, context);
-                final var record = new ConsumerRecord<>(topic, 0, 0L, "test",
-                        jsonCallgraph.toString());
-                metadataPlugin.consume(topic, record);
-            } catch (SQLException e) {
-                logger.error("Could not connect to the database", e);
-            } catch (IllegalArgumentException e) {
-                logger.error("Incorrect database URL", e);
-            }
+
+        } catch (SQLException e) {
+            logger.error("Could not connect to the database", e);
         }
     }
 }

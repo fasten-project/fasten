@@ -21,6 +21,7 @@ package eu.fasten.analyzer.metadataplugin;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -48,7 +49,7 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBExtension implements KafkaConsumer<String> {
+    public static class MetadataDBExtension implements KafkaConsumer<String>, DBConnector {
 
         private String topic;
         private DSLContext dslContext;
@@ -58,30 +59,35 @@ public class MetadataDatabasePlugin extends Plugin {
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
 
-        /**
-         * Constructor for MetadataPlugin with default DSLContext
-         * with parameters from `postgres.properties`.
-         *
-         * @param callgraphTopic Topic from which to consume call graphs
-         * @throws IOException              if cannot read file `postgres.properties`
-         * @throws SQLException             if cannot connect to the database
-         * @throws IllegalArgumentException if database URL in `postgres.properties` is malformed
-         */
-        public MetadataDBExtension(String callgraphTopic) throws IOException, SQLException,
-                IllegalArgumentException {
-            this(callgraphTopic, PostgresConnector.getDSLContext());
-        }
+//        /**
+//         * Constructor for MetadataPlugin with default DSLContext
+//         * with parameters from `postgres.properties`.
+//         *
+//         * @param callgraphTopic Topic from which to consume call graphs
+//         * @throws IOException              if cannot read file `postgres.properties`
+//         * @throws SQLException             if cannot connect to the database
+//         * @throws IllegalArgumentException if database URL in `postgres.properties` is malformed
+//         */
+//        public MetadataDBExtension(String callgraphTopic) throws IOException, SQLException,
+//                IllegalArgumentException {
+//            this(callgraphTopic, PostgresConnector.getDSLContext());
+//        }
 
-        /**
-         * Constructor for MetadataPlugin with provided DSLContext.
-         *
-         * @param callgraphTopic Topic from which to consume call graphs
-         * @param dslContext     DSLContext for jOOQ to query the database
-         */
-        public MetadataDBExtension(String callgraphTopic, DSLContext dslContext) {
-            super();
-            this.dslContext = dslContext;
-            this.topic = callgraphTopic;
+//        /**
+//         * Constructor for MetadataPlugin with provided DSLContext.
+//         *
+//         * @param callgraphTopic Topic from which to consume call graphs
+//         * @param dslContext     DSLContext for jOOQ to query the database
+//         */
+//        public MetadataDBExtension(String callgraphTopic, DSLContext dslContext) {
+//            super();
+//            this.dslContext = dslContext;
+//            this.topic = callgraphTopic;
+//        }
+
+        @Override
+        public void getDBAccess(String DBUrl, String username, String password) throws SQLException {
+            PostgresConnector.getDSLContext(DBUrl, username, password);
         }
 
         @Override
@@ -271,5 +277,6 @@ public class MetadataDatabasePlugin extends Plugin {
         public void freeResource() {
 
         }
+
     }
 }
