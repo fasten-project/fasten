@@ -52,7 +52,7 @@ public class WALAPlugin extends Plugin {
 
         private static org.apache.kafka.clients.producer
                 .KafkaProducer<Object, String> kafkaProducer;
-        final String consumeTopic = "maven.packages";
+        private String consumeTopic = "maven.packages";
         final String produceTopic = "wala_callgraphs";
         private boolean processedRecord;
         private String pluginError = "";
@@ -60,6 +60,11 @@ public class WALAPlugin extends Plugin {
         @Override
         public List<String> consumerTopics() {
             return new ArrayList<>(Collections.singletonList(consumeTopic));
+        }
+
+        @Override
+        public void setTopic(String topicName) {
+            this.consumeTopic = topicName;
         }
 
         @Override
