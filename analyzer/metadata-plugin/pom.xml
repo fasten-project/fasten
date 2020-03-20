@@ -36,7 +36,7 @@
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20180813</version>
-            <scope>provided</scope>
+<!--            <scope>provided</scope>-->
         </dependency>
         <dependency>
             <groupId>eu.fasten</groupId>
@@ -47,23 +47,23 @@
             <groupId>eu.fasten</groupId>
             <artifactId>server</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <scope>provided</scope>
+<!--            <scope>provided</scope>-->
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.slf4j</groupId>-->
-<!--            <artifactId>slf4j-simple</artifactId>-->
-<!--            <version>1.7.30</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.slf4j</groupId>-->
-<!--            <artifactId>slf4j-api</artifactId>-->
-<!--            <version>1.7.30</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.pf4j</groupId>-->
-<!--            <artifactId>pf4j</artifactId>-->
-<!--            <version>3.1.0</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+        <dependency>
+            <groupId>org.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
+            <version>3.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -80,34 +80,34 @@
                         <configuration>
                             <minimizeJar>false</minimizeJar>
                             <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
-                            <artifactSet>
-                                <excludes>
-                                    <exclude>org.apache.kafka:kafka-clients:*</exclude>
-                                    <exclude>com.martiansoftware:jsap:*</exclude>
-                                    <exclude>it.unimi.dsi:dsiutils:*</exclude>
-                                    <exclude>it.unimi.dsi:fastutil:*</exclude>
-                                    <exclude>org.codehaus.mojo:animal-sniffer-annotations:*</exclude>
-                                    <exclude>it.unimi.dsi:webgraph:*</exclude>
-                                    <exclude>it.unimi.dsi:sux4j:*</exclude>
-                                    <exclude>org.rocksdb:rocksdbjni:*</exclude>
-                                    <exclude>com.googlecode.javaewah:*</exclude>
-                                    <exclude>org.checkerframework:checker-qual:*</exclude>
-                                    <exclude>org.objenesis:objenesis:*</exclude>
-                                    <exclude>com.esotericsoftware:minlog:*</exclude>
-                                    <exclude>com.esotericsoftware:reflectasm:*</exclude>
-                                    <exclude>com.esotericsoftware:kryo:*</exclude>
-                                    <exclude>org.reactivestreams:reactive-streams:*</exclude>
-                                    <exclude>com.google.code.findbugs:jsr305:*</exclude>
-                                    <exclude>com.google.j2objc:j2objc-annotations:*</exclude>
-                                    <exclude>com.google.errorprone:error_prone_annotations:*</exclude>
-                                    <exclude>com.github.luben:zstd-jni:*</exclude>
-                                    <exclude>net.sf.jung:jung-api:*</exclude>
-                                    <exclude>net.sf.jung:jung-io:*</exclude>
-                                    <exclude>net.sf.jung:jung-algorithms:*</exclude>
-                                    <exclude>com.jcraft:jsch:*</exclude>
-                                    <exclude>com.jcraft:jzlib:*</exclude>
-                                </excludes>
-                            </artifactSet>
+<!--                            <artifactSet>-->
+<!--                                <excludes>-->
+<!--                                    <exclude>org.apache.kafka:kafka-clients:*</exclude>-->
+<!--                                    <exclude>com.martiansoftware:jsap:*</exclude>-->
+<!--                                    <exclude>it.unimi.dsi:dsiutils:*</exclude>-->
+<!--                                    <exclude>it.unimi.dsi:fastutil:*</exclude>-->
+<!--                                    <exclude>org.codehaus.mojo:animal-sniffer-annotations:*</exclude>-->
+<!--                                    <exclude>it.unimi.dsi:webgraph:*</exclude>-->
+<!--                                    <exclude>it.unimi.dsi:sux4j:*</exclude>-->
+<!--                                    <exclude>org.rocksdb:rocksdbjni:*</exclude>-->
+<!--                                    <exclude>com.googlecode.javaewah:*</exclude>-->
+<!--                                    <exclude>org.checkerframework:checker-qual:*</exclude>-->
+<!--                                    <exclude>org.objenesis:objenesis:*</exclude>-->
+<!--                                    <exclude>com.esotericsoftware:minlog:*</exclude>-->
+<!--                                    <exclude>com.esotericsoftware:reflectasm:*</exclude>-->
+<!--                                    <exclude>com.esotericsoftware:kryo:*</exclude>-->
+<!--                                    <exclude>org.reactivestreams:reactive-streams:*</exclude>-->
+<!--                                    <exclude>com.google.code.findbugs:jsr305:*</exclude>-->
+<!--                                    <exclude>com.google.j2objc:j2objc-annotations:*</exclude>-->
+<!--                                    <exclude>com.google.errorprone:error_prone_annotations:*</exclude>-->
+<!--                                    <exclude>com.github.luben:zstd-jni:*</exclude>-->
+<!--                                    <exclude>net.sf.jung:jung-api:*</exclude>-->
+<!--                                    <exclude>net.sf.jung:jung-io:*</exclude>-->
+<!--                                    <exclude>net.sf.jung:jung-algorithms:*</exclude>-->
+<!--                                    <exclude>com.jcraft:jsch:*</exclude>-->
+<!--                                    <exclude>com.jcraft:jzlib:*</exclude>-->
+<!--                                </excludes>-->
+<!--                            </artifactSet>-->
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
