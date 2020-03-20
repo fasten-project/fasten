@@ -337,6 +337,16 @@ public class MetadataDatabasePluginTest {
     }
 
     @Test
+    public void consumerTopicChangeTest() {
+        var topics1 = Collections.singletonList("opal_callgraphs");
+        assertEquals(topics1, metadataDBExtension.consumerTopics());
+        var differentTopic = "DifferentKafkaTopic";
+        var topics2 = Collections.singletonList(differentTopic);
+        metadataDBExtension.setTopic(differentTopic);
+        assertEquals(topics2, metadataDBExtension.consumerTopics());
+    }
+
+    @Test
     public void recordProcessSuccessfulTest() {
         assertFalse(metadataDBExtension.recordProcessSuccessful());
     }
