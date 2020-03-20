@@ -92,17 +92,9 @@ public class Main implements Runnable {
             metadataPlugin.getDBAccess(dbUrl, dbUser, dbPass);
 
             if (jsonFile == null || jsonFile.isEmpty()) {
-                try {
-
-                    var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
-                            this.getClass().getCanonicalName());
-                    new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
-
-                    // TODO: IllegalArgumentException should be removed from here?
-                    //  since the plug-in constructor has changed
-                } catch (IllegalArgumentException e) {
-                    logger.error("Incorrect database URL", e);
-                }
+                var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
+                        this.getClass().getCanonicalName());
+                new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
             } else {
                 final var filePath = Paths.get(jsonFile);
                 var jsonCallgraph = new JSONObject();

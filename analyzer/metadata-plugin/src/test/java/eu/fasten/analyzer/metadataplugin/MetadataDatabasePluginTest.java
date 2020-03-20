@@ -40,8 +40,6 @@ public class MetadataDatabasePluginTest {
 
     @BeforeEach
     public void setUp() throws SQLException {
-        // TODO: Using Mockito for DB credentials?
-        //DSLContext context = Mockito.mock(DSLContext.class);
         metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
         metadataDBExtension.setTopic("opal_callgraphs");
         metadataDBExtension.getDBAccess("jdbc:postgresql:postgres", "postgres", "pass123");

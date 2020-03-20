@@ -18,10 +18,8 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
-import java.io.IOException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -42,7 +40,7 @@ public class PostgresConnector {
     public static DSLContext getDSLContext(String dbUrl, String user, String pass)
             throws SQLException, IllegalArgumentException {
         if (!new Driver().acceptsURL(dbUrl)) {
-            throw new IllegalArgumentException("Incorrect database URI");
+            throw new IllegalArgumentException("Could not parse database URI: " + dbUrl);
         }
         var connection = DriverManager.getConnection(dbUrl, user, pass);
         return DSL.using(connection, SQLDialect.POSTGRES);
