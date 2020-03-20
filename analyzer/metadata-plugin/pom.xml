@@ -49,21 +49,21 @@
             <version>0.0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.slf4j</groupId>-->
-<!--            <artifactId>slf4j-simple</artifactId>-->
-<!--            <version>1.7.30</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.slf4j</groupId>-->
-<!--            <artifactId>slf4j-api</artifactId>-->
-<!--            <version>1.7.30</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.pf4j</groupId>-->
-<!--            <artifactId>pf4j</artifactId>-->
-<!--            <version>3.1.0</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+        <dependency>
+            <groupId>org.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
+            <version>3.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -174,9 +174,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <annotationProcessors>
-                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
-                    </annotationProcessors>
+<!--                    <annotationProcessors>-->
+<!--                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>-->
+<!--                    </annotationProcessors>-->
                     <source>1.11</source>
                     <target>1.11</target>
                 </configuration>
@@ -219,7 +219,7 @@
 <!--                                <inputSchema>public</inputSchema>-->
 <!--                            </database>-->
 <!--                            <target>-->
-<!--                                <packageName>eu.fasten.analyzer.metadataplugin.db.codegen</packageName>-->
+<!--                                <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>-->
 <!--                                <directory>src/main/java</directory>-->
 <!--                            </target>-->
 <!--                        </generator>-->
@@ -237,7 +237,6 @@
                 <version>0.8.2</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/codegen/**/*</exclude>
                         <exclude>**/PostgresConnector.*</exclude>
                         <exclude>**/Main.*</exclude>
                     </excludes>

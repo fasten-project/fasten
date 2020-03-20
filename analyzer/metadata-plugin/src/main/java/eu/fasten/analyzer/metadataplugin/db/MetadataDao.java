@@ -18,12 +18,12 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Callables;
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Dependencies;
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Edges;
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Files;
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.PackageVersions;
-import eu.fasten.analyzer.metadataplugin.db.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
+import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
