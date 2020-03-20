@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,9 +39,12 @@ public class MetadataDatabasePluginTest {
     private MetadataDatabasePlugin.MetadataDBExtension metadataDBExtension;
 
     @BeforeEach
-    public void setUp() {
-        DSLContext context = Mockito.mock(DSLContext.class);
-        metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension("opal_callgraphs", context);
+    public void setUp() throws SQLException {
+        // TODO: Using Mockito for DB credentials?
+        //DSLContext context = Mockito.mock(DSLContext.class);
+        metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
+        metadataDBExtension.setTopic("opal_callgraphs");
+        metadataDBExtension.getDBAccess("jdbc:postgresql:postgres", "postgres", "pass123");
     }
 
     @Test
