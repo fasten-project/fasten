@@ -60,11 +60,12 @@ public class MetadataDatabasePlugin extends Plugin {
         private final int transactionRestartLimit = 3;
 
         @Override
-        public void getDBAccess(String DBUrl, String username, String password) throws SQLException {
+        public void getDBAccess(String dbUrl, String username, String password)
+                throws SQLException {
             try {
-                this.dslContext = PostgresConnector.getDSLContext(DBUrl, username, password);
+                this.dslContext = PostgresConnector.getDSLContext(dbUrl, username, password);
             } catch (IllegalArgumentException e) {
-                logger.error("Malformed database URI: " + DBUrl, e);
+                logger.error("Malformed database URI: " + dbUrl, e);
                 setPluginError(e);
             }
         }
