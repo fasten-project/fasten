@@ -87,7 +87,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public void getDBAccess(String DBUrl, String username, String password) throws SQLException {
-            PostgresConnector.getDSLContext(DBUrl, username, password);
+            this.dslContext = PostgresConnector.getDSLContext(DBUrl, username, password);
         }
 
         @Override
