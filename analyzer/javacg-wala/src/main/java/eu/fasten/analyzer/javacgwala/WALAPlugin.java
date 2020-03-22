@@ -20,7 +20,7 @@ package eu.fasten.analyzer.javacgwala;
 
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
-import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
+import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.KafkaConsumer;

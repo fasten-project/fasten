@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.merge;
 
-import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import java.io.File;

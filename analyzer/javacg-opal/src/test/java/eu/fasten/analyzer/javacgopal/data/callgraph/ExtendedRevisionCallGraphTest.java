@@ -23,13 +23,14 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Objects;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -142,7 +143,7 @@ public class ExtendedRevisionCallGraphTest {
     }
 
     @Test
-    public void testExtendedRevisionCallGraph() {
+    public void testExtendedRevisionCallGraph() throws JSONException {
 
         final var cgFromJSON = new ExtendedRevisionCallGraph(new JSONObject(cgString));
 
@@ -177,7 +178,7 @@ public class ExtendedRevisionCallGraphTest {
 
 
     @Test
-    public void testgetCHAFromJSON() {
+    public void testgetCHAFromJSON() throws JSONException {
         assertEquals("{/name.space/DiffExampleFirst="
                 + "Type{sourceFileName='DiffExampleFirst.java',"
                 + " methods={"
@@ -193,7 +194,7 @@ public class ExtendedRevisionCallGraphTest {
     }
 
     @Test
-    public void testSortInternalCalls() {
+    public void testSortInternalCalls() throws JSONException {
         final var unorderdCGString = cgString.replace("[[1,2],[2,3],[3,4]]", "[[2,3],[3,4],[1,2]]");
         final var unorderedCG = new ExtendedRevisionCallGraph(new JSONObject(unorderdCGString));
         assertEquals("[[2, 3], [3, 4], [1, 2]]",

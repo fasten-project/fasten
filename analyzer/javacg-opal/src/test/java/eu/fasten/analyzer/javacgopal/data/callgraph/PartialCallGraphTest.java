@@ -21,7 +21,7 @@ package eu.fasten.analyzer.javacgopal.data.callgraph;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.OPALType;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
@@ -98,7 +98,7 @@ public class PartialCallGraphTest {
             .createExtendedRevisionCallGraph(
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
 
-        ExtendedRevisionCallGraphTest.assertSLF4j(rcg);
+        eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraphTest.assertSLF4j(rcg);
 
     }
 

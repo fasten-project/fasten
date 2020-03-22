@@ -19,7 +19,13 @@
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-<!--            <scope>provided</scope>-->
+            <!--<scope>provided</scope>-->
+        </dependency>
+        <dependency>
+            <groupId>eu.fasten.analyzer</groupId>
+            <artifactId>base-analyzer</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <!--<scope>provided</scope>-->
         </dependency>
         <dependency>
             <groupId>de.opal-project</groupId>
@@ -32,25 +38,10 @@
             <version>1.0.0</version>
         </dependency>
         <dependency>
-            <groupId>org.dom4j</groupId>
-            <artifactId>dom4j</artifactId>
-            <version>2.1.1</version>
-        </dependency>
-        <dependency>
-            <groupId>jaxen</groupId>
-            <artifactId>jaxen</artifactId>
-            <version>1.2.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.skyscreamer</groupId>
             <artifactId>jsonassert</artifactId>
             <version>1.5.0</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.0.4</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -65,7 +56,7 @@
     </dependencies>
 
     <build>
-        <testSourceDirectory>${project.basedir}/src/test/java/eu/fasten/analyzer/javacgopal/</testSourceDirectory>
+        <testSourceDirectory>${project.basedir}/src/test/java/</testSourceDirectory>
         <plugins>
 <!--            <plugin>-->
 <!--                <artifactId>maven-jar-plugin</artifactId>-->

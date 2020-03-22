@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgwala.data;
+package eu.fasten.analyzer.baseanalyzer;
 
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.BufferedReader;
@@ -226,7 +226,7 @@ public class MavenCoordinate {
          * Return a list of dependencies in given profile node or of the entire project if profiles
          * were not present in pom.xml.
          *
-         * @param node Dependencies node from profile or entire project
+         * @param node       Dependencies node from profile or entire project
          * @param properties A map containing properties from pom.xml
          * @return List of dependencies
          */
