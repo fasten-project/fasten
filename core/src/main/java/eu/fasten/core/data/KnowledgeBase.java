@@ -86,6 +86,15 @@ import it.unimi.dsi.webgraph.Transform;
 
 /**  Instances of this class represent a knowledge base (i.e., a set of revision call graphs).
  *   The knowledge base keeps the actual graphs in an associated {@linkplain #callGraphDB database}.
+ *   Nodes in each call graphs are can be identified in many different ways:
+ *   <ul>
+ *   	<li>by means of a generic (i.e., schemeless, forgeless, productless and versionless) FASTEN URI;
+ *      <li>through a global identifier (GID), that uniquely identifies its generic URI;
+ *      <li>through a local identifier (LID), that identifies that node within its call graph. LIDs of internal nodes are smaller than LIDs of external nodes;
+ *         more precisely, if a graph has <var>a</var> internal nodes and <var>b</var> external nodes, LIDs from 0 (inclusive) to <var>a</var> (exclusive) correspond
+ *         to its internal nodes, and LIDs from <var>a</var> (inclusive) to <var>a</var>+<var>b</var> (exclusive) correspond to its external nodes;
+ *       <li>for internal nodes only: through the JSON identifier, that is the integer used to identify that node within the JSON object that represents that call graph.
+ *   </ul>
  */
 public class KnowledgeBase implements Serializable, Closeable {
 	private static final long serialVersionUID = 1L;
@@ -189,12 +198,19 @@ public class KnowledgeBase implements Serializable, Closeable {
 	private String metadataPathname;
 
 
+	/** Instances of this class contain the data relative to a call graph that are stored in the database. */ 
 	public static final class CallGraphData {
-		public final ImmutableGraph graph, transpose;
-		public final Properties graphProperties, transposeProperties;
-		/** Maps LIDs to GIDs. TODO: in database */
+		/** The call graph. */
+		public final ImmutableGraph graph;
+		/** The transpose graph. */
+		public final ImmutableGraph transpose;
+		/** Properties (in the sense of {@link ImmutableGraph}) of the call graph. */
+		public final Properties graphProperties;
+		/** Properties (in the sense of {@link ImmutableGraph}) of the transpose graph. */
+		public final Properties transposeProperties;
+		/** Maps LIDs to GIDs. */
 		public final long[] LID2GID;
-		/** Inverse to {@link #LID2GID}: maps GIDs to LIDs. TODO: in database */
+		/** Inverse to {@link #LID2GID}: maps GIDs to LIDs. */
 		public final Long2IntOpenHashMap GID2LID;
 
 		public CallGraphData(final ImmutableGraph graph, final ImmutableGraph transpose, final Properties graphProperties, final Properties transposeProperties, final long[] LID2GID, final Long2IntOpenHashMap GID2LID) {
@@ -253,8 +269,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 			final LongLinkedOpenHashSet internalGIDs = new LongLinkedOpenHashSet(); // List of internal GIDs
 			final LongLinkedOpenHashSet externalGIDs = new LongLinkedOpenHashSet(); // List of external GIDs
-			final Int2IntOpenHashMap jsonId2Temporary = new Int2IntOpenHashMap();
+			final Int2IntOpenHashMap jsonId2Temporary = new Int2IntOpenHashMap(); // Maps JSON ids of internal nodes to a temporary index 
 
+			// First enumerate all internal nodes, add their URIs to the global maps if necessary, and assign them a temporary index
+			// Update jsonId2Temporary accordingly
 			final Map<Integer, FastenURI> mapOfAllMethods = g.mapOfAllMethods();
 			for(final Entry<Integer, FastenURI> e : mapOfAllMethods.entrySet()) {
 				final int jsonId = e.getKey().intValue();
@@ -268,6 +286,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 			nInternal = internalGIDs.size();
 
+			// Enumerate all external arcs, add the target URIs to the global maps if necessary. Note that they don't have a JSON id.
+			// While performing the enumeration, we check that their generic URIs don't appear already among those of internal nodes.
 			for(final Pair<Integer, FastenURI> e : g.getGraph().getExternalCalls().keySet()) {
 				final FastenURI uri = e.getValue();
 				final FastenURI genericUri = FastenURI.createSchemeless(null, null, null, uri.getRawNamespace(), uri.getRawEntity());
@@ -280,9 +300,11 @@ public class KnowledgeBase implements Serializable, Closeable {
 			}
 
 
+			// Now compute the map from temporary indices to GIDs (all GIDs are in the global maps, by now)
 			final long[] temporary2GID = new long[internalGIDs.size() + externalGIDs.size()];
 			LongIterators.unwrap(internalGIDs.iterator(), temporary2GID);
 			LongIterators.unwrap(externalGIDs.iterator(), temporary2GID, nInternal, temporary2GID.length - nInternal);
+			// Compute the reverse map
 			final Long2IntOpenHashMap GID2Temporary = new Long2IntOpenHashMap();
 			GID2Temporary.defaultReturnValue(-1);
 			for(int i = 0; i < temporary2GID.length; i++) {
@@ -291,8 +313,11 @@ public class KnowledgeBase implements Serializable, Closeable {
 			}
 
 			// Create, store and load compressed versions of the graph and of the transpose.
+			
+			// First create the graph as an ArrayListMutableGraph
 			final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(temporary2GID.length);
 
+			// Add arcs between internal nodes
 			for(final List<Integer> a : g.getGraph().getInternalCalls()) {
 				final int jsonSource = a.get(0).intValue();
 				final int jsonTarget = a.get(1).intValue();
@@ -304,6 +329,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 				}
 			}
 
+			// Add external calls
 			for(final Pair<Integer, FastenURI> a : g.getGraph().getExternalCalls().keySet()) {
 				final int jsonSource = a.getLeft().intValue();
 				final FastenURI targetUri = a.getRight();
@@ -334,7 +360,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
 			kryo.writeObject(bbo, BVGraph.load(f.toString()));
 
-			// Permute LID2GID accordingly
+			// Compute LIDs according to the current node renumbering based on BFS
 			final long[] LID2GID = new long[temporary2GID.length];
 			final Long2IntOpenHashMap GID2LID = new Long2IntOpenHashMap();
 
@@ -353,6 +379,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			kryo.writeObject(bbo, graphProperties);
 			kryo.writeObject(bbo, transposeProperties);
 
+			// Write out maps
 			kryo.writeObject(bbo, LID2GID);
 			kryo.writeObject(bbo, GID2LID);
 
