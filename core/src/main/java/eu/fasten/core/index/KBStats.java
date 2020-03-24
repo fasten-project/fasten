@@ -1,7 +1,6 @@
 package eu.fasten.core.index;
 
 import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -24,9 +23,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.PrintStream;
-import java.util.Properties;
 
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -43,6 +40,7 @@ import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.CallGraph;
+import eu.fasten.core.data.KnowledgeBase.CallGraphData;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.webgraph.ImmutableGraph;
 import it.unimi.dsi.webgraph.LazyIntIterator;
@@ -52,9 +50,6 @@ import it.unimi.dsi.webgraph.NodeIterator;
 public class KBStats {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(KBStats.class);
-
-	private static ImmutableGraph[] graph;
-	private static Properties[] property;
 
 	public static void main(final String[] args) throws JSAPException, ClassNotFoundException, RocksDBException, IOException {
 		final SimpleJSAP jsap = new SimpleJSAP(KBStats.class.getName(),
@@ -78,18 +73,18 @@ public class KBStats {
 		LOGGER.info("Loading KnowledgeBase metadata");
 		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
 		LOGGER.info("Number of graphs: " + kb.callGraphs.size());
-		
-		ProgressLogger pl = new ProgressLogger();
-		
+
+		final ProgressLogger pl = new ProgressLogger();
+
 		pl.count = kb.callGraphs.size();
 		pl.itemsName = "graphs";
 		pl.start("Enumerating graphs");
-		
+
 		final boolean gsdFlag = jsapResult.userSpecified("gsd");
-		PrintStream gsdStream = gsdFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("gsd")))) : null;
-		
+		final PrintStream gsdStream = gsdFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("gsd")))) : null;
+
 		final boolean odFlag = jsapResult.userSpecified("od");
-		PrintStream odStream = gsdFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("od")))) : null;
+		final PrintStream odStream = gsdFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("od")))) : null;
 
 		final StatsAccumulator nodes = new StatsAccumulator();
 		final StatsAccumulator arcs = new StatsAccumulator();
@@ -98,24 +93,24 @@ public class KBStats {
 		int totGraphs = 0, statGraphs = 0;
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
 			pl.update();
-			graph = callGraph.graphs();
+			final CallGraphData callGraphData = callGraph.callGraphData();
 			totGraphs++;
-			if (graph[0].numNodes() < minNodes) continue;
-			if (gsdFlag) gsdStream.println(graph[0].numNodes());
+			final ImmutableGraph graph = callGraphData.graph;
+			if (graph.numNodes() < minNodes) continue;
+			if (gsdFlag) gsdStream.println(graph.numNodes());
 			statGraphs++;
-			nodes.add(graph[0].numNodes());
-			arcs.add(graph[0].numArcs());
-			property = callGraph.graphProperties();
-			final double bpl = Double.parseDouble((property[0].getProperty("bitsperlink")));
+			nodes.add(graph.numNodes());
+			arcs.add(graph.numArcs());
+			final double bpl = Double.parseDouble((callGraphData.graphProperties.getProperty("bitsperlink")));
 			if (! Double.isNaN(bpl)) bitsPerLink.add(bpl);
-			final double bplt = Double.parseDouble((property[1].getProperty("bitsperlink")));
+			final double bplt = Double.parseDouble((callGraphData.transposeProperties.getProperty("bitsperlink")));
 			if (! Double.isNaN(bplt)) bitsPerLinkt.add(bplt);
 			if (odFlag) {
-				NodeIterator nodeIterator = graph[0].nodeIterator();
+				final NodeIterator nodeIterator = graph.nodeIterator();
 				int internalCalls = 0, externalCalls = 0, totalCalls = 0;
 				while (nodeIterator.hasNext()) {
 					nodeIterator.nextInt();
-					LazyIntIterator successors = nodeIterator.successors();
+					final LazyIntIterator successors = nodeIterator.successors();
 					int called;
 					while ((called = successors.nextInt()) >= 0) {
 						if (called < callGraph.nInternal) internalCalls++;

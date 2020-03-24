@@ -25,12 +25,14 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.ref.SoftReference;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 
-import org.apache.commons.lang3.SerializationUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -47,6 +49,7 @@ import com.google.common.primitives.Longs;
 import eu.fasten.core.index.BVGraphSerializer;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.bits.LongArrayBitVector;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrays;
@@ -82,10 +85,7 @@ import it.unimi.dsi.webgraph.NodeIterator;
 import it.unimi.dsi.webgraph.Transform;
 
 /**  Instances of this class represent a knowledge base (i.e., a set of revision call graphs).
- *   The knowledge base keeps the actual graphs in an associated {@linkplain #callGraphDB database},
- *   whereas all other informations about call graphs (both local information, such as {@link CallGraph#LID2GID}, and
- *   global information, such as {@link #genericURI2GID}) is kept in memory and serialized when the knowledge
- *   base is stored.
+ *   The knowledge base keeps the actual graphs in an associated {@linkplain #callGraphDB database}.
  */
 public class KnowledgeBase implements Serializable, Closeable {
 	private static final long serialVersionUID = 1L;
@@ -120,14 +120,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 			final FastenURI genericURI = GID2GenericURI.get(gid);
 			if (genericURI == null) return null;
 			final CallGraph callGraph = callGraphs.get(index);
-			assert genericURI.getProduct().equals(callGraph.product) : genericURI.getProduct() + " != " + callGraph.product;
 			return FastenURI.create(callGraph.forge, callGraph.product, callGraph.version, genericURI.getRawNamespace(), genericURI.getRawEntity());
 		}
 
 		@Override
 		public String toString() {
 			return 	"[GID=" + gid +
-					", LID=" + callGraphs.get(index).GID2LID.get(gid) +
+					", LID=" + callGraphs.get(index).callGraphData().GID2LID.get(gid) +
 					", revision=" + index +
 					"]: " + toFastenURI().toString();
 		}
@@ -165,9 +164,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 	}
 
-	private static byte[] KB_KEY = Longs.toByteArray(-1);
-
-	/** Maps schemeless, <em>generic</em> (i.e., without forge and without version, but with a product) FASTEN URIs to a unique identifier. */
+	/** Maps <em>generic</em> (i.e., schemeless, forgeless, productless and versionless) FASTEN URIs to a unique identifier. */
 	protected final Object2LongMap<FastenURI> genericURI2GID;
 
 	/** The inverse of {@link #genericURI2GID}. */
@@ -188,25 +185,41 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/** The {@link Kryo} object used to serialize data to the database. */
 	private transient Kryo kryo;
 
-	/** The pathname of the file containing the metadate of this knowledgebase. */
+	/** The pathname of the file containing the metadata of this knowledgebase. */
 	private String metadataPathname;
+
+
+	public static final class CallGraphData {
+		public final ImmutableGraph graph, transpose;
+		public final Properties graphProperties, transposeProperties;
+		/** Maps LIDs to GIDs. TODO: in database */
+		public final long[] LID2GID;
+		/** Inverse to {@link #LID2GID}: maps GIDs to LIDs. TODO: in database */
+		public final Long2IntOpenHashMap GID2LID;
+
+		public CallGraphData(final ImmutableGraph graph, final ImmutableGraph transpose, final Properties graphProperties, final Properties transposeProperties, final long[] LID2GID, final Long2IntOpenHashMap GID2LID) {
+			super();
+			this.graph = graph;
+			this.transpose = transpose;
+			this.graphProperties = graphProperties;
+			this.transposeProperties = transposeProperties;
+			this.LID2GID = LID2GID;
+			this.GID2LID = GID2LID;
+		}
+	}
+
 
 	/** Instances represent call graphs and the associated metadata. Each call
 	 *  graph corresponds to a specific release (product, version, forge), and has a unique
 	 *  revision index. Its nodes are divided into internal nodes and external nodes
 	 *  (the former have smaller values, the latter have larger values). Each node number is called
 	 *  a local identifier (LID); LIDs are mapped to global identifiers (GIDs).
-	 *  The GID of node x has a different product than the product of the call graph iff x is external.
 	 *  External nodes have no outgoing arcs.
 	 */
 	public class CallGraph implements Serializable {
 		private static final long serialVersionUID = 1L;
 		/** Number of internal nodes (first {@link #nInternal} GIDs in {@link #LID2GID}). */
 		public final int nInternal;
-		/** Maps LIDs to GIDs. */
-		public final long[] LID2GID;
-		/** Inverse to {@link #LID2GID}: maps GIDs to LIDs. */
-		public final Long2IntOpenHashMap GID2LID = new Long2IntOpenHashMap();
 		/** The product described in this call graph. */
 		private final String product;
 		/** The version described in this call graph. */
@@ -217,10 +230,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 		private final long index;
 		/** An array of two graphs: the call graph (index 0) and its transpose (index 1). */
 		@SuppressWarnings("null")
-		private transient SoftReference<ImmutableGraph[]> graphs;
+
+
+		private transient SoftReference<CallGraphData> callGraphData;
 
 		// ALERT unsynchronized update of Knowledge Base maps.
-		/** Creates a call graph from a {@link RevisionCallGraph}. All maps of the knowledge base (e.g. {@link KnowledgeBase#GIDAppearsIn}) are updated
+		/** Creates a call graph from a {@link ExtendedRevisionCallGraph}. All maps of the knowledge base (e.g. {@link KnowledgeBase#GIDAppearsIn}) are updated
 		 *  appropriately. The graphs are stored in the database.
 		 *
 		 * @param g the revision call graph.
@@ -228,75 +243,77 @@ public class KnowledgeBase implements Serializable, Closeable {
 		 * @throws IOException
 		 * @throws RocksDBException
 		 */
-		protected CallGraph(final RevisionCallGraph g, final long index) throws IOException, RocksDBException {
+		protected CallGraph(final ExtendedRevisionCallGraph g, final long index) throws IOException, RocksDBException {
 			product = g.product;
 			version = g.version;
 			forge = g.forge;
 			this.index = index;
 
 			LOGGER.debug("Analyzing fasten://" + forge + "!" + product + "$" + version);
-			final ArrayList<FastenURI[]> arcs = g.graph;
 
-			/*
-			 * Pass over arc list, building schemeless generic pairs URIs.
-			 * adding products where missing and skipping NULL_FASTEN_URIs.
-			 * Source and target URIs are passed to addURI(), updating GenericURI2GID
-			 * and its inverse GID2GenericURI.
-			 */
-			final ObjectArrayList<FastenURI> genericSources = new ObjectArrayList<>();
-			final ObjectArrayList<FastenURI> genericTargets = new ObjectArrayList<>();
 			final LongLinkedOpenHashSet internalGIDs = new LongLinkedOpenHashSet(); // List of internal GIDs
 			final LongLinkedOpenHashSet externalGIDs = new LongLinkedOpenHashSet(); // List of external GIDs
+			final Int2IntOpenHashMap jsonId2Temporary = new Int2IntOpenHashMap();
 
-			for(final FastenURI[] arc: arcs) {
-				// TODO: this should be a raw product
-				final FastenURI sourceSchemelessGenericURI = FastenURI.createSchemeless(null, product, null, arc[0].getRawNamespace(), arc[0].getRawEntity());
-				final long sourceGID = addURI(sourceSchemelessGenericURI);
-				addGidRev(GIDAppearsIn, sourceGID, index);
-				internalGIDs.add(sourceGID);
-
-				if (!FastenURI.NULL_FASTEN_URI.equals(arc[1])) {
-					genericSources.add(sourceSchemelessGenericURI);
-					// TODO: one should check that forge/version are null
-					String targetRawProduct = arc[1].getRawProduct();
-					final boolean internal = targetRawProduct == null;
-					if (internal) targetRawProduct = product;
-					final FastenURI target = FastenURI.createSchemeless(null, targetRawProduct, null, arc[1].getRawNamespace(), arc[1].getRawEntity());
-					final long targetGID = addURI(target);
-
-					if (internal) {
-						addGidRev(GIDAppearsIn, targetGID, index);
-						internalGIDs.add(targetGID);
-					}
-					else {
-						addGidRev(GIDCalledBy, targetGID, index);
-						externalGIDs.add(targetGID);
-					}
-
-					genericTargets.add(target);
-				}
+			final Map<Integer, FastenURI> mapOfAllMethods = g.mapOfAllMethods();
+			for(final Entry<Integer, FastenURI> e : mapOfAllMethods.entrySet()) {
+				final int jsonId = e.getKey().intValue();
+				final FastenURI uri = e.getValue();
+				final FastenURI genericUri = FastenURI.createSchemeless(null, null, null, uri.getRawNamespace(), uri.getRawEntity());
+				final long gid = addURI(genericUri);
+				addGidRev(GIDAppearsIn, gid, index);
+				jsonId2Temporary.put(jsonId, internalGIDs.size());
+				internalGIDs.add(gid);
 			}
-			// Set up local bijection
+
 			nInternal = internalGIDs.size();
 
-			final long[] l2g = new long[internalGIDs.size() + externalGIDs.size()];
-			LongIterators.unwrap(internalGIDs.iterator(), l2g);
-			LongIterators.unwrap(externalGIDs.iterator(), l2g, nInternal, l2g.length - nInternal);
-			GID2LID.defaultReturnValue(-1);
-			for(int i = 0; i < l2g.length; i++) GID2LID.put(l2g[i], i);
+			for(final Pair<Integer, FastenURI> e : g.getGraph().getExternalCalls().keySet()) {
+				final FastenURI uri = e.getValue();
+				final FastenURI genericUri = FastenURI.createSchemeless(null, null, null, uri.getRawNamespace(), uri.getRawEntity());
+				final long gid = addURI(genericUri);
+				if (internalGIDs.contains(gid)) LOGGER.error("GID " + gid + " (URL " + uri + ") appears both as an internal and as an external node: considering it internal");
+				else {
+					addGidRev(GIDCalledBy, gid, index);
+					externalGIDs.add(gid);
+				}
+			}
+
+
+			final long[] temporary2GID = new long[internalGIDs.size() + externalGIDs.size()];
+			LongIterators.unwrap(internalGIDs.iterator(), temporary2GID);
+			LongIterators.unwrap(externalGIDs.iterator(), temporary2GID, nInternal, temporary2GID.length - nInternal);
+			final Long2IntOpenHashMap GID2Temporary = new Long2IntOpenHashMap();
+			GID2Temporary.defaultReturnValue(-1);
+			for(int i = 0; i < temporary2GID.length; i++) {
+				final long result = GID2Temporary.put(temporary2GID[i], i);
+				assert result == -1; // Internal and external GIDs should be disjoint by construction
+			}
 
 			// Create, store and load compressed versions of the graph and of the transpose.
-			final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(l2g.length);
-			for(int i = 0; i < genericSources.size(); i++) {
-				assert genericURI2GID.getLong(genericSources.get(i)) != -1;
-				assert genericURI2GID.getLong(genericTargets.get(i)) != -1;
+			final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(temporary2GID.length);
+
+			for(final List<Integer> a : g.getGraph().getInternalCalls()) {
+				final int jsonSource = a.get(0).intValue();
+				final int jsonTarget = a.get(1).intValue();
+
 				try {
-					mutableGraph.addArc(GID2LID.get(
-							genericURI2GID.getLong(genericSources.get(i))),
-							GID2LID.get(
-									genericURI2GID.getLong(genericTargets.get(i))));
+					mutableGraph.addArc(jsonId2Temporary.get(jsonSource), jsonId2Temporary.get(jsonTarget));
 				} catch(final IllegalArgumentException e ) {
-					LOGGER.error("Duplicate arc " + genericSources.get(i) + " -> " + genericTargets.get(i));
+					LOGGER.error("Duplicate arc " + GID2GenericURI.get(temporary2GID[jsonId2Temporary.get(jsonSource)]) + " -> " + GID2GenericURI.get(temporary2GID[jsonId2Temporary.get(jsonSource)]));
+				}
+			}
+
+			for(final Pair<Integer, FastenURI> a : g.getGraph().getExternalCalls().keySet()) {
+				final int jsonSource = a.getLeft().intValue();
+				final FastenURI targetUri = a.getRight();
+				final FastenURI genericTargetUri = FastenURI.createSchemeless(null, null, null, targetUri.getRawNamespace(), targetUri.getRawEntity());
+				final long targetGID = addURI(genericTargetUri);
+
+				try {
+					mutableGraph.addArc(jsonId2Temporary.get(jsonSource), GID2Temporary.get(targetGID));
+				} catch(final IllegalArgumentException e ) {
+					LOGGER.error("Duplicate arc " + GID2GenericURI.get(temporary2GID[jsonId2Temporary.get(jsonSource)]) + " -> " + genericTargetUri);
 				}
 			}
 
@@ -306,7 +323,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			FileInputStream propertyFile;
 
 			// Compress, load and serialize graph
-			final int[] bfsperm = Util.identity(l2g.length); //bfsperm(mutableGraph.immutableView(), -1, internalGIDs.size());
+			final int[] bfsperm = Util.identity(temporary2GID.length); //bfsperm(mutableGraph.immutableView(), -1, internalGIDs.size());
 			final ImmutableGraph graph = Transform.map(mutableGraph.immutableView(), bfsperm);
 			BVGraph.store(graph, f.toString());
 			propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
@@ -318,9 +335,11 @@ public class KnowledgeBase implements Serializable, Closeable {
 			kryo.writeObject(bbo, BVGraph.load(f.toString()));
 
 			// Permute LID2GID accordingly
-			LID2GID = new long[l2g.length];
-			for (int x = 0; x < l2g.length; x++) LID2GID[bfsperm[x]] = l2g[x];
-			for(int i = 0; i < l2g.length; i++) GID2LID.put(LID2GID[i], i);
+			final long[] LID2GID = new long[temporary2GID.length];
+			final Long2IntOpenHashMap GID2LID = new Long2IntOpenHashMap();
+
+			for (int x = 0; x < temporary2GID.length; x++) LID2GID[bfsperm[x]] = temporary2GID[x];
+			for(int i = 0; i < temporary2GID.length; i++) GID2LID.put(LID2GID[i], i);
 
 			// Compress, load and serialize transpose graph
 			BVGraph.store(Transform.transpose(graph), f.toString());
@@ -333,6 +352,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 			// Write out properties
 			kryo.writeObject(bbo, graphProperties);
 			kryo.writeObject(bbo, transposeProperties);
+
+			kryo.writeObject(bbo, LID2GID);
+			kryo.writeObject(bbo, GID2LID);
+
 			bbo.flush();
 
 			// Write to DB
@@ -349,41 +372,23 @@ public class KnowledgeBase implements Serializable, Closeable {
 		 *
 		 * @return an array containing the call graph and its transpose.
 		 */
-		public ImmutableGraph[] graphs() {
-			if (graphs != null) {
-				final var graphs = this.graphs.get();
-				if (graphs != null) return graphs;
+		public CallGraphData callGraphData() {
+			if (callGraphData != null) {
+				final var callGraphData = this.callGraphData.get();
+				if (callGraphData != null) return callGraphData;
 			}
 			try {
-				// TODO: dynamic
-				final byte[] buffer = new byte[1000000];
-				callGraphDB.get(Longs.toByteArray(index), buffer);
+				byte[] buffer = new byte[0];
+				for(int length; (length = callGraphDB.get(Longs.toByteArray(index), buffer)) > buffer.length; ) buffer = new byte[length];
 				final Input input = new Input(buffer);
 				assert kryo != null;
 				final var graphs = new ImmutableGraph[] {kryo.readObject(input, BVGraph.class),  kryo.readObject(input, BVGraph.class)};
-				this.graphs = new SoftReference<>(graphs);
-				return graphs;
-			} catch (final RocksDBException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		/** Returns the properties of the call graph and its transpose in a 2-element array.
-		 *
-		 * @return an array containing the properties of the call graph and its transpose.
-		 */
-		public Properties[] graphProperties() {
-			try {
-				// TODO: dynamic
-				final byte[] buffer = new byte[1000000];
-				callGraphDB.get(Longs.toByteArray(index), buffer);
-				final Input input = new Input(buffer);
-				assert kryo != null;
-				kryo.readObject(input, BVGraph.class); // throw away graph
-				kryo.readObject(input, BVGraph.class); // throw away transpose
 				final Properties[] properties = new Properties[] { kryo.readObject(input, Properties.class), kryo.readObject(input, Properties.class) };
-				return properties;
-
+				final long[] LID2GID = kryo.readObject(input, long[].class);
+				final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
+				final CallGraphData callGraphData = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID);
+				this.callGraphData = new SoftReference<>(callGraphData);
+				return callGraphData;
 			} catch (final RocksDBException e) {
 				throw new RuntimeException(e);
 			}
@@ -392,11 +397,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 		@Override
 		public String toString() {
 			final StringBuilder b = new StringBuilder();
-			for(final NodeIterator nodeIterator = graphs()[0].nodeIterator(); nodeIterator.hasNext(); ) {
-				final FastenURI u = GID2GenericURI.get(LID2GID[nodeIterator.nextInt()]);
+
+			final CallGraphData callGraphData = callGraphData();
+			for(final NodeIterator nodeIterator = callGraphData.graph.nodeIterator(); nodeIterator.hasNext(); ) {
+				final FastenURI u = GID2GenericURI.get(callGraphData.LID2GID[nodeIterator.nextInt()]);
 				final LazyIntIterator successors = nodeIterator.successors();
 				for(int s; (s = successors.nextInt()) != -1; )
-					b.append(u).append('\t').append(GID2GenericURI.get(LID2GID[s])).append('\n');
+					b.append(u).append('\t').append(GID2GenericURI.get(callGraphData.LID2GID[s])).append('\n');
 			}
 			return b.toString();
 		}
@@ -454,6 +461,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 		kryo.register(EliasFanoMonotoneLongBigList.class, new JavaSerializer());
 		kryo.register(MutableString.class, new FieldSerializer<>(kryo, MutableString.class));
 		kryo.register(Properties.class);
+		kryo.register(long[].class);
+		kryo.register(Long2IntOpenHashMap.class);
 	}
 
 	/** Creates a new knowledge base with no associated database; initializes kryo. One has to explicitly call {@link #callGraphDB(RocksDB)}
@@ -481,12 +490,16 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	public static KnowledgeBase getInstance(final String kbDir, final String kbMetadataPathname) throws RocksDBException, ClassNotFoundException, IOException {
+		final boolean metadataExists = new File(kbMetadataPathname).exists();
+		final boolean kbDirExists = new File(kbDir).exists();
+		if (metadataExists != kbDirExists) throw new IllegalArgumentException("Either both or none of the knowledge-base directory and metadata must exist");
+
 		RocksDB.loadLibrary();
 		final Options options = new Options();
 		options.setCreateIfMissing(true);
 
-		final RocksDB db = RocksDB.open(options, kbDir);		
-		final KnowledgeBase kb = new File(kbMetadataPathname).exists() ? (KnowledgeBase)BinIO.loadObject(kbMetadataPathname) :  new KnowledgeBase();
+		final RocksDB db = RocksDB.open(options, kbDir);
+		final KnowledgeBase kb = metadataExists ? (KnowledgeBase)BinIO.loadObject(kbMetadataPathname) :  new KnowledgeBase();
 		kb.metadataPathname = kbMetadataPathname;
 		kb.callGraphDB(db);
 		return kb;
@@ -539,21 +552,22 @@ public class KnowledgeBase implements Serializable, Closeable {
 		final CallGraph callGraph = callGraphs.get(index);
 		assert callGraph != null;
 
-		final ImmutableGraph graph = callGraph.graphs()[0];
-		final LazyIntIterator s = graph.successors(callGraph.GID2LID.get(gid));
+		final CallGraphData callGraphData = callGraph.callGraphData();
+		final ImmutableGraph graph = callGraphData.graph;
+		final LazyIntIterator s = graph.successors(callGraphData.GID2LID.get(gid));
 
 		final ObjectList<Node> result = new ObjectArrayList<>();
 		int x;
 
 		/* In the successor case, internal nodes can be added directly... */
 
-		while((x = s.nextInt()) != -1 && x < callGraph.nInternal) result.add(new Node(callGraph.LID2GID[x], index));
+		while((x = s.nextInt()) != -1 && x < callGraph.nInternal) result.add(new Node(callGraphData.LID2GID[x], index));
 
 		if (x == -1) return result;
 
 		/* ...but external nodes must be search for in the revision call graphs in which they appear. */
 		do {
-			final long xGid = callGraph.LID2GID[x];
+			final long xGid = callGraphData.LID2GID[x];
 			for(final LongIterator revisions = GIDAppearsIn.get(xGid).iterator(); revisions.hasNext();)
 				result.add(new Node(xGid, revisions.nextLong()));
 		} while((x = s.nextInt()) != -1);
@@ -580,8 +594,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 		final CallGraph callGraph = callGraphs.get(index);
 		assert callGraph != null;
 
-		final ImmutableGraph graph = callGraph.graphs()[1];
-		final LazyIntIterator s = graph.successors(callGraph.GID2LID.get(gid));
+		final CallGraphData callGraphData = callGraph.callGraphData();
+		final ImmutableGraph graph = callGraphData.transpose;
+		final LazyIntIterator s = graph.successors(callGraphData.GID2LID.get(gid));
 
 		final ObjectList<Node> result = new ObjectArrayList<>();
 		int x;
@@ -589,7 +604,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		/* In the predecessor case, all nodes returned by the graph are necessarily internal. */
 		while((x = s.nextInt()) != -1) {
 			assert x < callGraph.nInternal;
-			result.add(new Node(callGraph.LID2GID[x], index));
+			result.add(new Node(callGraphData.LID2GID[x], index));
 		}
 
 		/* To move backward in the call graph, we use GIDCalledBy to find revisions that might
@@ -598,9 +613,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 			for(final LongIterator revisions = GIDCalledBy.get(gid).iterator(); revisions.hasNext();) {
 				final long revIndex = revisions.nextLong();
 				final CallGraph precCallGraph = callGraphs.get(revIndex);
-				final ImmutableGraph transpose = precCallGraph.graphs()[1];
-				final LazyIntIterator p = transpose.successors(precCallGraph.GID2LID.get(gid));
-				for(int y; (y = p.nextInt()) != -1;) result.add(new Node(precCallGraph.LID2GID[y], revIndex));
+				final CallGraphData precCallGraphData = precCallGraph.callGraphData();
+				final ImmutableGraph transpose = precCallGraphData.transpose;
+				final LazyIntIterator p = transpose.successors(precCallGraphData.GID2LID.get(gid));
+				for(int y; (y = p.nextInt()) != -1;) result.add(new Node(precCallGraphData.LID2GID[y], revIndex));
 			}
 		while((x = s.nextInt()) != -1);
 
@@ -710,7 +726,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @throws IOException
 	 * @throws RocksDBException
 	 */
-	public synchronized void add(final RevisionCallGraph g, final long index) throws IOException, RocksDBException {
+	public synchronized void add(final ExtendedRevisionCallGraph g, final long index) throws IOException, RocksDBException {
 		callGraphs.put(index, new CallGraph(g, index));
 	}
 

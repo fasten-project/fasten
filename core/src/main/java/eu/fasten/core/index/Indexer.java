@@ -1,5 +1,7 @@
 package eu.fasten.core.index;
 
+import java.io.File;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,7 +22,6 @@ package eu.fasten.core.index;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
@@ -50,8 +51,8 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.KnowledgeBase;
-import eu.fasten.core.data.RevisionCallGraph;
 /** A sample in-memory indexer that reads, compresses and stores in memory
  *  graphs stored in JSON format and answers to impact queries.
  *
@@ -86,7 +87,7 @@ public class Indexer {
 						final JSONObject json = new JSONObject(record.value());
 						try {
 							LOGGER.debug("Getting new record with key " + record.key());
-							kb.add(new RevisionCallGraph(json, false), index++);
+							kb.add(new ExtendedRevisionCallGraph(json), index++);
 							nIndexed++;
 							if (nIndexed >= max) {
 								stopIndexing[0] = true;
@@ -107,14 +108,14 @@ public class Indexer {
 		});
 	}
 
-	public void index(final long max, final String... files) throws JSONException, IOException, RocksDBException, URISyntaxException {
+	public void index(final long max, final String... files) throws JSONException, IOException, RocksDBException {
 		long index = kb.size();
 		long nIndexed = 0;
 		for(final String file: files) {
 			LOGGER.debug("Parsing " + file);
 			final FileReader reader = new FileReader(file);
 			final JSONObject json = new JSONObject(new JSONTokener(reader));
-			kb.add(new RevisionCallGraph(json, false), index++);
+			kb.add(new ExtendedRevisionCallGraph(json), index++);
 			nIndexed++;
 			if (nIndexed >= max)  break;
 			reader.close();
@@ -122,7 +123,7 @@ public class Indexer {
 	}
 
 
-	public static void main(final String[] args) throws JSONException, URISyntaxException, JSAPException, IOException, RocksDBException, InterruptedException, ExecutionException, ClassNotFoundException {
+	public static void main(final String[] args) throws JSONException, JSAPException, IOException, RocksDBException, InterruptedException, ExecutionException, ClassNotFoundException {
 		final SimpleJSAP jsap = new SimpleJSAP( Indexer.class.getName(),
 				"Creates or updates a knowledge base (associated to a given database), indexing either a list of JSON files or a Kafka topic where JSON object are published",
 				new Parameter[] {
@@ -140,6 +141,9 @@ public class Indexer {
 
 		final String kbDir = jsapResult.getString("kb");
 		final String kbMetadataFilename = jsapResult.getString("kbmeta");
+
+		if (new File(kbDir).exists()) throw new IllegalArgumentException("Knowledge base directory exists");
+		if (new File(kbMetadataFilename).exists()) throw new IllegalArgumentException("Knowledge-base metadaa file exists");
 
 		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
 
