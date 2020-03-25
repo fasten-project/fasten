@@ -303,9 +303,9 @@ public class CallGraphGenerator {
 		sb.append("\t\t\"externalCalls\": [\n");
 		lines.clear();
 		for(final int[] t: callGraphGenerator.source2Targets[i]) {
-			lines.add("\t\t\t[\n\t\t\t\t\"" + callGraphGenerator.nodePermutation[i][t[0]] + "\",\n\t\t\t\t\"/p" + t[1] + "/A"+ callGraphGenerator.nodePermutation[t[1]][t[2]] / 3 + ".f" + callGraphGenerator.nodePermutation[t[1]][t[2]] +"()v\",\n\t\t\t"
-					+ "\t\t\t\t{\"invokevirtual\": \"1\"}"
-					+ "]");
+			lines.add("\t\t\t[\n\t\t\t\t\"" + callGraphGenerator.nodePermutation[i][t[0]] + "\",\n\t\t\t\t\"/p" + t[1] + "/A"+ callGraphGenerator.nodePermutation[t[1]][t[2]] / 3 + ".f" + callGraphGenerator.nodePermutation[t[1]][t[2]] +"()v\",\n"
+					+ "\t\t\t\t{\"invokevirtual\": \"1\"}\n"
+					+ "\t\t\t]");
 		}
 		Collections.shuffle(lines, new Random(randomGenerator.nextLong())); // Permute graph lines
 		for (int j = 0; j < lines.size(); j++) {
