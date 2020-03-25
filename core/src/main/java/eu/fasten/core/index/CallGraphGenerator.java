@@ -249,38 +249,74 @@ public class CallGraphGenerator {
 	}
 
 	private static String graph2String(final CallGraphGenerator callGraphGenerator, final int i, final RandomGenerator randomGenerator) {
+		final ArrayListMutableGraph g = callGraphGenerator.rcgs[i];
 		final StringBuilder sb = new StringBuilder();
 		sb.append("{\n");
-		sb.append("\"forge\": \"f\",\n");
-		sb.append("\"product\": \"graph-" + i + "\",\n");
-		sb.append("\"version\": \"1.0\",\n");
-		sb.append("\"timestamp\": \"0\",\n");
-		sb.append("\"depset\": [\n");
+		sb.append("\t\"product\": \"graph-" + i + "\",\n");
+		sb.append("\t\"forge\": \"f\",\n");
+		sb.append("\t\"forge\": \"OPAL\",\n");
+		sb.append("\t\"version\": \"1.0\",\n");
+		sb.append("\t\"timestamp\": \"0\",\n");
+		sb.append("\t\"depset\": [\n\t\t");
 		// All generated DNFs are singletons
 		for(final IntIterator d = callGraphGenerator.deps[i].iterator(); d.hasNext(); ) {
 			sb.append( "[{ \"forge\": \"f\", \"product\": \"graph-" + d.nextInt() + "\", \"constraints\": [\"[1.0]\"] }]");
 			if (d.hasNext()) sb.append(", ");
 		}
-		sb.append("],\n");
-		sb.append("\"graph\": [\n");
-		final ObjectArrayList<String> lines = new ObjectArrayList<>(); // Graph lines
-		final ArrayListMutableGraph g = callGraphGenerator.rcgs[i];
-		final IntOpenHashSet callsExternal = new IntOpenHashSet();
-		for(final int[] t: callGraphGenerator.source2Targets[i]) {
-			lines.add("[ \"/p" + i + "/A.f" + callGraphGenerator.nodePermutation[i][t[0]] + "()v\", \"//graph-" + t[1] + "/p" + t[1] + "/A.f" + callGraphGenerator.nodePermutation[t[1]][t[2]] +"()v\" ],\n");
-			callsExternal.add(t[0]);
+		sb.append("\n\t],\n");
+		sb.append("\t\"cha\": {\n");
+		/*for (int jj = 0; jj < g.numNodes() / 3; jj++) {			
+			sb.append("\t\t\"/p" + i + "/A " + jj + \": {\n");
+			sb.append("\t\t\t\"methods\": {\n");
+			for (int j = 3 * jj; j < 3 * jj + 3 && jj < g.numNodes(); j++) {
+				sb.append("\t\t\t\t\"" + j + "\": \"/p" + i + "/A.f" + j + "()v\"");
+		}*/
+		sb.append("\t\t\"/p" + i + "/A\": {\n");
+		sb.append("\t\t\t\"methods\": {\n");
+		for (int j = 0; j < g.numNodes(); j++) {
+			sb.append("\t\t\t\t\"" + j + "\": \"/p" + i + "/A.f" + j + "()v\"");
+			if (j < g.numNodes() - 1) sb.append(",");
+			sb.append("\n");
 		}
-
+		sb.append("\t\t\t},\n");
+		sb.append("\t\t\t\"superinterfaces\": [],\n");
+		sb.append("\t\t\t\"sourcefile\": \"A.java\",\n");
+		sb.append("\t\t\t\"superclasses\": [\"/java.lang/Object\"]\n");
+		sb.append("\t\t}\n");
+		sb.append("\t},\n");
+		sb.append("\t\"graph\": {\n");
+		
+		// Resolved calls
+		sb.append("\t\t\"resolvedCalls\": [\n");
+		final ObjectArrayList<String> lines = new ObjectArrayList<>(); // Graph lines
 		for(int j = 0; j < g.numNodes(); j++) {
-			if (!callsExternal.contains(j) && g.outdegree(j) == 0)
-				lines.add("[ \"/p" + i + "/A.f" + callGraphGenerator.nodePermutation[i][j] + "()v\", \"//-\" ],\n");
 			for(final IntIterator s = g.successors(j); s.hasNext();)
-				lines.add("[ \"/p" + i + "/A.f" + callGraphGenerator.nodePermutation[i][j] + "()v\", \"/p" + i + "/A.f" + callGraphGenerator.nodePermutation[i][s.nextInt()] +"()v\" ],\n");
+				lines.add("\t\t\t[\n\t\t\t\t" + callGraphGenerator.nodePermutation[i][j] + ",\n\t\t\t\t" + callGraphGenerator.nodePermutation[i][s.nextInt()] + "\n\t\t\t]");
 		}
 		Collections.shuffle(lines, new Random(randomGenerator.nextLong())); // Permute graph lines
-		for (String line: lines) sb.append(line);
-		sb.append("]\n");
-		sb.append("}\n");
+		for (int j = 0; j < lines.size(); j++) {
+			sb.append(lines.get(j));
+			if (j < lines.size() - 1) sb.append(",");
+			sb.append("\n");
+		}
+		sb.append("\t\t]\n");
+		
+		// Unresolved calls
+		sb.append("\t\t\"unresolvedCalls\": [\n");
+		lines.clear();
+		for(final int[] t: callGraphGenerator.source2Targets[i]) {
+			lines.add("\t\t\t[\n\t\t\t\t\"" + callGraphGenerator.nodePermutation[i][t[0]] + "\",\n\t\t\t\t\"/p" + t[1] + "/A.f" + callGraphGenerator.nodePermutation[t[1]][t[2]] +"()v\"\n\t\t\t]");
+		}
+		Collections.shuffle(lines, new Random(randomGenerator.nextLong())); // Permute graph lines
+		for (int j = 0; j < lines.size(); j++) {
+			sb.append(lines.get(j));
+			if (j < lines.size() - 1) sb.append(",");
+			sb.append("\n");
+		}
+		sb.append("\t\t]\n");
+		sb.append("\t}\n");
+		sb.append("}");
+		
 		return sb.toString();
 	}
 }
