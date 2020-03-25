@@ -56,7 +56,9 @@ public class KBStats {
 				"Creates or updates a knowledge base (associated to a given database), indexing either a list of JSON files or a Kafka topic where JSON object are published",
 				new Parameter[] {
 						new FlaggedOption("gsd", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'g', "gsd", "Graph-size distribution: number of nodes (one per graph)." ),
-						new FlaggedOption("od", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'o', "od", "Outdegree distribution: unique graph identifier, internal outdegree, external outdegree, total outdegree (tab-separated, one per graph)." ),
+						new FlaggedOption("at", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'a', "at", "Arc type distribution: internal arcs, external arcs, total arcs (tab-separated, one per graph)." ),
+						new FlaggedOption("od", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'o', "od", "Outdegree distribution: graph id, internal outdegree, external outdegree, total outdegree (tab-separated, one per node)." ),
+						new FlaggedOption("id", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'i', "id", "Indegree distribution: graph id, external?, indegree (tab-separated, one per node)." ),
 						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'm', "min", "Consider only graphs with at least this number of nodes." ),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
@@ -83,8 +85,14 @@ public class KBStats {
 		final boolean gsdFlag = jsapResult.userSpecified("gsd");
 		final PrintStream gsdStream = gsdFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("gsd")))) : null;
 
+		final boolean atFlag = jsapResult.userSpecified("at");
+		final PrintStream atStream = atFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("at")))) : null;
+
 		final boolean odFlag = jsapResult.userSpecified("od");
-		final PrintStream odStream = gsdFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("od")))) : null;
+		final PrintStream odStream = odFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("od")))) : null;
+
+		final boolean idFlag = jsapResult.userSpecified("id");
+		final PrintStream idStream = idFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("id")))) : null;
 
 		final StatsAccumulator nodes = new StatsAccumulator();
 		final StatsAccumulator arcs = new StatsAccumulator();
@@ -105,25 +113,42 @@ public class KBStats {
 			if (! Double.isNaN(bpl)) bitsPerLink.add(bpl);
 			final double bplt = Double.parseDouble((callGraphData.transposeProperties.getProperty("bitsperlink")));
 			if (! Double.isNaN(bplt)) bitsPerLinkt.add(bplt);
-			if (odFlag) {
+			int internalArcs = 0, externalArcs = 0, totalArcs = 0;
+			if (atFlag || odFlag) {
 				final NodeIterator nodeIterator = graph.nodeIterator();
-				int internalCalls = 0, externalCalls = 0, totalCalls = 0;
 				while (nodeIterator.hasNext()) {
-					nodeIterator.nextInt();
+					int internalOut = 0, externalOut = 0, totalOut = 0;
+					if (nodeIterator.nextInt() >= callGraph.nInternal) break;
 					final LazyIntIterator successors = nodeIterator.successors();
 					int called;
 					while ((called = successors.nextInt()) >= 0) {
-						if (called < callGraph.nInternal) internalCalls++;
-						else externalCalls++;
-						totalCalls++;
+						if (called < callGraph.nInternal) internalOut++;
+						else externalOut++;
+						totalOut++;
 					}
+					if (odFlag) odStream.printf("%d\t%d\t%d\t%d\n", totGraphs, internalOut, externalOut, totalOut);
+					internalArcs += internalOut;
+					externalArcs += externalOut;
+					totalArcs += totalOut;
 				}
-				odStream.printf("%d\t%d\t%d\t%d\n", totGraphs, internalCalls, externalCalls, totalCalls);
+				if (atFlag) odStream.printf("%d\t%d\t%d\n", internalArcs, externalArcs, totalArcs);
 			}
+			if (idFlag) {
+				ImmutableGraph transpose = callGraphData.transpose;
+				final NodeIterator nodeIterator = transpose.nodeIterator();
+				while (nodeIterator.hasNext()) {
+					int external = nodeIterator.nextInt() < callGraph.nInternal? 0 : 1; 
+					idStream.printf("%d\t%d\t%d\n", totGraphs, external, nodeIterator.outdegree());
+				}
+				
+			}
+			
 		}
 
 		if (gsdFlag) gsdStream.close();
+		if (atFlag) atStream.close();
 		if (odFlag) odStream.close();
+		if (idFlag) idStream.close();
 		pl.done();
 		LOGGER.info("Closing KnowledgeBase");
 		kb.close();
