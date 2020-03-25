@@ -265,24 +265,22 @@ public class CallGraphGenerator {
 		}
 		sb.append("\n\t],\n");
 		sb.append("\t\"cha\": {\n");
-		/*for (int jj = 0; jj < g.numNodes() / 3; jj++) {			
-			sb.append("\t\t\"/p" + i + "/A " + jj + \": {\n");
+		for (int jj = 0; jj < g.numNodes() / 3; jj++) {			
+			sb.append("\t\t\"/p" + i + "/A" + jj + "\": {\n");
 			sb.append("\t\t\t\"methods\": {\n");
-			for (int j = 3 * jj; j < 3 * jj + 3 && jj < g.numNodes(); j++) {
-				sb.append("\t\t\t\t\"" + j + "\": \"/p" + i + "/A.f" + j + "()v\"");
-		}*/
-		sb.append("\t\t\"/p" + i + "/A\": {\n");
-		sb.append("\t\t\t\"methods\": {\n");
-		for (int j = 0; j < g.numNodes(); j++) {
-			sb.append("\t\t\t\t\"" + j + "\": \"/p" + i + "/A.f" + j + "()v\"");
-			if (j < g.numNodes() - 1) sb.append(",");
+			for (int j = 3 * jj; j < 3 * jj + 3 && j < g.numNodes(); j++) {
+				sb.append("\t\t\t\t\"" + j + "\": \"/p" + i + "/A" + jj + ".f" + j + "()v\"");
+				if (j < 3 * jj + 2 && j < g.numNodes() + 1) sb.append(",");
+				sb.append("\n");
+			}
+			sb.append("\t\t\t},\n");
+			sb.append("\t\t\t\"superinterfaces\": [],\n");
+			sb.append("\t\t\t\"sourcefile\": \"A" + jj + ".java\",\n");
+			sb.append("\t\t\t\"superclasses\": [\"/java.lang/Object\"]\n");
+			sb.append("\t\t}");
+			if (jj < g.numNodes() / 3 - 1) sb.append(",");
 			sb.append("\n");
 		}
-		sb.append("\t\t\t},\n");
-		sb.append("\t\t\t\"superinterfaces\": [],\n");
-		sb.append("\t\t\t\"sourcefile\": \"A.java\",\n");
-		sb.append("\t\t\t\"superclasses\": [\"/java.lang/Object\"]\n");
-		sb.append("\t\t}\n");
 		sb.append("\t},\n");
 		sb.append("\t\"graph\": {\n");
 		
@@ -305,7 +303,7 @@ public class CallGraphGenerator {
 		sb.append("\t\t\"unresolvedCalls\": [\n");
 		lines.clear();
 		for(final int[] t: callGraphGenerator.source2Targets[i]) {
-			lines.add("\t\t\t[\n\t\t\t\t\"" + callGraphGenerator.nodePermutation[i][t[0]] + "\",\n\t\t\t\t\"/p" + t[1] + "/A.f" + callGraphGenerator.nodePermutation[t[1]][t[2]] +"()v\"\n\t\t\t]");
+			lines.add("\t\t\t[\n\t\t\t\t\"" + callGraphGenerator.nodePermutation[i][t[0]] + "\",\n\t\t\t\t\"/p" + t[1] + "/A"+ callGraphGenerator.nodePermutation[t[1]][t[2]] / 3 + ".f" + callGraphGenerator.nodePermutation[t[1]][t[2]] +"()v\"\n\t\t\t]");
 		}
 		Collections.shuffle(lines, new Random(randomGenerator.nextLong())); // Permute graph lines
 		for (int j = 0; j < lines.size(); j++) {
