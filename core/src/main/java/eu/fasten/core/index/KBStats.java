@@ -131,7 +131,7 @@ public class KBStats {
 					externalArcs += externalOut;
 					totalArcs += totalOut;
 				}
-				if (atFlag) odStream.printf("%d\t%d\t%d\n", internalArcs, externalArcs, totalArcs);
+				if (atFlag) atStream.printf("%d\t%d\t%d\n", internalArcs, externalArcs, totalArcs);
 			}
 			if (idFlag) {
 				ImmutableGraph transpose = callGraphData.transpose;
