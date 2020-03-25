@@ -83,7 +83,7 @@ public class MetadataDatabasePlugin extends Plugin {
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
             final var consumedJson = new JSONObject(record.value());
-            final var product = consumedJson.optString("product");
+            final var artifact = consumedJson.optString("product") + "@" + consumedJson.optString("version");
             this.processedRecord = false;
             this.restartTransaction = false;
             this.pluginError = "";
@@ -91,7 +91,7 @@ public class MetadataDatabasePlugin extends Plugin {
             try {
                 callgraph = new ExtendedRevisionCallGraph(consumedJson);
             } catch (JSONException e) {
-                logger.error("Error parsing JSON callgraph for " + product, e);
+                logger.error("Error parsing JSON callgraph for " + artifact, e);
                 processedRecord = false;
                 setPluginError(e);
                 return;
@@ -106,11 +106,11 @@ public class MetadataDatabasePlugin extends Plugin {
                         try {
                             id = saveToDatabase(callgraph, metadataDao);
                         } catch (RuntimeException e) {
-                            logger.error("Error saving to the database: " + product, e);
+                            logger.error("Error saving to the database: " + artifact, e);
                             processedRecord = false;
                             setPluginError(e);
                             if (e instanceof DataAccessException) {
-                                logger.info("Restarting transaction for " + product);
+                                logger.info("Restarting transaction for " + artifact);
                                 restartTransaction = true;
                             } else {
                                 restartTransaction = false;
@@ -120,7 +120,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         if (getPluginError().isEmpty()) {
                             processedRecord = true;
                             restartTransaction = false;
-                            logger.info("Saved the " + product + " callgraph metadata "
+                            logger.info("Saved the " + artifact + " callgraph metadata "
                                     + "to the database with package ID = " + id);
                         }
                     });
