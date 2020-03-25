@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.ref.SoftReference;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -33,7 +35,11 @@ import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.rocksdb.Options;
+import org.rocksdb.ColumnFamilyDescriptor;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.CompressionType;
+import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -47,7 +53,6 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.google.common.primitives.Longs;
 
 import eu.fasten.core.index.BVGraphSerializer;
-import it.unimi.dsi.Util;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
@@ -65,8 +70,6 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.AbstractObjectCollection;
-import it.unimi.dsi.fastutil.objects.Object2LongMap;
-import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
@@ -98,15 +101,20 @@ import it.unimi.dsi.webgraph.Transform;
  */
 public class KnowledgeBase implements Serializable, Closeable {
 	private static final long serialVersionUID = 1L;
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(KnowledgeBase.class);
 
-	/** A node in the knowledge base is represented by a revision index and a GID, with the proviso
-	 *  that the gid corresponds to an internal node of the call graph specified by the index.
+	private static final byte[] URI2GID = "URI2GID".getBytes();
+	private static final byte[] GID2URI = "GID2URI".getBytes();
+
+	/**
+	 * A node in the knowledge base is represented by a revision index and a
+	 * GID, with the proviso that the gid corresponds to an internal node of the
+	 * call graph specified by the index.
 	 */
 	public class Node {
 
-		/** Builds a node.
+		/**
+		 * Builds a node.
 		 *
 		 * @param gid the GID.
 		 * @param index the revision index.
@@ -121,12 +129,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 		/** The revision index. */
 		public long index;
 
-		/** Returns the {@link FastenURI} corresponding to this node.
+		/**
+		 * Returns the {@link FastenURI} corresponding to this node.
 		 *
 		 * @return the {@link FastenURI} corresponding to this node.
 		 */
 		public FastenURI toFastenURI() {
-			final FastenURI genericURI = GID2GenericURI.get(gid);
+			final FastenURI genericURI = KnowledgeBase.this.gid2URI(gid);
 			if (genericURI == null) return null;
 			final CallGraph callGraph = callGraphs.get(index);
 			return FastenURI.create(callGraph.forge, callGraph.product, callGraph.version, genericURI.getRawNamespace(), genericURI.getRawEntity());
@@ -134,10 +143,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 		@Override
 		public String toString() {
-			return 	"[GID=" + gid +
-					", LID=" + callGraphs.get(index).callGraphData().GID2LID.get(gid) +
-					", revision=" + index +
-					"]: " + toFastenURI().toString();
+			return "[GID=" + gid + ", LID=" + callGraphs.get(index).callGraphData().GID2LID.get(gid) + ", revision=" + index + "]: " + toFastenURI().toString();
 		}
 
 		@Override
@@ -152,19 +158,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 		@Override
 		public boolean equals(final Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
 			final Node other = (Node) obj;
-			if (!getOuterType().equals(other.getOuterType()))
-				return false;
-			if (gid != other.gid)
-				return false;
-			if (index != other.index)
-				return false;
+			if (!getOuterType().equals(other.getOuterType())) return false;
+			if (gid != other.gid) return false;
+			if (index != other.index) return false;
 			return true;
 		}
 
@@ -173,16 +173,16 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 	}
 
-	/** Maps <em>generic</em> (i.e., schemeless, forgeless, productless and versionless) FASTEN URIs to a unique identifier. */
-	protected final Object2LongMap<FastenURI> genericURI2GID;
-
-	/** The inverse of {@link #genericURI2GID}. */
-	protected final Long2ObjectMap<FastenURI> GID2GenericURI;
-
-	/** Maps each GID to a list of revisions (identified by their revision index) in which the GID appears as an internal node. */
+	/**
+	 * Maps each GID to a list of revisions (identified by their revision index)
+	 * in which the GID appears as an internal node.
+	 */
 	protected final Long2ObjectMap<LongSet> GIDAppearsIn;
 
-	/** Maps each GID to a list of revisions (identified by their revision index) in which the GID appears as an external node. */
+	/**
+	 * Maps each GID to a list of revisions (identified by their revision index)
+	 * in which the GID appears as an external node.
+	 */
 	protected final Long2ObjectMap<LongSet> GIDCalledBy;
 
 	/** Maps revision indices to the corresponding call graph. */
@@ -194,11 +194,50 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/** The {@link Kryo} object used to serialize data to the database. */
 	private transient Kryo kryo;
 
-	/** The pathname of the file containing the metadata of this knowledgebase. */
-	private String metadataPathname;
+	/**
+	 * The pathname of the file containing the metadata of this knowledge base.
+	 */
+	private final String kbMetadataPathname;
 
+	/** The handle for the default column (index to graph data). */
+	private transient ColumnFamilyHandle defaultHandle;
+	/**
+	 * The handle for the column mapping GIDs to URIs (the inverse of
+	 * {@link #uri2gidFamilyHandle}}.
+	 */
+	private transient ColumnFamilyHandle gid2uriFamilyHandle;
+	/**
+	 * The handle for the column mapping URIs to GIDs (the inverse of
+	 * {@link #gid2uriFamilyHandle}).
+	 */
+	private transient ColumnFamilyHandle uri2gidFamilyHandle;
 
-	/** Instances of this class contain the data relative to a call graph that are stored in the database. */ 
+	/** The next GID available. */
+	private long nextGID;
+
+	private FastenURI gid2URI(final long gid) {
+		byte[] result;
+		try {
+			result = callGraphDB.get(gid2uriFamilyHandle, Longs.toByteArray(gid));
+		} catch (final RocksDBException e) {
+			throw new RuntimeException(e);
+		}
+		if (result == null) return null;
+		return FastenURI.create(new String(result, StandardCharsets.UTF_8));
+	}
+
+	private long uri2GID(final FastenURI uri) {
+		byte[] result;
+		try {
+			result = callGraphDB.get(uri2gidFamilyHandle, uri.toString().getBytes(StandardCharsets.UTF_8));
+		} catch (final RocksDBException e) {
+			throw new RuntimeException(e);
+		}
+		if (result == null) return -1;
+		return Longs.fromByteArray(result);
+	}
+
+	/** Instances of this class contain the data relative to a call graph that are stored in the database. */
 	public static final class CallGraphData {
 		/** The call graph. */
 		public final ImmutableGraph graph;
@@ -224,17 +263,21 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 	}
 
-
-	/** Instances represent call graphs and the associated metadata. Each call
-	 *  graph corresponds to a specific release (product, version, forge), and has a unique
-	 *  revision index. Its nodes are divided into internal nodes and external nodes
-	 *  (the former have smaller values, the latter have larger values). Each node number is called
-	 *  a local identifier (LID); LIDs are mapped to global identifiers (GIDs).
-	 *  External nodes have no outgoing arcs.
+	/**
+	 * Instances represent call graphs and the associated metadata. Each call
+	 * graph corresponds to a specific release (product, version, forge), and
+	 * has a unique revision index. Its nodes are divided into internal nodes
+	 * and external nodes (the former have smaller values, the latter have
+	 * larger values). Each node number is called a local identifier (LID); LIDs
+	 * are mapped to global identifiers (GIDs). External nodes have no outgoing
+	 * arcs.
 	 */
 	public class CallGraph implements Serializable {
 		private static final long serialVersionUID = 1L;
-		/** Number of internal nodes (first {@link #nInternal} GIDs in {@link #LID2GID}). */
+		/**
+		 * Number of internal nodes (first {@link #nInternal} GIDs in
+		 * {@link #LID2GID}).
+		 */
 		public final int nInternal;
 		/** The product described in this call graph. */
 		private final String product;
@@ -244,20 +287,22 @@ public class KnowledgeBase implements Serializable, Closeable {
 		private final String forge;
 		/** The revision index of this call graph. */
 		private final long index;
-		/** An array of two graphs: the call graph (index 0) and its transpose (index 1). */
+		/**
+		 * An array of two graphs: the call graph (index 0) and its transpose
+		 * (index 1).
+		 */
 		@SuppressWarnings("null")
-
 
 		private transient SoftReference<CallGraphData> callGraphData;
 
 		// ALERT unsynchronized update of Knowledge Base maps.
-		/** Creates a call graph from a {@link ExtendedRevisionCallGraph}. All maps of the knowledge base (e.g. {@link KnowledgeBase#GIDAppearsIn}) are updated
-		 *  appropriately. The graphs are stored in the database.
+		/**
+		 * Creates a call graph from a {@link ExtendedRevisionCallGraph}. All
+		 * maps of the knowledge base (e.g. {@link KnowledgeBase#GIDAppearsIn})
+		 * are updated appropriately. The graphs are stored in the database.
 		 *
 		 * @param g the revision call graph.
 		 * @param index the revision index.
-		 * @throws IOException
-		 * @throws RocksDBException
 		 */
 		protected CallGraph(final ExtendedRevisionCallGraph g, final long index) throws IOException, RocksDBException {
 			product = g.product;
@@ -265,16 +310,17 @@ public class KnowledgeBase implements Serializable, Closeable {
 			forge = g.forge;
 			this.index = index;
 
-			LOGGER.debug("Analyzing fasten://" + forge + "!" + product + "$" + version);
-
-			final LongLinkedOpenHashSet internalGIDs = new LongLinkedOpenHashSet(); // List of internal GIDs
-			final LongLinkedOpenHashSet externalGIDs = new LongLinkedOpenHashSet(); // List of external GIDs
-			final Int2IntOpenHashMap jsonId2Temporary = new Int2IntOpenHashMap(); // Maps JSON ids of internal nodes to a temporary index 
+			LOGGER.info("Analyzing fasten://" + forge + "!" + product + "$" + version);
+			// List of internal GIDs
+			final LongLinkedOpenHashSet internalGIDs = new LongLinkedOpenHashSet();
+			// List of external GIDs
+			final LongLinkedOpenHashSet externalGIDs = new LongLinkedOpenHashSet();
+			final Int2IntOpenHashMap jsonId2Temporary = new Int2IntOpenHashMap();
 
 			// First enumerate all internal nodes, add their URIs to the global maps if necessary, and assign them a temporary index
 			// Update jsonId2Temporary accordingly
 			final Map<Integer, FastenURI> mapOfAllMethods = g.mapOfAllMethods();
-			for(final Entry<Integer, FastenURI> e : mapOfAllMethods.entrySet()) {
+			for (final Entry<Integer, FastenURI> e : mapOfAllMethods.entrySet()) {
 				final int jsonId = e.getKey().intValue();
 				final FastenURI uri = e.getValue();
 				final FastenURI genericUri = FastenURI.createSchemeless(null, null, null, uri.getRawNamespace(), uri.getRawEntity());
@@ -299,7 +345,6 @@ public class KnowledgeBase implements Serializable, Closeable {
 				}
 			}
 
-
 			// Now compute the map from temporary indices to GIDs (all GIDs are in the global maps, by now)
 			final long[] temporary2GID = new long[internalGIDs.size() + externalGIDs.size()];
 			LongIterators.unwrap(internalGIDs.iterator(), temporary2GID);
@@ -307,30 +352,33 @@ public class KnowledgeBase implements Serializable, Closeable {
 			// Compute the reverse map
 			final Long2IntOpenHashMap GID2Temporary = new Long2IntOpenHashMap();
 			GID2Temporary.defaultReturnValue(-1);
-			for(int i = 0; i < temporary2GID.length; i++) {
+			for (int i = 0; i < temporary2GID.length; i++) {
 				final long result = GID2Temporary.put(temporary2GID[i], i);
-				assert result == -1; // Internal and external GIDs should be disjoint by construction
+				assert result == -1; // Internal and external GIDs should be
+				// disjoint by construction
 			}
 
 			// Create, store and load compressed versions of the graph and of the transpose.
-			
+
 			// First create the graph as an ArrayListMutableGraph
 			final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(temporary2GID.length);
 
 			// Add arcs between internal nodes
 			for(final List<Integer> a : g.getGraph().getInternalCalls()) {
+
 				final int jsonSource = a.get(0).intValue();
 				final int jsonTarget = a.get(1).intValue();
 
 				try {
 					mutableGraph.addArc(jsonId2Temporary.get(jsonSource), jsonId2Temporary.get(jsonTarget));
-				} catch(final IllegalArgumentException e ) {
-					LOGGER.error("Duplicate arc " + GID2GenericURI.get(temporary2GID[jsonId2Temporary.get(jsonSource)]) + " -> " + GID2GenericURI.get(temporary2GID[jsonId2Temporary.get(jsonSource)]));
+				} catch (final IllegalArgumentException e) {
+					LOGGER.error("Duplicate arc " + gid2URI(temporary2GID[jsonId2Temporary.get(jsonSource)]) + " -> " + gid2URI(temporary2GID[jsonId2Temporary.get(jsonSource)]));
 				}
 			}
 
 			// Add external calls
 			for(final Pair<Integer, FastenURI> a : g.getGraph().getExternalCalls().keySet()) {
+
 				final int jsonSource = a.getLeft().intValue();
 				final FastenURI targetUri = a.getRight();
 				final FastenURI genericTargetUri = FastenURI.createSchemeless(null, null, null, targetUri.getRawNamespace(), targetUri.getRawEntity());
@@ -338,8 +386,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 				try {
 					mutableGraph.addArc(jsonId2Temporary.get(jsonSource), GID2Temporary.get(targetGID));
-				} catch(final IllegalArgumentException e ) {
-					LOGGER.error("Duplicate arc " + GID2GenericURI.get(temporary2GID[jsonId2Temporary.get(jsonSource)]) + " -> " + genericTargetUri);
+				} catch (final IllegalArgumentException e) {
+					LOGGER.error("Duplicate arc " + gid2URI(temporary2GID[jsonId2Temporary.get(jsonSource)]) + " -> " + genericTargetUri);
 				}
 			}
 
@@ -349,7 +397,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			FileInputStream propertyFile;
 
 			// Compress, load and serialize graph
-			final int[] bfsperm = Util.identity(temporary2GID.length); //bfsperm(mutableGraph.immutableView(), -1, internalGIDs.size());
+			final int[] bfsperm = bfsperm(mutableGraph.immutableView(), -1, internalGIDs.size());
 			final ImmutableGraph graph = Transform.map(mutableGraph.immutableView(), bfsperm);
 			BVGraph.store(graph, f.toString());
 			propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
@@ -364,8 +412,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 			final long[] LID2GID = new long[temporary2GID.length];
 			final Long2IntOpenHashMap GID2LID = new Long2IntOpenHashMap();
 
-			for (int x = 0; x < temporary2GID.length; x++) LID2GID[bfsperm[x]] = temporary2GID[x];
-			for(int i = 0; i < temporary2GID.length; i++) GID2LID.put(LID2GID[i], i);
+			for (int x = 0; x < temporary2GID.length; x++)
+				LID2GID[bfsperm[x]] = temporary2GID[x];
+			for (int i = 0; i < temporary2GID.length; i++)
+				GID2LID.put(LID2GID[i], i);
 
 			// Compress, load and serialize transpose graph
 			BVGraph.store(Transform.transpose(graph), f.toString());
@@ -386,7 +436,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			bbo.flush();
 
 			// Write to DB
-			callGraphDB.put(Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
+			callGraphDB.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
 
 			new File(f.toString() + BVGraph.PROPERTIES_EXTENSION).delete();
 			new File(f.toString() + BVGraph.OFFSETS_EXTENSION).delete();
@@ -394,8 +444,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 			f.delete();
 		}
 
-		/** Returns the call graph and its transpose in a 2-element array. The graphs are cached,
-		 *  and read from the database if needed.
+		/**
+		 * Returns the call graph and its transpose in a 2-element array. The
+		 * graphs are cached, and read from the database if needed.
 		 *
 		 * @return an array containing the call graph and its transpose.
 		 */
@@ -405,11 +456,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 				if (callGraphData != null) return callGraphData;
 			}
 			try {
-				byte[] buffer = new byte[0];
-				for(int length; (length = callGraphDB.get(Longs.toByteArray(index), buffer)) > buffer.length; ) buffer = new byte[length];
+				final byte[] buffer = callGraphDB.get(Longs.toByteArray(index));
 				final Input input = new Input(buffer);
 				assert kryo != null;
-				final var graphs = new ImmutableGraph[] {kryo.readObject(input, BVGraph.class),  kryo.readObject(input, BVGraph.class)};
+				final var graphs = new ImmutableGraph[] { kryo.readObject(input, BVGraph.class), kryo.readObject(input, BVGraph.class) };
 				final Properties[] properties = new Properties[] { kryo.readObject(input, Properties.class), kryo.readObject(input, Properties.class) };
 				final long[] LID2GID = kryo.readObject(input, long[].class);
 				final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
@@ -426,23 +476,25 @@ public class KnowledgeBase implements Serializable, Closeable {
 			final StringBuilder b = new StringBuilder();
 
 			final CallGraphData callGraphData = callGraphData();
-			for(final NodeIterator nodeIterator = callGraphData.graph.nodeIterator(); nodeIterator.hasNext(); ) {
-				final FastenURI u = GID2GenericURI.get(callGraphData.LID2GID[nodeIterator.nextInt()]);
+			for (final NodeIterator nodeIterator = callGraphData.graph.nodeIterator(); nodeIterator.hasNext();) {
+				final FastenURI u = gid2URI(callGraphData.LID2GID[nodeIterator.nextInt()]);
 				final LazyIntIterator successors = nodeIterator.successors();
-				for(int s; (s = successors.nextInt()) != -1; )
-					b.append(u).append('\t').append(GID2GenericURI.get(callGraphData.LID2GID[s])).append('\n');
+				for (int s; (s = successors.nextInt()) != -1;)
+					b.append(u).append('\t').append(gid2URI(callGraphData.LID2GID[s])).append('\n');
 			}
 			return b.toString();
 		}
 	}
 
-	/** Wraps a set of nodes, and allows one to iterate over it with an iterator that returns the {@link FastenURI} of the
-	 *  node each time.
+	/**
+	 * Wraps a set of nodes, and allows one to iterate over it with an iterator
+	 * that returns the {@link FastenURI} of the node each time.
 	 */
 	private final class NamedResult extends AbstractObjectCollection<FastenURI> {
 		private final ObjectLinkedOpenHashSet<Node> reaches;
 
-		/** Wraps a given set of nodes.
+		/**
+		 * Wraps a given set of nodes.
 		 *
 		 * @param objectLinkedOpenHashSet the set of nodes.
 		 */
@@ -492,23 +544,31 @@ public class KnowledgeBase implements Serializable, Closeable {
 		kryo.register(Long2IntOpenHashMap.class);
 	}
 
-	/** Creates a new knowledge base with no associated database; initializes kryo. One has to explicitly call {@link #callGraphDB(RocksDB)}
-	 *  or {@link #callGraphDB(String)} (typically only once) before using the resulting instance. */
-	private KnowledgeBase() {
-		genericURI2GID = new Object2LongOpenHashMap<>();
-		GID2GenericURI = new Long2ObjectOpenHashMap<>();
+	/**
+	 * Creates a new knowledge base with no associated database; initializes
+	 * kryo. One has to explicitly call {@link #callGraphDB(RocksDB)} or
+	 * {@link #callGraphDB(String)} (typically only once) before using the
+	 * resulting instance.
+	 */
+	private KnowledgeBase(final RocksDB callGraphDB, final ColumnFamilyHandle defaultHandle, final ColumnFamilyHandle gid2URIFamilyHandle, final ColumnFamilyHandle uri2GIDFamilyHandle, final String kbMetadataPathname) {
 		GIDAppearsIn = new Long2ObjectOpenHashMap<>();
 		GIDCalledBy = new Long2ObjectOpenHashMap<>();
 		callGraphs = new Long2ObjectOpenHashMap<>();
 
-		genericURI2GID.defaultReturnValue(-1);
 		GIDAppearsIn.defaultReturnValue(LongSets.EMPTY_SET);
 		GIDCalledBy.defaultReturnValue(LongSets.EMPTY_SET);
+
+		this.callGraphDB = callGraphDB;
+		this.kbMetadataPathname = kbMetadataPathname;
+		this.defaultHandle = defaultHandle;
+		this.gid2uriFamilyHandle = gid2URIFamilyHandle;
+		this.uri2gidFamilyHandle = uri2GIDFamilyHandle;
 
 		initKryo();
 	}
 
-	/** Associates the given database to this knowledge base.
+	/**
+	 * Associates the given database to this knowledge base.
 	 *
 	 * @param db the database to be associated.
 	 */
@@ -522,17 +582,27 @@ public class KnowledgeBase implements Serializable, Closeable {
 		if (metadataExists != kbDirExists) throw new IllegalArgumentException("Either both or none of the knowledge-base directory and metadata must exist");
 
 		RocksDB.loadLibrary();
-		final Options options = new Options();
-		options.setCreateIfMissing(true);
+		final ColumnFamilyOptions cfOptions = new ColumnFamilyOptions().setCompressionType(CompressionType.LZ4_COMPRESSION);
+		@SuppressWarnings("resource")
+		final DBOptions dbOptions = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true);
+		final List<ColumnFamilyDescriptor> cfDescriptors = Arrays.asList(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, cfOptions), new ColumnFamilyDescriptor(GID2URI, cfOptions), new ColumnFamilyDescriptor(URI2GID, cfOptions));
 
-		final RocksDB db = RocksDB.open(options, kbDir);
-		final KnowledgeBase kb = metadataExists ? (KnowledgeBase)BinIO.loadObject(kbMetadataPathname) :  new KnowledgeBase();
-		kb.metadataPathname = kbMetadataPathname;
-		kb.callGraphDB(db);
+		final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+		final RocksDB db = RocksDB.open(dbOptions, kbDir, cfDescriptors, columnFamilyHandles);
+
+		final KnowledgeBase kb;
+		if (metadataExists) {
+			kb = (KnowledgeBase) BinIO.loadObject(kbMetadataPathname);
+			kb.callGraphDB = db;
+			kb.defaultHandle = columnFamilyHandles.get(0);
+			kb.gid2uriFamilyHandle = columnFamilyHandles.get(1);
+			kb.uri2gidFamilyHandle = columnFamilyHandles.get(2);
+		} else kb = new KnowledgeBase(db, columnFamilyHandles.get(0), columnFamilyHandles.get(1), columnFamilyHandles.get(2), kbMetadataPathname);
 		return kb;
 	}
 
-	/** Adds a given revision index to the set associated to the given gid.
+	/**
+	 * Adds a given revision index to the set associated to the given gid.
 	 *
 	 * @param map the map associating gids to sets revision indices.
 	 * @param gid the gid whose associated set should be modified.
@@ -546,32 +616,46 @@ public class KnowledgeBase implements Serializable, Closeable {
 		return set.add(revIndex);
 	}
 
-	/** Adds a URI to the global maps. If the URI is already present, returns its GID.
+	/**
+	 * Adds a URI to the global maps. If the URI is already present, returns its
+	 * GID.
 	 *
 	 * @param uri a Fasten URI.
 	 * @return the associated GID.
 	 */
 	protected long addURI(final FastenURI uri) {
-		long gid = genericURI2GID.getLong(uri);
-		if (gid != -1) return gid;
-		gid = genericURI2GID.size();
-		genericURI2GID.put(uri, gid);
-		GID2GenericURI.put(gid, uri);
-		return gid;
+		final byte[] uriBytes = uri.toString().getBytes(StandardCharsets.UTF_8);
+		try {
+			final byte[] result = callGraphDB.get(uri2gidFamilyHandle, uriBytes);
+			if (result != null) return Longs.fromByteArray(result);
+			final long gid = nextGID++;
+			final byte[] gidBytes = Longs.toByteArray(gid);
+			callGraphDB.put(gid2uriFamilyHandle, gidBytes, uriBytes);
+			callGraphDB.put(uri2gidFamilyHandle, uriBytes, gidBytes);
+			return gid;
+		} catch (final RocksDBException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	/** Returns the successors of a given node.
+	/**
+	 * Returns the successors of a given node.
 	 *
-	 * @param node a node (say, corresponding to the pair [<code>index</code>, <code>LID</code>])
-	 * @return the list of all successors; these are obtained as follows: for every successor <code>x</code>
-	 * of <code>node</code> in the call graph
-	 * <ul>
-	 * 	<li>if <code>x</code> is internal, [<code>index</code>, <code>LID</code>] is a successor
-	 *  <li>if <code>x</code> is external and it corresponds to the GID <code>g</code> (which in turn corresponds to a
-	 *  generic {@link FastenURI}), we look at every index <code>otherIndex</code> where <code>g</code>
-	 *  appears, and let <code>otherLID</code> be the corresponding LID: then [<code>otherIndex</code>, <code>otherLID</code>]
-	 *  is a successor.
-	 * </ul>
+	 * @param node a node (say, corresponding to the pair [<code>index</code>,
+	 *            <code>LID</code>])
+	 * @return the list of all successors; these are obtained as follows: for
+	 *         every successor <code>x</code> of <code>node</code> in the call
+	 *         graph
+	 *         <ul>
+	 *         <li>if <code>x</code> is internal, [<code>index</code>,
+	 *         <code>LID</code>] is a successor
+	 *         <li>if <code>x</code> is external and it corresponds to the GID
+	 *         <code>g</code> (which in turn corresponds to a generic
+	 *         {@link FastenURI}), we look at every index
+	 *         <code>otherIndex</code> where <code>g</code> appears, and let
+	 *         <code>otherLID</code> be the corresponding LID: then
+	 *         [<code>otherIndex</code>, <code>otherLID</code>] is a successor.
+	 *         </ul>
 	 */
 	public ObjectList<Node> successors(final Node node) {
 		final long gid = node.gid;
@@ -588,32 +672,40 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 		/* In the successor case, internal nodes can be added directly... */
 
-		while((x = s.nextInt()) != -1 && x < callGraph.nInternal) result.add(new Node(callGraphData.LID2GID[x], index));
+		while ((x = s.nextInt()) != -1 && x < callGraph.nInternal)
+			result.add(new Node(callGraphData.LID2GID[x], index));
 
 		if (x == -1) return result;
 
-		/* ...but external nodes must be search for in the revision call graphs in which they appear. */
+		/*
+		 * ...but external nodes must be search for in the revision call graphs
+		 * in which they appear.
+		 */
 		do {
 			final long xGid = callGraphData.LID2GID[x];
-			for(final LongIterator revisions = GIDAppearsIn.get(xGid).iterator(); revisions.hasNext();)
+			for (final LongIterator revisions = GIDAppearsIn.get(xGid).iterator(); revisions.hasNext();)
 				result.add(new Node(xGid, revisions.nextLong()));
-		} while((x = s.nextInt()) != -1);
+		} while ((x = s.nextInt()) != -1);
 
 		return result;
 	}
 
-	/** Returns the predecessors of a given node.
+	/**
+	 * Returns the predecessors of a given node.
 	 *
 	 * @param node a node (for the form [<code>index</code>, <code>LID</code>])
 	 * @return the list of all predecessors; these are obtained as follows:
-	 * <ul>
-	 * 	<li>for every predecessor <code>x</code>
-	 *  of <code>node</code> in the call graph, [<code>index</code>, <code>LID</code>] is a predecessor
-	 *  <li>let <code>g</code> be the GID of <code>node</code>: for every index <code>otherIndex</code>
-	 *  that calls <code>g</code> (i.e., where <code>g</code> is the GID of an external node),
-	 *  and for all the predecessors <code>x</code> of the node with GID <code>g</code> in <code>otherIndex</code>,
-	 *  [<code>otherIndex</code>, <code>x</code>] is a predecessor.
-	 * </ul>
+	 *         <ul>
+	 *         <li>for every predecessor <code>x</code> of <code>node</code> in
+	 *         the call graph, [<code>index</code>, <code>LID</code>] is a
+	 *         predecessor
+	 *         <li>let <code>g</code> be the GID of <code>node</code>: for every
+	 *         index <code>otherIndex</code> that calls <code>g</code> (i.e.,
+	 *         where <code>g</code> is the GID of an external node), and for all
+	 *         the predecessors <code>x</code> of the node with GID
+	 *         <code>g</code> in <code>otherIndex</code>,
+	 *         [<code>otherIndex</code>, <code>x</code>] is a predecessor.
+	 *         </ul>
 	 */
 	public ObjectList<Node> predecessors(final Node node) {
 		final long gid = node.gid;
@@ -628,29 +720,37 @@ public class KnowledgeBase implements Serializable, Closeable {
 		final ObjectList<Node> result = new ObjectArrayList<>();
 		int x;
 
-		/* In the predecessor case, all nodes returned by the graph are necessarily internal. */
-		while((x = s.nextInt()) != -1) {
+		/*
+		 * In the predecessor case, all nodes returned by the graph are
+		 * necessarily internal.
+		 */
+		while ((x = s.nextInt()) != -1) {
 			assert x < callGraph.nInternal;
 			result.add(new Node(callGraphData.LID2GID[x], index));
 		}
 
-		/* To move backward in the call graph, we use GIDCalledBy to find revisions that might
-		 * contain external nodes of the form <gid, index>. */
+		/*
+		 * To move backward in the call graph, we use GIDCalledBy to find
+		 * revisions that might contain external nodes of the form <gid, index>.
+		 */
 		do
-			for(final LongIterator revisions = GIDCalledBy.get(gid).iterator(); revisions.hasNext();) {
+			for (final LongIterator revisions = GIDCalledBy.get(gid).iterator(); revisions.hasNext();) {
 				final long revIndex = revisions.nextLong();
 				final CallGraph precCallGraph = callGraphs.get(revIndex);
 				final CallGraphData precCallGraphData = precCallGraph.callGraphData();
 				final ImmutableGraph transpose = precCallGraphData.transpose;
 				final LazyIntIterator p = transpose.successors(precCallGraphData.GID2LID.get(gid));
-				for(int y; (y = p.nextInt()) != -1;) result.add(new Node(precCallGraphData.LID2GID[y], revIndex));
+				for (int y; (y = p.nextInt()) != -1;)
+					result.add(new Node(precCallGraphData.LID2GID[y], revIndex));
 			}
-		while((x = s.nextInt()) != -1);
+		while ((x = s.nextInt()) != -1);
 
 		return result;
 	}
 
-	/** Returns the node corresponding to a given (non-generic) {@link FastenURI}.
+	/**
+	 * Returns the node corresponding to a given (non-generic)
+	 * {@link FastenURI}.
 	 *
 	 * @param fastenURI a {@link FastenURI} with version.
 	 * @return the corresponding node, or <code>null</code>.
@@ -658,33 +758,39 @@ public class KnowledgeBase implements Serializable, Closeable {
 	public Node fastenURI2Node(final FastenURI fastenURI) {
 		if (fastenURI.getVersion() == null) throw new IllegalArgumentException("The FASTEN URI must be versioned");
 		final FastenURI genericURI = FastenURI.createSchemeless(null, fastenURI.getRawProduct(), null, fastenURI.getRawNamespace(), fastenURI.getRawEntity());
-		final long gid = genericURI2GID.getLong(genericURI);
+		final long gid = uri2GID(genericURI);
 		if (gid == -1) return null;
 		final String version = fastenURI.getVersion();
-		for(final long index: GIDAppearsIn.get(gid))
+		for (final long index : GIDAppearsIn.get(gid))
 			if (version.equals(callGraphs.get(index).version)) return new Node(gid, index);
 
 		return null;
 	}
 
-	/** Given a generic URI (one without a version), returns all the matching non-generic URIs.
+	/**
+	 * Given a generic URI (one without a version), returns all the matching
+	 * non-generic URIs.
 	 *
 	 * @param genericURI a generic URI.
-	 * @return the list of all non-generic URIs matching <code>genericURI</code>.
+	 * @return the list of all non-generic URIs matching
+	 *         <code>genericURI</code>.
 	 */
 	public ObjectList<FastenURI> genericURI2URIs(final FastenURI genericURI) {
 		if (genericURI.getVersion() != null || genericURI.getScheme() != null) throw new IllegalArgumentException("The FASTEN URI must be generic and schemeless");
-		final long gid = genericURI2GID.getLong(genericURI);
+		final long gid = uri2GID(genericURI);
 		if (gid == -1) return null;
 		final ObjectArrayList<FastenURI> result = new ObjectArrayList<>();
-		for(final long index: GIDAppearsIn.get(gid)) result.add(FastenURI.createSchemeless(genericURI.getRawForge(), genericURI.getRawProduct(), callGraphs.get(index).version, genericURI.getRawNamespace(), genericURI.getRawEntity()));
+		for (final long index : GIDAppearsIn.get(gid))
+			result.add(FastenURI.createSchemeless(genericURI.getRawForge(), genericURI.getRawProduct(), callGraphs.get(index).version, genericURI.getRawNamespace(), genericURI.getRawEntity()));
 		return result;
 	}
 
-	/** The set of all nodes that are reachable from <code>start</code>.
+	/**
+	 * The set of all nodes that are reachable from <code>start</code>.
 	 *
 	 * @param start the starting node.
-	 * @return the set of all nodes for which there is a directed path from <code>start</code> to that node.
+	 * @return the set of all nodes for which there is a directed path from
+	 *         <code>start</code> to that node.
 	 */
 	public synchronized ObjectLinkedOpenHashSet<Node> reaches(final Node start) {
 		final ObjectLinkedOpenHashSet<Node> result = new ObjectLinkedOpenHashSet<>();
@@ -692,17 +798,19 @@ public class KnowledgeBase implements Serializable, Closeable {
 		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
 		queue.enqueue(start);
 
-		while(!queue.isEmpty()) {
+		while (!queue.isEmpty()) {
 			final Node node = queue.dequeue();
-			if (result.add(node)) for(final Node s: successors(node))
+			if (result.add(node)) for (final Node s : successors(node))
 				if (!result.contains(s)) queue.enqueue(s);
 		}
 
 		return result;
 	}
 
-	/** The set of all {@link FastenURI} that are reachable from a given {@link FastenURI}; just a convenience
-	 *  method to be used instead of {@link #reaches(Node)}.
+	/**
+	 * The set of all {@link FastenURI} that are reachable from a given
+	 * {@link FastenURI}; just a convenience method to be used instead of
+	 * {@link #reaches(Node)}.
 	 *
 	 * @param fastenURI the starting node.
 	 * @return all the nodes that can be reached from <code>fastenURI</code>.
@@ -713,10 +821,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 		return new NamedResult(reaches(start));
 	}
 
-	/** The set of all nodes that are coreachable from <code>start</code>.
+	/**
+	 * The set of all nodes that are coreachable from <code>start</code>.
 	 *
 	 * @param start the starting node.
-	 * @return the set of all nodes for which there is a directed path from that node to <code>start</code>.
+	 * @return the set of all nodes for which there is a directed path from that
+	 *         node to <code>start</code>.
 	 */
 	public synchronized ObjectLinkedOpenHashSet<Node> coreaches(final Node start) {
 		final ObjectLinkedOpenHashSet<Node> result = new ObjectLinkedOpenHashSet<>();
@@ -724,18 +834,19 @@ public class KnowledgeBase implements Serializable, Closeable {
 		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
 		queue.enqueue(start);
 
-		while(!queue.isEmpty()) {
+		while (!queue.isEmpty()) {
 			final Node node = queue.dequeue();
-			if (result.add(node))
-				for(final Node s: predecessors(node))
-					if (!result.contains(s)) queue.enqueue(s);
+			if (result.add(node)) for (final Node s : predecessors(node))
+				if (!result.contains(s)) queue.enqueue(s);
 		}
 
 		return result;
 	}
 
-	/** The set of all {@link FastenURI} that are coreachable from a given {@link FastenURI}; just a convenience
-	 *  method to be used instead of {@link #coreaches(Node)}.
+	/**
+	 * The set of all {@link FastenURI} that are coreachable from a given
+	 * {@link FastenURI}; just a convenience method to be used instead of
+	 * {@link #coreaches(Node)}.
 	 *
 	 * @param fastenURI the starting node.
 	 * @return all the nodes that can be coreached from <code>fastenURI</code>.
@@ -746,10 +857,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 		return new NamedResult(coreaches(start));
 	}
 
-	/** Adds a new {@link CallGraph} to the list of all call graphs.
+	/**
+	 * Adds a new {@link CallGraph} to the list of all call graphs.
 	 *
-	 * @param g the revision call graph from which the call graph will be created.
-	 * @param index the revision index to which the new call graph will be associated.
+	 * @param g the revision call graph from which the call graph will be
+	 *            created.
+	 * @param index the revision index to which the new call graph will be
+	 *            associated.
 	 * @throws IOException
 	 * @throws RocksDBException
 	 */
@@ -760,13 +874,17 @@ public class KnowledgeBase implements Serializable, Closeable {
 	@Override
 	public void close() throws IOException {
 		try {
-			BinIO.storeObject(this, metadataPathname);
+			BinIO.storeObject(this, kbMetadataPathname);
 		} finally {
+			defaultHandle.close();
+			gid2uriFamilyHandle.close();
+			uri2gidFamilyHandle.close();
 			callGraphDB.close();
 		}
 	}
 
-	/** The number of call graphs.
+	/**
+	 * The number of call graphs.
 	 *
 	 * @return the number of call graphs.
 	 */
@@ -779,12 +897,15 @@ public class KnowledgeBase implements Serializable, Closeable {
 		initKryo();
 	}
 
-	/** Return the permutation induced by the visit order of a depth-first visit.
+	/**
+	 * Return the permutation induced by the visit order of a depth-first visit.
 	 *
 	 * @param graph a graph.
-	 * @param startingNode the only starting node of the visit, or -1 for a complete visit.
+	 * @param startingNode the only starting node of the visit, or -1 for a
+	 *            complete visit.
 	 * @param internalNodes number of internal nodes in the graph
-	 * @return  the permutation induced by the visit order of a depth-first visit.
+	 * @return the permutation induced by the visit order of a depth-first
+	 *         visit.
 	 */
 	public static int[] bfsperm(final ImmutableGraph graph, final int startingNode, final int internalNodes) {
 		final int n = graph.numNodes();
@@ -801,7 +922,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 		int internalPos = 0, externalPos = internalNodes;
 
-		for(int i = 0; i < n; i++) {
+		for (int i = 0; i < n; i++) {
 			final int start = i == 0 && startingNode != -1 ? startingNode : i;
 			if (visited.getBoolean(start)) continue;
 			queue.enqueue(start);
@@ -810,19 +931,17 @@ public class KnowledgeBase implements Serializable, Closeable {
 			int currentNode;
 			final IntArrayList successors = new IntArrayList();
 
-			while(! queue.isEmpty()) {
+			while (!queue.isEmpty()) {
 				currentNode = queue.dequeueInt();
-				if (currentNode < internalNodes)
-					visitOrder[internalPos++] = currentNode;
-				else
-					visitOrder[externalPos++] = currentNode;
+				if (currentNode < internalNodes) visitOrder[internalPos++] = currentNode;
+				else visitOrder[externalPos++] = currentNode;
 				int degree = graph.outdegree(currentNode);
 				final LazyIntIterator iterator = graph.successors(currentNode);
 
 				successors.clear();
-				while(degree-- != 0) {
+				while (degree-- != 0) {
 					final int succ = iterator.nextInt();
-					if (! visited.getBoolean(succ)) {
+					if (!visited.getBoolean(succ)) {
 						successors.add(succ);
 						visited.set(succ);
 					}
@@ -831,7 +950,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 				final int[] randomSuccessors = successors.elements();
 				IntArrays.quickSort(randomSuccessors, 0, successors.size(), (x, y) -> x - y);
 
-				for(int j = successors.size(); j-- != 0;) queue.enqueue(randomSuccessors[j]);
+				for (int j = successors.size(); j-- != 0;)
+					queue.enqueue(randomSuccessors[j]);
 				pl.update();
 			}
 
@@ -843,6 +963,5 @@ public class KnowledgeBase implements Serializable, Closeable {
 			assert (i < internalNodes) == (visitOrder[i] < internalNodes);
 		return visitOrder;
 	}
-
 
 }
