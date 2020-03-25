@@ -21,6 +21,9 @@ package eu.fasten.analyzer.metadataplugin;
 import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import eu.fasten.server.kafka.FastenKafkaConnection;
 import eu.fasten.server.kafka.FastenKafkaConsumer;
+
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -28,6 +31,7 @@ import java.sql.SQLException;
 import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -96,14 +100,14 @@ public class Main implements Runnable {
                         this.getClass().getCanonicalName());
                 new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
             } else {
-                final var filePath = Paths.get(jsonFile);
-                var jsonCallgraph = new JSONObject();
+                final FileReader reader;
                 try {
-                    jsonCallgraph = new JSONObject(Files.readString(filePath));
-                } catch (IOException e) {
+                    reader = new FileReader(jsonFile);
+                } catch (FileNotFoundException e) {
                     logger.error("Could not find the JSON file at " + jsonFile, e);
                     return;
                 }
+                final JSONObject jsonCallgraph = new JSONObject(new JSONTokener(reader));
                 try {
                     final var record = new ConsumerRecord<>(topic, 0, 0L, "test",
                             jsonCallgraph.toString());
