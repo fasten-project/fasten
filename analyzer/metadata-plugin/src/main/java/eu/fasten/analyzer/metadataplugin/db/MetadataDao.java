@@ -21,7 +21,7 @@ package eu.fasten.analyzer.metadataplugin.db;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
-import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import java.sql.Timestamp;
@@ -191,29 +191,29 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts a record in  'files' table in the database.
+     * Inserts a record in  'modules' table in the database.
      *
-     * @param packageId  ID of the package version where the file belongs
+     * @param packageId  ID of the package version where the module belongs
      *                   (references 'package_versions.id')
-     * @param namespaces Namespaces of the file
-     * @param sha256     SHA256 of the file
-     * @param createdAt  Timestamp when the file was created
-     * @param metadata   Metadata of the file
+     * @param namespaces Namespaces of the module
+     * @param sha256     SHA256 of the module
+     * @param createdAt  Timestamp when the module was created
+     * @param metadata   Metadata of the module
      * @return ID of the new record
      */
-    public long insertFile(long packageId, String namespaces, byte[] sha256, Timestamp createdAt,
+    public long insertModule(long packageId, String namespaces, byte[] sha256, Timestamp createdAt,
                            JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var resultRecord = context.insertInto(Files.FILES,
-                Files.FILES.PACKAGE_ID, Files.FILES.NAMESPACES, Files.FILES.SHA256,
-                Files.FILES.CREATED_AT, Files.FILES.METADATA)
+        var resultRecord = context.insertInto(Modules.MODULES,
+                Modules.MODULES.PACKAGE_ID, Modules.MODULES.NAMESPACES, Modules.MODULES.SHA256,
+                Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)
                 .values(packageId, namespaces, sha256, createdAt, metadataJsonb)
-                .returning(Files.FILES.ID).fetchOne();
-        return resultRecord.getValue(Files.FILES.ID);
+                .returning(Modules.MODULES.ID).fetchOne();
+        return resultRecord.getValue(Modules.MODULES.ID);
     }
 
     /**
-     * Inserts multiple records in the 'files' table in the database.
+     * Inserts multiple records in the 'module' table in the database.
      *
      * @param packageId      ID of the common package
      * @param namespacesList List of namespaces
@@ -223,7 +223,7 @@ public class MetadataDao {
      * @return List of IDs of new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertFiles(long packageId, List<String> namespacesList,
+    public List<Long> insertModules(long packageId, List<String> namespacesList,
                                   List<byte[]> sha256s, List<Timestamp> createdAt,
                                   List<JSONObject> metadata) throws IllegalArgumentException {
         if (namespacesList.size() != sha256s.size() || sha256s.size() != createdAt.size()
@@ -233,7 +233,7 @@ public class MetadataDao {
         int length = namespacesList.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertFile(packageId, namespacesList.get(i), sha256s.get(i),
+            long result = insertModule(packageId, namespacesList.get(i), sha256s.get(i),
                     createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }
@@ -243,21 +243,21 @@ public class MetadataDao {
     /**
      * Inserts a record in the 'callables' table in the database.
      *
-     * @param fileId         ID of the file where the callable belongs (references 'files.id')
+     * @param moduleId         ID of the module where the callable belongs (references 'modules.id')
      * @param fastenUri      URI of the callable in FASTEN
      * @param isResolvedCall 'true' if call is resolved, 'false' otherwise
      * @param createdAt      Timestamp when the callable was created
      * @param metadata       Metadata of the callable
      * @return ID of the new record
      */
-    public long insertCallable(Long fileId, String fastenUri, boolean isResolvedCall,
+    public long insertCallable(Long moduleId, String fastenUri, boolean isResolvedCall,
                                Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Callables.CALLABLES,
-                Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI,
+                Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.IS_RESOLVED_CALL, Callables.CALLABLES.CREATED_AT,
                 Callables.CALLABLES.METADATA)
-                .values(fileId, fastenUri, isResolvedCall, createdAt, metadataJsonb)
+                .values(moduleId, fastenUri, isResolvedCall, createdAt, metadataJsonb)
                 .returning(Callables.CALLABLES.ID).fetchOne();
         return resultRecord.getValue(Callables.CALLABLES.ID);
     }
@@ -265,7 +265,7 @@ public class MetadataDao {
     /**
      * Inserts multiple records in the 'callables' table in the database.
      *
-     * @param fileId           ID of the common file
+     * @param moduleId           ID of the common module
      * @param fastenUris       List of FASTEN URIs
      * @param areResolvedCalls List of IsResolvedCall booleans
      * @param createdAt        List of timestamps
@@ -273,7 +273,7 @@ public class MetadataDao {
      * @return List of IDs of the new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertCallables(long fileId, List<String> fastenUris,
+    public List<Long> insertCallables(long moduleId, List<String> fastenUris,
                                       List<Boolean> areResolvedCalls, List<Timestamp> createdAt,
                                       List<JSONObject> metadata) throws IllegalArgumentException {
         if (fastenUris.size() != areResolvedCalls.size()
@@ -284,7 +284,7 @@ public class MetadataDao {
         int length = fastenUris.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertCallable(fileId, fastenUris.get(i),
+            long result = insertCallable(moduleId, fastenUris.get(i),
                     areResolvedCalls.get(i), createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }

@@ -28,7 +28,7 @@ import org.jooq.impl.TableRecordImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class EdgesRecord extends TableRecordImpl<EdgesRecord> implements Record3<Long, Long, JSONB> {
 
-    private static final long serialVersionUID = 1452815041;
+    private static final long serialVersionUID = 1847200193;
 
     /**
      * Setter for <code>public.edges.source_id</code>.

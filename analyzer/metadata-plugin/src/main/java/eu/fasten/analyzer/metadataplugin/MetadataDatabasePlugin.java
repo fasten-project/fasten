@@ -175,17 +175,17 @@ public class MetadataDatabasePlugin extends Plugin {
             var globalIdsMap = new HashMap<Integer, Long>();
             for (var fastenUri : cha.keySet()) {
                 var type = cha.get(fastenUri);
-                var fileMetadata = new JSONObject();
-                fileMetadata.put("superInterfaces",
+                var moduleMetadata = new JSONObject();
+                moduleMetadata.put("superInterfaces",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
-                fileMetadata.put("sourceFile", type.getSourceFileName());
-                fileMetadata.put("superClasses",
+                moduleMetadata.put("sourceFile", type.getSourceFileName());
+                moduleMetadata.put("superClasses",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
-                long fileId = metadataDao.insertFile(packageVersionId, fastenUri.getNamespace(),
-                        null, null, fileMetadata);
+                long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.getNamespace(),
+                        null, null, moduleMetadata);
                 for (var methodEntry : type.getMethods().entrySet()) {
                     var uri = methodEntry.getValue().toString();
-                    long callableId = metadataDao.insertCallable(fileId, uri, true, null, null);
+                    long callableId = metadataDao.insertCallable(moduleId, uri, true, null, null);
                     globalIdsMap.put(methodEntry.getKey(), callableId);
                 }
             }

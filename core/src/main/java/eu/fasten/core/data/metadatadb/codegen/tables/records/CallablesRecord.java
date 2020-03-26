@@ -31,7 +31,7 @@ import org.jooq.impl.UpdatableRecordImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class CallablesRecord extends UpdatableRecordImpl<CallablesRecord> implements Record6<Long, Long, String, Boolean, Timestamp, JSONB> {
 
-    private static final long serialVersionUID = 1832542521;
+    private static final long serialVersionUID = 2046808601;
 
     /**
      * Setter for <code>public.callables.id</code>.
@@ -48,16 +48,16 @@ public class CallablesRecord extends UpdatableRecordImpl<CallablesRecord> implem
     }
 
     /**
-     * Setter for <code>public.callables.file_id</code>.
+     * Setter for <code>public.callables.module_id</code>.
      */
-    public void setFileId(Long value) {
+    public void setModuleId(Long value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>public.callables.file_id</code>.
+     * Getter for <code>public.callables.module_id</code>.
      */
-    public Long getFileId() {
+    public Long getModuleId() {
         return (Long) get(1);
     }
 
@@ -147,7 +147,7 @@ public class CallablesRecord extends UpdatableRecordImpl<CallablesRecord> implem
 
     @Override
     public Field<Long> field2() {
-        return Callables.CALLABLES.FILE_ID;
+        return Callables.CALLABLES.MODULE_ID;
     }
 
     @Override
@@ -177,7 +177,7 @@ public class CallablesRecord extends UpdatableRecordImpl<CallablesRecord> implem
 
     @Override
     public Long component2() {
-        return getFileId();
+        return getModuleId();
     }
 
     @Override
@@ -207,7 +207,7 @@ public class CallablesRecord extends UpdatableRecordImpl<CallablesRecord> implem
 
     @Override
     public Long value2() {
-        return getFileId();
+        return getModuleId();
     }
 
     @Override
@@ -238,7 +238,7 @@ public class CallablesRecord extends UpdatableRecordImpl<CallablesRecord> implem
 
     @Override
     public CallablesRecord value2(Long value) {
-        setFileId(value);
+        setModuleId(value);
         return this;
     }
 
@@ -291,11 +291,11 @@ public class CallablesRecord extends UpdatableRecordImpl<CallablesRecord> implem
     /**
      * Create a detached, initialised CallablesRecord
      */
-    public CallablesRecord(Long id, Long fileId, String fastenUri, Boolean isResolvedCall, Timestamp createdAt, JSONB metadata) {
+    public CallablesRecord(Long id, Long moduleId, String fastenUri, Boolean isResolvedCall, Timestamp createdAt, JSONB metadata) {
         super(Callables.CALLABLES);
 
         set(0, id);
-        set(1, fileId);
+        set(1, moduleId);
         set(2, fastenUri);
         set(3, isResolvedCall);
         set(4, createdAt);
