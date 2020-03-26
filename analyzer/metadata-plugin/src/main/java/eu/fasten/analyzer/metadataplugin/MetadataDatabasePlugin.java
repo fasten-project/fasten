@@ -51,7 +51,7 @@ public class MetadataDatabasePlugin extends Plugin {
     @Extension
     public static class MetadataDBExtension implements KafkaConsumer<String>, DBConnector {
 
-        private String topic;
+        private String topic = "opal_callgraphs";
         private DSLContext dslContext;
         private boolean processedRecord = false;
         private String pluginError = "";
