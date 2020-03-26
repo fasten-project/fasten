@@ -18,15 +18,10 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import eu.fasten.server.kafka.FastenKafkaConnection;
 import eu.fasten.server.kafka.FastenKafkaConsumer;
-
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;

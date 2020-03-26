@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -188,7 +187,6 @@ public class MetadataDatabasePluginTest {
                 json.getString("version"), null, null))
                 .thenReturn(packageVersionId);
 
-        Mockito.when(metadataDao.getPackageIdByNameAndForge("test.dependency", "mvn")).thenReturn(-1L);
         long depPackageId = 128;
         Mockito.when(metadataDao.insertPackage("test.dependency", "mvn", null, null, null))
                 .thenReturn(depPackageId);
@@ -220,7 +218,6 @@ public class MetadataDatabasePluginTest {
                 null);
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
                 json.getString("version"), null, null);
-        Mockito.verify(metadataDao).getPackageIdByNameAndForge("test.dependency", "mvn");
         Mockito.verify(metadataDao).insertPackage("test.dependency", "mvn", null, null, null);
     }
 
@@ -284,7 +281,7 @@ public class MetadataDatabasePluginTest {
                 .thenReturn(packageVersionId);
 
         long depPackageId = 128;
-        Mockito.when(metadataDao.getPackageIdByNameAndForge("test.dependency", "mvn")).thenReturn(depPackageId);
+        Mockito.when(metadataDao.insertPackage("test.dependency", "mvn", null, null, null)).thenReturn(depPackageId);
 
         long moduleId = 10;
         var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
@@ -314,9 +311,6 @@ public class MetadataDatabasePluginTest {
                 null);
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
                 json.getString("version"), null, null);
-        Mockito.verify(metadataDao).getPackageIdByNameAndForge("test.dependency", "mvn");
-        Mockito.verify(metadataDao, Mockito.never()).insertPackage("test.dependency", "mvn", null, null,
-                null);
     }
 
     @Test

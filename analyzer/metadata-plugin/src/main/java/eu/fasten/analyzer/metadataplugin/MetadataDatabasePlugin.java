@@ -23,7 +23,6 @@ import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -83,7 +82,8 @@ public class MetadataDatabasePlugin extends Plugin {
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
             final var consumedJson = new JSONObject(record.value());
-            final var artifact = consumedJson.optString("product") + "@" + consumedJson.optString("version");
+            final var artifact = consumedJson.optString("product") + "@"
+                    + consumedJson.optString("version");
             this.processedRecord = false;
             this.restartTransaction = false;
             this.pluginError = "";
@@ -91,7 +91,7 @@ public class MetadataDatabasePlugin extends Plugin {
             try {
                 callgraph = new ExtendedRevisionCallGraph(consumedJson);
             } catch (JSONException e) {
-                logger.error("Error parsing JSON callgraph for " + artifact, e);
+                logger.error("Error parsing JSON callgraph for '" + artifact + "'", e);
                 processedRecord = false;
                 setPluginError(e);
                 return;
@@ -106,11 +106,11 @@ public class MetadataDatabasePlugin extends Plugin {
                         try {
                             id = saveToDatabase(callgraph, metadataDao);
                         } catch (RuntimeException e) {
-                            logger.error("Error saving to the database: " + artifact, e);
+                            logger.error("Error saving to the database: '" + artifact + "'", e);
                             processedRecord = false;
                             setPluginError(e);
                             if (e instanceof DataAccessException) {
-                                logger.info("Restarting transaction for " + artifact);
+                                logger.info("Restarting transaction for '" + artifact + "'");
                                 restartTransaction = true;
                             } else {
                                 restartTransaction = false;
@@ -120,7 +120,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         if (getPluginError().isEmpty()) {
                             processedRecord = true;
                             restartTransaction = false;
-                            logger.info("Saved the " + artifact + " callgraph metadata "
+                            logger.info("Saved the '" + artifact + "' callgraph metadata "
                                     + "to the database with package ID = " + id);
                         }
                     });
@@ -157,13 +157,8 @@ public class MetadataDatabasePlugin extends Plugin {
                         versions[i] = constraints.get(i).toString();
                     }
                     depVersions.add(versions);
-
-                    var depId = metadataDao.getPackageIdByNameAndForge(dependency.product,
-                            dependency.forge);
-                    if (depId == -1L) {
-                        depId = metadataDao.insertPackage(dependency.product, dependency.forge,
-                                null, null, null);
-                    }
+                    var depId = metadataDao.insertPackage(dependency.product, dependency.forge,
+                            null, null, null);
                     depIds.add(depId);
                 }
             }
