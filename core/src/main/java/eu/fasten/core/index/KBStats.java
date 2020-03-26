@@ -95,6 +95,8 @@ public class KBStats {
 		final PrintStream idStream = idFlag? new PrintStream(new BufferedOutputStream(new FileOutputStream(jsapResult.getString("id")))) : null;
 
 		final StatsAccumulator nodes = new StatsAccumulator();
+		final StatsAccumulator internalNodes = new StatsAccumulator();
+		final StatsAccumulator internalNodeRatio = new StatsAccumulator();
 		final StatsAccumulator arcs = new StatsAccumulator();
 		final StatsAccumulator bitsPerLink = new StatsAccumulator();
 		final StatsAccumulator bitsPerLinkt = new StatsAccumulator();
@@ -109,6 +111,8 @@ public class KBStats {
 			statGraphs++;
 			nodes.add(graph.numNodes());
 			arcs.add(graph.numArcs());
+			internalNodes.add(callGraph.nInternal);
+			internalNodeRatio.add(((double)callGraph.nInternal)/graph.numNodes());
 			final double bpl = Double.parseDouble((callGraphData.graphProperties.getProperty("bitsperlink")));
 			if (! Double.isNaN(bpl)) bitsPerLink.add(bpl);
 			final double bplt = Double.parseDouble((callGraphData.transposeProperties.getProperty("bitsperlink")));
@@ -155,6 +159,8 @@ public class KBStats {
 		System.out.println("Graphs in the kb: " + totGraphs);
 		System.out.println("Graphs considered for the stats: " + statGraphs);
 		System.out.println("Nodes: " + nodes.snapshot());
+		System.out.println("Internal nodes: " + internalNodes.snapshot());
+		System.out.println("Internal node ratio: " + internalNodeRatio.snapshot());
 		System.out.println("Arcs: " + arcs.snapshot());
 		System.out.println("Bits/link: " + bitsPerLink.snapshot());
 		System.out.println("Transpose bits/link: " + bitsPerLinkt.snapshot());
