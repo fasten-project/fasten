@@ -39,7 +39,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Edges extends TableImpl<EdgesRecord> {
 
-    private static final long serialVersionUID = -1704452902;
+    private static final long serialVersionUID = -178507430;
 
     /**
      * The reference instance of <code>public.edges</code>

@@ -40,8 +40,6 @@ public class MetadataDatabasePluginTest {
 
     @BeforeEach
     public void setUp() throws SQLException {
-        // TODO: Using Mockito for DB credentials?
-        //DSLContext context = Mockito.mock(DSLContext.class);
         metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
         metadataDBExtension.setTopic("opal_callgraphs");
         metadataDBExtension.getDBAccess("jdbc:postgresql:postgres", "postgres", "pass123");
@@ -98,23 +96,23 @@ public class MetadataDatabasePluginTest {
                 "}");
         long packageId = 8;
         Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
-                new Timestamp(json.getLong("timestamp")))).thenReturn(packageId);
+                null)).thenReturn(packageId);
 
         long packageVersionId = 42;
         Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
-                json.getString("version"), null, null)).thenReturn(packageVersionId);
-        long fileId = 10;
-        var fileMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
+                json.getString("version"), new Timestamp(json.getLong("timestamp")), null)).thenReturn(packageVersionId);
+        long moduleId = 10;
+        var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
                 "      \"sourceFile\": \"file.java\",\n" +
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
-        Mockito.when(metadataDao.insertFile(packageVersionId, "package", null, null,
-                fileMetadata)).thenReturn(fileId);
+        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null, null,
+                moduleMetadata)).thenReturn(moduleId);
 
-        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.method()%2Fjava" +
+        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
                 ".lang%2FVoid", true, null, null)).thenReturn(64L);
-        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.toString()%2Fjava" +
+        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.toString()%2Fjava" +
                 ".lang%2FString", true, null, null)).thenReturn(65L);
         Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
 
@@ -126,10 +124,9 @@ public class MetadataDatabasePluginTest {
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
-        Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
-                new Timestamp(json.getLong("timestamp")));
+        Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
-                json.getString("version"), null, null);
+                json.getString("version"), new Timestamp(json.getLong("timestamp")), null);
     }
 
     @Test
@@ -196,18 +193,18 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertPackage("test.dependency", "mvn", null, null, null))
                 .thenReturn(depPackageId);
 
-        long fileId = 10;
-        var fileMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
+        long moduleId = 10;
+        var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
                 "      \"sourceFile\": \"file.java\",\n" +
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
-        Mockito.when(metadataDao.insertFile(packageVersionId, "package", null, null,
-                fileMetadata)).thenReturn(fileId);
+        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null, null,
+                moduleMetadata)).thenReturn(moduleId);
 
-        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.method()%2Fjava" +
+        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
                 ".lang%2FVoid", true, null, null)).thenReturn(64L);
-        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.toString()%2Fjava" +
+        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.toString()%2Fjava" +
                 ".lang%2FString", true, null, null)).thenReturn(65L);
         Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
 
@@ -289,18 +286,18 @@ public class MetadataDatabasePluginTest {
         long depPackageId = 128;
         Mockito.when(metadataDao.getPackageIdByNameAndForge("test.dependency", "mvn")).thenReturn(depPackageId);
 
-        long fileId = 10;
-        var fileMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
+        long moduleId = 10;
+        var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
                 "      \"sourceFile\": \"file.java\",\n" +
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
-        Mockito.when(metadataDao.insertFile(packageVersionId, "package", null, null,
-                fileMetadata)).thenReturn(fileId);
+        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null, null,
+                moduleMetadata)).thenReturn(moduleId);
 
-        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.method()%2Fjava" +
+        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
                 ".lang%2FVoid", true, null, null)).thenReturn(64L);
-        Mockito.when(metadataDao.insertCallable(fileId, "/package/class.toString()%2Fjava" +
+        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.toString()%2Fjava" +
                 ".lang%2FString", true, null, null)).thenReturn(65L);
         Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
 

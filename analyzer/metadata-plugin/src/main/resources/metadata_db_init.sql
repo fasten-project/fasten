@@ -22,7 +22,7 @@ CREATE TABLE dependencies(
   version_range TEXT[] NOT NULL
 );
 
-CREATE TABLE files(
+CREATE TABLE modules(
 	id			BIGSERIAL PRIMARY KEY,
 	package_id	BIGINT NOT NULL REFERENCES package_versions(id),
 	namespaces  TEXT NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE files(
 
 CREATE TABLE callables(
 	id		  			BIGSERIAL PRIMARY KEY,
-	file_id				BIGINT REFERENCES files(id),
+	module_id			BIGINT REFERENCES modules(id),
 	fasten_uri			TEXT NOT NULL,
 	is_resolved_call	BOOLEAN NOT NULL,
   	created_at  		TIMESTAMP,

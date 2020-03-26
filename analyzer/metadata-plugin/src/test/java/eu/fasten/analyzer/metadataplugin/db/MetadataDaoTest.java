@@ -21,13 +21,13 @@ package eu.fasten.analyzer.metadataplugin.db;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
-import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.DependenciesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.FilesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.ModulesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
 import org.jooq.DSLContext;
@@ -357,7 +357,7 @@ public class MetadataDaoTest {
     }
 
     @Test
-    public void insertFileTest() {
+    public void insertModuleTest() {
         long id = 1;
         long packageId = 42;
         var namespaces = "namespace1;namespace2";
@@ -365,36 +365,36 @@ public class MetadataDaoTest {
         var createdAt = new Timestamp(1);
         var metadata = new JSONObject("{\"foo\":\"bar\"}");
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_ID, Files.FILES.NAMESPACES, Files.FILES.SHA256,
-                Files.FILES.CREATED_AT, Files.FILES.METADATA)).thenReturn(insertValues);
+        Mockito.when(context.insertInto(Modules.MODULES, Modules.MODULES.PACKAGE_ID, Modules.MODULES.NAMESPACES,
+                Modules.MODULES.SHA256, Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, namespaces, sha256, createdAt, JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertValues.returning(Files.FILES.ID)).thenReturn(insertResult);
-        var record = new FilesRecord(id, packageId, namespaces, sha256, createdAt, JSONB.valueOf(metadata.toString()));
+        Mockito.when(insertValues.returning(Modules.MODULES.ID)).thenReturn(insertResult);
+        var record = new ModulesRecord(id, packageId, namespaces, sha256, createdAt, JSONB.valueOf(metadata.toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        long result = metadataDao.insertFile(packageId, namespaces, sha256, createdAt, metadata);
+        long result = metadataDao.insertModule(packageId, namespaces, sha256, createdAt, metadata);
         assertEquals(id, result);
     }
 
     @Test
-    public void insertFileNullTest() {
+    public void insertModuleNullTest() {
         long id = 1;
         long packageId = 42;
         var namespaces = "namespace1;namespace2";
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_ID, Files.FILES.NAMESPACES, Files.FILES.SHA256,
-                Files.FILES.CREATED_AT, Files.FILES.METADATA)).thenReturn(insertValues);
+        Mockito.when(context.insertInto(Modules.MODULES, Modules.MODULES.PACKAGE_ID, Modules.MODULES.NAMESPACES, Modules.MODULES.SHA256,
+                Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, namespaces, null, null, null)).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertValues.returning(Files.FILES.ID)).thenReturn(insertResult);
-        var record = new FilesRecord(id, packageId, namespaces, null, null, null);
+        Mockito.when(insertValues.returning(Modules.MODULES.ID)).thenReturn(insertResult);
+        var record = new ModulesRecord(id, packageId, namespaces, null, null, null);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        long result = metadataDao.insertFile(packageId, namespaces, null, null, null);
+        long result = metadataDao.insertModule(packageId, namespaces, null, null, null);
         assertEquals(id, result);
     }
 
     @Test
-    public void insertMultipleFilesTest() throws IllegalArgumentException {
+    public void insertMultipleModulesTest() throws IllegalArgumentException {
         var ids = Arrays.asList(1L, 2L);
         long packageId = 42;
         var namespaces = Arrays.asList("namespace1;namespace2", "namespace3;namespace4");
@@ -402,157 +402,157 @@ public class MetadataDaoTest {
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_ID, Files.FILES.NAMESPACES, Files.FILES.SHA256,
-                Files.FILES.CREATED_AT, Files.FILES.METADATA)).thenReturn(insertValues);
+        Mockito.when(context.insertInto(Modules.MODULES, Modules.MODULES.PACKAGE_ID, Modules.MODULES.NAMESPACES, Modules.MODULES.SHA256,
+                Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, namespaces.get(0), sha256s.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()))).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, namespaces.get(1), sha256s.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()))).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertValues.returning(Files.FILES.ID)).thenReturn(insertResult);
-        var record1 = new FilesRecord(ids.get(0), packageId, namespaces.get(0), sha256s.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()));
-        var record2 = new FilesRecord(ids.get(1), packageId, namespaces.get(1), sha256s.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()));
+        Mockito.when(insertValues.returning(Modules.MODULES.ID)).thenReturn(insertResult);
+        var record1 = new ModulesRecord(ids.get(0), packageId, namespaces.get(0), sha256s.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()));
+        var record2 = new ModulesRecord(ids.get(1), packageId, namespaces.get(1), sha256s.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
-        var result = metadataDao.insertFiles(packageId, namespaces, sha256s, createdAt, metadata);
+        var result = metadataDao.insertModules(packageId, namespaces, sha256s, createdAt, metadata);
         assertEquals(ids, result);
     }
 
     @Test
-    public void insertMultipleFilesErrorTest() {
+    public void insertMultipleModulesErrorTest() {
         long packageId = 42;
         var namespaces = Arrays.asList("namespace1;namespace2", "namespace3;namespace4");
         var sha256s = Collections.singletonList(new byte[]{0, 1, 2, 3, 4});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(packageId, namespaces, sha256s, createdAt, metadata);
+            metadataDao.insertModules(packageId, namespaces, sha256s, createdAt, metadata);
         });
     }
 
     @Test
-    public void insertMultipleFilesErrorTest1() {
+    public void insertMultipleModulesErrorTest1() {
         long packageId = 42;
         var namespaces = Arrays.asList("namespace1;namespace2", "namespace3;namespace4");
         var sha256s = Arrays.asList(new byte[]{0, 1, 2, 3, 4}, new byte[]{5, 6, 7, 8, 9});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(packageId, namespaces, sha256s, createdAt, metadata);
+            metadataDao.insertModules(packageId, namespaces, sha256s, createdAt, metadata);
         });
     }
 
     @Test
-    public void insertMultipleFilesErrorTest2() {
+    public void insertMultipleModulesErrorTest2() {
         long packageId = 42;
         var namespaces = Arrays.asList("namespace1;namespace2", "namespace3;namespace4");
         var sha256s = Arrays.asList(new byte[]{0, 1, 2, 3, 4}, new byte[]{5, 6, 7, 8, 9});
         var createdAt = Collections.singletonList(new Timestamp(1));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(packageId, namespaces, sha256s, createdAt, metadata);
+            metadataDao.insertModules(packageId, namespaces, sha256s, createdAt, metadata);
         });
     }
 
     @Test
     public void insertCallableTest() throws IllegalArgumentException {
         var id = 1L;
-        long fileId = 42;
+        long moduleId = 42;
         var fastenUri = "URI";
         boolean isResolvedCall = true;
         var createdAt = new Timestamp(1);
         var metadata = new JSONObject("{\"foo\":\"bar\"}");
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI,
+        Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.IS_RESOLVED_CALL, Callables.CALLABLES.CREATED_AT,
                 Callables.CALLABLES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(fileId, fastenUri, isResolvedCall, createdAt,
+        Mockito.when(insertValues.values(moduleId, fastenUri, isResolvedCall, createdAt,
                 JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertValues.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
-        var record = new CallablesRecord(id, fileId, fastenUri, isResolvedCall, createdAt,
+        var record = new CallablesRecord(id, moduleId, fastenUri, isResolvedCall, createdAt,
                 JSONB.valueOf(metadata.toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        var result = metadataDao.insertCallable(fileId, fastenUri, isResolvedCall, createdAt, metadata);
+        var result = metadataDao.insertCallable(moduleId, fastenUri, isResolvedCall, createdAt, metadata);
         assertEquals(id, result);
     }
 
     @Test
     public void insertCallableNullTest() throws IllegalArgumentException {
         var id = 1L;
-        long fileId = 42;
+        long moduleId = 42;
         var fastenUri = "URI";
         var isResolvedCall = false;
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI,
+        Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.IS_RESOLVED_CALL, Callables.CALLABLES.CREATED_AT,
                 Callables.CALLABLES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(fileId, fastenUri, isResolvedCall, null, null)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(moduleId, fastenUri, isResolvedCall, null, null)).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertValues.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
-        var record = new CallablesRecord(id, fileId, fastenUri, isResolvedCall, null, null);
+        var record = new CallablesRecord(id, moduleId, fastenUri, isResolvedCall, null, null);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        var result = metadataDao.insertCallable(fileId, fastenUri, isResolvedCall, null, null);
+        var result = metadataDao.insertCallable(moduleId, fastenUri, isResolvedCall, null, null);
         assertEquals(id, result);
     }
 
     @Test
     public void insertCallablesTest() throws IllegalArgumentException {
         var ids = Arrays.asList(1L, 2L);
-        long fileId = 42;
+        long moduleId = 42;
         var fastenUris = Arrays.asList("URI1", "URI2");
         var areResolvedCalls = Arrays.asList(true, false);
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.FILE_ID, Callables.CALLABLES.FASTEN_URI,
+        Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.IS_RESOLVED_CALL, Callables.CALLABLES.CREATED_AT,
                 Callables.CALLABLES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(fileId, fastenUris.get(0), areResolvedCalls.get(0),
+        Mockito.when(insertValues.values(moduleId, fastenUris.get(0), areResolvedCalls.get(0),
                 createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()))).thenReturn(insertValues);
-        Mockito.when(insertValues.values(fileId, fastenUris.get(1), areResolvedCalls.get(1),
+        Mockito.when(insertValues.values(moduleId, fastenUris.get(1), areResolvedCalls.get(1),
                 createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()))).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertValues.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
-        var record1 = new CallablesRecord(ids.get(0), fileId, fastenUris.get(0),
+        var record1 = new CallablesRecord(ids.get(0), moduleId, fastenUris.get(0),
                 areResolvedCalls.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()));
-        var record2 = new CallablesRecord(ids.get(1), fileId, fastenUris.get(1),
+        var record2 = new CallablesRecord(ids.get(1), moduleId, fastenUris.get(1),
                 areResolvedCalls.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
-        var result = metadataDao.insertCallables(fileId, fastenUris, areResolvedCalls, createdAt, metadata);
+        var result = metadataDao.insertCallables(moduleId, fastenUris, areResolvedCalls, createdAt, metadata);
         assertEquals(ids, result);
     }
 
     @Test
     public void insertMultipleCallablesErrorTest() {
-        long fileId = 42;
+        long moduleId = 42;
         var fastenUris = Arrays.asList("URI1", "URI2");
         var areResolvedCalls = Arrays.asList(true, false);
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertCallables(fileId, fastenUris, areResolvedCalls, createdAt, metadata);
+            metadataDao.insertCallables(moduleId, fastenUris, areResolvedCalls, createdAt, metadata);
         });
     }
 
     @Test
     public void insertMultipleCallablesErrorTest1() {
-        long fileId = 42;
+        long moduleId = 42;
         var fastenUris = Arrays.asList("URI1", "URI2");
         var areResolvedCalls = Collections.singletonList(true);
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertCallables(fileId, fastenUris, areResolvedCalls, createdAt, metadata);
+            metadataDao.insertCallables(moduleId, fastenUris, areResolvedCalls, createdAt, metadata);
         });
     }
 
     @Test
     public void insertMultipleCallablesErrorTest2() {
-        long fileId = 42;
+        long moduleId = 42;
         var fastenUris = Collections.singletonList("URI1");
         var areResolvedCalls = Collections.singletonList(true);
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertCallables(fileId, fastenUris, areResolvedCalls, createdAt, metadata);
+            metadataDao.insertCallables(moduleId, fastenUris, areResolvedCalls, createdAt, metadata);
         });
     }
 

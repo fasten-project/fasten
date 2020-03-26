@@ -59,35 +59,15 @@ public class MetadataDatabasePlugin extends Plugin {
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
 
-//        /**
-//         * Constructor for MetadataPlugin with default DSLContext
-//         * with parameters from `postgres.properties`.
-//         *
-//         * @param callgraphTopic Topic from which to consume call graphs
-//         * @throws IOException              if cannot read file `postgres.properties`
-//         * @throws SQLException             if cannot connect to the database
-//         * @throws IllegalArgumentException if database URL in `postgres.properties` is malformed
-//         */
-//        public MetadataDBExtension(String callgraphTopic) throws IOException, SQLException,
-//                IllegalArgumentException {
-//            this(callgraphTopic, PostgresConnector.getDSLContext());
-//        }
-
-//        /**
-//         * Constructor for MetadataPlugin with provided DSLContext.
-//         *
-//         * @param callgraphTopic Topic from which to consume call graphs
-//         * @param dslContext     DSLContext for jOOQ to query the database
-//         */
-//        public MetadataDBExtension(String callgraphTopic, DSLContext dslContext) {
-//            super();
-//            this.dslContext = dslContext;
-//            this.topic = callgraphTopic;
-//        }
-
         @Override
-        public void getDBAccess(String DBUrl, String username, String password) throws SQLException {
-            this.dslContext = PostgresConnector.getDSLContext(DBUrl, username, password);
+        public void getDBAccess(String dbUrl, String username, String password)
+                throws SQLException {
+            try {
+                this.dslContext = PostgresConnector.getDSLContext(dbUrl, username, password);
+            } catch (IllegalArgumentException e) {
+                logger.error("Malformed database URI: " + dbUrl, e);
+                setPluginError(e);
+            }
         }
 
         @Override
@@ -103,7 +83,7 @@ public class MetadataDatabasePlugin extends Plugin {
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
             final var consumedJson = new JSONObject(record.value());
-            final var product = consumedJson.optString("product");
+            final var artifact = consumedJson.optString("product") + "@" + consumedJson.optString("version");
             this.processedRecord = false;
             this.restartTransaction = false;
             this.pluginError = "";
@@ -111,7 +91,7 @@ public class MetadataDatabasePlugin extends Plugin {
             try {
                 callgraph = new ExtendedRevisionCallGraph(consumedJson);
             } catch (JSONException e) {
-                logger.error("Error parsing JSON callgraph for " + product, e);
+                logger.error("Error parsing JSON callgraph for " + artifact, e);
                 processedRecord = false;
                 setPluginError(e);
                 return;
@@ -126,11 +106,11 @@ public class MetadataDatabasePlugin extends Plugin {
                         try {
                             id = saveToDatabase(callgraph, metadataDao);
                         } catch (RuntimeException e) {
-                            logger.error("Error saving to the database: " + product, e);
+                            logger.error("Error saving to the database: " + artifact, e);
                             processedRecord = false;
                             setPluginError(e);
                             if (e instanceof DataAccessException) {
-                                logger.info("Restarting transaction for " + product);
+                                logger.info("Restarting transaction for " + artifact);
                                 restartTransaction = true;
                             } else {
                                 restartTransaction = false;
@@ -140,7 +120,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         if (getPluginError().isEmpty()) {
                             processedRecord = true;
                             restartTransaction = false;
-                            logger.info("Saved the " + product + " callgraph metadata "
+                            logger.info("Saved the " + artifact + " callgraph metadata "
                                     + "to the database with package ID = " + id);
                         }
                     });
@@ -162,10 +142,10 @@ public class MetadataDatabasePlugin extends Plugin {
             final var timestamp = (callGraph.timestamp != -1) ? new Timestamp(callGraph.timestamp)
                     : null;
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
-                    null, null, timestamp);
+                    null, null, null);
 
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    callGraph.getCgGenerator(), callGraph.version, null, null);
+                    callGraph.getCgGenerator(), callGraph.version, timestamp, null);
 
             var depIds = new ArrayList<Long>();
             var depVersions = new ArrayList<String[]>();
@@ -195,17 +175,17 @@ public class MetadataDatabasePlugin extends Plugin {
             var globalIdsMap = new HashMap<Integer, Long>();
             for (var fastenUri : cha.keySet()) {
                 var type = cha.get(fastenUri);
-                var fileMetadata = new JSONObject();
-                fileMetadata.put("superInterfaces",
+                var moduleMetadata = new JSONObject();
+                moduleMetadata.put("superInterfaces",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
-                fileMetadata.put("sourceFile", type.getSourceFileName());
-                fileMetadata.put("superClasses",
+                moduleMetadata.put("sourceFile", type.getSourceFileName());
+                moduleMetadata.put("superClasses",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
-                long fileId = metadataDao.insertFile(packageVersionId, fastenUri.getNamespace(),
-                        null, null, fileMetadata);
+                long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.getNamespace(),
+                        null, null, moduleMetadata);
                 for (var methodEntry : type.getMethods().entrySet()) {
                     var uri = methodEntry.getValue().toString();
-                    long callableId = metadataDao.insertCallable(fileId, uri, true, null, null);
+                    long callableId = metadataDao.insertCallable(moduleId, uri, true, null, null);
                     globalIdsMap.put(methodEntry.getKey(), callableId);
                 }
             }

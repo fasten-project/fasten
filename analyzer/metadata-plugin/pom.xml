@@ -181,51 +181,6 @@
                     <target>1.11</target>
                 </configuration>
             </plugin>
-
-<!--            jOOQ code generation plugin -->
-<!--                <plugin>-->
-<!--                    <groupId>org.jooq</groupId>-->
-<!--                    <artifactId>jooq-codegen-maven</artifactId>-->
-<!--                    <version>3.12.3</version>-->
-
-<!--                    <executions>-->
-<!--                        <execution>-->
-<!--                            <goals>-->
-<!--                                <goal>generate</goal>-->
-<!--                            </goals>-->
-<!--                        </execution>-->
-<!--                    </executions>-->
-
-<!--                    <dependencies>-->
-<!--                        <dependency>-->
-<!--                            <groupId>org.postgresql</groupId>-->
-<!--                            <artifactId>postgresql</artifactId>-->
-<!--                            <version>9.4.1208</version>-->
-<!--                        </dependency>-->
-<!--                    </dependencies>-->
-
-<!--                    <configuration>-->
-<!--                        <jdbc>-->
-<!--                            <driver>org.postgresql.Driver</driver>-->
-<!--                            <url>jdbc:postgresql:postgres</url>-->
-<!--                            <user>postgres</user>-->
-<!--                            <password>pass123</password>-->
-<!--                        </jdbc>-->
-
-<!--                        <generator>-->
-<!--                            <database>-->
-<!--                                <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
-<!--                                <includes>.*</includes>-->
-<!--                                <inputSchema>public</inputSchema>-->
-<!--                            </database>-->
-<!--                            <target>-->
-<!--                                <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>-->
-<!--                                <directory>src/main/java</directory>-->
-<!--                            </target>-->
-<!--                        </generator>-->
-<!--                    </configuration>-->
-<!--                </plugin>-->
-
         </plugins>
     </build>
 

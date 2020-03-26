@@ -27,7 +27,7 @@ import org.jooq.impl.TableRecordImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class DependenciesRecord extends TableRecordImpl<DependenciesRecord> implements Record3<Long, Long, String[]> {
 
-    private static final long serialVersionUID = -200271834;
+    private static final long serialVersionUID = 1848385830;
 
     /**
      * Setter for <code>public.dependencies.package_id</code>.

@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Callables extends TableImpl<CallablesRecord> {
 
-    private static final long serialVersionUID = 1424304027;
+    private static final long serialVersionUID = -1213654597;
 
     /**
      * The reference instance of <code>public.callables</code>
@@ -65,9 +65,9 @@ public class Callables extends TableImpl<CallablesRecord> {
     public final TableField<CallablesRecord, Long> ID = createField(DSL.name("id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('callables_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
 
     /**
-     * The column <code>public.callables.file_id</code>.
+     * The column <code>public.callables.module_id</code>.
      */
-    public final TableField<CallablesRecord, Long> FILE_ID = createField(DSL.name("file_id"), org.jooq.impl.SQLDataType.BIGINT, this, "");
+    public final TableField<CallablesRecord, Long> MODULE_ID = createField(DSL.name("module_id"), org.jooq.impl.SQLDataType.BIGINT, this, "");
 
     /**
      * The column <code>public.callables.fasten_uri</code>.
@@ -149,11 +149,11 @@ public class Callables extends TableImpl<CallablesRecord> {
 
     @Override
     public List<ForeignKey<CallablesRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<CallablesRecord, ?>>asList(Keys.CALLABLES__CALLABLES_FILE_ID_FKEY);
+        return Arrays.<ForeignKey<CallablesRecord, ?>>asList(Keys.CALLABLES__CALLABLES_MODULE_ID_FKEY);
     }
 
-    public Files files() {
-        return new Files(this, Keys.CALLABLES__CALLABLES_FILE_ID_FKEY);
+    public Modules modules() {
+        return new Modules(this, Keys.CALLABLES__CALLABLES_MODULE_ID_FKEY);
     }
 
     @Override
