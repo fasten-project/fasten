@@ -142,10 +142,10 @@ public class MetadataDatabasePlugin extends Plugin {
             final var timestamp = (callGraph.timestamp != -1) ? new Timestamp(callGraph.timestamp)
                     : null;
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
-                    null, null, timestamp);
+                    null, null, null);
 
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    callGraph.getCgGenerator(), callGraph.version, null, null);
+                    callGraph.getCgGenerator(), callGraph.version, timestamp, null);
 
             var depIds = new ArrayList<Long>();
             var depVersions = new ArrayList<String[]>();

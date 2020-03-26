@@ -96,11 +96,11 @@ public class MetadataDatabasePluginTest {
                 "}");
         long packageId = 8;
         Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
-                new Timestamp(json.getLong("timestamp")))).thenReturn(packageId);
+                null)).thenReturn(packageId);
 
         long packageVersionId = 42;
         Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
-                json.getString("version"), null, null)).thenReturn(packageVersionId);
+                json.getString("version"), new Timestamp(json.getLong("timestamp")), null)).thenReturn(packageVersionId);
         long fileId = 10;
         var fileMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
                 "      \"sourceFile\": \"file.java\",\n" +
@@ -124,10 +124,9 @@ public class MetadataDatabasePluginTest {
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
-        Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
-                new Timestamp(json.getLong("timestamp")));
+        Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
-                json.getString("version"), null, null);
+                json.getString("version"), new Timestamp(json.getLong("timestamp")), null);
     }
 
     @Test
