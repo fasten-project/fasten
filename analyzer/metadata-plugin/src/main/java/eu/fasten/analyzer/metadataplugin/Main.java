@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
+import eu.fasten.server.db.PostgresConnector;
 import eu.fasten.server.kafka.FastenKafkaConnection;
 import eu.fasten.server.kafka.FastenKafkaConsumer;
 import java.io.FileNotFoundException;
@@ -86,9 +87,10 @@ public class Main implements Runnable {
     public void run() {
 
         try {
+
             var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
             metadataPlugin.setTopic(topic);
-            metadataPlugin.getDBAccess(dbUrl, dbUser, dbPass);
+            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
 
             if (jsonFile == null || jsonFile.isEmpty()) {
                 var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,

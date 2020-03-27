@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -38,10 +38,11 @@ public class MetadataDatabasePluginTest {
     private MetadataDatabasePlugin.MetadataDBExtension metadataDBExtension;
 
     @BeforeEach
-    public void setUp() throws SQLException {
+    public void setUp() {
+        var dslContext = Mockito.mock(DSLContext.class);
         metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
         metadataDBExtension.setTopic("opal_callgraphs");
-        metadataDBExtension.getDBAccess("jdbc:postgresql:postgres", "postgres", "pass123");
+        metadataDBExtension.setDBConnection(dslContext);
     }
 
     @Test

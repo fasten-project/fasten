@@ -19,11 +19,10 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
-import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
-import java.sql.SQLException;
+
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,14 +58,8 @@ public class MetadataDatabasePlugin extends Plugin {
         private final int transactionRestartLimit = 3;
 
         @Override
-        public void getDBAccess(String dbUrl, String username, String password)
-                throws SQLException {
-            try {
-                this.dslContext = PostgresConnector.getDSLContext(dbUrl, username, password);
-            } catch (IllegalArgumentException e) {
-                logger.error("Malformed database URI: " + dbUrl, e);
-                setPluginError(e);
-            }
+        public void setDBConnection(DSLContext dslContext) {
+            this.dslContext = dslContext;
         }
 
         @Override
