@@ -59,7 +59,7 @@ public class MetadataDao {
      */
     public long insertPackage(String packageName, String forge, String projectName,
                               String repository, Timestamp createdAt) {
-        var packageId = this.findPackage(packageName, forge, projectName, repository, createdAt);
+        var packageId = this.findPackage(packageName, forge);
         if (packageId != -1L) {
             return packageId;
         } else {
@@ -78,23 +78,12 @@ public class MetadataDao {
      *
      * @param packageName Name of the package
      * @param forge       Forge of the package
-     * @param projectName Project name of the package
-     * @param repository  Repository of the package
-     * @param timestamp   Timestamp of the package
      * @return ID of the record found or -1 otherwise
      */
-    public long findPackage(String packageName, String forge, String projectName,
-                            String repository, Timestamp timestamp) {
+    public long findPackage(String packageName, String forge) {
         var resultRecords = context.selectFrom(Packages.PACKAGES)
                 .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                .and(Packages.PACKAGES.FORGE.eq(forge))
-                .and(projectName == null ? Packages.PACKAGES.PROJECT_NAME.isNull()
-                        : Packages.PACKAGES.PROJECT_NAME.eq(projectName))
-                .and(repository == null ? Packages.PACKAGES.REPOSITORY.isNull()
-                        : Packages.PACKAGES.REPOSITORY.eq(repository))
-                .and(timestamp == null ? Packages.PACKAGES.CREATED_AT.isNull()
-                        : Packages.PACKAGES.CREATED_AT.eq(timestamp))
-                .fetch();
+                .and(Packages.PACKAGES.FORGE.eq(forge)).fetch();
         if (resultRecords == null || resultRecords.isEmpty()) {
             return -1L;
         } else {
@@ -145,8 +134,7 @@ public class MetadataDao {
     public long insertPackageVersion(long packageId, String cgGenerator, String version,
                                      Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var packageVersionId = this.findPackageVersion(packageId, cgGenerator, version, createdAt,
-                metadataJsonb);
+        var packageVersionId = this.findPackageVersion(packageId, cgGenerator, version);
         if (packageVersionId != -1L) {
             return packageVersionId;
         } else {
@@ -168,20 +156,13 @@ public class MetadataDao {
      * @param packageId ID of the package
      * @param generator Callgraph generator
      * @param version   Package version
-     * @param timestamp Timestamp of package version
-     * @param metadata  Metadata of package version
      * @return ID of the package version found or -1 otherwise
      */
-    public long findPackageVersion(long packageId, String generator, String version,
-                                   Timestamp timestamp, JSONB metadata) {
+    public long findPackageVersion(long packageId, String generator, String version) {
         var resultRecords = context.selectFrom(PackageVersions.PACKAGE_VERSIONS)
                 .where(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(packageId))
                 .and(PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR.eq(generator))
-                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
-                .and(timestamp == null ? PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNull()
-                        : PackageVersions.PACKAGE_VERSIONS.CREATED_AT.eq(timestamp))
-                .and(metadata == null ? PackageVersions.PACKAGE_VERSIONS.METADATA.isNull()
-                        : PackageVersions.PACKAGE_VERSIONS.METADATA.eq(metadata)).fetch();
+                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version)).fetch();
         if (resultRecords == null || resultRecords.isEmpty()) {
             return -1L;
         } else {
@@ -297,8 +278,7 @@ public class MetadataDao {
     public long insertModule(long packageVersionId, String namespaces, byte[] sha256,
                              Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var moduleId = this.findModule(packageVersionId, namespaces, sha256, createdAt,
-                metadataJsonb);
+        var moduleId = this.findModule(packageVersionId, namespaces);
         if (moduleId != -1L) {
             return moduleId;
         } else {
@@ -316,22 +296,12 @@ public class MetadataDao {
      *
      * @param packageVersionId ID of the package version
      * @param namespaces       Namespaces of the module
-     * @param sha256           SHA256 of the module
-     * @param timestamp        Timestamp of the module
-     * @param metadata         Metadata of the module
      * @return ID of the record found or -1 otherwise
      */
-    public long findModule(long packageVersionId, String namespaces, byte[] sha256,
-                           Timestamp timestamp, JSONB metadata) {
+    public long findModule(long packageVersionId, String namespaces) {
         var resultRecords = context.selectFrom(Modules.MODULES)
                 .where(Modules.MODULES.PACKAGE_ID.eq(packageVersionId))
-                .and(Modules.MODULES.NAMESPACES.eq(namespaces))
-                .and(sha256 == null ? Modules.MODULES.SHA256.isNull()
-                        : Modules.MODULES.SHA256.eq(sha256))
-                .and(timestamp == null ? Modules.MODULES.CREATED_AT.isNull()
-                        : Modules.MODULES.CREATED_AT.eq(timestamp))
-                .and(metadata == null ? Modules.MODULES.METADATA.isNull()
-                        : Modules.MODULES.METADATA.eq(metadata)).fetch();
+                .and(Modules.MODULES.NAMESPACES.eq(namespaces)).fetch();
         if (resultRecords == null || resultRecords.isEmpty()) {
             return -1L;
         } else {
@@ -380,8 +350,7 @@ public class MetadataDao {
     public long insertCallable(Long moduleId, String fastenUri, boolean isResolvedCall,
                                Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var callableId = this.findCallable(moduleId, fastenUri, isResolvedCall, createdAt,
-                metadataJsonb);
+        var callableId = this.findCallable(fastenUri, isResolvedCall);
         if (callableId != -1L) {
             return callableId;
         } else {
@@ -398,24 +367,14 @@ public class MetadataDao {
     /**
      * Searches 'callables' table for certain callable record.
      *
-     * @param moduleId       ID of the module
      * @param fastenUri      FASTEN URI of the callable
      * @param isResolvedCall is callable a resolved call or not
-     * @param timestamp      Timestamp of the callable
-     * @param metadata       Metadata of the callable
      * @return ID of the record found or -1 otherwise
      */
-    public long findCallable(Long moduleId, String fastenUri, boolean isResolvedCall,
-                             Timestamp timestamp, JSONB metadata) {
+    public long findCallable(String fastenUri, boolean isResolvedCall) {
         var resultRecords = context.selectFrom(Callables.CALLABLES)
-                .where(moduleId == null ? Callables.CALLABLES.MODULE_ID.isNull()
-                        : Callables.CALLABLES.MODULE_ID.eq(moduleId))
-                .and(Callables.CALLABLES.FASTEN_URI.eq(fastenUri))
-                .and(Callables.CALLABLES.IS_RESOLVED_CALL.eq(isResolvedCall))
-                .and(timestamp == null ? Callables.CALLABLES.CREATED_AT.isNull()
-                        : Callables.CALLABLES.CREATED_AT.eq(timestamp))
-                .and(metadata == null ? Callables.CALLABLES.METADATA.isNull()
-                        : Callables.CALLABLES.METADATA.eq(metadata)).fetch();
+                .where(Callables.CALLABLES.FASTEN_URI.eq(fastenUri))
+                .and(Callables.CALLABLES.IS_RESOLVED_CALL.eq(isResolvedCall)).fetch();
         if (resultRecords == null || resultRecords.isEmpty()) {
             return -1L;
         } else {
@@ -462,7 +421,7 @@ public class MetadataDao {
      */
     public long insertEdge(long sourceId, long targetId, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var edgeId = this.findEdge(sourceId, targetId, metadataJsonb);
+        var edgeId = this.findEdge(sourceId, targetId);
         if (edgeId != -1L) {
             return edgeId;
         } else {
@@ -479,15 +438,12 @@ public class MetadataDao {
      *
      * @param sourceId Source ID of the edge
      * @param targetId Target ID of the edge
-     * @param metadata Metadata of the edge
      * @return ID of the record found or -1 otherwise
      */
-    public long findEdge(long sourceId, long targetId, JSONB metadata) {
+    public long findEdge(long sourceId, long targetId) {
         var resultRecords = context.selectFrom(Edges.EDGES)
                 .where(Edges.EDGES.SOURCE_ID.eq(sourceId))
-                .and(Edges.EDGES.TARGET_ID.eq(targetId))
-                .and(metadata == null ? Edges.EDGES.METADATA.isNull()
-                        : Edges.EDGES.METADATA.eq(metadata)).fetch();
+                .and(Edges.EDGES.TARGET_ID.eq(targetId)).fetch();
         if (resultRecords == null || resultRecords.isEmpty()) {
             return -1L;
         } else {
