@@ -18,6 +18,7 @@
 
 package eu.fasten.server;
 
+import org.apache.commons.lang3.ObjectUtils;
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaConsumer;
@@ -50,6 +51,21 @@ public class FastenServer implements Runnable {
             description = "Kafka server to connect to. Use multiple times for clusters.",
             defaultValue = "localhost:9092")
     private List<String> kafkaServers;
+
+    @CommandLine.Option(names = {"-d", "--database"},
+            paramLabel = "dbURL",
+            description = "Database URL for connection")
+    private String dbUrl;
+
+    @CommandLine.Option(names = {"-u", "--user"},
+            paramLabel = "dbUser",
+            description = "Database user name")
+    private String dbUser;
+
+    @CommandLine.Option(names = {"-pw", "--pass"},
+            paramLabel = "dbPass",
+            description = "Database user password")
+    private String dbPass;
 
     @Option(names = {"-s", "--skip_offsets"},
             paramLabel = "skip",
@@ -93,6 +109,15 @@ public class FastenServer implements Runnable {
 
         logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, {} total plugins",
                 kafkaConsumers.size(), kafkaProducers.size(), plugins.size());
+
+        // Here, a DB connection is made for the plug-ins that need it.
+        if (ObjectUtils.allNotNull(dbUrl, dbUser, dbPass)){
+            logger.debug("Making a DB connection...");
+            //TODO: Here can be implemented a similar approach to what was done for Kafka producers. That is, calling
+            // setDBConnection for plug-ins that implement DBConnector interface.
+        } else {
+            logger.error("Couldn't make a DB connection. Make sure that you have provided a valid DB URL, username and password.");
+        }
 
         this.producers = kafkaProducers.stream().map(k -> {
             var properties = FastenKafkaConnection.producerProperties(kafkaServers,
