@@ -16,14 +16,15 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.metadataplugin.db;
+package eu.fasten.server.db;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.postgresql.Driver;
+
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 public class PostgresConnector {
 
