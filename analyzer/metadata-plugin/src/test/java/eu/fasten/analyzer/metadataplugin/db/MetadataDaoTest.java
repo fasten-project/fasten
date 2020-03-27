@@ -406,16 +406,16 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Dependencies.DEPENDENCIES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Dependencies.DEPENDENCIES.PACKAGE_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Dependencies.DEPENDENCIES.DEPENDENCY_ID.eq(dependencyId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Dependencies.DEPENDENCIES.VERSION_RANGE.cast(String[].class).eq(versionRange))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.fetch()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep3.class);
-        Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_ID,
+        Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, dependencyId, versionRange)).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertValues.returning(Dependencies.DEPENDENCIES.PACKAGE_ID)).thenReturn(insertResult);
+        Mockito.when(insertValues.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
         var record = new DependenciesRecord(packageId, dependencyId, versionRange);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         long result = metadataDao.insertDependency(packageId, dependencyId, versionRange);
@@ -430,18 +430,18 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Dependencies.DEPENDENCIES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Dependencies.DEPENDENCIES.PACKAGE_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Dependencies.DEPENDENCIES.DEPENDENCY_ID.eq(dependencyId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Dependencies.DEPENDENCIES.VERSION_RANGE.cast(String[].class).eq(versionRange))).thenReturn(selectCondStep);
         var resultSet = Mockito.mock(Result.class);
         Mockito.when(resultSet.isEmpty()).thenReturn(true);
         Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
         var insertValues = Mockito.mock(InsertValuesStep3.class);
-        Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_ID,
+        Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, dependencyId, versionRange)).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertValues.returning(Dependencies.DEPENDENCIES.PACKAGE_ID)).thenReturn(insertResult);
+        Mockito.when(insertValues.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
         var record = new DependenciesRecord(packageId, dependencyId, versionRange);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         long result = metadataDao.insertDependency(packageId, dependencyId, versionRange);
@@ -456,19 +456,19 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Dependencies.DEPENDENCIES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Dependencies.DEPENDENCIES.PACKAGE_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Dependencies.DEPENDENCIES.DEPENDENCY_ID.eq(dependencyId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Dependencies.DEPENDENCIES.VERSION_RANGE.cast(String[].class).eq(versionRange))).thenReturn(selectCondStep);
         var resultSet = Mockito.mock(Result.class);
         Mockito.when(resultSet.isEmpty()).thenReturn(false);
-        Mockito.when(resultSet.getValues(Dependencies.DEPENDENCIES.PACKAGE_ID)).thenReturn(Collections.singletonList(packageId));
+        Mockito.when(resultSet.getValues(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(Collections.singletonList(packageId));
         Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
         var insertValues = Mockito.mock(InsertValuesStep3.class);
-        Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_ID,
+        Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, dependencyId, versionRange)).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertValues.returning(Dependencies.DEPENDENCIES.PACKAGE_ID)).thenReturn(insertResult);
+        Mockito.when(insertValues.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
         var record = new DependenciesRecord(packageId, dependencyId, versionRange);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         long result = metadataDao.insertDependency(packageId, dependencyId, versionRange);
@@ -483,19 +483,19 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Dependencies.DEPENDENCIES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Dependencies.DEPENDENCIES.PACKAGE_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Dependencies.DEPENDENCIES.DEPENDENCY_ID.eq(dependencyIds.get(0)))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Dependencies.DEPENDENCIES.VERSION_RANGE.cast(String[].class).eq(versionRanges.get(0)))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Dependencies.DEPENDENCIES.DEPENDENCY_ID.eq(dependencyIds.get(1)))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Dependencies.DEPENDENCIES.VERSION_RANGE.cast(String[].class).eq(versionRanges.get(1)))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.fetch()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep3.class);
-        Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_ID,
+        Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, dependencyIds.get(0), versionRanges.get(0))).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, dependencyIds.get(1), versionRanges.get(1))).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertValues.returning(Dependencies.DEPENDENCIES.PACKAGE_ID)).thenReturn(insertResult);
+        Mockito.when(insertValues.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
         var record1 = new DependenciesRecord(packageId, dependencyIds.get(0), versionRanges.get(0));
         var record2 = new DependenciesRecord(packageId, dependencyIds.get(1), versionRanges.get(1));
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
@@ -524,11 +524,11 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Modules.MODULES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Modules.MODULES.PACKAGE_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Modules.MODULES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Modules.MODULES.NAMESPACES.eq(namespaces))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.fetch()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Modules.MODULES, Modules.MODULES.PACKAGE_ID, Modules.MODULES.NAMESPACES,
+        Mockito.when(context.insertInto(Modules.MODULES, Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACES,
                 Modules.MODULES.SHA256, Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, namespaces, sha256, createdAt, JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
@@ -547,13 +547,13 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Modules.MODULES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Modules.MODULES.PACKAGE_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Modules.MODULES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Modules.MODULES.NAMESPACES.eq(namespaces))).thenReturn(selectCondStep);
         var resultSet = Mockito.mock(Result.class);
         Mockito.when(resultSet.isEmpty()).thenReturn(true);
         Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Modules.MODULES, Modules.MODULES.PACKAGE_ID, Modules.MODULES.NAMESPACES, Modules.MODULES.SHA256,
+        Mockito.when(context.insertInto(Modules.MODULES, Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACES, Modules.MODULES.SHA256,
                 Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, namespaces, null, null, null)).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
@@ -575,7 +575,7 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Modules.MODULES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Modules.MODULES.PACKAGE_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Modules.MODULES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Modules.MODULES.NAMESPACES.eq(namespaces))).thenReturn(selectCondStep);
         var resultSet = Mockito.mock(Result.class);
         Mockito.when(resultSet.isEmpty()).thenReturn(false);
@@ -596,12 +596,12 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Modules.MODULES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Modules.MODULES.PACKAGE_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Modules.MODULES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Modules.MODULES.NAMESPACES.eq(namespaces.get(0)))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Modules.MODULES.NAMESPACES.eq(namespaces.get(1)))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.fetch()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Modules.MODULES, Modules.MODULES.PACKAGE_ID, Modules.MODULES.NAMESPACES, Modules.MODULES.SHA256,
+        Mockito.when(context.insertInto(Modules.MODULES, Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACES, Modules.MODULES.SHA256,
                 Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, namespaces.get(0), sha256s.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()))).thenReturn(insertValues);
         Mockito.when(insertValues.values(packageId, namespaces.get(1), sha256s.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()))).thenReturn(insertValues);

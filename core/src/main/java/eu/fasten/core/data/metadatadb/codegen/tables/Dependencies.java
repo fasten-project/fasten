@@ -4,6 +4,7 @@
 package eu.fasten.core.data.metadatadb.codegen.tables;
 
 
+import eu.fasten.core.data.metadatadb.codegen.Indexes;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.Public;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.DependenciesRecord;
@@ -15,6 +16,7 @@ import javax.annotation.processing.Generated;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Row3;
@@ -38,7 +40,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dependencies extends TableImpl<DependenciesRecord> {
 
-    private static final long serialVersionUID = -412009686;
+    private static final long serialVersionUID = 1357351582;
 
     /**
      * The reference instance of <code>public.dependencies</code>
@@ -54,9 +56,9 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
     }
 
     /**
-     * The column <code>public.dependencies.package_id</code>.
+     * The column <code>public.dependencies.package_version_id</code>.
      */
-    public final TableField<DependenciesRecord, Long> PACKAGE_ID = createField(DSL.name("package_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
+    public final TableField<DependenciesRecord, Long> PACKAGE_VERSION_ID = createField(DSL.name("package_version_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.dependencies.dependency_id</code>.
@@ -107,12 +109,17 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
     }
 
     @Override
+    public List<Index> getIndexes() {
+        return Arrays.<Index>asList(Indexes.DEPENDENCIES_COMPOUND_INDEX);
+    }
+
+    @Override
     public List<ForeignKey<DependenciesRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<DependenciesRecord, ?>>asList(Keys.DEPENDENCIES__DEPENDENCIES_PACKAGE_ID_FKEY, Keys.DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY);
+        return Arrays.<ForeignKey<DependenciesRecord, ?>>asList(Keys.DEPENDENCIES__DEPENDENCIES_PACKAGE_VERSION_ID_FKEY, Keys.DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY);
     }
 
     public PackageVersions packageVersions() {
-        return new PackageVersions(this, Keys.DEPENDENCIES__DEPENDENCIES_PACKAGE_ID_FKEY);
+        return new PackageVersions(this, Keys.DEPENDENCIES__DEPENDENCIES_PACKAGE_VERSION_ID_FKEY);
     }
 
     public Packages packages() {

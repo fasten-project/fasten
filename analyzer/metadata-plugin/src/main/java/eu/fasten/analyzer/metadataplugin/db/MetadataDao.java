@@ -202,56 +202,57 @@ public class MetadataDao {
     /**
      * Inserts a record in the 'dependencies' table in the database.
      *
-     * @param packageId     ID of the package (references 'package_versions.id')
+     * @param packageVersionId     ID of the package version (references 'package_versions.id')
      * @param dependencyId  ID of the dependency package (references 'packages.id')
      * @param versionRanges Ranges of valid versions
      * @return ID of the package (packageId)
      */
-    public long insertDependency(long packageId, long dependencyId, String[] versionRanges) {
-        var foundPackageId = this.findDependency(packageId, dependencyId, versionRanges);
+    public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges) {
+        var foundPackageId = this.findDependency(packageVersionId, dependencyId, versionRanges);
         if (foundPackageId != -1L) {
             return foundPackageId;
         } else {
             var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
-                    Dependencies.DEPENDENCIES.PACKAGE_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID,
+                    Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
+                    Dependencies.DEPENDENCIES.DEPENDENCY_ID,
                     Dependencies.DEPENDENCIES.VERSION_RANGE)
-                    .values(packageId, dependencyId, versionRanges)
-                    .returning(Dependencies.DEPENDENCIES.PACKAGE_ID).fetchOne();
-            return resultRecord.getValue(Dependencies.DEPENDENCIES.PACKAGE_ID);
+                    .values(packageVersionId, dependencyId, versionRanges)
+                    .returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID).fetchOne();
+            return resultRecord.getValue(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID);
         }
     }
 
     /**
      * Searches 'dependencies' table for certain dependency record.
      *
-     * @param packageId     ID of the package
+     * @param packageVersionId     ID of the package version
      * @param dependencyId  ID of the dependency
      * @param versionRanges Version ranges of the dependency
      * @return ID the of the record found or -1 otherwise
      */
-    public long findDependency(long packageId, long dependencyId, String[] versionRanges) {
+    public long findDependency(long packageVersionId, long dependencyId, String[] versionRanges) {
         var resultRecords = context.selectFrom(Dependencies.DEPENDENCIES)
-                .where(Dependencies.DEPENDENCIES.PACKAGE_ID.eq(packageId))
+                .where(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(packageVersionId))
                 .and(Dependencies.DEPENDENCIES.DEPENDENCY_ID.eq(dependencyId))
                 .and(Dependencies.DEPENDENCIES.VERSION_RANGE.cast(String[].class)
                         .eq(versionRanges)).fetch();
         if (resultRecords == null || resultRecords.isEmpty()) {
             return -1L;
         } else {
-            return resultRecords.getValues(Dependencies.DEPENDENCIES.PACKAGE_ID).get(0);
+            return resultRecords.getValues(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID).get(0);
         }
     }
 
     /**
      * Inserts multiple 'dependencies' int the database for certain package.
      *
-     * @param packageId       ID of the package
+     * @param packageVersionId       ID of the package version
      * @param dependenciesIds List of IDs of dependencies
      * @param versionRanges   List of version ranges
      * @return ID of the package (packageId)
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public long insertDependencies(long packageId, List<Long> dependenciesIds,
+    public long insertDependencies(long packageVersionId, List<Long> dependenciesIds,
                                    List<String[]> versionRanges)
             throws IllegalArgumentException {
         if (dependenciesIds.size() != versionRanges.size()) {
@@ -259,9 +260,9 @@ public class MetadataDao {
         }
         int length = dependenciesIds.size();
         for (int i = 0; i < length; i++) {
-            insertDependency(packageId, dependenciesIds.get(i), versionRanges.get(i));
+            insertDependency(packageVersionId, dependenciesIds.get(i), versionRanges.get(i));
         }
-        return packageId;
+        return packageVersionId;
     }
 
     /**
@@ -283,8 +284,8 @@ public class MetadataDao {
             return moduleId;
         } else {
             var resultRecord = context.insertInto(Modules.MODULES,
-                    Modules.MODULES.PACKAGE_ID, Modules.MODULES.NAMESPACES, Modules.MODULES.SHA256,
-                    Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)
+                    Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACES,
+                    Modules.MODULES.SHA256, Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)
                     .values(packageVersionId, namespaces, sha256, createdAt, metadataJsonb)
                     .returning(Modules.MODULES.ID).fetchOne();
             return resultRecord.getValue(Modules.MODULES.ID);
@@ -300,7 +301,7 @@ public class MetadataDao {
      */
     public long findModule(long packageVersionId, String namespaces) {
         var resultRecords = context.selectFrom(Modules.MODULES)
-                .where(Modules.MODULES.PACKAGE_ID.eq(packageVersionId))
+                .where(Modules.MODULES.PACKAGE_VERSION_ID.eq(packageVersionId))
                 .and(Modules.MODULES.NAMESPACES.eq(namespaces)).fetch();
         if (resultRecords == null || resultRecords.isEmpty()) {
             return -1L;
@@ -312,15 +313,15 @@ public class MetadataDao {
     /**
      * Inserts multiple records in the 'module' table in the database.
      *
-     * @param packageId      ID of the common package
-     * @param namespacesList List of namespaces
-     * @param sha256s        List of SHA256s
-     * @param createdAt      List of timestamps
-     * @param metadata       List of metadata objects
+     * @param packageVersionId ID of the common package version
+     * @param namespacesList    List of namespaces
+     * @param sha256s           List of SHA256s
+     * @param createdAt         List of timestamps
+     * @param metadata          List of metadata objects
      * @return List of IDs of new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertModules(long packageId, List<String> namespacesList,
+    public List<Long> insertModules(long packageVersionId, List<String> namespacesList,
                                     List<byte[]> sha256s, List<Timestamp> createdAt,
                                     List<JSONObject> metadata) throws IllegalArgumentException {
         if (namespacesList.size() != sha256s.size() || sha256s.size() != createdAt.size()
@@ -330,7 +331,7 @@ public class MetadataDao {
         int length = namespacesList.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertModule(packageId, namespacesList.get(i), sha256s.get(i),
+            long result = insertModule(packageVersionId, namespacesList.get(i), sha256s.get(i),
                     createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }

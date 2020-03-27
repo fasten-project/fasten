@@ -31,7 +31,7 @@ import org.jooq.impl.UpdatableRecordImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements Record6<Long, Long, String, byte[], Timestamp, JSONB> {
 
-    private static final long serialVersionUID = 1609976818;
+    private static final long serialVersionUID = -1799281075;
 
     /**
      * Setter for <code>public.modules.id</code>.
@@ -48,16 +48,16 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
     }
 
     /**
-     * Setter for <code>public.modules.package_id</code>.
+     * Setter for <code>public.modules.package_version_id</code>.
      */
-    public void setPackageId(Long value) {
+    public void setPackageVersionId(Long value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>public.modules.package_id</code>.
+     * Getter for <code>public.modules.package_version_id</code>.
      */
-    public Long getPackageId() {
+    public Long getPackageVersionId() {
         return (Long) get(1);
     }
 
@@ -147,7 +147,7 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
 
     @Override
     public Field<Long> field2() {
-        return Modules.MODULES.PACKAGE_ID;
+        return Modules.MODULES.PACKAGE_VERSION_ID;
     }
 
     @Override
@@ -177,7 +177,7 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
 
     @Override
     public Long component2() {
-        return getPackageId();
+        return getPackageVersionId();
     }
 
     @Override
@@ -207,7 +207,7 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
 
     @Override
     public Long value2() {
-        return getPackageId();
+        return getPackageVersionId();
     }
 
     @Override
@@ -238,7 +238,7 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
 
     @Override
     public ModulesRecord value2(Long value) {
-        setPackageId(value);
+        setPackageVersionId(value);
         return this;
     }
 
@@ -291,11 +291,11 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
     /**
      * Create a detached, initialised ModulesRecord
      */
-    public ModulesRecord(Long id, Long packageId, String namespaces, byte[] sha256, Timestamp createdAt, JSONB metadata) {
+    public ModulesRecord(Long id, Long packageVersionId, String namespaces, byte[] sha256, Timestamp createdAt, JSONB metadata) {
         super(Modules.MODULES);
 
         set(0, id);
-        set(1, packageId);
+        set(1, packageVersionId);
         set(2, namespaces);
         set(3, sha256);
         set(4, createdAt);
