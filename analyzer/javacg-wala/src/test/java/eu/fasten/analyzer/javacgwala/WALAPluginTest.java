@@ -34,9 +34,11 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+@Disabled("Disabled until a way to make Wala platform independent found")
 class WALAPluginTest {
 
     final String topic = "maven.packages";

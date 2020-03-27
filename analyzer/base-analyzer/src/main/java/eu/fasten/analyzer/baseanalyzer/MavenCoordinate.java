@@ -244,8 +244,8 @@ public class MavenCoordinate {
 
                 final String version;
                 if (versionSpec != null) {
-                    version = versionSpec.getStringValue().startsWith("$") ?
-                            properties.get(versionSpec.getStringValue()
+                    version = versionSpec.getStringValue().startsWith("$")
+                            ? properties.get(versionSpec.getStringValue()
                                     .substring(2, versionSpec.getStringValue().length() - 1)) :
                             versionSpec.getStringValue();
                 } else {
