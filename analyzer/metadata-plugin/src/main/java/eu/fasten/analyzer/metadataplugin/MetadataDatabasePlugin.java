@@ -20,6 +20,7 @@ package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
 
@@ -74,6 +75,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
+
             final var consumedJson = new JSONObject(record.value());
             final var artifact = consumedJson.optString("product") + "@"
                     + consumedJson.optString("version");
@@ -118,6 +120,9 @@ public class MetadataDatabasePlugin extends Plugin {
                         }
                     });
                 } catch (Exception expected) {
+                    logger.error("An exception occurred {} ", expected.getStackTrace());
+                    processedRecord = false;
+                    setPluginError(expected);
                 }
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord

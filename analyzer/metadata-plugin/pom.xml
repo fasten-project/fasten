@@ -23,47 +23,37 @@
             <version>3.12.3</version>
         </dependency>
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>9.4.1208</version>
-        </dependency>
-        <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.0.4</version>
         </dependency>
         <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20180813</version>
-<!--            <scope>provided</scope>-->
-        </dependency>
-        <dependency>
-            <groupId>eu.fasten</groupId>
-            <artifactId>core</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
+        <groupId>org.json</groupId>
+        <artifactId>json</artifactId>
+        <version>20180813</version>
+        <!--            <scope>provided</scope>-->
+    </dependency>
+    <dependency>
+        <groupId>eu.fasten</groupId>
+        <artifactId>core</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </dependency>
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>server</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-<!--            <scope>provided</scope>-->
+            <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.30</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.30</version>
-        </dependency>
-        <dependency>
-            <groupId>org.pf4j</groupId>
-            <artifactId>pf4j</artifactId>
-            <version>3.1.0</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-simple</artifactId>-->
+<!--            <version>1.7.30</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-api</artifactId>-->
+<!--            <version>1.7.30</version>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -80,9 +70,9 @@
                         <configuration>
                             <minimizeJar>false</minimizeJar>
                             <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
-<!--                            <artifactSet>-->
-<!--                                <excludes>-->
-<!--                                    <exclude>org.apache.kafka:kafka-clients:*</exclude>-->
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>org.apache.kafka:kafka-clients:*</exclude>
 <!--                                    <exclude>com.martiansoftware:jsap:*</exclude>-->
 <!--                                    <exclude>it.unimi.dsi:dsiutils:*</exclude>-->
 <!--                                    <exclude>it.unimi.dsi:fastutil:*</exclude>-->
@@ -106,8 +96,8 @@
 <!--                                    <exclude>net.sf.jung:jung-algorithms:*</exclude>-->
 <!--                                    <exclude>com.jcraft:jsch:*</exclude>-->
 <!--                                    <exclude>com.jcraft:jzlib:*</exclude>-->
-<!--                                </excludes>-->
-<!--                            </artifactSet>-->
+                                </excludes>
+                            </artifactSet>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
@@ -134,19 +124,13 @@
                         <filter>
                             <artifact>*:*</artifact>
                             <excludes>
-<!--                                <exclude>module-info.class</exclude>-->
-<!--                                <exclude>META-INF/*.SF</exclude>-->
-<!--                                <exclude>META-INF/*.DSA</exclude>-->
-<!--                                <exclude>META-INF/*.RSA</exclude>-->
-<!--                                <exclude>eu/fasten/core/plugins/*</exclude>-->
+                                <exclude>module-info.class</exclude>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                                <exclude>eu/fasten/core/plugins/*</exclude>
                             </excludes>
                         </filter>
-<!--                        <filter>-->
-<!--                            <artifact>org.apache.kafka:*</artifact>-->
-<!--                            <excludes>-->
-<!--                                <exclude>org/apache/kafka/**</exclude>-->
-<!--                            </excludes>-->
-<!--                        </filter>-->
                     </filters>
                 </configuration>
             </plugin>
@@ -174,9 +158,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-<!--                    <annotationProcessors>-->
-<!--                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>-->
-<!--                    </annotationProcessors>-->
+                    <annotationProcessors>
+                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
+                    </annotationProcessors>
                     <source>1.11</source>
                     <target>1.11</target>
                 </configuration>
