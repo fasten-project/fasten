@@ -17,14 +17,14 @@ CREATE TABLE package_versions(
 );
 
 CREATE TABLE dependencies(
-  package_id    BIGINT NOT NULL REFERENCES package_versions(id),
+  package_version_id    BIGINT NOT NULL REFERENCES package_versions(id),
   dependency_id BIGINT NOT NULL REFERENCES packages(id),
   version_range TEXT[] NOT NULL
 );
 
 CREATE TABLE modules(
 	id			BIGSERIAL PRIMARY KEY,
-	package_id	BIGINT NOT NULL REFERENCES package_versions(id),
+	package_version_id	BIGINT NOT NULL REFERENCES package_versions(id),
 	namespaces  TEXT NOT NULL,
   	sha256      BYTEA,
   	created_at  TIMESTAMP,
@@ -45,3 +45,10 @@ CREATE TABLE edges(
 	target_id	BIGINT NOT NULL REFERENCES callables(id),
 	metadata	JSONB
 );
+
+CREATE INDEX packages_compound_index ON packages(package_name, forge);
+CREATE INDEX package_versions_compound_index ON package_versions(package_id, version, cg_generator);
+CREATE INDEX dependencies_compound_index ON dependencies(package_version_id, dependency_id, version_range);
+CREATE INDEX modules_compound_index ON modules(package_version_id, namespaces);
+CREATE INDEX callables_compound_index ON callables(fasten_uri, is_resolved_call);
+CREATE INDEX edges_compound_index ON edges(source_id, target_id);

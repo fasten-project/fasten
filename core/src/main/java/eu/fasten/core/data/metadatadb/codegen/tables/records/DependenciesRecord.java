@@ -27,19 +27,19 @@ import org.jooq.impl.TableRecordImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class DependenciesRecord extends TableRecordImpl<DependenciesRecord> implements Record3<Long, Long, String[]> {
 
-    private static final long serialVersionUID = 1848385830;
+    private static final long serialVersionUID = -1391781137;
 
     /**
-     * Setter for <code>public.dependencies.package_id</code>.
+     * Setter for <code>public.dependencies.package_version_id</code>.
      */
-    public void setPackageId(Long value) {
+    public void setPackageVersionId(Long value) {
         set(0, value);
     }
 
     /**
-     * Getter for <code>public.dependencies.package_id</code>.
+     * Getter for <code>public.dependencies.package_version_id</code>.
      */
-    public Long getPackageId() {
+    public Long getPackageVersionId() {
         return (Long) get(0);
     }
 
@@ -87,7 +87,7 @@ public class DependenciesRecord extends TableRecordImpl<DependenciesRecord> impl
 
     @Override
     public Field<Long> field1() {
-        return Dependencies.DEPENDENCIES.PACKAGE_ID;
+        return Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID;
     }
 
     @Override
@@ -102,7 +102,7 @@ public class DependenciesRecord extends TableRecordImpl<DependenciesRecord> impl
 
     @Override
     public Long component1() {
-        return getPackageId();
+        return getPackageVersionId();
     }
 
     @Override
@@ -117,7 +117,7 @@ public class DependenciesRecord extends TableRecordImpl<DependenciesRecord> impl
 
     @Override
     public Long value1() {
-        return getPackageId();
+        return getPackageVersionId();
     }
 
     @Override
@@ -132,7 +132,7 @@ public class DependenciesRecord extends TableRecordImpl<DependenciesRecord> impl
 
     @Override
     public DependenciesRecord value1(Long value) {
-        setPackageId(value);
+        setPackageVersionId(value);
         return this;
     }
 
@@ -170,10 +170,10 @@ public class DependenciesRecord extends TableRecordImpl<DependenciesRecord> impl
     /**
      * Create a detached, initialised DependenciesRecord
      */
-    public DependenciesRecord(Long packageId, Long dependencyId, String[] versionRange) {
+    public DependenciesRecord(Long packageVersionId, Long dependencyId, String[] versionRange) {
         super(Dependencies.DEPENDENCIES);
 
-        set(0, packageId);
+        set(0, packageVersionId);
         set(1, dependencyId);
         set(2, versionRange);
     }

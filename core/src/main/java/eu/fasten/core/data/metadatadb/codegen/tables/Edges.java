@@ -4,6 +4,7 @@
 package eu.fasten.core.data.metadatadb.codegen.tables;
 
 
+import eu.fasten.core.data.metadatadb.codegen.Indexes;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.Public;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
@@ -15,6 +16,7 @@ import javax.annotation.processing.Generated;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -39,7 +41,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Edges extends TableImpl<EdgesRecord> {
 
-    private static final long serialVersionUID = -178507430;
+    private static final long serialVersionUID = 1225996722;
 
     /**
      * The reference instance of <code>public.edges</code>
@@ -105,6 +107,11 @@ public class Edges extends TableImpl<EdgesRecord> {
     @Override
     public Schema getSchema() {
         return Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.<Index>asList(Indexes.EDGES_COMPOUND_INDEX);
     }
 
     @Override

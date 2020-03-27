@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Modules extends TableImpl<ModulesRecord> {
 
-    private static final long serialVersionUID = 875529255;
+    private static final long serialVersionUID = 2138751062;
 
     /**
      * The reference instance of <code>public.modules</code>
@@ -65,9 +65,9 @@ public class Modules extends TableImpl<ModulesRecord> {
     public final TableField<ModulesRecord, Long> ID = createField(DSL.name("id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('modules_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
 
     /**
-     * The column <code>public.modules.package_id</code>.
+     * The column <code>public.modules.package_version_id</code>.
      */
-    public final TableField<ModulesRecord, Long> PACKAGE_ID = createField(DSL.name("package_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
+    public final TableField<ModulesRecord, Long> PACKAGE_VERSION_ID = createField(DSL.name("package_version_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.modules.namespaces</code>.
@@ -129,7 +129,7 @@ public class Modules extends TableImpl<ModulesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.MODULES_PKEY);
+        return Arrays.<Index>asList(Indexes.MODULES_COMPOUND_INDEX, Indexes.MODULES_PKEY);
     }
 
     @Override
@@ -149,11 +149,11 @@ public class Modules extends TableImpl<ModulesRecord> {
 
     @Override
     public List<ForeignKey<ModulesRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<ModulesRecord, ?>>asList(Keys.MODULES__MODULES_PACKAGE_ID_FKEY);
+        return Arrays.<ForeignKey<ModulesRecord, ?>>asList(Keys.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY);
     }
 
     public PackageVersions packageVersions() {
-        return new PackageVersions(this, Keys.MODULES__MODULES_PACKAGE_ID_FKEY);
+        return new PackageVersions(this, Keys.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY);
     }
 
     @Override
