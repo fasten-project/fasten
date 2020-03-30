@@ -176,7 +176,6 @@
                 <version>0.8.2</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/PostgresConnector.*</exclude>
                         <exclude>**/Main.*</exclude>
                     </excludes>
                 </configuration>

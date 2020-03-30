@@ -26,14 +26,18 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MetadataDao {
 
     private DSLContext context;
+    private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
 
     public MetadataDao(DSLContext context) {
         this.context = context;
@@ -61,6 +65,8 @@ public class MetadataDao {
                               String repository, Timestamp createdAt) {
         var packageId = this.findPackage(packageName, forge);
         if (packageId != -1L) {
+            logger.info("Duplicate package: '" + packageName + "; " + forge + "' already exists. "
+                    + "Returning its ID=" + packageId);
             return packageId;
         } else {
             var resultRecord = context.insertInto(Packages.PACKAGES,
@@ -136,6 +142,8 @@ public class MetadataDao {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var packageVersionId = this.findPackageVersion(packageId, cgGenerator, version);
         if (packageVersionId != -1L) {
+            logger.info("Duplicate package version: '" + packageId + "; " + cgGenerator + "; "
+                    + version + "' already exists. Returning its ID=" + packageVersionId);
             return packageVersionId;
         } else {
             var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
@@ -202,14 +210,17 @@ public class MetadataDao {
     /**
      * Inserts a record in the 'dependencies' table in the database.
      *
-     * @param packageVersionId     ID of the package version (references 'package_versions.id')
-     * @param dependencyId  ID of the dependency package (references 'packages.id')
-     * @param versionRanges Ranges of valid versions
+     * @param packageVersionId ID of the package version (references 'package_versions.id')
+     * @param dependencyId     ID of the dependency package (references 'packages.id')
+     * @param versionRanges    Ranges of valid versions
      * @return ID of the package (packageId)
      */
     public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges) {
         var foundPackageId = this.findDependency(packageVersionId, dependencyId, versionRanges);
         if (foundPackageId != -1L) {
+            logger.info("Duplicate dependency: '" + packageVersionId + "; " + dependencyId + "; "
+                    + Arrays.toString(versionRanges)
+                    + "' already exists. Returning its ID=" + foundPackageId);
             return foundPackageId;
         } else {
             var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
@@ -225,9 +236,9 @@ public class MetadataDao {
     /**
      * Searches 'dependencies' table for certain dependency record.
      *
-     * @param packageVersionId     ID of the package version
-     * @param dependencyId  ID of the dependency
-     * @param versionRanges Version ranges of the dependency
+     * @param packageVersionId ID of the package version
+     * @param dependencyId     ID of the dependency
+     * @param versionRanges    Version ranges of the dependency
      * @return ID the of the record found or -1 otherwise
      */
     public long findDependency(long packageVersionId, long dependencyId, String[] versionRanges) {
@@ -246,9 +257,9 @@ public class MetadataDao {
     /**
      * Inserts multiple 'dependencies' int the database for certain package.
      *
-     * @param packageVersionId       ID of the package version
-     * @param dependenciesIds List of IDs of dependencies
-     * @param versionRanges   List of version ranges
+     * @param packageVersionId ID of the package version
+     * @param dependenciesIds  List of IDs of dependencies
+     * @param versionRanges    List of version ranges
      * @return ID of the package (packageId)
      * @throws IllegalArgumentException if lists are not of the same size
      */
@@ -281,6 +292,8 @@ public class MetadataDao {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var moduleId = this.findModule(packageVersionId, namespaces);
         if (moduleId != -1L) {
+            logger.info("Duplicate module: '" + packageVersionId + "; " + namespaces
+                    + "' already exists. Returning its ID=" + moduleId);
             return moduleId;
         } else {
             var resultRecord = context.insertInto(Modules.MODULES,
@@ -314,10 +327,10 @@ public class MetadataDao {
      * Inserts multiple records in the 'module' table in the database.
      *
      * @param packageVersionId ID of the common package version
-     * @param namespacesList    List of namespaces
-     * @param sha256s           List of SHA256s
-     * @param createdAt         List of timestamps
-     * @param metadata          List of metadata objects
+     * @param namespacesList   List of namespaces
+     * @param sha256s          List of SHA256s
+     * @param createdAt        List of timestamps
+     * @param metadata         List of metadata objects
      * @return List of IDs of new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
@@ -353,6 +366,8 @@ public class MetadataDao {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var callableId = this.findCallable(fastenUri, isResolvedCall);
         if (callableId != -1L) {
+            logger.info("Duplicate callable: '" + fastenUri + "; " + isResolvedCall
+                    + "' already exists. Returning its ID=" + callableId);
             return callableId;
         } else {
             var resultRecord = context.insertInto(Callables.CALLABLES,
@@ -424,6 +439,8 @@ public class MetadataDao {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var edgeId = this.findEdge(sourceId, targetId);
         if (edgeId != -1L) {
+            logger.info("Duplicate edge: '" + sourceId + "; " + targetId
+                    + "' already exists. Returning its ID=" + edgeId);
             return edgeId;
         } else {
             var resultRecord = context.insertInto(Edges.EDGES,
