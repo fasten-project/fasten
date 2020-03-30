@@ -65,8 +65,9 @@ public class MetadataDao {
                               String repository, Timestamp createdAt) {
         var packageId = this.findPackage(packageName, forge);
         if (packageId != -1L) {
-            logger.info("Duplicate package: '" + packageName + "; " + forge + "' already exists. "
-                    + "Returning its ID=" + packageId);
+            logger.debug("Duplicate package: '" + packageName + "; " + forge
+                    + "' already exists with ID=" + packageId);
+            this.updatePackage(packageId, projectName, repository, createdAt);
             return packageId;
         } else {
             var resultRecord = context.insertInto(Packages.PACKAGES,
@@ -95,6 +96,22 @@ public class MetadataDao {
         } else {
             return resultRecords.getValues(Packages.PACKAGES.ID).get(0);
         }
+    }
+
+    /**
+     * Updates nullable attributes of certain package record.
+     *
+     * @param packageId   ID of the package record
+     * @param projectName Project name for the package
+     * @param repository  Repository for the package
+     * @param timestamp   Timestamp for the package
+     */
+    public void updatePackage(long packageId, String projectName, String repository,
+                              Timestamp timestamp) {
+        context.update(Packages.PACKAGES).set(Packages.PACKAGES.PROJECT_NAME, projectName)
+                .set(Packages.PACKAGES.REPOSITORY, repository)
+                .set(Packages.PACKAGES.CREATED_AT, timestamp)
+                .where(Packages.PACKAGES.ID.eq(packageId)).execute();
     }
 
     /**
@@ -142,8 +159,9 @@ public class MetadataDao {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var packageVersionId = this.findPackageVersion(packageId, cgGenerator, version);
         if (packageVersionId != -1L) {
-            logger.info("Duplicate package version: '" + packageId + "; " + cgGenerator + "; "
-                    + version + "' already exists. Returning its ID=" + packageVersionId);
+            logger.debug("Duplicate package version: '" + packageId + "; " + cgGenerator + "; "
+                    + version + "' already exists with ID=" + packageVersionId);
+            this.updatePackageVersion(packageVersionId, createdAt, metadataJsonb);
             return packageVersionId;
         } else {
             var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
@@ -176,6 +194,20 @@ public class MetadataDao {
         } else {
             return resultRecords.getValues(PackageVersions.PACKAGE_VERSIONS.ID).get(0);
         }
+    }
+
+    /**
+     * Updates timestamp and metadata of certain package version record.
+     *
+     * @param packageVersionId ID of the package version record
+     * @param timestamp        New timestamp for package version
+     * @param metadata         New metadata for package version
+     */
+    public void updatePackageVersion(long packageVersionId, Timestamp timestamp, JSONB metadata) {
+        context.update(PackageVersions.PACKAGE_VERSIONS)
+                .set(PackageVersions.PACKAGE_VERSIONS.CREATED_AT, timestamp)
+                .set(PackageVersions.PACKAGE_VERSIONS.METADATA, metadata)
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.eq(packageVersionId)).execute();
     }
 
     /**
@@ -218,9 +250,9 @@ public class MetadataDao {
     public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges) {
         var foundPackageId = this.findDependency(packageVersionId, dependencyId, versionRanges);
         if (foundPackageId != -1L) {
-            logger.info("Duplicate dependency: '" + packageVersionId + "; " + dependencyId + "; "
+            logger.debug("Duplicate dependency: '" + packageVersionId + "; " + dependencyId + "; "
                     + Arrays.toString(versionRanges)
-                    + "' already exists. Returning its ID=" + foundPackageId);
+                    + "' already exists with ID=" + foundPackageId);
             return foundPackageId;
         } else {
             var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
@@ -292,8 +324,9 @@ public class MetadataDao {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var moduleId = this.findModule(packageVersionId, namespaces);
         if (moduleId != -1L) {
-            logger.info("Duplicate module: '" + packageVersionId + "; " + namespaces
-                    + "' already exists. Returning its ID=" + moduleId);
+            logger.debug("Duplicate module: '" + packageVersionId + "; " + namespaces
+                    + "' already exists with ID=" + moduleId);
+            this.updateModule(moduleId, sha256, createdAt, metadataJsonb);
             return moduleId;
         } else {
             var resultRecord = context.insertInto(Modules.MODULES,
@@ -321,6 +354,22 @@ public class MetadataDao {
         } else {
             return resultRecords.getValues(Modules.MODULES.ID).get(0);
         }
+    }
+
+    /**
+     * Updates SHA256, timestamp and metadata of certain module record.
+     *
+     * @param moduleId  ID of the module record
+     * @param sha256    New SHA256 for the module
+     * @param timestamp New timestamp for the module
+     * @param metadata  New metadata for the module
+     */
+    public void updateModule(long moduleId, byte[] sha256, Timestamp timestamp, JSONB metadata) {
+        context.update(Modules.MODULES)
+                .set(Modules.MODULES.SHA256, sha256)
+                .set(Modules.MODULES.CREATED_AT, timestamp)
+                .set(Modules.MODULES.METADATA, metadata)
+                .where(Modules.MODULES.ID.eq(moduleId)).execute();
     }
 
     /**
@@ -366,8 +415,9 @@ public class MetadataDao {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var callableId = this.findCallable(fastenUri, isResolvedCall);
         if (callableId != -1L) {
-            logger.info("Duplicate callable: '" + fastenUri + "; " + isResolvedCall
-                    + "' already exists. Returning its ID=" + callableId);
+            logger.debug("Duplicate callable: '" + fastenUri + "; " + isResolvedCall
+                    + "' already exists with ID=" + callableId);
+            this.updateCallable(callableId, createdAt, metadataJsonb);
             return callableId;
         } else {
             var resultRecord = context.insertInto(Callables.CALLABLES,
@@ -396,6 +446,20 @@ public class MetadataDao {
         } else {
             return resultRecords.getValues(Callables.CALLABLES.ID).get(0);
         }
+    }
+
+    /**
+     * Updates timestamp and metadata of certain callable record.
+     *
+     * @param callableId ID of the callable record
+     * @param timestamp  New timestamp for the callable
+     * @param metadata   New metadata for the callable
+     */
+    public void updateCallable(long callableId, Timestamp timestamp, JSONB metadata) {
+        context.update(Callables.CALLABLES)
+                .set(Callables.CALLABLES.CREATED_AT, timestamp)
+                .set(Callables.CALLABLES.METADATA, metadata)
+                .where(Callables.CALLABLES.ID.eq(callableId)).execute();
     }
 
     /**
@@ -439,8 +503,9 @@ public class MetadataDao {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var edgeId = this.findEdge(sourceId, targetId);
         if (edgeId != -1L) {
-            logger.info("Duplicate edge: '" + sourceId + "; " + targetId
-                    + "' already exists. Returning its ID=" + edgeId);
+            logger.debug("Duplicate edge: '" + sourceId + "; " + targetId
+                    + "' already exists with ID=" + edgeId);
+            this.updateEdge(edgeId, metadataJsonb);
             return edgeId;
         } else {
             var resultRecord = context.insertInto(Edges.EDGES,
@@ -467,6 +532,17 @@ public class MetadataDao {
         } else {
             return resultRecords.getValues(Edges.EDGES.SOURCE_ID).get(0);
         }
+    }
+
+    /**
+     * Updates metadata of certain edge record.
+     *
+     * @param edgeId   ID of the edge record
+     * @param metadata New metadata for the callable
+     */
+    public void updateEdge(long edgeId, JSONB metadata) {
+        context.update(Edges.EDGES).set(Edges.EDGES.METADATA, metadata)
+                .where(Edges.EDGES.SOURCE_ID.eq(edgeId)).execute();
     }
 
     /**

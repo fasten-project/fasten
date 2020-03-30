@@ -30,14 +30,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.ModulesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
-import org.jooq.DSLContext;
-import org.jooq.InsertResultStep;
-import org.jooq.InsertValuesStep3;
-import org.jooq.InsertValuesStep5;
-import org.jooq.JSONB;
-import org.jooq.Result;
-import org.jooq.SelectConditionStep;
-import org.jooq.SelectWhereStep;
+import org.jooq.*;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,6 +109,14 @@ public class MetadataDaoTest {
         Mockito.when(resultSet.isEmpty()).thenReturn(false);
         Mockito.when(resultSet.getValues(Packages.PACKAGES.ID)).thenReturn(Collections.singletonList(id));
         Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(Packages.PACKAGES)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(Packages.PACKAGES.PROJECT_NAME, projectName)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(Packages.PACKAGES.REPOSITORY, repository)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(Packages.PACKAGES.CREATED_AT, createdAt)).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(Packages.PACKAGES.ID.eq(id))).thenReturn(updateCond);
         long result = metadataDao.insertPackage(packageName, forge, projectName, repository, createdAt);
         assertEquals(id, result);
     }
@@ -280,6 +281,13 @@ public class MetadataDaoTest {
         Mockito.when(resultSet.isEmpty()).thenReturn(false);
         Mockito.when(resultSet.getValues(PackageVersions.PACKAGE_VERSIONS.ID)).thenReturn(Collections.singletonList(id));
         Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(PackageVersions.PACKAGE_VERSIONS)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(PackageVersions.PACKAGE_VERSIONS.CREATED_AT, createdAt)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(PackageVersions.PACKAGE_VERSIONS.METADATA, JSONB.valueOf(metadata.toString()))).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(PackageVersions.PACKAGE_VERSIONS.ID.eq(id))).thenReturn(updateCond);
         long result = metadataDao.insertPackageVersion(packageId, cgGenerator, version, createdAt, metadata);
         assertEquals(id, result);
     }
@@ -581,6 +589,14 @@ public class MetadataDaoTest {
         Mockito.when(resultSet.isEmpty()).thenReturn(false);
         Mockito.when(resultSet.getValues(Modules.MODULES.ID)).thenReturn(Collections.singletonList(id));
         Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(Modules.MODULES)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(Modules.MODULES.SHA256, sha256)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(Modules.MODULES.CREATED_AT, createdAt)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(Modules.MODULES.METADATA, JSONB.valueOf(metadata.toString()))).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(Modules.MODULES.ID.eq(id))).thenReturn(updateCond);
         long result = metadataDao.insertModule(packageId, namespaces, sha256, createdAt, metadata);
         assertEquals(id, result);
     }
@@ -712,6 +728,8 @@ public class MetadataDaoTest {
         long moduleId = 42;
         var fastenUri = "URI";
         var isResolvedCall = false;
+        var timestamp = new Timestamp(1);
+        var metadata = new JSONObject();
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Callables.CALLABLES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
@@ -721,7 +739,14 @@ public class MetadataDaoTest {
         Mockito.when(resultSet.isEmpty()).thenReturn(false);
         Mockito.when(resultSet.getValues(Callables.CALLABLES.ID)).thenReturn(Collections.singletonList(id));
         Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
-        var result = metadataDao.insertCallable(moduleId, fastenUri, isResolvedCall, null, null);
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(Callables.CALLABLES)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(Callables.CALLABLES.CREATED_AT, timestamp)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(Callables.CALLABLES.METADATA, JSONB.valueOf(metadata.toString()))).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(Callables.CALLABLES.ID.eq(id))).thenReturn(updateCond);
+        var result = metadataDao.insertCallable(moduleId, fastenUri, isResolvedCall, timestamp, metadata);
         assertEquals(id, result);
     }
 
@@ -847,6 +872,7 @@ public class MetadataDaoTest {
     public void insertExistingEdgeTest() {
         long sourceId = 1;
         long targetId = 2;
+        var metadata = new JSONObject();
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Edges.EDGES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
@@ -856,7 +882,13 @@ public class MetadataDaoTest {
         Mockito.when(resultSet.isEmpty()).thenReturn(false);
         Mockito.when(resultSet.getValues(Edges.EDGES.SOURCE_ID)).thenReturn(Collections.singletonList(sourceId));
         Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
-        long result = metadataDao.insertEdge(sourceId, targetId, null);
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(Edges.EDGES)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(Edges.EDGES.METADATA, JSONB.valueOf(metadata.toString()))).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(Edges.EDGES.SOURCE_ID.eq(sourceId))).thenReturn(updateCond);
+        long result = metadataDao.insertEdge(sourceId, targetId, metadata);
         assertEquals(sourceId, result);
     }
 
@@ -905,5 +937,87 @@ public class MetadataDaoTest {
         assertThrows(IllegalArgumentException.class, () -> {
             metadataDao.insertEdges(sourceIds, targetIds, metadata);
         });
+    }
+
+    @Test
+    public void updatePackageTest() {
+        long packageId = 1;
+        String projectName = "Project1";
+        String repository = "Repo1";
+        Timestamp timestamp = new Timestamp(123);
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(Packages.PACKAGES)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(Packages.PACKAGES.PROJECT_NAME, projectName)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(Packages.PACKAGES.REPOSITORY, repository)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(Packages.PACKAGES.CREATED_AT, timestamp)).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(Packages.PACKAGES.ID.eq(packageId))).thenReturn(updateCond);
+        this.metadataDao.updatePackage(packageId, projectName, repository, timestamp);
+        Mockito.verify(updateCond).execute();
+    }
+
+    @Test
+    public void updatePackageVersionTest() {
+        long packageVersionId = 1;
+        Timestamp timestamp = new Timestamp(123);
+        JSONB metadata = JSONB.valueOf("{\"foo\":\"bar\"}");
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(PackageVersions.PACKAGE_VERSIONS)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(PackageVersions.PACKAGE_VERSIONS.CREATED_AT, timestamp)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(PackageVersions.PACKAGE_VERSIONS.METADATA, metadata)).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(PackageVersions.PACKAGE_VERSIONS.ID.eq(packageVersionId))).thenReturn(updateCond);
+        this.metadataDao.updatePackageVersion(packageVersionId, timestamp, metadata);
+        Mockito.verify(updateCond).execute();
+    }
+
+    @Test
+    public void updateModuleTest() {
+        long moduleId = 1;
+        byte[] sha256 = new byte[]{0, 1, 2, 3, 4};
+        Timestamp timestamp = new Timestamp(123);
+        JSONB metadata = JSONB.valueOf("{\"foo\":\"bar\"}");
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(Modules.MODULES)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(Modules.MODULES.SHA256, sha256)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(Modules.MODULES.CREATED_AT, timestamp)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(Modules.MODULES.METADATA, metadata)).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(Modules.MODULES.ID.eq(moduleId))).thenReturn(updateCond);
+        this.metadataDao.updateModule(moduleId, sha256, timestamp, metadata);
+        Mockito.verify(updateCond).execute();
+    }
+
+    @Test
+    public void updateCallableTest() {
+        long callableId = 1;
+        Timestamp timestamp = new Timestamp(123);
+        JSONB metadata = JSONB.valueOf("{\"foo\":\"bar\"}");
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(Callables.CALLABLES)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(Callables.CALLABLES.CREATED_AT, timestamp)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(Callables.CALLABLES.METADATA, metadata)).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(Callables.CALLABLES.ID.eq(callableId))).thenReturn(updateCond);
+        this.metadataDao.updateCallable(callableId, timestamp, metadata);
+        Mockito.verify(updateCond).execute();
+    }
+
+    @Test
+    public void updateEdgeTest() {
+        long edgeId = 1;
+        JSONB metadata = JSONB.valueOf("{\"foo\":\"bar\"}");
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(Edges.EDGES)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(Edges.EDGES.METADATA, metadata)).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(Edges.EDGES.SOURCE_ID.eq(edgeId))).thenReturn(updateCond);
+        this.metadataDao.updateEdge(edgeId, metadata);
+        Mockito.verify(updateCond).execute();
     }
 }

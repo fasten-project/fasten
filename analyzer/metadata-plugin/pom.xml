@@ -42,8 +42,9 @@
             <groupId>eu.fasten</groupId>
             <artifactId>server</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <scope>provided</scope>
+<!--            <scope>provided</scope>-->
         </dependency>
+<!--        NB! Uncomment the following 3 dependencies if you want to run Main class-->
 <!--        <dependency>-->
 <!--            <groupId>org.slf4j</groupId>-->
 <!--            <artifactId>slf4j-simple</artifactId>-->
@@ -53,6 +54,11 @@
 <!--            <groupId>org.slf4j</groupId>-->
 <!--            <artifactId>slf4j-api</artifactId>-->
 <!--            <version>1.7.30</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.pf4j</groupId>-->
+<!--            <artifactId>pf4j</artifactId>-->
+<!--            <version>3.1.0</version>-->
 <!--        </dependency>-->
     </dependencies>
 
@@ -158,9 +164,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <annotationProcessors>
-                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
-                    </annotationProcessors>
+<!--                    <annotationProcessors>-->
+<!--                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>-->
+<!--                    </annotationProcessors>-->
                     <source>1.11</source>
                     <target>1.11</target>
                 </configuration>
