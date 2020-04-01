@@ -85,9 +85,7 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-
         try {
-
             var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
             metadataPlugin.setTopic(topic);
             metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
@@ -113,7 +111,6 @@ public class Main implements Runnable {
                     logger.error("Incorrect database URL", e);
                 }
             }
-
         } catch (SQLException e) {
             logger.error("Could not connect to the database", e);
         }

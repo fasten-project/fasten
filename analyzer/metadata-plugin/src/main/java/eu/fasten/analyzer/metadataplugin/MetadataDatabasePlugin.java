@@ -118,9 +118,6 @@ public class MetadataDatabasePlugin extends Plugin {
                         }
                     });
                 } catch (Exception expected) {
-                    logger.error("An exception occurred {} ", expected.getStackTrace());
-                    processedRecord = false;
-                    setPluginError(expected);
                 }
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
@@ -135,8 +132,8 @@ public class MetadataDatabasePlugin extends Plugin {
          * @return Package ID saved in the database
          */
         public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
-            final var timestamp = (callGraph.timestamp != -1) ? new Timestamp(callGraph.timestamp)
-                    : null;
+            final var timestamp = (callGraph.timestamp != -1)
+                    ? new Timestamp(callGraph.timestamp * 1000) : null;
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
                     null, null, null);
 
