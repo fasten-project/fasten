@@ -21,6 +21,7 @@
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
             <version>3.12.3</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>
@@ -164,9 +165,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-<!--                    <annotationProcessors>-->
-<!--                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>-->
-<!--                    </annotationProcessors>-->
+                    <annotationProcessors>
+                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
+                    </annotationProcessors>
                     <source>1.11</source>
                     <target>1.11</target>
                 </configuration>
