@@ -132,8 +132,7 @@ public class MetadataDatabasePlugin extends Plugin {
          * @return Package ID saved in the database
          */
         public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
-            final var timestamp = (callGraph.timestamp != -1)
-                    ? new Timestamp(callGraph.timestamp * 1000) : null;
+            final var timestamp = this.getProperTimestamp(callGraph.timestamp);
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
                     null, null, null);
 
@@ -200,6 +199,18 @@ public class MetadataDatabasePlugin extends Plugin {
                 metadataDao.insertEdge(sourceGlobalId, targetId, edgeMetadata);
             }
             return packageId;
+        }
+
+        private Timestamp getProperTimestamp(long timestamp) {
+            if (timestamp == -1) {
+                return null;
+            } else {
+                if (timestamp / (1000L * 60 * 60 * 24 * 365) < 1L) {
+                    return new Timestamp(timestamp * 1000);
+                } else {
+                    return new Timestamp(timestamp);
+                }
+            }
         }
 
         @Override
