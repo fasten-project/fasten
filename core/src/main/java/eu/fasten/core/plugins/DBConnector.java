@@ -5,7 +5,7 @@ import org.jooq.DSLContext;
 /**
  * A plug-in that needs to get access to a database should implement this interface.
  */
-public interface DBConnector {
+public interface DBConnector extends FastenPlugin {
 
     /**
      *  This methods sets a DB connection for plug-ins.

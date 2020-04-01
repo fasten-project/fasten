@@ -18,12 +18,14 @@
 
 package eu.fasten.server;
 
+import eu.fasten.core.plugins.DBConnector;
+import eu.fasten.server.db.PostgresConnector;
+import eu.fasten.server.kafka.FastenKafkaConnection;
 import org.apache.commons.lang3.ObjectUtils;
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
-import eu.fasten.server.kafka.FastenKafkaConnection;
 import eu.fasten.server.kafka.FastenKafkaConsumer;
 import eu.fasten.server.kafka.FastenKafkaProducer;
 import org.pf4j.JarPluginManager;
@@ -31,8 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
-
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -86,8 +88,8 @@ public class FastenServer implements Runnable {
     public void run() {
 
         // TODO: Set log level based on an arg in CLI: either dev or deploy mode.
-        setLoggingLevel(Level.INFO);
-
+        setLoggingLevel(Level.DEBUG);
+        
         // Register shutdown actions
         // TODO: Fix the null pointer exception for the following ShutdownHook
 //        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -106,15 +108,23 @@ public class FastenServer implements Runnable {
         List<FastenPlugin> plugins = jarPluginManager.getExtensions(FastenPlugin.class);
         List<KafkaConsumer> kafkaConsumers = jarPluginManager.getExtensions(KafkaConsumer.class);
         List<KafkaProducer> kafkaProducers = jarPluginManager.getExtensions(KafkaProducer.class);
+        List<DBConnector> dbPlugins = jarPluginManager.getExtensions(DBConnector.class);
 
-        logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, {} total plugins",
-                kafkaConsumers.size(), kafkaProducers.size(), plugins.size());
+        logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, {} DB plug-ins: {} total plugins",
+                kafkaConsumers.size(), kafkaProducers.size(), dbPlugins.size(), plugins.size());
 
         // Here, a DB connection is made for the plug-ins that need it.
         if (ObjectUtils.allNotNull(dbUrl, dbUser, dbPass)){
-            logger.debug("Making a DB connection...");
-            //TODO: Here can be implemented a similar approach to what was done for Kafka producers. That is, calling
-            // setDBConnection for plug-ins that implement DBConnector interface.
+
+            dbPlugins.forEach((p) -> {
+                try {
+                    p.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
+                    logger.debug("Set DB connection successfully for plug-in {}", p.getClass().getSimpleName());
+                } catch (SQLException e) {
+                    logger.error("Couldn't set DB connection for plug-in {}\n{}", p.getClass().getSimpleName(), e.getStackTrace());
+                }
+            });
+
         } else {
             logger.error("Couldn't make a DB connection. Make sure that you have provided a valid DB URL, username and password.");
         }
@@ -138,7 +148,6 @@ public class FastenServer implements Runnable {
         }).collect(Collectors.toList());
 
         this.consumers.forEach(c -> c.start());
-
     }
 
     public static void main(String[] args) {
