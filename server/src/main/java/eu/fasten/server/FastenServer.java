@@ -28,11 +28,17 @@ import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 import eu.fasten.server.kafka.FastenKafkaConsumer;
 import eu.fasten.server.kafka.FastenKafkaProducer;
+import org.jooq.tools.json.JSONParser;
+import org.jooq.tools.json.ParseException;
+import org.jooq.tools.json.JSONObject;
 import org.pf4j.JarPluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
+
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
@@ -47,6 +53,11 @@ public class FastenServer implements Runnable {
             description = "Directory to load plugins from",
             defaultValue = ".")
     private Path pluginPath;
+
+    @Option(names = {"-t", "--topic"},
+            paramLabel = "topic",
+            description = "JSON file consists of topics for plug-ins.")
+    private String pluginTopic;
 
     @Option(names = {"-k", "--kafka_server"},
             paramLabel = "server.name:port",
@@ -112,6 +123,23 @@ public class FastenServer implements Runnable {
 
         logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, {} DB plug-ins: {} total plugins",
                 kafkaConsumers.size(), kafkaProducers.size(), dbPlugins.size(), plugins.size());
+
+        // Change the default topics of the plug-ins if a JSON file of the topics is given
+        if(pluginTopic != null) {
+            JSONParser parser = new JSONParser();
+            try {
+                JSONObject jsonObject = (JSONObject) parser.parse(new FileReader(pluginTopic));
+
+                kafkaConsumers.forEach((k) -> {
+                    if(jsonObject.containsKey(k.getClass().getSimpleName())) {
+                        k.setTopic(jsonObject.get(k.getClass().getSimpleName()).toString());
+                    }
+                });
+
+            } catch (IOException | ParseException e) {
+                logger.error("Failed to read the JSON file of the topics: {}", e.getMessage());
+            }
+        }
 
         // Here, a DB connection is made for the plug-ins that need it.
         if (ObjectUtils.allNotNull(dbUrl, dbUser, dbPass)){
