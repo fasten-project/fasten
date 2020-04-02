@@ -26,7 +26,7 @@ public abstract class AnalyzerPlugin extends Plugin {
 
         private static org.apache.kafka.clients.producer.KafkaProducer<Object, String>
                 kafkaProducer;
-        final String consumeTopic = "maven.packages";
+        private String consumeTopic = "maven.packages";
         private boolean processedRecord;
         private String pluginError;
 
@@ -138,6 +138,10 @@ public abstract class AnalyzerPlugin extends Plugin {
             });
         }
 
+        @Override
+        public void setTopic(String topicName) {
+            this.consumeTopic = topicName;
+        }
 
         @Override
         public abstract String producerTopic();
