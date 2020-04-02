@@ -19,11 +19,9 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
-import eu.fasten.analyzer.metadataplugin.db.PostgresConnector;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
-import java.io.IOException;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,41 +46,18 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataPlugin implements KafkaConsumer<String> {
+    public static class MetadataDBExtension implements KafkaConsumer<String>, DBConnector {
 
-        private String topic;
-        private DSLContext dslContext;
+        private String topic = "opal_callgraphs";
+        static private DSLContext dslContext;
         private boolean processedRecord = false;
         private String pluginError = "";
-        private final Logger logger = LoggerFactory.getLogger(MetadataPlugin.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
 
-        /**
-         * Constructor for MetadataPlugin with default DSLContext
-         * with parameters from `postgres.properties`.
-         *
-         * @param callgraphTopic Topic from which to consume call graphs
-         * @throws IOException              if cannot read file `postgres.properties`
-         * @throws SQLException             if cannot connect to the database
-         * @throws IllegalArgumentException if database URL in `postgres.properties` is malformed
-         */
-        public MetadataPlugin(String callgraphTopic) throws IOException, SQLException,
-                IllegalArgumentException {
-            this(callgraphTopic, PostgresConnector.getDSLContext());
-        }
-
-        /**
-         * Constructor for MetadataPlugin with provided DSLContext.
-         *
-         * @param callgraphTopic Topic from which to consume call graphs
-         * @param dslContext     DSLContext for jOOQ to query the database
-         */
-        public MetadataPlugin(String callgraphTopic, DSLContext dslContext) {
-            super();
-            this.dslContext = dslContext;
-            this.topic = callgraphTopic;
-        }
+        @Override
+        public void setDBConnection(DSLContext dslContext) { MetadataDBExtension.dslContext = dslContext; }
 
         @Override
         public List<String> consumerTopics() {
@@ -90,9 +65,16 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
+        public void setTopic(String topicName) {
+            this.topic = topicName;
+        }
+
+        @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
+
             final var consumedJson = new JSONObject(record.value());
-            final var product = consumedJson.optString("product");
+            final var artifact = consumedJson.optString("product") + "@"
+                    + consumedJson.optString("version");
             this.processedRecord = false;
             this.restartTransaction = false;
             this.pluginError = "";
@@ -100,26 +82,27 @@ public class MetadataDatabasePlugin extends Plugin {
             try {
                 callgraph = new ExtendedRevisionCallGraph(consumedJson);
             } catch (JSONException e) {
-                logger.error("Error parsing JSON callgraph for " + product, e);
+                logger.error("Error parsing JSON callgraph for '" + artifact + "'", e);
                 processedRecord = false;
                 setPluginError(e);
                 return;
             }
+
             int transactionRestartCount = 0;
             do {
                 try {
-                    var metadataDao = new MetadataDao(this.dslContext);
-                    this.dslContext.transaction(transaction -> {
+                    var metadataDao = new MetadataDao(dslContext);
+                    dslContext.transaction(transaction -> {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
                             id = saveToDatabase(callgraph, metadataDao);
                         } catch (RuntimeException e) {
-                            logger.error("Error saving to the database: " + product, e);
+                            logger.error("Error saving to the database: '" + artifact + "'", e);
                             processedRecord = false;
                             setPluginError(e);
                             if (e instanceof DataAccessException) {
-                                logger.info("Restarting transaction for " + product);
+                                logger.info("Restarting transaction for '" + artifact + "'");
                                 restartTransaction = true;
                             } else {
                                 restartTransaction = false;
@@ -129,7 +112,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         if (getPluginError().isEmpty()) {
                             processedRecord = true;
                             restartTransaction = false;
-                            logger.info("Saved the " + product + " callgraph metadata "
+                            logger.info("Saved the '" + artifact + "' callgraph metadata "
                                     + "to the database with package ID = " + id);
                         }
                     });
@@ -148,13 +131,12 @@ public class MetadataDatabasePlugin extends Plugin {
          * @return Package ID saved in the database
          */
         public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
-            final var timestamp = (callGraph.timestamp != -1) ? new Timestamp(callGraph.timestamp)
-                    : null;
+            final var timestamp = this.getProperTimestamp(callGraph.timestamp);
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
-                    null, null, timestamp);
+                    null, null, null);
 
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    callGraph.getCgGenerator(), callGraph.version, null, null);
+                    callGraph.getCgGenerator(), callGraph.version, timestamp, null);
 
             var depIds = new ArrayList<Long>();
             var depVersions = new ArrayList<String[]>();
@@ -166,13 +148,8 @@ public class MetadataDatabasePlugin extends Plugin {
                         versions[i] = constraints.get(i).toString();
                     }
                     depVersions.add(versions);
-
-                    var depId = metadataDao.getPackageIdByNameAndForge(dependency.product,
-                            dependency.forge);
-                    if (depId == -1L) {
-                        depId = metadataDao.insertPackage(dependency.product, dependency.forge,
-                                null, null, null);
-                    }
+                    var depId = metadataDao.insertPackage(dependency.product, dependency.forge,
+                            null, null, null);
                     depIds.add(depId);
                 }
             }
@@ -184,17 +161,17 @@ public class MetadataDatabasePlugin extends Plugin {
             var globalIdsMap = new HashMap<Integer, Long>();
             for (var fastenUri : cha.keySet()) {
                 var type = cha.get(fastenUri);
-                var fileMetadata = new JSONObject();
-                fileMetadata.put("superInterfaces",
+                var moduleMetadata = new JSONObject();
+                moduleMetadata.put("superInterfaces",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
-                fileMetadata.put("sourceFile", type.getSourceFileName());
-                fileMetadata.put("superClasses",
+                moduleMetadata.put("sourceFile", type.getSourceFileName());
+                moduleMetadata.put("superClasses",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
-                long fileId = metadataDao.insertFile(packageVersionId, fastenUri.getNamespace(),
-                        null, null, fileMetadata);
+                long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
+                        null, null, moduleMetadata);
                 for (var methodEntry : type.getMethods().entrySet()) {
                     var uri = methodEntry.getValue().toString();
-                    long callableId = metadataDao.insertCallable(fileId, uri, true, null, null);
+                    long callableId = metadataDao.insertCallable(moduleId, uri, true, null, null);
                     globalIdsMap.put(methodEntry.getKey(), callableId);
                 }
             }
@@ -221,6 +198,18 @@ public class MetadataDatabasePlugin extends Plugin {
                 metadataDao.insertEdge(sourceGlobalId, targetId, edgeMetadata);
             }
             return packageId;
+        }
+
+        private Timestamp getProperTimestamp(long timestamp) {
+            if (timestamp == -1) {
+                return null;
+            } else {
+                if (timestamp / (1000L * 60 * 60 * 24 * 365) < 1L) {
+                    return new Timestamp(timestamp * 1000);
+                } else {
+                    return new Timestamp(timestamp);
+                }
+            }
         }
 
         @Override
@@ -266,5 +255,6 @@ public class MetadataDatabasePlugin extends Plugin {
         public void freeResource() {
 
         }
+
     }
 }

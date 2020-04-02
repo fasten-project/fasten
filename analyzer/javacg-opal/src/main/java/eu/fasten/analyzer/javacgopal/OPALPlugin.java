@@ -50,7 +50,7 @@ public class OPALPlugin extends Plugin {
 
         private static org.apache.kafka.clients.producer.KafkaProducer<Object, String>
             kafkaProducer;
-        final String CONSUME_TOPIC = "maven.packages";
+        private String CONSUME_TOPIC = "maven.packages";
         final String PRODUCE_TOPIC = "opal_callgraphs";
         private boolean processedRecord;
         private String pluginError;
@@ -58,6 +58,11 @@ public class OPALPlugin extends Plugin {
         @Override
         public List<String> consumerTopics() {
             return new ArrayList<>(Collections.singletonList(CONSUME_TOPIC));
+        }
+
+        @Override
+        public void setTopic(String topicName) {
+            this.CONSUME_TOPIC = topicName;
         }
 
         @Override
