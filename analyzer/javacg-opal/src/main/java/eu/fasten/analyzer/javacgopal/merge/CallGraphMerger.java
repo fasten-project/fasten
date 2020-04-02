@@ -23,13 +23,19 @@ import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class CallGraphMerger {
+
+    private static Logger logger = LoggerFactory.getLogger(CallGraphMerger.class);
 
     public static CallGraphMerger resolve(final MavenCoordinate coordinate) {
 
@@ -50,61 +56,152 @@ public class CallGraphMerger {
 
     public static ExtendedRevisionCallGraph mergeCallGraph(final ExtendedRevisionCallGraph artifact,
                                                            final List<ExtendedRevisionCallGraph>
-                                                               dependencies) {
+                                                               dependencies,
+                                                           final String algorithm) {
+        if (algorithm.equals("RA")) {
+            return mergeWithRA(artifact, dependencies);
+        } else if (algorithm.equals("CHA")) {
+            return mergeWithCHA(artifact, dependencies);
+        } else {
+            logger.warn("{} algorithm is not supported for merge, please inter RA or CHA.",
+                algorithm);
+            return null;
+        }
 
-        final var mapOfAllMethods = artifact.mapOfAllMethods();
+    }
 
-        final Map<Pair<Integer, FastenURI>, Map<String, String>> externalCalls = new HashMap<>();
 
-        for (final var entry : artifact.getGraph()
-            .getExternalCalls().entrySet()) {
-            Pair<Integer, FastenURI> call = entry.getKey();
-            Map<String, String> metadata = entry.getValue();
-            final var source = mapOfAllMethods.get(call.getKey());
-            final var target = call.getValue();
-            final var isSuperClassMethod =
-                artifact.getClassHierarchy().get(getTypeURI(source)).getSuperClasses()
-                    .contains(getTypeURI(target));
-            nextCall:
 
-            //Foreach external call
-            if (target.toString().startsWith("///")) {
+    private static ExtendedRevisionCallGraph mergeWithCHA(ExtendedRevisionCallGraph artifact,
+                                                          List<ExtendedRevisionCallGraph> dependencies) {
+
+        final Map<Pair<Integer, FastenURI>, Map<String, String>> result = new HashMap<>();
+
+        for (final var arc : artifact.getGraph().getExternalCalls().entrySet()) {
+            boolean isResolved = false;
+
+            //Dynamic dispatch calls
+            if (Integer.parseInt(arc.getValue().getOrDefault("invokedvirtual", "0")) > 0 ||
+                Integer.parseInt(arc.getValue().getOrDefault("invokedinterface", "0")) > 0) {
+                final var receiverType = getTypeURI(arc.getKey().getValue());
+                dependencies.add(artifact);
 
                 //Go through all dependencies
-                for (ExtendedRevisionCallGraph dependency : dependencies) {
-                    var internalMethod = target.toString();
+                for (final var dep : dependencies) {
 
-                    nextDependency:
-                    //Check whether this method is inside the dependency
-                    if (dependency.getClassHierarchy().containsKey(getTypeURI(target))) {
-                        if (dependency.getClassHierarchy().get(getTypeURI(target)).getMethods()
-                            .containsValue(FastenURI.create(target.getRawPath()))) {
-                            internalMethod =
-                                target.toString().replace("///", "//"
-                                    + dependency.product + "/");
-                            //Check if this call is related to a super class
-                            if (isSuperClassMethod) {
-                                //Find that super class. in case there are two, pick the first one
-                                // since the order of instantiation matters
-                                for (FastenURI superClass : artifact.getClassHierarchy()
-                                    .get(getTypeURI(source)).getSuperClasses()) {
-                                    //Check if this dependency contains the super class that we want
-                                    if (dependency.getClassHierarchy().containsKey(superClass)) {
-                                        externalCalls.put(new MutablePair<>(call.getKey(),
-                                            new FastenJavaURI(internalMethod)), metadata);
-                                        break nextCall;
-                                    } else {
-                                        externalCalls.put(new MutablePair<>(call.getKey(), target),
-                                            metadata);
-                                        break nextDependency;
-                                    }
+                    //Find receiver type in dependencies.
+                    if (dep.getClassHierarchy().containsKey(receiverType)) {
+
+                        //If type implements the method add an arc to result
+                        if (dep.getClassHierarchy().get(receiverType).getMethods()
+                            .containsValue(
+                                FastenURI.create(arc.getKey().getValue().getRawPath()))) {
+
+                            result.put(new MutablePair<>(arc.getKey().getLeft(), new FastenJavaURI(
+                                    arc.getKey().getValue().toString()
+                                        .replace("///", "//" + dep.product + "$" + dep.version + "/"))),
+                                arc.getValue());
+
+                            isResolved = true;
+                        }
+                    }
+
+                    //Check for the subtypes as well.
+                    for (final var type : dep.getClassHierarchy().entrySet()) {
+                        for (final var superClass : type.getValue().getSuperClasses()) {
+                            if (superClass.equals(receiverType)) {
+                                if (resolve(result, arc,
+                                    new ArrayList<>(type.getValue().getMethods().values()),
+                                    dep.product + "$" + dep.version)) {
+                                    isResolved = true;
                                 }
-                            } else {
-                                externalCalls.put(new MutablePair<>(call.getKey(),
-                                    new FastenJavaURI(internalMethod)), metadata);
+                            }
+                        }
+                        for (final var superInterface : type.getValue().getSuperInterfaces()) {
+                            if (superInterface.equals(receiverType)) {
+                                if (resolve(result, arc,
+                                    new ArrayList<>(type.getValue().getMethods().values()),
+                                    dep.product + "$" + dep.version)) {
+                                    isResolved = true;
+                                }
                             }
                         }
                     }
+                }
+                //Not dynamic dispatch, search for the full signature in dependencies
+            } else {
+                for (final var dep : dependencies) {
+                    if (dep.mapOfAllMethods()
+                        .containsValue(FastenURI.create(arc.getKey().getValue().getRawPath()))) {
+                        result.put(new MutablePair<>(arc.getKey().getLeft(),
+                            new FastenJavaURI(arc.getKey().getValue().toString().replace("///", "//"
+                                + dep.product + "$" + dep.version + "/"))), arc.getValue());
+                        isResolved = true;
+                    }
+                }
+            }
+            if (!isResolved) {
+                result.put(arc.getKey(), arc.getValue());
+            }
+        }
+
+        return ExtendedRevisionCallGraph.extendedBuilder().forge(artifact.forge)
+            .cgGenerator(artifact.getCgGenerator())
+            .classHierarchy(artifact.getClassHierarchy())
+            .depset(artifact.depset)
+            .product(artifact.product)
+            .timestamp(artifact.timestamp)
+            .version(artifact.version)
+            .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraph().getInternalCalls(),
+                result))
+            .build();
+    }
+
+    private static boolean resolve(Map<Pair<Integer, FastenURI>, Map<String, String>> result,
+                                   Map.Entry<Pair<Integer, FastenURI>, Map<String, String>> arc,
+                                   List<FastenURI> methods,
+                                   String product) {
+        for (final var method : methods) {
+            if (method.getEntity().contains(arc.getKey().getValue().getEntity().split("[.]")[1])) {
+
+                result.put(new MutablePair<>(arc.getKey().getLeft(),
+                    new FastenJavaURI("//" + product + method)), arc.getValue());
+
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    public static ExtendedRevisionCallGraph mergeWithRA(final ExtendedRevisionCallGraph artifact,
+                                                        final List<ExtendedRevisionCallGraph>
+                                                            dependencies) {
+
+        final Map<Pair<Integer, FastenURI>, Map<String, String>> result = new HashMap<>();
+
+        for (final var arc : artifact.getGraph().getExternalCalls().entrySet()) {
+            final var call = arc.getKey();
+            final var target = call.getValue();
+
+            //Go through all dependencies
+            for (final var dep : dependencies) {
+                boolean isResolved = false;
+
+                //Check whether target's signature can be found in the dependency methods
+                for (final var method : dep.mapOfAllMethods().entrySet()) {
+                    if (method.getValue().getEntity()
+                        .contains(target.getEntity().split("[.]")[1])) {
+                        result
+                            .put(new MutablePair<>(call.getKey(), new FastenJavaURI(
+                                    "//" + dep.product + "$" + dep.version +
+                                        method.getValue())),
+                                arc.getValue());
+                        isResolved = true;
+                    }
+                }
+                if (!isResolved) {
+                    result.put(arc.getKey(), arc.getValue());
                 }
             }
         }
@@ -117,7 +214,7 @@ public class CallGraphMerger {
             .timestamp(artifact.timestamp)
             .version(artifact.version)
             .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraph().getInternalCalls(),
-                externalCalls))
+                result))
             .build();
     }
 
@@ -157,4 +254,7 @@ public class CallGraphMerger {
         final List<List<RevisionCallGraph.Dependency>> packageDependencyNetwork) {
         return null;
     }
+
 }
+
+

@@ -24,6 +24,7 @@ import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,7 +61,7 @@ public class CallGraphMergerTest {
         artifact = ExtendedRevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product("ImporterGroup.ImporterArtifact")
-            .version("1.7.29")
+            .version("1.0.0")
             .cgGenerator(importerGraph.getGENERATOR())
             .timestamp(1574072773)
             .graph(importerGraph.getGraph())
@@ -110,9 +111,18 @@ public class CallGraphMergerTest {
                 .filter(i -> i.getRight().toString().contains(
                     "targetMethod")).findFirst().orElseThrow().getRight());
 
-        assertEquals(new FastenJavaURI("//ImportedGroup.ImportedArtifact/depen.dency/Imported"
+        assertEquals(new FastenJavaURI("//ImportedGroup.ImportedArtifact$1.7.29/depen"
+                + ".dency/Imported"
                 + ".targetMethod()%2Fjava.lang%2FVoidType"),
-            CallGraphMerger.mergeCallGraph(artifact, Arrays.asList(dependency))
+            CallGraphMerger.mergeCallGraph(artifact, Arrays.asList(dependency),"CHA")
+                .getGraph().getExternalCalls().keySet().stream()
+                .filter(i -> i.getRight().toString().contains(
+                    "targetMethod")).findFirst().orElseThrow().getRight());
+
+        assertEquals(new FastenJavaURI("//ImportedGroup.ImportedArtifact$1.7.29/depen"
+                + ".dency/Imported"
+                + ".targetMethod()%2Fjava.lang%2FVoidType"),
+            CallGraphMerger.mergeCallGraph(artifact, Arrays.asList(dependency),"RA")
                 .getGraph().getExternalCalls().keySet().stream()
                 .filter(i -> i.getRight().toString().contains(
                     "targetMethod")).findFirst().orElseThrow().getRight());
