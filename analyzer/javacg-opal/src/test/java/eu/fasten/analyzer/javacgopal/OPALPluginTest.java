@@ -23,7 +23,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import java.io.FileNotFoundException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONException;

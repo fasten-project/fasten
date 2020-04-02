@@ -20,7 +20,7 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.baseanalyzer.AnalyzerPlugin;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.FileNotFoundException;
 import org.json.JSONObject;

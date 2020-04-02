@@ -21,10 +21,9 @@ package eu.fasten.analyzer.javacgopal.merge;
 import static org.junit.Assert.assertEquals;
 
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import org.junit.BeforeClass;
 import org.junit.Test;

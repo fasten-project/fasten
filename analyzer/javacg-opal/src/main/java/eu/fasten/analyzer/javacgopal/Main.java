@@ -20,7 +20,7 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.merge.CallGraphDifferentiator;
 
 import java.io.IOException;

@@ -21,7 +21,6 @@ package eu.fasten.analyzer.javacgopal.data;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
 import java.util.List;

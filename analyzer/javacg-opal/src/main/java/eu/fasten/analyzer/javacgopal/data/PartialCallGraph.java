@@ -16,12 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data.callgraph;
+package eu.fasten.analyzer.javacgopal.data;
 
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.OPALMethod;
-import eu.fasten.analyzer.javacgopal.data.OPALType;
 import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
