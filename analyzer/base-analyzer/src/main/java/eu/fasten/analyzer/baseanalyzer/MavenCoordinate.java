@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgwala.data;
+package eu.fasten.analyzer.baseanalyzer;
 
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.BufferedReader;
@@ -31,7 +31,9 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.dom4j.DocumentException;
 import org.dom4j.Node;
@@ -174,6 +176,17 @@ public class MavenCoordinate {
                         this.downloadPom(mavenCoordinate)
                                 .orElseThrow(RuntimeException::new).getBytes()));
 
+                Map<String, String> properties = new HashMap<>();
+
+                var propertiesRoot = pom.getRootElement()
+                        .selectSingleNode("./*[local-name() ='properties']");
+
+                if (propertiesRoot != null) {
+                    for (final var property : propertiesRoot.selectNodes("*")) {
+                        properties.put(property.getName(), property.getStringValue());
+                    }
+                }
+
                 var profilesRoot = pom.getRootElement()
                         .selectSingleNode("./*[local-name() ='profiles']");
 
@@ -186,7 +199,7 @@ public class MavenCoordinate {
                         .selectSingleNode("./*[local-name()='dependencies']");
 
                 if (outerDeps != null) {
-                    var resolved = resolveLocalDependencies(outerDeps);
+                    var resolved = resolveLocalDependencies(outerDeps, properties);
                     if (resolved.size() != 0) {
                         dependencies.add(resolved);
                     }
@@ -196,7 +209,7 @@ public class MavenCoordinate {
                     var dependenciesNode =
                             profile.selectSingleNode("./*[local-name() ='dependencies']");
                     if (dependenciesNode != null) {
-                        var resolved = resolveLocalDependencies(dependenciesNode);
+                        var resolved = resolveLocalDependencies(dependenciesNode, properties);
                         if (resolved.size() != 0) {
                             dependencies.add(resolved);
                         }
@@ -213,10 +226,12 @@ public class MavenCoordinate {
          * Return a list of dependencies in given profile node or of the entire project if profiles
          * were not present in pom.xml.
          *
-         * @param node Dependencies node from profile or entire project
+         * @param node       Dependencies node from profile or entire project
+         * @param properties A map containing properties from pom.xml
          * @return List of dependencies
          */
-        private List<RevisionCallGraph.Dependency> resolveLocalDependencies(final Node node) {
+        private List<RevisionCallGraph.Dependency> resolveLocalDependencies(
+                final Node node, Map<String, String> properties) {
             final var depList = new ArrayList<RevisionCallGraph.Dependency>();
 
             for (final var depNode : node.selectNodes("./*[local-name() = 'dependency']")) {
@@ -229,7 +244,10 @@ public class MavenCoordinate {
 
                 final String version;
                 if (versionSpec != null) {
-                    version = versionSpec.getStringValue();
+                    version = versionSpec.getStringValue().startsWith("$")
+                            ? properties.get(versionSpec.getStringValue()
+                                    .substring(2, versionSpec.getStringValue().length() - 1)) :
+                            versionSpec.getStringValue();
                 } else {
                     version = "*";
                 }

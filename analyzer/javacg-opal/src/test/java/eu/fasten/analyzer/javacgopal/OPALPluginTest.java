@@ -22,7 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.callgraph.PartialCallGraph;
 import java.io.FileNotFoundException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -97,7 +97,7 @@ public class OPALPluginTest {
     }
 
     @Test
-    public void testEmptyCallGraph() {
+    public void testEmptyCallGraph() throws JSONException {
         JSONObject emptyCGCoordinate = new JSONObject("{\n"
             + "    \"groupId\": \"activemq\",\n"
             + "    \"artifactId\": \"activemq\",\n"
@@ -113,7 +113,7 @@ public class OPALPluginTest {
     }
 
     @Test
-    public void testFileNotFoundException() {
+    public void testFileNotFoundException() throws JSONException {
         JSONObject noJARFile = new JSONObject("{\n"
             + "    \"groupId\": \"com.visionarts\",\n"
             + "    \"artifactId\": \"power-jambda-pom\",\n"
@@ -130,7 +130,7 @@ public class OPALPluginTest {
     }
 
     @Test
-    public void testNullPointerException() {
+    public void testNullPointerException() throws JSONException {
         JSONObject mvnCoordinate = new JSONObject("{\n"
             + "    \"groupId\": \"ch.epfl.scala\",\n"
             + "    \"artifactId\": \"collection-strawman_0.6\",\n"

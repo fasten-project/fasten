@@ -33,8 +33,10 @@ import java.nio.file.Paths;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled("Disabled until a way to make Wala platform independent found")
 class PartialCallGraphTest {
 
     private static PartialCallGraph graph;

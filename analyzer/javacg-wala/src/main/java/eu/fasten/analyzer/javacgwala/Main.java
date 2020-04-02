@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgwala;
 
-import eu.fasten.analyzer.javacgwala.data.MavenCoordinate;
+import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import java.io.BufferedReader;
 import java.io.File;
@@ -91,7 +91,7 @@ public class Main implements Runnable {
 
             } catch (Throwable e) {
                 logger.error("Failed to generate a call graph for Maven coordinate: {}, Error: {}",
-                        mavenCoordinate.getCoordinate(), e.getClass().getSimpleName());
+                        mavenCoordinate.getCoordinate(), e);
             }
         }
     }
@@ -208,7 +208,7 @@ public class Main implements Runnable {
                     kafkaConsumedJson.get("artifactId").toString(),
                     kafkaConsumedJson.get("version").toString());
         } catch (JSONException e) {
-            logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson);
+            logger.error("Could not parse input coordinate: {}", kafkaConsumedJson);
         }
         return null;
     }
