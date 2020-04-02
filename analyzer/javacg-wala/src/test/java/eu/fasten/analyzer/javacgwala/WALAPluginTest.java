@@ -55,6 +55,13 @@ class WALAPluginTest {
     }
 
     @Test
+    public void testSetTopic() {
+        String topicName = "fasten.mvn.pkg";
+        walaPlugin.setTopic(topicName);
+        assertEquals(topicName, walaPlugin.consumerTopics().get(0));
+    }
+
+    @Test
     public void testConsume() throws JSONException, IOException, ClassHierarchyException, CallGraphBuilderCancelException {
 
         JSONObject coordinateJSON = new JSONObject("{\n" +

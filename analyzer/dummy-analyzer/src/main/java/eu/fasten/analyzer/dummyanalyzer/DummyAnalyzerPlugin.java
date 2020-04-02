@@ -20,10 +20,19 @@ public class DummyAnalyzerPlugin extends Plugin {
 
     @Extension
     public static class DummyAnalyzer implements KafkaConsumer<String> {
+
+        private String consumeTopic = "fasten.mvn.pkg";
         private final Logger logger = LoggerFactory.getLogger(DummyAnalyzer.class.getName());
+
+
         @Override
         public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList("maven.packages"));
+            return new ArrayList<>(Collections.singletonList(consumeTopic));
+        }
+
+        @Override
+        public void setTopic(String topicName) {
+            this.consumeTopic = topicName;
         }
 
         @Override

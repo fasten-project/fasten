@@ -15,33 +15,162 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.rocksdb.RocksDBException;
 
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.Node;
-import eu.fasten.core.data.RevisionCallGraph;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 
 public class IndexerTest {
 
 	final String[] JSON_SPECS = {
-			"{\n" + "\"forge\": \"f\",\n" + "\"product\": \"graph-0\",\n" + "\"version\": \"1.0\",\n" + "\"timestamp\": \"0\",\n" + "\"depset\": [],\n" + "\"graph\": [\n" + "          [ \"/p0/A.f0()v\", \"//-\" ],\n" + "          [ \"/p0/A.f1()v\", \"//-\" ],\n" + "          [ \"/p0/A.f2()v\", \"//-\" ],\n" + "          [ \"/p0/A.f3()v\", \"//-\" ],\n" + "          [ \"/p0/A.f4()v\", \"//-\" ],\n" + "          [ \"/p0/A.f5()v\", \"//-\" ],\n" + "          [ \"/p0/A.f6()v\", \"//-\" ],\n" + "          [ \"/p0/A.f7()v\", \"//-\" ],\n" + "          [ \"/p0/A.f8()v\", \"//-\" ],\n" + "          [ \"/p0/A.f9()v\", \"//-\" ],\n" + "          [ \"/p0/A.f10()v\", \"/p0/A.f8()v\" ],\n" + "          [ \"/p0/A.f10()v\", \"/p0/A.f9()v\" ],\n" + "          [ \"/p0/A.f11()v\", \"/p0/A.f1()v\" ],\n" + "          ]" + "}",
-			"{\n" + "\"forge\": \"f\",\n" + "\"product\": \"graph-1\",\n" + "\"version\": \"1.0\",\n" + "\"timestamp\": \"0\",\n" + "\"depset\": [],\n" + "\"graph\": [\n" + "          [ \"/p1/A.f0()v\", \"//-\" ],\n" + "          [ \"/p1/A.f1()v\", \"//-\" ],\n" + "          [ \"/p1/A.f2()v\", \"//-\" ],\n" + "          [ \"/p1/A.f3()v\", \"//-\" ],\n" + "          [ \"/p1/A.f4()v\", \"//-\" ],\n" + "          [ \"/p1/A.f5()v\", \"//-\" ],\n" + "          [ \"/p1/A.f6()v\", \"//-\" ],\n" + "          [ \"/p1/A.f7()v\", \"//-\" ],\n" + "          [ \"/p1/A.f8()v\", \"//-\" ],\n" + "          [ \"/p1/A.f9()v\", \"//-\" ],\n" + "          [ \"/p1/A.f10()v\", \"/p1/A.f0()v\" ],\n" + "          [ \"/p1/A.f10()v\", \"/p1/A.f3()v\" ],\n" + "          [ \"/p1/A.f10()v\", \"/p1/A.f5()v\" ],\n" + "          [ \"/p1/A.f11()v\", \"/p1/A.f1()v\" ],\n" + "          ]\n" + "}",
-			"{\n" + "\"forge\": \"f\",\n" + "\"product\": \"graph-2\",\n" + "\"version\": \"1.0\",\n" + "\"timestamp\": \"0\",\n" + "\"depset\": [[{ \"forge\": \"f\", \"product\": \"graph-0\", \"constraints\": [\"[1.0]\"] }], [{ \"forge\": \"f\", \"product\": \"graph-1\", \"constraints\": [\"[1.0]\"] }]],\n" + "\"graph\": [\n" + "          [ \"/p2/A.f1()v\", \"//graph-0/p0/A.f3()v\" ],\n" + "          [ \"/p2/A.f7()v\", \"//graph-0/p0/A.f6()v\" ],\n" + "          [ \"/p2/A.f2()v\", \"//graph-0/p0/A.f0()v\" ],\n" + "          [ \"/p2/A.f0()v\", \"//graph-1/p1/A.f2()v\" ],\n" + "          [ \"/p2/A.f5()v\", \"//graph-1/p1/A.f7()v\" ],\n" + "          [ \"/p2/A.f10()v\", \"//graph-1/p1/A.f8()v\" ],\n" + "          [ \"/p2/A.f3()v\", \"//-\" ],\n" + "          [ \"/p2/A.f4()v\", \"//-\" ],\n" + "          [ \"/p2/A.f6()v\", \"//-\" ],\n" + "          [ \"/p2/A.f8()v\", \"//-\" ],\n" + "          [ \"/p2/A.f9()v\", \"//-\" ],\n" + "          [ \"/p2/A.f10()v\", \"/p2/A.f1()v\" ],\n" + "          [ \"/p2/A.f10()v\", \"/p2/A.f2()v\" ],\n" + "          [ \"/p2/A.f10()v\", \"/p2/A.f7()v\" ],\n" + "          [ \"/p2/A.f10()v\", \"/p2/A.f8()v\" ],\n" + "          [ \"/p2/A.f11()v\", \"/p2/A.f0()v\" ],\n" + "          [ \"/p2/A.f11()v\", \"/p2/A.f4()v\" ],\n" + "          [ \"/p2/A.f11()v\", \"/p2/A.f9()v\" ],\n" + "          ]\n" + "}",
-			"{\n" + "\"forge\": \"f\",\n" + "\"product\": \"graph-3\",\n" + "\"version\": \"1.0\",\n" + "\"timestamp\": \"0\",\n" + "\"depset\": [[{ \"forge\": \"f\", \"product\": \"graph-0\", \"constraints\": [\"[1.0]\"] }], [{ \"forge\": \"f\", \"product\": \"graph-2\", \"constraints\": [\"[1.0]\"] }], [{ \"forge\": \"f\", \"product\": \"graph-1\", \"constraints\": [\"[1.0]\"] }]],\n" + "\"graph\": [\n" + "          [ \"/p3/A.f8()v\", \"//graph-1/p1/A.f7()v\" ],\n" + "          [ \"/p3/A.f5()v\", \"//graph-0/p0/A.f5()v\" ],\n" + "          [ \"/p3/A.f10()v\", \"//graph-0/p0/A.f7()v\" ],\n" + "          [ \"/p3/A.f10()v\", \"//graph-0/p0/A.f8()v\" ],\n" + "          [ \"/p3/A.f8()v\", \"//graph-0/p0/A.f6()v\" ],\n" + "          [ \"/p3/A.f5()v\", \"//graph-2/p2/A.f3()v\" ],\n" + "          [ \"/p3/A.f11()v\", \"//graph-2/p2/A.f6()v\" ],\n" + "          [ \"/p3/A.f0()v\", \"//-\" ],\n" + "          [ \"/p3/A.f1()v\", \"//-\" ],\n" + "          [ \"/p3/A.f2()v\", \"//-\" ],\n" + "          [ \"/p3/A.f3()v\", \"//-\" ],\n" + "          [ \"/p3/A.f4()v\", \"//-\" ],\n" + "          [ \"/p3/A.f6()v\", \"//-\" ],\n" + "          [ \"/p3/A.f7()v\", \"//-\" ],\n" + "          [ \"/p3/A.f9()v\", \"//-\" ],\n" + "          [ \"/p3/A.f10()v\", \"/p3/A.f4()v\" ],\n" + "          [ \"/p3/A.f10()v\", \"/p3/A.f8()v\" ],\n" + "          [ \"/p3/A.f11()v\", \"/p3/A.f1()v\" ],\n" + "          [ \"/p3/A.f11()v\", \"/p3/A.f4()v\" ],\n" + "          [ \"/p3/A.f11()v\", \"/p3/A.f5()v\" ],\n" + "          ]\n" + "}" };
+			"{\n" +
+					"    \"product\": \"org.slf4j.slf4j-api\",\n" +
+					"    \"forge\": \"mvn\",\n" +
+					"    \"generator\": \"OPAL\",\n" +
+					"    \"depset\": [],\n" +
+					"    \"version\": \"1.0\",\n" +
+					"    \"cha\": {\n" +
+					"        \"/org.slf4j.helpers/FormattingTuple\": {\n" +
+					"            \"methods\": {\n" +
+					"                \"0\": \"/org.slf4j.helpers/FormattingTuple.getThrowable()%2Fjava.lang%2FThrowable\",\n" +
+					"                \"1\": \"/org.slf4j.helpers/FormattingTuple.%3Cinit%3E()%2Fjava.lang%2FVoidType\",\n" +
+					"                \"2\": \"/org.slf4j.helpers/FormattingTuple.FormattingTuple(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType\",\n" +
+					"                \"3\": \"/org.slf4j.helpers/FormattingTuple.FormattingTuple(%2Fjava.lang%2FString,%2Fjava.lang%2FObject%25255B%25255D,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType\",\n" +
+					"            },\n" +
+					"            \"superInterfaces\": [],\n" +
+					"            \"sourceFile\": \"FormattingTuple.java\",\n" +
+					"            \"superClasses\": [\"/java.lang/Object\"]\n" +
+					"        },\n" +
+					"        \"/org.slf4j/ILoggerFactory\": {\n" +
+					"            \"methods\": {\"9\": \"/org.slf4j/ILoggerFactory.getLogger(%2Fjava.lang%2FString)Logger\"},\n" +
+					"            \"superInterfaces\": [],\n" +
+					"            \"sourceFile\": \"ILoggerFactory.java\",\n" +
+					"            \"superClasses\": [\"/java.lang/Object\"]\n" +
+					"        },\n" +
+					"        \"/org.slf4j.event/SubstituteLoggingEvent\": {\n" +
+					"            \"methods\": {\n" +
+					"                \"4\": \"/org.slf4j.event/SubstituteLoggingEvent.setMessage(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType\",\n" +
+					"                \"5\": \"/org.slf4j.event/SubstituteLoggingEvent.getMarker()%2Forg.slf4j%2FMarker\",\n" +
+					"            },\n" +
+					"            \"superInterfaces\": [],\n" +
+					"            \"sourceFile\": \"SubstituteLoggingEvent.java\",\n" +
+					"            \"superClasses\": [\"/java.lang/Object\"]\n" +
+					"        }\n" +
+					"    },\n" +
+					"    \"graph\": {\n" +
+					"        \"internalCalls\": [\n" +
+					"            [\n" +
+					"                2,\n" +
+					"                1\n" +
+					"            ],\n" +
+					"            [\n" +
+					"                3,\n" +
+					"                5\n" +
+					"            ],\n" +
+					"            [\n" +
+					"                0,\n" +
+					"                1\n" +
+					"            ]\n" +
+					"	],\n" +
+					"	\"externalCalls\": [\n" +
+					"            [\n" +
+					"                \"2\",\n" +
+					"                \"///java.lang/StringBuilder.append(String)StringBuilder\",\n" +
+					"                {\"invokevirtual\": \"1\"}\n" +
+					"            ],\n" +
+					"            [\n" +
+					"                \"0\",\n" +
+					"                \"///java.lang/StringBuilder.append(String)StringBuilder\",\n" +
+					"                {\"invokevirtual\": \"1\"}\n" +
+					"            ]\n" +
+					"	]\n" +
+					"    },\n" +
+					"    \"timestamp\": 0\n" +
+					"}\n",
+					"{\n" +
+							"    \"product\": \"org.slf4j2.slf4j-api\",\n" +
+							"    \"forge\": \"mvn\",\n" +
+							"    \"generator\": \"OPAL\",\n" +
+							"    \"depset\": [],\n" +
+							"    \"version\": \"1.0\",\n" +
+							"    \"cha\": {\n" +
+							"        \"/org.slf4j2.helpers/FormattingTuple\": {\n" +
+							"            \"methods\": {\n" +
+							"                \"0\": \"/org.slf4j2.helpers/FormattingTuple.getThrowable()%2Fjava.lang%2FThrowable\",\n" +
+							"                \"1\": \"/org.slf4j2.helpers/FormattingTuple.%3Cinit%3E()%2Fjava.lang%2FVoidType\",\n" +
+							"                \"2\": \"/org.slf4j2.helpers/FormattingTuple.FormattingTuple(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType\",\n" +
+							"                \"3\": \"/org.slf4j2.helpers/FormattingTuple.FormattingTuple(%2Fjava.lang%2FString,%2Fjava.lang%2FObject%25255B%25255D,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType\",\n" +
+							"            },\n" +
+							"            \"superInterfaces\": [],\n" +
+							"            \"sourceFile\": \"FormattingTuple.java\",\n" +
+							"            \"superClasses\": [\"/java.lang/Object\"]\n" +
+							"        },\n" +
+							"        \"/org.slf4j2/ILoggerFactory\": {\n" +
+							"            \"methods\": {\"9\": \"/org.slf4j2/ILoggerFactory.getLogger(%2Fjava.lang%2FString)Logger\"},\n" +
+							"            \"superInterfaces\": [],\n" +
+							"            \"sourceFile\": \"ILoggerFactory.java\",\n" +
+							"            \"superClasses\": [\"/java.lang/Object\"]\n" +
+							"        },\n" +
+							"        \"/org.slf4j2.event/SubstituteLoggingEvent\": {\n" +
+							"            \"methods\": {\n" +
+							"                \"4\": \"/org.slf4j2.event/SubstituteLoggingEvent.setMessage(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType\",\n" +
+							"                \"5\": \"/org.slf4j2.event/SubstituteLoggingEvent.getMarker()%2Forg.slf4j2%2FMarker\",\n" +
+							"            },\n" +
+							"            \"superInterfaces\": [],\n" +
+							"            \"sourceFile\": \"SubstituteLoggingEvent.java\",\n" +
+							"            \"superClasses\": [\"/java.lang/Object\"]\n" +
+							"        }\n" +
+							"    },\n" +
+							"    \"graph\": {\n" +
+							"        \"internalCalls\": [\n" +
+							"            [\n" +
+							"                2,\n" +
+							"                1\n" +
+							"            ],\n" +
+							"            [\n" +
+							"                3,\n" +
+							"                5\n" +
+							"            ],\n" +
+							"            [\n" +
+							"                0,\n" +
+							"                1\n" +
+							"            ]\n" +
+							"	],\n" +
+							"	\"externalCalls\": [\n" +
+							"            [\n" +
+							"                \"2\",\n" +
+							"                \"///org.slf4j.helpers/FormattingTuple.getThrowable()%2Fjava.lang%2FThrowable\",\n" +
+							"                {\"invokevirtual\": \"1\"}\n" +
+							"            ],\n" +
+							"            [\n" +
+							"                \"0\",\n" +
+							"                \"///org.slf4j/ILoggerFactory.getLogger(%2Fjava.lang%2FString)Logger\",\n" +
+							"                {\"invokevirtual\": \"1\"}\n" +
+							"            ]\n" +
+							"	]\n" +
+							"    },\n" +
+							"    \"timestamp\": 0\n" +
+							"}\n"
+
+	};
 
 	public void testKnowledgeBase(final String[] jsonSpec) throws JSONException, IOException, RocksDBException, URISyntaxException, ClassNotFoundException {
 		final Path kbDir = Files.createTempDirectory(Indexer.class.getSimpleName());
-		String meta = Files.createTempFile(Indexer.class.getSimpleName(), "meta").getFileName().toString();
+		final String meta = Files.createTempFile(Indexer.class.getSimpleName(), "meta").getFileName().toString();
+		FileUtils.deleteDirectory(kbDir.toFile());
+		FileUtils.deleteQuietly(new File(meta));
+
 		KnowledgeBase kb = KnowledgeBase.getInstance(kbDir.toString(), meta);
 
 		for (int index = 0; index < jsonSpec.length; index++)
-			kb.add(new RevisionCallGraph(new JSONObject(jsonSpec[index]), false), index);
+			kb.add(new ExtendedRevisionCallGraph(new JSONObject(jsonSpec[index])), index);
 
 		for(int pass = 0; pass < 2; pass++) {
 			for(final var entry : kb.callGraphs.long2ObjectEntrySet()) {
 				final eu.fasten.core.data.KnowledgeBase.CallGraph callGraph = entry.getValue();
 				for(int i = 0; i < callGraph.nInternal; i++) {
-					final Node node = kb.new Node(callGraph.LID2GID[i], entry.getLongKey());
+					final Node node = kb.new Node(callGraph.callGraphData().LID2GID[i], entry.getLongKey());
 					ObjectLinkedOpenHashSet<Node> reaches;
 					ObjectLinkedOpenHashSet<Node> coreaches;
 
@@ -62,9 +191,8 @@ public class IndexerTest {
 			kb = KnowledgeBase.getInstance(kbDir.toString(), meta);
 		}
 
-
 		FileUtils.deleteDirectory(kbDir.toFile());
-		FileUtils.deleteQuietly(new File("kb.meta"));
+		FileUtils.deleteQuietly(new File(meta));
 	}
 
 	@Test

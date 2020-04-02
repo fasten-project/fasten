@@ -19,8 +19,6 @@
 package eu.fasten.core.plugins;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.pf4j.ExtensionPoint;
-
 import java.util.List;
 
 /**
@@ -37,6 +35,12 @@ public interface KafkaConsumer<T> extends FastenPlugin {
      * The topic this plug-in is interested into.
      */
     public List<String> consumerTopics();
+
+    /**
+     * Overrides the default topic of a plug-in.
+     * @param topicName
+     */
+    public void setTopic(String topicName);
 
     /**
      * Processed an incoming record. This method must return when the record

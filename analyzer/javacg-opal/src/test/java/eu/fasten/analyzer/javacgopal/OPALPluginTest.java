@@ -48,6 +48,13 @@ public class OPALPluginTest {
     }
 
     @Test
+    public void testSetTopic() {
+        String topicName = "fasten.mvn.pkg";
+        opalPlugin.setTopic(topicName);
+        assertEquals(topicName, opalPlugin.consumerTopics().get(0));
+    }
+
+    @Test
     public void testConsume() throws JSONException, FileNotFoundException {
 
         JSONObject coordinateJSON = new JSONObject("{\n"
