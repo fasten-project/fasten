@@ -31,8 +31,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.jar.JarFile;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled("Disabled until a way to make Wala platform independent found")
 class ArtifactResolverTest {
 
     private static CallGraph graph;

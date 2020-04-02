@@ -39,8 +39,10 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled("Disabled until a way to make Wala platform independent found")
 public class MethodTest {
 
     private static CallGraph ssttgraph, cigraph, lambdagraph, arraygraph, aegraph;

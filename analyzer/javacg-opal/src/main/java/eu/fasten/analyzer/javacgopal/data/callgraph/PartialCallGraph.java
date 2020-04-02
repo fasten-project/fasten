@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.javacgopal.data.callgraph;
 
 import com.google.common.collect.Lists;
-import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.OPALType;
 import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
