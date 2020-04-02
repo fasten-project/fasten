@@ -282,8 +282,7 @@ public class PartialCallGraph {
      * @return A {@link Chain} of {@link ObjectType} as super classes of the passed type.
      */
     public static Chain<ObjectType> extractSuperClasses(final ClassHierarchy classHierarchy,
-                                                        final ObjectType currentClass) {
-        try {
+                                                        final ObjectType currentClass) throws NoSuchElementException  {
             if (classHierarchy.supertypes().contains(currentClass)) {
                 final var superClasses =
                     classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
@@ -291,15 +290,6 @@ public class PartialCallGraph {
                     return superClasses.reverse();
                 }
             }
-        } catch (NoSuchElementException e) {
-            logger.error("This type {} doesn't have allSuperclassTypesInInitializationOrder"
-                + " method.", currentClass, e);
-        } catch (OutOfMemoryError e) {
-            logger.error("This type {} made an out of memory Exception in calculation of its"
-                + "supper types!", currentClass, e);
-        } catch (Exception e) {
-            logger.error("This type made an Exception in calculation of its supper types!", e);
-        }
         return null;
     }
 

@@ -47,26 +47,20 @@ public class OPALMethod {
      */
     public static FastenURI toCanonicalSchemelessURI(final String product, final ReferenceType clas,
                                                      final String method,
-                                                     final MethodDescriptor descriptor) {
-        final FastenJavaURI javaURI;
-        try {
-            javaURI = FastenJavaURI.create(null, product, null,
-                getPackageName(clas),
-                getClassName(clas),
-                getMethodName(getClassName(clas), method),
-                getParametersURI(JavaConverters.seqAsJavaList(descriptor.parameterTypes())),
-                getTypeURI(descriptor.returnType())
-            ).canonicalize();
+                                                     final MethodDescriptor descriptor)
+        throws IllegalArgumentException, NullPointerException {
+        final var javaURI = FastenJavaURI.create(null, product, null,
+            getPackageName(clas),
+            getClassName(clas),
+            getMethodName(getClassName(clas), method),
+            getParametersURI(JavaConverters.seqAsJavaList(descriptor.parameterTypes())),
+            getTypeURI(descriptor.returnType())
+        ).canonicalize();
 
-            return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
-                javaURI.getRawVersion(),
-                javaURI.getRawNamespace(), javaURI.getRawEntity());
+        return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
+            javaURI.getRawVersion(),
+            javaURI.getRawNamespace(), javaURI.getRawEntity());
 
-        } catch (IllegalArgumentException | NullPointerException e) {
-            logger.error("Error in FastenURI for {}/{}/{}", product, clas, descriptor);
-            e.printStackTrace();
-        }
-        return null;
     }
 
     /**
