@@ -18,6 +18,9 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
+import com.github.t9t.jooq.json.JsonDSL;
+import com.github.t9t.jooq.json.JsonbDSL;
+import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
@@ -28,7 +31,10 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.jooq.JSONB;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -501,48 +507,27 @@ public class MetadataDao {
      */
     public long insertEdge(long sourceId, long targetId, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var edgeId = this.findEdge(sourceId, targetId);
-        if (edgeId != -1L) {
-            logger.debug("Duplicate edge: '" + sourceId + "; " + targetId
-                    + "' already exists with ID=" + edgeId);
-            this.updateEdge(edgeId, metadataJsonb);
-            return edgeId;
-        } else {
-            var resultRecord = context.insertInto(Edges.EDGES,
-                    Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.METADATA)
-                    .values(sourceId, targetId, metadataJsonb)
-                    .returning(Edges.EDGES.SOURCE_ID).fetchOne();
-            return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
-        }
+        var resultRecord = context.insertInto(Edges.EDGES,
+                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.METADATA)
+                .values(sourceId, targetId, metadataJsonb)
+                .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
+                .set(Edges.EDGES.METADATA, Edges.EDGES.as("excluded").METADATA)
+//                .set(Edges.EDGES.METADATA, concatEdgeMetadata(Edges.EDGES.as("excluded").METADATA, sourceId, targetId))
+                .returning(Edges.EDGES.SOURCE_ID).fetchOne();
+        return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
     }
 
-    /**
-     * Searches 'edges' table for certain edge record.
-     *
-     * @param sourceId Source ID of the edge
-     * @param targetId Target ID of the edge
-     * @return ID of the record found or -1 otherwise
-     */
-    public long findEdge(long sourceId, long targetId) {
-        var resultRecords = context.selectFrom(Edges.EDGES)
-                .where(Edges.EDGES.SOURCE_ID.eq(sourceId))
-                .and(Edges.EDGES.TARGET_ID.eq(targetId)).fetch();
-        if (resultRecords == null || resultRecords.isEmpty()) {
-            return -1L;
+    private Field<JSONB> concatEdgeMetadata(Field<JSONB> existingMetadata, long source, long target) {
+        //TODO: Fix concatenation (currently only replaces)
+        var record = context.selectFrom(Edges.EDGES)
+                .where(Edges.EDGES.SOURCE_ID.eq(source))
+                .and(Edges.EDGES.TARGET_ID.eq(target))
+                .fetchOne();
+        if (record == null) {
+            return existingMetadata;
         } else {
-            return resultRecords.getValues(Edges.EDGES.SOURCE_ID).get(0);
+            return JsonbDSL.concat(existingMetadata, record.field(Edges.EDGES.METADATA));
         }
-    }
-
-    /**
-     * Updates metadata of certain edge record.
-     *
-     * @param edgeId   ID of the edge record
-     * @param metadata New metadata for the callable
-     */
-    public void updateEdge(long edgeId, JSONB metadata) {
-        context.update(Edges.EDGES).set(Edges.EDGES.METADATA, metadata)
-                .where(Edges.EDGES.SOURCE_ID.eq(edgeId)).execute();
     }
 
     /**
