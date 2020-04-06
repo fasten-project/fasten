@@ -24,6 +24,7 @@ import org.jooq.Row3;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
@@ -41,7 +42,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Edges extends TableImpl<EdgesRecord> {
 
-    private static final long serialVersionUID = 1225996722;
+    private static final long serialVersionUID = -355473986;
 
     /**
      * The reference instance of <code>public.edges</code>
@@ -111,7 +112,12 @@ public class Edges extends TableImpl<EdgesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.EDGES_COMPOUND_INDEX);
+        return Arrays.<Index>asList(Indexes.UNIQUE_SOURCE_TARGET);
+    }
+
+    @Override
+    public List<UniqueKey<EdgesRecord>> getKeys() {
+        return Arrays.<UniqueKey<EdgesRecord>>asList(Keys.UNIQUE_SOURCE_TARGET);
     }
 
     @Override

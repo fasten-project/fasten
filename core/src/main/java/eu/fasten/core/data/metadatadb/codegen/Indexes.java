@@ -38,7 +38,7 @@ public class Indexes {
     public static final Index CALLABLES_COMPOUND_INDEX = Indexes0.CALLABLES_COMPOUND_INDEX;
     public static final Index CALLABLES_PKEY = Indexes0.CALLABLES_PKEY;
     public static final Index DEPENDENCIES_COMPOUND_INDEX = Indexes0.DEPENDENCIES_COMPOUND_INDEX;
-    public static final Index EDGES_COMPOUND_INDEX = Indexes0.EDGES_COMPOUND_INDEX;
+    public static final Index UNIQUE_SOURCE_TARGET = Indexes0.UNIQUE_SOURCE_TARGET;
     public static final Index MODULES_COMPOUND_INDEX = Indexes0.MODULES_COMPOUND_INDEX;
     public static final Index MODULES_PKEY = Indexes0.MODULES_PKEY;
     public static final Index PACKAGE_VERSIONS_COMPOUND_INDEX = Indexes0.PACKAGE_VERSIONS_COMPOUND_INDEX;
@@ -54,7 +54,7 @@ public class Indexes {
         public static Index CALLABLES_COMPOUND_INDEX = Internal.createIndex("callables_compound_index", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_RESOLVED_CALL }, false);
         public static Index CALLABLES_PKEY = Internal.createIndex("callables_pkey", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.ID }, true);
         public static Index DEPENDENCIES_COMPOUND_INDEX = Internal.createIndex("dependencies_compound_index", Dependencies.DEPENDENCIES, new OrderField[] { Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE }, false);
-        public static Index EDGES_COMPOUND_INDEX = Internal.createIndex("edges_compound_index", Edges.EDGES, new OrderField[] { Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID }, false);
+        public static Index UNIQUE_SOURCE_TARGET = Internal.createIndex("unique_source_target", Edges.EDGES, new OrderField[] { Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID }, true);
         public static Index MODULES_COMPOUND_INDEX = Internal.createIndex("modules_compound_index", Modules.MODULES, new OrderField[] { Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACES }, false);
         public static Index MODULES_PKEY = Internal.createIndex("modules_pkey", Modules.MODULES, new OrderField[] { Modules.MODULES.ID }, true);
         public static Index PACKAGE_VERSIONS_COMPOUND_INDEX = Internal.createIndex("package_versions_compound_index", PackageVersions.PACKAGE_VERSIONS, new OrderField[] { PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR }, false);

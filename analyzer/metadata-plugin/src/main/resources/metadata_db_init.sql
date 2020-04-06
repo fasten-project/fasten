@@ -57,4 +57,7 @@ CREATE INDEX package_versions_compound_index ON package_versions (package_id, ve
 CREATE INDEX dependencies_compound_index ON dependencies (package_version_id, dependency_id, version_range);
 CREATE INDEX modules_compound_index ON modules (package_version_id, namespaces);
 CREATE INDEX callables_compound_index ON callables (fasten_uri, is_resolved_call);
-CREATE INDEX edges_compound_index ON edges (source_id, target_id);
+-- CREATE INDEX edges_compound_index ON edges (source_id, target_id);
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_source_target ON edges USING btree (source_id, target_id);
+ALTER TABLE edges ADD CONSTRAINT unique_source_target UNIQUE USING INDEX unique_source_target;
