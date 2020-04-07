@@ -511,13 +511,13 @@ public class MetadataDao {
                 Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.METADATA)
                 .values(sourceId, targetId, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
-                .set(Edges.EDGES.METADATA, concatEdgeMetadata(Edges.EDGES.as("excluded").METADATA, sourceId, targetId))
-                .returning(Edges.EDGES.SOURCE_ID).fetchOne();
+                .set(Edges.EDGES.METADATA,
+                        concatEdgeMetadata(Edges.EDGES.as("excluded").METADATA, sourceId, targetId)
+                ).returning(Edges.EDGES.SOURCE_ID).fetchOne();
         return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
     }
 
-    public Field<JSONB> concatEdgeMetadata(Field<JSONB> newMetadata, long source, long target) {
-        //TODO: Fix concatenation (currently doesn't replace values of existing keys)
+    private Field<JSONB> concatEdgeMetadata(Field<JSONB> newMetadata, long source, long target) {
         var record = context.selectFrom(Edges.EDGES)
                 .where(Edges.EDGES.SOURCE_ID.eq(source))
                 .and(Edges.EDGES.TARGET_ID.eq(target))
@@ -525,7 +525,7 @@ public class MetadataDao {
         if (record == null) {
             return newMetadata;
         } else {
-            return JsonbDSL.concat(newMetadata, record.field(Edges.EDGES.METADATA));
+            return JsonbDSL.concat(record.field(Edges.EDGES.METADATA), newMetadata);
         }
     }
 
