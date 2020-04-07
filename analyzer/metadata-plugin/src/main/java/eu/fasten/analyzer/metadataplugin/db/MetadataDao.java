@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
-import com.github.t9t.jooq.json.JsonDSL;
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
@@ -31,8 +30,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.JSONB;
@@ -512,8 +509,8 @@ public class MetadataDao {
                 .values(sourceId, targetId, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
                 .set(Edges.EDGES.METADATA,
-                        concatEdgeMetadata(Edges.EDGES.as("excluded").METADATA, sourceId, targetId)
-                ).returning(Edges.EDGES.SOURCE_ID).fetchOne();
+                        concatEdgeMetadata(Edges.EDGES.as("excluded").METADATA, sourceId, targetId))
+                .returning(Edges.EDGES.SOURCE_ID).fetchOne();
         return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
     }
 

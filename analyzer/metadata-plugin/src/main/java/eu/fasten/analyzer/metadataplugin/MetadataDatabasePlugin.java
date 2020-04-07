@@ -49,7 +49,7 @@ public class MetadataDatabasePlugin extends Plugin {
     public static class MetadataDBExtension implements KafkaConsumer<String>, DBConnector {
 
         private String topic = "opal_callgraphs";
-        static private DSLContext dslContext;
+        private static DSLContext dslContext;
         private boolean processedRecord = false;
         private String pluginError = "";
         private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
@@ -57,7 +57,9 @@ public class MetadataDatabasePlugin extends Plugin {
         private final int transactionRestartLimit = 3;
 
         @Override
-        public void setDBConnection(DSLContext dslContext) { MetadataDBExtension.dslContext = dslContext; }
+        public void setDBConnection(DSLContext dslContext) {
+            MetadataDBExtension.dslContext = dslContext;
+        }
 
         @Override
         public List<String> consumerTopics() {
