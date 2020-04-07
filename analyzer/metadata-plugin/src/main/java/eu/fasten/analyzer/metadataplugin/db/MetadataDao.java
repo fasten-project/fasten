@@ -511,22 +511,21 @@ public class MetadataDao {
                 Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.METADATA)
                 .values(sourceId, targetId, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
-                .set(Edges.EDGES.METADATA, Edges.EDGES.as("excluded").METADATA)
-//                .set(Edges.EDGES.METADATA, concatEdgeMetadata(Edges.EDGES.as("excluded").METADATA, sourceId, targetId))
+                .set(Edges.EDGES.METADATA, concatEdgeMetadata(Edges.EDGES.as("excluded").METADATA, sourceId, targetId))
                 .returning(Edges.EDGES.SOURCE_ID).fetchOne();
         return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
     }
 
-    private Field<JSONB> concatEdgeMetadata(Field<JSONB> existingMetadata, long source, long target) {
-        //TODO: Fix concatenation (currently only replaces)
+    public Field<JSONB> concatEdgeMetadata(Field<JSONB> newMetadata, long source, long target) {
+        //TODO: Fix concatenation (currently doesn't replace values of existing keys)
         var record = context.selectFrom(Edges.EDGES)
                 .where(Edges.EDGES.SOURCE_ID.eq(source))
                 .and(Edges.EDGES.TARGET_ID.eq(target))
                 .fetchOne();
         if (record == null) {
-            return existingMetadata;
+            return newMetadata;
         } else {
-            return JsonbDSL.concat(existingMetadata, record.field(Edges.EDGES.METADATA));
+            return JsonbDSL.concat(newMetadata, record.field(Edges.EDGES.METADATA));
         }
     }
 
