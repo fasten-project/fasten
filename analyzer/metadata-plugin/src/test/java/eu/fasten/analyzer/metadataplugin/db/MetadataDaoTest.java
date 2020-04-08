@@ -827,12 +827,6 @@ public class MetadataDaoTest {
         long sourceId = 1;
         long targetId = 2;
         var metadata = new JSONObject("{\"foo\":\"bar\"}");
-        var selectStep = Mockito.mock(SelectWhereStep.class);
-        Mockito.when(context.selectFrom(Edges.EDGES)).thenReturn(selectStep);
-        var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Edges.EDGES.SOURCE_ID.eq(sourceId))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.and(Edges.EDGES.TARGET_ID.eq(targetId))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.fetchOne()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep3.class);
         Mockito.when(context.insertInto(Edges.EDGES, Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
                 Edges.EDGES.METADATA)).thenReturn(insertValues);
@@ -855,41 +849,6 @@ public class MetadataDaoTest {
     public void insertNullEdgeTest() {
         long sourceId = 1;
         long targetId = 2;
-        var selectStep = Mockito.mock(SelectWhereStep.class);
-        Mockito.when(context.selectFrom(Edges.EDGES)).thenReturn(selectStep);
-        var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Edges.EDGES.SOURCE_ID.eq(sourceId))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.and(Edges.EDGES.TARGET_ID.eq(targetId))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.fetchOne()).thenReturn(null);
-        var insertValues = Mockito.mock(InsertValuesStep3.class);
-        Mockito.when(context.insertInto(Edges.EDGES, Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
-                Edges.EDGES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(sourceId, targetId, null)).thenReturn(insertValues);
-        var insertConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
-        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET)).thenReturn(insertConflict);
-        var insertDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
-        Mockito.when(insertConflict.doUpdate()).thenReturn(insertDuplicate);
-        var insertDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
-        Mockito.when(insertDuplicate.set(Mockito.eq(Edges.EDGES.METADATA), Mockito.any(Field.class))).thenReturn(insertDuplicateMore);
-        var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertDuplicateMore.returning(Edges.EDGES.SOURCE_ID)).thenReturn(insertResult);
-        var record = new EdgesRecord(sourceId, targetId, null);
-        Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        long result = metadataDao.insertEdge(sourceId, targetId, null);
-        assertEquals(sourceId, result);
-    }
-
-    @Test
-    public void insertExistingEdgeTest() {
-        long sourceId = 1;
-        long targetId = 2;
-        var selectStep = Mockito.mock(SelectWhereStep.class);
-        Mockito.when(context.selectFrom(Edges.EDGES)).thenReturn(selectStep);
-        var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Edges.EDGES.SOURCE_ID.eq(sourceId))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.and(Edges.EDGES.TARGET_ID.eq(targetId))).thenReturn(selectCondStep);
-        var existingEdge = new EdgesRecord(1L, 2L, JSONB.valueOf("{\"foo\": \"bar\"}"));
-        Mockito.when(selectCondStep.fetchOne()).thenReturn(existingEdge);
         var insertValues = Mockito.mock(InsertValuesStep3.class);
         Mockito.when(context.insertInto(Edges.EDGES, Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
                 Edges.EDGES.METADATA)).thenReturn(insertValues);
@@ -915,12 +874,6 @@ public class MetadataDaoTest {
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Edges.EDGES)).thenReturn(selectStep);
-        var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Edges.EDGES.SOURCE_ID.eq(sourceIds.get(0)))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.and(Edges.EDGES.TARGET_ID.eq(targetIds.get(0)))).thenReturn(selectCondStep);
-        Mockito.when(selectStep.where(Edges.EDGES.SOURCE_ID.eq(sourceIds.get(1)))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.and(Edges.EDGES.TARGET_ID.eq(targetIds.get(1)))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.fetchOne()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep3.class);
         Mockito.when(context.insertInto(Edges.EDGES, Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
                 Edges.EDGES.METADATA)).thenReturn(insertValues);

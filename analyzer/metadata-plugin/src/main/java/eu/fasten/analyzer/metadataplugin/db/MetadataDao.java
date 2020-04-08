@@ -508,22 +508,10 @@ public class MetadataDao {
                 Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.METADATA)
                 .values(sourceId, targetId, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
-                .set(Edges.EDGES.METADATA,
-                        concatEdgeMetadata(Edges.EDGES.as("excluded").METADATA, sourceId, targetId))
+                .set(Edges.EDGES.METADATA, JsonbDSL.concat(Edges.EDGES.METADATA,
+                        Edges.EDGES.as("excluded").METADATA))
                 .returning(Edges.EDGES.SOURCE_ID).fetchOne();
         return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
-    }
-
-    private Field<JSONB> concatEdgeMetadata(Field<JSONB> newMetadata, long source, long target) {
-        var record = context.selectFrom(Edges.EDGES)
-                .where(Edges.EDGES.SOURCE_ID.eq(source))
-                .and(Edges.EDGES.TARGET_ID.eq(target))
-                .fetchOne();
-        if (record == null) {
-            return newMetadata;
-        } else {
-            return JsonbDSL.concat(record.field(Edges.EDGES.METADATA), newMetadata);
-        }
     }
 
     /**
