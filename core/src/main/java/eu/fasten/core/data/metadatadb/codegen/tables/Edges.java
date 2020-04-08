@@ -42,7 +42,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Edges extends TableImpl<EdgesRecord> {
 
-    private static final long serialVersionUID = -355473986;
+    private static final long serialVersionUID = 906422015;
 
     /**
      * The reference instance of <code>public.edges</code>
@@ -70,7 +70,7 @@ public class Edges extends TableImpl<EdgesRecord> {
     /**
      * The column <code>public.edges.metadata</code>.
      */
-    public final TableField<EdgesRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB, this, "");
+    public final TableField<EdgesRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB.nullable(false), this, "");
 
     /**
      * Create a <code>public.edges</code> table reference

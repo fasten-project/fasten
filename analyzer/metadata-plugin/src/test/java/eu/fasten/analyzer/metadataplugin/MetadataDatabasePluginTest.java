@@ -20,13 +20,16 @@ package eu.fasten.analyzer.metadataplugin;
 
 import java.sql.Timestamp;
 import java.util.Collections;
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
+import org.jooq.JSONB;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -114,19 +117,15 @@ public class MetadataDatabasePluginTest {
                 ".lang%2FVoid", true, null, null)).thenReturn(64L);
         Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.toString()%2Fjava" +
                 ".lang%2FString", true, null, null)).thenReturn(65L);
-        Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
-
         Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
                 ".lang%2FObject", false, null, null)).thenReturn(100L);
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
-        Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
-
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
-                json.getString("version"), new Timestamp(json.getLong("timestamp")), null);
+                json.getString("version"), new Timestamp(json.getLong("timestamp") * 1000), null);
     }
 
     @Test

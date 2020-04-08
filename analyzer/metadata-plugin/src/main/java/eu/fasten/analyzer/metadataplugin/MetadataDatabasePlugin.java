@@ -20,6 +20,7 @@ package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
 import java.sql.Timestamp;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
+import org.jooq.JSONB;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.json.JSONException;
@@ -179,14 +181,15 @@ public class MetadataDatabasePlugin extends Plugin {
             }
 
             final var graph = callGraph.getGraph();
-
+            var edges = new ArrayList<EdgesRecord>(graph.getInternalCalls().size()
+                    + graph.getExternalCalls().size());
             final var internalCalls = graph.getInternalCalls();
             for (var call : internalCalls) {
                 var sourceLocalId = call.get(0);
                 var targetLocalId = call.get(1);
                 var sourceGlobalId = globalIdsMap.get(sourceLocalId);
                 var targetGlobalId = globalIdsMap.get(targetLocalId);
-                metadataDao.insertEdge(sourceGlobalId, targetGlobalId, new JSONObject("{}"));
+                edges.add(new EdgesRecord(sourceGlobalId, targetGlobalId, JSONB.valueOf("{}")));
             }
 
             final var externalCalls = graph.getExternalCalls();
@@ -198,7 +201,20 @@ public class MetadataDatabasePlugin extends Plugin {
                 var targetId = metadataDao.insertCallable(null, uri, false, null, null);
                 var edgeMetadata = new JSONObject(callEntry.getValue());
                 metadataDao.insertEdge(sourceGlobalId, targetId, edgeMetadata);
+                edges.add(new EdgesRecord(sourceGlobalId, targetId,
+                        JSONB.valueOf(edgeMetadata.toString())));
             }
+
+            final int batchSize = 4096;
+            final var edgesIterator = edges.iterator();
+            while (edgesIterator.hasNext()) {
+                var edgesBatch = new ArrayList<EdgesRecord>(batchSize);
+                while (edgesIterator.hasNext() && edgesBatch.size() < batchSize) {
+                    edgesBatch.add(edgesIterator.next());
+                }
+                metadataDao.batchInsertEdges(edgesBatch);
+            }
+
             return packageId;
         }
 
