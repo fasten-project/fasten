@@ -186,7 +186,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 var targetLocalId = call.get(1);
                 var sourceGlobalId = globalIdsMap.get(sourceLocalId);
                 var targetGlobalId = globalIdsMap.get(targetLocalId);
-                metadataDao.insertEdge(sourceGlobalId, targetGlobalId, null);
+                metadataDao.insertEdge(sourceGlobalId, targetGlobalId, new JSONObject("{}"));
             }
 
             final var externalCalls = graph.getExternalCalls();

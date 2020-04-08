@@ -852,7 +852,7 @@ public class MetadataDaoTest {
         var insertValues = Mockito.mock(InsertValuesStep3.class);
         Mockito.when(context.insertInto(Edges.EDGES, Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
                 Edges.EDGES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(sourceId, targetId, null)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(sourceId, targetId, JSONB.valueOf("{}"))).thenReturn(insertValues);
         var insertConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
         Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET)).thenReturn(insertConflict);
         var insertDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
@@ -861,7 +861,7 @@ public class MetadataDaoTest {
         Mockito.when(insertDuplicate.set(Mockito.eq(Edges.EDGES.METADATA), Mockito.any(Field.class))).thenReturn(insertDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertDuplicateMore.returning(Edges.EDGES.SOURCE_ID)).thenReturn(insertResult);
-        var record = new EdgesRecord(sourceId, targetId, null);
+        var record = new EdgesRecord(sourceId, targetId, JSONB.valueOf("{}"));
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         long result = metadataDao.insertEdge(sourceId, targetId, null);
         assertEquals(sourceId, result);
@@ -982,4 +982,27 @@ public class MetadataDaoTest {
         Mockito.verify(updateCond).execute();
     }
 
+    @Test
+    public void batchInsertEdgesTest() {
+        var r1 = new EdgesRecord(1L, 2L, JSONB.valueOf("{}"));
+        var r2 = new EdgesRecord(3L, 4L, JSONB.valueOf("{\"foo\": \"bar\"}"));
+        var insertValues = Mockito.mock(InsertValuesStep3.class);
+        Mockito.when(context.insertInto(Edges.EDGES, Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
+                Edges.EDGES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values((Long) null, (Long) null, (JSONB) null)).thenReturn(insertValues);
+        var insertConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
+        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET)).thenReturn(insertConflict);
+        var insertDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertConflict.doUpdate()).thenReturn(insertDuplicate);
+        var insertDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertDuplicate.set(Mockito.eq(Edges.EDGES.METADATA), Mockito.any(Field.class))).thenReturn(insertDuplicateMore);
+        var batchBind = Mockito.mock(BatchBindStep.class);
+        Mockito.when(context.batch(insertDuplicateMore)).thenReturn(batchBind);
+        Mockito.when(batchBind.bind(r1.getSourceId(), r1.getTargetId(), r1.getMetadata())).thenReturn(batchBind);
+        Mockito.when(batchBind.bind(r2.getSourceId(), r2.getTargetId(), r2.getMetadata())).thenReturn(batchBind);
+        metadataDao.batchInsertEdges(List.of(r1, r2));
+        Mockito.verify(batchBind).bind(r1.getSourceId(), r1.getTargetId(), r1.getMetadata());
+        Mockito.verify(batchBind).bind(r2.getSourceId(), r2.getTargetId(), r2.getMetadata());
+        Mockito.verify(batchBind).execute();
+    }
 }

@@ -26,12 +26,14 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jooq.Query;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -502,7 +504,8 @@ public class MetadataDao {
      * @return ID of the source callable (sourceId)
      */
     public long insertEdge(long sourceId, long targetId, JSONObject metadata) {
-        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString())
+                : JSONB.valueOf("{}");
         var resultRecord = context.insertInto(Edges.EDGES,
                 Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.METADATA)
                 .values(sourceId, targetId, metadataJsonb)
@@ -534,5 +537,24 @@ public class MetadataDao {
             recordIds.add(result);
         }
         return recordIds;
+    }
+
+    /**
+     * Executes batch insert for 'edges' table.
+     *
+     * @param edges List of edges records to insert
+     */
+    public void batchInsertEdges(List<EdgesRecord> edges) {
+        Query batchQuery = context.insertInto(Edges.EDGES,
+                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.METADATA)
+                .values((Long) null, (Long) null, (JSONB) null)
+                .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
+                .set(Edges.EDGES.METADATA, JsonbDSL.concat(Edges.EDGES.METADATA,
+                        Edges.EDGES.as("excluded").METADATA));
+        var batchBind = context.batch(batchQuery);
+        for (var edge : edges) {
+            batchBind = batchBind.bind(edge.getSourceId(), edge.getTargetId(), edge.getMetadata());
+        }
+        batchBind.execute();
     }
 }
