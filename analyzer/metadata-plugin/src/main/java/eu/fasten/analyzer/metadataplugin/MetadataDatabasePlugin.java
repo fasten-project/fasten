@@ -172,7 +172,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 moduleMetadata.put("superClasses",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
                 long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
-                        null, null, moduleMetadata);
+                        null, moduleMetadata);
                 for (var methodEntry : type.getMethods().entrySet()) {
                     var uri = methodEntry.getValue().toString();
                     long callableId = metadataDao.insertCallable(moduleId, uri, true, null, null);

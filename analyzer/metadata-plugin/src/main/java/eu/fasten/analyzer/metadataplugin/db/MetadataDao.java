@@ -23,6 +23,7 @@ import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
@@ -313,30 +314,29 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts a record in  'modules' table in the database.
+     * Inserts a record in 'modules' table in the database.
      *
      * @param packageVersionId ID of the package version where the module belongs
      *                         (references 'package_versions.id')
-     * @param namespaces       Namespaces of the module
-     * @param sha256           SHA256 of the module
+     * @param namespace        Namespace of the module
      * @param createdAt        Timestamp when the module was created
      * @param metadata         Metadata of the module
      * @return ID of the new record
      */
-    public long insertModule(long packageVersionId, String namespaces, byte[] sha256,
+    public long insertModule(long packageVersionId, String namespace,
                              Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var moduleId = this.findModule(packageVersionId, namespaces);
+        var moduleId = this.findModule(packageVersionId, namespace);
         if (moduleId != -1L) {
-            logger.debug("Duplicate module: '" + packageVersionId + "; " + namespaces
+            logger.debug("Duplicate module: '" + packageVersionId + "; " + namespace
                     + "' already exists with ID=" + moduleId);
-            this.updateModule(moduleId, sha256, createdAt, metadataJsonb);
+            this.updateModule(moduleId, createdAt, metadataJsonb);
             return moduleId;
         } else {
             var resultRecord = context.insertInto(Modules.MODULES,
-                    Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACES,
-                    Modules.MODULES.SHA256, Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)
-                    .values(packageVersionId, namespaces, sha256, createdAt, metadataJsonb)
+                    Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE,
+                    Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)
+                    .values(packageVersionId, namespace, createdAt, metadataJsonb)
                     .returning(Modules.MODULES.ID).fetchOne();
             return resultRecord.getValue(Modules.MODULES.ID);
         }
@@ -346,13 +346,13 @@ public class MetadataDao {
      * Searches 'modules' table for certain module record.
      *
      * @param packageVersionId ID of the package version
-     * @param namespaces       Namespaces of the module
+     * @param namespace        Namespace of the module
      * @return ID of the record found or -1 otherwise
      */
-    public long findModule(long packageVersionId, String namespaces) {
+    public long findModule(long packageVersionId, String namespace) {
         var resultRecords = context.selectFrom(Modules.MODULES)
                 .where(Modules.MODULES.PACKAGE_VERSION_ID.eq(packageVersionId))
-                .and(Modules.MODULES.NAMESPACES.eq(namespaces)).fetch();
+                .and(Modules.MODULES.NAMESPACE.eq(namespace)).fetch();
         if (resultRecords == null || resultRecords.isEmpty()) {
             return -1L;
         } else {
@@ -364,13 +364,11 @@ public class MetadataDao {
      * Updates SHA256, timestamp and metadata of certain module record.
      *
      * @param moduleId  ID of the module record
-     * @param sha256    New SHA256 for the module
      * @param timestamp New timestamp for the module
      * @param metadata  New metadata for the module
      */
-    public void updateModule(long moduleId, byte[] sha256, Timestamp timestamp, JSONB metadata) {
+    public void updateModule(long moduleId, Timestamp timestamp, JSONB metadata) {
         context.update(Modules.MODULES)
-                .set(Modules.MODULES.SHA256, sha256)
                 .set(Modules.MODULES.CREATED_AT, timestamp)
                 .set(Modules.MODULES.METADATA, metadata)
                 .where(Modules.MODULES.ID.eq(moduleId)).execute();
@@ -381,23 +379,112 @@ public class MetadataDao {
      *
      * @param packageVersionId ID of the common package version
      * @param namespacesList   List of namespaces
-     * @param sha256s          List of SHA256s
      * @param createdAt        List of timestamps
      * @param metadata         List of metadata objects
      * @return List of IDs of new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public List<Long> insertModules(long packageVersionId, List<String> namespacesList,
-                                    List<byte[]> sha256s, List<Timestamp> createdAt,
-                                    List<JSONObject> metadata) throws IllegalArgumentException {
-        if (namespacesList.size() != sha256s.size() || sha256s.size() != createdAt.size()
-                || createdAt.size() != metadata.size()) {
+                                    List<Timestamp> createdAt, List<JSONObject> metadata)
+            throws IllegalArgumentException {
+        if (namespacesList.size() != createdAt.size() || createdAt.size() != metadata.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = namespacesList.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertModule(packageVersionId, namespacesList.get(i), sha256s.get(i),
+            long result = insertModule(packageVersionId, namespacesList.get(i),
+                    createdAt.get(i), metadata.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
+    }
+
+    /**
+     * Insert a new record into 'files' table in the database.
+     *
+     * @param moduleId  Module ID of the file
+     * @param path      Path of the file
+     * @param checksum  Checksum of the file
+     * @param createdAt Timestamp of the file
+     * @param metadata  Metadata of the file
+     * @return ID of the new record
+     */
+    public long insertFile(long moduleId, String path, byte[] checksum,
+                           Timestamp createdAt, JSONObject metadata) {
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
+        var fileId = this.findFile(moduleId, path);
+        if (fileId != -1L) {
+            logger.debug("Duplicate file: '" + moduleId + "; " + path
+                    + "' already exists with ID=" + fileId);
+            this.updateFile(fileId, checksum, createdAt, metadataJsonb);
+            return fileId;
+        } else {
+            var resultRecord = context.insertInto(Files.FILES,
+                    Files.FILES.MODULE_ID, Files.FILES.PATH, Files.FILES.CHECKSUM,
+                    Files.FILES.CREATED_AT, Files.FILES.METADATA)
+                    .values(moduleId, path, checksum, createdAt, metadataJsonb)
+                    .returning(Files.FILES.ID).fetchOne();
+            return resultRecord.getValue(Files.FILES.ID);
+        }
+    }
+
+    /**
+     * Searches 'files' table for a file with certain module ID and path.
+     *
+     * @param moduleId Module ID of the file
+     * @param path     Path of the file
+     * @return ID of the record found or -1 otherwise
+     */
+    public long findFile(long moduleId, String path) {
+        var resultRecords = context.selectFrom(Files.FILES)
+                .where(Files.FILES.MODULE_ID.eq(moduleId))
+                .and(Files.FILES.PATH.eq(path)).fetch();
+        if (resultRecords == null || resultRecords.isEmpty()) {
+            return -1L;
+        } else {
+            return resultRecords.getValues(Files.FILES.ID).get(0);
+        }
+    }
+
+    /**
+     * Updates checksum, timestamp and metadata of certain file record.
+     *
+     * @param fileId    ID of the file record
+     * @param checksum  New checksum
+     * @param timestamp New timestamp
+     * @param metadata  New metadata
+     */
+    public void updateFile(long fileId, byte[] checksum, Timestamp timestamp, JSONB metadata) {
+        context.update(Files.FILES)
+                .set(Files.FILES.CHECKSUM, checksum)
+                .set(Files.FILES.CREATED_AT, timestamp)
+                .set(Files.FILES.METADATA, metadata)
+                .where(Files.FILES.ID.eq(fileId)).execute();
+    }
+
+    /**
+     * Insert multiple records in the 'files' table in the database.
+     *
+     * @param moduleId      Common module ID
+     * @param pathsList     List of paths of files
+     * @param checksumsList List of checksums of files
+     * @param createdAt     List of timestamps of files
+     * @param metadata      List of metadata of files
+     * @return List of IDs of new records
+     * @throws IllegalArgumentException if any of the lists have different size
+     */
+    public List<Long> insertFiles(long moduleId, List<String> pathsList, List<byte[]> checksumsList,
+                                  List<Timestamp> createdAt, List<JSONObject> metadata)
+            throws IllegalArgumentException {
+        if (pathsList.size() != checksumsList.size() || checksumsList.size() != createdAt.size()
+                || createdAt.size() != metadata.size()) {
+            throw new IllegalArgumentException("All lists should have equal size");
+        }
+        int length = pathsList.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertFile(moduleId, pathsList.get(i), checksumsList.get(i),
                     createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }
@@ -409,26 +496,26 @@ public class MetadataDao {
      *
      * @param moduleId       ID of the module where the callable belongs (references 'modules.id')
      * @param fastenUri      URI of the callable in FASTEN
-     * @param isResolvedCall 'true' if call is resolved, 'false' otherwise
+     * @param isInternalCall 'true' if call is internal, 'false' if external
      * @param createdAt      Timestamp when the callable was created
      * @param metadata       Metadata of the callable
      * @return ID of the new record
      */
-    public long insertCallable(Long moduleId, String fastenUri, boolean isResolvedCall,
+    public long insertCallable(Long moduleId, String fastenUri, boolean isInternalCall,
                                Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var callableId = this.findCallable(fastenUri, isResolvedCall);
+        var callableId = this.findCallable(fastenUri, isInternalCall);
         if (callableId != -1L) {
-            logger.debug("Duplicate callable: '" + fastenUri + "; " + isResolvedCall
+            logger.debug("Duplicate callable: '" + fastenUri + "; " + isInternalCall
                     + "' already exists with ID=" + callableId);
             this.updateCallable(callableId, createdAt, metadataJsonb);
             return callableId;
         } else {
             var resultRecord = context.insertInto(Callables.CALLABLES,
                     Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
-                    Callables.CALLABLES.IS_RESOLVED_CALL, Callables.CALLABLES.CREATED_AT,
+                    Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
                     Callables.CALLABLES.METADATA)
-                    .values(moduleId, fastenUri, isResolvedCall, createdAt, metadataJsonb)
+                    .values(moduleId, fastenUri, isInternalCall, createdAt, metadataJsonb)
                     .returning(Callables.CALLABLES.ID).fetchOne();
             return resultRecord.getValue(Callables.CALLABLES.ID);
         }
@@ -438,13 +525,13 @@ public class MetadataDao {
      * Searches 'callables' table for certain callable record.
      *
      * @param fastenUri      FASTEN URI of the callable
-     * @param isResolvedCall is callable a resolved call or not
+     * @param isInternalCall is callable a internal or not
      * @return ID of the record found or -1 otherwise
      */
-    public long findCallable(String fastenUri, boolean isResolvedCall) {
+    public long findCallable(String fastenUri, boolean isInternalCall) {
         var resultRecords = context.selectFrom(Callables.CALLABLES)
                 .where(Callables.CALLABLES.FASTEN_URI.eq(fastenUri))
-                .and(Callables.CALLABLES.IS_RESOLVED_CALL.eq(isResolvedCall)).fetch();
+                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(isInternalCall)).fetch();
         if (resultRecords == null || resultRecords.isEmpty()) {
             return -1L;
         } else {
@@ -471,17 +558,17 @@ public class MetadataDao {
      *
      * @param moduleId         ID of the common module
      * @param fastenUris       List of FASTEN URIs
-     * @param areResolvedCalls List of IsResolvedCall booleans
+     * @param areInternalCalls List of booleans that show if callable is internal
      * @param createdAt        List of timestamps
      * @param metadata         List of metadata objects
      * @return List of IDs of the new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public List<Long> insertCallables(long moduleId, List<String> fastenUris,
-                                      List<Boolean> areResolvedCalls, List<Timestamp> createdAt,
+                                      List<Boolean> areInternalCalls, List<Timestamp> createdAt,
                                       List<JSONObject> metadata) throws IllegalArgumentException {
-        if (fastenUris.size() != areResolvedCalls.size()
-                || areResolvedCalls.size() != metadata.size()
+        if (fastenUris.size() != areInternalCalls.size()
+                || areInternalCalls.size() != metadata.size()
                 || metadata.size() != createdAt.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
@@ -489,7 +576,7 @@ public class MetadataDao {
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
             long result = insertCallable(moduleId, fastenUris.get(i),
-                    areResolvedCalls.get(i), createdAt.get(i), metadata.get(i));
+                    areInternalCalls.get(i), createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;

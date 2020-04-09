@@ -7,6 +7,7 @@ package eu.fasten.core.data.metadatadb.codegen;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
@@ -39,6 +40,8 @@ public class Indexes {
     public static final Index CALLABLES_PKEY = Indexes0.CALLABLES_PKEY;
     public static final Index DEPENDENCIES_COMPOUND_INDEX = Indexes0.DEPENDENCIES_COMPOUND_INDEX;
     public static final Index UNIQUE_SOURCE_TARGET = Indexes0.UNIQUE_SOURCE_TARGET;
+    public static final Index FILES_COMPOUND_INDEX = Indexes0.FILES_COMPOUND_INDEX;
+    public static final Index FILES_PKEY = Indexes0.FILES_PKEY;
     public static final Index MODULES_COMPOUND_INDEX = Indexes0.MODULES_COMPOUND_INDEX;
     public static final Index MODULES_PKEY = Indexes0.MODULES_PKEY;
     public static final Index PACKAGE_VERSIONS_COMPOUND_INDEX = Indexes0.PACKAGE_VERSIONS_COMPOUND_INDEX;
@@ -51,11 +54,13 @@ public class Indexes {
     // -------------------------------------------------------------------------
 
     private static class Indexes0 {
-        public static Index CALLABLES_COMPOUND_INDEX = Internal.createIndex("callables_compound_index", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_RESOLVED_CALL }, false);
+        public static Index CALLABLES_COMPOUND_INDEX = Internal.createIndex("callables_compound_index", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_INTERNAL_CALL }, false);
         public static Index CALLABLES_PKEY = Internal.createIndex("callables_pkey", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.ID }, true);
         public static Index DEPENDENCIES_COMPOUND_INDEX = Internal.createIndex("dependencies_compound_index", Dependencies.DEPENDENCIES, new OrderField[] { Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE }, false);
         public static Index UNIQUE_SOURCE_TARGET = Internal.createIndex("unique_source_target", Edges.EDGES, new OrderField[] { Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID }, true);
-        public static Index MODULES_COMPOUND_INDEX = Internal.createIndex("modules_compound_index", Modules.MODULES, new OrderField[] { Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACES }, false);
+        public static Index FILES_COMPOUND_INDEX = Internal.createIndex("files_compound_index", Files.FILES, new OrderField[] { Files.FILES.MODULE_ID, Files.FILES.PATH }, false);
+        public static Index FILES_PKEY = Internal.createIndex("files_pkey", Files.FILES, new OrderField[] { Files.FILES.ID }, true);
+        public static Index MODULES_COMPOUND_INDEX = Internal.createIndex("modules_compound_index", Modules.MODULES, new OrderField[] { Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE }, false);
         public static Index MODULES_PKEY = Internal.createIndex("modules_pkey", Modules.MODULES, new OrderField[] { Modules.MODULES.ID }, true);
         public static Index PACKAGE_VERSIONS_COMPOUND_INDEX = Internal.createIndex("package_versions_compound_index", PackageVersions.PACKAGE_VERSIONS, new OrderField[] { PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR }, false);
         public static Index PACKAGE_VERSIONS_PKEY = Internal.createIndex("package_versions_pkey", PackageVersions.PACKAGE_VERSIONS, new OrderField[] { PackageVersions.PACKAGE_VERSIONS.ID }, true);

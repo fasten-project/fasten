@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Callables extends TableImpl<CallablesRecord> {
 
-    private static final long serialVersionUID = 813051519;
+    private static final long serialVersionUID = 1945056612;
 
     /**
      * The reference instance of <code>public.callables</code>
@@ -75,9 +75,9 @@ public class Callables extends TableImpl<CallablesRecord> {
     public final TableField<CallablesRecord, String> FASTEN_URI = createField(DSL.name("fasten_uri"), org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
 
     /**
-     * The column <code>public.callables.is_resolved_call</code>.
+     * The column <code>public.callables.is_internal_call</code>.
      */
-    public final TableField<CallablesRecord, Boolean> IS_RESOLVED_CALL = createField(DSL.name("is_resolved_call"), org.jooq.impl.SQLDataType.BOOLEAN.nullable(false), this, "");
+    public final TableField<CallablesRecord, Boolean> IS_INTERNAL_CALL = createField(DSL.name("is_internal_call"), org.jooq.impl.SQLDataType.BOOLEAN.nullable(false), this, "");
 
     /**
      * The column <code>public.callables.created_at</code>.

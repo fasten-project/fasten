@@ -22,7 +22,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row6;
+import org.jooq.Row5;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Modules extends TableImpl<ModulesRecord> {
 
-    private static final long serialVersionUID = 2138751062;
+    private static final long serialVersionUID = -406922573;
 
     /**
      * The reference instance of <code>public.modules</code>
@@ -70,14 +70,9 @@ public class Modules extends TableImpl<ModulesRecord> {
     public final TableField<ModulesRecord, Long> PACKAGE_VERSION_ID = createField(DSL.name("package_version_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
-     * The column <code>public.modules.namespaces</code>.
+     * The column <code>public.modules.namespace</code>.
      */
-    public final TableField<ModulesRecord, String> NAMESPACES = createField(DSL.name("namespaces"), org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
-
-    /**
-     * The column <code>public.modules.sha256</code>.
-     */
-    public final TableField<ModulesRecord, byte[]> SHA256 = createField(DSL.name("sha256"), org.jooq.impl.SQLDataType.BLOB, this, "");
+    public final TableField<ModulesRecord, String> NAMESPACE = createField(DSL.name("namespace"), org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.modules.created_at</code>.
@@ -183,11 +178,11 @@ public class Modules extends TableImpl<ModulesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row6 type methods
+    // Row5 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row6<Long, Long, String, byte[], Timestamp, JSONB> fieldsRow() {
-        return (Row6) super.fieldsRow();
+    public Row5<Long, Long, String, Timestamp, JSONB> fieldsRow() {
+        return (Row5) super.fieldsRow();
     }
 }

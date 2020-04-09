@@ -7,6 +7,7 @@ package eu.fasten.core.data.metadatadb.codegen;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
@@ -41,6 +42,11 @@ public class Tables {
      * The table <code>public.edges</code>.
      */
     public static final Edges EDGES = Edges.EDGES;
+
+    /**
+     * The table <code>public.files</code>.
+     */
+    public static final Files FILES = Files.FILES;
 
     /**
      * The table <code>public.modules</code>.

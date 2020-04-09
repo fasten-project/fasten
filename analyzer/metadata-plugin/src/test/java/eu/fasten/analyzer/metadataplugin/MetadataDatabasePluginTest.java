@@ -20,16 +20,13 @@ package eu.fasten.analyzer.metadataplugin;
 
 import java.sql.Timestamp;
 import java.util.Collections;
-import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
-import org.jooq.JSONB;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -110,7 +107,7 @@ public class MetadataDatabasePluginTest {
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
-        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null, null,
+        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
                 moduleMetadata)).thenReturn(moduleId);
 
         Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
@@ -119,7 +116,6 @@ public class MetadataDatabasePluginTest {
                 ".lang%2FString", true, null, null)).thenReturn(65L);
         Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
                 ".lang%2FObject", false, null, null)).thenReturn(100L);
-        var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
@@ -197,7 +193,7 @@ public class MetadataDatabasePluginTest {
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
-        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null, null,
+        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
                 moduleMetadata)).thenReturn(moduleId);
 
         Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
@@ -289,7 +285,7 @@ public class MetadataDatabasePluginTest {
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
-        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null, null,
+        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
                 moduleMetadata)).thenReturn(moduleId);
 
         Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +

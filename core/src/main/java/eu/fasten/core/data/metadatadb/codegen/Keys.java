@@ -7,12 +7,14 @@ package eu.fasten.core.data.metadatadb.codegen;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.DependenciesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.FilesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.ModulesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
@@ -44,6 +46,7 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final Identity<CallablesRecord, Long> IDENTITY_CALLABLES = Identities0.IDENTITY_CALLABLES;
+    public static final Identity<FilesRecord, Long> IDENTITY_FILES = Identities0.IDENTITY_FILES;
     public static final Identity<ModulesRecord, Long> IDENTITY_MODULES = Identities0.IDENTITY_MODULES;
     public static final Identity<PackageVersionsRecord, Long> IDENTITY_PACKAGE_VERSIONS = Identities0.IDENTITY_PACKAGE_VERSIONS;
     public static final Identity<PackagesRecord, Long> IDENTITY_PACKAGES = Identities0.IDENTITY_PACKAGES;
@@ -54,6 +57,7 @@ public class Keys {
 
     public static final UniqueKey<CallablesRecord> CALLABLES_PKEY = UniqueKeys0.CALLABLES_PKEY;
     public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = UniqueKeys0.UNIQUE_SOURCE_TARGET;
+    public static final UniqueKey<FilesRecord> FILES_PKEY = UniqueKeys0.FILES_PKEY;
     public static final UniqueKey<ModulesRecord> MODULES_PKEY = UniqueKeys0.MODULES_PKEY;
     public static final UniqueKey<PackageVersionsRecord> PACKAGE_VERSIONS_PKEY = UniqueKeys0.PACKAGE_VERSIONS_PKEY;
     public static final UniqueKey<PackagesRecord> PACKAGES_PKEY = UniqueKeys0.PACKAGES_PKEY;
@@ -67,6 +71,7 @@ public class Keys {
     public static final ForeignKey<DependenciesRecord, PackagesRecord> DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY = ForeignKeys0.DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY;
     public static final ForeignKey<EdgesRecord, CallablesRecord> EDGES__EDGES_SOURCE_ID_FKEY = ForeignKeys0.EDGES__EDGES_SOURCE_ID_FKEY;
     public static final ForeignKey<EdgesRecord, CallablesRecord> EDGES__EDGES_TARGET_ID_FKEY = ForeignKeys0.EDGES__EDGES_TARGET_ID_FKEY;
+    public static final ForeignKey<FilesRecord, ModulesRecord> FILES__FILES_MODULE_ID_FKEY = ForeignKeys0.FILES__FILES_MODULE_ID_FKEY;
     public static final ForeignKey<ModulesRecord, PackageVersionsRecord> MODULES__MODULES_PACKAGE_VERSION_ID_FKEY = ForeignKeys0.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY;
     public static final ForeignKey<PackageVersionsRecord, PackagesRecord> PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY = ForeignKeys0.PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY;
 
@@ -76,6 +81,7 @@ public class Keys {
 
     private static class Identities0 {
         public static Identity<CallablesRecord, Long> IDENTITY_CALLABLES = Internal.createIdentity(Callables.CALLABLES, Callables.CALLABLES.ID);
+        public static Identity<FilesRecord, Long> IDENTITY_FILES = Internal.createIdentity(Files.FILES, Files.FILES.ID);
         public static Identity<ModulesRecord, Long> IDENTITY_MODULES = Internal.createIdentity(Modules.MODULES, Modules.MODULES.ID);
         public static Identity<PackageVersionsRecord, Long> IDENTITY_PACKAGE_VERSIONS = Internal.createIdentity(PackageVersions.PACKAGE_VERSIONS, PackageVersions.PACKAGE_VERSIONS.ID);
         public static Identity<PackagesRecord, Long> IDENTITY_PACKAGES = Internal.createIdentity(Packages.PACKAGES, Packages.PACKAGES.ID);
@@ -84,6 +90,7 @@ public class Keys {
     private static class UniqueKeys0 {
         public static final UniqueKey<CallablesRecord> CALLABLES_PKEY = Internal.createUniqueKey(Callables.CALLABLES, "callables_pkey", Callables.CALLABLES.ID);
         public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = Internal.createUniqueKey(Edges.EDGES, "unique_source_target", Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID);
+        public static final UniqueKey<FilesRecord> FILES_PKEY = Internal.createUniqueKey(Files.FILES, "files_pkey", Files.FILES.ID);
         public static final UniqueKey<ModulesRecord> MODULES_PKEY = Internal.createUniqueKey(Modules.MODULES, "modules_pkey", Modules.MODULES.ID);
         public static final UniqueKey<PackageVersionsRecord> PACKAGE_VERSIONS_PKEY = Internal.createUniqueKey(PackageVersions.PACKAGE_VERSIONS, "package_versions_pkey", PackageVersions.PACKAGE_VERSIONS.ID);
         public static final UniqueKey<PackagesRecord> PACKAGES_PKEY = Internal.createUniqueKey(Packages.PACKAGES, "packages_pkey", Packages.PACKAGES.ID);
@@ -95,6 +102,7 @@ public class Keys {
         public static final ForeignKey<DependenciesRecord, PackagesRecord> DEPENDENCIES__DEPENDENCIES_DEPENDENCY_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGES_PKEY, Dependencies.DEPENDENCIES, "dependencies__dependencies_dependency_id_fkey", Dependencies.DEPENDENCIES.DEPENDENCY_ID);
         public static final ForeignKey<EdgesRecord, CallablesRecord> EDGES__EDGES_SOURCE_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.CALLABLES_PKEY, Edges.EDGES, "edges__edges_source_id_fkey", Edges.EDGES.SOURCE_ID);
         public static final ForeignKey<EdgesRecord, CallablesRecord> EDGES__EDGES_TARGET_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.CALLABLES_PKEY, Edges.EDGES, "edges__edges_target_id_fkey", Edges.EDGES.TARGET_ID);
+        public static final ForeignKey<FilesRecord, ModulesRecord> FILES__FILES_MODULE_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.MODULES_PKEY, Files.FILES, "files__files_module_id_fkey", Files.FILES.MODULE_ID);
         public static final ForeignKey<ModulesRecord, PackageVersionsRecord> MODULES__MODULES_PACKAGE_VERSION_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGE_VERSIONS_PKEY, Modules.MODULES, "modules__modules_package_version_id_fkey", Modules.MODULES.PACKAGE_VERSION_ID);
         public static final ForeignKey<PackageVersionsRecord, PackagesRecord> PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGES_PKEY, PackageVersions.PACKAGE_VERSIONS, "package_versions__package_versions_package_id_fkey", PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID);
     }
