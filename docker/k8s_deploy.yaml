@@ -1,23 +1,53 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fasten-server-dev
+  name: fasten-server
   namespace: fasten
 spec:
   selector:
     matchLabels:
-      app: fasten-server-dev
-  replicas: 3
+      app: fasten-server
+  replicas: 10
   template:
     metadata:
       labels:
-        app: fasten-server-dev
+        app: fasten-server
     spec:
       containers:
-        - name: fasten-server-dev
-          image: monster93/fasten-server-dev:v0.1b
-          args: ["-k", "kafka-0.kafka-headless.codefeedr:9092"]
+        - name: fasten-server
+          image: monster93/fasten-server:v0.6b
+          args: ["-k", "kafka-0.kafka-headless.codefeedr:9092", "-t", "$(FASTEN_CONFIG)"]
           ports:
             - containerPort: 3010
-      nodeSelector:
-        fasten.node: "true"
+          env:
+            - name: FASTEN_CONFIG
+              valueFrom:
+                configMapKeyRef:
+                  key: fasten.topics
+                  name: fasten.config
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 70
+              preference:
+                matchExpressions:
+                  - key: node.power
+                    operator: In
+                    values:
+                      - high
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 40
+              preference:
+                matchExpressions:
+                  - key: node.power
+                    operator: In
+                    values:
+                      - med
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 10
+              preference:
+                matchExpressions:
+                  - key: node.power
+                    operator: In
+                    values:
+                      - low
