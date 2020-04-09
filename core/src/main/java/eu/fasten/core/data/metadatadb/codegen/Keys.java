@@ -53,6 +53,7 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<CallablesRecord> CALLABLES_PKEY = UniqueKeys0.CALLABLES_PKEY;
+    public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = UniqueKeys0.UNIQUE_SOURCE_TARGET;
     public static final UniqueKey<ModulesRecord> MODULES_PKEY = UniqueKeys0.MODULES_PKEY;
     public static final UniqueKey<PackageVersionsRecord> PACKAGE_VERSIONS_PKEY = UniqueKeys0.PACKAGE_VERSIONS_PKEY;
     public static final UniqueKey<PackagesRecord> PACKAGES_PKEY = UniqueKeys0.PACKAGES_PKEY;
@@ -82,6 +83,7 @@ public class Keys {
 
     private static class UniqueKeys0 {
         public static final UniqueKey<CallablesRecord> CALLABLES_PKEY = Internal.createUniqueKey(Callables.CALLABLES, "callables_pkey", Callables.CALLABLES.ID);
+        public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = Internal.createUniqueKey(Edges.EDGES, "unique_source_target", Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID);
         public static final UniqueKey<ModulesRecord> MODULES_PKEY = Internal.createUniqueKey(Modules.MODULES, "modules_pkey", Modules.MODULES.ID);
         public static final UniqueKey<PackageVersionsRecord> PACKAGE_VERSIONS_PKEY = Internal.createUniqueKey(PackageVersions.PACKAGE_VERSIONS, "package_versions_pkey", PackageVersions.PACKAGE_VERSIONS.ID);
         public static final UniqueKey<PackagesRecord> PACKAGES_PKEY = Internal.createUniqueKey(Packages.PACKAGES, "packages_pkey", Packages.PACKAGES.ID);
