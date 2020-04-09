@@ -126,23 +126,25 @@ public class FastenServer implements Runnable {
 
         // Change the default topics of the plug-ins if a JSON file of the topics is given
         if(pluginTopic != null) {
+            JSONObject jsonObject;
             try {
-                JSONObject jsonObject = new JSONObject(new String(Files.readAllBytes(Paths.get(pluginTopic))));
-
-                kafkaConsumers.forEach((k) -> {
-                    if(jsonObject.has(k.getClass().getSimpleName())) {
-                        k.setTopic(jsonObject.getJSONObject(k.getClass().getSimpleName()).get("consumer").toString());
-                    }
-                });
-
-                kafkaProducers.forEach((k) ->{
-                    if(jsonObject.has(k.getClass().getSimpleName())) {
-                        k.setProducerTopic(jsonObject.getJSONObject(k.getClass().getSimpleName()).get("producer").toString());
-                    }
-                });
-
+                jsonObject = new JSONObject(new String(Files.readAllBytes(Paths.get(pluginTopic))));
             } catch (IOException e) {
                 logger.error("Failed to read the JSON file of the topics: {}", e.getMessage());
+                // Here, it reads the JSON string directly from the CLI, not a file.
+                jsonObject = new JSONObject(pluginTopic);
+            }
+
+            for(KafkaConsumer k: kafkaConsumers) {
+                if(jsonObject.has(k.getClass().getSimpleName())) {
+                    k.setTopic(jsonObject.getJSONObject(k.getClass().getSimpleName()).get("consumer").toString());
+                }
+            }
+
+            for(KafkaProducer k: kafkaProducers) {
+                if(jsonObject.has(k.getClass().getSimpleName())) {
+                    k.setProducerTopic(jsonObject.getJSONObject(k.getClass().getSimpleName()).get("producer").toString());
+                }
             }
         }
 
