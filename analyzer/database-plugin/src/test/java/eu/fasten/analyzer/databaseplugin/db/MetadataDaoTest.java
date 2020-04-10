@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.metadataplugin.db;
+package eu.fasten.analyzer.databaseplugin.db;
 
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;

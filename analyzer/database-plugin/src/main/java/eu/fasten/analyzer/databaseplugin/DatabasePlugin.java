@@ -16,13 +16,15 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.metadataplugin;
+package eu.fasten.analyzer.databaseplugin;
 
-import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
+import eu.fasten.analyzer.databaseplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,29 +40,31 @@ import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
+import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MetadataDatabasePlugin extends Plugin {
+public class DatabasePlugin extends Plugin {
 
-    public MetadataDatabasePlugin(PluginWrapper wrapper) {
+    public DatabasePlugin(PluginWrapper wrapper) {
         super(wrapper);
     }
 
     @Extension
-    public static class MetadataDBExtension implements KafkaConsumer<String>, DBConnector {
+    public static class DatabaseExtension implements KafkaConsumer<String>, DBConnector {
 
         private String topic = "opal_callgraphs";
+        private KnowledgeBase knowledgeBase;
         private static DSLContext dslContext;
         private boolean processedRecord = false;
         private String pluginError = "";
-        private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(DatabaseExtension.class.getName());
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
-            MetadataDBExtension.dslContext = dslContext;
+            DatabaseExtension.dslContext = dslContext;
         }
 
         @Override
@@ -73,9 +77,13 @@ public class MetadataDatabasePlugin extends Plugin {
             this.topic = topicName;
         }
 
+        public void setKnowledgeBase(String kbDir, String kbMetadataFilename)
+                throws RocksDBException, IOException, ClassNotFoundException {
+            this.knowledgeBase = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
+        }
+
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
-
             final var consumedJson = new JSONObject(record.value());
             final var artifact = consumedJson.optString("product") + "@"
                     + consumedJson.optString("version");
@@ -100,7 +108,8 @@ public class MetadataDatabasePlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(callgraph, metadataDao);
+                            id = saveToMetadataDatabase(callgraph, metadataDao);
+                            knowledgeBase.add(callgraph, id);
                         } catch (RuntimeException e) {
                             logger.error("Error saving to the database: '" + artifact + "'", e);
                             processedRecord = false;
@@ -128,13 +137,14 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         /**
-         * Saves a callgraph to the database to appropriate tables.
+         * Saves a callgraph to the metadata database to appropriate tables.
          *
          * @param callGraph   Call graph to save to the database.
          * @param metadataDao Data Access Object to insert records in the database
-         * @return Package ID saved in the database
+         * @return Package ID saved in the metadata database
          */
-        public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
+        public long saveToMetadataDatabase(ExtendedRevisionCallGraph callGraph,
+                                           MetadataDao metadataDao) {
             final var timestamp = this.getProperTimestamp(callGraph.timestamp);
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
                     null, null, null);
@@ -237,14 +247,14 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public String name() {
-            return "Metadata plugin";
+            return "Database plugin";
         }
 
         @Override
         public String description() {
-            return "Metadata plugin. "
+            return "Database plugin. "
                     + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
-                    + " and populates metadata database with consumed data.";
+                    + " and populates metadata database and graph database with consumed data.";
         }
 
         @Override

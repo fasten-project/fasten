@@ -10,11 +10,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.fasten.analyzer</groupId>
-    <artifactId>metadata-plugin</artifactId>
+    <artifactId>database-plugin</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>metadata-plugin</name>
+    <name>database-plugin</name>
 
     <dependencies>
         <dependency>
@@ -115,11 +115,11 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>eu.fasten.analyzer.metadataplugin.Main</Main-Class>
+                                        <Main-Class>eu.fasten.analyzer.databaseplugin.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.metadataplugin.MetadataDatabasePlugin</Plugin-Class>
-                                        <Plugin-Id>metadata-plugin</Plugin-Id>
+                                        <Plugin-Class>eu.fasten.analyzer.databaseplugin.DatabasePlugin</Plugin-Class>
+                                        <Plugin-Id>database-plugin</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
                                         <Plugin-Description>Metadata Plugin</Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>

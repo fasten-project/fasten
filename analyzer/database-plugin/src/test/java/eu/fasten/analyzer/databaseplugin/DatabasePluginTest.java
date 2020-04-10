@@ -16,48 +16,45 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.metadataplugin;
+package eu.fasten.analyzer.databaseplugin;
 
 import java.sql.Timestamp;
 import java.util.Collections;
-import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
+import eu.fasten.analyzer.databaseplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
-import org.jooq.JSONB;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 
-public class MetadataDatabasePluginTest {
+public class DatabasePluginTest {
 
-    private MetadataDatabasePlugin.MetadataDBExtension metadataDBExtension;
+    private DatabasePlugin.DatabaseExtension databaseExtension;
 
     @BeforeEach
     public void setUp() {
         var dslContext = Mockito.mock(DSLContext.class);
-        metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
-        metadataDBExtension.setTopic("opal_callgraphs");
-        metadataDBExtension.setDBConnection(dslContext);
+        databaseExtension = new DatabasePlugin.DatabaseExtension();
+        databaseExtension.setTopic("opal_callgraphs");
+        databaseExtension.setDBConnection(dslContext);
     }
 
     @Test
     public void consumeJsonErrorTest() {
         var topic = "opal_callgraphs";
         var record = new ConsumerRecord<>(topic, 0, 0L, "test", "{\"foo\":\"bar\"}");
-        metadataDBExtension.consume(topic, record);
-        assertFalse(metadataDBExtension.recordProcessSuccessful());
+        databaseExtension.consume(topic, record);
+        assertFalse(databaseExtension.recordProcessSuccessful());
     }
 
     @Test
-    public void saveToDatabaseTest() {
+    public void saveToMetadataDatabaseTest() {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject("{\n" +
                 "  \"product\": \"test.product\",\n" +
@@ -119,8 +116,7 @@ public class MetadataDatabasePluginTest {
                 ".lang%2FString", true, null, null)).thenReturn(65L);
         Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
                 ".lang%2FObject", false, null, null)).thenReturn(100L);
-        var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
-        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = databaseExtension.saveToMetadataDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
@@ -129,7 +125,7 @@ public class MetadataDatabasePluginTest {
     }
 
     @Test
-    public void saveToDatabaseTest2() {
+    public void saveToMetadataDatabaseTest2() {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject("{\n" +
                 "  \"product\": \"test.product\",\n" +
@@ -211,7 +207,7 @@ public class MetadataDatabasePluginTest {
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
-        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = databaseExtension.saveToMetadataDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
@@ -222,7 +218,7 @@ public class MetadataDatabasePluginTest {
     }
 
     @Test
-    public void saveToDatabaseTest3() {
+    public void saveToMetadataDatabaseTest3() {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject("{\n" +
                 "  \"product\": \"test.product\",\n" +
@@ -303,8 +299,8 @@ public class MetadataDatabasePluginTest {
         var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
         Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
 
-        metadataDBExtension.setPluginError(new RuntimeException());
-        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        databaseExtension.setPluginError(new RuntimeException());
+        long id = databaseExtension.saveToMetadataDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
@@ -317,42 +313,42 @@ public class MetadataDatabasePluginTest {
     public void saveToDatabaseEmptyJsonTest() {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject();
-        assertThrows(JSONException.class, () -> metadataDBExtension
-                .saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao));
+        assertThrows(JSONException.class, () -> databaseExtension
+                .saveToMetadataDatabase(new ExtendedRevisionCallGraph(json), metadataDao));
     }
 
     @Test
     public void consumerTopicsTest() {
         var topics = Collections.singletonList("opal_callgraphs");
-        assertEquals(topics, metadataDBExtension.consumerTopics());
+        assertEquals(topics, databaseExtension.consumerTopics());
     }
 
     @Test
     public void consumerTopicChangeTest() {
         var topics1 = Collections.singletonList("opal_callgraphs");
-        assertEquals(topics1, metadataDBExtension.consumerTopics());
+        assertEquals(topics1, databaseExtension.consumerTopics());
         var differentTopic = "DifferentKafkaTopic";
         var topics2 = Collections.singletonList(differentTopic);
-        metadataDBExtension.setTopic(differentTopic);
-        assertEquals(topics2, metadataDBExtension.consumerTopics());
+        databaseExtension.setTopic(differentTopic);
+        assertEquals(topics2, databaseExtension.consumerTopics());
     }
 
     @Test
     public void recordProcessSuccessfulTest() {
-        assertFalse(metadataDBExtension.recordProcessSuccessful());
+        assertFalse(databaseExtension.recordProcessSuccessful());
     }
 
     @Test
     public void nameTest() {
-        var name = "Metadata plugin";
-        assertEquals(name, metadataDBExtension.name());
+        var name = "Database plugin";
+        assertEquals(name, databaseExtension.name());
     }
 
     @Test
     public void descriptionTest() {
-        var description = "Metadata plugin. "
+        var description = "Database plugin. "
                 + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
-                + " and populates metadata database with consumed data.";
-        assertEquals(description, metadataDBExtension.description());
+                + " and populates metadata database and graph database with consumed data.";
+        assertEquals(description, databaseExtension.description());
     }
 }

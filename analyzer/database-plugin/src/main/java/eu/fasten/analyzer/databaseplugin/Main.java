@@ -16,18 +16,20 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.metadataplugin;
+package eu.fasten.analyzer.databaseplugin;
 
 import eu.fasten.server.db.PostgresConnector;
 import eu.fasten.server.kafka.FastenKafkaConnection;
 import eu.fasten.server.kafka.FastenKafkaConsumer;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -78,6 +80,16 @@ public class Main implements Runnable {
             defaultValue = "pass123")
     String dbPass;
 
+    @CommandLine.Option(names = {"-kb", "--kb_dir"},
+            paramLabel = "kbDir",
+            description = "The directory of the RocksDB instance containing the knowledge base")
+    String kbDir;
+
+    @CommandLine.Option(names = {"-kbmeta", "--kbMeta_file"},
+            paramLabel = "kbMeta",
+            description = "The file containing the knowledge base metadata")
+    String kbMeta;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -86,14 +98,15 @@ public class Main implements Runnable {
     @Override
     public void run() {
         try {
-            var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
-            metadataPlugin.setTopic(topic);
-            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
+            var databasePlugin = new DatabasePlugin.DatabaseExtension();
+            databasePlugin.setTopic(topic);
+            databasePlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
+            databasePlugin.setKnowledgeBase(kbDir, kbMeta);
 
             if (jsonFile == null || jsonFile.isEmpty()) {
                 var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
                         this.getClass().getCanonicalName());
-                new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
+                new FastenKafkaConsumer(properties, databasePlugin, skipOffsets).start();
             } else {
                 final FileReader reader;
                 try {
@@ -106,13 +119,13 @@ public class Main implements Runnable {
                 try {
                     final var record = new ConsumerRecord<>(topic, 0, 0L, "test",
                             jsonCallgraph.toString());
-                    metadataPlugin.consume(topic, record);
+                    databasePlugin.consume(topic, record);
                 } catch (IllegalArgumentException e) {
                     logger.error("Incorrect database URL", e);
                 }
             }
-        } catch (SQLException e) {
-            logger.error("Could not connect to the database", e);
+        } catch (SQLException | RocksDBException | IOException | ClassNotFoundException e) {
+            logger.error("Could not connect to the database or instantiate KnowledgeBase", e);
         }
     }
 }
