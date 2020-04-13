@@ -4,6 +4,8 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
@@ -27,6 +29,16 @@ import javax.annotation.processing.Generated;
 )
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
+
+    /**
+     * The table <code>public.binary_module_contents</code>.
+     */
+    public static final BinaryModuleContents BINARY_MODULE_CONTENTS = BinaryModuleContents.BINARY_MODULE_CONTENTS;
+
+    /**
+     * The table <code>public.binary_modules</code>.
+     */
+    public static final BinaryModules BINARY_MODULES = BinaryModules.BINARY_MODULES;
 
     /**
      * The table <code>public.callables</code>.

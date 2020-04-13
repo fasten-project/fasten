@@ -4,6 +4,8 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
@@ -36,6 +38,9 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index BINARY_MODULE_CONTENTS_PKEY = Indexes0.BINARY_MODULE_CONTENTS_PKEY;
+    public static final Index BINARY_MODULES_COMPOUND_INDEX = Indexes0.BINARY_MODULES_COMPOUND_INDEX;
+    public static final Index BINARY_MODULES_PKEY = Indexes0.BINARY_MODULES_PKEY;
     public static final Index CALLABLES_COMPOUND_INDEX = Indexes0.CALLABLES_COMPOUND_INDEX;
     public static final Index CALLABLES_PKEY = Indexes0.CALLABLES_PKEY;
     public static final Index DEPENDENCIES_COMPOUND_INDEX = Indexes0.DEPENDENCIES_COMPOUND_INDEX;
@@ -54,6 +59,9 @@ public class Indexes {
     // -------------------------------------------------------------------------
 
     private static class Indexes0 {
+        public static Index BINARY_MODULE_CONTENTS_PKEY = Internal.createIndex("binary_module_contents_pkey", BinaryModuleContents.BINARY_MODULE_CONTENTS, new OrderField[] { BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID, BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID }, true);
+        public static Index BINARY_MODULES_COMPOUND_INDEX = Internal.createIndex("binary_modules_compound_index", BinaryModules.BINARY_MODULES, new OrderField[] { BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME }, false);
+        public static Index BINARY_MODULES_PKEY = Internal.createIndex("binary_modules_pkey", BinaryModules.BINARY_MODULES, new OrderField[] { BinaryModules.BINARY_MODULES.ID }, true);
         public static Index CALLABLES_COMPOUND_INDEX = Internal.createIndex("callables_compound_index", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_INTERNAL_CALL }, false);
         public static Index CALLABLES_PKEY = Internal.createIndex("callables_pkey", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.ID }, true);
         public static Index DEPENDENCIES_COMPOUND_INDEX = Internal.createIndex("dependencies_compound_index", Dependencies.DEPENDENCIES, new OrderField[] { Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE }, false);

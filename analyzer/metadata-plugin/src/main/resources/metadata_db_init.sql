@@ -44,6 +44,22 @@ CREATE TABLE files
     metadata   JSONB
 );
 
+CREATE TABLE binary_modules
+(
+    id                 BIGSERIAL PRIMARY KEY,
+    package_version_id BIGINT NOT NULL REFERENCES package_versions (id),
+    name               TEXT   NOT NULL,
+    created_at         TIMESTAMP,
+    metadata           JSONB
+);
+
+CREATE TABLE binary_module_contents
+(
+    binary_module_id BIGINT NOT NULL REFERENCES binary_modules (id),
+    file_id          BIGINT NOT NULL REFERENCES files (id),
+    PRIMARY KEY (binary_module_id, file_id)
+);
+
 CREATE TABLE callables
 (
     id               BIGSERIAL PRIMARY KEY,
@@ -65,6 +81,7 @@ CREATE INDEX packages_compound_index ON packages (package_name, forge);
 CREATE INDEX package_versions_compound_index ON package_versions (package_id, version, cg_generator);
 CREATE INDEX dependencies_compound_index ON dependencies (package_version_id, dependency_id, version_range);
 CREATE INDEX modules_compound_index ON modules (package_version_id, namespace);
+CREATE INDEX binary_modules_compound_index ON binary_modules (package_version_id, name);
 CREATE INDEX files_compound_index ON files (module_id, path);
 CREATE INDEX callables_compound_index ON callables (fasten_uri, is_internal_call);
 

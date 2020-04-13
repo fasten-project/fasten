@@ -4,6 +4,8 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
@@ -37,12 +39,22 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = -867305040;
+    private static final long serialVersionUID = 1496219339;
 
     /**
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * The table <code>public.binary_module_contents</code>.
+     */
+    public final BinaryModuleContents BINARY_MODULE_CONTENTS = eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents.BINARY_MODULE_CONTENTS;
+
+    /**
+     * The table <code>public.binary_modules</code>.
+     */
+    public final BinaryModules BINARY_MODULES = eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules.BINARY_MODULES;
 
     /**
      * The table <code>public.callables</code>.
@@ -101,6 +113,7 @@ public class Public extends SchemaImpl {
 
     private final List<Sequence<?>> getSequences0() {
         return Arrays.<Sequence<?>>asList(
+            Sequences.BINARY_MODULES_ID_SEQ,
             Sequences.CALLABLES_ID_SEQ,
             Sequences.FILES_ID_SEQ,
             Sequences.MODULES_ID_SEQ,
@@ -117,6 +130,8 @@ public class Public extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
+            BinaryModuleContents.BINARY_MODULE_CONTENTS,
+            BinaryModules.BINARY_MODULES,
             Callables.CALLABLES,
             Dependencies.DEPENDENCIES,
             Edges.EDGES,
