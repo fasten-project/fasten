@@ -651,6 +651,144 @@ public class MetadataDaoTest {
     }
 
     @Test
+    public void insertBinaryModuleTest() {
+        long id = 1;
+        long packageId = 42;
+        var name = "name";
+        var createdAt = new Timestamp(1);
+        var metadata = new JSONObject("{\"foo\":\"bar\"}");
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(BinaryModules.BINARY_MODULES)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(BinaryModules.BINARY_MODULES.NAME.eq(name))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.fetch()).thenReturn(null);
+        var insertValues = Mockito.mock(InsertValuesStep4.class);
+        Mockito.when(context.insertInto(BinaryModules.BINARY_MODULES, BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME,
+                BinaryModules.BINARY_MODULES.CREATED_AT, BinaryModules.BINARY_MODULES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, name, createdAt, JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(BinaryModules.BINARY_MODULES.ID)).thenReturn(insertResult);
+        var record = new BinaryModulesRecord(id, packageId, name, createdAt, JSONB.valueOf(metadata.toString()));
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        long result = metadataDao.insertBinaryModule(packageId, name, createdAt, metadata);
+        assertEquals(id, result);
+    }
+
+    @Test
+    public void insertBinaryModuleNullTest() {
+        long id = 1;
+        long packageId = 42;
+        var name = "name";
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(BinaryModules.BINARY_MODULES)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(BinaryModules.BINARY_MODULES.NAME.eq(name))).thenReturn(selectCondStep);
+        var resultSet = Mockito.mock(Result.class);
+        Mockito.when(resultSet.isEmpty()).thenReturn(true);
+        Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
+        var insertValues = Mockito.mock(InsertValuesStep4.class);
+        Mockito.when(context.insertInto(BinaryModules.BINARY_MODULES, BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME,
+                BinaryModules.BINARY_MODULES.CREATED_AT, BinaryModules.BINARY_MODULES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, name, null, null)).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(BinaryModules.BINARY_MODULES.ID)).thenReturn(insertResult);
+        var record = new BinaryModulesRecord(id, packageId, name, null, null);
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        long result = metadataDao.insertBinaryModule(packageId, name, null, null);
+        assertEquals(id, result);
+    }
+
+    @Test
+    public void insertExistingBinaryModuleTest() {
+        long id = 1;
+        long packageId = 42;
+        var name = "name";
+        var createdAt = new Timestamp(1);
+        var metadata = new JSONObject("{\"foo\":\"bar\"}");
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(BinaryModules.BINARY_MODULES)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(BinaryModules.BINARY_MODULES.NAME.eq(name))).thenReturn(selectCondStep);
+        var resultSet = Mockito.mock(Result.class);
+        Mockito.when(resultSet.isEmpty()).thenReturn(false);
+        Mockito.when(resultSet.getValues(BinaryModules.BINARY_MODULES.ID)).thenReturn(Collections.singletonList(id));
+        Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
+        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
+        Mockito.when(context.update(BinaryModules.BINARY_MODULES)).thenReturn(updateSetStart);
+        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
+        Mockito.when(updateSetStart.set(BinaryModules.BINARY_MODULES.CREATED_AT, createdAt)).thenReturn(updateSet);
+        Mockito.when(updateSet.set(BinaryModules.BINARY_MODULES.METADATA, JSONB.valueOf(metadata.toString()))).thenReturn(updateSet);
+        var updateCond = Mockito.mock(UpdateConditionStep.class);
+        Mockito.when(updateSet.where(BinaryModules.BINARY_MODULES.ID.eq(id))).thenReturn(updateCond);
+        long result = metadataDao.insertBinaryModule(packageId, name, createdAt, metadata);
+        assertEquals(id, result);
+    }
+
+    @Test
+    public void insertMultipleBinaryModulesTest() throws IllegalArgumentException {
+        var ids = Arrays.asList(1L, 2L);
+        long packageId = 42;
+        var name = Arrays.asList("name1", "name2");
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(BinaryModules.BINARY_MODULES)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID.eq(packageId))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(BinaryModules.BINARY_MODULES.NAME.eq(name.get(0)))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(BinaryModules.BINARY_MODULES.NAME.eq(name.get(1)))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.fetch()).thenReturn(null);
+        var insertValues = Mockito.mock(InsertValuesStep4.class);
+        Mockito.when(context.insertInto(BinaryModules.BINARY_MODULES, BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME,
+                BinaryModules.BINARY_MODULES.CREATED_AT, BinaryModules.BINARY_MODULES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, name.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, name.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()))).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(BinaryModules.BINARY_MODULES.ID)).thenReturn(insertResult);
+        var record1 = new BinaryModulesRecord(ids.get(0), packageId, name.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()));
+        var record2 = new BinaryModulesRecord(ids.get(1), packageId, name.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()));
+        Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
+        var result = metadataDao.insertBinaryModules(packageId, name, createdAt, metadata);
+        assertEquals(ids, result);
+    }
+
+    @Test
+    public void insertMultipleBinaryModulesErrorTest() {
+        long packageId = 42;
+        var names = Collections.singletonList("name");
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertModules(packageId, names, createdAt, metadata);
+        });
+    }
+
+    @Test
+    public void insertMultipleBinaryModulesErrorTest1() {
+        long packageId = 42;
+        var names = Arrays.asList("name1", "name2");
+        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertModules(packageId, names, createdAt, metadata);
+        });
+    }
+
+    @Test
+    public void insertMultipleBinaryModulesErrorTest2() {
+        long packageId = 42;
+        var names = Arrays.asList("name1", "name2");
+        var createdAt = Collections.singletonList(new Timestamp(1));
+        var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertModules(packageId, names, createdAt, metadata);
+        });
+    }
+
+    @Test
     public void insertFileTest() {
         var id = 1L;
         var moduleId = 42L;

@@ -20,6 +20,7 @@ package eu.fasten.analyzer.metadataplugin.db;
 
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
@@ -361,7 +362,7 @@ public class MetadataDao {
     }
 
     /**
-     * Updates SHA256, timestamp and metadata of certain module record.
+     * Updates timestamp and metadata of certain module record.
      *
      * @param moduleId  ID of the module record
      * @param timestamp New timestamp for the module
@@ -375,7 +376,7 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts multiple records in the 'module' table in the database.
+     * Inserts multiple records in the 'modules' table in the database.
      *
      * @param packageVersionId ID of the common package version
      * @param namespacesList   List of namespaces
@@ -395,6 +396,95 @@ public class MetadataDao {
         for (int i = 0; i < length; i++) {
             long result = insertModule(packageVersionId, namespacesList.get(i),
                     createdAt.get(i), metadata.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
+    }
+
+    /**
+     * Inserts a record in 'binary_modules' table in the database.
+     *
+     * @param packageVersionId ID of the package version where the binary module belongs
+     *                         (references 'package_versions.id')
+     * @param name             Name of the binary module
+     * @param createdAt        Timestamp when the binary module was created
+     * @param metadata         Metadata of the binary module
+     * @return ID of the new record
+     */
+    public long insertBinaryModule(long packageVersionId, String name,
+                                   Timestamp createdAt, JSONObject metadata) {
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
+        var binaryModule = this.findBinaryModule(packageVersionId, name);
+        if (binaryModule != -1L) {
+            logger.debug("Duplicate binary module: '" + packageVersionId + "; " + name
+                    + "' already exists with ID=" + binaryModule);
+            this.updateBinaryModule(binaryModule, createdAt, metadataJsonb);
+            return binaryModule;
+        } else {
+            var resultRecord = context.insertInto(BinaryModules.BINARY_MODULES,
+                    BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID,
+                    BinaryModules.BINARY_MODULES.NAME,
+                    BinaryModules.BINARY_MODULES.CREATED_AT,
+                    BinaryModules.BINARY_MODULES.METADATA)
+                    .values(packageVersionId, name, createdAt, metadataJsonb)
+                    .returning(BinaryModules.BINARY_MODULES.ID).fetchOne();
+            return resultRecord.getValue(BinaryModules.BINARY_MODULES.ID);
+        }
+    }
+
+    /**
+     * Searches 'binary_modules' table for certain binary module record.
+     *
+     * @param packageVersionId ID of the package version
+     * @param name             Name of the module
+     * @return ID of the record found or -1 otherwise
+     */
+    public long findBinaryModule(long packageVersionId, String name) {
+        var resultRecords = context.selectFrom(BinaryModules.BINARY_MODULES)
+                .where(BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID.eq(packageVersionId))
+                .and(BinaryModules.BINARY_MODULES.NAME.eq(name)).fetch();
+        if (resultRecords == null || resultRecords.isEmpty()) {
+            return -1L;
+        } else {
+            return resultRecords.getValues(BinaryModules.BINARY_MODULES.ID).get(0);
+        }
+    }
+
+    /**
+     * Updates timestamp and metadata of certain binary module record.
+     *
+     * @param binaryModuleId ID of the module record
+     * @param timestamp      New timestamp for the module
+     * @param metadata       New metadata for the module
+     */
+    public void updateBinaryModule(long binaryModuleId, Timestamp timestamp, JSONB metadata) {
+        context.update(BinaryModules.BINARY_MODULES)
+                .set(BinaryModules.BINARY_MODULES.CREATED_AT, timestamp)
+                .set(BinaryModules.BINARY_MODULES.METADATA, metadata)
+                .where(BinaryModules.BINARY_MODULES.ID.eq(binaryModuleId)).execute();
+    }
+
+    /**
+     * Inserts multiple records in the 'binary_modules' table in the database.
+     *
+     * @param packageVersionId ID of the common package version
+     * @param namesList        List of names
+     * @param createdAt        List of timestamps
+     * @param metadata         List of metadata objects
+     * @return List of IDs of new records
+     * @throws IllegalArgumentException if lists are not of the same size
+     */
+    public List<Long> insertBinaryModules(long packageVersionId, List<String> namesList,
+                                          List<Timestamp> createdAt, List<JSONObject> metadata)
+            throws IllegalArgumentException {
+        if (namesList.size() != createdAt.size() || createdAt.size() != metadata.size()) {
+            throw new IllegalArgumentException("All lists should have equal size");
+        }
+        int length = namesList.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertBinaryModule(packageVersionId, namesList.get(i), createdAt.get(i),
+                    metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;
