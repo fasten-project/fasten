@@ -762,7 +762,7 @@ public class MetadataDaoTest {
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertModules(packageId, names, createdAt, metadata);
+            metadataDao.insertBinaryModules(packageId, names, createdAt, metadata);
         });
     }
 
@@ -773,7 +773,7 @@ public class MetadataDaoTest {
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertModules(packageId, names, createdAt, metadata);
+            metadataDao.insertBinaryModules(packageId, names, createdAt, metadata);
         });
     }
 
@@ -784,7 +784,90 @@ public class MetadataDaoTest {
         var createdAt = Collections.singletonList(new Timestamp(1));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertModules(packageId, names, createdAt, metadata);
+            metadataDao.insertBinaryModules(packageId, names, createdAt, metadata);
+        });
+    }
+
+    @Test
+    public void insertBinaryModuleContentsTest() {
+        long binaryModuleId = 1;
+        long fileId = 42;
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(BinaryModuleContents.BINARY_MODULE_CONTENTS)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID.eq(binaryModuleId))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID.eq(fileId))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.fetch()).thenReturn(null);
+        var insertValues = Mockito.mock(InsertValuesStep2.class);
+        Mockito.when(context.insertInto(BinaryModuleContents.BINARY_MODULE_CONTENTS, BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID,
+                BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(binaryModuleId, fileId)).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)).thenReturn(insertResult);
+        var record = new BinaryModuleContentsRecord(binaryModuleId, fileId);
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        long result = metadataDao.insertBinaryModuleContent(binaryModuleId, fileId);
+        assertEquals(binaryModuleId, result);
+    }
+
+    @Test
+    public void insertExistingBinaryModuleContentsTest() {
+        long binaryModuleId = 1;
+        long fileId = 42;
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(BinaryModuleContents.BINARY_MODULE_CONTENTS)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID.eq(binaryModuleId))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID.eq(fileId))).thenReturn(selectCondStep);
+        var resultSet = Mockito.mock(Result.class);
+        Mockito.when(resultSet.isEmpty()).thenReturn(false);
+        Mockito.when(resultSet.getValues(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)).thenReturn(Collections.singletonList(binaryModuleId));
+        Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
+        long result = metadataDao.insertBinaryModuleContent(binaryModuleId, fileId);
+        assertEquals(binaryModuleId, result);
+    }
+
+    @Test
+    public void insertMultipleBinaryModuleContentsTest() throws IllegalArgumentException {
+        var binaryModuleIds = List.of(1L, 2L);
+        var fileIds = List.of(8L, 42L);
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(BinaryModuleContents.BINARY_MODULE_CONTENTS)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID.eq(binaryModuleIds.get(0)))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID.eq(fileIds.get(0)))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID.eq(binaryModuleIds.get(1)))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID.eq(fileIds.get(1)))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.fetch()).thenReturn(null);
+        var insertValues = Mockito.mock(InsertValuesStep2.class);
+        Mockito.when(context.insertInto(BinaryModuleContents.BINARY_MODULE_CONTENTS, BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID,
+                BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(binaryModuleIds.get(0), fileIds.get(0))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(binaryModuleIds.get(1), fileIds.get(1))).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)).thenReturn(insertResult);
+        var record1 = new BinaryModuleContentsRecord(binaryModuleIds.get(0), fileIds.get(0));
+        var record2 = new BinaryModuleContentsRecord(binaryModuleIds.get(1), fileIds.get(1));
+        Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
+        var result = metadataDao.insertBinaryModuleContents(binaryModuleIds, fileIds);
+        assertEquals(binaryModuleIds, result);
+    }
+
+    @Test
+    public void insertMultipleBinaryModuleContentsErrorTest() {
+        var binaryModuleIds = List.of(1L);
+        var fileIds = List.of(8L, 42L);
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertBinaryModuleContents(binaryModuleIds, fileIds);
+        });
+    }
+
+    @Test
+    public void insertMultipleBinaryModuleContentsErrorTest1() {
+        var binaryModuleIds = List.of(1L, 2L);
+        var fileIds = List.of(8L);
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertBinaryModuleContents(binaryModuleIds, fileIds);
         });
     }
 

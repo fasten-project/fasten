@@ -20,6 +20,7 @@ package eu.fasten.analyzer.metadataplugin.db;
 
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
@@ -485,6 +486,73 @@ public class MetadataDao {
         for (int i = 0; i < length; i++) {
             long result = insertBinaryModule(packageVersionId, namesList.get(i), createdAt.get(i),
                     metadata.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
+    }
+
+    /**
+     * Inserts a record in 'binary_module_contents' table in the database.
+     *
+     * @param binaryModuleId ID of the package version (references 'package_versions.id')
+     * @param fileId             ID of the file (references 'files.id')
+     * @return ID of the new record = binaryModuleId
+     */
+    public long insertBinaryModuleContent(long binaryModuleId, long fileId) {
+        var binaryModuleContents = this.findBinaryModuleContents(binaryModuleId, fileId);
+        if (binaryModuleContents != -1L) {
+            logger.debug("Duplicate binary module: '" + binaryModuleId + "; " + fileId
+                    + "' already exists with ID=" + binaryModuleContents);
+            return binaryModuleContents;
+        } else {
+            var resultRecord = context.insertInto(BinaryModuleContents.BINARY_MODULE_CONTENTS,
+                    BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID,
+                    BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID)
+                    .values(binaryModuleId, fileId)
+                    .returning(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)
+                    .fetchOne();
+            return resultRecord
+                    .getValue(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID);
+        }
+    }
+
+    /**
+     * Searches 'binary_module_contents' table for certain binary module contents record.
+     *
+     * @param binaryModuleId ID of the binary module
+     * @param fileId             ID of the file
+     * @return ID of the record found or -1 otherwise
+     */
+    public long findBinaryModuleContents(long binaryModuleId, long fileId) {
+        var resultRecords = context.selectFrom(BinaryModuleContents.BINARY_MODULE_CONTENTS)
+                .where(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID
+                        .eq(binaryModuleId))
+                .and(BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID.eq(fileId)).fetch();
+        if (resultRecords == null || resultRecords.isEmpty()) {
+            return -1L;
+        } else {
+            return resultRecords
+                    .getValues(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID).get(0);
+        }
+    }
+
+    /**
+     * Inserts multiple records in the 'binary_module_contents' table in the database.
+     *
+     * @param binaryModuleIds List of binary modules IDs
+     * @param fileIds        List of files IDs
+     * @return List of IDs of new records
+     * @throws IllegalArgumentException if lists are not of the same size
+     */
+    public List<Long> insertBinaryModuleContents(List<Long> binaryModuleIds, List<Long> fileIds)
+            throws IllegalArgumentException {
+        if (fileIds.size() != binaryModuleIds.size()) {
+            throw new IllegalArgumentException("Lists should have equal size");
+        }
+        int length = fileIds.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertBinaryModuleContent(binaryModuleIds.get(i), fileIds.get(i));
             recordIds.add(result);
         }
         return recordIds;
