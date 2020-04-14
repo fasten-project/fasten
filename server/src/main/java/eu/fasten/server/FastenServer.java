@@ -86,6 +86,9 @@ public class FastenServer implements Runnable {
             defaultValue = "0")
     private int skipOffsets;
 
+    @Option(names = {"-dp, --deploy"})
+    boolean deployMode;
+
     private static Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     private List<FastenKafkaConsumer> consumers;
@@ -98,9 +101,14 @@ public class FastenServer implements Runnable {
 
     public void run() {
 
-        // TODO: Set log level based on an arg in CLI: either dev or deploy mode.
-        setLoggingLevel(Level.DEBUG);
-        
+        if(deployMode) {
+            setLoggingLevel(Level.INFO);
+            logger.info("FASTEN server started in deployment mode");
+        } else {
+            setLoggingLevel(Level.DEBUG);
+            logger.info("FASTEN server started in development mode");
+        }
+
         // Register shutdown actions
         // TODO: Fix the null pointer exception for the following ShutdownHook
 //        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
