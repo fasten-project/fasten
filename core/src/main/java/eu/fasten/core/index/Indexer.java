@@ -65,7 +65,7 @@ public class Indexer {
 
 	/** Creates an indexer using the given database instance.
 	 *
-	 * @param db the database instance used by this indexer.
+	 * @param kb the database instance used by this indexer.
 	 */
 	public Indexer(final KnowledgeBase kb) {
 		this.kb = kb;
@@ -143,7 +143,7 @@ public class Indexer {
 		final String kbMetadataFilename = jsapResult.getString("kbmeta");
 
 		if (new File(kbDir).exists()) throw new IllegalArgumentException("Knowledge base directory exists");
-		if (new File(kbMetadataFilename).exists()) throw new IllegalArgumentException("Knowledge-base metadaa file exists");
+		if (new File(kbMetadataFilename).exists()) throw new IllegalArgumentException("Knowledge-base metadata file exists");
 
 		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
 

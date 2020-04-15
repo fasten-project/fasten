@@ -444,6 +444,146 @@ public class KnowledgeBase implements Serializable, Closeable {
 			f.delete();
 		}
 
+		protected CallGraph(final ExtendedRevisionCallGraph g, final long index, Map<FastenURI, Long> uriToGid) throws IOException, RocksDBException {
+			product = g.product;
+			version = g.version;
+			forge = g.forge;
+			this.index = index;
+
+			LOGGER.info("Analyzing fasten://" + forge + "!" + product + "$" + version);
+			// List of internal GIDs
+			final LongLinkedOpenHashSet internalGIDs = new LongLinkedOpenHashSet();
+			// List of external GIDs
+			final LongLinkedOpenHashSet externalGIDs = new LongLinkedOpenHashSet();
+			final Int2IntOpenHashMap jsonId2Temporary = new Int2IntOpenHashMap();
+
+			// First enumerate all internal nodes, add their URIs to the global maps if necessary, and assign them a temporary index
+			// Update jsonId2Temporary accordingly
+			final Map<Integer, FastenURI> mapOfAllMethods = g.mapOfAllMethods();
+			for (final Entry<Integer, FastenURI> e : mapOfAllMethods.entrySet()) {
+				final int jsonId = e.getKey().intValue();
+				final FastenURI uri = e.getValue();
+				final FastenURI genericUri = FastenURI.createSchemeless(null, null, null, uri.getRawNamespace(), uri.getRawEntity());
+				final long gid = addURI(genericUri, uriToGid);
+				addGidRev(GIDAppearsIn, gid, index);
+				jsonId2Temporary.put(jsonId, internalGIDs.size());
+				internalGIDs.add(gid);
+			}
+
+			nInternal = internalGIDs.size();
+
+			// Enumerate all external arcs, add the target URIs to the global maps if necessary. Note that they don't have a JSON id.
+			// While performing the enumeration, we check that their generic URIs don't appear already among those of internal nodes.
+			for(final Pair<Integer, FastenURI> e : g.getGraph().getExternalCalls().keySet()) {
+				final FastenURI uri = e.getValue();
+				final FastenURI genericUri = FastenURI.createSchemeless(null, null, null, uri.getRawNamespace(), uri.getRawEntity());
+				final long gid = addURI(genericUri, uriToGid);
+				if (internalGIDs.contains(gid)) LOGGER.error("GID " + gid + " (URL " + uri + ") appears both as an internal and as an external node: considering it internal");
+				else {
+					addGidRev(GIDCalledBy, gid, index);
+					externalGIDs.add(gid);
+				}
+			}
+
+			// Now compute the map from temporary indices to GIDs (all GIDs are in the global maps, by now)
+			final long[] temporary2GID = new long[internalGIDs.size() + externalGIDs.size()];
+			LongIterators.unwrap(internalGIDs.iterator(), temporary2GID);
+			LongIterators.unwrap(externalGIDs.iterator(), temporary2GID, nInternal, temporary2GID.length - nInternal);
+			// Compute the reverse map
+			final Long2IntOpenHashMap GID2Temporary = new Long2IntOpenHashMap();
+			GID2Temporary.defaultReturnValue(-1);
+			for (int i = 0; i < temporary2GID.length; i++) {
+				final long result = GID2Temporary.put(temporary2GID[i], i);
+				assert result == -1; // Internal and external GIDs should be
+				// disjoint by construction
+			}
+
+			// Create, store and load compressed versions of the graph and of the transpose.
+
+			// First create the graph as an ArrayListMutableGraph
+			final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(temporary2GID.length);
+
+			// Add arcs between internal nodes
+			for(final List<Integer> a : g.getGraph().getInternalCalls()) {
+
+				final int jsonSource = a.get(0).intValue();
+				final int jsonTarget = a.get(1).intValue();
+
+				try {
+					mutableGraph.addArc(jsonId2Temporary.get(jsonSource), jsonId2Temporary.get(jsonTarget));
+				} catch (final IllegalArgumentException e) {
+					LOGGER.error("Duplicate arc " + gid2URI(temporary2GID[jsonId2Temporary.get(jsonSource)]) + " -> " + gid2URI(temporary2GID[jsonId2Temporary.get(jsonSource)]));
+				}
+			}
+
+			// Add external calls
+			for(final Pair<Integer, FastenURI> a : g.getGraph().getExternalCalls().keySet()) {
+
+				final int jsonSource = a.getLeft().intValue();
+				final FastenURI targetUri = a.getRight();
+				final FastenURI genericTargetUri = FastenURI.createSchemeless(null, null, null, targetUri.getRawNamespace(), targetUri.getRawEntity());
+				final long targetGID = addURI(genericTargetUri, uriToGid);
+
+				try {
+					mutableGraph.addArc(jsonId2Temporary.get(jsonSource), GID2Temporary.get(targetGID));
+				} catch (final IllegalArgumentException e) {
+					LOGGER.error("Duplicate arc " + gid2URI(temporary2GID[jsonId2Temporary.get(jsonSource)]) + " -> " + genericTargetUri);
+				}
+			}
+
+			final File f = File.createTempFile(KnowledgeBase.class.getSimpleName(), ".tmpgraph");
+
+			final Properties graphProperties = new Properties(), transposeProperties = new Properties();
+			FileInputStream propertyFile;
+
+			// Compress, load and serialize graph
+			final int[] bfsperm = bfsperm(mutableGraph.immutableView(), -1, internalGIDs.size());
+			final ImmutableGraph graph = Transform.map(mutableGraph.immutableView(), bfsperm);
+			BVGraph.store(graph, f.toString());
+			propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
+			graphProperties.load(propertyFile);
+			propertyFile.close();
+
+			final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
+			final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
+			kryo.writeObject(bbo, BVGraph.load(f.toString()));
+
+			// Compute LIDs according to the current node renumbering based on BFS
+			final long[] LID2GID = new long[temporary2GID.length];
+			final Long2IntOpenHashMap GID2LID = new Long2IntOpenHashMap();
+
+			for (int x = 0; x < temporary2GID.length; x++)
+				LID2GID[bfsperm[x]] = temporary2GID[x];
+			for (int i = 0; i < temporary2GID.length; i++)
+				GID2LID.put(LID2GID[i], i);
+
+			// Compress, load and serialize transpose graph
+			BVGraph.store(Transform.transpose(graph), f.toString());
+			propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
+			transposeProperties.load(propertyFile);
+			propertyFile.close();
+
+			kryo.writeObject(bbo, BVGraph.load(f.toString()));
+
+			// Write out properties
+			kryo.writeObject(bbo, graphProperties);
+			kryo.writeObject(bbo, transposeProperties);
+
+			// Write out maps
+			kryo.writeObject(bbo, LID2GID);
+			kryo.writeObject(bbo, GID2LID);
+
+			bbo.flush();
+
+			// Write to DB
+			callGraphDB.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
+
+			new File(f.toString() + BVGraph.PROPERTIES_EXTENSION).delete();
+			new File(f.toString() + BVGraph.OFFSETS_EXTENSION).delete();
+			new File(f.toString() + BVGraph.GRAPH_EXTENSION).delete();
+			f.delete();
+		}
+
 		/**
 		 * Returns the call graph and its transpose in a 2-element array. The
 		 * graphs are cached, and read from the database if needed.
@@ -629,6 +769,21 @@ public class KnowledgeBase implements Serializable, Closeable {
 			final byte[] result = callGraphDB.get(uri2gidFamilyHandle, uriBytes);
 			if (result != null) return Longs.fromByteArray(result);
 			final long gid = nextGID++;
+			final byte[] gidBytes = Longs.toByteArray(gid);
+			callGraphDB.put(gid2uriFamilyHandle, gidBytes, uriBytes);
+			callGraphDB.put(uri2gidFamilyHandle, uriBytes, gidBytes);
+			return gid;
+		} catch (final RocksDBException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected long addURI(final FastenURI uri, Map<FastenURI, Long> uriToGid) {
+		final byte[] uriBytes = uri.toString().getBytes(StandardCharsets.UTF_8);
+		try {
+			final byte[] result = callGraphDB.get(uri2gidFamilyHandle, uriBytes);
+			if (result != null) return Longs.fromByteArray(result);
+			final long gid = uriToGid.get(uri);
 			final byte[] gidBytes = Longs.toByteArray(gid);
 			callGraphDB.put(gid2uriFamilyHandle, gidBytes, uriBytes);
 			callGraphDB.put(uri2gidFamilyHandle, uriBytes, gidBytes);
@@ -869,6 +1024,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 */
 	public synchronized void add(final ExtendedRevisionCallGraph g, final long index) throws IOException, RocksDBException {
 		callGraphs.put(index, new CallGraph(g, index));
+	}
+
+	public synchronized void add(final ExtendedRevisionCallGraph g, final long index, final Map<FastenURI, Long> uriToGid) throws IOException, RocksDBException {
+		callGraphs.put(index, new CallGraph(g, index, uriToGid));
 	}
 
 	@Override
