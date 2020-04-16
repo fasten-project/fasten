@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+import it.unimi.dsi.fastutil.objects.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -69,12 +70,6 @@ import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
-import it.unimi.dsi.fastutil.objects.AbstractObjectCollection;
-import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.io.InputBitStream;
 import it.unimi.dsi.io.NullInputStream;
 import it.unimi.dsi.lang.MutableString;
@@ -444,7 +439,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			f.delete();
 		}
 
-		protected CallGraph(final ExtendedRevisionCallGraph g, final long index, Map<FastenURI, Long> uriToGid) throws IOException, RocksDBException {
+		protected CallGraph(final ExtendedRevisionCallGraph g, final long index, Object2LongMap<FastenURI> uriToGid) throws IOException, RocksDBException {
 			product = g.product;
 			version = g.version;
 			forge = g.forge;
@@ -463,8 +458,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			for (final Entry<Integer, FastenURI> e : mapOfAllMethods.entrySet()) {
 				final int jsonId = e.getKey().intValue();
 				final FastenURI uri = e.getValue();
-				final FastenURI genericUri = FastenURI.createSchemeless(null, null, null, uri.getRawNamespace(), uri.getRawEntity());
-				final long gid = addURI(genericUri, uriToGid);
+				final long gid = uriToGid.getLong(uri);
 				addGidRev(GIDAppearsIn, gid, index);
 				jsonId2Temporary.put(jsonId, internalGIDs.size());
 				internalGIDs.add(gid);
@@ -476,8 +470,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			// While performing the enumeration, we check that their generic URIs don't appear already among those of internal nodes.
 			for(final Pair<Integer, FastenURI> e : g.getGraph().getExternalCalls().keySet()) {
 				final FastenURI uri = e.getValue();
-				final FastenURI genericUri = FastenURI.createSchemeless(null, null, null, uri.getRawNamespace(), uri.getRawEntity());
-				final long gid = addURI(genericUri, uriToGid);
+				final long gid = uriToGid.getLong(uri);
 				if (internalGIDs.contains(gid)) LOGGER.error("GID " + gid + " (URL " + uri + ") appears both as an internal and as an external node: considering it internal");
 				else {
 					addGidRev(GIDCalledBy, gid, index);
@@ -521,13 +514,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 				final int jsonSource = a.getLeft().intValue();
 				final FastenURI targetUri = a.getRight();
-				final FastenURI genericTargetUri = FastenURI.createSchemeless(null, null, null, targetUri.getRawNamespace(), targetUri.getRawEntity());
-				final long targetGID = addURI(genericTargetUri, uriToGid);
+				final long targetGID = uriToGid.getLong(targetUri);
 
 				try {
 					mutableGraph.addArc(jsonId2Temporary.get(jsonSource), GID2Temporary.get(targetGID));
 				} catch (final IllegalArgumentException e) {
-					LOGGER.error("Duplicate arc " + gid2URI(temporary2GID[jsonId2Temporary.get(jsonSource)]) + " -> " + genericTargetUri);
+					LOGGER.error("Duplicate arc " + gid2URI(temporary2GID[jsonId2Temporary.get(jsonSource)]) + " -> " + targetUri);
 				}
 			}
 
@@ -778,21 +770,6 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 	}
 
-	protected long addURI(final FastenURI uri, Map<FastenURI, Long> uriToGid) {
-		final byte[] uriBytes = uri.toString().getBytes(StandardCharsets.UTF_8);
-		try {
-			final byte[] result = callGraphDB.get(uri2gidFamilyHandle, uriBytes);
-			if (result != null) return Longs.fromByteArray(result);
-			final long gid = uriToGid.get(uri);
-			final byte[] gidBytes = Longs.toByteArray(gid);
-			callGraphDB.put(gid2uriFamilyHandle, gidBytes, uriBytes);
-			callGraphDB.put(uri2gidFamilyHandle, uriBytes, gidBytes);
-			return gid;
-		} catch (final RocksDBException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	/**
 	 * Returns the successors of a given node.
 	 *
@@ -1026,7 +1003,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		callGraphs.put(index, new CallGraph(g, index));
 	}
 
-	public synchronized void add(final ExtendedRevisionCallGraph g, final long index, final Map<FastenURI, Long> uriToGid) throws IOException, RocksDBException {
+	public synchronized void add(final ExtendedRevisionCallGraph g, final long index, final Object2LongMap<FastenURI> uriToGid) throws IOException, RocksDBException {
 		callGraphs.put(index, new CallGraph(g, index, uriToGid));
 	}
 

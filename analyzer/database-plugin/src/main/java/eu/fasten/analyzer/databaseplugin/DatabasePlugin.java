@@ -31,7 +31,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -63,7 +64,7 @@ public class DatabasePlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(DatabaseExtension.class.getName());
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
-        private Map<FastenURI, Long> uriToGid = new HashMap<>();
+        private Object2LongMap<FastenURI> uriToGid;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -87,7 +88,7 @@ public class DatabasePlugin extends Plugin {
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
-            uriToGid = new HashMap<>();
+            uriToGid = new Object2LongOpenHashMap<>();
             final var consumedJson = new JSONObject(record.value());
             final var artifact = consumedJson.optString("product") + "@"
                     + consumedJson.optString("version");
@@ -191,10 +192,7 @@ public class DatabasePlugin extends Plugin {
                     var uri = methodEntry.getValue().toString();
                     long callableId = metadataDao.insertCallable(moduleId, uri, true, null, null);
                     globalIdsMap.put(methodEntry.getKey(), callableId);
-                    var genericUri = FastenURI.createSchemeless(null, null, null,
-                            methodEntry.getValue().getRawNamespace(),
-                            methodEntry.getValue().getRawEntity());
-                    this.uriToGid.put(genericUri, callableId);
+                    this.uriToGid.put(methodEntry.getValue(), callableId);
                 }
             }
 
@@ -217,9 +215,7 @@ public class DatabasePlugin extends Plugin {
                 var sourceGlobalId = globalIdsMap.get(sourceLocalId);
                 var uri = call.getValue().toString();
                 var targetId = metadataDao.insertCallable(null, uri, false, null, null);
-                var genericUri = FastenURI.createSchemeless(null, null, null,
-                        call.getValue().getRawNamespace(), call.getValue().getRawEntity());
-                this.uriToGid.put(genericUri, targetId);
+                this.uriToGid.put(call.getValue(), targetId);
                 var edgeMetadata = new JSONObject(callEntry.getValue());
                 metadataDao.insertEdge(sourceGlobalId, targetId, edgeMetadata);
                 edges.add(new EdgesRecord(sourceGlobalId, targetId,
