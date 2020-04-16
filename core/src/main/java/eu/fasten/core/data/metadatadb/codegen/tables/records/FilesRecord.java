@@ -31,7 +31,7 @@ import org.jooq.impl.UpdatableRecordImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class FilesRecord extends UpdatableRecordImpl<FilesRecord> implements Record6<Long, Long, String, byte[], Timestamp, JSONB> {
 
-    private static final long serialVersionUID = -1183560952;
+    private static final long serialVersionUID = 1812926113;
 
     /**
      * Setter for <code>public.files.id</code>.
@@ -48,16 +48,16 @@ public class FilesRecord extends UpdatableRecordImpl<FilesRecord> implements Rec
     }
 
     /**
-     * Setter for <code>public.files.module_id</code>.
+     * Setter for <code>public.files.package_version_id</code>.
      */
-    public void setModuleId(Long value) {
+    public void setPackageVersionId(Long value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>public.files.module_id</code>.
+     * Getter for <code>public.files.package_version_id</code>.
      */
-    public Long getModuleId() {
+    public Long getPackageVersionId() {
         return (Long) get(1);
     }
 
@@ -147,7 +147,7 @@ public class FilesRecord extends UpdatableRecordImpl<FilesRecord> implements Rec
 
     @Override
     public Field<Long> field2() {
-        return Files.FILES.MODULE_ID;
+        return Files.FILES.PACKAGE_VERSION_ID;
     }
 
     @Override
@@ -177,7 +177,7 @@ public class FilesRecord extends UpdatableRecordImpl<FilesRecord> implements Rec
 
     @Override
     public Long component2() {
-        return getModuleId();
+        return getPackageVersionId();
     }
 
     @Override
@@ -207,7 +207,7 @@ public class FilesRecord extends UpdatableRecordImpl<FilesRecord> implements Rec
 
     @Override
     public Long value2() {
-        return getModuleId();
+        return getPackageVersionId();
     }
 
     @Override
@@ -238,7 +238,7 @@ public class FilesRecord extends UpdatableRecordImpl<FilesRecord> implements Rec
 
     @Override
     public FilesRecord value2(Long value) {
-        setModuleId(value);
+        setPackageVersionId(value);
         return this;
     }
 
@@ -291,11 +291,11 @@ public class FilesRecord extends UpdatableRecordImpl<FilesRecord> implements Rec
     /**
      * Create a detached, initialised FilesRecord
      */
-    public FilesRecord(Long id, Long moduleId, String path, byte[] checksum, Timestamp createdAt, JSONB metadata) {
+    public FilesRecord(Long id, Long packageVersionId, String path, byte[] checksum, Timestamp createdAt, JSONB metadata) {
         super(Files.FILES);
 
         set(0, id);
-        set(1, moduleId);
+        set(1, packageVersionId);
         set(2, path);
         set(3, checksum);
         set(4, createdAt);

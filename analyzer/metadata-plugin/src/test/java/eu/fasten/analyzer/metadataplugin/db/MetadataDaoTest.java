@@ -788,6 +788,94 @@ public class MetadataDaoTest {
         });
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    @Test
+    public void insertModuleContentsTest() {
+        long moduleId = 1;
+        long fileId = 42;
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(ModuleContents.MODULE_CONTENTS)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(ModuleContents.MODULE_CONTENTS.MODULE_ID.eq(moduleId))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(ModuleContents.MODULE_CONTENTS.FILE_ID.eq(fileId))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.fetch()).thenReturn(null);
+        var insertValues = Mockito.mock(InsertValuesStep2.class);
+        Mockito.when(context.insertInto(ModuleContents.MODULE_CONTENTS, ModuleContents.MODULE_CONTENTS.MODULE_ID,
+                ModuleContents.MODULE_CONTENTS.FILE_ID)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(moduleId, fileId)).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(ModuleContents.MODULE_CONTENTS.MODULE_ID)).thenReturn(insertResult);
+        var record = new ModuleContentsRecord(moduleId, fileId);
+        Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        long result = metadataDao.insertModuleContent(moduleId, fileId);
+        assertEquals(moduleId, result);
+    }
+
+    @Test
+    public void insertExistingModuleContentsTest() {
+        long moduleId = 1;
+        long fileId = 42;
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(ModuleContents.MODULE_CONTENTS)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(ModuleContents.MODULE_CONTENTS.MODULE_ID.eq(moduleId))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(ModuleContents.MODULE_CONTENTS.FILE_ID.eq(fileId))).thenReturn(selectCondStep);
+        var resultSet = Mockito.mock(Result.class);
+        Mockito.when(resultSet.isEmpty()).thenReturn(false);
+        Mockito.when(resultSet.getValues(ModuleContents.MODULE_CONTENTS.MODULE_ID)).thenReturn(Collections.singletonList(moduleId));
+        Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
+        long result = metadataDao.insertModuleContent(moduleId, fileId);
+        assertEquals(moduleId, result);
+    }
+
+    @Test
+    public void insertMultipleModuleContentsTest() throws IllegalArgumentException {
+        var moduleIds = List.of(1L, 2L);
+        var fileIds = List.of(8L, 42L);
+        var selectStep = Mockito.mock(SelectWhereStep.class);
+        Mockito.when(context.selectFrom(ModuleContents.MODULE_CONTENTS)).thenReturn(selectStep);
+        var selectCondStep = Mockito.mock(SelectConditionStep.class);
+        Mockito.when(selectStep.where(ModuleContents.MODULE_CONTENTS.MODULE_ID.eq(moduleIds.get(0)))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(ModuleContents.MODULE_CONTENTS.FILE_ID.eq(fileIds.get(0)))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(ModuleContents.MODULE_CONTENTS.MODULE_ID.eq(moduleIds.get(1)))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.and(ModuleContents.MODULE_CONTENTS.FILE_ID.eq(fileIds.get(1)))).thenReturn(selectCondStep);
+        Mockito.when(selectCondStep.fetch()).thenReturn(null);
+        var insertValues = Mockito.mock(InsertValuesStep2.class);
+        Mockito.when(context.insertInto(ModuleContents.MODULE_CONTENTS, ModuleContents.MODULE_CONTENTS.MODULE_ID,
+                ModuleContents.MODULE_CONTENTS.FILE_ID)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(moduleIds.get(0), fileIds.get(0))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(moduleIds.get(1), fileIds.get(1))).thenReturn(insertValues);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertValues.returning(ModuleContents.MODULE_CONTENTS.MODULE_ID)).thenReturn(insertResult);
+        var record1 = new ModuleContentsRecord(moduleIds.get(0), fileIds.get(0));
+        var record2 = new ModuleContentsRecord(moduleIds.get(1), fileIds.get(1));
+        Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
+        var result = metadataDao.insertModuleContents(moduleIds, fileIds);
+        assertEquals(moduleIds, result);
+    }
+
+    @Test
+    public void insertMultipleModuleContentsErrorTest() {
+        var moduleIds = List.of(1L);
+        var fileIds = List.of(8L, 42L);
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertModuleContents(moduleIds, fileIds);
+        });
+    }
+
+    @Test
+    public void insertMultipleModuleContentsErrorTest1() {
+        var moduleIds = List.of(1L, 2L);
+        var fileIds = List.of(8L);
+        assertThrows(IllegalArgumentException.class, () -> {
+            metadataDao.insertModuleContents(moduleIds, fileIds);
+        });
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+
     @Test
     public void insertBinaryModuleContentsTest() {
         long binaryModuleId = 1;
@@ -874,7 +962,7 @@ public class MetadataDaoTest {
     @Test
     public void insertFileTest() {
         var id = 1L;
-        var moduleId = 42L;
+        var packageVersionId = 42L;
         var path = "path/to/file";
         var checksum = new byte[]{1, 2, 3, 4, 5};
         var createdAt = new Timestamp(1);
@@ -882,50 +970,50 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Files.FILES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Files.FILES.MODULE_ID.eq(moduleId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Files.FILES.PACKAGE_VERSION_ID.eq(packageVersionId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Files.FILES.PATH.eq(path))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.fetch()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Files.FILES, Files.FILES.MODULE_ID, Files.FILES.PATH, Files.FILES.CHECKSUM,
+        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH, Files.FILES.CHECKSUM,
                 Files.FILES.CREATED_AT, Files.FILES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(moduleId, path, checksum, createdAt,
+        Mockito.when(insertValues.values(packageVersionId, path, checksum, createdAt,
                 JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertValues.returning(Files.FILES.ID)).thenReturn(insertResult);
-        var record = new FilesRecord(id, moduleId, path, checksum, createdAt,
+        var record = new FilesRecord(id, packageVersionId, path, checksum, createdAt,
                 JSONB.valueOf(metadata.toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        var result = metadataDao.insertFile(moduleId, path, checksum, createdAt, metadata);
+        var result = metadataDao.insertFile(packageVersionId, path, checksum, createdAt, metadata);
         assertEquals(id, result);
     }
 
     @Test
     public void insertNullFileTest() {
         var id = 1L;
-        var moduleId = 42L;
+        var packageVersionId = 42L;
         var path = "path/to/file";
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Files.FILES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Files.FILES.MODULE_ID.eq(moduleId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Files.FILES.PACKAGE_VERSION_ID.eq(packageVersionId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Files.FILES.PATH.eq(path))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.fetch()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Files.FILES, Files.FILES.MODULE_ID, Files.FILES.PATH, Files.FILES.CHECKSUM,
+        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH, Files.FILES.CHECKSUM,
                 Files.FILES.CREATED_AT, Files.FILES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(moduleId, path, null, null, null)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageVersionId, path, null, null, null)).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertValues.returning(Files.FILES.ID)).thenReturn(insertResult);
-        var record = new FilesRecord(id, moduleId, path, null, null, null);
+        var record = new FilesRecord(id, packageVersionId, path, null, null, null);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        var result = metadataDao.insertFile(moduleId, path, null, null, null);
+        var result = metadataDao.insertFile(packageVersionId, path, null, null, null);
         assertEquals(id, result);
     }
 
     @Test
     public void insertExistingFileTest() {
         var id = 1L;
-        var moduleId = 42L;
+        var packageVersionId = 42L;
         var path = "path/to/file";
         var checksum = new byte[]{1, 2, 3, 4, 5};
         var createdAt = new Timestamp(1);
@@ -933,7 +1021,7 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Files.FILES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Files.FILES.MODULE_ID.eq(moduleId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Files.FILES.PACKAGE_VERSION_ID.eq(packageVersionId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Files.FILES.PATH.eq(path))).thenReturn(selectCondStep);
         var resultSet = Mockito.mock(Result.class);
         Mockito.when(resultSet.isEmpty()).thenReturn(false);
@@ -947,14 +1035,14 @@ public class MetadataDaoTest {
         Mockito.when(updateSet.set(Files.FILES.METADATA, JSONB.valueOf(metadata.toString()))).thenReturn(updateSet);
         var updateCond = Mockito.mock(UpdateConditionStep.class);
         Mockito.when(updateSet.where(Files.FILES.ID.eq(id))).thenReturn(updateCond);
-        var result = metadataDao.insertFile(moduleId, path, checksum, createdAt, metadata);
+        var result = metadataDao.insertFile(packageVersionId, path, checksum, createdAt, metadata);
         assertEquals(id, result);
     }
 
     @Test
     public void insertMultipleFilesTest() {
         var ids = Arrays.asList(1L, 2L);
-        var moduleId = 42L;
+        var packageVersionId = 42L;
         var paths = Arrays.asList("path/to/file", "path/to/another/file");
         var checksums = Arrays.asList(new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
@@ -962,69 +1050,69 @@ public class MetadataDaoTest {
         var selectStep = Mockito.mock(SelectWhereStep.class);
         Mockito.when(context.selectFrom(Files.FILES)).thenReturn(selectStep);
         var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Files.FILES.MODULE_ID.eq(moduleId))).thenReturn(selectCondStep);
+        Mockito.when(selectStep.where(Files.FILES.PACKAGE_VERSION_ID.eq(packageVersionId))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Files.FILES.PATH.eq(paths.get(0)))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.and(Files.FILES.PATH.eq(paths.get(1)))).thenReturn(selectCondStep);
         Mockito.when(selectCondStep.fetch()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep5.class);
-        Mockito.when(context.insertInto(Files.FILES, Files.FILES.MODULE_ID, Files.FILES.PATH, Files.FILES.CHECKSUM,
+        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH, Files.FILES.CHECKSUM,
                 Files.FILES.CREATED_AT, Files.FILES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(moduleId, paths.get(0), checksums.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()))).thenReturn(insertValues);
-        Mockito.when(insertValues.values(moduleId, paths.get(1), checksums.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageVersionId, paths.get(0), checksums.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageVersionId, paths.get(1), checksums.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()))).thenReturn(insertValues);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertValues.returning(Files.FILES.ID)).thenReturn(insertResult);
-        var record1 = new FilesRecord(ids.get(0), moduleId, paths.get(0), checksums.get(1), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()));
-        var record2 = new FilesRecord(ids.get(1), moduleId, paths.get(1), checksums.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()));
+        var record1 = new FilesRecord(ids.get(0), packageVersionId, paths.get(0), checksums.get(1), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()));
+        var record2 = new FilesRecord(ids.get(1), packageVersionId, paths.get(1), checksums.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
-        var result = metadataDao.insertFiles(moduleId, paths, checksums, createdAt, metadata);
+        var result = metadataDao.insertFiles(packageVersionId, paths, checksums, createdAt, metadata);
         assertEquals(ids, result);
     }
 
     @Test
     public void insertMultipleFilesErrorTest() {
-        var moduleId = 42L;
+        var packageVersionId = 42L;
         var paths = Collections.singletonList("path/to/file");
         var checksums = Arrays.asList(new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(moduleId, paths, checksums, createdAt, metadata);
+            metadataDao.insertFiles(packageVersionId, paths, checksums, createdAt, metadata);
         });
     }
 
     @Test
     public void insertMultipleFilesErrorTest1() {
-        var moduleId = 42L;
+        var packageVersionId = 42L;
         var paths = Arrays.asList("path/to/file", "path/to/another/file");
         var checksums = Collections.singletonList(new byte[]{1, 2, 3, 4, 5});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(moduleId, paths, checksums, createdAt, metadata);
+            metadataDao.insertFiles(packageVersionId, paths, checksums, createdAt, metadata);
         });
     }
 
     @Test
     public void insertMultipleFilesErrorTest2() {
-        var moduleId = 42L;
+        var packageVersionId = 42L;
         var paths = Arrays.asList("path/to/file", "path/to/another/file");
         var checksums = Arrays.asList(new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9});
         var createdAt = Collections.singletonList(new Timestamp(1));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(moduleId, paths, checksums, createdAt, metadata);
+            metadataDao.insertFiles(packageVersionId, paths, checksums, createdAt, metadata);
         });
     }
 
     @Test
     public void insertMultipleFilesErrorTest3() {
-        var moduleId = 42L;
+        var packageVersionId = 42L;
         var paths = Arrays.asList("path/to/file", "path/to/another/file");
         var checksums = Arrays.asList(new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(moduleId, paths, checksums, createdAt, metadata);
+            metadataDao.insertFiles(packageVersionId, paths, checksums, createdAt, metadata);
         });
     }
 

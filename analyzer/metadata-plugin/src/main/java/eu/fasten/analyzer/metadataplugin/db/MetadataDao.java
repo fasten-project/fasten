@@ -20,15 +20,7 @@ package eu.fasten.analyzer.metadataplugin.db;
 
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
-import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
-import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
-import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
-import eu.fasten.core.data.metadatadb.codegen.tables.Files;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -492,16 +484,80 @@ public class MetadataDao {
     }
 
     /**
+     * Inserts a record in 'module_contents' table in the database.
+     *
+     * @param moduleId ID of the module (references 'modules.id')
+     * @param fileId   ID of the file (references 'files.id')
+     * @return ID of the new record = moduleId
+     */
+    public long insertModuleContent(long moduleId, long fileId) {
+        var moduleContents = this.findModuleContents(moduleId, fileId);
+        if (moduleContents != -1L) {
+            logger.debug("Duplicate module contents: '" + moduleId + "; " + fileId
+                    + "' already exists with ID=" + moduleContents);
+            return moduleContents;
+        } else {
+            var resultRecord = context.insertInto(ModuleContents.MODULE_CONTENTS,
+                    ModuleContents.MODULE_CONTENTS.MODULE_ID,
+                    ModuleContents.MODULE_CONTENTS.FILE_ID)
+                    .values(moduleId, fileId)
+                    .returning(ModuleContents.MODULE_CONTENTS.MODULE_ID)
+                    .fetchOne();
+            return resultRecord.getValue(ModuleContents.MODULE_CONTENTS.MODULE_ID);
+        }
+    }
+
+    /**
+     * Searches 'module_contents' table for certain module contents record.
+     *
+     * @param moduleId ID of the module
+     * @param fileId   ID of the file
+     * @return ID of the record found or -1 otherwise
+     */
+    public long findModuleContents(long moduleId, long fileId) {
+        var resultRecords = context.selectFrom(ModuleContents.MODULE_CONTENTS)
+                .where(ModuleContents.MODULE_CONTENTS.MODULE_ID.eq(moduleId))
+                .and(ModuleContents.MODULE_CONTENTS.FILE_ID.eq(fileId)).fetch();
+        if (resultRecords == null || resultRecords.isEmpty()) {
+            return -1L;
+        } else {
+            return resultRecords.getValues(ModuleContents.MODULE_CONTENTS.MODULE_ID).get(0);
+        }
+    }
+
+    /**
+     * Inserts multiple records in the 'module_contents' table in the database.
+     *
+     * @param moduleIds List of modules IDs
+     * @param fileIds   List of files IDs
+     * @return List of IDs of new records
+     * @throws IllegalArgumentException if lists are not of the same size
+     */
+    public List<Long> insertModuleContents(List<Long> moduleIds, List<Long> fileIds)
+            throws IllegalArgumentException {
+        if (moduleIds.size() != fileIds.size()) {
+            throw new IllegalArgumentException("Lists should have equal size");
+        }
+        int length = fileIds.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertModuleContent(moduleIds.get(i), fileIds.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
+    }
+
+    /**
      * Inserts a record in 'binary_module_contents' table in the database.
      *
-     * @param binaryModuleId ID of the package version (references 'package_versions.id')
-     * @param fileId             ID of the file (references 'files.id')
+     * @param binaryModuleId ID of the binary module (references 'binary_modules.id')
+     * @param fileId         ID of the file (references 'files.id')
      * @return ID of the new record = binaryModuleId
      */
     public long insertBinaryModuleContent(long binaryModuleId, long fileId) {
         var binaryModuleContents = this.findBinaryModuleContents(binaryModuleId, fileId);
         if (binaryModuleContents != -1L) {
-            logger.debug("Duplicate binary module: '" + binaryModuleId + "; " + fileId
+            logger.debug("Duplicate binary module contents: '" + binaryModuleId + "; " + fileId
                     + "' already exists with ID=" + binaryModuleContents);
             return binaryModuleContents;
         } else {
@@ -520,7 +576,7 @@ public class MetadataDao {
      * Searches 'binary_module_contents' table for certain binary module contents record.
      *
      * @param binaryModuleId ID of the binary module
-     * @param fileId             ID of the file
+     * @param fileId         ID of the file
      * @return ID of the record found or -1 otherwise
      */
     public long findBinaryModuleContents(long binaryModuleId, long fileId) {
@@ -540,7 +596,7 @@ public class MetadataDao {
      * Inserts multiple records in the 'binary_module_contents' table in the database.
      *
      * @param binaryModuleIds List of binary modules IDs
-     * @param fileIds        List of files IDs
+     * @param fileIds         List of files IDs
      * @return List of IDs of new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
@@ -561,27 +617,29 @@ public class MetadataDao {
     /**
      * Insert a new record into 'files' table in the database.
      *
-     * @param moduleId  Module ID of the file
-     * @param path      Path of the file
-     * @param checksum  Checksum of the file
-     * @param createdAt Timestamp of the file
-     * @param metadata  Metadata of the file
+     * @param packageVersionId ID of the package version to which the file belongs
+     *                         (references 'package_versions.id')
+     * @param path             Path of the file
+     * @param checksum         Checksum of the file
+     * @param createdAt        Timestamp of the file
+     * @param metadata         Metadata of the file
      * @return ID of the new record
      */
-    public long insertFile(long moduleId, String path, byte[] checksum,
+    public long insertFile(long packageVersionId, String path, byte[] checksum,
                            Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var fileId = this.findFile(moduleId, path);
+        var fileId = this.findFile(packageVersionId, path);
         if (fileId != -1L) {
-            logger.debug("Duplicate file: '" + moduleId + "; " + path
+            logger.debug("Duplicate file: '" + packageVersionId + "; " + path
                     + "' already exists with ID=" + fileId);
             this.updateFile(fileId, checksum, createdAt, metadataJsonb);
             return fileId;
         } else {
             var resultRecord = context.insertInto(Files.FILES,
-                    Files.FILES.MODULE_ID, Files.FILES.PATH, Files.FILES.CHECKSUM,
+                    Files.FILES.PACKAGE_VERSION_ID,
+                    Files.FILES.PATH, Files.FILES.CHECKSUM,
                     Files.FILES.CREATED_AT, Files.FILES.METADATA)
-                    .values(moduleId, path, checksum, createdAt, metadataJsonb)
+                    .values(packageVersionId, path, checksum, createdAt, metadataJsonb)
                     .returning(Files.FILES.ID).fetchOne();
             return resultRecord.getValue(Files.FILES.ID);
         }
@@ -590,13 +648,12 @@ public class MetadataDao {
     /**
      * Searches 'files' table for a file with certain module ID and path.
      *
-     * @param moduleId Module ID of the file
-     * @param path     Path of the file
+     * @param path Path of the file
      * @return ID of the record found or -1 otherwise
      */
-    public long findFile(long moduleId, String path) {
+    public long findFile(long packageVersionId, String path) {
         var resultRecords = context.selectFrom(Files.FILES)
-                .where(Files.FILES.MODULE_ID.eq(moduleId))
+                .where(Files.FILES.PACKAGE_VERSION_ID.eq(packageVersionId))
                 .and(Files.FILES.PATH.eq(path)).fetch();
         if (resultRecords == null || resultRecords.isEmpty()) {
             return -1L;
@@ -624,17 +681,17 @@ public class MetadataDao {
     /**
      * Insert multiple records in the 'files' table in the database.
      *
-     * @param moduleId      Common module ID
-     * @param pathsList     List of paths of files
-     * @param checksumsList List of checksums of files
-     * @param createdAt     List of timestamps of files
-     * @param metadata      List of metadata of files
+     * @param packageVersionId ID of the common package version
+     * @param pathsList        List of paths of files
+     * @param checksumsList    List of checksums of files
+     * @param createdAt        List of timestamps of files
+     * @param metadata         List of metadata of files
      * @return List of IDs of new records
      * @throws IllegalArgumentException if any of the lists have different size
      */
-    public List<Long> insertFiles(long moduleId, List<String> pathsList, List<byte[]> checksumsList,
-                                  List<Timestamp> createdAt, List<JSONObject> metadata)
-            throws IllegalArgumentException {
+    public List<Long> insertFiles(long packageVersionId, List<String> pathsList,
+                                  List<byte[]> checksumsList, List<Timestamp> createdAt,
+                                  List<JSONObject> metadata) throws IllegalArgumentException {
         if (pathsList.size() != checksumsList.size() || checksumsList.size() != createdAt.size()
                 || createdAt.size() != metadata.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
@@ -642,7 +699,7 @@ public class MetadataDao {
         int length = pathsList.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertFile(moduleId, pathsList.get(i), checksumsList.get(i),
+            long result = insertFile(packageVersionId, pathsList.get(i), checksumsList.get(i),
                     createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }

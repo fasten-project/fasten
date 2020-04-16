@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Files extends TableImpl<FilesRecord> {
 
-    private static final long serialVersionUID = -1192988928;
+    private static final long serialVersionUID = -149564113;
 
     /**
      * The reference instance of <code>public.files</code>
@@ -65,9 +65,9 @@ public class Files extends TableImpl<FilesRecord> {
     public final TableField<FilesRecord, Long> ID = createField(DSL.name("id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('files_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
 
     /**
-     * The column <code>public.files.module_id</code>.
+     * The column <code>public.files.package_version_id</code>.
      */
-    public final TableField<FilesRecord, Long> MODULE_ID = createField(DSL.name("module_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
+    public final TableField<FilesRecord, Long> PACKAGE_VERSION_ID = createField(DSL.name("package_version_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.files.path</code>.
@@ -149,11 +149,11 @@ public class Files extends TableImpl<FilesRecord> {
 
     @Override
     public List<ForeignKey<FilesRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<FilesRecord, ?>>asList(Keys.FILES__FILES_MODULE_ID_FKEY);
+        return Arrays.<ForeignKey<FilesRecord, ?>>asList(Keys.FILES__FILES_PACKAGE_VERSION_ID_FKEY);
     }
 
-    public Modules modules() {
-        return new Modules(this, Keys.FILES__FILES_MODULE_ID_FKEY);
+    public PackageVersions packageVersions() {
+        return new PackageVersions(this, Keys.FILES__FILES_PACKAGE_VERSION_ID_FKEY);
     }
 
     @Override

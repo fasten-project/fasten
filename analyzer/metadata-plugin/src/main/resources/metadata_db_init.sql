@@ -36,12 +36,19 @@ CREATE TABLE modules
 
 CREATE TABLE files
 (
-    id         BIGSERIAL PRIMARY KEY,
-    module_id  BIGINT NOT NULL REFERENCES modules (id),
-    path       TEXT   NOT NULL,
-    checksum   BYTEA,
-    created_at TIMESTAMP,
-    metadata   JSONB
+    id                 BIGSERIAL PRIMARY KEY,
+    package_version_id BIGINT NOT NULL REFERENCES package_versions (id),
+    path               TEXT   NOT NULL,
+    checksum           BYTEA,
+    created_at         TIMESTAMP,
+    metadata           JSONB
+);
+
+CREATE TABLE module_contents
+(
+    module_id BIGINT NOT NULL REFERENCES modules (id),
+    file_id   BIGINT NOT NULL REFERENCES files (id),
+    PRIMARY KEY (module_id, file_id)
 );
 
 CREATE TABLE binary_modules
@@ -82,7 +89,7 @@ CREATE INDEX package_versions_compound_index ON package_versions (package_id, ve
 CREATE INDEX dependencies_compound_index ON dependencies (package_version_id, dependency_id, version_range);
 CREATE INDEX modules_compound_index ON modules (package_version_id, namespace);
 CREATE INDEX binary_modules_compound_index ON binary_modules (package_version_id, name);
-CREATE INDEX files_compound_index ON files (module_id, path);
+CREATE INDEX files_compound_index ON files (package_version_id, path);
 CREATE INDEX callables_compound_index ON callables (fasten_uri, is_internal_call);
 
 CREATE UNIQUE INDEX CONCURRENTLY unique_source_target ON edges USING btree (source_id, target_id);

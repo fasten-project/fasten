@@ -41,7 +41,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class BinaryModuleContents extends TableImpl<BinaryModuleContentsRecord> {
 
-    private static final long serialVersionUID = 805290297;
+    private static final long serialVersionUID = 291627686;
 
     /**
      * The reference instance of <code>public.binary_module_contents</code>
@@ -121,15 +121,11 @@ public class BinaryModuleContents extends TableImpl<BinaryModuleContentsRecord> 
 
     @Override
     public List<ForeignKey<BinaryModuleContentsRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<BinaryModuleContentsRecord, ?>>asList(Keys.BINARY_MODULE_CONTENTS__BINARY_MODULE_CONTENTS_BINARY_MODULE_ID_FKEY, Keys.BINARY_MODULE_CONTENTS__BINARY_MODULE_CONTENTS_FILE_ID_FKEY);
+        return Arrays.<ForeignKey<BinaryModuleContentsRecord, ?>>asList(Keys.BINARY_MODULE_CONTENTS__BINARY_MODULE_CONTENTS_BINARY_MODULE_ID_FKEY);
     }
 
     public BinaryModules binaryModules() {
         return new BinaryModules(this, Keys.BINARY_MODULE_CONTENTS__BINARY_MODULE_CONTENTS_BINARY_MODULE_ID_FKEY);
-    }
-
-    public Files files() {
-        return new Files(this, Keys.BINARY_MODULE_CONTENTS__BINARY_MODULE_CONTENTS_FILE_ID_FKEY);
     }
 
     @Override

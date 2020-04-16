@@ -10,6 +10,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
@@ -39,7 +40,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = 1496219339;
+    private static final long serialVersionUID = 619820699;
 
     /**
      * The reference instance of <code>public</code>
@@ -75,6 +76,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.files</code>.
      */
     public final Files FILES = eu.fasten.core.data.metadatadb.codegen.tables.Files.FILES;
+
+    /**
+     * The table <code>public.module_contents</code>.
+     */
+    public final ModuleContents MODULE_CONTENTS = eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents.MODULE_CONTENTS;
 
     /**
      * The table <code>public.modules</code>.
@@ -136,6 +142,7 @@ public class Public extends SchemaImpl {
             Dependencies.DEPENDENCIES,
             Edges.EDGES,
             Files.FILES,
+            ModuleContents.MODULE_CONTENTS,
             Modules.MODULES,
             PackageVersions.PACKAGE_VERSIONS,
             Packages.PACKAGES);
