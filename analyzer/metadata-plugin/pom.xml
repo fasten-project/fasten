@@ -21,7 +21,8 @@
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
             <version>3.12.3</version>
-<!--            <scope>provided</scope>-->
+            <!-- The scope should be provided. Since JOOQ is provided in the JAR of the FASTEN server -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <!-- This dependency can be removed once jOOQ v3.15 is out,

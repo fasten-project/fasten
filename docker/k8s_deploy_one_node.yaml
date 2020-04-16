@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fasten-server-lima
+  namespace: fasten
+spec:
+  selector:
+    matchLabels:
+      app: fasten-server-lima
+  replicas: 8
+  template:
+    metadata:
+      labels:
+        app: fasten-server-lima
+    spec:
+      containers:
+        - name: fasten-server
+          image: monster93/fasten-server:v0.6b
+          args: ["-k", "kafka-0.kafka-headless.codefeedr:9092", "-t", "$(FASTEN_CONFIG)"]
+          ports:
+            - containerPort: 3010
+          env:
+            - name: FASTEN_CONFIG
+              valueFrom:
+                configMapKeyRef:
+                  key: fasten.topics
+                  name: fasten.config
+      nodeSelector:
+        lima.node: "true"
