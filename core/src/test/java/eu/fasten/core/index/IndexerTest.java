@@ -169,23 +169,24 @@ public class IndexerTest {
 		for(int pass = 0; pass < 2; pass++) {
 			for(final var entry : kb.callGraphs.long2ObjectEntrySet()) {
 				final eu.fasten.core.data.KnowledgeBase.CallGraph callGraph = entry.getValue();
-				for(int i = 0; i < callGraph.nInternal; i++) {
-					final Node node = kb.new Node(callGraph.callGraphData().LID2GID[i], entry.getLongKey());
-					ObjectLinkedOpenHashSet<Node> reaches;
-					ObjectLinkedOpenHashSet<Node> coreaches;
+				for(long gid: callGraph.callGraphData().nodes()) 
+					if (!(callGraph.callGraphData().externalNodes().contains(gid))) {
+						final Node node = kb.new Node(gid, entry.getLongKey());
+						ObjectLinkedOpenHashSet<Node> reaches;
+						ObjectLinkedOpenHashSet<Node> coreaches;
 
-					reaches = kb.reaches(node);
-					for(final Node reached: reaches) {
-						coreaches = kb.coreaches(reached);
-						assertTrue(coreaches.contains(node));
-					}
+						reaches = kb.reaches(node);
+						for(final Node reached: reaches) {
+							coreaches = kb.coreaches(reached);
+							assertTrue(coreaches.contains(node));
+						}
 
-					coreaches = kb.coreaches(node);
-					for(final Node reached: coreaches) {
-						reaches = kb.coreaches(reached);
-						assertTrue(coreaches.contains(node));
+						coreaches = kb.coreaches(node);
+						for(final Node reached: coreaches) {
+							reaches = kb.coreaches(reached);
+							assertTrue(coreaches.contains(node));
+						}
 					}
-				}
 			}
 			kb.close();
 			kb = KnowledgeBase.getInstance(kbDir.toString(), meta);

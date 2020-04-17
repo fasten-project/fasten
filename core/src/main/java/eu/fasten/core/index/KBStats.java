@@ -41,10 +41,8 @@ import com.martiansoftware.jsap.UnflaggedOption;
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.CallGraph;
 import eu.fasten.core.data.KnowledgeBase.CallGraphData;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.logging.ProgressLogger;
-import it.unimi.dsi.webgraph.ImmutableGraph;
-import it.unimi.dsi.webgraph.LazyIntIterator;
-import it.unimi.dsi.webgraph.NodeIterator;
 
 
 public class KBStats {
@@ -105,29 +103,26 @@ public class KBStats {
 			pl.update();
 			final CallGraphData callGraphData = callGraph.callGraphData();
 			totGraphs++;
-			final ImmutableGraph graph = callGraphData.graph;
-			if (graph.numNodes() < minNodes) continue;
-			if (gsdFlag) gsdStream.println(graph.numNodes());
+			if (callGraphData.numNodes() < minNodes) continue;
+			if (gsdFlag) gsdStream.println(callGraphData.numNodes());
 			statGraphs++;
-			nodes.add(graph.numNodes());
-			arcs.add(graph.numArcs());
+			nodes.add(callGraphData.numNodes());
+			arcs.add(callGraphData.numArcs());
 			internalNodes.add(callGraph.nInternal);
-			internalNodeRatio.add(((double)callGraph.nInternal)/graph.numNodes());
+			internalNodeRatio.add(((double)callGraph.nInternal)/callGraphData.numNodes());
 			final double bpl = Double.parseDouble((callGraphData.graphProperties.getProperty("bitsperlink")));
 			if (! Double.isNaN(bpl)) bitsPerLink.add(bpl);
 			final double bplt = Double.parseDouble((callGraphData.transposeProperties.getProperty("bitsperlink")));
 			if (! Double.isNaN(bplt)) bitsPerLinkt.add(bplt);
 			int internalArcs = 0, externalArcs = 0, totalArcs = 0;
+			LongSet externalNodes = callGraphData.externalNodes();
 			if (atFlag || odFlag) {
-				final NodeIterator nodeIterator = graph.nodeIterator();
-				while (nodeIterator.hasNext()) {
+				for (long node: callGraphData.nodes()) {
 					int internalOut = 0, externalOut = 0, totalOut = 0;
-					if (nodeIterator.nextInt() >= callGraph.nInternal) break;
-					final LazyIntIterator successors = nodeIterator.successors();
-					int called;
-					while ((called = successors.nextInt()) >= 0) {
-						if (called < callGraph.nInternal) internalOut++;
-						else externalOut++;
+					if (externalNodes.contains(node)) continue;
+					for (long successor: callGraphData.successors(node)) {
+						if (externalNodes.contains(successor)) externalOut++;
+						else internalOut++;
 						totalOut++;
 					}
 					if (odFlag) odStream.printf("%d\t%d\t%d\t%d\n", totGraphs, internalOut, externalOut, totalOut);
@@ -138,11 +133,9 @@ public class KBStats {
 				if (atFlag) atStream.printf("%d\t%d\t%d\n", internalArcs, externalArcs, totalArcs);
 			}
 			if (idFlag) {
-				ImmutableGraph transpose = callGraphData.transpose;
-				final NodeIterator nodeIterator = transpose.nodeIterator();
-				while (nodeIterator.hasNext()) {
-					int external = nodeIterator.nextInt() < callGraph.nInternal? 0 : 1; 
-					idStream.printf("%d\t%d\t%d\n", totGraphs, external, nodeIterator.outdegree());
+				for (long node: callGraphData.nodes()) {
+					int external = externalNodes.contains(node)? 1 : 0;
+					idStream.printf("%d\t%d\t%d\n", totGraphs, external, callGraphData.predecessors(node).size());
 				}
 				
 			}
