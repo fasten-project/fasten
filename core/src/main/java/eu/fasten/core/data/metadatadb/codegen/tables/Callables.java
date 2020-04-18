@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Callables extends TableImpl<CallablesRecord> {
 
-    private static final long serialVersionUID = 1945056612;
+    private static final long serialVersionUID = 1640507102;
 
     /**
      * The reference instance of <code>public.callables</code>
@@ -129,7 +129,7 @@ public class Callables extends TableImpl<CallablesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.CALLABLES_COMPOUND_INDEX, Indexes.CALLABLES_PKEY);
+        return Arrays.<Index>asList(Indexes.CALLABLES_PKEY, Indexes.UNIQUE_URI_CALL);
     }
 
     @Override
@@ -144,7 +144,7 @@ public class Callables extends TableImpl<CallablesRecord> {
 
     @Override
     public List<UniqueKey<CallablesRecord>> getKeys() {
-        return Arrays.<UniqueKey<CallablesRecord>>asList(Keys.CALLABLES_PKEY);
+        return Arrays.<UniqueKey<CallablesRecord>>asList(Keys.CALLABLES_PKEY, Keys.UNIQUE_URI_CALL);
     }
 
     @Override

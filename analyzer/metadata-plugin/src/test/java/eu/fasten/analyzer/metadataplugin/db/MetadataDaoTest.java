@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin.db;
 
+import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.*;
@@ -1124,20 +1125,23 @@ public class MetadataDaoTest {
         boolean isInternalCall = true;
         var createdAt = new Timestamp(1);
         var metadata = new JSONObject("{\"foo\":\"bar\"}");
-        var selectStep = Mockito.mock(SelectWhereStep.class);
-        Mockito.when(context.selectFrom(Callables.CALLABLES)).thenReturn(selectStep);
-        var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Callables.CALLABLES.FASTEN_URI.eq(fastenUri))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(isInternalCall))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.fetch()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep5.class);
         Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
                 Callables.CALLABLES.METADATA)).thenReturn(insertValues);
         Mockito.when(insertValues.values(moduleId, fastenUri, isInternalCall, createdAt,
                 JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
+        var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
+        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_URI_CALL)).thenReturn(insertOnConflict);
+        var insertDuplicateSet = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertDuplicateSet);
+        var insertDuplicateSetMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertDuplicateSet.set(Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.as("excluded").MODULE_ID)).thenReturn(insertDuplicateSetMore);
+        Mockito.when(insertDuplicateSetMore.set(Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.as("excluded").CREATED_AT)).thenReturn(insertDuplicateSetMore);
+        Mockito.when(insertDuplicateSetMore.set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
+                Callables.CALLABLES.as("excluded").METADATA))).thenReturn(insertDuplicateSetMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertValues.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
+        Mockito.when(insertDuplicateSetMore.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
         var record = new CallablesRecord(id, moduleId, fastenUri, isInternalCall, createdAt,
                 JSONB.valueOf(metadata.toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
@@ -1151,52 +1155,25 @@ public class MetadataDaoTest {
         long moduleId = 42;
         var fastenUri = "URI";
         var isInternalCall = false;
-        var selectStep = Mockito.mock(SelectWhereStep.class);
-        Mockito.when(context.selectFrom(Callables.CALLABLES)).thenReturn(selectStep);
-        var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Callables.CALLABLES.FASTEN_URI.eq(fastenUri))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(isInternalCall))).thenReturn(selectCondStep);
-        var resultSet = Mockito.mock(Result.class);
-        Mockito.when(resultSet.isEmpty()).thenReturn(true);
-        Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
         var insertValues = Mockito.mock(InsertValuesStep5.class);
         Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
                 Callables.CALLABLES.METADATA)).thenReturn(insertValues);
         Mockito.when(insertValues.values(moduleId, fastenUri, isInternalCall, null, null)).thenReturn(insertValues);
+        var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
+        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_URI_CALL)).thenReturn(insertOnConflict);
+        var insertDuplicateSet = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertDuplicateSet);
+        var insertDuplicateSetMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertDuplicateSet.set(Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.as("excluded").MODULE_ID)).thenReturn(insertDuplicateSetMore);
+        Mockito.when(insertDuplicateSetMore.set(Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.as("excluded").CREATED_AT)).thenReturn(insertDuplicateSetMore);
+        Mockito.when(insertDuplicateSetMore.set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
+                Callables.CALLABLES.as("excluded").METADATA))).thenReturn(insertDuplicateSetMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertValues.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
+        Mockito.when(insertDuplicateSetMore.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
         var record = new CallablesRecord(id, moduleId, fastenUri, isInternalCall, null, null);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         var result = metadataDao.insertCallable(moduleId, fastenUri, isInternalCall, null, null);
-        assertEquals(id, result);
-    }
-
-    @Test
-    public void insertExistingCallableTest() throws IllegalArgumentException {
-        var id = 1L;
-        long moduleId = 42;
-        var fastenUri = "URI";
-        var isInternalCall = false;
-        var timestamp = new Timestamp(1);
-        var metadata = new JSONObject();
-        var selectStep = Mockito.mock(SelectWhereStep.class);
-        Mockito.when(context.selectFrom(Callables.CALLABLES)).thenReturn(selectStep);
-        var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Callables.CALLABLES.FASTEN_URI.eq(fastenUri))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(isInternalCall))).thenReturn(selectCondStep);
-        var resultSet = Mockito.mock(Result.class);
-        Mockito.when(resultSet.isEmpty()).thenReturn(false);
-        Mockito.when(resultSet.getValues(Callables.CALLABLES.ID)).thenReturn(Collections.singletonList(id));
-        Mockito.when(selectCondStep.fetch()).thenReturn(resultSet);
-        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
-        Mockito.when(context.update(Callables.CALLABLES)).thenReturn(updateSetStart);
-        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
-        Mockito.when(updateSetStart.set(Callables.CALLABLES.CREATED_AT, timestamp)).thenReturn(updateSet);
-        Mockito.when(updateSet.set(Callables.CALLABLES.METADATA, JSONB.valueOf(metadata.toString()))).thenReturn(updateSet);
-        var updateCond = Mockito.mock(UpdateConditionStep.class);
-        Mockito.when(updateSet.where(Callables.CALLABLES.ID.eq(id))).thenReturn(updateCond);
-        var result = metadataDao.insertCallable(moduleId, fastenUri, isInternalCall, timestamp, metadata);
         assertEquals(id, result);
     }
 
@@ -1208,24 +1185,25 @@ public class MetadataDaoTest {
         var areInternalCalls = Arrays.asList(true, false);
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
-        var selectStep = Mockito.mock(SelectWhereStep.class);
-        Mockito.when(context.selectFrom(Callables.CALLABLES)).thenReturn(selectStep);
-        var selectCondStep = Mockito.mock(SelectConditionStep.class);
-        Mockito.when(selectStep.where(Callables.CALLABLES.FASTEN_URI.eq(fastenUris.get(0)))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(areInternalCalls.get(0)))).thenReturn(selectCondStep);
-        Mockito.when(selectStep.where(Callables.CALLABLES.FASTEN_URI.eq(fastenUris.get(1)))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(areInternalCalls.get(1)))).thenReturn(selectCondStep);
-        Mockito.when(selectCondStep.fetch()).thenReturn(null);
         var insertValues = Mockito.mock(InsertValuesStep5.class);
         Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
                 Callables.CALLABLES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(moduleId, fastenUris.get(0), areInternalCalls.get(0),
-                createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()))).thenReturn(insertValues);
-        Mockito.when(insertValues.values(moduleId, fastenUris.get(1), areInternalCalls.get(1),
-                createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(moduleId, fastenUris.get(0), areInternalCalls.get(0), createdAt.get(0),
+                JSONB.valueOf(metadata.get(0).toString()))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(moduleId, fastenUris.get(1), areInternalCalls.get(1), createdAt.get(1),
+                JSONB.valueOf(metadata.get(1).toString()))).thenReturn(insertValues);
+        var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
+        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_URI_CALL)).thenReturn(insertOnConflict);
+        var insertDuplicateSet = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertDuplicateSet);
+        var insertDuplicateSetMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertDuplicateSet.set(Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.as("excluded").MODULE_ID)).thenReturn(insertDuplicateSetMore);
+        Mockito.when(insertDuplicateSetMore.set(Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.as("excluded").CREATED_AT)).thenReturn(insertDuplicateSetMore);
+        Mockito.when(insertDuplicateSetMore.set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
+                Callables.CALLABLES.as("excluded").METADATA))).thenReturn(insertDuplicateSetMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertValues.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
+        Mockito.when(insertDuplicateSetMore.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
         var record1 = new CallablesRecord(ids.get(0), moduleId, fastenUris.get(0),
                 areInternalCalls.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()));
         var record2 = new CallablesRecord(ids.get(1), moduleId, fastenUris.get(1),
@@ -1410,22 +1388,6 @@ public class MetadataDaoTest {
         var updateCond = Mockito.mock(UpdateConditionStep.class);
         Mockito.when(updateSet.where(Modules.MODULES.ID.eq(moduleId))).thenReturn(updateCond);
         this.metadataDao.updateModule(moduleId, timestamp, metadata);
-        Mockito.verify(updateCond).execute();
-    }
-
-    @Test
-    public void updateCallableTest() {
-        long callableId = 1;
-        Timestamp timestamp = new Timestamp(123);
-        JSONB metadata = JSONB.valueOf("{\"foo\":\"bar\"}");
-        var updateSetStart = Mockito.mock(UpdateSetFirstStep.class);
-        Mockito.when(context.update(Callables.CALLABLES)).thenReturn(updateSetStart);
-        var updateSet = Mockito.mock(UpdateSetMoreStep.class);
-        Mockito.when(updateSetStart.set(Callables.CALLABLES.CREATED_AT, timestamp)).thenReturn(updateSet);
-        Mockito.when(updateSet.set(Callables.CALLABLES.METADATA, metadata)).thenReturn(updateSet);
-        var updateCond = Mockito.mock(UpdateConditionStep.class);
-        Mockito.when(updateSet.where(Callables.CALLABLES.ID.eq(callableId))).thenReturn(updateCond);
-        this.metadataDao.updateCallable(callableId, timestamp, metadata);
         Mockito.verify(updateCond).execute();
     }
 

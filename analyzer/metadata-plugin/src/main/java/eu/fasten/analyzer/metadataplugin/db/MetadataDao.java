@@ -20,7 +20,16 @@ package eu.fasten.analyzer.metadataplugin.db;
 
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
-import eu.fasten.core.data.metadatadb.codegen.tables.*;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
+import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -719,53 +728,18 @@ public class MetadataDao {
     public long insertCallable(Long moduleId, String fastenUri, boolean isInternalCall,
                                Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var callableId = this.findCallable(fastenUri, isInternalCall);
-        if (callableId != -1L) {
-            logger.debug("Duplicate callable: '" + fastenUri + "; " + isInternalCall
-                    + "' already exists with ID=" + callableId);
-            this.updateCallable(callableId, createdAt, metadataJsonb);
-            return callableId;
-        } else {
-            var resultRecord = context.insertInto(Callables.CALLABLES,
-                    Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
-                    Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
-                    Callables.CALLABLES.METADATA)
-                    .values(moduleId, fastenUri, isInternalCall, createdAt, metadataJsonb)
-                    .returning(Callables.CALLABLES.ID).fetchOne();
-            return resultRecord.getValue(Callables.CALLABLES.ID);
-        }
-    }
-
-    /**
-     * Searches 'callables' table for certain callable record.
-     *
-     * @param fastenUri      FASTEN URI of the callable
-     * @param isInternalCall is callable a internal or not
-     * @return ID of the record found or -1 otherwise
-     */
-    public long findCallable(String fastenUri, boolean isInternalCall) {
-        var resultRecords = context.selectFrom(Callables.CALLABLES)
-                .where(Callables.CALLABLES.FASTEN_URI.eq(fastenUri))
-                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(isInternalCall)).fetch();
-        if (resultRecords == null || resultRecords.isEmpty()) {
-            return -1L;
-        } else {
-            return resultRecords.getValues(Callables.CALLABLES.ID).get(0);
-        }
-    }
-
-    /**
-     * Updates timestamp and metadata of certain callable record.
-     *
-     * @param callableId ID of the callable record
-     * @param timestamp  New timestamp for the callable
-     * @param metadata   New metadata for the callable
-     */
-    public void updateCallable(long callableId, Timestamp timestamp, JSONB metadata) {
-        context.update(Callables.CALLABLES)
-                .set(Callables.CALLABLES.CREATED_AT, timestamp)
-                .set(Callables.CALLABLES.METADATA, metadata)
-                .where(Callables.CALLABLES.ID.eq(callableId)).execute();
+        var resultRecord = context.insertInto(Callables.CALLABLES,
+                Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
+                Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
+                Callables.CALLABLES.METADATA)
+                .values(moduleId, fastenUri, isInternalCall, createdAt, metadataJsonb)
+                .onConflictOnConstraint(Keys.UNIQUE_URI_CALL).doUpdate()
+                .set(Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.as("excluded").MODULE_ID)
+                .set(Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.as("excluded").CREATED_AT)
+                .set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
+                        Callables.CALLABLES.as("excluded").METADATA))
+                .returning(Callables.CALLABLES.ID).fetchOne();
+        return resultRecord.getValue(Callables.CALLABLES.ID);
     }
 
     /**

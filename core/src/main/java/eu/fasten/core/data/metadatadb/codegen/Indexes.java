@@ -42,8 +42,8 @@ public class Indexes {
     public static final Index BINARY_MODULE_CONTENTS_PKEY = Indexes0.BINARY_MODULE_CONTENTS_PKEY;
     public static final Index BINARY_MODULES_COMPOUND_INDEX = Indexes0.BINARY_MODULES_COMPOUND_INDEX;
     public static final Index BINARY_MODULES_PKEY = Indexes0.BINARY_MODULES_PKEY;
-    public static final Index CALLABLES_COMPOUND_INDEX = Indexes0.CALLABLES_COMPOUND_INDEX;
     public static final Index CALLABLES_PKEY = Indexes0.CALLABLES_PKEY;
+    public static final Index UNIQUE_URI_CALL = Indexes0.UNIQUE_URI_CALL;
     public static final Index DEPENDENCIES_COMPOUND_INDEX = Indexes0.DEPENDENCIES_COMPOUND_INDEX;
     public static final Index UNIQUE_SOURCE_TARGET = Indexes0.UNIQUE_SOURCE_TARGET;
     public static final Index FILES_COMPOUND_INDEX = Indexes0.FILES_COMPOUND_INDEX;
@@ -64,8 +64,8 @@ public class Indexes {
         public static Index BINARY_MODULE_CONTENTS_PKEY = Internal.createIndex("binary_module_contents_pkey", BinaryModuleContents.BINARY_MODULE_CONTENTS, new OrderField[] { BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID, BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID }, true);
         public static Index BINARY_MODULES_COMPOUND_INDEX = Internal.createIndex("binary_modules_compound_index", BinaryModules.BINARY_MODULES, new OrderField[] { BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME }, false);
         public static Index BINARY_MODULES_PKEY = Internal.createIndex("binary_modules_pkey", BinaryModules.BINARY_MODULES, new OrderField[] { BinaryModules.BINARY_MODULES.ID }, true);
-        public static Index CALLABLES_COMPOUND_INDEX = Internal.createIndex("callables_compound_index", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_INTERNAL_CALL }, false);
         public static Index CALLABLES_PKEY = Internal.createIndex("callables_pkey", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.ID }, true);
+        public static Index UNIQUE_URI_CALL = Internal.createIndex("unique_uri_call", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_INTERNAL_CALL }, true);
         public static Index DEPENDENCIES_COMPOUND_INDEX = Internal.createIndex("dependencies_compound_index", Dependencies.DEPENDENCIES, new OrderField[] { Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE }, false);
         public static Index UNIQUE_SOURCE_TARGET = Internal.createIndex("unique_source_target", Edges.EDGES, new OrderField[] { Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID }, true);
         public static Index FILES_COMPOUND_INDEX = Internal.createIndex("files_compound_index", Files.FILES, new OrderField[] { Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH }, false);

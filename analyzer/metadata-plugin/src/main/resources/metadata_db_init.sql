@@ -90,8 +90,10 @@ CREATE INDEX dependencies_compound_index ON dependencies (package_version_id, de
 CREATE INDEX modules_compound_index ON modules (package_version_id, namespace);
 CREATE INDEX binary_modules_compound_index ON binary_modules (package_version_id, name);
 CREATE INDEX files_compound_index ON files (package_version_id, path);
-CREATE INDEX callables_compound_index ON callables (fasten_uri, is_internal_call);
 
+CREATE UNIQUE INDEX CONCURRENTLY unique_uri_call ON callables USING btree (fasten_uri, is_internal_call);
+ALTER TABLE callables
+    ADD CONSTRAINT unique_uri_call UNIQUE USING INDEX unique_uri_call;
 CREATE UNIQUE INDEX CONCURRENTLY unique_source_target ON edges USING btree (source_id, target_id);
 ALTER TABLE edges
     ADD CONSTRAINT unique_source_target UNIQUE USING INDEX unique_source_target;

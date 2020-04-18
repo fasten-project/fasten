@@ -65,6 +65,7 @@ public class Keys {
     public static final UniqueKey<BinaryModuleContentsRecord> BINARY_MODULE_CONTENTS_PKEY = UniqueKeys0.BINARY_MODULE_CONTENTS_PKEY;
     public static final UniqueKey<BinaryModulesRecord> BINARY_MODULES_PKEY = UniqueKeys0.BINARY_MODULES_PKEY;
     public static final UniqueKey<CallablesRecord> CALLABLES_PKEY = UniqueKeys0.CALLABLES_PKEY;
+    public static final UniqueKey<CallablesRecord> UNIQUE_URI_CALL = UniqueKeys0.UNIQUE_URI_CALL;
     public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = UniqueKeys0.UNIQUE_SOURCE_TARGET;
     public static final UniqueKey<FilesRecord> FILES_PKEY = UniqueKeys0.FILES_PKEY;
     public static final UniqueKey<ModuleContentsRecord> MODULE_CONTENTS_PKEY = UniqueKeys0.MODULE_CONTENTS_PKEY;
@@ -105,6 +106,7 @@ public class Keys {
         public static final UniqueKey<BinaryModuleContentsRecord> BINARY_MODULE_CONTENTS_PKEY = Internal.createUniqueKey(BinaryModuleContents.BINARY_MODULE_CONTENTS, "binary_module_contents_pkey", BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID, BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID);
         public static final UniqueKey<BinaryModulesRecord> BINARY_MODULES_PKEY = Internal.createUniqueKey(BinaryModules.BINARY_MODULES, "binary_modules_pkey", BinaryModules.BINARY_MODULES.ID);
         public static final UniqueKey<CallablesRecord> CALLABLES_PKEY = Internal.createUniqueKey(Callables.CALLABLES, "callables_pkey", Callables.CALLABLES.ID);
+        public static final UniqueKey<CallablesRecord> UNIQUE_URI_CALL = Internal.createUniqueKey(Callables.CALLABLES, "unique_uri_call", Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_INTERNAL_CALL);
         public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = Internal.createUniqueKey(Edges.EDGES, "unique_source_target", Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID);
         public static final UniqueKey<FilesRecord> FILES_PKEY = Internal.createUniqueKey(Files.FILES, "files_pkey", Files.FILES.ID);
         public static final UniqueKey<ModuleContentsRecord> MODULE_CONTENTS_PKEY = Internal.createUniqueKey(ModuleContents.MODULE_CONTENTS, "module_contents_pkey", ModuleContents.MODULE_CONTENTS.MODULE_ID, ModuleContents.MODULE_CONTENTS.FILE_ID);
