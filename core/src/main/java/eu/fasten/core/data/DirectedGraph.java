@@ -9,6 +9,8 @@ public interface DirectedGraph {
 	public LongList successors(final long node);
 	public LongList predecessors(final long node);
 	public LongList nodes();
-	public LongSet externalNodes();
 
+	public LongSet xternalNodes();
+	public boolean isInternal(final long node);
+	public boolean isExternal(final long node);
 }

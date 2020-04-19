@@ -41,7 +41,6 @@ import com.martiansoftware.jsap.UnflaggedOption;
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.CallGraph;
 import eu.fasten.core.data.KnowledgeBase.CallGraphData;
-import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.logging.ProgressLogger;
 
 
@@ -115,13 +114,12 @@ public class KBStats {
 			final double bplt = Double.parseDouble((callGraphData.transposeProperties.getProperty("bitsperlink")));
 			if (! Double.isNaN(bplt)) bitsPerLinkt.add(bplt);
 			int internalArcs = 0, externalArcs = 0, totalArcs = 0;
-			LongSet externalNodes = callGraphData.externalNodes();
 			if (atFlag || odFlag) {
-				for (long node: callGraphData.nodes()) {
+				for (final long node: callGraphData.nodes()) {
 					int internalOut = 0, externalOut = 0, totalOut = 0;
-					if (externalNodes.contains(node)) continue;
-					for (long successor: callGraphData.successors(node)) {
-						if (externalNodes.contains(successor)) externalOut++;
+					if (callGraphData.isExternal(node)) continue;
+					for (final long successor: callGraphData.successors(node)) {
+						if (callGraphData.isExternal(successor)) externalOut++;
 						else internalOut++;
 						totalOut++;
 					}
@@ -133,13 +131,13 @@ public class KBStats {
 				if (atFlag) atStream.printf("%d\t%d\t%d\n", internalArcs, externalArcs, totalArcs);
 			}
 			if (idFlag) {
-				for (long node: callGraphData.nodes()) {
-					int external = externalNodes.contains(node)? 1 : 0;
+				for (final long node: callGraphData.nodes()) {
+					final int external = callGraphData.isExternal(node) ? 1 : 0;
 					idStream.printf("%d\t%d\t%d\n", totGraphs, external, callGraphData.predecessors(node).size());
 				}
-				
+
 			}
-			
+
 		}
 
 		if (gsdFlag) gsdStream.close();

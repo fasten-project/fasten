@@ -253,8 +253,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 		private final long[] LID2GID;
 		/** Inverse to {@link #LID2GID}: maps GIDs to LIDs. */
 		private final Long2IntOpenHashMap GID2LID;
-		/** Number of internal nodes. */
-		private int nInternal;
+		/** A cached copy of the set of external nodes (TODO: immutable? slower but safer). */
+		private final LongOpenHashSet externalNodes;
 
 		public CallGraphData(final ImmutableGraph graph, final ImmutableGraph transpose, final Properties graphProperties, final Properties transposeProperties, final long[] LID2GID, final Long2IntOpenHashMap GID2LID, final int nInternal) {
 			super();
@@ -264,7 +264,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			this.transposeProperties = transposeProperties;
 			this.LID2GID = LID2GID;
 			this.GID2LID = GID2LID;
-			this.nInternal = nInternal;
+			this.externalNodes = new LongOpenHashSet(Arrays.copyOfRange(LID2GID, nInternal, LID2GID.length));
 		}
 
 		@Override
@@ -278,22 +278,22 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 
 		@Override
-		public LongList successors(long node) {
-			int lid = GID2LID.get(node);
+		public LongList successors(final long node) {
+			final int lid = GID2LID.get(node);
 			if (lid < 0) throw new IllegalArgumentException("GID " + node + " does not exist");
-			int outdegree = graph.outdegree(lid);
-			LongArrayList gidList = new LongArrayList(outdegree);
-			for (int s: graph.successorArray(lid)) gidList.add(LID2GID[s]);
+			final int outdegree = graph.outdegree(lid);
+			final LongArrayList gidList = new LongArrayList(outdegree);
+			for (final int s: graph.successorArray(lid)) gidList.add(LID2GID[s]);
 			return gidList;
 		}
 
 		@Override
-		public LongList predecessors(long node) {
-			int lid = GID2LID.get(node);
+		public LongList predecessors(final long node) {
+			final int lid = GID2LID.get(node);
 			if (lid < 0) throw new IllegalArgumentException("GID " + node + " does not exist");
-			int indegree = transpose.outdegree(lid);
-			LongArrayList gidList = new LongArrayList(indegree);
-			for (int s: transpose.successorArray(lid)) gidList.add(LID2GID[s]);
+			final int indegree = transpose.outdegree(lid);
+			final LongArrayList gidList = new LongArrayList(indegree);
+			for (final int s: transpose.successorArray(lid)) gidList.add(LID2GID[s]);
 			return gidList;
 		}
 
@@ -304,9 +304,18 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 
 		@Override
-		public LongSet externalNodes() {
-			// TODO maybe cache this
-			return new LongOpenHashSet(Arrays.copyOfRange(LID2GID, nInternal, LID2GID.length));
+		public LongSet xternalNodes() {
+			return externalNodes;
+		}
+
+		@Override
+		public boolean isExternal(final long node) {
+			return externalNodes.contains(node);
+		}
+
+		@Override
+		public boolean isInternal(final long node) {
+			return !externalNodes.contains(node);
 		}
 	}
 
@@ -712,16 +721,15 @@ public class KnowledgeBase implements Serializable, Closeable {
 		assert callGraph != null;
 
 		final CallGraphData callGraphData = callGraph.callGraphData();
-		LongList successors = callGraphData.successors(gid);
-		LongSet externalNodes = callGraphData.externalNodes();
+		final LongList successors = callGraphData.successors(gid);
 
 		final ObjectList<Node> result = new ObjectArrayList<>();
 
 		/* In the successor case, internal nodes can be added directly... */
-		for (long x: successors) 
-			if (externalNodes.contains(x)) 
+		for (final long x: successors)
+			if (callGraphData.isExternal(x))
 				for (final LongIterator revisions = GIDAppearsIn.get(x).iterator(); revisions.hasNext();)
-					result.add(new Node(x, revisions.nextLong()));				
+					result.add(new Node(x, revisions.nextLong()));
 			else result.add(new Node(x, index));
 
 		return result;
@@ -751,14 +759,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 		assert callGraph != null;
 
 		final CallGraphData callGraphData = callGraph.callGraphData();
-		LongList predecessors = callGraphData.predecessors(gid);
-		LongSet externalNodes = callGraphData.externalNodes();
+		final LongList predecessors = callGraphData.predecessors(gid);
 
 		final ObjectList<Node> result = new ObjectArrayList<>();
 
 		/* In the successor case, internal nodes can be added directly... */
-		for (long x: predecessors) {
-			assert !externalNodes.contains(x);
+		for (final long x: predecessors) {
+			assert callGraphData.isInternal(x);
 			result.add(new Node(x, index));
 		}
 
@@ -769,7 +776,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		for (final LongIterator revisions = GIDCalledBy.get(gid).iterator(); revisions.hasNext();) {
 			final long revIndex = revisions.nextLong();
 			final CallGraphData precCallGraphData = callGraphs.get(revIndex).callGraphData();
-			for (long y: precCallGraphData.predecessors(gid)) result.add(new Node(y, revIndex));
+			for (final long y: precCallGraphData.predecessors(gid)) result.add(new Node(y, revIndex));
 		}
 
 		return result;

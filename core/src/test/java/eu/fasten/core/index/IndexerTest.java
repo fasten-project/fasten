@@ -155,7 +155,7 @@ public class IndexerTest {
 
 	};
 
-	public void testKnowledgeBase(final String[] jsonSpec) throws JSONException, IOException, RocksDBException, URISyntaxException, ClassNotFoundException {
+	public void testKnowledgeBase(final String[] jsonSpec) throws JSONException, IOException, RocksDBException, ClassNotFoundException {
 		final Path kbDir = Files.createTempDirectory(Indexer.class.getSimpleName());
 		final String meta = Files.createTempFile(Indexer.class.getSimpleName(), "meta").getFileName().toString();
 		FileUtils.deleteDirectory(kbDir.toFile());
@@ -169,8 +169,8 @@ public class IndexerTest {
 		for(int pass = 0; pass < 2; pass++) {
 			for(final var entry : kb.callGraphs.long2ObjectEntrySet()) {
 				final eu.fasten.core.data.KnowledgeBase.CallGraph callGraph = entry.getValue();
-				for(long gid: callGraph.callGraphData().nodes()) 
-					if (!(callGraph.callGraphData().externalNodes().contains(gid))) {
+				for(final long gid: callGraph.callGraphData().nodes())
+					if (!(callGraph.callGraphData().isExternal(gid))) {
 						final Node node = kb.new Node(gid, entry.getLongKey());
 						ObjectLinkedOpenHashSet<Node> reaches;
 						ObjectLinkedOpenHashSet<Node> coreaches;
