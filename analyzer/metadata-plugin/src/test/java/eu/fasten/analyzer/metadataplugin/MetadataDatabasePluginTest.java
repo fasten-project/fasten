@@ -20,6 +20,7 @@ package eu.fasten.analyzer.metadataplugin;
 
 import java.sql.Timestamp;
 import java.util.Collections;
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -97,7 +98,6 @@ public class MetadataDatabasePluginTest {
         long packageId = 8;
         Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
                 null)).thenReturn(packageId);
-
         long packageVersionId = 42;
         Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
                 json.getString("version"), new Timestamp(json.getLong("timestamp")), null)).thenReturn(packageVersionId);
@@ -109,13 +109,7 @@ public class MetadataDatabasePluginTest {
                 "      ]}");
         Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
                 moduleMetadata)).thenReturn(moduleId);
-
-        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
-                ".lang%2FVoid", true, null, null)).thenReturn(64L);
-        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.toString()%2Fjava" +
-                ".lang%2FString", true, null, null)).thenReturn(65L);
-        Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
-                ".lang%2FObject", false, null, null)).thenReturn(100L);
+        Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
@@ -195,18 +189,7 @@ public class MetadataDatabasePluginTest {
                 "      ]}");
         Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
                 moduleMetadata)).thenReturn(moduleId);
-
-        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
-                ".lang%2FVoid", true, null, null)).thenReturn(64L);
-        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.toString()%2Fjava" +
-                ".lang%2FString", true, null, null)).thenReturn(65L);
-        Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
-
-        Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
-                ".lang%2FObject", false, null, null)).thenReturn(100L);
-        var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
-        Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
-
+        Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
 
@@ -287,18 +270,7 @@ public class MetadataDatabasePluginTest {
                 "      ]}");
         Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
                 moduleMetadata)).thenReturn(moduleId);
-
-        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
-                ".lang%2FVoid", true, null, null)).thenReturn(64L);
-        Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.toString()%2Fjava" +
-                ".lang%2FString", true, null, null)).thenReturn(65L);
-        Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
-
-        Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
-                ".lang%2FObject", false, null, null)).thenReturn(100L);
-        var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
-        Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
-
+        Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         metadataDBExtension.setPluginError(new RuntimeException());
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);

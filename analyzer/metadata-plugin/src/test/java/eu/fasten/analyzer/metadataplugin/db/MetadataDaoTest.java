@@ -1414,4 +1414,34 @@ public class MetadataDaoTest {
         Mockito.verify(batchBind).bind(r2.getSourceId(), r2.getTargetId(), r2.getMetadata());
         Mockito.verify(batchBind).execute();
     }
+
+    @Test
+    public void batchInsertCallablesTest() throws IllegalArgumentException {
+        var record1 = new CallablesRecord(1L, 42L, "URI1", true, new Timestamp(1), JSONB.valueOf("{\"foo\":\"bar\"}"));
+        var record2 = new CallablesRecord(2L, 42L, "URI2", false, new Timestamp(2), JSONB.valueOf("{\"hello\":\"world\"}"));
+        var insertValues = Mockito.mock(InsertValuesStep5.class);
+        Mockito.when(context.insertInto(Callables.CALLABLES, Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
+                Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
+                Callables.CALLABLES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(record1.getModuleId(), record1.getFastenUri(), record1.getIsInternalCall(),
+                record1.getCreatedAt(), record1.getMetadata())).thenReturn(insertValues);
+        Mockito.when(insertValues.values(record2.getModuleId(), record2.getFastenUri(), record2.getIsInternalCall(),
+                record2.getCreatedAt(), record2.getMetadata())).thenReturn(insertValues);
+        var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
+        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_URI_CALL)).thenReturn(insertOnConflict);
+        var insertDuplicateSet = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertDuplicateSet);
+        var insertDuplicateSetMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertDuplicateSet.set(Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.as("excluded").MODULE_ID)).thenReturn(insertDuplicateSetMore);
+        Mockito.when(insertDuplicateSetMore.set(Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.as("excluded").CREATED_AT)).thenReturn(insertDuplicateSetMore);
+        Mockito.when(insertDuplicateSetMore.set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
+                Callables.CALLABLES.as("excluded").METADATA))).thenReturn(insertDuplicateSetMore);
+        var insertResult = Mockito.mock(InsertResultStep.class);
+        Mockito.when(insertDuplicateSetMore.returning(Callables.CALLABLES.ID)).thenReturn(insertResult);
+        var resultSet = Mockito.mock(Result.class);
+        Mockito.when(resultSet.getValues(Callables.CALLABLES.ID)).thenReturn(List.of(record1.getId(), record2.getId()));
+        Mockito.when(insertResult.fetch()).thenReturn(resultSet);
+        var result = metadataDao.batchInsertCallables(List.of(record1, record2));
+        assertEquals(List.of(record1.getId(), record2.getId()), result);
+    }
 }

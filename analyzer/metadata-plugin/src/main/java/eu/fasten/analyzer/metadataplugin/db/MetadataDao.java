@@ -30,6 +30,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -832,5 +833,28 @@ public class MetadataDao {
             batchBind = batchBind.bind(edge.getSourceId(), edge.getTargetId(), edge.getMetadata());
         }
         batchBind.execute();
+    }
+
+    /**
+     * Executes batch insert for 'callables' table.
+     *
+     * @param callables List of callables records to insert
+     */
+    public List<Long> batchInsertCallables(List<CallablesRecord> callables) {
+        var insert = context.insertInto(Callables.CALLABLES,
+                Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
+                Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
+                Callables.CALLABLES.METADATA);
+        for (var callable : callables) {
+            insert = insert.values(callable.getModuleId(), callable.getFastenUri(),
+                    callable.getIsInternalCall(), callable.getCreatedAt(), callable.getMetadata());
+        }
+        var result = insert.onConflictOnConstraint(Keys.UNIQUE_URI_CALL).doUpdate()
+                .set(Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.as("excluded").MODULE_ID)
+                .set(Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.as("excluded").CREATED_AT)
+                .set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
+                        Callables.CALLABLES.as("excluded").METADATA))
+                .returning(Callables.CALLABLES.ID).fetch();
+        return result.getValues(Callables.CALLABLES.ID);
     }
 }
