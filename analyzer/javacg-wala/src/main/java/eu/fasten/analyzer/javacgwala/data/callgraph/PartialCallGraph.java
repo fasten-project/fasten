@@ -21,9 +21,11 @@ package eu.fasten.analyzer.javacgwala.data.callgraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
+import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import eu.fasten.analyzer.javacgwala.data.core.CallType;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.RevisionCallGraph;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -127,5 +129,26 @@ public class PartialCallGraph {
                 MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
                 partialCallGraph.getClassHierarchy(),
                 partialCallGraph.getGraph());
+    }
+
+    /**
+     * Generates {@link ExtendedRevisionCallGraph} from a path to a file.
+     *
+     * @param path path to a file
+     * @return ExtendedRevisionCallGraph
+     */
+    public static ExtendedRevisionCallGraph generateERCG(final String path, final String product,
+                                                         final String version, final long timestamp,
+                                                         final List<List<RevisionCallGraph.Dependency>> depset) {
+        try {
+            final var callgraph = CallGraphConstructor.generateCallGraph(path);
+            final var partialCallgraph = WalaResultAnalyzer.wrap(callgraph);
+
+            return new ExtendedRevisionCallGraph("mvn", product, version, timestamp, "WALA", depset,
+                    partialCallgraph.getClassHierarchy(), partialCallgraph.getGraph());
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
