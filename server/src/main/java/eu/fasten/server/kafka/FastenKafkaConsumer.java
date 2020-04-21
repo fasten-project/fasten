@@ -147,7 +147,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 //                .put("partition", String.valueOf(record.partition())).put("offset", String.valueOf(record.offset())).put("record",
 //                        record.value()).put("status", status).toString();
 
-        return new JSONObject(record.key()).put("error", status).toString();
+        return new JSONObject().put("record", record.key()).put("error", status).toString();
     }
 
     /**
