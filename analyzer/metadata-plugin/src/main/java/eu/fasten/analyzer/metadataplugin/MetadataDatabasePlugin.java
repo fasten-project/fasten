@@ -261,7 +261,6 @@ public class MetadataDatabasePlugin extends Plugin {
                     new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
                             throwable.getMessage()).put("trace", throwable.getStackTrace())
                             .put("type", throwable.getClass().getSimpleName()).toString();
-            System.out.println(this.pluginError);
         }
 
         @Override

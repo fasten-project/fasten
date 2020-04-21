@@ -147,7 +147,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 //                .put("partition", String.valueOf(record.partition())).put("offset", String.valueOf(record.offset())).put("record",
 //                        record.value()).put("status", status).toString();
 
-        return new JSONObject(record.value()).put("error", status).toString();
+        return new JSONObject().put("record", record.key()).put("error", status).toString();
     }
 
     /**
@@ -299,12 +299,12 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                         long startTime = System.currentTimeMillis();
                         kafkaConsumer.consume(topic, r);
 
-                        if(kafkaConsumer.recordProcessSuccessful()){
+                        if(kafkaConsumer.recordProcessSuccessful()) {
                             logToKafka(this.serverLog, this.serverLogTopic, new Date() + "| [" + this.consumerHostName + "] Plug-in " + kafkaConsumer.getClass().getSimpleName() +
                                     " processed successfully record [in " + timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d) + " sec.]: " + r.key());
                         } else {
-                            logToKafka(this.failedRecords, this.failedRecordsTopic, generateRecordStatus(kafkaConsumer.getClass().getSimpleName(),
-                                    r, this.kafkaConsumer.getPluginError()));
+                            logToKafka(this.failedRecords, String.format("fasten.%s.STDERR", kafkaConsumer.getClass().getSimpleName()),
+                                    generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.kafkaConsumer.getPluginError()));
                         }
                         //kafkaConsumer.freeResource();
                     }
