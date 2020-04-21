@@ -28,7 +28,9 @@ import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
 import eu.fasten.server.kafka.FastenKafkaConsumer;
 import eu.fasten.server.kafka.FastenKafkaProducer;
-import org.json.JSONObject;
+import org.jooq.tools.json.JSONParser;
+import org.jooq.tools.json.ParseException;
+import org.jooq.tools.json.JSONObject;
 import org.pf4j.JarPluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +39,7 @@ import picocli.CommandLine.Option;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -86,9 +86,6 @@ public class FastenServer implements Runnable {
             defaultValue = "0")
     private int skipOffsets;
 
-    @Option(names = {"-dp, --deploy"})
-    boolean deployMode;
-
     private static Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     private List<FastenKafkaConsumer> consumers;
@@ -101,14 +98,9 @@ public class FastenServer implements Runnable {
 
     public void run() {
 
-        if(deployMode) {
-            setLoggingLevel(Level.INFO);
-            logger.info("FASTEN server started in deployment mode");
-        } else {
-            setLoggingLevel(Level.DEBUG);
-            logger.info("FASTEN server started in development mode");
-        }
-
+        // TODO: Set log level based on an arg in CLI: either dev or deploy mode.
+        setLoggingLevel(Level.DEBUG);
+        
         // Register shutdown actions
         // TODO: Fix the null pointer exception for the following ShutdownHook
 //        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -134,25 +126,18 @@ public class FastenServer implements Runnable {
 
         // Change the default topics of the plug-ins if a JSON file of the topics is given
         if(pluginTopic != null) {
-            JSONObject jsonObject;
+            JSONParser parser = new JSONParser();
             try {
-                jsonObject = new JSONObject(new String(Files.readAllBytes(Paths.get(pluginTopic))));
-            } catch (IOException e) {
+                JSONObject jsonObject = (JSONObject) parser.parse(new FileReader(pluginTopic));
+
+                kafkaConsumers.forEach((k) -> {
+                    if(jsonObject.containsKey(k.getClass().getSimpleName())) {
+                        k.setTopic(jsonObject.get(k.getClass().getSimpleName()).toString());
+                    }
+                });
+
+            } catch (IOException | ParseException e) {
                 logger.error("Failed to read the JSON file of the topics: {}", e.getMessage());
-                // Here, it reads the JSON string directly from the CLI, not a file.
-                jsonObject = new JSONObject(pluginTopic);
-            }
-
-            for(KafkaConsumer k: kafkaConsumers) {
-                if(jsonObject.has(k.getClass().getSimpleName())) {
-                    k.setTopic(jsonObject.getJSONObject(k.getClass().getSimpleName()).get("consumer").toString());
-                }
-            }
-
-            for(KafkaProducer k: kafkaProducers) {
-                if(jsonObject.has(k.getClass().getSimpleName())) {
-                    k.setProducerTopic(jsonObject.getJSONObject(k.getClass().getSimpleName()).get("producer").toString());
-                }
             }
         }
 
