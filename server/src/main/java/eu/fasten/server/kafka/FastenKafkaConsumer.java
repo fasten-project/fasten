@@ -59,16 +59,6 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         this.consumerHostName = this.getConsumerHostName();
 
         this.mLatch = new CountDownLatch(1);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.debug("Caught shutdown hook");
-            try {
-                mLatch.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            logger.debug("{} has exited", kafkaConsumer.getClass().getCanonicalName());
-        }));
 
         logger.debug("Thread: " + Thread.currentThread().getName() + " | Constructed a Kafka consumer for " + kc.getClass().getCanonicalName());
 
@@ -131,17 +121,17 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
     /**
      * This is a utility method to get current committed offset of all partitions for a consumer
      */
-    private void getOffsetForPartitions(org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer, List<String> topics){
+    private void getOffsetForPartitions(org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer, List<String> topics) {
 
-        for(String t: topics){
-            for(PartitionInfo p: consumer.partitionsFor(t)){
+        for (String t : topics) {
+            for (PartitionInfo p : consumer.partitionsFor(t)) {
                 logToKafka(this.serverLog, this.serverLogTopic, "T: " + t + " P: " + p.partition() + " OfC: " +
                         consumer.committed(new TopicPartition(t, p.partition())).offset());
             }
         }
     }
 
-    private String generateRecordStatus(String pluginName, ConsumerRecord<String, String> record, String status){
+    private String generateRecordStatus(String pluginName, ConsumerRecord<String, String> record, String status) {
 
 //        return new JSONObject().put("plugin", pluginName).put("topic", record.topic())
 //                .put("partition", String.valueOf(record.partition())).put("offset", String.valueOf(record.offset())).put("record",
@@ -153,10 +143,10 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
     /**
      * This is a dummy poll method for calling lazy methods such as seek.
      */
-    private ConsumerRecords<String, String> dummyPoll(org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer){
+    private ConsumerRecords<String, String> dummyPoll(org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer) {
         ConsumerRecords<String, String> statusRecords;
         int i = 0;
-        do{
+        do {
             statusRecords = consumer.poll(Duration.ofMillis(100));
             i++;
         } while (i <= 5 && statusRecords.count() == 0);
@@ -168,10 +158,10 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
      * It checks whether the last record was processed successfully or not.
      * if the processing of the last record failed, the method changes current offset to skip the failed record.
      */
-    private void checkFailStatus(){
+    private void checkFailStatus() {
 
         ArrayList<TopicPartition> topicPartitions = new ArrayList<>();
-        for(PartitionInfo p: this.cgsStatusConsumer.partitionsFor(this.failedRecordsTopic)){
+        for (PartitionInfo p : this.cgsStatusConsumer.partitionsFor(this.failedRecordsTopic)) {
             topicPartitions.add(new TopicPartition(this.failedRecordsTopic, p.partition()));
         }
 
@@ -183,22 +173,22 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 //            i++;
 //        } while (i <= 5 && statusRecords.count() == 0);
         // After five times try, either we continue to check or assume that CGS_status topic is empty and return.
-        if(statusRecords.count() == 0) return;
+        if (statusRecords.count() == 0) return;
 
         this.cgsStatusConsumer.seekToEnd(topicPartitions);
 
         //System.out.println("Offset before seeking to end: " + this.cgsStatusConsumer.position(topicPartitions.get(0)));
 
         // Sets offset to correct position to read the last record
-        topicPartitions.forEach(tp -> this.cgsStatusConsumer.seek(tp,  this.cgsStatusConsumer.position(tp) - 1));
+        topicPartitions.forEach(tp -> this.cgsStatusConsumer.seek(tp, this.cgsStatusConsumer.position(tp) - 1));
         //this.cgsStatusConsumer.seek(topicPartitions.get(0),  this.cgsStatusConsumer.position(topicPartitions.get(0)) - 1);
 
         //System.out.println("Offset set to: " + this.cgsStatusConsumer.position(topicPartitions.get(0)));
 
         statusRecords = this.cgsStatusConsumer.poll(Duration.ofMillis(100));
 
-        if(statusRecords.count() != 0){
-            String record =  statusRecords.iterator().next().value();
+        if (statusRecords.count() != 0) {
+            String record = statusRecords.iterator().next().value();
             String[] splitRecord = record.split("\\|");
             JSONObject lastStatusRecord = new JSONObject(splitRecord[1]);
 
@@ -207,22 +197,22 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
             this.cgsStatusConsumer.close();
 
-            if(!lastStatusRecord.get("status").toString().equals(this.OK_STATUS)){
+            if (!lastStatusRecord.get("status").toString().equals(this.OK_STATUS)) {
                 logger.debug("Increasing offset for skipping a record");
                 final long failedPartition = Long.parseLong(lastStatusRecord.get("partition").toString());
                 final long failedOffset = Long.parseLong(lastStatusRecord.get("offset").toString());
 
                 ConsumerRecords<String, String> failedRecord;
-                do{
+                do {
                     // A dummy call to poll to make seek method work
                     failedRecord = this.connection.poll(Duration.ofMillis(1000));
                     connection.commitSync();
                     System.out.println("Fetched " + failedRecord.count());
-                }while (failedRecord.count() == 0);
+                } while (failedRecord.count() == 0);
 
                 System.out.println("Current offset for plug-in" + this.connection.position(new TopicPartition(lastStatusRecord.get("topic").toString(),
-                        (int)failedPartition)));
-                this.connection.seek(new TopicPartition(lastStatusRecord.get("topic").toString(), (int)failedPartition),
+                        (int) failedPartition)));
+                this.connection.seek(new TopicPartition(lastStatusRecord.get("topic").toString(), (int) failedPartition),
                         failedOffset + 1);
             }
         }
@@ -233,23 +223,23 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
      * This is useful when you want to skip an offset with FATAL errors when the FASTEN server is restarted
      * Please note that this is NOT the most efficient way to restart FASTEN server in the case of FATAL errors.
      */
-    private void skipPartitionOffsets(){
+    private void skipPartitionOffsets() {
         ArrayList<TopicPartition> topicPartitions = new ArrayList<>();
         // Note that this assumes that the consumer is subscribed to one topic only
-        for(PartitionInfo p: this.connection.partitionsFor(this.kafkaConsumer.consumerTopics().get(0))){
+        for (PartitionInfo p : this.connection.partitionsFor(this.kafkaConsumer.consumerTopics().get(0))) {
             topicPartitions.add(new TopicPartition(this.kafkaConsumer.consumerTopics().get(0), p.partition()));
         }
 
         ConsumerRecords<String, String> records = dummyPoll(this.connection);
 
-        if(records.count() != 0){
-            for(TopicPartition tp : topicPartitions){
+        if (records.count() != 0) {
+            for (TopicPartition tp : topicPartitions) {
                 logger.debug("Topic: {} | Current offset for partition {}: {}", this.kafkaConsumer.consumerTopics().get(0)
                         , tp, this.connection.position(tp));
                 logToKafka(this.serverLog, this.serverLogTopic, "Topic: " + this.kafkaConsumer.consumerTopics().get(0) +
                         "| Current offset for partition " + tp + ": " + this.connection.position(tp));
 
-                this.connection.seek(tp,  this.connection.position(tp) + 1);
+                this.connection.seek(tp, this.connection.position(tp) + 1);
 
                 logger.debug("Topic: {} | Offset for partition {} is set to {}", this.kafkaConsumer.consumerTopics().get(0)
                         , tp, this.connection.position(tp));
@@ -261,7 +251,6 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
     @Override
     public void run() {
-
         NumberFormat timeFormatter = new DecimalFormat("#0.000");
 
         logger.debug("Starting consumer: {}", kafkaConsumer.getClass());
@@ -272,12 +261,12 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                 connection.subscribe(kafkaConsumer.consumerTopics());
             }
 
-            logToKafka(this.serverLog, this.serverLogTopic,new Date() + "| " + "Current Offset before running plug-in "
+            logToKafka(this.serverLog, this.serverLogTopic, new Date() + "| " + "Current Offset before running plug-in "
                     + kafkaConsumer.getClass().getCanonicalName());
             //getOffsetForPartitions(this.connection, kafkaConsumer.consumerTopics());
 
             //checkFailStatus();
-            if(this.skipOffsets == 1){
+            if (this.skipOffsets == 1) {
                 skipPartitionOffsets();
             }
 
@@ -291,7 +280,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
                 for (String topic : topics) {
                     for (ConsumerRecord<String, String> r : records.records(topic)) {
-                        logToKafka(this.serverLog, this.serverLogTopic,new Date() + "| [" + this.consumerHostName + "] T: " + r.topic() + " P: "
+                        logToKafka(this.serverLog, this.serverLogTopic, new Date() + "| [" + this.consumerHostName + "] T: " + r.topic() + " P: "
                                 + r.partition() + " Of: " + r.offset() + " | Processing: " + r.key());
 
                         // Note that this is "at most once" strategy which values progress over completeness.
@@ -299,7 +288,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                         long startTime = System.currentTimeMillis();
                         kafkaConsumer.consume(topic, r);
 
-                        if(kafkaConsumer.recordProcessSuccessful()) {
+                        if (kafkaConsumer.recordProcessSuccessful()) {
                             logToKafka(this.serverLog, this.serverLogTopic, new Date() + "| [" + this.consumerHostName + "] Plug-in " + kafkaConsumer.getClass().getSimpleName() +
                                     " processed successfully record [in " + timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d) + " sec.]: " + r.key());
                         } else {
@@ -310,18 +299,22 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                     }
                 }
             } while (true);
+        } catch (WakeupException e) {
+            logger.info(this.getName() + " shutting down...");
+
         } catch (RuntimeException re) {
             logToKafka(this.serverLog, kafkaConsumer.getClass().getSimpleName() + "_errors", new Date() +
                     "| " + "Exception for plug-in:" +
                     kafkaConsumer.getClass().getCanonicalName() + "\n" + ExceptionUtils.getStackTrace(re));
-//        } catch (WakeupException e) {
-//            logger.info("Received shutdown signal!");
         } finally {
             connection.close();
             mLatch.countDown();
         }
     }
 
+    /**
+     * Sends a wake up signal to Kafka consumer and stops it.
+     */
     public void shutdown() {
         connection.wakeup();
     }

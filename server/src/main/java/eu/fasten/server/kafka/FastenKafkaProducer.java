@@ -36,28 +36,15 @@ public class FastenKafkaProducer extends FastenKafkaConnection {
         super(p);
         this.producer = kp;
         this.mLatch = new CountDownLatch(1);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.debug("Caught shutdown hook");
-            try {
-                mLatch.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            logger.debug("{} has exited", producer.getClass().getCanonicalName());
-        }));
-
     }
 
     @Override
     public void run(){
         logger.info("Starts....");
         if(this.connection == null){
-            this.connection = new KafkaProducer<Object, String>(this.connProperties);
+            this.connection = new KafkaProducer<>(this.connProperties);
         }
         this.producer.setKafkaProducer(this.connection);
         logger.debug("Sets a Kafka producer.....");
     }
-
 }
