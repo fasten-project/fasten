@@ -65,17 +65,17 @@ public class FastenServer implements Runnable {
             defaultValue = "localhost:9092")
     private List<String> kafkaServers;
 
-    @CommandLine.Option(names = {"-d", "--database"},
+    @Option(names = {"-d", "--database"},
             paramLabel = "dbURL",
             description = "Database URL for connection")
     private String dbUrl;
 
-    @CommandLine.Option(names = {"-u", "--user"},
+    @Option(names = {"-u", "--user"},
             paramLabel = "dbUser",
             description = "Database user name")
     private String dbUser;
 
-    @CommandLine.Option(names = {"-pw", "--pass"},
+    @Option(names = {"-pw", "--pass"},
             paramLabel = "dbPass",
             description = "Database user password")
     private String dbPass;
@@ -85,6 +85,10 @@ public class FastenServer implements Runnable {
             description = "Adds one to offset of all the partitions of the consumers.",
             defaultValue = "0")
     private int skipOffsets;
+
+    @Option(names = {"-m", "--mode"},
+            description = "Deployment or Development mode")
+    boolean deployMode;
 
     private static Logger logger = LoggerFactory.getLogger(FastenServer.class);
 

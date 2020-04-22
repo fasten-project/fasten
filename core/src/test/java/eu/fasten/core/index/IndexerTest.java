@@ -155,7 +155,7 @@ public class IndexerTest {
 
 	};
 
-	public void testKnowledgeBase(final String[] jsonSpec) throws JSONException, IOException, RocksDBException, URISyntaxException, ClassNotFoundException {
+	public void testKnowledgeBase(final String[] jsonSpec) throws JSONException, IOException, RocksDBException, ClassNotFoundException {
 		final Path kbDir = Files.createTempDirectory(Indexer.class.getSimpleName());
 		final String meta = Files.createTempFile(Indexer.class.getSimpleName(), "meta").getFileName().toString();
 		FileUtils.deleteDirectory(kbDir.toFile());
@@ -169,23 +169,24 @@ public class IndexerTest {
 		for(int pass = 0; pass < 2; pass++) {
 			for(final var entry : kb.callGraphs.long2ObjectEntrySet()) {
 				final eu.fasten.core.data.KnowledgeBase.CallGraph callGraph = entry.getValue();
-				for(int i = 0; i < callGraph.nInternal; i++) {
-					final Node node = kb.new Node(callGraph.callGraphData().LID2GID[i], entry.getLongKey());
-					ObjectLinkedOpenHashSet<Node> reaches;
-					ObjectLinkedOpenHashSet<Node> coreaches;
+				for(final long gid: callGraph.callGraphData().nodes())
+					if (!(callGraph.callGraphData().isExternal(gid))) {
+						final Node node = kb.new Node(gid, entry.getLongKey());
+						ObjectLinkedOpenHashSet<Node> reaches;
+						ObjectLinkedOpenHashSet<Node> coreaches;
 
-					reaches = kb.reaches(node);
-					for(final Node reached: reaches) {
-						coreaches = kb.coreaches(reached);
-						assertTrue(coreaches.contains(node));
-					}
+						reaches = kb.reaches(node);
+						for(final Node reached: reaches) {
+							coreaches = kb.coreaches(reached);
+							assertTrue(coreaches.contains(node));
+						}
 
-					coreaches = kb.coreaches(node);
-					for(final Node reached: coreaches) {
-						reaches = kb.coreaches(reached);
-						assertTrue(coreaches.contains(node));
+						coreaches = kb.coreaches(node);
+						for(final Node reached: coreaches) {
+							reaches = kb.coreaches(reached);
+							assertTrue(coreaches.contains(node));
+						}
 					}
-				}
 			}
 			kb.close();
 			kb = KnowledgeBase.getInstance(kbDir.toString(), meta);

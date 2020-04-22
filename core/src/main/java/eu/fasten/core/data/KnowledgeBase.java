@@ -63,9 +63,11 @@ import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongIterators;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
@@ -238,21 +240,23 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/** Instances of this class contain the data relative to a call graph that are stored in the database. */
-	public static final class CallGraphData {
+	public static final class CallGraphData implements DirectedGraph {
 		/** The call graph. */
-		public final ImmutableGraph graph;
+		private final ImmutableGraph graph;
 		/** The transpose graph. */
-		public final ImmutableGraph transpose;
+		private final ImmutableGraph transpose;
 		/** Properties (in the sense of {@link ImmutableGraph}) of the call graph. */
 		public final Properties graphProperties;
 		/** Properties (in the sense of {@link ImmutableGraph}) of the transpose graph. */
 		public final Properties transposeProperties;
 		/** Maps LIDs to GIDs. */
-		public final long[] LID2GID;
+		private final long[] LID2GID;
 		/** Inverse to {@link #LID2GID}: maps GIDs to LIDs. */
-		public final Long2IntOpenHashMap GID2LID;
+		private final Long2IntOpenHashMap GID2LID;
+		/** A cached copy of the set of external nodes (TODO: immutable? slower but safer). */
+		private final LongOpenHashSet externalNodes;
 
-		public CallGraphData(final ImmutableGraph graph, final ImmutableGraph transpose, final Properties graphProperties, final Properties transposeProperties, final long[] LID2GID, final Long2IntOpenHashMap GID2LID) {
+		public CallGraphData(final ImmutableGraph graph, final ImmutableGraph transpose, final Properties graphProperties, final Properties transposeProperties, final long[] LID2GID, final Long2IntOpenHashMap GID2LID, final int nInternal) {
 			super();
 			this.graph = graph;
 			this.transpose = transpose;
@@ -260,6 +264,58 @@ public class KnowledgeBase implements Serializable, Closeable {
 			this.transposeProperties = transposeProperties;
 			this.LID2GID = LID2GID;
 			this.GID2LID = GID2LID;
+			this.externalNodes = new LongOpenHashSet(Arrays.copyOfRange(LID2GID, nInternal, LID2GID.length));
+		}
+
+		@Override
+		public int numNodes() {
+			return graph.numNodes();
+		}
+
+		@Override
+		public long numArcs() {
+			return graph.numArcs();
+		}
+
+		@Override
+		public LongList successors(final long node) {
+			final int lid = GID2LID.get(node);
+			if (lid < 0) throw new IllegalArgumentException("GID " + node + " does not exist");
+			final int outdegree = graph.outdegree(lid);
+			final LongArrayList gidList = new LongArrayList(outdegree);
+			for (final int s: graph.successorArray(lid)) gidList.add(LID2GID[s]);
+			return gidList;
+		}
+
+		@Override
+		public LongList predecessors(final long node) {
+			final int lid = GID2LID.get(node);
+			if (lid < 0) throw new IllegalArgumentException("GID " + node + " does not exist");
+			final int indegree = transpose.outdegree(lid);
+			final LongArrayList gidList = new LongArrayList(indegree);
+			for (final int s: transpose.successorArray(lid)) gidList.add(LID2GID[s]);
+			return gidList;
+		}
+
+		@Override
+		public LongList nodes() {
+			// TODO maybe cache this
+			return LongArrayList.wrap(LID2GID.clone());
+		}
+
+		@Override
+		public LongSet xternalNodes() {
+			return externalNodes;
+		}
+
+		@Override
+		public boolean isExternal(final long node) {
+			return externalNodes.contains(node);
+		}
+
+		@Override
+		public boolean isInternal(final long node) {
+			return !externalNodes.contains(node);
 		}
 	}
 
@@ -411,6 +467,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			// Compute LIDs according to the current node renumbering based on BFS
 			final long[] LID2GID = new long[temporary2GID.length];
 			final Long2IntOpenHashMap GID2LID = new Long2IntOpenHashMap();
+			GID2LID.defaultReturnValue(-1);
 
 			for (int x = 0; x < temporary2GID.length; x++)
 				LID2GID[bfsperm[x]] = temporary2GID[x];
@@ -463,7 +520,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 				final Properties[] properties = new Properties[] { kryo.readObject(input, Properties.class), kryo.readObject(input, Properties.class) };
 				final long[] LID2GID = kryo.readObject(input, long[].class);
 				final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
-				final CallGraphData callGraphData = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID);
+				final CallGraphData callGraphData = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, nInternal);
 				this.callGraphData = new SoftReference<>(callGraphData);
 				return callGraphData;
 			} catch (final RocksDBException e) {
@@ -576,6 +633,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		this.callGraphDB = db;
 	}
 
+	@SuppressWarnings("resource")
 	public static KnowledgeBase getInstance(final String kbDir, final String kbMetadataPathname) throws RocksDBException, ClassNotFoundException, IOException {
 		final boolean metadataExists = new File(kbMetadataPathname).exists();
 		final boolean kbDirExists = new File(kbDir).exists();
@@ -583,7 +641,6 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 		RocksDB.loadLibrary();
 		final ColumnFamilyOptions cfOptions = new ColumnFamilyOptions().setCompressionType(CompressionType.LZ4_COMPRESSION);
-		@SuppressWarnings("resource")
 		final DBOptions dbOptions = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true);
 		final List<ColumnFamilyDescriptor> cfDescriptors = Arrays.asList(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, cfOptions), new ColumnFamilyDescriptor(GID2URI, cfOptions), new ColumnFamilyDescriptor(URI2GID, cfOptions));
 
@@ -664,28 +721,16 @@ public class KnowledgeBase implements Serializable, Closeable {
 		assert callGraph != null;
 
 		final CallGraphData callGraphData = callGraph.callGraphData();
-		final ImmutableGraph graph = callGraphData.graph;
-		final LazyIntIterator s = graph.successors(callGraphData.GID2LID.get(gid));
+		final LongList successors = callGraphData.successors(gid);
 
 		final ObjectList<Node> result = new ObjectArrayList<>();
-		int x;
 
 		/* In the successor case, internal nodes can be added directly... */
-
-		while ((x = s.nextInt()) != -1 && x < callGraph.nInternal)
-			result.add(new Node(callGraphData.LID2GID[x], index));
-
-		if (x == -1) return result;
-
-		/*
-		 * ...but external nodes must be search for in the revision call graphs
-		 * in which they appear.
-		 */
-		do {
-			final long xGid = callGraphData.LID2GID[x];
-			for (final LongIterator revisions = GIDAppearsIn.get(xGid).iterator(); revisions.hasNext();)
-				result.add(new Node(xGid, revisions.nextLong()));
-		} while ((x = s.nextInt()) != -1);
+		for (final long x: successors)
+			if (callGraphData.isExternal(x))
+				for (final LongIterator revisions = GIDAppearsIn.get(x).iterator(); revisions.hasNext();)
+					result.add(new Node(x, revisions.nextLong()));
+			else result.add(new Node(x, index));
 
 		return result;
 	}
@@ -714,36 +759,25 @@ public class KnowledgeBase implements Serializable, Closeable {
 		assert callGraph != null;
 
 		final CallGraphData callGraphData = callGraph.callGraphData();
-		final ImmutableGraph graph = callGraphData.transpose;
-		final LazyIntIterator s = graph.successors(callGraphData.GID2LID.get(gid));
+		final LongList predecessors = callGraphData.predecessors(gid);
 
 		final ObjectList<Node> result = new ObjectArrayList<>();
-		int x;
 
-		/*
-		 * In the predecessor case, all nodes returned by the graph are
-		 * necessarily internal.
-		 */
-		while ((x = s.nextInt()) != -1) {
-			assert x < callGraph.nInternal;
-			result.add(new Node(callGraphData.LID2GID[x], index));
+		/* In the successor case, internal nodes can be added directly... */
+		for (final long x: predecessors) {
+			assert callGraphData.isInternal(x);
+			result.add(new Node(x, index));
 		}
 
 		/*
 		 * To move backward in the call graph, we use GIDCalledBy to find
 		 * revisions that might contain external nodes of the form <gid, index>.
 		 */
-		do
-			for (final LongIterator revisions = GIDCalledBy.get(gid).iterator(); revisions.hasNext();) {
-				final long revIndex = revisions.nextLong();
-				final CallGraph precCallGraph = callGraphs.get(revIndex);
-				final CallGraphData precCallGraphData = precCallGraph.callGraphData();
-				final ImmutableGraph transpose = precCallGraphData.transpose;
-				final LazyIntIterator p = transpose.successors(precCallGraphData.GID2LID.get(gid));
-				for (int y; (y = p.nextInt()) != -1;)
-					result.add(new Node(precCallGraphData.LID2GID[y], revIndex));
-			}
-		while ((x = s.nextInt()) != -1);
+		for (final LongIterator revisions = GIDCalledBy.get(gid).iterator(); revisions.hasNext();) {
+			final long revIndex = revisions.nextLong();
+			final CallGraphData precCallGraphData = callGraphs.get(revIndex).callGraphData();
+			for (final long y: precCallGraphData.predecessors(gid)) result.add(new Node(y, revIndex));
+		}
 
 		return result;
 	}

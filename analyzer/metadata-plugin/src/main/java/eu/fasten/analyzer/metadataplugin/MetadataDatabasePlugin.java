@@ -86,7 +86,7 @@ public class MetadataDatabasePlugin extends Plugin {
             ExtendedRevisionCallGraph callgraph;
             try {
                 callgraph = new ExtendedRevisionCallGraph(consumedJson);
-            } catch (JSONException e) {
+            } catch (JSONException | IllegalArgumentException e) {
                 logger.error("Error parsing JSON callgraph for '" + artifact + "'", e);
                 processedRecord = false;
                 setPluginError(e);
@@ -278,7 +278,6 @@ public class MetadataDatabasePlugin extends Plugin {
                     new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
                             throwable.getMessage()).put("trace", throwable.getStackTrace())
                             .put("type", throwable.getClass().getSimpleName()).toString();
-            System.out.println(this.pluginError);
         }
 
         @Override

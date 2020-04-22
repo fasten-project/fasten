@@ -20,6 +20,8 @@ package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -68,8 +70,25 @@ public class Main implements Runnable {
      */
     public void run() {
         MavenCoordinate mavenCoordinate;
+        if (setRunner.pathToFile.path != null) {
+            final List<List<RevisionCallGraph.Dependency>> dependencies = new ArrayList<>();
 
-        if (setRunner.set != null) {
+            final List<MavenCoordinate> coordinates = new ArrayList<>();
+            if (setRunner.pathToFile.dependencies != null) {
+                for (String currentCoordinate : setRunner.pathToFile.dependencies) {
+                    coordinates.add(MavenCoordinate.fromString(currentCoordinate));
+                }
+            }
+
+            for (var coordinate : coordinates) {
+                dependencies.addAll(MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()));
+            }
+            var ercg = PartialCallGraph.generateERCG(setRunner.pathToFile.path,
+                    setRunner.pathToFile.product, setRunner.pathToFile.version,
+                    Long.parseLong(setRunner.pathToFile.timestamp), dependencies);
+            System.out.println(ercg.toJSON());
+
+        } else if (setRunner.set != null) {
             consumeSet(setRunner.set);
         } else {
             if (this.setRunner.fullCoordinate.mavenCoordStr != null) {
@@ -269,9 +288,43 @@ public class Main implements Runnable {
         String mavenCoordStr;
     }
 
+    static class PathToFile {
+        @CommandLine.Option(names = {"--path"},
+                paramLabel = "PATH",
+                description = "Path to file",
+                required = true)
+        String path;
+
+        @CommandLine.Option(names = {"-p", "--product"},
+                paramLabel = "PRODUCT",
+                description = "Product",
+                defaultValue = "PRODUCT")
+        String product;
+
+        @CommandLine.Option(names = {"--prodcutversion"},
+                paramLabel = "VERSION",
+                description = "Callgraph version",
+                defaultValue = "0.0.0")
+        String version;
+
+        @CommandLine.Option(names = {"--producttimestamp"},
+                paramLabel = "TS",
+                description = "Release TS",
+                defaultValue = "0")
+        String timestamp;
+
+        @CommandLine.Option(names = {"-d", "--dependencies"},
+                paramLabel = "DEPENDENCIES",
+                description = "One or more dependency coordinate to merge with the artifact")
+        String[] dependencies;
+    }
+
     static class SetRunner {
         @CommandLine.ArgGroup()
         FullCoordinate fullCoordinate;
+
+        @CommandLine.ArgGroup(exclusive = false)
+        PathToFile pathToFile;
 
         @CommandLine.Option(names = {"-s", "--set"},
                 paramLabel = "Set",
