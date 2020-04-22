@@ -37,4 +37,10 @@ public interface KafkaProducer extends FastenPlugin {
      * implementation can use it to write a set of mechanisms to Kafka, in a blocking fashion.
      */
     public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer);
+
+    /**
+     * Overrides the default topic of a KafkaProducer
+     * @param topicName the name of a Kafka topic to set
+     */
+    public void setProducerTopic(String topicName);
 }

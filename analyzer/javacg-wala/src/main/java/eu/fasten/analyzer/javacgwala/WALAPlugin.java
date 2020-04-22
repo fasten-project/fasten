@@ -38,7 +38,7 @@ public class WALAPlugin extends AnalyzerPlugin {
     @Extension
     public static class WALA extends AnalyzerPlugin.ANALYZER {
 
-        final String produceTopic = "wala_callgraphs";
+        private static String produceTopic = "wala_callgraphs";
 
         @Override
         public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
@@ -51,7 +51,12 @@ public class WALAPlugin extends AnalyzerPlugin {
 
         @Override
         public String producerTopic() {
-            return this.produceTopic;
+            return produceTopic;
+        }
+
+        @Override
+        public void setProducerTopic(String topicName) {
+            produceTopic = topicName;
         }
     }
 }
