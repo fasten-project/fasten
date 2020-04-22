@@ -47,8 +47,7 @@ CREATE TABLE files
 CREATE TABLE module_contents
 (
     module_id BIGINT NOT NULL REFERENCES modules (id),
-    file_id   BIGINT NOT NULL REFERENCES files (id),
-    PRIMARY KEY (module_id, file_id)
+    file_id   BIGINT NOT NULL REFERENCES files (id)
 );
 
 CREATE TABLE binary_modules
@@ -63,8 +62,7 @@ CREATE TABLE binary_modules
 CREATE TABLE binary_module_contents
 (
     binary_module_id BIGINT NOT NULL REFERENCES binary_modules (id),
-    file_id          BIGINT NOT NULL REFERENCES files (id),
-    PRIMARY KEY (binary_module_id, file_id)
+    file_id          BIGINT NOT NULL REFERENCES files (id)
 );
 
 CREATE TABLE callables
@@ -84,16 +82,42 @@ CREATE TABLE edges
     metadata  JSONB  NOT NULL
 );
 
-CREATE INDEX packages_compound_index ON packages (package_name, forge);
-CREATE INDEX package_versions_compound_index ON package_versions (package_id, version, cg_generator);
-CREATE INDEX dependencies_compound_index ON dependencies (package_version_id, dependency_id, version_range);
-CREATE INDEX modules_compound_index ON modules (package_version_id, namespace);
-CREATE INDEX binary_modules_compound_index ON binary_modules (package_version_id, name);
-CREATE INDEX files_compound_index ON files (package_version_id, path);
+CREATE UNIQUE INDEX CONCURRENTLY unique_package_forge ON packages USING btree (package_name, forge);
+ALTER TABLE packages
+    ADD CONSTRAINT unique_package_forge UNIQUE USING INDEX unique_package_forge;
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_package_version_generator ON package_versions USING btree (package_id, version, cg_generator);
+ALTER TABLE package_versions
+    ADD CONSTRAINT unique_package_version_generator UNIQUE USING INDEX unique_package_version_generator;
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_version_dependency_range ON dependencies USING btree (package_version_id, dependency_id, version_range);
+ALTER TABLE dependencies
+    ADD CONSTRAINT unique_version_dependency_range UNIQUE USING INDEX unique_version_dependency_range;
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_version_namespace ON modules USING btree (package_version_id, namespace);
+ALTER TABLE modules
+    ADD CONSTRAINT unique_version_namespace UNIQUE USING INDEX unique_version_namespace;
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_module_file ON module_contents USING btree (module_id, file_id);
+ALTER TABLE module_contents
+    ADD CONSTRAINT unique_module_file UNIQUE USING INDEX unique_module_file;
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_version_name ON binary_modules USING btree (package_version_id, name);
+ALTER TABLE binary_modules
+    ADD CONSTRAINT unique_version_name UNIQUE USING INDEX unique_version_name;
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_binary_module_file ON binary_module_contents USING btree (binary_module_id, file_id);
+ALTER TABLE binary_module_contents
+    ADD CONSTRAINT unique_binary_module_file UNIQUE USING INDEX unique_binary_module_file;
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_version_path ON files USING btree (package_version_id, path);
+ALTER TABLE files
+    ADD CONSTRAINT unique_version_path UNIQUE USING INDEX unique_version_path;
 
 CREATE UNIQUE INDEX CONCURRENTLY unique_uri_call ON callables USING btree (fasten_uri, is_internal_call);
 ALTER TABLE callables
     ADD CONSTRAINT unique_uri_call UNIQUE USING INDEX unique_uri_call;
+
 CREATE UNIQUE INDEX CONCURRENTLY unique_source_target ON edges USING btree (source_id, target_id);
 ALTER TABLE edges
     ADD CONSTRAINT unique_source_target UNIQUE USING INDEX unique_source_target;

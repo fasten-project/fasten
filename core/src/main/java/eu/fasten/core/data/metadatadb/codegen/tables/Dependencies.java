@@ -23,6 +23,7 @@ import org.jooq.Row3;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
@@ -40,7 +41,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dependencies extends TableImpl<DependenciesRecord> {
 
-    private static final long serialVersionUID = 1357351582;
+    private static final long serialVersionUID = 1005523151;
 
     /**
      * The reference instance of <code>public.dependencies</code>
@@ -110,7 +111,12 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.DEPENDENCIES_COMPOUND_INDEX);
+        return Arrays.<Index>asList(Indexes.UNIQUE_VERSION_DEPENDENCY_RANGE);
+    }
+
+    @Override
+    public List<UniqueKey<DependenciesRecord>> getKeys() {
+        return Arrays.<UniqueKey<DependenciesRecord>>asList(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE);
     }
 
     @Override

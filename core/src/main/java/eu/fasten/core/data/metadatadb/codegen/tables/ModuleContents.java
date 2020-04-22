@@ -41,7 +41,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class ModuleContents extends TableImpl<ModuleContentsRecord> {
 
-    private static final long serialVersionUID = 2129426444;
+    private static final long serialVersionUID = -1221390543;
 
     /**
      * The reference instance of <code>public.module_contents</code>
@@ -106,26 +106,25 @@ public class ModuleContents extends TableImpl<ModuleContentsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.MODULE_CONTENTS_PKEY);
-    }
-
-    @Override
-    public UniqueKey<ModuleContentsRecord> getPrimaryKey() {
-        return Keys.MODULE_CONTENTS_PKEY;
+        return Arrays.<Index>asList(Indexes.UNIQUE_MODULE_FILE);
     }
 
     @Override
     public List<UniqueKey<ModuleContentsRecord>> getKeys() {
-        return Arrays.<UniqueKey<ModuleContentsRecord>>asList(Keys.MODULE_CONTENTS_PKEY);
+        return Arrays.<UniqueKey<ModuleContentsRecord>>asList(Keys.UNIQUE_MODULE_FILE);
     }
 
     @Override
     public List<ForeignKey<ModuleContentsRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<ModuleContentsRecord, ?>>asList(Keys.MODULE_CONTENTS__MODULE_CONTENTS_MODULE_ID_FKEY);
+        return Arrays.<ForeignKey<ModuleContentsRecord, ?>>asList(Keys.MODULE_CONTENTS__MODULE_CONTENTS_MODULE_ID_FKEY, Keys.MODULE_CONTENTS__MODULE_CONTENTS_FILE_ID_FKEY);
     }
 
     public Modules modules() {
         return new Modules(this, Keys.MODULE_CONTENTS__MODULE_CONTENTS_MODULE_ID_FKEY);
+    }
+
+    public Files files() {
+        return new Files(this, Keys.MODULE_CONTENTS__MODULE_CONTENTS_FILE_ID_FKEY);
     }
 
     @Override

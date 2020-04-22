@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class BinaryModules extends TableImpl<BinaryModulesRecord> {
 
-    private static final long serialVersionUID = 760317736;
+    private static final long serialVersionUID = -1062938740;
 
     /**
      * The reference instance of <code>public.binary_modules</code>
@@ -124,7 +124,7 @@ public class BinaryModules extends TableImpl<BinaryModulesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.BINARY_MODULES_COMPOUND_INDEX, Indexes.BINARY_MODULES_PKEY);
+        return Arrays.<Index>asList(Indexes.BINARY_MODULES_PKEY, Indexes.UNIQUE_VERSION_NAME);
     }
 
     @Override
@@ -139,7 +139,7 @@ public class BinaryModules extends TableImpl<BinaryModulesRecord> {
 
     @Override
     public List<UniqueKey<BinaryModulesRecord>> getKeys() {
-        return Arrays.<UniqueKey<BinaryModulesRecord>>asList(Keys.BINARY_MODULES_PKEY);
+        return Arrays.<UniqueKey<BinaryModulesRecord>>asList(Keys.BINARY_MODULES_PKEY, Keys.UNIQUE_VERSION_NAME);
     }
 
     @Override

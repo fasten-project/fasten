@@ -43,7 +43,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Packages extends TableImpl<PackagesRecord> {
 
-    private static final long serialVersionUID = -53738089;
+    private static final long serialVersionUID = 1759693829;
 
     /**
      * The reference instance of <code>public.packages</code>
@@ -128,7 +128,7 @@ public class Packages extends TableImpl<PackagesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.PACKAGES_COMPOUND_INDEX, Indexes.PACKAGES_PKEY);
+        return Arrays.<Index>asList(Indexes.PACKAGES_PKEY, Indexes.UNIQUE_PACKAGE_FORGE);
     }
 
     @Override
@@ -143,7 +143,7 @@ public class Packages extends TableImpl<PackagesRecord> {
 
     @Override
     public List<UniqueKey<PackagesRecord>> getKeys() {
-        return Arrays.<UniqueKey<PackagesRecord>>asList(Keys.PACKAGES_PKEY);
+        return Arrays.<UniqueKey<PackagesRecord>>asList(Keys.PACKAGES_PKEY, Keys.UNIQUE_PACKAGE_FORGE);
     }
 
     @Override
