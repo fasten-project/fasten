@@ -104,12 +104,9 @@ public class Main implements Runnable {
                 }
                 final JSONObject jsonCallgraph = new JSONObject(new JSONTokener(reader));
                 try {
-                    var startTime = System.nanoTime();
                     final var record = new ConsumerRecord<>(topic, 0, 0L, "test",
                             jsonCallgraph.toString());
                     metadataPlugin.consume(topic, record);
-                    var elapsedTime = System.nanoTime() - startTime;
-                    System.out.println("Callgraph was saved in " + elapsedTime / 1000000 + " ms");
                 } catch (IllegalArgumentException e) {
                     logger.error("Incorrect database URL", e);
                 }

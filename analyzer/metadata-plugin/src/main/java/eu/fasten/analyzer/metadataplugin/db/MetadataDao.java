@@ -39,10 +39,13 @@ import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Query;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MetadataDao {
 
     private DSLContext context;
+    private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
 
     public MetadataDao(DSLContext context) {
         this.context = context;
@@ -136,7 +139,7 @@ public class MetadataDao {
                         PackageVersions.PACKAGE_VERSIONS.as("excluded").CREATED_AT)
                 .set(PackageVersions.PACKAGE_VERSIONS.METADATA,
                         JsonbDSL.concat(PackageVersions.PACKAGE_VERSIONS.METADATA,
-                                PackageVersions.PACKAGE_VERSIONS.as("excluded").METADATA))
+                        PackageVersions.PACKAGE_VERSIONS.as("excluded").METADATA))
                 .returning(PackageVersions.PACKAGE_VERSIONS.ID).fetchOne();
         return resultRecord.getValue(PackageVersions.PACKAGE_VERSIONS.ID);
     }
@@ -286,7 +289,7 @@ public class MetadataDao {
                         BinaryModules.BINARY_MODULES.as("excluded").CREATED_AT)
                 .set(BinaryModules.BINARY_MODULES.METADATA,
                         JsonbDSL.concat(BinaryModules.BINARY_MODULES.METADATA,
-                                BinaryModules.BINARY_MODULES.as("excluded").METADATA))
+                        BinaryModules.BINARY_MODULES.as("excluded").METADATA))
                 .returning(BinaryModules.BINARY_MODULES.ID).fetchOne();
         return resultRecord.getValue(BinaryModules.BINARY_MODULES.ID);
     }
@@ -405,20 +408,20 @@ public class MetadataDao {
      * @param packageVersionId ID of the package version to which the file belongs
      *                         (references 'package_versions.id')
      * @param path             Path of the file
-     * @param filename         Name of the file
      * @param checksum         Checksum of the file
      * @param createdAt        Timestamp of the file
      * @param metadata         Metadata of the file
      * @return ID of the new record
      */
-    public long insertFile(long packageVersionId, String path, String filename, byte[] checksum,
+    public long insertFile(long packageVersionId, String path, byte[] checksum,
                            Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Files.FILES,
-                Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH, Files.FILES.FILENAME,
-                Files.FILES.CHECKSUM, Files.FILES.CREATED_AT, Files.FILES.METADATA)
-                .values(packageVersionId, path, filename, checksum, createdAt, metadataJsonb)
-                .onConflictOnConstraint(Keys.UNIQUE_VERSION_PATH_FILENAME).doUpdate()
+                Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH,
+                Files.FILES.CHECKSUM, Files.FILES.CREATED_AT,
+                Files.FILES.METADATA)
+                .values(packageVersionId, path, checksum, createdAt, metadataJsonb)
+                .onConflictOnConstraint(Keys.UNIQUE_VERSION_PATH).doUpdate()
                 .set(Files.FILES.CHECKSUM, Files.FILES.as("excluded").CHECKSUM)
                 .set(Files.FILES.CREATED_AT, Files.FILES.as("excluded").CREATED_AT)
                 .set(Files.FILES.METADATA, JsonbDSL.concat(Files.FILES.METADATA,
@@ -432,7 +435,6 @@ public class MetadataDao {
      *
      * @param packageVersionId ID of the common package version
      * @param pathsList        List of paths of files
-     * @param fileNamesList    List of file names
      * @param checksumsList    List of checksums of files
      * @param createdAt        List of timestamps of files
      * @param metadata         List of metadata of files
@@ -440,20 +442,17 @@ public class MetadataDao {
      * @throws IllegalArgumentException if any of the lists have different size
      */
     public List<Long> insertFiles(long packageVersionId, List<String> pathsList,
-                                  List<String> fileNamesList, List<byte[]> checksumsList,
-                                  List<Timestamp> createdAt, List<JSONObject> metadata)
-            throws IllegalArgumentException {
-        if (pathsList.size() != fileNamesList.size()
-                || fileNamesList.size() != checksumsList.size()
-                || checksumsList.size() != createdAt.size()
+                                  List<byte[]> checksumsList, List<Timestamp> createdAt,
+                                  List<JSONObject> metadata) throws IllegalArgumentException {
+        if (pathsList.size() != checksumsList.size() || checksumsList.size() != createdAt.size()
                 || createdAt.size() != metadata.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = pathsList.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertFile(packageVersionId, pathsList.get(i), fileNamesList.get(i),
-                    checksumsList.get(i), createdAt.get(i), metadata.get(i));
+            long result = insertFile(packageVersionId, pathsList.get(i), checksumsList.get(i),
+                    createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;

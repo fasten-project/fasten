@@ -764,16 +764,15 @@ public class MetadataDaoTest {
         var id = 1L;
         var packageVersionId = 42L;
         var path = "path/to/file";
-        var filename = "file.java";
         var checksum = new byte[]{1, 2, 3, 4, 5};
         var createdAt = new Timestamp(1);
         var metadata = new JSONObject("{\"foo\":\"bar\"}");
-        var insertValues = Mockito.mock(InsertValuesStep6.class);
-        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH, Files.FILES.FILENAME,
+        var insertValues = Mockito.mock(InsertValuesStep5.class);
+        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH,
                 Files.FILES.CHECKSUM, Files.FILES.CREATED_AT, Files.FILES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(packageVersionId, path, filename, checksum, createdAt, JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageVersionId, path, checksum, createdAt, JSONB.valueOf(metadata.toString()))).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
-        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_VERSION_PATH_FILENAME)).thenReturn(insertOnConflict);
+        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_VERSION_PATH)).thenReturn(insertOnConflict);
         var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
         Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
         var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
@@ -783,9 +782,9 @@ public class MetadataDaoTest {
                 Files.FILES.as("excluded").METADATA))).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertOnDuplicateMore.returning(Files.FILES.ID)).thenReturn(insertResult);
-        var record = new FilesRecord(id, packageVersionId, path, filename, checksum, createdAt, JSONB.valueOf(metadata.toString()));
+        var record = new FilesRecord(id, packageVersionId, path, checksum, createdAt, JSONB.valueOf(metadata.toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        var result = metadataDao.insertFile(packageVersionId, path, filename, checksum, createdAt, metadata);
+        var result = metadataDao.insertFile(packageVersionId, path, checksum, createdAt, metadata);
         assertEquals(id, result);
     }
 
@@ -794,13 +793,12 @@ public class MetadataDaoTest {
         var id = 1L;
         var packageVersionId = 42L;
         var path = "path/to/file";
-        var filename = "file.java";
-        var insertValues = Mockito.mock(InsertValuesStep6.class);
-        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH, Files.FILES.FILENAME,
+        var insertValues = Mockito.mock(InsertValuesStep5.class);
+        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH,
                 Files.FILES.CHECKSUM, Files.FILES.CREATED_AT, Files.FILES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(packageVersionId, path, filename, null, null, null)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageVersionId, path, null, null, null)).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
-        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_VERSION_PATH_FILENAME)).thenReturn(insertOnConflict);
+        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_VERSION_PATH)).thenReturn(insertOnConflict);
         var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
         Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
         var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
@@ -810,9 +808,9 @@ public class MetadataDaoTest {
                 Files.FILES.as("excluded").METADATA))).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertOnDuplicateMore.returning(Files.FILES.ID)).thenReturn(insertResult);
-        var record = new FilesRecord(id, packageVersionId, path, filename, null, null, null);
+        var record = new FilesRecord(id, packageVersionId, path, null, null, null);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        var result = metadataDao.insertFile(packageVersionId, path, filename, null, null, null);
+        var result = metadataDao.insertFile(packageVersionId, path, null, null, null);
         assertEquals(id, result);
     }
 
@@ -821,17 +819,16 @@ public class MetadataDaoTest {
         var ids = Arrays.asList(1L, 2L);
         var packageVersionId = 42L;
         var paths = Arrays.asList("path/to/file", "path/to/another/file");
-        var filenames = Arrays.asList("file1.java", "file2.java");
         var checksums = Arrays.asList(new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
-        var insertValues = Mockito.mock(InsertValuesStep6.class);
-        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH, Files.FILES.FILENAME,
+        var insertValues = Mockito.mock(InsertValuesStep5.class);
+        Mockito.when(context.insertInto(Files.FILES, Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH,
                 Files.FILES.CHECKSUM, Files.FILES.CREATED_AT, Files.FILES.METADATA)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(packageVersionId, paths.get(0), filenames.get(0), checksums.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()))).thenReturn(insertValues);
-        Mockito.when(insertValues.values(packageVersionId, paths.get(1), filenames.get(1), checksums.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageVersionId, paths.get(0), checksums.get(0), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageVersionId, paths.get(1), checksums.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()))).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
-        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_VERSION_PATH_FILENAME)).thenReturn(insertOnConflict);
+        Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_VERSION_PATH)).thenReturn(insertOnConflict);
         var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
         Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
         var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
@@ -841,10 +838,10 @@ public class MetadataDaoTest {
                 Files.FILES.as("excluded").METADATA))).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertOnDuplicateMore.returning(Files.FILES.ID)).thenReturn(insertResult);
-        var record1 = new FilesRecord(ids.get(0), packageVersionId, paths.get(0), filenames.get(0), checksums.get(1), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()));
-        var record2 = new FilesRecord(ids.get(1), packageVersionId, paths.get(1), filenames.get(1), checksums.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()));
+        var record1 = new FilesRecord(ids.get(0), packageVersionId, paths.get(0), checksums.get(1), createdAt.get(0), JSONB.valueOf(metadata.get(0).toString()));
+        var record2 = new FilesRecord(ids.get(1), packageVersionId, paths.get(1), checksums.get(1), createdAt.get(1), JSONB.valueOf(metadata.get(1).toString()));
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
-        var result = metadataDao.insertFiles(packageVersionId, paths, filenames, checksums, createdAt, metadata);
+        var result = metadataDao.insertFiles(packageVersionId, paths, checksums, createdAt, metadata);
         assertEquals(ids, result);
     }
 
@@ -852,12 +849,11 @@ public class MetadataDaoTest {
     public void insertMultipleFilesErrorTest() {
         var packageVersionId = 42L;
         var paths = Collections.singletonList("path/to/file");
-        var filenames = Arrays.asList("file1.java", "file2.java");
         var checksums = Arrays.asList(new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(packageVersionId, paths, filenames, checksums, createdAt, metadata);
+            metadataDao.insertFiles(packageVersionId, paths, checksums, createdAt, metadata);
         });
     }
 
@@ -865,12 +861,11 @@ public class MetadataDaoTest {
     public void insertMultipleFilesErrorTest1() {
         var packageVersionId = 42L;
         var paths = Arrays.asList("path/to/file", "path/to/another/file");
-        var filenames = Collections.singletonList("file1.java");
-        var checksums = Arrays.asList(new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9});
+        var checksums = Collections.singletonList(new byte[]{1, 2, 3, 4, 5});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
-        var metadata = Arrays.asList(new JSONObject("{\"foo\":\"bar\"}"), new JSONObject("{\"hello\":\"world\"}"));
+        var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(packageVersionId, paths, filenames, checksums, createdAt, metadata);
+            metadataDao.insertFiles(packageVersionId, paths, checksums, createdAt, metadata);
         });
     }
 
@@ -878,12 +873,11 @@ public class MetadataDaoTest {
     public void insertMultipleFilesErrorTest2() {
         var packageVersionId = 42L;
         var paths = Arrays.asList("path/to/file", "path/to/another/file");
-        var filenames = Arrays.asList("file1.java", "file2.java");
-        var checksums = Collections.singletonList(new byte[]{1, 2, 3, 4, 5});
-        var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
+        var checksums = Arrays.asList(new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9});
+        var createdAt = Collections.singletonList(new Timestamp(1));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(packageVersionId, paths, filenames, checksums, createdAt, metadata);
+            metadataDao.insertFiles(packageVersionId, paths, checksums, createdAt, metadata);
         });
     }
 
@@ -891,25 +885,11 @@ public class MetadataDaoTest {
     public void insertMultipleFilesErrorTest3() {
         var packageVersionId = 42L;
         var paths = Arrays.asList("path/to/file", "path/to/another/file");
-        var filenames = Arrays.asList("file1.java", "file2.java");
-        var checksums = Arrays.asList(new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9});
-        var createdAt = Collections.singletonList(new Timestamp(1));
-        var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
-        assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(packageVersionId, paths, filenames, checksums, createdAt, metadata);
-        });
-    }
-
-    @Test
-    public void insertMultipleFilesErrorTest4() {
-        var packageVersionId = 42L;
-        var paths = Arrays.asList("path/to/file", "path/to/another/file");
-        var filenames = Arrays.asList("file1.java", "file2.java");
         var checksums = Arrays.asList(new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9});
         var createdAt = Arrays.asList(new Timestamp(1), new Timestamp(2));
         var metadata = Collections.singletonList(new JSONObject("{\"foo\":\"bar\"}"));
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertFiles(packageVersionId, paths, filenames, checksums, createdAt, metadata);
+            metadataDao.insertFiles(packageVersionId, paths, checksums, createdAt, metadata);
         });
     }
 

@@ -39,7 +39,6 @@ CREATE TABLE files
     id                 BIGSERIAL PRIMARY KEY,
     package_version_id BIGINT NOT NULL REFERENCES package_versions (id),
     path               TEXT   NOT NULL,
-    filename           TEXT   NOT NULL,
     checksum           BYTEA,
     created_at         TIMESTAMP,
     metadata           JSONB
@@ -111,9 +110,9 @@ CREATE UNIQUE INDEX CONCURRENTLY unique_binary_module_file ON binary_module_cont
 ALTER TABLE binary_module_contents
     ADD CONSTRAINT unique_binary_module_file UNIQUE USING INDEX unique_binary_module_file;
 
-CREATE UNIQUE INDEX CONCURRENTLY unique_version_path_filename ON files USING btree (package_version_id, path, filename);
+CREATE UNIQUE INDEX CONCURRENTLY unique_version_path ON files USING btree (package_version_id, path);
 ALTER TABLE files
-    ADD CONSTRAINT unique_version_path_filename UNIQUE USING INDEX unique_version_path_filename;
+    ADD CONSTRAINT unique_version_path UNIQUE USING INDEX unique_version_path;
 
 CREATE UNIQUE INDEX CONCURRENTLY unique_uri_call ON callables USING btree (fasten_uri, is_internal_call);
 ALTER TABLE callables

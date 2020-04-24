@@ -169,19 +169,15 @@ public class MetadataDatabasePlugin extends Plugin {
                 var moduleMetadata = new JSONObject();
                 moduleMetadata.put("superInterfaces",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
+                moduleMetadata.put("sourceFile", type.getSourceFileName()); // TODO: Put in files table
                 moduleMetadata.put("superClasses",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
                 long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
                         null, moduleMetadata);
-                var fileName = type.getSourceFileName();
-                var fileId = metadataDao
-                        .insertFile(packageVersionId, "", fileName, null, null, null);
-                metadataDao.insertModuleContent(moduleId, fileId);
                 for (var methodEntry : type.getMethods().entrySet()) {
                     var localId = (long) methodEntry.getKey();
                     var uri = methodEntry.getValue().toString();
-                    internalCallables.add(
-                            new CallablesRecord(localId, moduleId, uri, true, null, null));
+                    internalCallables.add(new CallablesRecord(localId, moduleId, uri, true, null, null));
                 }
             }
 
@@ -191,8 +187,7 @@ public class MetadataDatabasePlugin extends Plugin {
             for (var call : internalCalls) {
                 var sourceLocalId = (long) call.get(0);
                 var targetLocalId = (long) call.get(1);
-                internalEdges.add(
-                        new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
+                internalEdges.add(new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
             }
 
             final var externalCalls = graph.getExternalCalls();
@@ -221,8 +216,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
             var internalLidToGidMap = new HashMap<Long, Long>();
             for (int i = 0; i < internalCallables.size(); i++) {
-                internalLidToGidMap.put(internalCallables.get(i).getId(),
-                        internalCallablesIds.get(i));
+                internalLidToGidMap.put(internalCallables.get(i).getId(), internalCallablesIds.get(i));
             }
             for (var edge : internalEdges) {
                 edge.setSourceId(internalLidToGidMap.get(edge.getSourceId()));
