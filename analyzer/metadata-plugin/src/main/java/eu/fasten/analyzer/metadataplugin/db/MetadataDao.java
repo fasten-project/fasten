@@ -135,8 +135,10 @@ public class MetadataDao {
                 PackageVersions.PACKAGE_VERSIONS.METADATA)
                 .values(packageId, cgGenerator, version, createdAt, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_PACKAGE_VERSION_GENERATOR).doUpdate()
-                .set(PackageVersions.PACKAGE_VERSIONS.CREATED_AT, PackageVersions.PACKAGE_VERSIONS.as("excluded").CREATED_AT)
-                .set(PackageVersions.PACKAGE_VERSIONS.METADATA, JsonbDSL.concat(PackageVersions.PACKAGE_VERSIONS.METADATA,
+                .set(PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
+                        PackageVersions.PACKAGE_VERSIONS.as("excluded").CREATED_AT)
+                .set(PackageVersions.PACKAGE_VERSIONS.METADATA,
+                        JsonbDSL.concat(PackageVersions.PACKAGE_VERSIONS.METADATA,
                         PackageVersions.PACKAGE_VERSIONS.as("excluded").METADATA))
                 .returning(PackageVersions.PACKAGE_VERSIONS.ID).fetchOne();
         return resultRecord.getValue(PackageVersions.PACKAGE_VERSIONS.ID);
@@ -181,10 +183,13 @@ public class MetadataDao {
      */
     public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges) {
         var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
-                Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID,
+                Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
+                Dependencies.DEPENDENCIES.DEPENDENCY_ID,
                 Dependencies.DEPENDENCIES.VERSION_RANGE)
                 .values(packageVersionId, dependencyId, versionRanges)
-                .onConflictOnConstraint(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE).doNothing()
+                .onConflictOnConstraint(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE).doUpdate()
+                .set(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
+                        Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)
                 .returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID).fetchOne();
         return resultRecord.getValue(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID);
     }
@@ -280,8 +285,10 @@ public class MetadataDao {
                 BinaryModules.BINARY_MODULES.CREATED_AT, BinaryModules.BINARY_MODULES.METADATA)
                 .values(packageVersionId, name, createdAt, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_VERSION_NAME).doUpdate()
-                .set(BinaryModules.BINARY_MODULES.CREATED_AT, BinaryModules.BINARY_MODULES.as("excluded").CREATED_AT)
-                .set(BinaryModules.BINARY_MODULES.METADATA, JsonbDSL.concat(BinaryModules.BINARY_MODULES.METADATA,
+                .set(BinaryModules.BINARY_MODULES.CREATED_AT,
+                        BinaryModules.BINARY_MODULES.as("excluded").CREATED_AT)
+                .set(BinaryModules.BINARY_MODULES.METADATA,
+                        JsonbDSL.concat(BinaryModules.BINARY_MODULES.METADATA,
                         BinaryModules.BINARY_MODULES.as("excluded").METADATA))
                 .returning(BinaryModules.BINARY_MODULES.ID).fetchOne();
         return resultRecord.getValue(BinaryModules.BINARY_MODULES.ID);
@@ -325,7 +332,9 @@ public class MetadataDao {
                 ModuleContents.MODULE_CONTENTS.MODULE_ID,
                 ModuleContents.MODULE_CONTENTS.FILE_ID)
                 .values(moduleId, fileId)
-                .onConflictOnConstraint(Keys.UNIQUE_MODULE_FILE).doNothing()
+                .onConflictOnConstraint(Keys.UNIQUE_MODULE_FILE).doUpdate()
+                .set(ModuleContents.MODULE_CONTENTS.MODULE_ID,
+                        ModuleContents.MODULE_CONTENTS.MODULE_ID)
                 .returning(ModuleContents.MODULE_CONTENTS.MODULE_ID).fetchOne();
         return resultRecord.getValue(ModuleContents.MODULE_CONTENTS.MODULE_ID);
     }
@@ -364,7 +373,9 @@ public class MetadataDao {
                 BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID,
                 BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID)
                 .values(binaryModuleId, fileId)
-                .onConflictOnConstraint(Keys.UNIQUE_BINARY_MODULE_FILE).doNothing()
+                .onConflictOnConstraint(Keys.UNIQUE_BINARY_MODULE_FILE).doUpdate()
+                .set(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID,
+                        BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)
                 .returning(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID).fetchOne();
         return resultRecord.getValue(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID);
     }

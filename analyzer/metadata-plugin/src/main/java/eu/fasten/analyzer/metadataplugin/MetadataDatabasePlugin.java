@@ -163,13 +163,13 @@ public class MetadataDatabasePlugin extends Plugin {
             }
 
             final var cha = callGraph.getClassHierarchy();
-            var callables = new ArrayList<CallablesRecord>();
+            var internalCallables = new ArrayList<CallablesRecord>();
             for (var fastenUri : cha.keySet()) {
                 var type = cha.get(fastenUri);
                 var moduleMetadata = new JSONObject();
                 moduleMetadata.put("superInterfaces",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
-                moduleMetadata.put("sourceFile", type.getSourceFileName());
+                moduleMetadata.put("sourceFile", type.getSourceFileName()); // TODO: Put in files table
                 moduleMetadata.put("superClasses",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
                 long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
@@ -177,52 +177,58 @@ public class MetadataDatabasePlugin extends Plugin {
                 for (var methodEntry : type.getMethods().entrySet()) {
                     var localId = (long) methodEntry.getKey();
                     var uri = methodEntry.getValue().toString();
-                    callables.add(new CallablesRecord(localId, moduleId, uri, true, null, null));
+                    internalCallables.add(new CallablesRecord(localId, moduleId, uri, true, null, null));
                 }
             }
 
             final var graph = callGraph.getGraph();
-            var edges = new ArrayList<EdgesRecord>(graph.size());
+            var internalEdges = new ArrayList<EdgesRecord>(graph.getInternalCalls().size());
             final var internalCalls = graph.getInternalCalls();
             for (var call : internalCalls) {
                 var sourceLocalId = (long) call.get(0);
                 var targetLocalId = (long) call.get(1);
-                edges.add(new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
+                internalEdges.add(new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
             }
 
             final var externalCalls = graph.getExternalCalls();
+            var externalEdges = new ArrayList<EdgesRecord>(graph.getExternalCalls().size());
             for (var callEntry : externalCalls.entrySet()) {
                 var call = callEntry.getKey();
                 var sourceLocalId = (long) call.getKey();
                 var uri = call.getValue().toString();
-                var targetId = (long) callables.size() + 1;
-                callables.add(new CallablesRecord(targetId, null, uri, false, null, null));
+                var targetId = metadataDao.insertCallable(null, uri, false, null, null);
                 var edgeMetadata = new JSONObject(callEntry.getValue());
-                edges.add(new EdgesRecord(sourceLocalId, targetId,
+                externalEdges.add(new EdgesRecord(sourceLocalId, targetId,
                         JSONB.valueOf(edgeMetadata.toString())));
             }
 
             final int batchSize = 4096;
-            var callablesIds = new ArrayList<Long>(callables.size());
-            final var callablesIterator = callables.iterator();
-            while (callablesIterator.hasNext()) {
+            var internalCallablesIds = new ArrayList<Long>(internalCallables.size());
+            final var internalCallablesIterator = internalCallables.iterator();
+            while (internalCallablesIterator.hasNext()) {
                 var callablesBatch = new ArrayList<CallablesRecord>(batchSize);
-                while (callablesIterator.hasNext() && callablesBatch.size() < batchSize) {
-                    callablesBatch.add(callablesIterator.next());
+                while (internalCallablesIterator.hasNext() && callablesBatch.size() < batchSize) {
+                    callablesBatch.add(internalCallablesIterator.next());
                 }
                 var ids = metadataDao.batchInsertCallables(callablesBatch);
-                callablesIds.addAll(ids);
+                internalCallablesIds.addAll(ids);
             }
 
-            var lidToGidMap = new HashMap<Long, Long>();
-            for (int i = 0; i < callables.size(); i++) {
-                lidToGidMap.put(callables.get(i).getId(), callablesIds.get(i));
+            var internalLidToGidMap = new HashMap<Long, Long>();
+            for (int i = 0; i < internalCallables.size(); i++) {
+                internalLidToGidMap.put(internalCallables.get(i).getId(), internalCallablesIds.get(i));
             }
-            for (var edge : edges) {
-                edge.setSourceId(lidToGidMap.get(edge.getSourceId()));
-                edge.setTargetId(lidToGidMap.get(edge.getTargetId()));
+            for (var edge : internalEdges) {
+                edge.setSourceId(internalLidToGidMap.get(edge.getSourceId()));
+                edge.setTargetId(internalLidToGidMap.get(edge.getTargetId()));
+            }
+            for (var edge : externalEdges) {
+                edge.setSourceId(internalLidToGidMap.get(edge.getSourceId()));
             }
 
+            var edges = new ArrayList<EdgesRecord>(graph.size());
+            edges.addAll(internalEdges);
+            edges.addAll(externalEdges);
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
                 var edgesBatch = new ArrayList<EdgesRecord>(batchSize);
