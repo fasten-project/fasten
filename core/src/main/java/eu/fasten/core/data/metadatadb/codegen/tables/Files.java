@@ -22,7 +22,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row6;
+import org.jooq.Row7;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Files extends TableImpl<FilesRecord> {
 
-    private static final long serialVersionUID = 2017129051;
+    private static final long serialVersionUID = 673742431;
 
     /**
      * The reference instance of <code>public.files</code>
@@ -73,6 +73,11 @@ public class Files extends TableImpl<FilesRecord> {
      * The column <code>public.files.path</code>.
      */
     public final TableField<FilesRecord, String> PATH = createField(DSL.name("path"), org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
+
+    /**
+     * The column <code>public.files.filename</code>.
+     */
+    public final TableField<FilesRecord, String> FILENAME = createField(DSL.name("filename"), org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.files.checksum</code>.
@@ -129,7 +134,7 @@ public class Files extends TableImpl<FilesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.FILES_PKEY, Indexes.UNIQUE_VERSION_PATH);
+        return Arrays.<Index>asList(Indexes.FILES_PKEY, Indexes.UNIQUE_VERSION_PATH_FILENAME);
     }
 
     @Override
@@ -144,7 +149,7 @@ public class Files extends TableImpl<FilesRecord> {
 
     @Override
     public List<UniqueKey<FilesRecord>> getKeys() {
-        return Arrays.<UniqueKey<FilesRecord>>asList(Keys.FILES_PKEY, Keys.UNIQUE_VERSION_PATH);
+        return Arrays.<UniqueKey<FilesRecord>>asList(Keys.FILES_PKEY, Keys.UNIQUE_VERSION_PATH_FILENAME);
     }
 
     @Override
@@ -183,11 +188,11 @@ public class Files extends TableImpl<FilesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row6 type methods
+    // Row7 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row6<Long, Long, String, byte[], Timestamp, JSONB> fieldsRow() {
-        return (Row6) super.fieldsRow();
+    public Row7<Long, Long, String, String, byte[], Timestamp, JSONB> fieldsRow() {
+        return (Row7) super.fieldsRow();
     }
 }

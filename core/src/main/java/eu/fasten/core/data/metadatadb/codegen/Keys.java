@@ -70,7 +70,7 @@ public class Keys {
     public static final UniqueKey<DependenciesRecord> UNIQUE_VERSION_DEPENDENCY_RANGE = UniqueKeys0.UNIQUE_VERSION_DEPENDENCY_RANGE;
     public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = UniqueKeys0.UNIQUE_SOURCE_TARGET;
     public static final UniqueKey<FilesRecord> FILES_PKEY = UniqueKeys0.FILES_PKEY;
-    public static final UniqueKey<FilesRecord> UNIQUE_VERSION_PATH = UniqueKeys0.UNIQUE_VERSION_PATH;
+    public static final UniqueKey<FilesRecord> UNIQUE_VERSION_PATH_FILENAME = UniqueKeys0.UNIQUE_VERSION_PATH_FILENAME;
     public static final UniqueKey<ModuleContentsRecord> UNIQUE_MODULE_FILE = UniqueKeys0.UNIQUE_MODULE_FILE;
     public static final UniqueKey<ModulesRecord> MODULES_PKEY = UniqueKeys0.MODULES_PKEY;
     public static final UniqueKey<ModulesRecord> UNIQUE_VERSION_NAMESPACE = UniqueKeys0.UNIQUE_VERSION_NAMESPACE;
@@ -119,7 +119,7 @@ public class Keys {
         public static final UniqueKey<DependenciesRecord> UNIQUE_VERSION_DEPENDENCY_RANGE = Internal.createUniqueKey(Dependencies.DEPENDENCIES, "unique_version_dependency_range", Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE);
         public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = Internal.createUniqueKey(Edges.EDGES, "unique_source_target", Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID);
         public static final UniqueKey<FilesRecord> FILES_PKEY = Internal.createUniqueKey(Files.FILES, "files_pkey", Files.FILES.ID);
-        public static final UniqueKey<FilesRecord> UNIQUE_VERSION_PATH = Internal.createUniqueKey(Files.FILES, "unique_version_path", Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH);
+        public static final UniqueKey<FilesRecord> UNIQUE_VERSION_PATH_FILENAME = Internal.createUniqueKey(Files.FILES, "unique_version_path_filename", Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH, Files.FILES.FILENAME);
         public static final UniqueKey<ModuleContentsRecord> UNIQUE_MODULE_FILE = Internal.createUniqueKey(ModuleContents.MODULE_CONTENTS, "unique_module_file", ModuleContents.MODULE_CONTENTS.MODULE_ID, ModuleContents.MODULE_CONTENTS.FILE_ID);
         public static final UniqueKey<ModulesRecord> MODULES_PKEY = Internal.createUniqueKey(Modules.MODULES, "modules_pkey", Modules.MODULES.ID);
         public static final UniqueKey<ModulesRecord> UNIQUE_VERSION_NAMESPACE = Internal.createUniqueKey(Modules.MODULES, "unique_version_namespace", Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE);

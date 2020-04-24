@@ -47,7 +47,7 @@ public class Indexes {
     public static final Index UNIQUE_VERSION_DEPENDENCY_RANGE = Indexes0.UNIQUE_VERSION_DEPENDENCY_RANGE;
     public static final Index UNIQUE_SOURCE_TARGET = Indexes0.UNIQUE_SOURCE_TARGET;
     public static final Index FILES_PKEY = Indexes0.FILES_PKEY;
-    public static final Index UNIQUE_VERSION_PATH = Indexes0.UNIQUE_VERSION_PATH;
+    public static final Index UNIQUE_VERSION_PATH_FILENAME = Indexes0.UNIQUE_VERSION_PATH_FILENAME;
     public static final Index UNIQUE_MODULE_FILE = Indexes0.UNIQUE_MODULE_FILE;
     public static final Index MODULES_PKEY = Indexes0.MODULES_PKEY;
     public static final Index UNIQUE_VERSION_NAMESPACE = Indexes0.UNIQUE_VERSION_NAMESPACE;
@@ -69,7 +69,7 @@ public class Indexes {
         public static Index UNIQUE_VERSION_DEPENDENCY_RANGE = Internal.createIndex("unique_version_dependency_range", Dependencies.DEPENDENCIES, new OrderField[] { Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE }, true);
         public static Index UNIQUE_SOURCE_TARGET = Internal.createIndex("unique_source_target", Edges.EDGES, new OrderField[] { Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID }, true);
         public static Index FILES_PKEY = Internal.createIndex("files_pkey", Files.FILES, new OrderField[] { Files.FILES.ID }, true);
-        public static Index UNIQUE_VERSION_PATH = Internal.createIndex("unique_version_path", Files.FILES, new OrderField[] { Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH }, true);
+        public static Index UNIQUE_VERSION_PATH_FILENAME = Internal.createIndex("unique_version_path_filename", Files.FILES, new OrderField[] { Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH, Files.FILES.FILENAME }, true);
         public static Index UNIQUE_MODULE_FILE = Internal.createIndex("unique_module_file", ModuleContents.MODULE_CONTENTS, new OrderField[] { ModuleContents.MODULE_CONTENTS.MODULE_ID, ModuleContents.MODULE_CONTENTS.FILE_ID }, true);
         public static Index MODULES_PKEY = Internal.createIndex("modules_pkey", Modules.MODULES, new OrderField[] { Modules.MODULES.ID }, true);
         public static Index UNIQUE_VERSION_NAMESPACE = Internal.createIndex("unique_version_namespace", Modules.MODULES, new OrderField[] { Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE }, true);
