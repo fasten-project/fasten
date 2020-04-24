@@ -1,6 +1,8 @@
 package eu.fasten.analyzer.restapiplugin;
 
+import eu.fasten.analyzer.restapiplugin.server.OpenAPIServer;
 import eu.fasten.core.plugins.DBConnector;
+import io.vertx.core.Vertx;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -19,10 +21,11 @@ public class RestAPIPlugin extends Plugin {
     public static class RestAPIExtension implements DBConnector {
         private static DSLContext dslContext;
         private String pluginError = "";
+        private final Logger logger = LoggerFactory.getLogger(RestAPIExtension.class.getName());
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
-
+            RestAPIExtension.dslContext = dslContext;
         }
 
         @Override
@@ -38,7 +41,9 @@ public class RestAPIPlugin extends Plugin {
 
         @Override
         public void start() {
-            // TODO: deploy the vertx verticle
+            Vertx vertx = Vertx.vertx();
+            vertx.deployVerticle(new OpenAPIServer());
+            logger.info("Deployed Verticle: " + vertx);
         }
 
         @Override
