@@ -41,6 +41,7 @@ public class RestAPIPlugin extends Plugin {
 
         @Override
         public void start() {
+            // TODO: check if this is the right place to deploy the verticle
             Vertx vertx = Vertx.vertx();
             vertx.deployVerticle(new OpenAPIServer());
             logger.info("Deployed Verticle: " + vertx);
