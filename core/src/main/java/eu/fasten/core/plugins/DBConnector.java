@@ -8,9 +8,10 @@ import org.jooq.DSLContext;
 public interface DBConnector extends FastenPlugin {
 
     /**
-     *  This methods sets a DB connection for plug-ins.
+     * This methods sets a DB connection for plug-ins.
+     *
      * @param dslContext A DSL context for JOOQ to query the database.
      */
-    public void setDBConnection(DSLContext dslContext);
+    void setDBConnection(DSLContext dslContext);
 
 }

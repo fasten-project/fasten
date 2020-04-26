@@ -35,7 +35,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 public class OPALPluginTest {
 
     static OPALPlugin.OPAL opalPlugin;
-    final String topic = "maven.packages";
+    final String topic = "fasten.maven.pkg";
 
     @BeforeClass
     public static void instantiatePlugin() {
@@ -44,7 +44,7 @@ public class OPALPluginTest {
 
     @Test
     public void testConsumerTopic() {
-        assertEquals("maven.packages", opalPlugin.consumerTopics().get(0));
+        assertEquals("fasten.maven.pkg", opalPlugin.consumerTopics().get(0));
     }
 
     @Test
@@ -123,10 +123,9 @@ public class OPALPluginTest {
             + "}");
 
         opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()));
-        JSONObject error = new JSONObject(opalPlugin.getPluginError());
+        var error = opalPlugin.getPluginError();
 
-        assertEquals(FileNotFoundException.class.getSimpleName(), error.get("type"));
-        assertEquals(opalPlugin.getClass().getSimpleName(), error.get("plugin"));
+        assertEquals(FileNotFoundException.class.getSimpleName(), error.getClass().getSimpleName());
         assertFalse(opalPlugin.recordProcessSuccessful());
     }
 

@@ -25,22 +25,23 @@ import java.util.List;
  * Indicates a plug-in that works by consuming records from Kafka.
  *
  * @param <T> The type of data that this plug-in expects to consume. The FASTEN core
- *           only provides a de-serializer from JSON data into
- *           {@link eu.fasten.core.data.RevisionCallGraph} entries. All other types
- *           must be accompanied by custom de-serializers.
+ *            only provides a de-serializer from JSON data into
+ *            {@link eu.fasten.core.data.RevisionCallGraph} entries. All other types
+ *            must be accompanied by custom de-serializers.
  */
 public interface KafkaConsumer<T> extends FastenPlugin {
 
     /**
      * The topic this plug-in is interested into.
      */
-    public List<String> consumerTopics();
+    List<String> consumerTopics();
 
     /**
      * Overrides the default topic of a plug-in.
-     * @param topicName
+     *
+     * @param topicName new topic name
      */
-    public void setTopic(String topicName);
+    void setTopic(String topicName);
 
     /**
      * Processed an incoming record. This method must return when the record
@@ -48,11 +49,12 @@ public interface KafkaConsumer<T> extends FastenPlugin {
      *
      * @param record A record, de-serialized to the provided type {@link T}
      */
-    public void consume(String topic, ConsumerRecord<String, T> record);
+    void consume(String topic, ConsumerRecord<String, T> record);
 
     /**
      * This returns true if the plug-in processed the consumed record successfully.
-     * @return
+     *
+     * @return true if record processed successfully, false otherwise
      */
-    public boolean recordProcessSuccessful();
+    boolean recordProcessSuccessful();
 }

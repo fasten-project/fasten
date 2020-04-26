@@ -69,8 +69,8 @@ public class DummyAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public String getPluginError() {
-            return "";
+        public Throwable getPluginError() {
+            return null;
         }
 
         @Override

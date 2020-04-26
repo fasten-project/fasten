@@ -26,9 +26,9 @@ public abstract class AnalyzerPlugin extends Plugin {
 
         private static org.apache.kafka.clients.producer.KafkaProducer<Object, String>
                 kafkaProducer;
-        private String consumeTopic = "maven.packages";
+        private String consumeTopic = "fasten.maven.pkg";
         private boolean processedRecord;
-        private String pluginError;
+        private Throwable pluginError;
         private ExtendedRevisionCallGraph graph;
 
         @Override
@@ -38,10 +38,10 @@ public abstract class AnalyzerPlugin extends Plugin {
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
-            pluginError = "";
+            pluginError = null;
             processedRecord = false;
             consume(kafkaRecord);
-            if (getPluginError().isEmpty()) {
+            if (getPluginError() == null) {
                 processedRecord = true;
             }
         }
@@ -183,18 +183,18 @@ public abstract class AnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public String getPluginError() {
+        public Throwable getPluginError() {
             return this.pluginError;
         }
 
         @Override
         public void setPluginError(Throwable throwable) {
-
-            this.pluginError =
-                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
-                            throwable.getMessage()).put("trace", throwable.getStackTrace())
-                            .put("type", throwable.getClass().getSimpleName()).toString();
-            System.out.println(this.pluginError);
+            this.pluginError = throwable;
+//            this.pluginError =
+//                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
+//                            throwable.getMessage()).put("trace", throwable.getStackTrace())
+//                            .put("type", throwable.getClass().getSimpleName()).toString();
+//            System.out.println(this.pluginError);
         }
 
         @Override

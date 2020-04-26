@@ -41,7 +41,7 @@ import org.mockito.Mockito;
 @Disabled("Disabled until a way to make Wala platform independent found")
 class WALAPluginTest {
 
-    final String topic = "maven.packages";
+    final String topic = "fasten.maven.pkg";
     static WALAPlugin.WALA walaPlugin;
 
     @BeforeAll
@@ -51,7 +51,7 @@ class WALAPluginTest {
 
     @Test
     public void testConsumerTopic() {
-        assertEquals("maven.packages", walaPlugin.consumerTopics().get(0));
+        assertEquals("fasten.maven.pkg", walaPlugin.consumerTopics().get(0));
     }
 
     @Test
@@ -108,10 +108,9 @@ class WALAPluginTest {
                 "}");
 
         walaPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()));
-        JSONObject error = new JSONObject(walaPlugin.getPluginError());
+        var error = walaPlugin.getPluginError();
 
-        assertEquals(FileNotFoundException.class.getSimpleName(), error.get("type"));
-        assertEquals(walaPlugin.getClass().getSimpleName(), error.get("plugin"));
+        assertEquals(FileNotFoundException.class.getSimpleName(), error.getClass().getSimpleName());
         assertFalse(walaPlugin.recordProcessSuccessful());
     }
 

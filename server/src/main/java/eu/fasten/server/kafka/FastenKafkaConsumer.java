@@ -71,6 +71,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         stdoutMsg.put("plugin_version", "0.0.0");
 
         stdoutMsg.put("input", new JSONObject(record.value()));
+
         if (consumer instanceof eu.fasten.core.plugins.KafkaProducer) {
             var producer = (eu.fasten.core.plugins.KafkaProducer) consumer;
             stdoutMsg.put("payload", new JSONObject(producer.getResult()));
@@ -88,11 +89,11 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
         stderrMsg.put("input", new JSONObject(record.value()));
 
-        JSONObject pluginError = new JSONObject(consumer.getPluginError());
+        Throwable pluginError = consumer.getPluginError();
         JSONObject error = new JSONObject();
-        error.put("error", pluginError.get("type"));
-        error.put("msg", pluginError.get("msg"));
-        error.put("stacktrace", pluginError.get("trace"));
+        error.put("error", pluginError.getClass().getSimpleName());
+        error.put("msg", pluginError.getMessage());
+        error.put("stacktrace", pluginError.getStackTrace());
 
         stderrMsg.put("err", error);
 
@@ -108,8 +109,8 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         return "Unknown";
     }
 
-    /*
-    This methods sets up a connection for producing error logs of a plug-in into a Kafka topic.
+    /**
+     * This methods sets up a connection for producing error logs of a plug-in into a Kafka topic.
      */
     private Properties setKafkaProducer(String serverAddress, String clientID) {
 

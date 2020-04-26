@@ -171,6 +171,7 @@ public class FastenServer implements Runnable {
             try {
                 p.join();
             } catch (InterruptedException e) {
+                //TODO: fix
                 logger.debug("Couldn't join consumers");
             }
         });

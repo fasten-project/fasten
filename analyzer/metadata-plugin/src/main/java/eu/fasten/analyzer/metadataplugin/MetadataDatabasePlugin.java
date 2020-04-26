@@ -53,7 +53,7 @@ public class MetadataDatabasePlugin extends Plugin {
         private String topic = "opal_callgraphs";
         private static DSLContext dslContext;
         private boolean processedRecord = false;
-        private String pluginError = "";
+        private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
@@ -81,7 +81,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     + consumedJson.optString("version");
             this.processedRecord = false;
             this.restartTransaction = false;
-            this.pluginError = "";
+            this.pluginError = null;
             ExtendedRevisionCallGraph callgraph;
             try {
                 callgraph = new ExtendedRevisionCallGraph(consumedJson);
@@ -113,7 +113,7 @@ public class MetadataDatabasePlugin extends Plugin {
                             }
                             throw e;
                         }
-                        if (getPluginError().isEmpty()) {
+                        if (getPluginError() == null) {
                             processedRecord = true;
                             restartTransaction = false;
                             logger.info("Saved the '" + artifact + "' callgraph metadata "
@@ -257,14 +257,15 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public void setPluginError(Throwable throwable) {
-            this.pluginError =
-                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
-                            throwable.getMessage()).put("trace", throwable.getStackTrace())
-                            .put("type", throwable.getClass().getSimpleName()).toString();
+            this.pluginError = throwable;
+//            this.pluginError =
+//                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
+//                            throwable.getMessage()).put("trace", throwable.getStackTrace())
+//                            .put("type", throwable.getClass().getSimpleName()).toString();
         }
 
         @Override
-        public String getPluginError() {
+        public Throwable getPluginError() {
             return this.pluginError;
         }
 
