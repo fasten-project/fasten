@@ -65,7 +65,7 @@ public class OPALPluginTest {
             + "}");
 
         final var cg = opalPlugin
-            .consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()), false);
+            .consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()));
 
         final var extendedRevisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(
             new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
@@ -86,7 +86,7 @@ public class OPALPluginTest {
             + "}");
 
         var cg = opalPlugin
-            .consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()), false);
+            .consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()));
 
         var extendedRevisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(
             new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"), 1574072773);
@@ -106,7 +106,8 @@ public class OPALPluginTest {
             + "}");
 
         var cg = opalPlugin
-            .consume(new ConsumerRecord<>(topic, 1, 0, "bar", emptyCGCoordinate.toString()), false);
+            .consume(new ConsumerRecord<>(topic, 1, 0, "bar",
+                    emptyCGCoordinate.toString()));
 
         //Based on plugin's logs this artifact's call graph should be empty.
         assertTrue(cg.isCallGraphEmpty());
@@ -121,7 +122,7 @@ public class OPALPluginTest {
             + "    \"date\":\"1521511260\"\n"
             + "}");
 
-        opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()), false);
+        opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()));
         JSONObject error = new JSONObject(opalPlugin.getPluginError());
 
         assertEquals(FileNotFoundException.class.getSimpleName(), error.get("type"));

@@ -18,8 +18,6 @@
 
 package eu.fasten.core.plugins;
 
-import org.pf4j.ExtensionPoint;
-
 /**
  * Indicates a plug-in that produces records to Kafka. As per FASTEN conventions,
  * the plug-ins are expected to produce text output in the JSON format.
@@ -30,17 +28,25 @@ public interface KafkaProducer extends FastenPlugin {
      * A unique name for the producer topic to write to. If multiple plug-ins specify the same topic,
      * the FASTEN server discards all plug-ins except the first to declare the topic.
      */
-    public String producerTopic();
+    String producerTopic();
 
     /**
      * The server provides the plug-in with an already initialized Kafka producer. The plug-in
      * implementation can use it to write a set of mechanisms to Kafka, in a blocking fashion.
      */
-    public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer);
+    void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer);
 
     /**
      * Overrides the default topic of a KafkaProducer
+     *
      * @param topicName the name of a Kafka topic to set
      */
-    public void setProducerTopic(String topicName);
+    void setProducerTopic(String topicName);
+
+    /**
+     * Returns a result of the computation that needs to be sent to Kafka topic.
+     *
+     * @return msg for sending to Kafka
+     */
+    String getResult();
 }

@@ -29,6 +29,7 @@ public abstract class AnalyzerPlugin extends Plugin {
         private String consumeTopic = "maven.packages";
         private boolean processedRecord;
         private String pluginError;
+        private ExtendedRevisionCallGraph graph;
 
         @Override
         public List<String> consumerTopics() {
@@ -39,7 +40,7 @@ public abstract class AnalyzerPlugin extends Plugin {
         public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
             pluginError = "";
             processedRecord = false;
-            consume(kafkaRecord, true);
+            consume(kafkaRecord);
             if (getPluginError().isEmpty()) {
                 processedRecord = true;
             }
@@ -53,10 +54,8 @@ public abstract class AnalyzerPlugin extends Plugin {
          * @param kafkaRecord    A record including maven coordinates in the JSON format. e.g. {
          *                       "groupId": "com.g2forge.alexandria", "artifactId": "alexandria",
          *                       "version": "0.0.9", "date": "1574072773" }
-         * @param writeCGToKafka If true, the generated call graph will be written into Kafka
          */
-        public ExtendedRevisionCallGraph consume(final ConsumerRecord<String, String> kafkaRecord,
-                                                 final boolean writeCGToKafka) {
+        public ExtendedRevisionCallGraph consume(final ConsumerRecord<String, String> kafkaRecord) {
             try {
                 final var kafkaConsumedJson = new JSONObject(kafkaRecord.value());
                 final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
@@ -72,9 +71,7 @@ public abstract class AnalyzerPlugin extends Plugin {
                 logger.info("Call graph successfully generated for {}!",
                         mavenCoordinate.getCoordinate());
 
-                if (writeCGToKafka) {
-                    sendToKafka(cg);
-                }
+                graph = cg;
                 return cg;
 
             } catch (Exception e) {
@@ -156,6 +153,11 @@ public abstract class AnalyzerPlugin extends Plugin {
         public void setKafkaProducer(
                 org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
             kafkaProducer = producer;
+        }
+
+        @Override
+        public String getResult() {
+            return graph.toJSON().toString();
         }
 
         public String name() {

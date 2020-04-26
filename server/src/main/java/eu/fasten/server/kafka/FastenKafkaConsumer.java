@@ -64,6 +64,41 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
     }
 
+    private String getStdOutMsg(KafkaConsumer<String> consumer, ConsumerRecord<String, String> record) {
+        JSONObject stdoutMsg = new JSONObject();
+        stdoutMsg.put("created_at", System.currentTimeMillis() / 1000L);
+        stdoutMsg.put("plugin_name", consumer.getClass().getSimpleName());
+        stdoutMsg.put("plugin_version", "0.0.0");
+
+        stdoutMsg.put("input", new JSONObject(record.value()));
+        if (consumer instanceof eu.fasten.core.plugins.KafkaProducer) {
+            var producer = (eu.fasten.core.plugins.KafkaProducer) consumer;
+            stdoutMsg.put("payload", new JSONObject(producer.getResult()));
+        } else {
+            stdoutMsg.put("payload", "");
+        }
+        return stdoutMsg.toString();
+    }
+
+    private String getStdErrMsg(KafkaConsumer<String> consumer, ConsumerRecord<String, String> record) {
+        JSONObject stderrMsg = new JSONObject();
+        stderrMsg.put("created_at", System.currentTimeMillis() / 1000L);
+        stderrMsg.put("plugin_name", consumer.getClass().getSimpleName());
+        stderrMsg.put("plugin_version", "0.0.0");
+
+        stderrMsg.put("input", new JSONObject(record.value()));
+
+        JSONObject pluginError = new JSONObject(consumer.getPluginError());
+        JSONObject error = new JSONObject();
+        error.put("error", pluginError.get("type"));
+        error.put("msg", pluginError.get("msg"));
+        error.put("stacktrace", pluginError.get("trace"));
+
+        stderrMsg.put("err", error);
+
+        return stderrMsg.toString();
+    }
+
     private String getConsumerHostName() {
         try {
             return InetAddress.getLocalHost().getHostName();
@@ -291,9 +326,13 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                         if (kafkaConsumer.recordProcessSuccessful()) {
                             logToKafka(this.serverLog, this.serverLogTopic, new Date() + "| [" + this.consumerHostName + "] Plug-in " + kafkaConsumer.getClass().getSimpleName() +
                                     " processed successfully record [in " + timeFormatter.format((System.currentTimeMillis() - startTime) / 1000d) + " sec.]: " + r.key());
+
+                            logToKafka(this.failedRecords, String.format("fasten.%s.out", kafkaConsumer.getClass().getSimpleName()),
+                                    getStdOutMsg(kafkaConsumer, r));
+
                         } else {
-                            logToKafka(this.failedRecords, String.format("fasten.%s.STDERR", kafkaConsumer.getClass().getSimpleName()),
-                                    generateRecordStatus(kafkaConsumer.getClass().getSimpleName(), r, this.kafkaConsumer.getPluginError()));
+                            logToKafka(this.failedRecords, String.format("fasten.%s.err", kafkaConsumer.getClass().getSimpleName()),
+                                    getStdErrMsg(kafkaConsumer, r));
                         }
                         //kafkaConsumer.freeResource();
                     }

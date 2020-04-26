@@ -73,7 +73,7 @@ class WALAPluginTest {
 
         ExtendedRevisionCallGraph cg = walaPlugin
                 .consume(new ConsumerRecord<>(topic, 1, 0, "foo",
-                        coordinateJSON.toString()), false);
+                        coordinateJSON.toString()));
 
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
         var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
@@ -93,7 +93,7 @@ class WALAPluginTest {
 
         ExtendedRevisionCallGraph cg = walaPlugin
                 .consume(new ConsumerRecord<>(topic, 1, 0, "bar",
-                        emptyCGCoordinate.toString()), false);
+                        emptyCGCoordinate.toString()));
 
         assertNull(cg);
     }
@@ -126,7 +126,7 @@ class WALAPluginTest {
                 "}");
 
         ExtendedRevisionCallGraph cg = walaPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo",
-                coordinateJSON1.toString()), false);
+                coordinateJSON1.toString()));
         var coordinate = new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3");
         ExtendedRevisionCallGraph extendedRevisionCallGraph =
                 PartialCallGraph.createExtendedRevisionCallGraph(coordinate, 1574072773);
@@ -160,7 +160,7 @@ class WALAPluginTest {
 
         ExtendedRevisionCallGraph cg = walaPlugin
                 .consume(new ConsumerRecord<>(topic, 1, 0, "foo",
-                        coordinateJSON.toString()), true);
+                        coordinateJSON.toString()));
 
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
         var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
