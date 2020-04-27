@@ -103,12 +103,13 @@ public class MetadataDatabasePluginTest {
                 json.getString("version"), new Timestamp(json.getLong("timestamp")), null)).thenReturn(packageVersionId);
         long moduleId = 10;
         var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
-                "      \"sourceFile\": \"file.java\",\n" +
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
         Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
                 moduleMetadata)).thenReturn(moduleId);
+        long fileId = 3;
+        Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
@@ -183,12 +184,13 @@ public class MetadataDatabasePluginTest {
 
         long moduleId = 10;
         var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
-                "      \"sourceFile\": \"file.java\",\n" +
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
         Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
                 moduleMetadata)).thenReturn(moduleId);
+        long fileId = 3;
+        Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageId, id);
@@ -264,12 +266,13 @@ public class MetadataDatabasePluginTest {
 
         long moduleId = 10;
         var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
-                "      \"sourceFile\": \"file.java\",\n" +
                 "      \"superClasses\": [\n" +
                 "        \"/java.lang/Object\"\n" +
                 "      ]}");
         Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
                 moduleMetadata)).thenReturn(moduleId);
+        long fileId = 3;
+        Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         metadataDBExtension.setPluginError(new RuntimeException());
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);

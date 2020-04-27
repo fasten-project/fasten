@@ -348,10 +348,13 @@ public class MetadataDaoTest {
         Mockito.when(insertValues.values(packageId, dependencyId, versionRange)).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
         Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE)).thenReturn(insertOnConflict);
-        var insertReturning = Mockito.mock(InsertReturningStep.class);
-        Mockito.when(insertOnConflict.doNothing()).thenReturn(insertReturning);
+        var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
+        var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertOnDuplicate.set(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
+                Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertReturning.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
+        Mockito.when(insertOnDuplicateMore.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
         var record = new DependenciesRecord(packageId, dependencyId, versionRange);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         long result = metadataDao.insertDependency(packageId, dependencyId, versionRange);
@@ -370,10 +373,13 @@ public class MetadataDaoTest {
         Mockito.when(insertValues.values(packageId, dependencyIds.get(1), versionRanges.get(1))).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
         Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE)).thenReturn(insertOnConflict);
-        var insertReturning = Mockito.mock(InsertReturningStep.class);
-        Mockito.when(insertOnConflict.doNothing()).thenReturn(insertReturning);
+        var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
+        var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertOnDuplicate.set(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
+                Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertReturning.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
+        Mockito.when(insertOnDuplicateMore.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
         var record1 = new DependenciesRecord(packageId, dependencyIds.get(0), versionRanges.get(0));
         var record2 = new DependenciesRecord(packageId, dependencyIds.get(1), versionRanges.get(1));
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
@@ -629,10 +635,13 @@ public class MetadataDaoTest {
         Mockito.when(insertValues.values(moduleId, fileId)).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
         Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_MODULE_FILE)).thenReturn(insertOnConflict);
-        var insertReturning = Mockito.mock(InsertReturningStep.class);
-        Mockito.when(insertOnConflict.doNothing()).thenReturn(insertReturning);
+        var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
+        var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertOnDuplicate.set(ModuleContents.MODULE_CONTENTS.MODULE_ID,
+                ModuleContents.MODULE_CONTENTS.MODULE_ID)).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertReturning.returning(ModuleContents.MODULE_CONTENTS.MODULE_ID)).thenReturn(insertResult);
+        Mockito.when(insertOnDuplicateMore.returning(ModuleContents.MODULE_CONTENTS.MODULE_ID)).thenReturn(insertResult);
         var record = new ModuleContentsRecord(moduleId, fileId);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         long result = metadataDao.insertModuleContent(moduleId, fileId);
@@ -650,10 +659,13 @@ public class MetadataDaoTest {
         Mockito.when(insertValues.values(moduleIds.get(1), fileIds.get(1))).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
         Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_MODULE_FILE)).thenReturn(insertOnConflict);
-        var insertReturning = Mockito.mock(InsertReturningStep.class);
-        Mockito.when(insertOnConflict.doNothing()).thenReturn(insertReturning);
+        var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
+        var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertOnDuplicate.set(ModuleContents.MODULE_CONTENTS.MODULE_ID,
+                ModuleContents.MODULE_CONTENTS.MODULE_ID)).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertReturning.returning(ModuleContents.MODULE_CONTENTS.MODULE_ID)).thenReturn(insertResult);
+        Mockito.when(insertOnDuplicateMore.returning(ModuleContents.MODULE_CONTENTS.MODULE_ID)).thenReturn(insertResult);
         var record1 = new ModuleContentsRecord(moduleIds.get(0), fileIds.get(0));
         var record2 = new ModuleContentsRecord(moduleIds.get(1), fileIds.get(1));
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
@@ -690,10 +702,13 @@ public class MetadataDaoTest {
         Mockito.when(insertValues.values(binaryModuleId, fileId)).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
         Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_BINARY_MODULE_FILE)).thenReturn(insertOnConflict);
-        var insertReturning = Mockito.mock(InsertReturningStep.class);
-        Mockito.when(insertOnConflict.doNothing()).thenReturn(insertReturning);
+        var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
+        var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertOnDuplicate.set(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID,
+                BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertReturning.returning(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)).thenReturn(insertResult);
+        Mockito.when(insertOnDuplicateMore.returning(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)).thenReturn(insertResult);
         var record = new BinaryModuleContentsRecord(binaryModuleId, fileId);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
         long result = metadataDao.insertBinaryModuleContent(binaryModuleId, fileId);
@@ -712,10 +727,13 @@ public class MetadataDaoTest {
         Mockito.when(insertValues.values(binaryModuleIds.get(1), fileIds.get(1))).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
         Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_BINARY_MODULE_FILE)).thenReturn(insertOnConflict);
-        var insertReturning = Mockito.mock(InsertReturningStep.class);
-        Mockito.when(insertOnConflict.doNothing()).thenReturn(insertReturning);
+        var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
+        Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
+        var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
+        Mockito.when(insertOnDuplicate.set(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID,
+                BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
-        Mockito.when(insertReturning.returning(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)).thenReturn(insertResult);
+        Mockito.when(insertOnDuplicateMore.returning(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)).thenReturn(insertResult);
         var record1 = new BinaryModuleContentsRecord(binaryModuleIds.get(0), fileIds.get(0));
         var record2 = new BinaryModuleContentsRecord(binaryModuleIds.get(1), fileIds.get(1));
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);

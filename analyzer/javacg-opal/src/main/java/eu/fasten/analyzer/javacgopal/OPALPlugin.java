@@ -36,7 +36,7 @@ public class OPALPlugin extends AnalyzerPlugin {
     @Extension
     public static class OPAL extends AnalyzerPlugin.ANALYZER {
 
-        final String produceTopic = "opal_callgraphs";
+        private static String produceTopic = "opal_callgraphs";
 
         @Override
         public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
@@ -52,8 +52,12 @@ public class OPALPlugin extends AnalyzerPlugin {
 
         @Override
         public String producerTopic() {
-            return this.produceTopic;
+            return produceTopic;
         }
 
+        @Override
+        public void setProducerTopic(String topicName) {
+            produceTopic = topicName;
+        }
     }
 }
