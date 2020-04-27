@@ -1,37 +1,39 @@
 package eu.fasten.server;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-
-
-import org.apache.kafka.common.errors.WakeupException;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.json.JSONObject;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-import picocli.CommandLine;
-
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.errors.WakeupException;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
 
 /**
  * This plugin consumes Maven coordinates for creating call graphs.
- *
  * Please note that this is highly experimental and does not adhere to conventions of Kafkas interfaces
  * until the plugin's functionalities are discussed and reviewed.
- *
  */
 
 @CommandLine.Command(name = "MavenCoordConsumer", description = "Generates call graphs from Maven coordinates.")
-public class MavenCoordConsumer implements Runnable{
+public class MavenCoordConsumer implements Runnable {
 
-    @CommandLine.Option(names = {"-h", "--host"}, defaultValue = "localhost", description = "The IP address of the Kafka server")
+    @CommandLine.Option(
+            names = {"-h", "--host"},
+            defaultValue = "localhost",
+            description = "The IP address of the Kafka server")
     String IP;
-    @CommandLine.Option(names = {"-p", "--port"}, defaultValue = "9092", description = "The port of the Kafka server.")
+
+    @CommandLine.Option(
+            names = {"-p", "--port"},
+            defaultValue = "9092",
+            description = "The port of the Kafka server.")
     String port;
 
     private KafkaConsumer<String, String> MVCConsumer;
@@ -55,19 +57,20 @@ public class MavenCoordConsumer implements Runnable{
     private class ConsumerRunnable implements Runnable {
         private CountDownLatch mLatch;
 
-        ConsumerRunnable(CountDownLatch latch){
+        ConsumerRunnable(CountDownLatch latch) {
             mLatch = latch;
             MVCConsumer.subscribe(Collections.singletonList(topic));
         }
 
         @Override
-        public void run(){
-            try{
+        public void run() {
+            try {
 
-                do{
-                    ConsumerRecords<String, String> records = MVCConsumer.poll(Duration.ofMillis(100));
+                do {
+                    ConsumerRecords<String, String> records =
+                            MVCConsumer.poll(Duration.ofMillis(100));
 
-                    for(ConsumerRecord<String, String> r : records){
+                    for (ConsumerRecord<String, String> r : records) {
                         System.out.println(r.key() + " " + r.value());
 
                         JSONObject mvn_record = new JSONObject(r.value());
@@ -77,9 +80,9 @@ public class MavenCoordConsumer implements Runnable{
                         System.out.println("datetime: " + mvn_record.getString("date"));
 
                     }
-                    
-                }while (true);
-            } catch (WakeupException e){
+
+                } while (true);
+            } catch (WakeupException e) {
                 logger.info("Received shutdown signal!");
             } finally {
                 MVCConsumer.close();
@@ -95,7 +98,7 @@ public class MavenCoordConsumer implements Runnable{
     @Override
     public void run() {
         Properties props = consumerProps(IP + ":" + port);
-        this.MVCConsumer = new KafkaConsumer<String, String>(props);
+        this.MVCConsumer = new KafkaConsumer<>(props);
 
         logger.info("Consumer initialized");
 

@@ -90,6 +90,7 @@ public class FastenServer implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
+    @Override
     public void run() {
         setLoggingLevel();
 
@@ -104,7 +105,8 @@ public class FastenServer implements Runnable {
         var kafkaProducers = jarPluginManager.getExtensions(KafkaProducer.class);
         var dbPlugins = jarPluginManager.getExtensions(DBConnector.class);
 
-        logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, {} DB plug-ins: {} total plugins",
+        logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, "
+                        + "{} DB plug-ins: {} total plugins",
                 kafkaConsumers.size(), kafkaProducers.size(), dbPlugins.size(), plugins.size());
 
         changeDefaultTopics(kafkaConsumers, kafkaProducers);
@@ -114,13 +116,16 @@ public class FastenServer implements Runnable {
             dbPlugins.forEach((p) -> {
                 try {
                     p.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
-                    logger.debug("Set DB connection successfully for plug-in {}", p.getClass().getSimpleName());
+                    logger.debug("Set DB connection successfully for plug-in {}",
+                            p.getClass().getSimpleName());
                 } catch (SQLException e) {
-                    logger.error("Couldn't set DB connection for plug-in {}\n{}", p.getClass().getSimpleName(), e.getStackTrace());
+                    logger.error("Couldn't set DB connection for plug-in {}\n{}",
+                            p.getClass().getSimpleName(), e.getStackTrace());
                 }
             });
         } else {
-            logger.error("Couldn't make a DB connection. Make sure that you have provided a valid DB URL, username and password.");
+            logger.error("Couldn't make a DB connection. Make sure that you have "
+                    + "provided a valid DB URL, username and password.");
         }
 
         List<FastenKafkaProducer> producers = kafkaProducers.stream().map(k -> {
@@ -171,8 +176,7 @@ public class FastenServer implements Runnable {
             try {
                 p.join();
             } catch (InterruptedException e) {
-                //TODO: fix
-                logger.debug("Couldn't join consumers");
+                logger.debug("Couldn't join producers");
             }
         });
     }
@@ -197,13 +201,15 @@ public class FastenServer implements Runnable {
 
             for (var k : kafkaConsumers) {
                 if (jsonObject.has(k.getClass().getSimpleName())) {
-                    k.setTopic(jsonObject.getJSONObject(k.getClass().getSimpleName()).get("consumer").toString());
+                    k.setTopic(jsonObject.getJSONObject(k.getClass().getSimpleName())
+                            .get("consumer").toString());
                 }
             }
 
             for (KafkaProducer k : kafkaProducers) {
                 if (jsonObject.has(k.getClass().getSimpleName())) {
-                    k.setProducerTopic(jsonObject.getJSONObject(k.getClass().getSimpleName()).get("producer").toString());
+                    k.setProducerTopic(jsonObject.getJSONObject(k.getClass().getSimpleName())
+                            .get("producer").toString());
                 }
             }
         }

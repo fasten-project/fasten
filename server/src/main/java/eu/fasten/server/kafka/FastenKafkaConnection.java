@@ -18,13 +18,12 @@
 
 package eu.fasten.server.kafka;
 
+import java.util.List;
+import java.util.Properties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-
-import java.util.List;
-import java.util.Properties;
 
 public abstract class FastenKafkaConnection extends Thread {
 
@@ -56,7 +55,7 @@ public abstract class FastenKafkaConnection extends Thread {
         return properties;
     }
 
-    public static Properties producerProperties(List<String> serverAddresses, String clientId){
+    public static Properties producerProperties(List<String> serverAddresses, String clientId) {
 
         String serializer = StringSerializer.class.getName();
         Properties properties = new Properties();
