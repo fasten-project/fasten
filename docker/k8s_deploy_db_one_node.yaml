@@ -7,7 +7,7 @@ spec:
   selector:
     matchLabels:
       app: fasten-server-db-monster
-  replicas: 1
+  replicas: 5
   template:
     metadata:
       labels:
