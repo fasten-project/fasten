@@ -41,7 +41,7 @@ public class Main implements Runnable{
             var restAPIPlugin = new RestAPIPlugin.RestAPIExtension();
             restAPIPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
 
-            new RestAPIPlugin.RestAPIExtension().start();
+            restAPIPlugin.start();
 
         } catch (SQLException e) {
             logger.error("Could not connect to the database", e);
