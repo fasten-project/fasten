@@ -50,7 +50,7 @@ public class MetadataDatabasePlugin extends Plugin {
     @Extension
     public static class MetadataDBExtension implements KafkaConsumer<String>, DBConnector {
 
-        private String topic = "opal_callgraphs";
+        private String topic = "fasten.OPAL.out";
         private static DSLContext dslContext;
         private boolean processedRecord = false;
         private Throwable pluginError = null;
@@ -76,7 +76,7 @@ public class MetadataDatabasePlugin extends Plugin {
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
 
-            final var consumedJson = new JSONObject(record.value());
+            final var consumedJson = new JSONObject(record.value()).getJSONObject("payload");
             final var artifact = consumedJson.optString("product") + "@"
                     + consumedJson.optString("version");
             this.processedRecord = false;
@@ -248,6 +248,11 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
+        public String version() {
+            return "0.0.1";
+        }
+
+        @Override
         public void start() {
         }
 
@@ -258,10 +263,6 @@ public class MetadataDatabasePlugin extends Plugin {
         @Override
         public void setPluginError(Throwable throwable) {
             this.pluginError = throwable;
-//            this.pluginError =
-//                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
-//                            throwable.getMessage()).put("trace", throwable.getStackTrace())
-//                            .put("type", throwable.getClass().getSimpleName()).toString();
         }
 
         @Override

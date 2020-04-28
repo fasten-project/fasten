@@ -41,7 +41,6 @@ public class FastenKafkaProducer extends FastenKafkaConnection {
         if (this.connection == null) {
             this.connection = new KafkaProducer<>(this.connProperties);
         }
-        this.producer.setKafkaProducer(this.connection);
         logger.debug("Sets a Kafka producer.....");
     }
 }

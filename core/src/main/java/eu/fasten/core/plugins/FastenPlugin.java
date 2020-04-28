@@ -38,22 +38,29 @@ import org.pf4j.ExtensionPoint;
 public interface FastenPlugin extends ExtensionPoint {
 
     /**
-     * Returns a unique name for the plug-in
+     * Returns a unique name for the plug-in.
      *
      * @return The plugin's fully qualified name
      */
     String name();
 
     /**
-     * Returns a longer description of the plug-in functionality
+     * Returns a longer description of the plug-in functionality.
      *
-     * @return A string describing what the plug-in does.
+     * @return A string describing what the plug-in does
      */
     String description();
 
     /**
+     * Returns a version of the plug-in.
+     *
+     * @return A string containing a version of the plug-in
+     */
+    String version();
+
+    /**
      * Lifecycle operations: Invoked when the server has allocated all resources required to run
-     * this plug-in
+     * this plug-in.
      */
     void start();
 
@@ -63,8 +70,11 @@ public interface FastenPlugin extends ExtensionPoint {
     void stop();
 
     /**
-     * These two methods should be implemented so that the FASTEN server can retrieve the plug-in's error and its exception
-     * type. This will help to reprocess certain types of failed records.
+     * These two methods should be implemented so that the FASTEN server can retrieve
+     * the plug-in's error and its exception type. This will help to reprocess certain types of
+     * failed records.
+     *
+     * @param throwable exception or error encountered during plugin execution
      */
     void setPluginError(Throwable throwable);
 
@@ -77,8 +87,8 @@ public interface FastenPlugin extends ExtensionPoint {
     Throwable getPluginError();
 
     /**
-     * The purpose of this method is to release all the resources of a plug-in. For example, closing a stream or setting
-     * a big object to null.
+     * The purpose of this method is to release all the resources of a plug-in. For example,
+     * closing a stream or setting a big object to null.
      */
     void freeResource();
 

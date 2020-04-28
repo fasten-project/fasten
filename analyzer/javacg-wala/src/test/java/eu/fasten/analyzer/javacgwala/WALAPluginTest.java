@@ -134,11 +134,6 @@ class WALAPluginTest {
     }
 
     @Test
-    public void testProducerTopic() {
-        assertEquals("wala_callgraphs", walaPlugin.producerTopic());
-    }
-
-    @Test
     public void testName() {
         assertEquals("eu.fasten.analyzer.javacgwala.WALAPlugin.WALA", walaPlugin.name());
     }
@@ -146,7 +141,6 @@ class WALAPluginTest {
     @Test
     public void sendToKafkaTest() throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
         KafkaProducer<Object, String> producer = Mockito.mock(KafkaProducer.class);
-        walaPlugin.setKafkaProducer(producer);
 
         Mockito.when(producer.send(Mockito.any())).thenReturn(null);
 

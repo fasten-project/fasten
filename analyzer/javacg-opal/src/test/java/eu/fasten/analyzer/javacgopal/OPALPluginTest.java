@@ -148,11 +148,6 @@ public class OPALPluginTest {
     }
 
     @Test
-    public void testProducerTopic() {
-        assertEquals("opal_callgraphs", opalPlugin.producerTopic());
-    }
-
-    @Test
     public void testName() {
         assertEquals("eu.fasten.analyzer.javacgopal.OPALPlugin.OPAL", opalPlugin.name());
     }

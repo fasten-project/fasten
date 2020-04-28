@@ -109,7 +109,7 @@ public class FastenServer implements Runnable {
                         + "{} DB plug-ins: {} total plugins",
                 kafkaConsumers.size(), kafkaProducers.size(), dbPlugins.size(), plugins.size());
 
-        changeDefaultTopics(kafkaConsumers, kafkaProducers);
+        changeDefaultTopics(kafkaConsumers);
 
         // Here, a DB connection is made for the plug-ins that need it.
         if (ObjectUtils.allNotNull(dbUrl, dbUser, dbPass)) {
@@ -185,10 +185,8 @@ public class FastenServer implements Runnable {
      * Changes Kafka topics of consumers ad producers if specified in command line.
      *
      * @param kafkaConsumers list of consumers
-     * @param kafkaProducers list of producers
      */
-    private void changeDefaultTopics(List<KafkaConsumer> kafkaConsumers,
-                                     List<KafkaProducer> kafkaProducers) {
+    private void changeDefaultTopics(List<KafkaConsumer> kafkaConsumers) {
         if (pluginTopic != null) {
             JSONObject jsonObject;
             try {
@@ -203,13 +201,6 @@ public class FastenServer implements Runnable {
                 if (jsonObject.has(k.getClass().getSimpleName())) {
                     k.setTopic(jsonObject.getJSONObject(k.getClass().getSimpleName())
                             .get("consumer").toString());
-                }
-            }
-
-            for (KafkaProducer k : kafkaProducers) {
-                if (jsonObject.has(k.getClass().getSimpleName())) {
-                    k.setProducerTopic(jsonObject.getJSONObject(k.getClass().getSimpleName())
-                            .get("producer").toString());
                 }
             }
         }

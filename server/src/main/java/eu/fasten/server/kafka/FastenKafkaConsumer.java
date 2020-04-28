@@ -161,6 +161,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
                                 kafkaConsumer.getClass().getSimpleName()),
                                 getStdErrMsg(kafkaConsumer, r));
                     }
+                    kafkaConsumer.freeResource();
                 }
             }
         } while (true);
@@ -199,13 +200,13 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         JSONObject stdoutMsg = new JSONObject();
         stdoutMsg.put("created_at", System.currentTimeMillis() / 1000L);
         stdoutMsg.put("plugin_name", consumer.getClass().getSimpleName());
-        stdoutMsg.put("plugin_version", "0.0.0");
+        stdoutMsg.put("plugin_version", consumer.version());
 
         stdoutMsg.put("input", new JSONObject(record.value()));
 
         if (consumer instanceof eu.fasten.core.plugins.KafkaProducer) {
             var producer = (eu.fasten.core.plugins.KafkaProducer) consumer;
-            stdoutMsg.put("payload", new JSONObject(producer.getResult()));
+            stdoutMsg.put("payload", new JSONObject(producer.produce()));
         } else {
             stdoutMsg.put("payload", "");
         }
@@ -224,7 +225,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
         JSONObject stderrMsg = new JSONObject();
         stderrMsg.put("created_at", System.currentTimeMillis() / 1000L);
         stderrMsg.put("plugin_name", consumer.getClass().getSimpleName());
-        stderrMsg.put("plugin_version", "0.0.0");
+        stderrMsg.put("plugin_version", consumer.version());
 
         stderrMsg.put("input", new JSONObject(record.value()));
 

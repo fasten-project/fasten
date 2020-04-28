@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Plugin;
@@ -24,8 +23,6 @@ public abstract class AnalyzerPlugin extends Plugin {
 
         private Logger logger = LoggerFactory.getLogger(getClass());
 
-        private static org.apache.kafka.clients.producer.KafkaProducer<Object, String>
-                kafkaProducer;
         private String consumeTopic = "fasten.maven.pkg";
         private boolean processedRecord;
         private Throwable pluginError;
@@ -51,9 +48,9 @@ public abstract class AnalyzerPlugin extends Plugin {
          * eu.fasten.core.data.RevisionCallGraph format, and produce them to the Producer that is
          * provided for this Object.
          *
-         * @param kafkaRecord    A record including maven coordinates in the JSON format. e.g. {
-         *                       "groupId": "com.g2forge.alexandria", "artifactId": "alexandria",
-         *                       "version": "0.0.9", "date": "1574072773" }
+         * @param kafkaRecord A record including maven coordinates in the JSON format. e.g. {
+         *                    "groupId": "com.g2forge.alexandria", "artifactId": "alexandria",
+         *                    "version": "0.0.9", "date": "1574072773" }
          */
         public ExtendedRevisionCallGraph consume(final ConsumerRecord<String, String> kafkaRecord) {
             try {
@@ -112,51 +109,13 @@ public abstract class AnalyzerPlugin extends Plugin {
                 final MavenCoordinate mavenCoordinate,
                 final JSONObject kafkaConsumedJson) throws Exception;
 
-        /**
-         * Send ExtendedRevisionCallGraph to Kafka.
-         *
-         * @param cg Generated call graph
-         */
-        public void sendToKafka(final ExtendedRevisionCallGraph cg) {
-
-            logger.debug("Writing call graph for {} to Kafka", cg.uri.toString());
-            final var record = new ProducerRecord<Object, String>(this.producerTopic(),
-                    cg.uri.toString(),
-                    cg.toJSON().toString()
-            );
-
-            kafkaProducer.send(record, (recordMetadata, e) -> {
-                if (recordMetadata != null) {
-                    logger.debug("Sent: {} to {}", cg.uri.toString(), this.producerTopic());
-                } else {
-                    setPluginError(e);
-                    logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
-                }
-            });
-        }
-
         @Override
         public void setTopic(String topicName) {
             this.consumeTopic = topicName;
         }
 
         @Override
-        public abstract String producerTopic();
-
-        /**
-         * This method should be called before calling consume method. It sets the KafkaProducer of
-         * this Object to what is passed to it.
-         *
-         * @param producer org.apache.kafka.clients.producer.KafkaProducer.
-         */
-        @Override
-        public void setKafkaProducer(
-                org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
-            kafkaProducer = producer;
-        }
-
-        @Override
-        public String getResult() {
+        public String produce() {
             return graph.toJSON().toString();
         }
 
@@ -190,16 +149,11 @@ public abstract class AnalyzerPlugin extends Plugin {
         @Override
         public void setPluginError(Throwable throwable) {
             this.pluginError = throwable;
-//            this.pluginError =
-//                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
-//                            throwable.getMessage()).put("trace", throwable.getStackTrace())
-//                            .put("type", throwable.getClass().getSimpleName()).toString();
-//            System.out.println(this.pluginError);
         }
 
         @Override
         public void freeResource() {
-
+            this.graph = null;
         }
     }
 }
