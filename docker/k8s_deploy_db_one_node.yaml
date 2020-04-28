@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fasten-server-db-monster
+  namespace: fasten
+spec:
+  selector:
+    matchLabels:
+      app: fasten-server-db-monster
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: fasten-server-db-monster
+    spec:
+      containers:
+        - name: fasten-server-db
+          image: monster93/fasten.server.db:v0.1b
+          args: ["-k", "kafka-0.kafka-headless.codefeedr:9092", "-t", "$(FASTEN_CONFIG)", "-d", "$(PSQL_DB)", "-u", "$(PSQL_USER)", "-pw", "$(PSQL_SECRET)"]
+          ports:
+            - containerPort: 3010
+          env:
+            - name: FASTEN_CONFIG
+              valueFrom:
+                configMapKeyRef:
+                  key: fasten.topics
+                  name: fasten.config
+            - name: PSQL_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: psql-pwd
+                  name: psql.pwd
+            - name: PSQL_DB
+              valueFrom:
+                secretKeyRef:
+                  key: psql.db.url
+                  name: psql.db
+            - name: PSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  key: psql.db.username
+                  name: psql.db.user       
+      nodeSelector:
+        monster.node: "true"
