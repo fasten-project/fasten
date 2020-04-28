@@ -56,6 +56,11 @@ public class DummyAnalyzerPlugin extends Plugin {
         }
 
         @Override
+        public String version() {
+            return "0.0.0";
+        }
+
+        @Override
         public void start() {
         }
 
