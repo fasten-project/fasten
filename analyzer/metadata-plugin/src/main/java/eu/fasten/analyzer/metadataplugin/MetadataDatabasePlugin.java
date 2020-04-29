@@ -24,12 +24,16 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import eu.fasten.core.plugins.KafkaProducer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.exception.DataAccessException;
@@ -49,9 +53,11 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBExtension implements KafkaConsumer<String>, DBConnector {
+    public static class MetadataDBExtension implements KafkaConsumer<String>, KafkaProducer, DBConnector {
 
-        private String topic = "opal_callgraphs";
+        private String consumerTopic = "fasten.opal.cg.3";
+        private String producerTopic = "fasten.cg.edges";
+        private org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
         private static DSLContext dslContext;
         private boolean processedRecord = false;
         private String pluginError = "";
@@ -66,12 +72,12 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList(topic));
+            return new ArrayList<>(Collections.singletonList(consumerTopic));
         }
 
         @Override
         public void setTopic(String topicName) {
-            this.topic = topicName;
+            this.consumerTopic = topicName;
         }
 
         @Override
@@ -239,7 +245,11 @@ public class MetadataDatabasePlugin extends Plugin {
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
             }
-
+            if (this.kafkaProducer != null) {
+                this.sendEdgesToKafka(callGraph.product + "@" + callGraph.version, edges);
+            } else {
+                writeEdgesToFile(callGraph.product + "@" + callGraph.version, edges);
+            }
             return packageId;
         }
 
@@ -252,6 +262,52 @@ public class MetadataDatabasePlugin extends Plugin {
                 } else {
                     return new Timestamp(timestamp);
                 }
+            }
+        }
+
+        /**
+         * Sends list of edges to Kafka.
+         *
+         * @param product Product name and version
+         * @param edges List of edges
+         */
+        public void sendEdgesToKafka(String product, List<EdgesRecord> edges) {
+            logger.debug("Writing edges for {} to Kafka", product);
+            var edgesArray = edges.parallelStream()
+                    .map((r) -> new long[]{r.getSourceId(), r.getTargetId()})
+                    .toArray();
+            final var record = new ProducerRecord<Object, String>(
+                    this.producerTopic(),
+                    product,
+                    Arrays.deepToString(edgesArray)
+            );
+            kafkaProducer.send(record, (recordMetadata, e) -> {
+                if (recordMetadata != null) {
+                    logger.debug("Sent: {} to {}", product, this.producerTopic());
+                } else {
+                    setPluginError(e);
+                    logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
+                }
+            });
+        }
+
+        /**
+         * Writes edges to file.
+         *
+         * @param product Product name and version
+         * @param edges List of edges
+         */
+        public void writeEdgesToFile(String product, List<EdgesRecord> edges) {
+            logger.debug("Writing edges for {} to file", product);
+            var edgesArray = edges.parallelStream()
+                    .map((r) -> new long[]{r.getSourceId(), r.getTargetId()})
+                    .toArray();
+            var data = product + "\n" + Arrays.deepToString(edgesArray);
+            try {
+                Files.write(Paths.get("edges.txt"), data.getBytes());
+            } catch (IOException e) {
+                setPluginError(e);
+                logger.error("Failed to write edges to file: " + e.getMessage(), e);
             }
         }
 
@@ -269,7 +325,8 @@ public class MetadataDatabasePlugin extends Plugin {
         public String description() {
             return "Metadata plugin. "
                     + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
-                    + " and populates metadata database with consumed data.";
+                    + " and populates metadata database with consumed data"
+                    + " and writes edges of callgraph with Global IDs to another Kafka topic.";
         }
 
         @Override
@@ -298,5 +355,19 @@ public class MetadataDatabasePlugin extends Plugin {
 
         }
 
+        @Override
+        public String producerTopic() {
+            return this.producerTopic;
+        }
+
+        @Override
+        public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
+            this.kafkaProducer = producer;
+        }
+
+        @Override
+        public void setProducerTopic(String topicName) {
+            this.producerTopic = topicName;
+        }
     }
 }

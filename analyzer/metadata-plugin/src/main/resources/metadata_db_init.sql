@@ -82,6 +82,20 @@ CREATE TABLE edges
     metadata  JSONB  NOT NULL
 );
 
+CREATE INDEX CONCURRENTLY package_versions_package_id ON package_versions USING btree (package_id);
+CREATE INDEX CONCURRENTLY dependencies_package_version_id ON dependencies USING btree (package_version_id);
+CREATE INDEX CONCURRENTLY dependencies_dependency_id ON dependencies USING btree (dependency_id);
+CREATE INDEX CONCURRENTLY files_package_version_id ON files USING btree (package_version_id);
+CREATE INDEX CONCURRENTLY modules_package_version_id ON modules USING btree (package_version_id);
+CREATE INDEX CONCURRENTLY module_contents_module_id ON module_contents USING btree (module_id);
+CREATE INDEX CONCURRENTLY module_contents_file_id ON module_contents USING btree (file_id);
+CREATE INDEX CONCURRENTLY binary_modules_package_version_id ON binary_modules USING btree (package_version_id);
+CREATE INDEX CONCURRENTLY binary_module_contents_binary_module_id ON binary_module_contents USING btree (binary_module_id);
+CREATE INDEX CONCURRENTLY binary_module_contents_file_id ON binary_module_contents USING btree (file_id);
+CREATE INDEX CONCURRENTLY callables_module_id ON callables USING btree (module_id);
+CREATE INDEX CONCURRENTLY edges_source_id ON edges USING btree (source_id);
+CREATE INDEX CONCURRENTLY edges_target_id ON edges USING btree (target_id);
+
 CREATE UNIQUE INDEX CONCURRENTLY unique_package_forge ON packages USING btree (package_name, forge);
 ALTER TABLE packages
     ADD CONSTRAINT unique_package_forge UNIQUE USING INDEX unique_package_forge;

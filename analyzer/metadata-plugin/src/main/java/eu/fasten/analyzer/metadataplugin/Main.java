@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
 import java.util.List;
+import eu.fasten.server.kafka.FastenKafkaProducer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -40,7 +41,7 @@ public class Main implements Runnable {
     @CommandLine.Option(names = {"-t", "--topic"},
             paramLabel = "topic",
             description = "Kafka topic from which to consume call graphs",
-            defaultValue = "opal_callgraphs")
+            defaultValue = "fasten.opal.cg.3")
     String topic;
 
     @CommandLine.Option(names = {"-s", "--skip_offsets"},
@@ -91,9 +92,12 @@ public class Main implements Runnable {
             metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
 
             if (jsonFile == null || jsonFile.isEmpty()) {
-                var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
+                var consumerProperties = FastenKafkaConnection.kafkaProperties(kafkaServers,
                         this.getClass().getCanonicalName());
-                new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
+                var producerProperties = FastenKafkaConnection.producerProperties(kafkaServers,
+                        this.getClass().getCanonicalName());
+                new FastenKafkaConsumer(consumerProperties, metadataPlugin, skipOffsets).start();
+                new FastenKafkaProducer(producerProperties, metadataPlugin).start();
             } else {
                 final FileReader reader;
                 try {
