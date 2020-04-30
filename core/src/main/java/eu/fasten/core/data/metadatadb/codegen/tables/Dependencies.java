@@ -41,7 +41,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dependencies extends TableImpl<DependenciesRecord> {
 
-    private static final long serialVersionUID = 1005523151;
+    private static final long serialVersionUID = 935003509;
 
     /**
      * The reference instance of <code>public.dependencies</code>
@@ -111,7 +111,7 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.UNIQUE_VERSION_DEPENDENCY_RANGE);
+        return Arrays.<Index>asList(Indexes.DEPENDENCIES_DEPENDENCY_ID, Indexes.DEPENDENCIES_PACKAGE_VERSION_ID, Indexes.UNIQUE_VERSION_DEPENDENCY_RANGE);
     }
 
     @Override
