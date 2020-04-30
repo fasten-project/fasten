@@ -29,6 +29,7 @@
         <module>dummy-analyzer</module>
         <module>metadata-plugin</module>
         <module>base-analyzer</module>
+        <module>vulnerability-plugin</module>
     </modules>
 
     <build>
