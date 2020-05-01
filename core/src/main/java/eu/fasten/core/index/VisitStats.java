@@ -75,7 +75,7 @@ public class VisitStats {
 		final SimpleJSAP jsap = new SimpleJSAP(VisitStats.class.getName(),
 				"Computes (co)reachable set statistics for a prototype knowledge base.",
 				new Parameter[] {
-						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'm', "min", "Consider only graphs with at least this number of nodes." ),
+						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'm', "min", "Consider only graphs with at least this number of internal nodes." ),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
 		});
@@ -106,10 +106,10 @@ public class VisitStats {
 
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
 			pl.update();
+			if (callGraph.nInternal < minNodes) continue;
 			final CallGraphData callGraphData = callGraph.callGraphData();
 			totGraphs++;
-			if (callGraphData.numNodes() < minNodes) continue;
-			for (int startNode = 0; startNode < callGraphData.numArcs(); startNode++) {
+			for (int startNode = 0; startNode < callGraphData.numNodes(); startNode++) {
 				reachable.add(reachable(callGraphData.rawGraph(), startNode));
 				coreachable.add(reachable(callGraphData.rawTranspose(), startNode));
 			}
