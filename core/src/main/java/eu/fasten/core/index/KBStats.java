@@ -50,7 +50,7 @@ public class KBStats {
 
 	public static void main(final String[] args) throws JSAPException, ClassNotFoundException, RocksDBException, IOException {
 		final SimpleJSAP jsap = new SimpleJSAP(KBStats.class.getName(),
-				"Creates or updates a knowledge base (associated to a given database), indexing either a list of JSON files or a Kafka topic where JSON object are published",
+				"Compute statistics about an instance of a prototype knowledge base.",
 				new Parameter[] {
 						new FlaggedOption("gsd", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'g', "gsd", "Graph-size distribution: number of nodes (one per graph)." ),
 						new FlaggedOption("at", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'a', "at", "Arc type distribution: internal arcs, external arcs, total arcs (tab-separated, one per graph)." ),

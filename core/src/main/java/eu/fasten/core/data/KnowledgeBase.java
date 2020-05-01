@@ -317,6 +317,14 @@ public class KnowledgeBase implements Serializable, Closeable {
 		public boolean isInternal(final long node) {
 			return !externalNodes.contains(node);
 		}
+
+		public ImmutableGraph rawGraph() {
+			return graph;
+		}
+
+		public ImmutableGraph rawTranspose() {
+			return transpose;
+		}
 	}
 
 	/**
@@ -932,14 +940,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/**
-	 * Return the permutation induced by the visit order of a depth-first visit.
+	 * Return the permutation induced by the visit order of a breadth-first visit.
 	 *
 	 * @param graph a graph.
-	 * @param startingNode the only starting node of the visit, or -1 for a
-	 *            complete visit.
+	 * @param startingNode the only starting node of the visit, or -1 for a complete visit.
 	 * @param internalNodes number of internal nodes in the graph
-	 * @return the permutation induced by the visit order of a depth-first
-	 *         visit.
+	 * @return the permutation induced by the visit order of a breadth-first visit.
 	 */
 	public static int[] bfsperm(final ImmutableGraph graph, final int startingNode, final int internalNodes) {
 		final int n = graph.numNodes();
@@ -952,7 +958,6 @@ public class KnowledgeBase implements Serializable, Closeable {
 		pl.expectedUpdates = n;
 		pl.itemsName = "nodes";
 		pl.start("Starting breadth-first visit...");
-		Arrays.fill(visitOrder, -1);
 
 		int internalPos = 0, externalPos = internalNodes;
 
