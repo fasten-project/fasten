@@ -81,7 +81,7 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public Optional<String> call() {
+        public Optional<String> produce() {
             final var consumedJson = new JSONObject(record).getJSONObject("payload");
             final var artifact = consumedJson.optString("product") + "@"
                     + consumedJson.optString("version");

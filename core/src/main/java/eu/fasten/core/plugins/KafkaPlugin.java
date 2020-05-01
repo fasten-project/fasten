@@ -2,16 +2,15 @@ package eu.fasten.core.plugins;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 
-public interface KafkaPlugin<I, O> extends FastenPlugin, Callable<Optional<O>> {
+public interface KafkaPlugin<I, O> extends FastenPlugin {
     Optional<List<String>> consumeTopics();
 
     void setTopic(String topicName);
 
-    void consume(String record);
+    void consume(I record);
 
-    Optional<O> call();
+    Optional<O> produce();
 
     boolean recordProcessSuccessful();
 }

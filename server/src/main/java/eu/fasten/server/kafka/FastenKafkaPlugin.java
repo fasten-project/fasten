@@ -1,22 +1,25 @@
 package eu.fasten.server.kafka;
 
+import com.google.common.base.Strings;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.json.JSONObject;
@@ -24,11 +27,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class FastenKafkaPlugin implements Runnable {
-    private final Logger logger = LoggerFactory.getLogger(FastenKafkaConsumer.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(FastenKafkaPlugin.class.getName());
 
-    private final Thread thread;
+    private Thread thread;
 
-    private KafkaPlugin<String, String> plugin;
+    private final KafkaPlugin<String, String> plugin;
 
     private final String serverLogTopic = "fasten.server.logs";
 
@@ -47,9 +50,6 @@ public class FastenKafkaPlugin implements Runnable {
      * @param skipOffsets skip offset number
      */
     public FastenKafkaPlugin(Properties p, KafkaPlugin<String, String> plugin, int skipOffsets) {
-        this.thread = new Thread(this);
-        //this.thread.setName(this.plugin.getClass().getSimpleName() + "_plugin");
-
         this.plugin = plugin;
 
         this.connection = new KafkaConsumer<>(p);
@@ -63,29 +63,31 @@ public class FastenKafkaPlugin implements Runnable {
         this.consumerHostName = this.getConsumerHostName();
         this.skipOffsets = skipOffsets;
 
-        logger.debug("Thread: " + thread.getName()
-                + " | Constructed a Kafka plugin for "
-                + plugin.getClass().getCanonicalName());
+        logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
 
     @Override
     public void run() {
-        ExecutorService exec = Executors.newSingleThreadExecutor();
         NumberFormat timeFormatter = new DecimalFormat("#0.000");
 
         try {
             if (plugin.consumeTopics().isPresent()) {
                 connection.subscribe(plugin.consumeTopics().get());
             }
+            if (this.skipOffsets == 1) {
+                skipPartitionOffsets();
+            }
 
             while (true) {
                 if (plugin.consumeTopics().isPresent()) {
-                    ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
+                    ConsumerRecords<String, String> records =
+                            connection.poll(Duration.ofSeconds(1));
                     for (var r : records) {
+                        doCommitSync();
+
                         long startTime = System.currentTimeMillis();
                         plugin.consume(r.value());
-                        var futureResult = exec.submit(plugin);
-                        var result = futureResult.get();
+                        var result = plugin.produce();
                         long endTime = System.currentTimeMillis();
 
                         if (plugin.recordProcessSuccessful()) {
@@ -96,8 +98,9 @@ public class FastenKafkaPlugin implements Runnable {
                                     + timeFormatter.format((endTime - startTime) / 1000d)
                                     + " sec.]: " + r.key());
 
-                            result.ifPresent(s -> emitMessage(this.producer, String.format("fasten.%s.out",
-                                    plugin.getClass().getSimpleName()),
+                            result.ifPresent(s -> emitMessage(this.producer,
+                                    String.format("fasten.%s.out",
+                                            plugin.getClass().getSimpleName()),
                                     getStdOutMsg(r.value(), s)));
                         } else {
                             emitMessage(this.producer, String.format("fasten.%s.err",
@@ -106,16 +109,18 @@ public class FastenKafkaPlugin implements Runnable {
                         }
                     }
                 } else {
-                    var futureResult = exec.submit(plugin);
-                    var result = futureResult.get();
+                    doCommitSync();
+
+                    var result = plugin.produce();
                     if (plugin.recordProcessSuccessful()) {
                         emitMessage(this.serverLog, this.serverLogTopic, new Date()
                                 + "| [" + this.consumerHostName + "] Plug-in "
                                 + plugin.getClass().getSimpleName()
                                 + " processed successfully record");
 
-                        result.ifPresent(s -> emitMessage(this.producer, String.format("fasten.%s.out",
-                                plugin.getClass().getSimpleName()),
+                        result.ifPresent(s -> emitMessage(this.producer,
+                                String.format("fasten.%s.out",
+                                        plugin.getClass().getSimpleName()),
                                 getStdOutMsg("", s)));
                     } else {
                         emitMessage(this.producer, String.format("fasten.%s.err",
@@ -126,16 +131,17 @@ public class FastenKafkaPlugin implements Runnable {
             }
         } catch (WakeupException e) {
             logger.debug("Caught wakeup exception");
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
         } finally {
-            exec.shutdown();
             connection.close();
         }
     }
 
-
+    /**
+     * Starts a thread.
+     */
     public void start() {
+        this.thread = new Thread(this);
+        this.thread.setName(this.plugin.getClass().getSimpleName() + "_plugin");
         this.thread.start();
     }
 
@@ -146,6 +152,11 @@ public class FastenKafkaPlugin implements Runnable {
         connection.wakeup();
     }
 
+    /**
+     * Getter for the thread.
+     *
+     * @return thread
+     */
     public Thread getThread() {
         return thread;
     }
@@ -184,8 +195,8 @@ public class FastenKafkaPlugin implements Runnable {
         stdoutMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stdoutMsg.put("plugin_version", plugin.version());
 
-        stdoutMsg.put("input", new JSONObject(input));
-        stdoutMsg.put("payload", new JSONObject(payload));
+        stdoutMsg.put("input", !Strings.isNullOrEmpty(input) ? new JSONObject(input) : "");
+        stdoutMsg.put("payload", !Strings.isNullOrEmpty(input) ? new JSONObject(payload) : "");
 
         return stdoutMsg.toString();
     }
@@ -202,7 +213,7 @@ public class FastenKafkaPlugin implements Runnable {
         stderrMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stderrMsg.put("plugin_version", plugin.version());
 
-        stderrMsg.put("input", new JSONObject(input));
+        stderrMsg.put("input", !Strings.isNullOrEmpty(input) ? new JSONObject(input) : "");
 
         Throwable pluginError = plugin.getPluginError();
         JSONObject error = new JSONObject();
@@ -213,6 +224,27 @@ public class FastenKafkaPlugin implements Runnable {
         stderrMsg.put("err", error);
 
         return stderrMsg.toString();
+    }
+
+    /**
+     * This is a synchronous commits and will block until either the commit succeeds
+     * or an unrecoverable error is encountered.
+     */
+    private void doCommitSync() {
+        try {
+            connection.commitSync();
+            logger.debug("Committed the processed record...");
+        } catch (WakeupException e) {
+            // we're shutting down, but finish the commit first and then
+            // rethrow the exception so that the main loop can exit
+            doCommitSync();
+            throw e;
+        } catch (CommitFailedException e) {
+            // the commit failed with an unrecoverable error. if there is any
+            // internal state which depended on the commit, you can clean it
+            // up here. otherwise it's reasonable to ignore the error and go on
+            logger.error("Commit failed", e);
+        }
     }
 
     /**
@@ -235,7 +267,6 @@ public class FastenKafkaPlugin implements Runnable {
         return p;
     }
 
-
     /**
      * Get host name of this consumer.
      *
@@ -248,5 +279,84 @@ public class FastenKafkaPlugin implements Runnable {
             logger.error("Could not find the consumer's hostname.");
         }
         return "Unknown";
+    }
+
+    /**
+     * This is a utility method to get current committed offset of all partitions for a consumer.
+     *
+     * @param consumer Kafka consumer
+     * @param topics   list of topics
+     */
+    private void getOffsetForPartitions(KafkaConsumer<String, String> consumer,
+                                        List<String> topics) {
+
+        for (String t : topics) {
+            for (PartitionInfo p : consumer.partitionsFor(t)) {
+                emitMessage(this.serverLog, this.serverLogTopic,
+                        "T: " + t + " P: " + p.partition() + " OfC: "
+                                + consumer.committed(new TopicPartition(t, p.partition()))
+                                .offset());
+            }
+        }
+    }
+
+    /**
+     * This method adds one to the offset of all the partitions of a topic.
+     * This is useful when you want to skip an offset with FATAL errors when
+     * the FASTEN server is restarted.
+     * Please note that this is NOT the most efficient way to restart FASTEN server
+     * in the case of FATAL errors.
+     */
+    private void skipPartitionOffsets() {
+        ArrayList<TopicPartition> topicPartitions = new ArrayList<>();
+        List<String> topics = new ArrayList<>();
+        this.plugin.consumeTopics().ifPresentOrElse(topics::addAll, () -> {
+        });
+        if (topics.isEmpty()) {
+            return;
+        }
+        // Note that this assumes that the consumer is subscribed to one topic only
+        for (PartitionInfo p : this.connection.partitionsFor(topics.get(0))) {
+            topicPartitions.add(new TopicPartition(topics.get(0), p.partition()));
+        }
+
+        ConsumerRecords<String, String> records = dummyPoll(this.connection);
+
+        if (records.count() != 0) {
+            for (TopicPartition tp : topicPartitions) {
+                logger.debug("Topic: {} | Current offset for partition {}: {}", topics.get(0),
+                        tp, this.connection.position(tp));
+
+                emitMessage(this.serverLog, this.serverLogTopic, "Topic: " + topics.get(0)
+                        + "| Current offset for partition " + tp
+                        + ": " + this.connection.position(tp));
+
+                this.connection.seek(tp, this.connection.position(tp) + 1);
+
+                logger.debug("Topic: {} | Offset for partition {} is set to {}",
+                        topics.get(0),
+                        tp, this.connection.position(tp));
+                emitMessage(this.serverLog, this.serverLogTopic, "Topic: " + topics.get(0)
+                        + "| Offset for partition " + tp
+                        + " is set to " + this.connection.position(tp));
+            }
+        }
+    }
+
+    /**
+     * This is a dummy poll method for calling lazy methods such as seek.
+     *
+     * @param consumer Kafka consumer
+     * @return consumed Kafka record
+     */
+    private ConsumerRecords<String, String> dummyPoll(KafkaConsumer<String, String> consumer) {
+        ConsumerRecords<String, String> statusRecords;
+        int i = 0;
+        do {
+            statusRecords = consumer.poll(Duration.ofMillis(100));
+            i++;
+        } while (i <= 5 && statusRecords.count() == 0);
+
+        return statusRecords;
     }
 }

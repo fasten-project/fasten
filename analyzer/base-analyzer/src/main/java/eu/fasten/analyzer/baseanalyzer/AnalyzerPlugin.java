@@ -38,7 +38,7 @@ public abstract class AnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public Optional<String> call() {
+        public Optional<String> produce() {
             try {
                 final var kafkaConsumedJson = new JSONObject(this.record);
                 final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);

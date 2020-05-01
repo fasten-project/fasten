@@ -20,7 +20,6 @@ package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.server.db.PostgresConnector;
 import eu.fasten.server.kafka.FastenKafkaConnection;
-import eu.fasten.server.kafka.FastenKafkaConsumer;
 import eu.fasten.server.kafka.FastenKafkaPlugin;
 import java.io.FileNotFoundException;
 import java.io.FileReader;

@@ -1,17 +1,13 @@
 package eu.fasten.analyzer.dummyanalyzer;
 
-import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.util.Optional;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class DummyAnalyzerPlugin extends Plugin {
@@ -42,7 +38,7 @@ public class DummyAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public Optional<String> call() {
+        public Optional<String> produce() {
             try {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {

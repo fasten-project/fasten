@@ -27,13 +27,6 @@ import org.apache.kafka.common.serialization.StringSerializer;
 
 public abstract class FastenKafkaConnection extends Thread {
 
-    Properties connProperties;
-
-
-    public FastenKafkaConnection(Properties p) {
-        this.connProperties = p;
-    }
-
     public static Properties kafkaProperties(List<String> serverAddresses, String groupId) {
         String deserializer = StringDeserializer.class.getName();
         Properties properties = new Properties();
