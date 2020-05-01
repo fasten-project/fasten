@@ -71,7 +71,6 @@ public class CallGraphMerger {
     }
 
 
-
     private static ExtendedRevisionCallGraph mergeWithCHA(ExtendedRevisionCallGraph artifact,
                                                           List<ExtendedRevisionCallGraph> dependencies) {
 
@@ -162,7 +161,7 @@ public class CallGraphMerger {
                                    List<FastenURI> methods,
                                    String product) {
         for (final var method : methods) {
-            if (method.getEntity().contains(arc.getKey().getValue().getEntity().split("[.]")[1])) {
+            if (method.getEntity().contains(getSignature(arc.getKey().getValue().getEntity()))) {
 
                 result.put(new MutablePair<>(arc.getKey().getLeft(),
                     new FastenJavaURI("//" + product + method)), arc.getValue());
@@ -173,6 +172,9 @@ public class CallGraphMerger {
         return false;
     }
 
+    private static String getSignature(final String Entity) {
+        return Entity.substring(Entity.indexOf(".") + 1);
+    }
 
     public static ExtendedRevisionCallGraph mergeWithRA(final ExtendedRevisionCallGraph artifact,
                                                         final List<ExtendedRevisionCallGraph>
@@ -191,11 +193,10 @@ public class CallGraphMerger {
                 //Check whether target's signature can be found in the dependency methods
                 for (final var method : dep.mapOfAllMethods().entrySet()) {
                     if (method.getValue().getEntity()
-                        .contains(target.getEntity().split("[.]")[1])) {
+                        .contains(getSignature(target.getEntity()))) {
                         result
                             .put(new MutablePair<>(call.getKey(), new FastenJavaURI(
-                                    "//" + dep.product + "$" + dep.version +
-                                        method.getValue())),
+                                    "//" + dep.product + "$" + dep.version + method.getValue())),
                                 arc.getValue());
                         isResolved = true;
                     }
