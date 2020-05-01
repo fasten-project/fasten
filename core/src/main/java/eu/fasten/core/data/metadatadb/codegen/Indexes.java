@@ -82,7 +82,7 @@ public class Indexes {
         public static Index UNIQUE_VERSION_NAME = Internal.createIndex("unique_version_name", BinaryModules.BINARY_MODULES, new OrderField[] { BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME }, true);
         public static Index CALLABLES_MODULE_ID = Internal.createIndex("callables_module_id", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.MODULE_ID }, false);
         public static Index CALLABLES_PKEY = Internal.createIndex("callables_pkey", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.ID }, true);
-        public static Index UNIQUE_URI_CALL = Internal.createIndex("unique_uri_call", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_INTERNAL_CALL }, true);
+        public static Index UNIQUE_URI_CALL = Internal.createIndex("unique_uri_call", Callables.CALLABLES, new OrderField[] { Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_INTERNAL_CALL }, true);
         public static Index DEPENDENCIES_DEPENDENCY_ID = Internal.createIndex("dependencies_dependency_id", Dependencies.DEPENDENCIES, new OrderField[] { Dependencies.DEPENDENCIES.DEPENDENCY_ID }, false);
         public static Index DEPENDENCIES_PACKAGE_VERSION_ID = Internal.createIndex("dependencies_package_version_id", Dependencies.DEPENDENCIES, new OrderField[] { Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID }, false);
         public static Index UNIQUE_VERSION_DEPENDENCY_RANGE = Internal.createIndex("unique_version_dependency_range", Dependencies.DEPENDENCIES, new OrderField[] { Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE }, true);

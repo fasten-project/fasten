@@ -128,10 +128,14 @@ CREATE UNIQUE INDEX CONCURRENTLY unique_version_path ON files USING btree (packa
 ALTER TABLE files
     ADD CONSTRAINT unique_version_path UNIQUE USING INDEX unique_version_path;
 
-CREATE UNIQUE INDEX CONCURRENTLY unique_uri_call ON callables USING btree (fasten_uri, is_internal_call);
+CREATE UNIQUE INDEX CONCURRENTLY unique_uri_call ON callables USING btree (module_id, fasten_uri, is_internal_call);
 ALTER TABLE callables
     ADD CONSTRAINT unique_uri_call UNIQUE USING INDEX unique_uri_call;
 
 CREATE UNIQUE INDEX CONCURRENTLY unique_source_target ON edges USING btree (source_id, target_id);
 ALTER TABLE edges
     ADD CONSTRAINT unique_source_target UNIQUE USING INDEX unique_source_target;
+
+ALTER TABLE callables
+    ADD CONSTRAINT check_module_id CHECK ((module_id IS NULL AND is_internal_call IS false) OR
+                                          (module_id IS NOT NULL AND is_internal_call IS true));
