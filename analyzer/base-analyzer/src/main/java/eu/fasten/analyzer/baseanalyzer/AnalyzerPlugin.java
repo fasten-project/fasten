@@ -1,12 +1,11 @@
 package eu.fasten.analyzer.baseanalyzer;
 
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.plugins.KafkaConsumer;
-import eu.fasten.core.plugins.KafkaProducer;
+import eu.fasten.core.plugins.KafkaPlugin;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import java.util.Optional;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Plugin;
@@ -19,62 +18,51 @@ public abstract class AnalyzerPlugin extends Plugin {
         super(wrapper);
     }
 
-    public abstract static class ANALYZER implements KafkaConsumer<String>, KafkaProducer {
+    public abstract static class ANALYZER implements KafkaPlugin<String, String> {
 
-        private Logger logger = LoggerFactory.getLogger(getClass());
+        private final Logger logger = LoggerFactory.getLogger(getClass());
 
         private String consumeTopic = "fasten.maven.pkg";
-        private boolean processedRecord;
         private Throwable pluginError;
-        private ExtendedRevisionCallGraph graph;
+        private String record;
 
         @Override
-        public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList(consumeTopic));
+        public Optional<List<String>> consumeTopics() {
+            return Optional.of(new ArrayList<>(Collections.singletonList(consumeTopic)));
         }
 
         @Override
-        public void consume(String topic, ConsumerRecord<String, String> kafkaRecord) {
+        public void consume(String kafkaRecord) {
             pluginError = null;
-            processedRecord = false;
-            consume(kafkaRecord);
-            if (getPluginError() == null) {
-                processedRecord = true;
-            }
+            this.record = kafkaRecord;
         }
 
-        /**
-         * Generates call graphs using OPAL for consumed maven coordinates in
-         * eu.fasten.core.data.RevisionCallGraph format, and produce them to the Producer that is
-         * provided for this Object.
-         *
-         * @param kafkaRecord A record including maven coordinates in the JSON format. e.g. {
-         *                    "groupId": "com.g2forge.alexandria", "artifactId": "alexandria",
-         *                    "version": "0.0.9", "date": "1574072773" }
-         */
-        public ExtendedRevisionCallGraph consume(final ConsumerRecord<String, String> kafkaRecord) {
+        @Override
+        public Optional<String> call() {
             try {
-                final var kafkaConsumedJson = new JSONObject(kafkaRecord.value());
+                final var kafkaConsumedJson = new JSONObject(this.record);
                 final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
 
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
                 final var cg = generateCallGraph(mavenCoordinate, kafkaConsumedJson);
 
-                if (cg == null || cg.isCallGraphEmpty()) {
+                if (cg == null) {
+                    return Optional.empty();
+                }
+                if (cg.isCallGraphEmpty()) {
                     logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
-                    return cg;
+                    return Optional.of(cg.toJSON().toString());
                 }
 
                 logger.info("Call graph successfully generated for {}!",
                         mavenCoordinate.getCoordinate());
 
-                graph = cg;
-                return cg;
+                return Optional.of(cg.toJSON().toString());
 
             } catch (Exception e) {
                 setPluginError(e);
                 logger.error("", e);
-                return null;
+                return Optional.empty();
             }
         }
 
@@ -115,10 +103,6 @@ public abstract class AnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public String produce() {
-            return graph.toJSON().toString();
-        }
-
         public String name() {
             return this.getClass().getCanonicalName();
         }
@@ -130,7 +114,7 @@ public abstract class AnalyzerPlugin extends Plugin {
 
         @Override
         public boolean recordProcessSuccessful() {
-            return this.processedRecord;
+            return this.pluginError == null;
         }
 
         @Override
@@ -153,7 +137,6 @@ public abstract class AnalyzerPlugin extends Plugin {
 
         @Override
         public void freeResource() {
-            this.graph = null;
         }
     }
 }

@@ -1,6 +1,8 @@
 package eu.fasten.analyzer.dummyanalyzer;
 
 import eu.fasten.core.plugins.KafkaConsumer;
+import eu.fasten.core.plugins.KafkaPlugin;
+import java.util.Optional;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -19,25 +21,34 @@ public class DummyAnalyzerPlugin extends Plugin {
     }
 
     @Extension
-    public static class DummyAnalyzer implements KafkaConsumer<String> {
+    public static class DummyAnalyzer implements KafkaPlugin<String, String> {
 
         private String consumeTopic = "fasten.mvn.pkg";
         private final Logger logger = LoggerFactory.getLogger(DummyAnalyzer.class.getName());
 
-
         @Override
-        public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList(consumeTopic));
+        public Optional<List<String>> consumeTopics() {
+            return Optional.empty();
         }
 
         @Override
         public void setTopic(String topicName) {
-            this.consumeTopic = topicName;
+
         }
 
         @Override
-        public void consume(String topic, ConsumerRecord<String, String> record) {
-            logger.debug("Key: " + record.key() + " Value:" + record.value());
+        public void consume(String record) {
+
+        }
+
+        @Override
+        public Optional<String> call() {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return Optional.of("test");
         }
 
         @Override
@@ -47,25 +58,27 @@ public class DummyAnalyzerPlugin extends Plugin {
 
         @Override
         public String name() {
-            return "Dummy plugin";
+            return "DummyAnalyzer";
         }
 
         @Override
         public String description() {
-            return "Dummy plug-in. Connects to Kafka queue and prints all its contents to the debug log";
+            return "SomeDescription";
         }
 
         @Override
         public String version() {
-            return "0.0.0";
+            return "0.0.1";
         }
 
         @Override
         public void start() {
+
         }
 
         @Override
         public void stop() {
+
         }
 
         @Override
@@ -82,5 +95,6 @@ public class DummyAnalyzerPlugin extends Plugin {
         public void freeResource() {
 
         }
+
     }
 }

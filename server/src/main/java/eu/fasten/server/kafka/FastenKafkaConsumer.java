@@ -206,7 +206,7 @@ public class FastenKafkaConsumer extends FastenKafkaConnection {
 
         if (consumer instanceof eu.fasten.core.plugins.KafkaProducer) {
             var producer = (eu.fasten.core.plugins.KafkaProducer) consumer;
-            stdoutMsg.put("payload", new JSONObject(producer.produce()));
+            //stdoutMsg.put("payload", new JSONObject(producer.produce()));
         } else {
             stdoutMsg.put("payload", "");
         }
