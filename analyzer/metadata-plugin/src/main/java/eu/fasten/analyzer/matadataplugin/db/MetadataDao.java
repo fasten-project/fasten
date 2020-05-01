@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.metadataplugin.db;
+package eu.fasten.analyzer.matadataplugin.db;
 
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.metadataplugin;
+package eu.fasten.analyzer.matadataplugin;
 
 import eu.fasten.server.db.PostgresConnector;
 import eu.fasten.server.kafka.FastenKafkaConnection;
@@ -36,7 +36,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "MetadataPlugin")
 public class Main implements Runnable {
 
-    private static Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     @CommandLine.Option(names = {"-t", "--topic"},
             paramLabel = "topic",

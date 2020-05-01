@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.metadataplugin;
+package eu.fasten.analyzer.matadataplugin;
 
-import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
+import eu.fasten.analyzer.matadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
@@ -29,8 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import eu.fasten.core.plugins.KafkaProducer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
