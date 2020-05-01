@@ -48,7 +48,7 @@ public class FastenKafkaPlugin implements Runnable {
      */
     public FastenKafkaPlugin(Properties p, KafkaPlugin<String, String> plugin, int skipOffsets) {
         this.thread = new Thread(this);
-        this.thread.setName(this.plugin.getClass().getSimpleName() + "_plugin");
+        //this.thread.setName(this.plugin.getClass().getSimpleName() + "_plugin");
 
         this.plugin = plugin;
 
@@ -184,8 +184,8 @@ public class FastenKafkaPlugin implements Runnable {
         stdoutMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stdoutMsg.put("plugin_version", plugin.version());
 
-        stdoutMsg.put("input", input);
-        stdoutMsg.put("payload", payload);
+        stdoutMsg.put("input", new JSONObject(input));
+        stdoutMsg.put("payload", new JSONObject(payload));
 
         return stdoutMsg.toString();
     }

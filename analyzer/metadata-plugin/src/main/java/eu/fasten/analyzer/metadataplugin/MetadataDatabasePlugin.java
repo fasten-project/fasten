@@ -22,13 +22,13 @@ import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.plugins.KafkaConsumer;
+import eu.fasten.core.plugins.KafkaPlugin;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.exception.DataAccessException;
@@ -48,7 +48,7 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBExtension implements KafkaConsumer<String>, DBConnector {
+    public static class MetadataDBExtension implements KafkaPlugin<String, String>, DBConnector {
 
         private String topic = "fasten.OPAL.out";
         private static DSLContext dslContext;
@@ -57,6 +57,7 @@ public class MetadataDatabasePlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
+        private String record;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -64,8 +65,8 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList(topic));
+        public Optional<List<String>> consumeTopics() {
+            return Optional.of(new ArrayList<>(Collections.singletonList(topic)));
         }
 
         @Override
@@ -74,9 +75,13 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public void consume(String topic, ConsumerRecord<String, String> record) {
+        public void consume(String record) {
+            this.record = record;
+        }
 
-            final var consumedJson = new JSONObject(record.value()).getJSONObject("payload");
+        @Override
+        public Optional<String> call() {
+            final var consumedJson = new JSONObject(record).getJSONObject("payload");
             final var artifact = consumedJson.optString("product") + "@"
                     + consumedJson.optString("version");
             this.processedRecord = false;
@@ -89,7 +94,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 logger.error("Error parsing JSON callgraph for '" + artifact + "'", e);
                 processedRecord = false;
                 setPluginError(e);
-                return;
+                return Optional.empty();
             }
 
             int transactionRestartCount = 0;
@@ -125,6 +130,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
                     && transactionRestartCount < transactionRestartLimit);
+            return Optional.empty();
         }
 
         /**
