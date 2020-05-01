@@ -44,7 +44,7 @@ public class DummyAnalyzerPlugin extends Plugin {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            return Optional.of("test");
+            return Optional.of("{\"field\" : \"test\"}");
         }
 
         @Override

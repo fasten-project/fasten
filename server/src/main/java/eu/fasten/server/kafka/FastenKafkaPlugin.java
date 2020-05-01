@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -98,10 +99,9 @@ public class FastenKafkaPlugin implements Runnable {
                                     + timeFormatter.format((endTime - startTime) / 1000d)
                                     + " sec.]: " + r.key());
 
-                            result.ifPresent(s -> emitMessage(this.producer,
-                                    String.format("fasten.%s.out",
-                                            plugin.getClass().getSimpleName()),
-                                    getStdOutMsg(r.value(), s)));
+                            emitMessage(this.producer, String.format("fasten.%s.out",
+                                    plugin.getClass().getSimpleName()),
+                                    getStdOutMsg(r.value(), result.orElse(null)));
                         } else {
                             emitMessage(this.producer, String.format("fasten.%s.err",
                                     plugin.getClass().getSimpleName()),
@@ -118,10 +118,9 @@ public class FastenKafkaPlugin implements Runnable {
                                 + plugin.getClass().getSimpleName()
                                 + " processed successfully record");
 
-                        result.ifPresent(s -> emitMessage(this.producer,
-                                String.format("fasten.%s.out",
-                                        plugin.getClass().getSimpleName()),
-                                getStdOutMsg("", s)));
+                        emitMessage(this.producer, String.format("fasten.%s.out",
+                                plugin.getClass().getSimpleName()),
+                                getStdOutMsg(null, result.orElse(null)));
                     } else {
                         emitMessage(this.producer, String.format("fasten.%s.err",
                                 plugin.getClass().getSimpleName()),
@@ -195,8 +194,8 @@ public class FastenKafkaPlugin implements Runnable {
         stdoutMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stdoutMsg.put("plugin_version", plugin.version());
 
-        stdoutMsg.put("input", !Strings.isNullOrEmpty(input) ? new JSONObject(input) : "");
-        stdoutMsg.put("payload", !Strings.isNullOrEmpty(input) ? new JSONObject(payload) : "");
+        stdoutMsg.put("input", StringUtils.isNotEmpty(input) ? new JSONObject(input) : "");
+        stdoutMsg.put("payload", StringUtils.isNotEmpty(payload) ? new JSONObject(payload) : "");
 
         return stdoutMsg.toString();
     }
