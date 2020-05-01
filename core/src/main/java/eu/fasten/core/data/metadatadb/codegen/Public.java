@@ -4,9 +4,13 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
@@ -36,12 +40,22 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = 755097815;
+    private static final long serialVersionUID = 619820699;
 
     /**
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * The table <code>public.binary_module_contents</code>.
+     */
+    public final BinaryModuleContents BINARY_MODULE_CONTENTS = eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents.BINARY_MODULE_CONTENTS;
+
+    /**
+     * The table <code>public.binary_modules</code>.
+     */
+    public final BinaryModules BINARY_MODULES = eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules.BINARY_MODULES;
 
     /**
      * The table <code>public.callables</code>.
@@ -57,6 +71,16 @@ public class Public extends SchemaImpl {
      * The table <code>public.edges</code>.
      */
     public final Edges EDGES = eu.fasten.core.data.metadatadb.codegen.tables.Edges.EDGES;
+
+    /**
+     * The table <code>public.files</code>.
+     */
+    public final Files FILES = eu.fasten.core.data.metadatadb.codegen.tables.Files.FILES;
+
+    /**
+     * The table <code>public.module_contents</code>.
+     */
+    public final ModuleContents MODULE_CONTENTS = eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents.MODULE_CONTENTS;
 
     /**
      * The table <code>public.modules</code>.
@@ -95,7 +119,9 @@ public class Public extends SchemaImpl {
 
     private final List<Sequence<?>> getSequences0() {
         return Arrays.<Sequence<?>>asList(
+            Sequences.BINARY_MODULES_ID_SEQ,
             Sequences.CALLABLES_ID_SEQ,
+            Sequences.FILES_ID_SEQ,
             Sequences.MODULES_ID_SEQ,
             Sequences.PACKAGE_VERSIONS_ID_SEQ,
             Sequences.PACKAGES_ID_SEQ);
@@ -110,9 +136,13 @@ public class Public extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
+            BinaryModuleContents.BINARY_MODULE_CONTENTS,
+            BinaryModules.BINARY_MODULES,
             Callables.CALLABLES,
             Dependencies.DEPENDENCIES,
             Edges.EDGES,
+            Files.FILES,
+            ModuleContents.MODULE_CONTENTS,
             Modules.MODULES,
             PackageVersions.PACKAGE_VERSIONS,
             Packages.PACKAGES);

@@ -24,9 +24,19 @@ import org.jooq.impl.SequenceImpl;
 public class Sequences {
 
     /**
+     * The sequence <code>public.binary_modules_id_seq</code>
+     */
+    public static final Sequence<Long> BINARY_MODULES_ID_SEQ = new SequenceImpl<Long>("binary_modules_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
+
+    /**
      * The sequence <code>public.callables_id_seq</code>
      */
     public static final Sequence<Long> CALLABLES_ID_SEQ = new SequenceImpl<Long>("callables_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
+
+    /**
+     * The sequence <code>public.files_id_seq</code>
+     */
+    public static final Sequence<Long> FILES_ID_SEQ = new SequenceImpl<Long>("files_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
 
     /**
      * The sequence <code>public.modules_id_seq</code>
