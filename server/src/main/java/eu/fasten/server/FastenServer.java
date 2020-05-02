@@ -22,9 +22,10 @@ import ch.qos.logback.classic.Level;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaPlugin;
-import eu.fasten.server.db.PostgresConnector;
-import eu.fasten.server.kafka.FastenKafkaConnection;
-import eu.fasten.server.kafka.FastenKafkaPlugin;
+import eu.fasten.server.connectors.KafkaConnector;
+import eu.fasten.server.connectors.PostgresConnector;
+import eu.fasten.server.plugins.FastenServerPlugin;
+import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -105,18 +106,11 @@ public class FastenServer implements Runnable {
         logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins: {} total plugins",
                 kafkaPlugins.size(), dbPlugins.size(), plugins.size());
 
-        changeDefaultTopics(kafkaPlugins);
         makeDBConnection(dbPlugins);
 
-        List<FastenKafkaPlugin> kafkaServerPlugins = kafkaPlugins.stream().map(k -> {
-            var properties = FastenKafkaConnection.kafkaProperties(
-                    kafkaServers,
-                    k.getClass().getCanonicalName());
+        var kafkaServerPlugins = setupKafkaPlugins(kafkaPlugins);
 
-            return new FastenKafkaPlugin(properties, k, skipOffsets);
-        }).collect(Collectors.toList());
-
-        kafkaServerPlugins.forEach(FastenKafkaPlugin::start);
+        kafkaServerPlugins.forEach(FastenServerPlugin::start);
 
         waitForInterruption(kafkaServerPlugins);
     }
@@ -127,15 +121,15 @@ public class FastenServer implements Runnable {
      *
      * @param plugins list of kafka plugins
      */
-    private void waitForInterruption(List<FastenKafkaPlugin> plugins) {
+    private void waitForInterruption(List<FastenServerPlugin> plugins) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            plugins.forEach(FastenKafkaPlugin::stop);
+            plugins.forEach(FastenServerPlugin::stop);
             logger.info("Fasten server has been successfully stopped");
         }));
 
         plugins.forEach(c -> {
             try {
-                c.getThread().join();
+                c.thread().join();
             } catch (InterruptedException e) {
                 logger.debug("Couldn't join consumers");
             }
@@ -145,9 +139,9 @@ public class FastenServer implements Runnable {
     /**
      * Changes Kafka topics of consumers ad producers if specified in command line.
      *
-     * @param kafkaConsumers list of consumers
+     * @param kafkaPlugins list of consumers
      */
-    private void changeDefaultTopics(List<KafkaPlugin> kafkaConsumers) {
+    private List<FastenServerPlugin> setupKafkaPlugins(List<KafkaPlugin> kafkaPlugins) {
         if (pluginTopic != null) {
             JSONObject jsonObject;
             try {
@@ -158,13 +152,21 @@ public class FastenServer implements Runnable {
                 jsonObject = new JSONObject(pluginTopic);
             }
 
-            for (var k : kafkaConsumers) {
+            for (var k : kafkaPlugins) {
                 if (jsonObject.has(k.getClass().getSimpleName())) {
                     k.setTopic(jsonObject.getJSONObject(k.getClass().getSimpleName())
                             .get("consumer").toString());
                 }
             }
         }
+
+        return kafkaPlugins.stream().map(k -> {
+            var properties = KafkaConnector.kafkaProperties(
+                    kafkaServers,
+                    k.getClass().getCanonicalName());
+
+            return new FastenKafkaPlugin(properties, k, skipOffsets);
+        }).collect(Collectors.toList());
     }
 
     /**

@@ -1,7 +1,8 @@
-package eu.fasten.server.kafka;
+package eu.fasten.server.plugins.kafka;
 
 import com.google.common.base.Strings;
 import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.server.plugins.FastenServerPlugin;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.DecimalFormat;
@@ -27,7 +28,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FastenKafkaPlugin implements Runnable {
+public class FastenKafkaPlugin implements FastenServerPlugin {
     private final Logger logger = LoggerFactory.getLogger(FastenKafkaPlugin.class.getName());
 
     private Thread thread;
@@ -114,7 +115,7 @@ public class FastenKafkaPlugin implements Runnable {
      *
      * @return thread
      */
-    public Thread getThread() {
+    public Thread thread() {
         return thread;
     }
 

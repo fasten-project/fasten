@@ -18,9 +18,9 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.server.db.PostgresConnector;
-import eu.fasten.server.kafka.FastenKafkaConnection;
-import eu.fasten.server.kafka.FastenKafkaPlugin;
+import eu.fasten.server.connectors.PostgresConnector;
+import eu.fasten.server.connectors.KafkaConnector;
+import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
@@ -91,7 +91,7 @@ public class Main implements Runnable {
             metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
 
             if (jsonFile == null || jsonFile.isEmpty()) {
-                var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
+                var properties = KafkaConnector.kafkaProperties(kafkaServers,
                         this.getClass().getCanonicalName());
                 new FastenKafkaPlugin(properties, metadataPlugin, skipOffsets).start();
             } else {

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.server.kafka;
+package eu.fasten.server.connectors;
 
 import java.util.List;
 import java.util.Properties;
@@ -25,7 +25,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
-public abstract class FastenKafkaConnection extends Thread {
+public class KafkaConnector {
 
     public static Properties kafkaProperties(List<String> serverAddresses, String groupId) {
         String deserializer = StringDeserializer.class.getName();
