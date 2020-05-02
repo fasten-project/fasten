@@ -106,23 +106,7 @@ public class FastenServer implements Runnable {
                 kafkaPlugins.size(), dbPlugins.size(), plugins.size());
 
         changeDefaultTopics(kafkaPlugins);
-
-        // Here, a DB connection is made for the plug-ins that need it.
-        if (ObjectUtils.allNotNull(dbUrl, dbUser, dbPass)) {
-            dbPlugins.forEach((p) -> {
-                try {
-                    p.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
-                    logger.debug("Set DB connection successfully for plug-in {}",
-                            p.getClass().getSimpleName());
-                } catch (SQLException e) {
-                    logger.error("Couldn't set DB connection for plug-in {}\n{}",
-                            p.getClass().getSimpleName(), e.getStackTrace());
-                }
-            });
-        } else {
-            logger.error("Couldn't make a DB connection. Make sure that you have "
-                    + "provided a valid DB URL, username and password.");
-        }
+        makeDBConnection(dbPlugins);
 
         List<FastenKafkaPlugin> kafkaServerPlugins = kafkaPlugins.stream().map(k -> {
             var properties = FastenKafkaConnection.kafkaProperties(
@@ -138,19 +122,18 @@ public class FastenServer implements Runnable {
     }
 
     /**
-     * Joins threads of consumers and producers, waits for the interrupt signal and sends
+     * Joins threads of kafka plugins, waits for the interrupt signal and sends
      * shutdown signal to all threads.
      *
-     * @param consumers list of consumers
+     * @param plugins list of kafka plugins
      */
-    private void waitForInterruption(List<FastenKafkaPlugin> consumers) {
+    private void waitForInterruption(List<FastenKafkaPlugin> plugins) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            consumers.forEach(FastenKafkaPlugin::shutdown);
+            plugins.forEach(FastenKafkaPlugin::stop);
             logger.info("Fasten server has been successfully stopped");
         }));
 
-        // Join all consumers and producers and wait until they are interrupted
-        consumers.forEach(c -> {
+        plugins.forEach(c -> {
             try {
                 c.getThread().join();
             } catch (InterruptedException e) {
@@ -181,6 +164,29 @@ public class FastenServer implements Runnable {
                             .get("consumer").toString());
                 }
             }
+        }
+    }
+
+    /**
+     * Setup DB connection for DB plugins.
+     *
+     * @param dbPlugins list of DB plugins
+     */
+    private void makeDBConnection(List<DBConnector> dbPlugins) {
+        if (ObjectUtils.allNotNull(dbUrl, dbUser, dbPass)) {
+            dbPlugins.forEach((p) -> {
+                try {
+                    p.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
+                    logger.debug("Set DB connection successfully for plug-in {}",
+                            p.getClass().getSimpleName());
+                } catch (SQLException e) {
+                    logger.error("Couldn't set DB connection for plug-in {}\n{}",
+                            p.getClass().getSimpleName(), e.getStackTrace());
+                }
+            });
+        } else {
+            logger.error("Couldn't make a DB connection. Make sure that you have "
+                    + "provided a valid DB URL, username and password.");
         }
     }
 

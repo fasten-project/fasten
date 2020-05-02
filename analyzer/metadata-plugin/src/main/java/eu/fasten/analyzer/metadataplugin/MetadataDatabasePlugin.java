@@ -58,7 +58,6 @@ public class MetadataDatabasePlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
-        private String record;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -77,11 +76,6 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public void consume(String record) {
-            this.record = record;
-        }
-
-        @Override
-        public Optional<String> produce() {
             final var consumedJson = new JSONObject(record).getJSONObject("payload");
             final var artifact = consumedJson.optString("product") + "@"
                     + consumedJson.optString("version");
@@ -95,7 +89,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 logger.error("Error parsing JSON callgraph for '" + artifact + "'", e);
                 processedRecord = false;
                 setPluginError(e);
-                return Optional.empty();
+                return;
             }
 
             int transactionRestartCount = 0;
@@ -131,6 +125,10 @@ public class MetadataDatabasePlugin extends Plugin {
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
                     && transactionRestartCount < transactionRestartLimit);
+        }
+
+        @Override
+        public Optional<String> produce() {
             return Optional.empty();
         }
 

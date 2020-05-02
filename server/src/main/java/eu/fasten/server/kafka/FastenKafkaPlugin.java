@@ -69,8 +69,6 @@ public class FastenKafkaPlugin implements Runnable {
 
     @Override
     public void run() {
-        NumberFormat timeFormatter = new DecimalFormat("#0.000");
-
         try {
             if (plugin.consumeTopics().isPresent()) {
                 connection.subscribe(plugin.consumeTopics().get());
@@ -81,51 +79,11 @@ public class FastenKafkaPlugin implements Runnable {
 
             while (true) {
                 if (plugin.consumeTopics().isPresent()) {
-                    ConsumerRecords<String, String> records =
-                            connection.poll(Duration.ofSeconds(1));
-                    for (var r : records) {
-                        doCommitSync();
-
-                        long startTime = System.currentTimeMillis();
-                        plugin.consume(r.value());
-                        var result = plugin.produce();
-                        long endTime = System.currentTimeMillis();
-
-                        if (plugin.recordProcessSuccessful()) {
-                            emitMessage(this.serverLog, this.serverLogTopic, new Date()
-                                    + "| [" + this.consumerHostName + "] Plug-in "
-                                    + plugin.getClass().getSimpleName()
-                                    + " processed successfully record [in "
-                                    + timeFormatter.format((endTime - startTime) / 1000d)
-                                    + " sec.]: " + r.key());
-
-                            emitMessage(this.producer, String.format("fasten.%s.out",
-                                    plugin.getClass().getSimpleName()),
-                                    getStdOutMsg(r.value(), result.orElse(null)));
-                        } else {
-                            emitMessage(this.producer, String.format("fasten.%s.err",
-                                    plugin.getClass().getSimpleName()),
-                                    getStdErrMsg(r.value()));
-                        }
-                    }
+                    handleConsuming();
                 } else {
                     doCommitSync();
 
-                    var result = plugin.produce();
-                    if (plugin.recordProcessSuccessful()) {
-                        emitMessage(this.serverLog, this.serverLogTopic, new Date()
-                                + "| [" + this.consumerHostName + "] Plug-in "
-                                + plugin.getClass().getSimpleName()
-                                + " processed successfully record");
-
-                        emitMessage(this.producer, String.format("fasten.%s.out",
-                                plugin.getClass().getSimpleName()),
-                                getStdOutMsg(null, result.orElse(null)));
-                    } else {
-                        emitMessage(this.producer, String.format("fasten.%s.err",
-                                plugin.getClass().getSimpleName()),
-                                getStdErrMsg(""));
-                    }
+                    handleProducing(null, null);
                 }
             }
         } catch (WakeupException e) {
@@ -147,7 +105,7 @@ public class FastenKafkaPlugin implements Runnable {
     /**
      * Sends a wake up signal to Kafka consumer and stops it.
      */
-    public void shutdown() {
+    public void stop() {
         connection.wakeup();
     }
 
@@ -158,6 +116,49 @@ public class FastenKafkaPlugin implements Runnable {
      */
     public Thread getThread() {
         return thread;
+    }
+
+    /**
+     * Consumes a message from a Kafka topics and passes it to a plugin.
+     */
+    private void handleConsuming() {
+        NumberFormat timeFormatter = new DecimalFormat("#0.000");
+        ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
+        for (var r : records) {
+            doCommitSync();
+
+            long startTime = System.currentTimeMillis();
+            plugin.consume(r.value());
+            long endTime = System.currentTimeMillis();
+
+            handleProducing(r.value(), timeFormatter.format((endTime - startTime) / 1000d));
+        }
+    }
+
+    /**
+     * Writes messages to server log and stdout/stderr topics.
+     *
+     * @param input input message [can be null]
+     * @param time  precessing time [can be null]
+     */
+    private void handleProducing(String input, String time) {
+        if (plugin.recordProcessSuccessful()) {
+            var result = plugin.produce();
+
+            emitMessage(this.serverLog, this.serverLogTopic, new Date()
+                    + "| [" + this.consumerHostName + "] Plug-in "
+                    + plugin.getClass().getSimpleName()
+                    + " processed successfully record"
+                    + (StringUtils.isNotEmpty(time) ? " [in " + time + " seconds]" : ""));
+
+            emitMessage(this.producer, String.format("fasten.%s.out",
+                    plugin.getClass().getSimpleName()),
+                    getStdOutMsg(input, result.orElse(null)));
+        } else {
+            emitMessage(this.producer, String.format("fasten.%s.err",
+                    plugin.getClass().getSimpleName()),
+                    getStdErrMsg(input));
+        }
     }
 
     /**

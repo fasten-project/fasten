@@ -24,7 +24,7 @@ public abstract class AnalyzerPlugin extends Plugin {
 
         private String consumeTopic = "fasten.maven.pkg";
         private Throwable pluginError;
-        private String record;
+        private ExtendedRevisionCallGraph graph;
 
         @Override
         public Optional<List<String>> consumeTopics() {
@@ -34,34 +34,32 @@ public abstract class AnalyzerPlugin extends Plugin {
         @Override
         public void consume(String kafkaRecord) {
             pluginError = null;
-            this.record = kafkaRecord;
-        }
-
-        @Override
-        public Optional<String> produce() {
             try {
-                final var kafkaConsumedJson = new JSONObject(this.record);
+                final var kafkaConsumedJson = new JSONObject(kafkaRecord);
                 final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
 
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
-                final var cg = generateCallGraph(mavenCoordinate, kafkaConsumedJson);
+                this.graph = generateCallGraph(mavenCoordinate, kafkaConsumedJson);
 
-                if (cg == null) {
-                    return Optional.empty();
-                }
-                if (cg.isCallGraphEmpty()) {
+                if (graph == null || graph.isCallGraphEmpty()) {
                     logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
-                    return Optional.of(cg.toJSON().toString());
+                    return;
                 }
 
                 logger.info("Call graph successfully generated for {}!",
                         mavenCoordinate.getCoordinate());
 
-                return Optional.of(cg.toJSON().toString());
-
             } catch (Exception e) {
                 setPluginError(e);
                 logger.error("", e);
+            }
+        }
+
+        @Override
+        public Optional<String> produce() {
+            if (this.graph != null) {
+                return Optional.of(graph.toJSON().toString());
+            } else {
                 return Optional.empty();
             }
         }
