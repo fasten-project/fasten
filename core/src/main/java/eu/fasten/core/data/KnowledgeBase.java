@@ -250,9 +250,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 		/** Properties (in the sense of {@link ImmutableGraph}) of the transpose graph. */
 		public final Properties transposeProperties;
 		/** Maps LIDs to GIDs. */
-		private final long[] LID2GID;
+		public final long[] LID2GID;
 		/** Inverse to {@link #LID2GID}: maps GIDs to LIDs. */
-		private final Long2IntOpenHashMap GID2LID;
+		public final Long2IntOpenHashMap GID2LID;
 		/** A cached copy of the set of external nodes (TODO: immutable? slower but safer). */
 		private final LongOpenHashSet externalNodes;
 
