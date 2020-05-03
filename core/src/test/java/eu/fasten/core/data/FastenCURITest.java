@@ -6,12 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-class FastenCURITest {
+public class FastenCURITest {
 
 	@Test
-	void testCreation() {
+	public void testCreation() {
 		var fastenCURI = new FastenCURI("fasten://recsplit/C/copy()");
 		assertEquals("fasten", fastenCURI.getScheme());
 		assertNull(fastenCURI.getForge());
@@ -38,12 +38,12 @@ class FastenCURITest {
 	}
 
 	@Test
-	void testCreationNoEntity() {
+	public void testCreationNoEntity() {
 		assertEquals("recsplit", new FastenCURI("fasten://recsplit").getProduct());
 	}
 
 	@Test
-	void testCreationError() {
+	public void testCreationError() {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			new FastenCURI("fasten://recsplit/C/copy(");
 		});
