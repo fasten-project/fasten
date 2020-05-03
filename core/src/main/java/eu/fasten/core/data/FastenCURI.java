@@ -34,7 +34,6 @@ public class FastenCURI extends FastenURI {
 
 	public FastenCURI(final URI uri) {
 		super(uri);
-		if (getNamespace() != null && ! "C".equals(getNamespace())) throw new IllegalArgumentException("The namespace of a FASTEN C URI must be \"C\"");
 		if (rawEntity == null) {
 			filename = functionOrVariableName = null;
 			isFunction = false;
