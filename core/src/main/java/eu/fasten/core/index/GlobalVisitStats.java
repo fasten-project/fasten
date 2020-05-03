@@ -38,6 +38,8 @@ import eu.fasten.core.data.KnowledgeBase.CallGraph;
 import eu.fasten.core.data.KnowledgeBase.CallGraphData;
 import eu.fasten.core.data.KnowledgeBase.Node;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.stat.SummaryStats;
 import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandom;
@@ -48,6 +50,41 @@ import it.unimi.dsi.webgraph.LazyIntIterator;
 public class GlobalVisitStats {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GlobalVisitStats.class);
+
+	public static int reaches(final KnowledgeBase kb, final Node start, final ProgressLogger pl) {
+		final ObjectOpenHashSet<Node> result = new ObjectOpenHashSet<>();
+		// Visit queue
+		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
+		queue.enqueue(start);
+		pl.start("Visiting reachable nodes...");
+
+		while (!queue.isEmpty()) {
+			final Node node = queue.dequeue();
+			if (result.add(node)) for (final Node s : kb.successors(node))
+				if (!result.contains(s)) queue.enqueue(s);
+			pl.lightUpdate();
+		}
+
+		pl.done();
+		return result.size();
+	}
+
+	public static int coreaches(final KnowledgeBase kb, final Node start, final ProgressLogger pl) {
+		final ObjectOpenHashSet<Node> result = new ObjectOpenHashSet<>();
+		// Visit queue
+		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
+		queue.enqueue(start);
+
+		pl.start("Visiting coreachable nodes...");
+		while (!queue.isEmpty()) {
+			final Node node = queue.dequeue();
+			if (result.add(node)) for (final Node s : kb.predecessors(node)) if (!result.contains(s)) queue.enqueue(s);
+			pl.lightUpdate();
+		}
+
+		pl.done();
+		return result.size();
+	}
 
 	public static int reachable(final ImmutableGraph graph, final int startingNode) {
 		final int n = graph.numNodes();
@@ -106,6 +143,8 @@ public class GlobalVisitStats {
 		final XoRoShiRo128PlusPlusRandom random = new XoRoShiRo128PlusPlusRandom(0);
 		final long[] callGraphIndex = kb.callGraphs.keySet().toLongArray();
 
+		final ProgressLogger pl2 = new ProgressLogger(LOGGER);
+
 		for (int i = 0; i < n; i++) {
 			pl.update();
 			final int index = random.nextInt(callGraphIndex.length);
@@ -114,8 +153,8 @@ public class GlobalVisitStats {
 			final int startNode = random.nextInt(callGraph.nInternal);
 			final Node node = kb.new Node(callGraphData.LID2GID[startNode], index);
 			LOGGER.info("Analyzing node " + node.toFastenURI());
-			reachable.add(kb.reaches(node).size());
-			coreachable.add(kb.coreaches(node).size());
+			reachable.add(reaches(kb, node, pl2));
+			coreachable.add(coreaches(kb, node, pl2));
 		}
 
 		pl.done();
