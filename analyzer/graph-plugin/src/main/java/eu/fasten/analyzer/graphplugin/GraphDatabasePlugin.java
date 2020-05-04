@@ -19,15 +19,13 @@
 package eu.fasten.analyzer.graphplugin;
 
 import eu.fasten.core.data.KnowledgeBase;
+import eu.fasten.core.data.metadatadb.graph.Graph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -68,20 +66,10 @@ public class GraphDatabasePlugin extends Plugin {
 
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
-            var jsonArray = new JSONArray();
-            try {
-                jsonArray = new JSONArray(record.value());
-            } catch (JSONException e) {
-                processedRecord = false;
-                logger.error("Incorrect input JSON: " + record.value(), e);
-                setPluginError(e);
-                return;
-            }
-            List<List<Long>> edges = jsonArray.toList().parallelStream()
-                    .map((e) -> (List<Long>) e)
-                    .collect(Collectors.toList());
-            System.out.println(edges);
-            // TODO: Save edges to KnowledgeBase
+            var json = new JSONObject(record.value());
+            var graph = Graph.getGraph(json);
+            logger.debug(graph.toJSONString());
+            // TODO: Save graph to KnowledgeBase
         }
 
         @Override

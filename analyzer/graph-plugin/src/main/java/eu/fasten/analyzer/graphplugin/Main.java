@@ -18,12 +18,9 @@
 
 package eu.fasten.analyzer.graphplugin;
 
-import eu.fasten.server.kafka.FastenKafkaConnection;
-import eu.fasten.server.kafka.FastenKafkaConsumer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -34,24 +31,6 @@ import picocli.CommandLine;
 public class Main implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
-
-    @CommandLine.Option(names = {"-t", "--topic"},
-            paramLabel = "topic",
-            description = "Kafka topic from which to consume call graphs",
-            defaultValue = "fasten.cg.edges")
-    String topic;
-
-    @CommandLine.Option(names = {"-s", "--skip_offsets"},
-            paramLabel = "skip",
-            description = "Adds one to offset of all the partitions of the consumers.",
-            defaultValue = "0")
-    int skipOffsets;
-
-    @CommandLine.Option(names = {"-k", "--kafka_server"},
-            paramLabel = "server.name:port",
-            description = "Kafka server to connect to. Use multiple times for clusters.",
-            defaultValue = "localhost:9092")
-    List<String> kafkaServers;
 
     @CommandLine.Option(names = {"-f", "--file"},
             paramLabel = "JSON",
@@ -76,29 +55,22 @@ public class Main implements Runnable {
     @Override
     public void run() {
         var graphPlugin = new GraphDatabasePlugin.GraphDBExtension();
-        graphPlugin.setTopic(topic);
         try {
             graphPlugin.setKnowledgeBase(kbDir, kbMeta);
         } catch (RocksDBException | IOException | ClassNotFoundException e) {
             e.printStackTrace(System.err);
             return;
         }
-        if (jsonFile == null || jsonFile.isEmpty()) {
-            var consumerProperties = FastenKafkaConnection.kafkaProperties(kafkaServers,
-                    this.getClass().getCanonicalName());
-            new FastenKafkaConsumer(consumerProperties, graphPlugin, skipOffsets).start();
-        } else {
-            final String fileContents;
-            try {
-                fileContents = Files.readString(Paths.get(jsonFile));
-            } catch (IOException e) {
-                logger.error("Could not find the JSON file at " + jsonFile, e);
-                return;
-            }
-            String artifact = fileContents.split("\n")[0];
-            String edges = fileContents.split("\n")[1];
-            final var record = new ConsumerRecord<>(topic, 0, 0L, artifact, edges);
-            graphPlugin.consume(topic, record);
+        final String fileContents;
+        try {
+            fileContents = Files.readString(Paths.get(jsonFile));
+        } catch (IOException e) {
+            logger.error("Could not find the JSON file at " + jsonFile, e);
+            return;
         }
+        String artifact = fileContents.split("\n")[0];
+        String graph = fileContents.split("\n")[1];
+        final var record = new ConsumerRecord<>("fasten.cg.edges", 0, 0L, artifact, graph);
+        graphPlugin.consume("fasten.cg.edges", record);
     }
 }

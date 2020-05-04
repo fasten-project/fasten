@@ -41,12 +41,12 @@
         <artifactId>json</artifactId>
         <version>20180813</version>
         <!--            <scope>provided</scope>-->
-    </dependency>
-    <dependency>
-        <groupId>eu.fasten</groupId>
-        <artifactId>core</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-    </dependency>
+        </dependency>
+        <dependency>
+            <groupId>eu.fasten</groupId>
+            <artifactId>core</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>server</artifactId>

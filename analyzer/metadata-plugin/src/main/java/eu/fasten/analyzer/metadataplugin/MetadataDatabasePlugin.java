@@ -22,6 +22,7 @@ import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import eu.fasten.core.data.metadatadb.graph.Graph;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
@@ -30,7 +31,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -203,6 +203,8 @@ public class MetadataDatabasePlugin extends Plugin {
                         new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
             }
 
+            var nodes = new ArrayList<Long>(graph.size());
+
             final var externalCalls = graph.getExternalCalls();
             var externalEdges = new ArrayList<EdgesRecord>(graph.getExternalCalls().size());
             for (var callEntry : externalCalls.entrySet()) {
@@ -210,6 +212,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 var sourceLocalId = (long) call.getKey();
                 var uri = call.getValue().toString();
                 var targetId = metadataDao.insertCallable(null, uri, false, null, null);
+                nodes.add(targetId);
                 var edgeMetadata = new JSONObject(callEntry.getValue());
                 externalEdges.add(new EdgesRecord(sourceLocalId, targetId,
                         JSONB.valueOf(edgeMetadata.toString())));
@@ -226,6 +229,8 @@ public class MetadataDatabasePlugin extends Plugin {
                 var ids = metadataDao.batchInsertCallables(callablesBatch);
                 internalCallablesIds.addAll(ids);
             }
+
+            nodes.addAll(internalCallablesIds);
 
             var internalLidToGidMap = new HashMap<Long, Long>();
             for (int i = 0; i < internalCallables.size(); i++) {
@@ -251,10 +256,11 @@ public class MetadataDatabasePlugin extends Plugin {
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
             }
+            var edgesGraph = new Graph(callGraph.product, callGraph.version, nodes, edges);
             if (this.kafkaProducer != null) {
-                this.sendEdgesToKafka(callGraph.product + "@" + callGraph.version, edges);
+                this.sendGraphToKafka(edgesGraph);
             } else {
-                writeEdgesToFile(callGraph.product + "@" + callGraph.version, edges);
+                writeGraphToFile(edgesGraph);
             }
             return packageId;
         }
@@ -272,24 +278,21 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         /**
-         * Sends list of edges to Kafka.
+         * Sends GIDs graph to Kafka.
          *
-         * @param product Product name and version
-         * @param edges List of edges
+         * @param graph   Graph consisting of Global IDs
          */
-        public void sendEdgesToKafka(String product, List<EdgesRecord> edges) {
-            logger.debug("Writing edges for {} to Kafka", product);
-            var edgesArray = edges.parallelStream()
-                    .map((r) -> new long[]{r.getSourceId(), r.getTargetId()})
-                    .toArray();
+        public void sendGraphToKafka(Graph graph) {
+            var artifact = graph.getProduct() + "@" + graph.getVersion();
+            logger.debug("Writing GIDs graph for {} to Kafka", artifact);
             final var record = new ProducerRecord<Object, String>(
                     this.producerTopic(),
-                    product,
-                    Arrays.deepToString(edgesArray)
+                    artifact,
+                    graph.toJSONString()
             );
             kafkaProducer.send(record, (recordMetadata, e) -> {
                 if (recordMetadata != null) {
-                    logger.debug("Sent: {} to {}", product, this.producerTopic());
+                    logger.debug("Sent: {} to {}", artifact, this.producerTopic());
                 } else {
                     setPluginError(e);
                     logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
@@ -298,22 +301,18 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         /**
-         * Writes edges to file.
+         * Writes GIDs graph to file.
          *
-         * @param product Product name and version
-         * @param edges List of edges
+         * @param graph   Graph consisting of Global IDs
          */
-        public void writeEdgesToFile(String product, List<EdgesRecord> edges) {
-            logger.debug("Writing edges for {} to file", product);
-            var edgesArray = edges.parallelStream()
-                    .map((r) -> new long[]{r.getSourceId(), r.getTargetId()})
-                    .toArray();
-            var data = product + "\n" + Arrays.deepToString(edgesArray);
+        public void writeGraphToFile(Graph graph) {
+            var artifact = graph.getProduct() + "@" + graph.getVersion();
+            logger.debug("Writing GIDs graph for {} to file", artifact);
             try {
-                Files.write(Paths.get("edges.txt"), data.getBytes());
+                Files.write(Paths.get("gid_graph.txt"), graph.toJSONString().getBytes());
             } catch (IOException e) {
                 setPluginError(e);
-                logger.error("Failed to write edges to file: " + e.getMessage(), e);
+                logger.error("Failed to write GIDs graph to file: " + e.getMessage(), e);
             }
         }
 
@@ -332,7 +331,7 @@ public class MetadataDatabasePlugin extends Plugin {
             return "Metadata plugin. "
                     + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
                     + " and populates metadata database with consumed data"
-                    + " and writes edges of callgraph with Global IDs to another Kafka topic.";
+                    + " and writes graph of GIDs of callgraph to another Kafka topic.";
         }
 
         @Override
