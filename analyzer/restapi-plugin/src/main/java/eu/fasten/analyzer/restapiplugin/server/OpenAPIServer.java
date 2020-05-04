@@ -9,6 +9,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.api.RequestParameters;
+import io.vertx.ext.web.api.contract.RouterFactoryOptions;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 
 public class OpenAPIServer extends AbstractVerticle {
@@ -23,6 +25,25 @@ public class OpenAPIServer extends AbstractVerticle {
                 OpenAPI3RouterFactory routerFactory = ar.result();
 
                 // Add routes handlers
+
+                // TODO: global handler
+
+                // "/api/{pkg_manager}/{product}/{version}"
+                // "api/pypi/numpy/1.12.3"
+                routerFactory.addHandlerByOperationId("get_metadata_api__pkg_manager___product___version__get", routingContext -> {
+                    RequestParameters params = routingContext.get("parsedParameters");
+                    String pkg_manager = params.pathParameter("pkg_manager").getString();
+                    String product = params.pathParameter("product").getString();
+                    String version = params.pathParameter("version").getString();
+                    // TODO: call a function to do the DB query
+                    String reply = dummyFunction(pkg_manager, product, version);
+                    if (!reply.isEmpty())
+                        routingContext
+                                .response()
+                                .setStatusCode(200)
+                                //.putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                                .end(reply);
+                });
 
                 // Generate the router
                 Router router = routerFactory.getRouter();
@@ -67,6 +88,10 @@ public class OpenAPIServer extends AbstractVerticle {
                 future.fail(ar.cause());
             }
         });
+    }
+
+    private String dummyFunction(String pkg_manager, String product, String version) {
+        return ("It's working: " + pkg_manager + ", " + product + ", " + version);
     }
 
     @Override
