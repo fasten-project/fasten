@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.matadataplugin;
+package eu.fasten.analyzer.metadataplugin;
 
 import java.sql.Timestamp;
 import java.util.Collections;
@@ -24,7 +24,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import eu.fasten.analyzer.matadataplugin.db.MetadataDao;
+import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;

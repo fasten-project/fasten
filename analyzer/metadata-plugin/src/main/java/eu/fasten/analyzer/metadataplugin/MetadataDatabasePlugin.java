@@ -16,20 +16,24 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.matadataplugin;
+package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.analyzer.matadataplugin.db.MetadataDao;
+import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
+import eu.fasten.core.plugins.KafkaProducer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
-import java.util.*;
-import eu.fasten.core.plugins.KafkaProducer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.jooq.DSLContext;
@@ -51,7 +55,8 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBExtension implements KafkaConsumer<String>, KafkaProducer, DBConnector {
+    public static class MetadataDBExtension implements
+            KafkaConsumer<String>, KafkaProducer, DBConnector {
 
         private String consumerTopic = "fasten.opal.cg.3";
         private String producerTopic = "fasten.cg.edges";
@@ -183,7 +188,8 @@ public class MetadataDatabasePlugin extends Plugin {
                 for (var methodEntry : type.getMethods().entrySet()) {
                     var localId = (long) methodEntry.getKey();
                     var uri = methodEntry.getValue().toString();
-                    internalCallables.add(new CallablesRecord(localId, moduleId, uri, true, null, null));
+                    internalCallables.add(new CallablesRecord(localId, moduleId, uri, true,
+                            null, null));
                 }
             }
 
@@ -193,7 +199,8 @@ public class MetadataDatabasePlugin extends Plugin {
             for (var call : internalCalls) {
                 var sourceLocalId = (long) call.get(0);
                 var targetLocalId = (long) call.get(1);
-                internalEdges.add(new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
+                internalEdges.add(
+                        new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
             }
 
             final var externalCalls = graph.getExternalCalls();
@@ -222,7 +229,8 @@ public class MetadataDatabasePlugin extends Plugin {
 
             var internalLidToGidMap = new HashMap<Long, Long>();
             for (int i = 0; i < internalCallables.size(); i++) {
-                internalLidToGidMap.put(internalCallables.get(i).getId(), internalCallablesIds.get(i));
+                internalLidToGidMap.put(internalCallables.get(i).getId(),
+                        internalCallablesIds.get(i));
             }
             for (var edge : internalEdges) {
                 edge.setSourceId(internalLidToGidMap.get(edge.getSourceId()));
@@ -359,7 +367,8 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public void setKafkaProducer(org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
+        public void setKafkaProducer(
+                org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
             this.kafkaProducer = producer;
         }
 

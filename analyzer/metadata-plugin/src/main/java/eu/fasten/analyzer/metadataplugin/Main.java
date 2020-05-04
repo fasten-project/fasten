@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.matadataplugin;
+package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.server.db.PostgresConnector;
 import eu.fasten.server.kafka.FastenKafkaConnection;
 import eu.fasten.server.kafka.FastenKafkaConsumer;
+import eu.fasten.server.kafka.FastenKafkaProducer;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
 import java.util.List;
-import eu.fasten.server.kafka.FastenKafkaProducer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.json.JSONTokener;
