@@ -6,12 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-class FastenJavaURITest {
+public class FastenJavaURITest {
 
 	@Test
-	void testCreationEmptyArgs() {
+	public void testCreationEmptyArgs() {
 		var fastenJavaURI = new FastenJavaURI("fasten://webgraph.jar/it.unimi.dsi.webgraph/BVGraph.copy()BVGraph");
 		assertEquals("fasten", fastenJavaURI.getScheme());
 		assertNull(fastenJavaURI.getForge());
@@ -38,7 +38,7 @@ class FastenJavaURITest {
 	}
 
 	@Test
-	void testCreationOneArg() {
+	public void testCreationOneArg() {
 		final var fastenJavaURI = new FastenJavaURI("fasten://webgraph.jar/it.unimi.dsi.webgraph/BVGraph.successors(%2Fjava.primitive%2Fint)LazyIntIterator");
 		assertEquals("fasten", fastenJavaURI.getScheme());
 		assertEquals("webgraph.jar", fastenJavaURI.getProduct());
@@ -52,12 +52,12 @@ class FastenJavaURITest {
 	}
 
 	@Test
-	void testCreationNoEntity() {
+	public void testCreationNoEntity() {
 		assertEquals("webgraph.jar", new FastenJavaURI("fasten://webgraph.jar").getProduct());
 	}
 
 	@Test
-	void testCreationError() {
+	public void testCreationError() {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			new FastenJavaURI("fasten://webgraph.jar/it.unimi.dsi.webgraph/BVGraph.copy(");
 		});
@@ -70,7 +70,7 @@ class FastenJavaURITest {
 	}
 
 	@Test
-	void testExample1() {
+	public void testExample1() {
 		final var fastenJavaURI = new FastenJavaURI("fasten://xerces.xercesImpl$2.6.2/org.apache.html.dom/HTMLUListElementImpl.%3Cinit%3E(HTMLDocumentImpl,%2F%2Fjdk%2Fjava.lang%2FString)HTMLUListElementImpl");
 		assertEquals("fasten", fastenJavaURI.getScheme());
 		assertEquals("xerces.xercesImpl", fastenJavaURI.getProduct());
@@ -87,7 +87,7 @@ class FastenJavaURITest {
 	}
 
 	@Test
-	void testExample2() {
+	public void testExample2() {
 		final var fastenJavaURI = new FastenJavaURI("fasten://com.faster.jackson.core.jackson-core/com.fasterxml.jackson.core.json.async/NonBlockingJsonParserBase._findName(%2F%2Fjdk%2Fjava.primitive%2Fint,%2F%2Fjdk%2Fjava.primitive%2Fint)%2F%2Fjdk%2Fjava.lang%2FString");
 		assertEquals("fasten", fastenJavaURI.getScheme());
 		assertEquals("com.faster.jackson.core.jackson-core", fastenJavaURI.getProduct());

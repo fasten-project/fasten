@@ -26,6 +26,8 @@ import java.net.URI;
 public class FastenCURI extends FastenURI {
 	protected final String filename;
 	protected final String functionOrVariableName;
+	protected final String namespace;
+	protected final String binary;
 	protected final boolean isFunction;
 
 	public FastenCURI(final String s) {
@@ -34,21 +36,22 @@ public class FastenCURI extends FastenURI {
 
 	public FastenCURI(final URI uri) {
 		super(uri);
-		if (getNamespace() != null && ! "C".equals(getNamespace())) throw new IllegalArgumentException("The namespace of a FASTEN C URI must be \"C\"");
 		if (rawEntity == null) {
 			filename = functionOrVariableName = null;
 			isFunction = false;
+			namespace = null;
+			binary = null;
 			return;
 		}
-		final var semicolonPos = rawEntity.indexOf(";");
+		final var semicolonPosEntity = rawEntity.indexOf(";");
 		String s;
-		if (semicolonPos == -1) {
+		if (semicolonPosEntity == -1) {
 			filename = null; // Without filename
 			s = decode(rawEntity);
 		}
 		else {
-			filename = decode(rawEntity.substring(0, semicolonPos));
-			s = decode(rawEntity.substring(semicolonPos + 1));
+			filename = decode(rawEntity.substring(0, semicolonPosEntity));
+			s = decode(rawEntity.substring(semicolonPosEntity + 1));
 		}
 
 		final var openParenPos = s.indexOf('(');
@@ -58,6 +61,16 @@ public class FastenCURI extends FastenURI {
 			functionOrVariableName = decode(s.substring(0, s.length() - 2));
 		}
 		else functionOrVariableName = decode(s); // variable
+		if (rawNamespace == null) {
+			namespace = null;
+			binary = null;
+		} else {
+			final var semicolonPosNamespace = rawNamespace.indexOf(";");
+			if (semicolonPosNamespace == -1) throw new IllegalArgumentException("Namespace must contain a semicolon");
+			var b = decode(rawNamespace.substring(0, semicolonPosNamespace));
+			binary = b.equals("") ? null : b;
+			namespace = decode(rawNamespace.substring(semicolonPosNamespace + 1));
+		}
 	}
 
 	/**
@@ -97,13 +110,21 @@ public class FastenCURI extends FastenURI {
 	 */
 
 	public static FastenCURI create(final String rawForge, final String rawProduct, final String rawVersion,
-			final String filename, final String functionOrVariableName, final boolean isFunction) {
+			final String binary, final String namespace, final String filename,
+			final String functionOrVariableName, final boolean isFunction) {
+		if (binary != null && namespace == null) throw new IllegalArgumentException("If binary is provided then namespace must be provided");
 		final StringBuffer entitysb = new StringBuffer();
 		if (filename != null) entitysb.append(filename + ';');
 		entitysb.append(functionOrVariableName);
 		if (isFunction) entitysb.append("()");
-
-		final FastenURI fastenURI = FastenURI.create(rawForge, rawProduct, rawVersion, "C", entitysb.toString());
+		final String rawNamespace;
+		if (binary != null)
+			rawNamespace = binary + ";" + namespace;
+		else if (namespace != null)
+			rawNamespace = ";" + namespace;
+		else
+			rawNamespace = null;
+		final FastenURI fastenURI = FastenURI.create(rawForge, rawProduct, rawVersion, rawNamespace, entitysb.toString());
 		return create(fastenURI.uri);
 	}
 
@@ -131,6 +152,36 @@ public class FastenCURI extends FastenURI {
 		return isFunction;
 	}
 
+	/** Returns the binary associated with this Fasten C URI.
+	 *
+	 * @return the binary associated with this Fasten C URI.
+	 */
+	public String getBinary() {
+		return binary;
+	}
+
+	/** Returns the namespace of this Fasten C URI.
+	 * In Fasten C URI the namespace is C for public functions / variables.
+	 * Otherwise, is the absolute path from project's root to the filename of
+	 * the entity.
+	 *
+	 * @return the namespace of this Fasten C URI.
+	 */
+	@Override
+	public String getNamespace() {
+		return namespace;
+	}
+
+	/** Returns whether this FASTEN C URI represents a public function / variable.
+	 *
+	 * @return whether this FASTEN C URI represents a public function / variable.
+	 */
+	public boolean isPublic() {
+		if (namespace.equals("C"))
+			return true;
+		return false;
+	}
+
 
 	/** Relativizes the provided FASTEN C URI with respected to this FASTEN C URI.
 	 *
@@ -143,6 +194,7 @@ public class FastenCURI extends FastenURI {
 	@Override
 	public FastenCURI relativize(final FastenURI u) {
 		if (rawNamespace == null) throw new IllegalStateException("You cannot relativize without a namespace");
+
 		final String rawAuthority = u.uri.getRawAuthority();
 		// There is an authority and it doesn't match: return u
 		if (rawAuthority != null && ! rawAuthority.equals(uri.getRawAuthority())) return u instanceof FastenCURI ? (FastenCURI) u : create(u.uri);
@@ -159,6 +211,6 @@ public class FastenCURI extends FastenURI {
 
 	@Override
 	public FastenCURI canonicalize() {
-		return FastenCURI.create(rawForge, rawProduct, rawVersion, filename, functionOrVariableName, isFunction);
+		return FastenCURI.create(rawForge, rawProduct, rawVersion, binary, namespace, filename, functionOrVariableName, isFunction);
 	}
 }
