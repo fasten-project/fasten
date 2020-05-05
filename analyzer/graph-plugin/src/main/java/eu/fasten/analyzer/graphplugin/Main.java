@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -37,15 +36,10 @@ public class Main implements Runnable {
             description = "Path to JSON file which contains edges")
     String jsonFile;
 
-    @CommandLine.Option(names = {"-kb", "--kbDirectory"},
-            paramLabel = "kbDir",
-            description = "The directory of the RocksDB instance containing the knowledge base")
-    String kbDir;
-
-    @CommandLine.Option(names = {"-kbmeta", "--kbMetadataFile"},
-            paramLabel = "kbMeta",
-            description = "The file containing the knowledge base metadata")
-    String kbMeta;
+    @CommandLine.Option(names = {"-d", "--directory"},
+            paramLabel = "Dir",
+            description = "The directory of the RocksDB instance")
+    String dir;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
@@ -55,12 +49,7 @@ public class Main implements Runnable {
     @Override
     public void run() {
         var graphPlugin = new GraphDatabasePlugin.GraphDBExtension();
-        try {
-            graphPlugin.setKnowledgeBase(kbDir, kbMeta);
-        } catch (RocksDBException | IOException | ClassNotFoundException e) {
-            e.printStackTrace(System.err);
-            return;
-        }
+        graphPlugin.setRocksDbDir(dir);
         final String fileContents;
         try {
             fileContents = Files.readString(Paths.get(jsonFile));

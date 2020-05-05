@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.graphplugin;
 
+import eu.fasten.analyzer.graphplugin.db.RocksDao;
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.metadatadb.graph.Graph;
 import eu.fasten.core.plugins.KafkaConsumer;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -47,16 +49,15 @@ public class GraphDatabasePlugin extends Plugin {
         private boolean processedRecord = false;
         private String pluginError = "";
         private final Logger logger = LoggerFactory.getLogger(GraphDBExtension.class.getName());
-        private KnowledgeBase knowledgeBase;
+        private String rocksDbDir = "";
 
         @Override
         public List<String> consumerTopics() {
             return new ArrayList<>(Collections.singletonList(consumerTopic));
         }
 
-        public void setKnowledgeBase(String kbDir, String kbMetadataFilename)
-                throws RocksDBException, IOException, ClassNotFoundException {
-            this.knowledgeBase = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
+        public void setRocksDbDir(String dir) {
+            this.rocksDbDir = dir;
         }
 
         @Override
@@ -67,9 +68,39 @@ public class GraphDatabasePlugin extends Plugin {
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
             var json = new JSONObject(record.value());
-            var graph = Graph.getGraph(json);
-            logger.debug(graph.toJSONString());
-            // TODO: Save graph to KnowledgeBase
+            Graph graph;
+            try {
+                graph = Graph.getGraph(json);
+            } catch (JSONException e) {
+                logger.error("Could not parse GID graph", e);
+                processedRecord = false;
+                setPluginError(e);
+                return;
+            }
+            var artifact = graph.getProduct() + "@" + graph.getVersion();
+            try {
+                var rocksDao = new RocksDao(rocksDbDir);
+                saveToDatabase(graph, rocksDao);
+            } catch (RocksDBException e) {
+                logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
+                processedRecord = false;
+                setPluginError(e);
+                return;
+            }
+            if (getPluginError().isEmpty()) {
+                processedRecord = true;
+                logger.info("Saved the '" + artifact + "' GID graph into RocksDB graph database");
+            }
+        }
+
+        /**
+         * Inserts a graph into RocksDB.
+         *
+         * @param graph Graph with Global IDs
+         * @param rocksDao Database Access Object for RocksDB
+         */
+        public void saveToDatabase(Graph graph, RocksDao rocksDao) {
+            rocksDao.saveToRocksDb(graph.getNodes(), graph.getNumInternalNodes(), graph.getEdges());
         }
 
         @Override
