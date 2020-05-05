@@ -14,20 +14,25 @@ public class Graph {
     private final String product;
     private final String version;
     private final List<Long> nodes;
+    private final int numInternalNodes;
     private final List<List<Long>> edges;
 
     /**
      * Constructor for Graph.
      *
-     * @param product Product name
-     * @param version Product version
-     * @param nodes List of Global IDs of nodes of the graph
-     * @param edges List of edges of the graph with pairs for Global IDs
+     * @param product          Product name
+     * @param version          Product version
+     * @param nodes            List of Global IDs of nodes of the graph
+     *                         (first internal nodes, then external nodes)
+     * @param numInternalNodes Number of internal nodes in nodes list
+     * @param edges            List of edges of the graph with pairs for Global IDs
      */
-    public Graph(String product, String version, List<Long> nodes, List<EdgesRecord> edges) {
+    public Graph(String product, String version, List<Long> nodes, int numInternalNodes,
+                 List<EdgesRecord> edges) {
         this.product = product;
         this.version = version;
         this.nodes = nodes;
+        this.numInternalNodes = numInternalNodes;
         this.edges = edges.parallelStream()
                 .map((r) -> List.of(r.getSourceId(), r.getTargetId()))
                 .collect(Collectors.toList());
@@ -45,6 +50,10 @@ public class Graph {
         return nodes;
     }
 
+    public int getNumInternalNodes() {
+        return numInternalNodes;
+    }
+
     public List<List<Long>> getEdges() {
         return edges;
     }
@@ -59,6 +68,7 @@ public class Graph {
         json.put("product", getProduct());
         json.put("version", getVersion());
         json.put("nodes", getNodes());
+        json.put("numInternalNodes", getNumInternalNodes());
         json.put("edges", getEdges());
         return json.toString();
     }
@@ -81,6 +91,7 @@ public class Graph {
         for (int i = 0; i < jsonNodes.length(); i++) {
             nodes.add(jsonNodes.getLong(i));
         }
+        var numInternalNodes = jsonGraph.getInt("numInternalNodes");
         var jsonEdges = jsonGraph.getJSONArray("edges");
         List<EdgesRecord> edges = new ArrayList<>(jsonEdges.length());
         for (int i = 0; i < jsonEdges.length(); i++) {
@@ -88,7 +99,7 @@ public class Graph {
             var edge = new EdgesRecord(edgeArr.getLong(0), edgeArr.getLong(1), JSONB.valueOf(""));
             edges.add(edge);
         }
-        return new Graph(product, version, nodes, edges);
+        return new Graph(product, version, nodes, numInternalNodes, edges);
     }
 
     @Override
@@ -107,6 +118,9 @@ public class Graph {
             return false;
         }
         if (!Objects.equals(nodes, graph.nodes)) {
+            return false;
+        }
+        if (!Objects.equals(numInternalNodes, graph.numInternalNodes)) {
             return false;
         }
         return Objects.equals(edges, graph.edges);

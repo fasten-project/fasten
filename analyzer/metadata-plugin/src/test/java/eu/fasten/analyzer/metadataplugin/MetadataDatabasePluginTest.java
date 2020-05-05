@@ -341,7 +341,7 @@ public class MetadataDatabasePluginTest {
         var edges = List.of(edge1, edge2);
         var product = "test";
         var version = "0.0.1";
-        var graph = new Graph(product, version, nodes, edges);
+        var graph = new Graph(product, version, nodes, 2, edges);
         metadataDBExtension.writeGraphToFile(graph);
         var file = "gid_graph.txt";
         assertTrue(new File(file).exists());

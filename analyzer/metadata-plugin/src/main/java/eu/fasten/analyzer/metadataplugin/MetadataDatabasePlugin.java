@@ -33,6 +33,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -203,7 +204,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
             }
 
-            var nodes = new ArrayList<Long>(graph.size());
+            var nodes = new LinkedList<Long>();
 
             final var externalCalls = graph.getExternalCalls();
             var externalEdges = new ArrayList<EdgesRecord>(graph.getExternalCalls().size());
@@ -230,7 +231,9 @@ public class MetadataDatabasePlugin extends Plugin {
                 internalCallablesIds.addAll(ids);
             }
 
-            nodes.addAll(internalCallablesIds);
+            for (var internalId : internalCallablesIds) {
+                nodes.addFirst(internalId);
+            }
 
             var internalLidToGidMap = new HashMap<Long, Long>();
             for (int i = 0; i < internalCallables.size(); i++) {
@@ -256,7 +259,8 @@ public class MetadataDatabasePlugin extends Plugin {
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
             }
-            var edgesGraph = new Graph(callGraph.product, callGraph.version, nodes, edges);
+            var edgesGraph = new Graph(callGraph.product, callGraph.version, nodes,
+                    internalCallablesIds.size(), edges);
             if (this.kafkaProducer != null) {
                 this.sendGraphToKafka(edgesGraph);
             } else {
@@ -280,7 +284,7 @@ public class MetadataDatabasePlugin extends Plugin {
         /**
          * Sends GIDs graph to Kafka.
          *
-         * @param graph   Graph consisting of Global IDs
+         * @param graph Graph consisting of Global IDs
          */
         public void sendGraphToKafka(Graph graph) {
             var artifact = graph.getProduct() + "@" + graph.getVersion();
@@ -303,7 +307,7 @@ public class MetadataDatabasePlugin extends Plugin {
         /**
          * Writes GIDs graph to file.
          *
-         * @param graph   Graph consisting of Global IDs
+         * @param graph Graph consisting of Global IDs
          */
         public void writeGraphToFile(Graph graph) {
             var artifact = graph.getProduct() + "@" + graph.getVersion();

@@ -14,6 +14,7 @@ public class GraphTest {
                 "\"product\": \"test\"," +
                 "\"version\": \"0.0.1\"," +
                 "\"nodes\": [1, 2, 3]," +
+                "\"numInternalNodes\": 2," +
                 "\"edges\": [[1, 2], [2, 3]]" +
                 "}");
         var graph = Graph.getGraph(json);
