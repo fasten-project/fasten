@@ -18,6 +18,7 @@ import org.rocksdb.RocksDBException;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.Node;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 
@@ -172,19 +173,33 @@ public class IndexerTest {
 				for(final long gid: callGraph.callGraphData().nodes())
 					if (!(callGraph.callGraphData().isExternal(gid))) {
 						final Node node = kb.new Node(gid, entry.getLongKey());
+						final long signature = node.signature();
 						ObjectLinkedOpenHashSet<Node> reaches;
 						ObjectLinkedOpenHashSet<Node> coreaches;
+						LongSet reachesSig;
+						LongSet coreachesSig;
 
 						reaches = kb.reaches(node);
+						reachesSig = kb.reaches(signature);
+
 						for(final Node reached: reaches) {
 							coreaches = kb.coreaches(reached);
 							assertTrue(coreaches.contains(node));
 						}
+						for (final long reachedSig : reachesSig) {
+							coreachesSig = kb.coreaches(reachedSig);
+							assertTrue(coreachesSig.contains(signature));
+						}
 
 						coreaches = kb.coreaches(node);
+						coreachesSig = kb.coreaches(signature);
 						for(final Node reached: coreaches) {
 							reaches = kb.coreaches(reached);
 							assertTrue(coreaches.contains(node));
+						}
+						for (final long reached : coreachesSig) {
+							reachesSig = kb.coreaches(reached);
+							assertTrue(coreachesSig.contains(signature));
 						}
 					}
 			}
