@@ -21,17 +21,23 @@ package eu.fasten.server.connectors;
 import java.util.List;
 import java.util.Properties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 
 public class KafkaConnector {
 
+    /**
+     * Returns Kafka properties.
+     *
+     * @param serverAddresses broker address
+     * @param groupId         group id
+     * @return Kafka Properties
+     */
     public static Properties kafkaProperties(List<String> serverAddresses, String groupId) {
         String deserializer = StringDeserializer.class.getName();
         Properties properties = new Properties();
 
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, String.join(",", serverAddresses));
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                String.join(",", serverAddresses));
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, groupId + "_client");
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, deserializer);
@@ -41,26 +47,10 @@ public class KafkaConnector {
         properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "5");
         properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "20000000");
 
-        // Gives more time to the consumer for processing the records so that the broker will NOT kill the consumer.
+        // Gives more time to the consumer for processing the records so
+        // that the broker will NOT kill the consumer.
         properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "200000");
         properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "700000");
-
-        return properties;
-    }
-
-    public static Properties producerProperties(List<String> serverAddresses, String clientId) {
-
-        String serializer = StringSerializer.class.getName();
-        Properties properties = new Properties();
-
-        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, String.join(",", serverAddresses));
-        properties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, clientId);
-        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, serializer);
-        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, serializer);
-        properties.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "100000000");
-        // The total bytes of memory the producer can use to buffer records waiting to be sent to the server
-        properties.setProperty(ProducerConfig.BUFFER_MEMORY_CONFIG, "100000000");
-        properties.setProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "gzip");
 
         return properties;
     }

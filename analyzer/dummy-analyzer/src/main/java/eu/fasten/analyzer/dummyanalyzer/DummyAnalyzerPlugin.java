@@ -39,12 +39,7 @@ public class DummyAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return Optional.of("{\"field\" : \"test\"}");
+            return Optional.empty();
         }
 
         @Override

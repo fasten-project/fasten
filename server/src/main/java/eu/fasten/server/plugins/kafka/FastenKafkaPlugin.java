@@ -45,7 +45,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final int skipOffsets;
 
     /**
-     * Constructs a FastenKafkaConsumer
+     * Constructs a FastenKafkaConsumer.
      *
      * @param p           properties of a consumer
      * @param plugin      Kafka plugin
