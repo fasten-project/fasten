@@ -123,7 +123,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Consumes a message from a Kafka topics and passes it to a plugin.
      */
     private void handleConsuming() {
-        NumberFormat timeFormatter = new DecimalFormat("#0.000");
         ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
         for (var r : records) {
             doCommitSync();
@@ -132,7 +131,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             plugin.consume(r.value());
             long endTime = System.currentTimeMillis();
 
-            handleProducing(r.value(), timeFormatter.format((endTime - startTime) / 1000d));
+            handleProducing(r.value(), String.valueOf(endTime - startTime));
         }
     }
 
@@ -146,11 +145,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         if (plugin.recordProcessSuccessful()) {
             var result = plugin.produce();
 
-            emitMessage(this.serverLog, this.serverLogTopic, new Date()
-                    + "| [" + this.consumerHostName + "] Plug-in "
+            emitMessage(this.serverLog, this.serverLogTopic,
+                    "Timestamp: " + System.currentTimeMillis()
+                    + " | [" + this.consumerHostName + "] Plug-in "
                     + plugin.getClass().getSimpleName()
                     + " processed successfully record"
-                    + (StringUtils.isNotEmpty(time) ? " [in " + time + " seconds]" : ""));
+                    + (StringUtils.isNotEmpty(time) ? " [in " + time + " ms]" : ""));
 
             emitMessage(this.producer, String.format("fasten.%s.out",
                     plugin.getClass().getSimpleName()),
@@ -192,7 +192,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     private String getStdOutMsg(String input, String payload) {
         JSONObject stdoutMsg = new JSONObject();
-        stdoutMsg.put("created_at", System.currentTimeMillis() / 1000L);
+        stdoutMsg.put("created_at", System.currentTimeMillis());
         stdoutMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stdoutMsg.put("plugin_version", plugin.version());
 
