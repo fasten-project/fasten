@@ -60,7 +60,7 @@ public class MetadataDatabasePlugin extends Plugin {
             KafkaConsumer<String>, KafkaProducer, DBConnector {
 
         private String consumerTopic = "fasten.opal.cg.3";
-        private String producerTopic = "fasten.cg.edges";
+        private String producerTopic = "fasten.cg.gid_graphs";
         private org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
         private static DSLContext dslContext;
         private boolean processedRecord = false;

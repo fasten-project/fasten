@@ -18,10 +18,14 @@
 
 package eu.fasten.analyzer.graphplugin;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -50,16 +54,15 @@ public class Main implements Runnable {
     public void run() {
         var graphPlugin = new GraphDatabasePlugin.GraphDBExtension();
         graphPlugin.setRocksDbDir(dir);
-        final String fileContents;
+        final FileReader reader;
         try {
-            fileContents = Files.readString(Paths.get(jsonFile));
-        } catch (IOException e) {
+            reader = new FileReader(jsonFile);
+        } catch (FileNotFoundException e) {
             logger.error("Could not find the JSON file at " + jsonFile, e);
             return;
         }
-        String artifact = fileContents.split("\n")[0];
-        String graph = fileContents.split("\n")[1];
-        final var record = new ConsumerRecord<>("fasten.cg.edges", 0, 0L, artifact, graph);
-        graphPlugin.consume("fasten.cg.edges", record);
+        final JSONObject graph = new JSONObject(new JSONTokener(reader));
+        final var record = new ConsumerRecord<>("fasten.cg.gid_graphs", 0, 0L, "test", graph.toString());
+        graphPlugin.consume("fasten.cg.gid_graphs", record);
     }
 }

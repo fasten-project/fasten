@@ -44,7 +44,7 @@ public class GraphDatabasePlugin extends Plugin {
     @Extension
     public static class GraphDBExtension implements KafkaConsumer<String> {
 
-        private String consumerTopic = "fasten.cg.edges";
+        private String consumerTopic = "fasten.cg.gid_graphs";
         private boolean processedRecord = false;
         private String pluginError = "";
         private final Logger logger = LoggerFactory.getLogger(GraphDBExtension.class.getName());

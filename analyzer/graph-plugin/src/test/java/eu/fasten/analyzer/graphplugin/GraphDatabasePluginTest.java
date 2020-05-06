@@ -37,7 +37,7 @@ public class GraphDatabasePluginTest {
     @BeforeEach
     public void setUp() {
         graphDBExtension = new GraphDatabasePlugin.GraphDBExtension();
-        graphDBExtension.setTopic("fasten.cg.edges");
+        graphDBExtension.setTopic("fasten.cg.gid_graphs");
     }
 
     @Test
