@@ -23,7 +23,7 @@ public class DummyAnalyzerPlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(DummyAnalyzer.class.getName());
 
         @Override
-        public Optional<List<String>> consumeTopics() {
+        public Optional<List<String>> consumeTopic() {
             return Optional.empty();
         }
 
@@ -45,11 +45,6 @@ public class DummyAnalyzerPlugin extends Plugin {
                 e.printStackTrace();
             }
             return Optional.empty();
-        }
-
-        @Override
-        public boolean recordProcessSuccessful() {
-            return true;
         }
 
         @Override

@@ -65,7 +65,7 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public Optional<List<String>> consumeTopics() {
+        public Optional<List<String>> consumeTopic() {
             return Optional.of(new ArrayList<>(Collections.singletonList(topic)));
         }
 
@@ -257,11 +257,6 @@ public class MetadataDatabasePlugin extends Plugin {
                     return new Timestamp(timestamp);
                 }
             }
-        }
-
-        @Override
-        public boolean recordProcessSuccessful() {
-            return this.processedRecord;
         }
 
         @Override

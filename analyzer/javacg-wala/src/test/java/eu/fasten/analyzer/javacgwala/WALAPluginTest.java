@@ -19,8 +19,7 @@
 package eu.fasten.analyzer.javacgwala;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
@@ -29,7 +28,6 @@ import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,7 +39,6 @@ import org.mockito.Mockito;
 @Disabled("Disabled until a way to make Wala platform independent found")
 class WALAPluginTest {
 
-    final String topic = "fasten.maven.pkg";
     static WALAPlugin.WALA walaPlugin;
 
     @BeforeAll
@@ -51,115 +48,114 @@ class WALAPluginTest {
 
     @Test
     public void testConsumerTopic() {
-        assertEquals("fasten.maven.pkg", walaPlugin.consumeTopics().get().get(0));
+        assertTrue(walaPlugin.consumeTopic().isPresent());
+        assertEquals("fasten.maven.pkg", walaPlugin.consumeTopic().get().get(0));
     }
 
     @Test
     public void testSetTopic() {
         String topicName = "fasten.mvn.pkg";
         walaPlugin.setTopic(topicName);
-        assertEquals(topicName, walaPlugin.consumeTopics().get().get(0));
+        assertTrue(walaPlugin.consumeTopic().isPresent());
+        assertEquals(topicName, walaPlugin.consumeTopic().get().get(0));
     }
 
-//    @Test
-//    public void testConsume() throws JSONException, IOException, ClassHierarchyException, CallGraphBuilderCancelException {
-//
-//        JSONObject coordinateJSON = new JSONObject("{\n" +
-//                "    \"groupId\": \"org.slf4j\",\n" +
-//                "    \"artifactId\": \"slf4j-api\",\n" +
-//                "    \"version\": \"1.7.29\",\n" +
-//                "    \"date\":\"1574072773\"\n" +
-//                "}");
-//
-//        ExtendedRevisionCallGraph cg = walaPlugin
-//                .consume(new ConsumerRecord<>(topic, 1, 0, "foo",
-//                        coordinateJSON.toString()));
-//
-//        var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
-//        var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
-//                1574072773);
-//
-//        assertEquals(revisionCallGraph.toJSON().toString(), cg.toJSON().toString());
-//    }
+    @Test
+    public void testConsume() throws JSONException, IOException, ClassHierarchyException, CallGraphBuilderCancelException {
 
-//    @Test
-//    public void testEmptyCallGraph() {
-//        JSONObject emptyCGCoordinate = new JSONObject("{\n" +
-//                "    \"groupId\": \"activemq\",\n" +
-//                "    \"artifactId\": \"activemq\",\n" +
-//                "    \"version\": \"release-1.5\",\n" +
-//                "    \"date\":\"1574072773\"\n" +
-//                "}");
-//
-//        ExtendedRevisionCallGraph cg = walaPlugin
-//                .consume(new ConsumerRecord<>(topic, 1, 0, "bar",
-//                        emptyCGCoordinate.toString()));
-//
-//        assertNull(cg);
-//    }
+        JSONObject coordinateJSON = new JSONObject("{\n" +
+                "    \"groupId\": \"org.slf4j\",\n" +
+                "    \"artifactId\": \"slf4j-api\",\n" +
+                "    \"version\": \"1.7.29\",\n" +
+                "    \"date\":\"1574072773\"\n" +
+                "}");
 
-//    @Test
-//    public void testFileNotFoundException() {
-//        JSONObject noJARFile = new JSONObject("{\n" +
-//                "    \"groupId\": \"com.visionarts\",\n" +
-//                "    \"artifactId\": \"power-jambda-pom\",\n" +
-//                "    \"version\": \"0.9.10\",\n" +
-//                "    \"date\":\"1521511260\"\n" +
-//                "}");
-//
-//        walaPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()));
-//        var error = walaPlugin.getPluginError();
-//
-//        assertEquals(FileNotFoundException.class.getSimpleName(), error.getClass().getSimpleName());
-//        assertFalse(walaPlugin.recordProcessSuccessful());
-//    }
+        walaPlugin.consume(coordinateJSON.toString());
 
-//    @Test
-//    public void testShouldNotFaceClassReadingError() throws JSONException, IOException, ClassHierarchyException, CallGraphBuilderCancelException {
-//
-//        JSONObject coordinateJSON1 = new JSONObject("{\n" +
-//                "    \"groupId\": \"com.zarbosoft\",\n" +
-//                "    \"artifactId\": \"coroutines-core\",\n" +
-//                "    \"version\": \"0.0.3\",\n" +
-//                "    \"date\":\"1574072773\"\n" +
-//                "}");
-//
-//        ExtendedRevisionCallGraph cg = walaPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo",
-//                coordinateJSON1.toString()));
-//        var coordinate = new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3");
-//        ExtendedRevisionCallGraph extendedRevisionCallGraph =
-//                PartialCallGraph.createExtendedRevisionCallGraph(coordinate, 1574072773);
-//
-//        assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString());
-//    }
+        var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
+        var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
+                1574072773);
+
+        assertTrue(walaPlugin.produce().isPresent());
+        assertEquals(revisionCallGraph.toJSON().toString(), walaPlugin.produce().get());
+    }
+
+    @Test
+    public void testEmptyCallGraph() {
+        JSONObject emptyCGCoordinate = new JSONObject("{\n" +
+                "    \"groupId\": \"activemq\",\n" +
+                "    \"artifactId\": \"activemq\",\n" +
+                "    \"version\": \"release-1.5\",\n" +
+                "    \"date\":\"1574072773\"\n" +
+                "}");
+
+        walaPlugin.consume(emptyCGCoordinate.toString());
+
+        assertTrue(walaPlugin.produce().isEmpty());
+    }
+
+    @Test
+    public void testFileNotFoundException() {
+        JSONObject noJARFile = new JSONObject("{\n" +
+                "    \"groupId\": \"com.visionarts\",\n" +
+                "    \"artifactId\": \"power-jambda-pom\",\n" +
+                "    \"version\": \"0.9.10\",\n" +
+                "    \"date\":\"1521511260\"\n" +
+                "}");
+
+        walaPlugin.consume(noJARFile.toString());
+        var error = walaPlugin.getPluginError();
+
+        assertTrue(walaPlugin.produce().isPresent());
+        assertEquals(FileNotFoundException.class.getSimpleName(), error.getClass().getSimpleName());
+    }
+
+    @Test
+    public void testShouldNotFaceClassReadingError() throws JSONException, IOException, ClassHierarchyException, CallGraphBuilderCancelException {
+
+        JSONObject coordinateJSON1 = new JSONObject("{\n" +
+                "    \"groupId\": \"com.zarbosoft\",\n" +
+                "    \"artifactId\": \"coroutines-core\",\n" +
+                "    \"version\": \"0.0.3\",\n" +
+                "    \"date\":\"1574072773\"\n" +
+                "}");
+
+        walaPlugin.consume(coordinateJSON1.toString());
+
+        var coordinate = new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3");
+        ExtendedRevisionCallGraph extendedRevisionCallGraph =
+                PartialCallGraph.createExtendedRevisionCallGraph(coordinate, 1574072773);
+
+        assertTrue(walaPlugin.produce().isPresent());
+        assertEquals(extendedRevisionCallGraph.toJSON().toString(), walaPlugin.produce().get());
+    }
 
     @Test
     public void testName() {
         assertEquals("eu.fasten.analyzer.javacgwala.WALAPlugin.WALA", walaPlugin.name());
     }
 
-//    @Test
-//    public void sendToKafkaTest() throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
-//        KafkaProducer<Object, String> producer = Mockito.mock(KafkaProducer.class);
-//
-//        Mockito.when(producer.send(Mockito.any())).thenReturn(null);
-//
-//        JSONObject coordinateJSON = new JSONObject("{\n" +
-//                "    \"groupId\": \"org.slf4j\",\n" +
-//                "    \"artifactId\": \"slf4j-api\",\n" +
-//                "    \"version\": \"1.7.29\",\n" +
-//                "    \"date\":\"1574072773\"\n" +
-//                "}");
-//
-//        ExtendedRevisionCallGraph cg = walaPlugin
-//                .consume(new ConsumerRecord<>(topic, 1, 0, "foo",
-//                        coordinateJSON.toString()));
-//
-//        var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
-//        var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
-//                1574072773);
-//
-//        assertEquals(revisionCallGraph.toJSON().toString(), cg.toJSON().toString());
-//    }
+    @Test
+    public void sendToKafkaTest() throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
+        KafkaProducer<Object, String> producer = Mockito.mock(KafkaProducer.class);
+
+        Mockito.when(producer.send(Mockito.any())).thenReturn(null);
+
+        JSONObject coordinateJSON = new JSONObject("{\n" +
+                "    \"groupId\": \"org.slf4j\",\n" +
+                "    \"artifactId\": \"slf4j-api\",\n" +
+                "    \"version\": \"1.7.29\",\n" +
+                "    \"date\":\"1574072773\"\n" +
+                "}");
+
+        walaPlugin.consume(coordinateJSON.toString());
+
+        var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
+        var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
+                1574072773);
+
+        assertTrue(walaPlugin.produce().isPresent());
+        assertEquals(revisionCallGraph.toJSON().toString(), walaPlugin.produce().get());
+    }
 
 }

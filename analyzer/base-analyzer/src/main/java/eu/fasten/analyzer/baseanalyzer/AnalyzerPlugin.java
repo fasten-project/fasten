@@ -27,7 +27,7 @@ public abstract class AnalyzerPlugin extends Plugin {
         private ExtendedRevisionCallGraph graph;
 
         @Override
-        public Optional<List<String>> consumeTopics() {
+        public Optional<List<String>> consumeTopic() {
             return Optional.of(new ArrayList<>(Collections.singletonList(consumeTopic)));
         }
 
@@ -108,11 +108,6 @@ public abstract class AnalyzerPlugin extends Plugin {
         @Override
         public String description() {
             return "Generates call graphs for Java packages using OPAL";
-        }
-
-        @Override
-        public boolean recordProcessSuccessful() {
-            return this.pluginError == null;
         }
 
         @Override

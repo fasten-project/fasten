@@ -83,7 +83,6 @@ public interface FastenPlugin extends ExtensionPoint {
      *
      * @return exception or error
      */
-
     Throwable getPluginError();
 
     /**

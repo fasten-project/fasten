@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.server.plugins.kafka;
 
 import com.google.common.base.Strings;
@@ -5,11 +23,8 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import org.apache.commons.lang.StringUtils;
@@ -71,15 +86,15 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     @Override
     public void run() {
         try {
-            if (plugin.consumeTopics().isPresent()) {
-                connection.subscribe(plugin.consumeTopics().get());
+            if (plugin.consumeTopic().isPresent()) {
+                connection.subscribe(plugin.consumeTopic().get());
             }
             if (this.skipOffsets == 1) {
                 skipPartitionOffsets();
             }
 
             while (true) {
-                if (plugin.consumeTopics().isPresent()) {
+                if (plugin.consumeTopic().isPresent()) {
                     handleConsuming();
                 } else {
                     doCommitSync();
@@ -142,7 +157,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param time  precessing time [can be null]
      */
     private void handleProducing(String input, String time) {
-        if (plugin.recordProcessSuccessful()) {
+        if (plugin.getPluginError() == null) {
             var result = plugin.produce();
 
             emitMessage(this.serverLog, this.serverLogTopic,
@@ -234,7 +249,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private void doCommitSync() {
         try {
             connection.commitSync();
-            logger.debug("Committed the processed record...");
         } catch (WakeupException e) {
             // we're shutting down, but finish the commit first and then
             // rethrow the exception so that the main loop can exit
@@ -283,25 +297,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     /**
-     * This is a utility method to get current committed offset of all partitions for a consumer.
-     *
-     * @param consumer Kafka consumer
-     * @param topics   list of topics
-     */
-    private void getOffsetForPartitions(KafkaConsumer<String, String> consumer,
-                                        List<String> topics) {
-
-        for (String t : topics) {
-            for (PartitionInfo p : consumer.partitionsFor(t)) {
-                emitMessage(this.serverLog, this.serverLogTopic,
-                        "T: " + t + " P: " + p.partition() + " OfC: "
-                                + consumer.committed(new TopicPartition(t, p.partition()))
-                                .offset());
-            }
-        }
-    }
-
-    /**
      * This method adds one to the offset of all the partitions of a topic.
      * This is useful when you want to skip an offset with FATAL errors when
      * the FASTEN server is restarted.
@@ -311,7 +306,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private void skipPartitionOffsets() {
         ArrayList<TopicPartition> topicPartitions = new ArrayList<>();
         List<String> topics = new ArrayList<>();
-        this.plugin.consumeTopics().ifPresentOrElse(topics::addAll, () -> {
+        this.plugin.consumeTopic().ifPresentOrElse(topics::addAll, () -> {
         });
         if (topics.isEmpty()) {
             return;
