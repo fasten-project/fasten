@@ -36,7 +36,9 @@ jobs:
         with:
           java-version: 1.11
       - name: Build jar
-        run: mvn clean install package
+        run: mvn clean install
+      - name: Show jars
+        run: ls docker/server && ls docker/plugins
       - name: Build image
         run: cd docker/server && docker build . --file Dockerfile --tag image
       - name: Log into registry
