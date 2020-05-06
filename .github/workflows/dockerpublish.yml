@@ -18,7 +18,7 @@ on:
 env:
   # TODO: Change variable to your image's name.
   IMAGE_NAME: fasten.server
-  SHORTSHA: $(git rev-parse --short=7 ${{ github.sha }})
+  SHORTSHA: ${GITHUB_SHA::8}
 
 jobs:
 
@@ -42,7 +42,6 @@ jobs:
         run: cd docker/ && docker build . -f server/Dockerfile -t fasten.server
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
-
       - name: Push image
         run: |
           IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
