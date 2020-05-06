@@ -32,17 +32,16 @@ public class PostgresConnector {
      *
      * @param dbUrl URL of the database to connect
      * @param user  Database user name
-     * @param pass  Database user password
      * @return DSLContext for jOOQ to query the database
      * @throws SQLException             if failed to set up connection
      * @throws IllegalArgumentException if database URL has incorrect format and cannot be parsed
      */
-    public static DSLContext getDSLContext(String dbUrl, String user, String pass)
+    public static DSLContext getDSLContext(String dbUrl, String user)
             throws SQLException, IllegalArgumentException {
         if (!new Driver().acceptsURL(dbUrl)) {
             throw new IllegalArgumentException("Could not parse database URI: " + dbUrl);
         }
-        var connection = DriverManager.getConnection(dbUrl, user, pass);
+        var connection = DriverManager.getConnection(dbUrl, user, System.getenv("DBPASS"));
         return DSL.using(connection, SQLDialect.POSTGRES);
     }
 }

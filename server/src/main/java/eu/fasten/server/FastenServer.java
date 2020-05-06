@@ -51,7 +51,17 @@ public class FastenServer implements Runnable {
             defaultValue = ".")
     private Path pluginPath;
 
-    @Option(names = {"-t", "--topic"},
+    @Option(names = {"-s", "--skip_offsets"},
+            paramLabel = "skip",
+            description = "Adds one to offset of all the partitions of the consumers.",
+            defaultValue = "0")
+    private int skipOffsets;
+
+    @Option(names = {"-m", "--mode"},
+            description = "Deployment or Development mode")
+    private boolean deployMode;
+
+    @Option(names = {"-kt", "--topic"},
             paramLabel = "topic",
             description = "JSON file consists of topics for plug-ins.")
     private String pluginTopic;
@@ -67,25 +77,11 @@ public class FastenServer implements Runnable {
             description = "Database URL for connection")
     private String dbUrl;
 
-    @Option(names = {"-u", "--user"},
+    @Option(names = {"-du", "--user"},
             paramLabel = "dbUser",
             description = "Database user name")
     private String dbUser;
 
-    @Option(names = {"-pw", "--pass"},
-            paramLabel = "dbPass",
-            description = "Database user password")
-    private String dbPass;
-
-    @Option(names = {"-s", "--skip_offsets"},
-            paramLabel = "skip",
-            description = "Adds one to offset of all the partitions of the consumers.",
-            defaultValue = "0")
-    private int skipOffsets;
-
-    @Option(names = {"-m", "--mode"},
-            description = "Deployment or Development mode")
-    boolean deployMode;
 
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
@@ -175,10 +171,10 @@ public class FastenServer implements Runnable {
      * @param dbPlugins list of DB plugins
      */
     private void makeDBConnection(List<DBConnector> dbPlugins) {
-        if (ObjectUtils.allNotNull(dbUrl, dbUser, dbPass)) {
+        if (ObjectUtils.allNotNull(dbUrl, dbUser)) {
             dbPlugins.forEach((p) -> {
                 try {
-                    p.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
+                    p.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
                     logger.debug("Set DB connection successfully for plug-in {}",
                             p.getClass().getSimpleName());
                 } catch (SQLException e) {
