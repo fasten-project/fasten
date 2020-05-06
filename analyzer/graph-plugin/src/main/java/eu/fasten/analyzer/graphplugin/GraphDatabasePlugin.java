@@ -49,7 +49,7 @@ public class GraphDatabasePlugin extends Plugin {
         private boolean processedRecord = false;
         private String pluginError = "";
         private final Logger logger = LoggerFactory.getLogger(GraphDBExtension.class.getName());
-        private String rocksDbDir = "";
+        private String rocksDbDir = "graphDB";
 
         @Override
         public List<String> consumerTopics() {

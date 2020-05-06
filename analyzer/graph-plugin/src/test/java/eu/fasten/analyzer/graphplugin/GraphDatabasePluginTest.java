@@ -19,8 +19,6 @@
 package eu.fasten.analyzer.graphplugin;
 
 import java.util.Collections;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import eu.fasten.analyzer.graphplugin.db.RocksDao;
 import eu.fasten.core.data.metadatadb.graph.Graph;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -28,6 +26,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GraphDatabasePluginTest {
 
@@ -66,6 +65,8 @@ public class GraphDatabasePluginTest {
         var graph = Graph.getGraph(json);
         var record = new ConsumerRecord<>("fasten.cg.edges", 1, 0L, graph.getProduct(), graph.toJSONString());
         graphDBExtension.consume("fasten.cg.edges", record);
+        assertTrue(graphDBExtension.recordProcessSuccessful());
+        assertTrue(graphDBExtension.getPluginError().isEmpty());
     }
 
     @Test
