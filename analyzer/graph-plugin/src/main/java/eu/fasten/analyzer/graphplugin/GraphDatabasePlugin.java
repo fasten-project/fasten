@@ -19,7 +19,6 @@
 package eu.fasten.analyzer.graphplugin;
 
 import eu.fasten.analyzer.graphplugin.db.RocksDao;
-import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.metadatadb.graph.Graph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import java.io.IOException;
@@ -81,7 +80,7 @@ public class GraphDatabasePlugin extends Plugin {
             try {
                 var rocksDao = new RocksDao(rocksDbDir);
                 saveToDatabase(graph, rocksDao);
-            } catch (RocksDBException e) {
+            } catch (RocksDBException | IOException e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
                 processedRecord = false;
                 setPluginError(e);
@@ -96,11 +95,15 @@ public class GraphDatabasePlugin extends Plugin {
         /**
          * Inserts a graph into RocksDB.
          *
-         * @param graph Graph with Global IDs
+         * @param graph    Graph with Global IDs
          * @param rocksDao Database Access Object for RocksDB
+         * @throws IOException      if there was a problem writing to files
+         * @throws RocksDBException if there was a problem inserting in the database
          */
-        public void saveToDatabase(Graph graph, RocksDao rocksDao) {
-            rocksDao.saveToRocksDb(graph.getNodes(), graph.getNumInternalNodes(), graph.getEdges());
+        public void saveToDatabase(Graph graph, RocksDao rocksDao)
+                throws IOException, RocksDBException {
+            rocksDao.saveToRocksDb(graph.getIndex(), graph.getNodes(), graph.getNumInternalNodes(),
+                    graph.getEdges());
         }
 
         @Override

@@ -259,8 +259,8 @@ public class MetadataDatabasePlugin extends Plugin {
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
             }
-            var edgesGraph = new Graph(callGraph.product, callGraph.version, nodes,
-                    internalCallablesIds.size(), edges);
+            var edgesGraph = new Graph(packageVersionId, callGraph.product, callGraph.version,
+                    nodes, internalCallablesIds.size(), edges);
             if (this.kafkaProducer != null) {
                 this.sendGraphToKafka(edgesGraph);
             } else {

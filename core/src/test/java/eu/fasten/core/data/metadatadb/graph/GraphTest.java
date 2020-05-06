@@ -11,6 +11,7 @@ public class GraphTest {
     @Test
     public void graphTest() {
         var json = new JSONObject("{" +
+                "\"index\": 1," +
                 "\"product\": \"test\"," +
                 "\"version\": \"0.0.1\"," +
                 "\"nodes\": [1, 2, 3]," +

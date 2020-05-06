@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.graphplugin;
 
+import java.io.IOException;
 import java.util.Collections;
 import eu.fasten.analyzer.graphplugin.db.RocksDao;
 import eu.fasten.core.data.metadatadb.graph.Graph;
@@ -26,6 +27,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
+import org.rocksdb.RocksDBException;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class GraphDatabasePluginTest {
@@ -39,9 +41,10 @@ public class GraphDatabasePluginTest {
     }
 
     @Test
-    public void saveToDatabaseTest() {
+    public void saveToDatabaseTest() throws IOException, RocksDBException {
         var rocksDao = Mockito.mock(RocksDao.class);
         var json = new JSONObject("{" +
+                "\"index\": 1," +
                 "\"product\": \"test\"," +
                 "\"version\": \"0.0.1\"," +
                 "\"nodes\": [1, 2, 3]," +
@@ -50,17 +53,18 @@ public class GraphDatabasePluginTest {
                 "}");
         var graph = Graph.getGraph(json);
         graphDBExtension.saveToDatabase(graph, rocksDao);
-        Mockito.verify(rocksDao).saveToRocksDb(graph.getNodes(), graph.getNumInternalNodes(), graph.getEdges());
+        Mockito.verify(rocksDao).saveToRocksDb(graph.getIndex(), graph.getNodes(), graph.getNumInternalNodes(), graph.getEdges());
     }
 
     @Test
     public void consumeTest() {
         var json = new JSONObject("{" +
+                "\"index\": 1," +
                 "\"product\": \"test\"," +
                 "\"version\": \"0.0.1\"," +
-                "\"nodes\": [1, 2, 3]," +
+                "\"nodes\": [0, 1, 2]," +
                 "\"numInternalNodes\": 2," +
-                "\"edges\": [[1, 2], [2, 3]]" +
+                "\"edges\": [[0, 1], [1, 2]]" +
                 "}");
         var graph = Graph.getGraph(json);
         var record = new ConsumerRecord<>("fasten.cg.edges", 1, 0L, graph.getProduct(), graph.toJSONString());

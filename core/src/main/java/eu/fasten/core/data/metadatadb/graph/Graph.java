@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 public class Graph {
 
+    private final long index;
     private final String product;
     private final String version;
     private final List<Long> nodes;
@@ -38,6 +39,7 @@ public class Graph {
     /**
      * Constructor for Graph.
      *
+     * @param index            ID of the graph (index from postgres)
      * @param product          Product name
      * @param version          Product version
      * @param nodes            List of Global IDs of nodes of the graph
@@ -45,8 +47,9 @@ public class Graph {
      * @param numInternalNodes Number of internal nodes in nodes list
      * @param edges            List of edges of the graph with pairs for Global IDs
      */
-    public Graph(String product, String version, List<Long> nodes, int numInternalNodes,
+    public Graph(long index, String product, String version, List<Long> nodes, int numInternalNodes,
                  List<EdgesRecord> edges) {
+        this.index = index;
         this.product = product;
         this.version = version;
         this.nodes = nodes;
@@ -54,6 +57,10 @@ public class Graph {
         this.edges = edges.parallelStream()
                 .map((r) -> List.of(r.getSourceId(), r.getTargetId()))
                 .collect(Collectors.toList());
+    }
+
+    public long getIndex() {
+        return index;
     }
 
     public String getProduct() {
@@ -83,6 +90,7 @@ public class Graph {
      */
     public String toJSONString() {
         var json = new JSONObject();
+        json.put("index", getIndex());
         json.put("product", getProduct());
         json.put("version", getVersion());
         json.put("nodes", getNodes());
@@ -102,6 +110,7 @@ public class Graph {
         if (jsonGraph == null) {
             throw new JSONException("JSON Graph cannot be null");
         }
+        var index = jsonGraph.getLong("index");
         var product = jsonGraph.getString("product");
         var version = jsonGraph.getString("version");
         var jsonNodes = jsonGraph.getJSONArray("nodes");
@@ -117,7 +126,7 @@ public class Graph {
             var edge = new EdgesRecord(edgeArr.getLong(0), edgeArr.getLong(1), JSONB.valueOf(""));
             edges.add(edge);
         }
-        return new Graph(product, version, nodes, numInternalNodes, edges);
+        return new Graph(index, product, version, nodes, numInternalNodes, edges);
     }
 
     @Override
@@ -129,6 +138,9 @@ public class Graph {
             return false;
         }
         Graph graph = (Graph) o;
+        if (!Objects.equals(index, graph.index)) {
+            return false;
+        }
         if (!Objects.equals(product, graph.product)) {
             return false;
         }
