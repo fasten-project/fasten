@@ -116,8 +116,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 		return index << 40 | gid;
 	}
 
-	public static long index(final long signature) {
-		return signature >>> 40;
+	public static int index(final long signature) {
+		return (int)(signature >>> 40);
 	}
 
 	public static long gid(final long signature) {
@@ -365,13 +365,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 		 */
 		public final int nInternal;
 		/** The product described in this call graph. */
-		private final String product;
+		public final String product;
 		/** The version described in this call graph. */
-		private final String version;
+		public final String version;
 		/** The forge described in this call graph. */
-		private final String forge;
+		public final String forge;
 		/** The revision index of this call graph. */
-		private final long index;
+		public final long index;
 		/**
 		 * An array of two graphs: the call graph (index 0) and its transpose
 		 * (index 1).
@@ -767,7 +767,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/**
 	 * Returns the successors of a given node by signature.
 	 *
-	 * This method is semantically equivalent to {@link #successors(long)}, but it uses node signatures,
+	 * This method is semantically equivalent to {@link #successors(Node)}, but it uses node signatures,
 	 * allowing for faster visits. It is just useful for statistics and debugging.
 	 *
 	 * @param node a node signature.
@@ -844,17 +844,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/**
 	 * Returns the predecessors of a given node.
 	 *
-	 * @param node a node (for the form [<code>index</code>, <code>LID</code>])
-	 * @return the list of all predecessors; these are obtained as follows:
-	 *         <ul>
-	 *         <li>for every predecessor <code>x</code> of <code>node</code> in the call graph,
-	 *         [<code>index</code>, <code>LID</code>] is a predecessor
-	 *         <li>let <code>g</code> be the GID of <code>node</code>: for every index
-	 *         <code>otherIndex</code> that calls <code>g</code> (i.e., where <code>g</code> is the GID
-	 *         of an external node), and for all the predecessors <code>x</code> of the node with GID
-	 *         <code>g</code> in <code>otherIndex</code>, [<code>otherIndex</code>, <code>x</code>] is a
-	 *         predecessor.
-	 *         </ul>
+	 * This method is semantically equivalent to {@link #predecessor(Node)}, but it uses node
+	 * signatures, allowing for faster visits. It is just useful for statistics and debugging.
+	 *
+	 * @param node a node signature.
+	 * @return the set of signatures of predecessors.
+	 * @see #predecessor(Node)
 	 */
 	public LongList predecessors(final long nodeSig) {
 		final long gid = gid(nodeSig);
@@ -935,32 +930,39 @@ public class KnowledgeBase implements Serializable, Closeable {
 		// Visit queue
 		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
 		queue.enqueue(start);
+		result.add(start);
 
 		while (!queue.isEmpty()) {
 			final Node node = queue.dequeue();
-			if (result.add(node)) for (final Node s : successors(node))
-				if (!result.contains(s)) queue.enqueue(s);
+			for (final Node s : successors(node)) if (!result.contains(s)) {
+				queue.enqueue(s);
+				result.add(s);
+			}
 		}
 
 		return result;
 	}
 
 	/**
-	 * The set of all node signatures that are reachable from <code>start</code>.
+	 * The set of all node signatures that are reachable from the signature <code>startSig</code>.
 	 *
 	 * @param start the starting node.
-	 * @return the set of all node signatures for which there is a directed path from <code>start</code>
-	 *         to that node.
+	 * @return the set of all node signatures for which there is a directed path from
+	 *         <code>startSig</code> to that node.
 	 */
 	public synchronized LongSet reaches(final long startSig) {
 		final LongOpenHashSet result = new LongOpenHashSet();
 		// Visit queue
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
 		queue.enqueue(startSig);
+		result.add(startSig);
 
 		while (!queue.isEmpty()) {
 			final long nodeSig = queue.dequeueLong();
-			if (result.add(nodeSig)) for (final long s : successors(nodeSig)) if (!result.contains(s)) queue.enqueue(s);
+			for (final long s : successors(nodeSig)) if (!result.contains(s)) {
+				queue.enqueue(s);
+				result.add(s);
+			}
 		}
 
 		return result;
@@ -980,22 +982,25 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/**
-	 * The set of all nodes that are coreachable from <code>start</code>.
+	 * The set of all nodes that are coreachable from the <code>start</code>.
 	 *
 	 * @param start the starting node.
-	 * @return the set of all nodes for which there is a directed path from that
-	 *         node to <code>start</code>.
+	 * @return the set of all nodes for which there is a directed path from that node to
+	 *         <code>start</code>.
 	 */
 	public synchronized ObjectLinkedOpenHashSet<Node> coreaches(final Node start) {
 		final ObjectLinkedOpenHashSet<Node> result = new ObjectLinkedOpenHashSet<>();
 		// Visit queue
 		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
 		queue.enqueue(start);
+		result.add(start);
 
 		while (!queue.isEmpty()) {
 			final Node node = queue.dequeue();
-			if (result.add(node)) for (final Node s : predecessors(node))
-				if (!result.contains(s)) queue.enqueue(s);
+			for (final Node s : predecessors(node)) if (!result.contains(s)) {
+				queue.enqueue(s);
+				result.add(s);
+			}
 		}
 
 		return result;
@@ -1017,21 +1022,25 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 
 	/**
-	 * The set of all nodes signatures that are coreachable from <code>start</code>.
+	 * The set of all nodes signatures that are coreachable from <code>startSig</code>.
 	 *
 	 * @param start the starting node signature.
 	 * @return the set of all node signatures for which there is a directed path from that node to
-	 *         <code>start</code>.
+	 *         <code>startSig</code>.
 	 */
 	public synchronized LongSet coreaches(final long startSig) {
 		final LongOpenHashSet result = new LongOpenHashSet();
 		// Visit queue
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
 		queue.enqueue(startSig);
+		result.add(startSig);
 
 		while (!queue.isEmpty()) {
 			final long nodeSig = queue.dequeueLong();
-			if (result.add(nodeSig)) for (final long s : predecessors(nodeSig)) if (!result.contains(s)) queue.enqueue(s);
+			for (final long s : predecessors(nodeSig)) if (!result.contains(s)) {
+				queue.enqueue(s);
+				result.add(s);
+			}
 		}
 
 		return result;

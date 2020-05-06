@@ -18,9 +18,13 @@ package eu.fasten.core.index;
  * limitations under the License.
  */
 
+import static eu.fasten.core.data.KnowledgeBase.index;
+import static eu.fasten.core.data.KnowledgeBase.gid;
+
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +42,10 @@ import eu.fasten.core.data.KnowledgeBase.CallGraph;
 import eu.fasten.core.data.KnowledgeBase.CallGraphData;
 import eu.fasten.core.data.KnowledgeBase.Node;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.stat.SummaryStats;
 import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandom;
@@ -51,39 +57,94 @@ public class GlobalVisitStats {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GlobalVisitStats.class);
 
-	public static int reaches(final KnowledgeBase kb, final long startSig, final ProgressLogger pl) {
+	public static class Result {
+		final long numNodes;
+		final long numProducts;
+		final long numRevs;
+
+		public Result(final long numNodes, final long numProducts, final long numRevs) {
+			this.numRevs = numRevs;
+			this.numNodes = numNodes;
+			this.numProducts = numProducts;
+		}
+	}
+
+	public static Result reaches(final KnowledgeBase kb, final long startSig, final int maxRevs, final ProgressLogger pl) {
 		final LongOpenHashSet result = new LongOpenHashSet();
+		final Object2ObjectOpenHashMap<String, IntOpenHashSet> product2Revs = new Object2ObjectOpenHashMap<>();
+		final MutableLong totRevs = new MutableLong();
+
 		// Visit queue
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
 		queue.enqueue(startSig);
+		result.add(startSig);
+
+		String p = kb.callGraphs.get(index(startSig)).product;
+		IntOpenHashSet revs = new IntOpenHashSet();
+		revs.add(index(startSig));
+		product2Revs.put(p, revs);
+		totRevs.increment();
+
+
+		pl.itemsName = "nodes";
+		pl.info = new Object() {
+			@Override
+			public String toString() {
+				return "[nodes: " + result.size() + " products: " + product2Revs.size() + " revisions: " + totRevs.getValue() + "]";
+			}
+		};
+
 		pl.start("Visiting reachable nodes...");
 
 		while (!queue.isEmpty()) {
 			final long node = queue.dequeueLong();
-			if (result.add(node)) for (final long s : kb.successors(node))
-				if (!result.contains(s)) queue.enqueue(s);
+
+			for (final long s : kb.successors(node)) if (!result.contains(s)) {
+				p = kb.callGraphs.get(index(s)).product;
+				revs = product2Revs.get(p);
+				if (revs == null) product2Revs.put(p, revs = new IntOpenHashSet());
+				if (revs.contains(index(s)) || revs.size() < maxRevs) {
+					queue.enqueue(s);
+					result.add(s);
+					System.out.println(kb.new Node(gid(node), index(node)).toFastenURI() + " -> " + kb.new Node(gid(s), index(s)).toFastenURI());
+					if (revs.add(index(s))) totRevs.increment();
+				}
+			}
 			pl.lightUpdate();
 		}
 
 		pl.done();
-		return result.size();
+		return new Result(result.size(), product2Revs.size(), totRevs.getValue().longValue());
 	}
 
-	public static int coreaches(final KnowledgeBase kb, final long startSig, final ProgressLogger pl) {
+	public static Result coreaches(final KnowledgeBase kb, final long startSig, final ProgressLogger pl) {
 		final LongOpenHashSet result = new LongOpenHashSet();
+		final IntOpenHashSet graphs = new IntOpenHashSet();
 		// Visit queue
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
 		queue.enqueue(startSig);
+		result.add(startSig);
 
+		pl.itemsName = "nodes";
+		pl.info = new Object() {
+			@Override
+			public String toString() {
+				return "[nodes: " + result.size() + " graphs: " + graphs.size() + "]";
+			}
+		};
 		pl.start("Visiting coreachable nodes...");
 		while (!queue.isEmpty()) {
 			final long node = queue.dequeueLong();
-			if (result.add(node)) for (final long s : kb.predecessors(node)) if (!result.contains(s)) queue.enqueue(s);
+			graphs.add(index(node));
+			for (final long s : kb.predecessors(node)) if (!result.contains(s)) {
+				queue.enqueue(s);
+				result.add(s);
+			}
 			pl.lightUpdate();
 		}
 
 		pl.done();
-		return result.size();
+		return new Result(result.size(), graphs.size(), 0);
 	}
 
 	public static int reachable(final ImmutableGraph graph, final int startingNode) {
@@ -114,6 +175,7 @@ public class GlobalVisitStats {
 		final SimpleJSAP jsap = new SimpleJSAP(GlobalVisitStats.class.getName(),
 				"Computes (co)reachable set statistics for a prototype knowledge base.",
 				new Parameter[] {
+						new FlaggedOption("maxRevs", JSAP.INTEGER_PARSER, Integer.toString(Integer.MAX_VALUE), JSAP.NOT_REQUIRED, 'm', "max-revs", "The maximum number of revision per product during the visit."),
 						new FlaggedOption("n", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'n', "n", "The the number of samples."),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
@@ -123,6 +185,7 @@ public class GlobalVisitStats {
 		if ( jsap.messagePrinted() ) return;
 
 		final int n = jsapResult.getInt("n");
+		final int maxRevs = jsapResult.getInt("maxRevs");
 		final String kbDir = jsapResult.getString("kb");
 		if (!new File(kbDir).exists()) throw new IllegalArgumentException("No such directory: " + kbDir);
 		final String kbMetadataFilename = jsapResult.getString("kbmeta");
@@ -139,6 +202,8 @@ public class GlobalVisitStats {
 
 		final SummaryStats reachable = new SummaryStats();
 		final SummaryStats coreachable = new SummaryStats();
+		final SummaryStats reachableGraphs = new SummaryStats();
+		final SummaryStats coreachableGraphs = new SummaryStats();
 
 		final XoRoShiRo128PlusPlusRandom random = new XoRoShiRo128PlusPlusRandom(0);
 		final long[] callGraphIndex = kb.callGraphs.keySet().toLongArray();
@@ -153,8 +218,12 @@ public class GlobalVisitStats {
 			final int startNode = random.nextInt(callGraph.nInternal);
 			final Node node = kb.new Node(callGraphData.LID2GID[startNode], index);
 			LOGGER.info("Analyzing node " + node.toFastenURI());
-			reachable.add(reaches(kb, node.signature(), pl2));
-			coreachable.add(coreaches(kb, node.signature(), pl2));
+			final Result reaches = reaches(kb, node.signature(), maxRevs, pl2);
+			reachable.add(reaches.numNodes);
+			reachableGraphs.add(reaches.numProducts);
+			final Result coreaches = coreaches(kb, node.signature(), pl2);
+			coreachable.add(coreaches.numNodes);
+			coreachableGraphs.add(coreaches.numProducts);
 		}
 
 		pl.done();
