@@ -18,7 +18,6 @@ on:
 env:
   # TODO: Change variable to your image's name.
   IMAGE_NAME: fasten.server
-  SHORTSHA: ${GITHUB_SHA::8}
 
 jobs:
 
@@ -55,7 +54,7 @@ jobs:
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
 
           # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=$SHORTSHA
+          [ "$VERSION" == "master" ] && VERSION=${GITHUB_SHA::8}
 
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
