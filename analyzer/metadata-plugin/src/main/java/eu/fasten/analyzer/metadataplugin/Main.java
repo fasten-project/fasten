@@ -72,12 +72,6 @@ public class Main implements Runnable {
             defaultValue = "postgres")
     String dbUser;
 
-    @CommandLine.Option(names = {"-p", "--pass"},
-            paramLabel = "dbPass",
-            description = "Database user password",
-            defaultValue = "pass123")
-    String dbPass;
-
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -88,7 +82,7 @@ public class Main implements Runnable {
         try {
             var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
             metadataPlugin.setTopic(topic);
-            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
+            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
 
             if (jsonFile == null || jsonFile.isEmpty()) {
                 var properties = KafkaConnector.kafkaProperties(kafkaServers,
