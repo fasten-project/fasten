@@ -39,8 +39,10 @@ jobs:
         run: mvn clean install
       - name: Show jars
         run: ls docker/server && ls docker/plugins
+      - name: Show current directory
+        run: ls
       - name: Build image
-        run: docker build . --file server/Dockerfile --tag fasten.server.$GITHUB_REF
+        run: cd fasten/ && docker build . --file server/Dockerfile --tag fasten.server.$GITHUB_REF
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
 
