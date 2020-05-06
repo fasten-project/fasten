@@ -17,7 +17,7 @@ on:
 
 env:
   # TODO: Change variable to your image's name.
-  IMAGE_NAME: fasten-server
+  IMAGE_NAME: fasten.server.$GITHUB_REF
 
 jobs:
 
@@ -40,7 +40,7 @@ jobs:
       - name: Show jars
         run: ls docker/server && ls docker/plugins
       - name: Build image
-        run: cd docker/server && docker build . --file Dockerfile --tag image
+        run: docker build . --file server/Dockerfile --tag fasten.server.$GITHUB_REF
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
 
