@@ -67,15 +67,15 @@ public class GraphDatabasePluginTest {
                 "\"edges\": [[0, 1], [1, 2]]" +
                 "}");
         var graph = Graph.getGraph(json);
-        var record = new ConsumerRecord<>("fasten.cg.edges", 1, 0L, graph.getProduct(), graph.toJSONString());
-        graphDBExtension.consume("fasten.cg.edges", record);
+        var record = new ConsumerRecord<>("fasten.cg.gid_graphs", 1, 0L, graph.getProduct(), graph.toJSONString());
+        graphDBExtension.consume("fasten.cg.gid_graphs", record);
         assertTrue(graphDBExtension.recordProcessSuccessful());
         assertTrue(graphDBExtension.getPluginError().isEmpty());
     }
 
     @Test
     public void consumeJsonErrorTest() {
-        var topic = "fasten.cg.edges";
+        var topic = "fasten.cg.gid_graphs";
         var record = new ConsumerRecord<>(topic, 1, 0L, "test", "{\"foo\":\"bar\"}");
         graphDBExtension.consume(topic, record);
         assertFalse(graphDBExtension.recordProcessSuccessful());
@@ -83,13 +83,13 @@ public class GraphDatabasePluginTest {
 
     @Test
     public void consumerTopicsTest() {
-        var topics = Collections.singletonList("fasten.cg.edges");
+        var topics = Collections.singletonList("fasten.cg.gid_graphs");
         assertEquals(topics, graphDBExtension.consumerTopics());
     }
 
     @Test
     public void consumerTopicChangeTest() {
-        var topics1 = Collections.singletonList("fasten.cg.edges");
+        var topics1 = Collections.singletonList("fasten.cg.gid_graphs");
         assertEquals(topics1, graphDBExtension.consumerTopics());
         var differentTopic = "DifferentKafkaTopic";
         var topics2 = Collections.singletonList(differentTopic);

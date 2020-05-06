@@ -20,9 +20,6 @@ package eu.fasten.analyzer.graphplugin;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -62,7 +59,8 @@ public class Main implements Runnable {
             return;
         }
         final JSONObject graph = new JSONObject(new JSONTokener(reader));
-        final var record = new ConsumerRecord<>("fasten.cg.gid_graphs", 0, 0L, "test", graph.toString());
+        final var record = new ConsumerRecord<>(
+                "fasten.cg.gid_graphs", 0, 0L, "test",graph.toString());
         graphPlugin.consume("fasten.cg.gid_graphs", record);
     }
 }

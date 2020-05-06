@@ -22,6 +22,7 @@ import static eu.fasten.core.data.KnowledgeBase.bfsperm;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
+import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.google.common.primitives.Longs;
@@ -43,6 +44,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -62,6 +64,7 @@ public class RocksDao implements Closeable {
     private final RocksDB rocksDb;
     private final ColumnFamilyHandle defaultHandle;
     private Kryo kryo;
+    private SoftReference<KnowledgeBase.CallGraphData> graphData;
     private final Logger logger = LoggerFactory.getLogger(RocksDao.class.getName());
 
     /**
@@ -179,6 +182,40 @@ public class RocksDao implements Closeable {
         new File(file.toString() + BVGraph.OFFSETS_EXTENSION).delete();
         new File(file.toString() + BVGraph.GRAPH_EXTENSION).delete();
         file.delete();
+    }
+
+    /**
+     * Returns the graph and its transpose in a 2-element array. The
+     * graphs are cached, and read from the database if needed.
+     *
+     * @return an array containing the call graph and its transpose.
+     * @throws RocksDBException if could not retrieve data from the database
+     */
+    public KnowledgeBase.CallGraphData getGraphData(long index, int numInternal)
+            throws RocksDBException {
+        if (graphData != null) {
+            final var graphData = this.graphData.get();
+            if (graphData != null) {
+                return graphData;
+            }
+        }
+        final byte[] buffer = rocksDb.get(Longs.toByteArray(index));
+        final Input input = new Input(buffer);
+        assert kryo != null;
+        final var graphs = new ImmutableGraph[] {
+                kryo.readObject(input, BVGraph.class),
+                kryo.readObject(input, BVGraph.class)
+        };
+        final Properties[] properties = new Properties[] {
+                kryo.readObject(input, Properties.class),
+                kryo.readObject(input, Properties.class)
+        };
+        final long[] LID2GID = kryo.readObject(input, long[].class);
+        final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
+        final KnowledgeBase.CallGraphData graphData = new KnowledgeBase.CallGraphData(
+                graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, numInternal);
+        this.graphData = new SoftReference<>(graphData);
+        return graphData;
     }
 
     @Override
