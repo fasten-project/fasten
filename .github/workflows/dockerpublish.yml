@@ -42,7 +42,7 @@ jobs:
       - name: Show current directory
         run: ls
       - name: Build image
-        run: cd fasten/ && docker build . --file server/Dockerfile --tag fasten.server.$GITHUB_REF
+        run: docker build . --file docker/server/Dockerfile --tag fasten.server.$GITHUB_REF
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
 
