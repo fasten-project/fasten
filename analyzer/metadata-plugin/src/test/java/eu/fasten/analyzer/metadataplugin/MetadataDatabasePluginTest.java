@@ -27,8 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.graph.Graph;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -341,12 +341,12 @@ public class MetadataDatabasePluginTest {
         var edges = List.of(edge1, edge2);
         var product = "test";
         var version = "0.0.1";
-        var graph = new Graph(1L, product, version, nodes, 2, edges);
+        var graph = new GidGraph(1L, product, version, nodes, 2, edges);
         metadataDBExtension.writeGraphToFile(graph);
         var file = "gid_graph.txt";
         assertTrue(new File(file).exists());
         var jsonFile = new JSONObject(Files.readString(Paths.get(file)));
-        assertEquals(graph, Graph.getGraph(jsonFile));
+        assertEquals(graph, GidGraph.getGraph(jsonFile));
         assertTrue(new File(file).delete());
     }
 }

@@ -20,9 +20,9 @@ package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.graph.Graph;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaConsumer;
 import eu.fasten.core.plugins.KafkaProducer;
@@ -259,7 +259,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
             }
-            var edgesGraph = new Graph(packageVersionId, callGraph.product, callGraph.version,
+            var edgesGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
                     nodes, internalCallablesIds.size(), edges);
             if (this.kafkaProducer != null) {
                 this.sendGraphToKafka(edgesGraph);
@@ -284,15 +284,15 @@ public class MetadataDatabasePlugin extends Plugin {
         /**
          * Sends GIDs graph to Kafka.
          *
-         * @param graph Graph consisting of Global IDs
+         * @param gidGraph Graph consisting of Global IDs
          */
-        public void sendGraphToKafka(Graph graph) {
-            var artifact = graph.getProduct() + "@" + graph.getVersion();
+        public void sendGraphToKafka(GidGraph gidGraph) {
+            var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
             logger.debug("Writing GIDs graph for {} to Kafka", artifact);
             final var record = new ProducerRecord<Object, String>(
                     this.producerTopic(),
                     artifact,
-                    graph.toJSONString()
+                    gidGraph.toJSONString()
             );
             kafkaProducer.send(record, (recordMetadata, e) -> {
                 if (recordMetadata != null) {
@@ -307,13 +307,13 @@ public class MetadataDatabasePlugin extends Plugin {
         /**
          * Writes GIDs graph to file.
          *
-         * @param graph Graph consisting of Global IDs
+         * @param gidGraph Graph consisting of Global IDs
          */
-        public void writeGraphToFile(Graph graph) {
-            var artifact = graph.getProduct() + "@" + graph.getVersion();
+        public void writeGraphToFile(GidGraph gidGraph) {
+            var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
             logger.debug("Writing GIDs graph for {} to file", artifact);
             try {
-                Files.write(Paths.get("gid_graph.txt"), graph.toJSONString().getBytes());
+                Files.write(Paths.get("gid_graph.txt"), gidGraph.toJSONString().getBytes());
             } catch (IOException e) {
                 setPluginError(e);
                 logger.error("Failed to write GIDs graph to file: " + e.getMessage(), e);

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.data.metadatadb.graph;
+package eu.fasten.core.data.graphdb;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import org.jooq.JSONB;
@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class Graph {
+public class GidGraph {
 
     private final long index;
     private final String product;
@@ -47,8 +47,8 @@ public class Graph {
      * @param numInternalNodes Number of internal nodes in nodes list
      * @param edges            List of edges of the graph with pairs for Global IDs
      */
-    public Graph(long index, String product, String version, List<Long> nodes, int numInternalNodes,
-                 List<EdgesRecord> edges) {
+    public GidGraph(long index, String product, String version, List<Long> nodes, int numInternalNodes,
+                    List<EdgesRecord> edges) {
         this.index = index;
         this.product = product;
         this.version = version;
@@ -106,7 +106,7 @@ public class Graph {
      * @return Graph instance
      * @throws JSONException if JSON graph is null or is not in correct form
      */
-    public static Graph getGraph(JSONObject jsonGraph) throws JSONException {
+    public static GidGraph getGraph(JSONObject jsonGraph) throws JSONException {
         if (jsonGraph == null) {
             throw new JSONException("JSON Graph cannot be null");
         }
@@ -126,7 +126,7 @@ public class Graph {
             var edge = new EdgesRecord(edgeArr.getLong(0), edgeArr.getLong(1), JSONB.valueOf(""));
             edges.add(edge);
         }
-        return new Graph(index, product, version, nodes, numInternalNodes, edges);
+        return new GidGraph(index, product, version, nodes, numInternalNodes, edges);
     }
 
     @Override
@@ -137,23 +137,23 @@ public class Graph {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Graph graph = (Graph) o;
-        if (!Objects.equals(index, graph.index)) {
+        GidGraph gidGraph = (GidGraph) o;
+        if (!Objects.equals(index, gidGraph.index)) {
             return false;
         }
-        if (!Objects.equals(product, graph.product)) {
+        if (!Objects.equals(product, gidGraph.product)) {
             return false;
         }
-        if (!Objects.equals(version, graph.version)) {
+        if (!Objects.equals(version, gidGraph.version)) {
             return false;
         }
-        if (!Objects.equals(nodes, graph.nodes)) {
+        if (!Objects.equals(nodes, gidGraph.nodes)) {
             return false;
         }
-        if (!Objects.equals(numInternalNodes, graph.numInternalNodes)) {
+        if (!Objects.equals(numInternalNodes, gidGraph.numInternalNodes)) {
             return false;
         }
-        return Objects.equals(edges, graph.edges);
+        return Objects.equals(edges, gidGraph.edges);
     }
 
     @Override

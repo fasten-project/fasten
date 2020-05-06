@@ -21,7 +21,7 @@ package eu.fasten.analyzer.graphplugin;
 import java.io.IOException;
 import java.util.Collections;
 import eu.fasten.analyzer.graphplugin.db.RocksDao;
-import eu.fasten.core.data.metadatadb.graph.Graph;
+import eu.fasten.core.data.graphdb.GidGraph;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ public class GraphDatabasePluginTest {
                 "\"numInternalNodes\": 2," +
                 "\"edges\": [[1, 2], [2, 3]]" +
                 "}");
-        var graph = Graph.getGraph(json);
+        var graph = GidGraph.getGraph(json);
         graphDBExtension.saveToDatabase(graph, rocksDao);
         Mockito.verify(rocksDao).saveToRocksDb(graph.getIndex(), graph.getNodes(), graph.getNumInternalNodes(), graph.getEdges());
     }
@@ -66,7 +66,7 @@ public class GraphDatabasePluginTest {
                 "\"numInternalNodes\": 2," +
                 "\"edges\": [[0, 1], [1, 2]]" +
                 "}");
-        var graph = Graph.getGraph(json);
+        var graph = GidGraph.getGraph(json);
         var record = new ConsumerRecord<>("fasten.cg.gid_graphs", 1, 0L, graph.getProduct(), graph.toJSONString());
         graphDBExtension.consume("fasten.cg.gid_graphs", record);
         assertTrue(graphDBExtension.recordProcessSuccessful());

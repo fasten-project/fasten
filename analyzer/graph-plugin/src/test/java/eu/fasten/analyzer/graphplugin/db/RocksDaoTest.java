@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.graphplugin.db;
 
-import eu.fasten.core.data.metadatadb.graph.Graph;
+import eu.fasten.core.data.graphdb.GidGraph;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
@@ -53,7 +53,7 @@ public class RocksDaoTest {
                 "\"numInternalNodes\": 2," +
                 "\"edges\": [[0, 1], [1, 2]]" +
                 "}");
-        var graph = Graph.getGraph(json);
+        var graph = GidGraph.getGraph(json);
         rocksDao.saveToRocksDb(graph.getIndex(), graph.getNodes(), graph.getNumInternalNodes(), graph.getEdges());
         var graphData = rocksDao.getGraphData(graph.getIndex(), graph.getNumInternalNodes());
         assertEquals(graph.getNodes().size(), graphData.nodes().size());

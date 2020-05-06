@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.graphplugin;
 
 import eu.fasten.analyzer.graphplugin.db.RocksDao;
-import eu.fasten.core.data.metadatadb.graph.Graph;
+import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.plugins.KafkaConsumer;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -67,19 +67,19 @@ public class GraphDatabasePlugin extends Plugin {
         @Override
         public void consume(String topic, ConsumerRecord<String, String> record) {
             var json = new JSONObject(record.value());
-            Graph graph;
+            GidGraph gidGraph;
             try {
-                graph = Graph.getGraph(json);
+                gidGraph = GidGraph.getGraph(json);
             } catch (JSONException e) {
                 logger.error("Could not parse GID graph", e);
                 processedRecord = false;
                 setPluginError(e);
                 return;
             }
-            var artifact = graph.getProduct() + "@" + graph.getVersion();
+            var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
             try {
                 var rocksDao = new RocksDao(rocksDbDir);
-                saveToDatabase(graph, rocksDao);
+                saveToDatabase(gidGraph, rocksDao);
             } catch (RocksDBException | IOException e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
                 processedRecord = false;
@@ -95,15 +95,15 @@ public class GraphDatabasePlugin extends Plugin {
         /**
          * Inserts a graph into RocksDB.
          *
-         * @param graph    Graph with Global IDs
+         * @param gidGraph Graph with Global IDs
          * @param rocksDao Database Access Object for RocksDB
          * @throws IOException      if there was a problem writing to files
          * @throws RocksDBException if there was a problem inserting in the database
          */
-        public void saveToDatabase(Graph graph, RocksDao rocksDao)
+        public void saveToDatabase(GidGraph gidGraph, RocksDao rocksDao)
                 throws IOException, RocksDBException {
-            rocksDao.saveToRocksDb(graph.getIndex(), graph.getNodes(), graph.getNumInternalNodes(),
-                    graph.getEdges());
+            rocksDao.saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(),
+                    gidGraph.getEdges());
         }
 
         @Override
