@@ -49,7 +49,7 @@ public class RestAPIPlugin extends Plugin {
 
         @Override
         public void stop() {
-
+            logger.info("Plugin stoped");
         }
 
         @Override
