@@ -68,7 +68,7 @@ CREATE TABLE binary_module_contents
 CREATE TABLE callables
 (
     id               BIGSERIAL PRIMARY KEY,
-    module_id        BIGINT REFERENCES modules (id),
+    module_id        BIGINT  NOT NULL REFERENCES modules (id),
     fasten_uri       TEXT    NOT NULL,
     is_internal_call BOOLEAN NOT NULL,
     created_at       TIMESTAMP,
