@@ -100,6 +100,8 @@ public class KBStats {
 		final StatsAccumulator bitsPerLink = new StatsAccumulator();
 		final StatsAccumulator bitsPerLinkt = new StatsAccumulator();
 		final StatsAccumulator bytes = new StatsAccumulator();
+		final StatsAccumulator rawBytes = new StatsAccumulator();
+		final StatsAccumulator inflation = new StatsAccumulator();
 		int totGraphs = 0, statGraphs = 0;
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
 			if (totGraphs++ == n) break;
@@ -110,6 +112,8 @@ public class KBStats {
 				System.out.println("Internal node ratio: " + internalNodeRatio.snapshot());
 				System.out.println("Arcs: " + arcs.snapshot());
 				System.out.println("Bytes: " + bytes.snapshot());
+				System.out.println("Raw bytes: " + rawBytes.snapshot());
+				System.out.println("Inflation: " + inflation.snapshot());
 				System.out.println("Bits/link: " + bitsPerLink.snapshot());
 				System.out.println("Transpose bits/link: " + bitsPerLinkt.snapshot());
 			}
@@ -121,7 +125,11 @@ public class KBStats {
 			statGraphs++;
 			nodes.add(callGraphData.numNodes());
 			arcs.add(callGraphData.numArcs());
-			bytes.add(callGraphData.size - 12 * callGraphData.numNodes()); // ALERT: temporary compensation for GID2LID
+			final long b = callGraphData.size + callGraphData.numNodes() * 6;
+			bytes.add(b);
+			final long r = callGraphData.numArcs() * 16 + callGraphData.numNodes() * 2 * 8 + callGraphData.numNodes() * (8 + 8) * 3 / 2;
+			rawBytes.add(r);
+			inflation.add((double)r/b);
 			internalNodes.add(callGraph.nInternal);
 			internalNodeRatio.add(((double)callGraph.nInternal)/callGraphData.numNodes());
 			final double bpl = Double.parseDouble((callGraphData.graphProperties.getProperty("bitsperlink")));
@@ -170,6 +178,8 @@ public class KBStats {
 		System.out.println("Internal node ratio: " + internalNodeRatio.snapshot());
 		System.out.println("Arcs: " + arcs.snapshot());
 		System.out.println("Bytes: " + bytes.snapshot());
+		System.out.println("Raw bytes: " + rawBytes.snapshot());
+		System.out.println("Inflation: " + inflation.snapshot());
 		System.out.println("Bits/link: " + bitsPerLink.snapshot());
 		System.out.println("Transpose bits/link: " + bitsPerLinkt.snapshot());
 	}

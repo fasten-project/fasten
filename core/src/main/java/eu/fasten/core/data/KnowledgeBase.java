@@ -414,7 +414,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 				final FastenURI genericUri = FastenURI.createSchemeless(null, null, null, uri.getRawNamespace(), uri.getRawEntity());
 				final long gid = addURI(genericUri);
 				// Fix gazillions of copies of Java classes in jars
-				if (!uri.getRawNamespace().startsWith("java.") && !uri.getRawNamespace().startsWith("jdk.")) addGidRev(GIDAppearsIn, gid, index);
+				addGidRev(GIDAppearsIn, gid, index);
 				jsonId2Temporary.put(jsonId, internalGIDs.size());
 				internalGIDs.add(gid);
 			}
