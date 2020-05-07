@@ -58,6 +58,8 @@ public class GlobalVisitStats {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GlobalVisitStats.class);
 
+	private static final LongOpenHashSet badGIDs = new LongOpenHashSet();
+
 	public static class Result {
 		final LongOpenHashSet nodes;
 		final long numProducts;
@@ -102,8 +104,13 @@ public class GlobalVisitStats {
 
 			for (final long s : kb.successors(node)) if (!result.contains(s)) {
 				p = kb.callGraphs.get(index(s)).product;
-				final String targetNameSpace = kb.new Node(gid(s), index(s)).toFastenURI().getRawNamespace();
-				if (targetNameSpace.startsWith("java.") || targetNameSpace.startsWith("javax.") || targetNameSpace.startsWith("jdk.")) continue;
+				final long gid = gid(s);
+				final String targetNameSpace = kb.new Node(gid, index(s)).toFastenURI().getRawNamespace();
+				if (badGIDs.contains(gid)) continue;
+				if (targetNameSpace.startsWith("java.") || targetNameSpace.startsWith("javax.") || targetNameSpace.startsWith("jdk.")) {
+					badGIDs.add(gid);
+					continue;
+				}
 				revs = product2Revs.get(p);
 				if (revs == null) product2Revs.put(p, revs = new IntOpenHashSet());
 				if (revs.contains(index(s)) || revs.size() < maxRevs) {
