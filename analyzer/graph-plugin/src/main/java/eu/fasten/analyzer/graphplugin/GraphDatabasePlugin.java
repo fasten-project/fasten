@@ -48,6 +48,7 @@ public class GraphDatabasePlugin extends Plugin {
         private boolean processedRecord = false;
         private String pluginError = "";
         private final Logger logger = LoggerFactory.getLogger(GraphDBExtension.class.getName());
+        private RocksDao rocksDao;
         private String rocksDbDir = "graphDB";
 
         @Override
@@ -78,7 +79,9 @@ public class GraphDatabasePlugin extends Plugin {
             }
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
             try {
-                var rocksDao = new RocksDao(rocksDbDir);
+                if (rocksDao == null) {
+                    rocksDao = new RocksDao(rocksDbDir);
+                }
                 saveToDatabase(gidGraph, rocksDao);
             } catch (RocksDBException | IOException e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
@@ -125,10 +128,19 @@ public class GraphDatabasePlugin extends Plugin {
 
         @Override
         public void start() {
+            try {
+                this.rocksDao = new RocksDao(rocksDbDir);
+            } catch (RocksDBException e) {
+                logger.error("Could not create RocksDao instance", e);
+                processedRecord = false;
+                setPluginError(e);
+            }
         }
 
         @Override
         public void stop() {
+            rocksDao.close();
+            rocksDao = null;
         }
 
         @Override
@@ -146,7 +158,8 @@ public class GraphDatabasePlugin extends Plugin {
 
         @Override
         public void freeResource() {
-
+            rocksDao.close();
+            rocksDao = null;
         }
     }
 }
