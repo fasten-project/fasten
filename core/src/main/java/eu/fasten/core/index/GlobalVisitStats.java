@@ -104,9 +104,10 @@ public class GlobalVisitStats {
 				revs = product2Revs.get(p);
 				if (revs == null) product2Revs.put(p, revs = new IntOpenHashSet());
 				if (revs.contains(index(s)) || revs.size() < maxRevs) {
+					String targetNameSpace = kb.new Node(gid(s), index(s)).toFastenURI().getRawNamespace();
+					if (targetNameSpace.startsWith("java.") || targetNameSpace.startsWith("javax.")) continue; 
 					queue.enqueue(s);
 					result.add(s);
-					System.out.println(kb.new Node(gid(node), index(node)).toFastenURI() + " -> " + kb.new Node(gid(s), index(s)).toFastenURI());
 					if (revs.add(index(s))) totRevs.increment();
 				}
 			}
