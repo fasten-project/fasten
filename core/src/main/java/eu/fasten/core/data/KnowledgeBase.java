@@ -521,7 +521,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 			// Write out LID2GID info
 			kryo.writeObject(bbo, LID2GID);
-
+			// This could be rebuilt if data were input correctly (i.e., no duplicate internal and external nodes, see assert above).
+			kryo.writeObject(bbo, GID2LID);
 			bbo.flush();
 
 			// Write to DB
@@ -551,12 +552,15 @@ public class KnowledgeBase implements Serializable, Closeable {
 				final var graphs = new ImmutableGraph[] { kryo.readObject(input, BVGraph.class), kryo.readObject(input, BVGraph.class) };
 				final Properties[] properties = new Properties[] { kryo.readObject(input, Properties.class), kryo.readObject(input, Properties.class) };
 				final long[] LID2GID = kryo.readObject(input, long[].class);
+				final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
 
+				/* This might be reinstated if incoming data is correct. See assert above.
 				// Rebuild GID2LID from LID2GID
 				final int n = LID2GID.length;
 				final Long2IntOpenHashMap GID2LID = new Long2IntOpenHashMap(n);
 				GID2LID.defaultReturnValue(-1);
 				for (int i = 0; i < n; i++) GID2LID.put(LID2GID[i], i);
+				*/
 
 				final CallGraphData callGraphData = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, nInternal, buffer.length);
 				this.callGraphData = new SoftReference<>(callGraphData);
@@ -636,6 +640,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		kryo.register(MutableString.class, new FieldSerializer<>(kryo, MutableString.class));
 		kryo.register(Properties.class);
 		kryo.register(long[].class);
+		kryo.register(Long2IntOpenHashMap.class);
 	}
 
 	/**
