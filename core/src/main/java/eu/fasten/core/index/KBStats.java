@@ -97,6 +97,7 @@ public class KBStats {
 		final StatsAccumulator arcs = new StatsAccumulator();
 		final StatsAccumulator bitsPerLink = new StatsAccumulator();
 		final StatsAccumulator bitsPerLinkt = new StatsAccumulator();
+		final StatsAccumulator bytes = new StatsAccumulator();
 		int totGraphs = 0, statGraphs = 0;
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
 			pl.update();
@@ -107,6 +108,7 @@ public class KBStats {
 			statGraphs++;
 			nodes.add(callGraphData.numNodes());
 			arcs.add(callGraphData.numArcs());
+			bytes.add(callGraphData.size - 12 * callGraphData.numNodes()); // ALERT: temporary compensation for GID2LID
 			internalNodes.add(callGraph.nInternal);
 			internalNodeRatio.add(((double)callGraph.nInternal)/callGraphData.numNodes());
 			final double bpl = Double.parseDouble((callGraphData.graphProperties.getProperty("bitsperlink")));
@@ -153,6 +155,7 @@ public class KBStats {
 		System.out.println("Internal nodes: " + internalNodes.snapshot());
 		System.out.println("Internal node ratio: " + internalNodeRatio.snapshot());
 		System.out.println("Arcs: " + arcs.snapshot());
+		System.out.println("Bytes: " + bytes.snapshot());
 		System.out.println("Bits/link: " + bitsPerLink.snapshot());
 		System.out.println("Transpose bits/link: " + bitsPerLinkt.snapshot());
 	}

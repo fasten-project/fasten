@@ -276,8 +276,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 		public final Long2IntOpenHashMap GID2LID;
 		/** A cached copy of the set of external nodes (TODO: immutable? slower but safer). */
 		private final LongOpenHashSet externalNodes;
+		/** The size in bytes of the RocksDB entry. */
+		public final int size;
 
-		public CallGraphData(final ImmutableGraph graph, final ImmutableGraph transpose, final Properties graphProperties, final Properties transposeProperties, final long[] LID2GID, final Long2IntOpenHashMap GID2LID, final int nInternal) {
+		public CallGraphData(final ImmutableGraph graph, final ImmutableGraph transpose, final Properties graphProperties, final Properties transposeProperties, final long[] LID2GID, final Long2IntOpenHashMap GID2LID, final int nInternal, final int size) {
 			super();
 			this.graph = graph;
 			this.transpose = transpose;
@@ -286,6 +288,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			this.LID2GID = LID2GID;
 			this.GID2LID = GID2LID;
 			this.externalNodes = new LongOpenHashSet(Arrays.copyOfRange(LID2GID, nInternal, LID2GID.length));
+			this.size = size;
 		}
 
 		@Override
@@ -550,7 +553,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 				final Properties[] properties = new Properties[] { kryo.readObject(input, Properties.class), kryo.readObject(input, Properties.class) };
 				final long[] LID2GID = kryo.readObject(input, long[].class);
 				final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
-				final CallGraphData callGraphData = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, nInternal);
+				final CallGraphData callGraphData = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, nInternal, buffer.length);
 				this.callGraphData = new SoftReference<>(callGraphData);
 				return callGraphData;
 			} catch (final RocksDBException e) {
