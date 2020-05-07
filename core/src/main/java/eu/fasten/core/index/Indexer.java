@@ -143,7 +143,7 @@ public class Indexer {
 		final String kbMetadataFilename = jsapResult.getString("kbmeta");
 
 		if (new File(kbDir).exists()) throw new IllegalArgumentException("Knowledge base directory exists");
-		if (new File(kbMetadataFilename).exists()) throw new IllegalArgumentException("Knowledge-base metadaa file exists");
+		if (new File(kbMetadataFilename).exists()) throw new IllegalArgumentException("Knowledge-base metadata file exists");
 
 		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
 
