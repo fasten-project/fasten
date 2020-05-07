@@ -129,9 +129,8 @@ public class RocksDao implements Closeable {
         final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(temporary2GID.length);
         // Add arcs between internal nodes
         for (final List<Long> edge : edges) {
-            // TODO: Change to long
-            final int sourceId = Math.toIntExact(edge.get(0));
-            final int targetId = Math.toIntExact(edge.get(1));
+            final int sourceId = GID2Temporary.applyAsInt(edge.get(0));
+            final int targetId = GID2Temporary.applyAsInt(edge.get(1));
             try {
                 mutableGraph.addArc(sourceId, targetId);
             } catch (final IllegalArgumentException e) {
