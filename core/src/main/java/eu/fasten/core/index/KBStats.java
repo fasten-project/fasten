@@ -57,6 +57,7 @@ public class KBStats {
 						new FlaggedOption("od", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'o', "od", "Outdegree distribution: graph id, internal outdegree, external outdegree, total outdegree (tab-separated, one per node)." ),
 						new FlaggedOption("id", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 'i', "id", "Indegree distribution: graph id, external?, indegree (tab-separated, one per node)." ),
 						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'm', "min", "Consider only graphs with at least this number of nodes." ),
+						new FlaggedOption("n", JSAP.INTEGER_PARSER, Integer.toString(Integer.MAX_VALUE), JSAP.NOT_REQUIRED, 'n', "n", "Analyze just this number of graphs."),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
 		});
@@ -65,6 +66,7 @@ public class KBStats {
 		if ( jsap.messagePrinted() ) return;
 
 		final int minNodes = jsapResult.getInt("min");
+		final int n = jsapResult.getInt("n");
 		final String kbDir = jsapResult.getString("kb");
 		if (!new File(kbDir).exists()) throw new IllegalArgumentException("No such directory: " + kbDir);
 		final String kbMetadataFilename = jsapResult.getString("kbmeta");
@@ -100,9 +102,20 @@ public class KBStats {
 		final StatsAccumulator bytes = new StatsAccumulator();
 		int totGraphs = 0, statGraphs = 0;
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
+			if (totGraphs++ == n) break;
+
+			if (totGraphs % 10000 == 0) {
+				System.out.println("Nodes: " + nodes.snapshot());
+				System.out.println("Internal nodes: " + internalNodes.snapshot());
+				System.out.println("Internal node ratio: " + internalNodeRatio.snapshot());
+				System.out.println("Arcs: " + arcs.snapshot());
+				System.out.println("Bytes: " + bytes.snapshot());
+				System.out.println("Bits/link: " + bitsPerLink.snapshot());
+				System.out.println("Transpose bits/link: " + bitsPerLinkt.snapshot());
+			}
+
 			pl.update();
 			final CallGraphData callGraphData = callGraph.callGraphData();
-			totGraphs++;
 			if (callGraphData.numNodes() < minNodes) continue;
 			if (gsdFlag) gsdStream.println(callGraphData.numNodes());
 			statGraphs++;
@@ -149,7 +162,8 @@ public class KBStats {
 		pl.done();
 		LOGGER.info("Closing KnowledgeBase");
 		kb.close();
-		System.out.println("Graphs in the kb: " + totGraphs);
+		System.out.println("Graphs in the kb: " + kb.callGraphs.size());
+		System.out.println("Graphs examined: " + totGraphs);
 		System.out.println("Graphs considered for the stats: " + statGraphs);
 		System.out.println("Nodes: " + nodes.snapshot());
 		System.out.println("Internal nodes: " + internalNodes.snapshot());
