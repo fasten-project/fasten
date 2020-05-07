@@ -105,8 +105,8 @@ public class GlobalVisitStats {
 			for (final long s : kb.successors(node)) if (!result.contains(s)) {
 				p = kb.callGraphs.get(index(s)).product;
 				final long gid = gid(s);
-				final String targetNameSpace = kb.new Node(gid, index(s)).toFastenURI().getRawNamespace();
 				if (badGIDs.contains(gid)) continue;
+				final String targetNameSpace = kb.new Node(gid, index(s)).toFastenURI().getRawNamespace();
 				if (targetNameSpace.startsWith("java.") || targetNameSpace.startsWith("javax.") || targetNameSpace.startsWith("jdk.")) {
 					badGIDs.add(gid);
 					continue;
