@@ -162,7 +162,7 @@ public class IndexerTest {
 		FileUtils.deleteDirectory(kbDir.toFile());
 		FileUtils.deleteQuietly(new File(meta));
 
-		KnowledgeBase kb = KnowledgeBase.getInstance(kbDir.toString(), meta);
+		KnowledgeBase kb = KnowledgeBase.getInstance(kbDir.toString(), meta, false);
 
 		for (int index = 0; index < jsonSpec.length; index++)
 			kb.add(new ExtendedRevisionCallGraph(new JSONObject(jsonSpec[index])), index);
@@ -204,7 +204,7 @@ public class IndexerTest {
 					}
 			}
 			kb.close();
-			kb = KnowledgeBase.getInstance(kbDir.toString(), meta);
+			kb = KnowledgeBase.getInstance(kbDir.toString(), meta, false);
 		}
 
 		FileUtils.deleteDirectory(kbDir.toFile());

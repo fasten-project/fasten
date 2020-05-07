@@ -1,5 +1,7 @@
 package eu.fasten.core.index;
 
+import static eu.fasten.core.data.KnowledgeBase.gid;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,7 +21,6 @@ package eu.fasten.core.index;
  */
 
 import static eu.fasten.core.data.KnowledgeBase.index;
-import static eu.fasten.core.data.KnowledgeBase.gid;
 
 import java.io.File;
 import java.io.IOException;
@@ -101,8 +102,8 @@ public class GlobalVisitStats {
 
 			for (final long s : kb.successors(node)) if (!result.contains(s)) {
 				p = kb.callGraphs.get(index(s)).product;
-				String targetNameSpace = kb.new Node(gid(s), index(s)).toFastenURI().getRawNamespace();
-				if (targetNameSpace.startsWith("java.") || targetNameSpace.startsWith("javax.") || targetNameSpace.startsWith("jdk.")) continue; 
+				final String targetNameSpace = kb.new Node(gid(s), index(s)).toFastenURI().getRawNamespace();
+				if (targetNameSpace.startsWith("java.") || targetNameSpace.startsWith("javax.") || targetNameSpace.startsWith("jdk.")) continue;
 				revs = product2Revs.get(p);
 				if (revs == null) product2Revs.put(p, revs = new IntOpenHashSet());
 				if (revs.contains(index(s)) || revs.size() < maxRevs) {
@@ -128,7 +129,7 @@ public class GlobalVisitStats {
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
 		queue.enqueue(startSig);
 		result.add(startSig);
-		
+
 		String p = kb.callGraphs.get(index(startSig)).product;
 		IntOpenHashSet revs = new IntOpenHashSet();
 		revs.add(index(startSig));
@@ -149,8 +150,8 @@ public class GlobalVisitStats {
 
 			for (final long s : kb.predecessors(node)) if (!result.contains(s)) {
 				p = kb.callGraphs.get(index(s)).product;
-				String targetNameSpace = kb.new Node(gid(s), index(s)).toFastenURI().getRawNamespace();
-				if (targetNameSpace.startsWith("java.") || targetNameSpace.startsWith("javax.") || targetNameSpace.startsWith("jdk.")) continue; 
+				final String targetNameSpace = kb.new Node(gid(s), index(s)).toFastenURI().getRawNamespace();
+				if (targetNameSpace.startsWith("java.") || targetNameSpace.startsWith("javax.") || targetNameSpace.startsWith("jdk.")) continue;
 				revs = product2Revs.get(p);
 				if (revs == null) product2Revs.put(p, revs = new IntOpenHashSet());
 				if (revs.contains(index(s)) || revs.size() < maxRevs) {
@@ -215,7 +216,7 @@ public class GlobalVisitStats {
 		final String kbMetadataFilename = jsapResult.getString("kbmeta");
 		if (!new File(kbMetadataFilename).exists()) throw new IllegalArgumentException("No such file: " + kbMetadataFilename);
 		LOGGER.info("Loading KnowledgeBase metadata");
-		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
+		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename, true);
 		LOGGER.info("Number of graphs: " + kb.callGraphs.size());
 
 		final ProgressLogger pl = new ProgressLogger();

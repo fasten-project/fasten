@@ -214,6 +214,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/** The RocksDB instance used by this indexer. */
 	private transient RocksDB callGraphDB;
 
+	/** The knowledged base is read-only. */
+	private boolean readOnly;
+
 	/** The {@link Kryo} object used to serialize data to the database. */
 	private transient Kryo kryo;
 
@@ -644,12 +647,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/**
-	 * Creates a new knowledge base with no associated database; initializes
-	 * kryo. One has to explicitly call {@link #callGraphDB(RocksDB)} or
-	 * {@link #callGraphDB(String)} (typically only once) before using the
-	 * resulting instance.
+	 * Creates a new knowledge base with no associated database; initializes kryo. One has to explicitly
+	 * call {@link #callGraphDB(RocksDB)} or {@link #callGraphDB(String)} (typically only once) before
+	 * using the resulting instance.
+	 *
+	 * @param readOnly
 	 */
-	private KnowledgeBase(final RocksDB callGraphDB, final ColumnFamilyHandle defaultHandle, final ColumnFamilyHandle gid2URIFamilyHandle, final ColumnFamilyHandle uri2GIDFamilyHandle, final String kbMetadataPathname) {
+	private KnowledgeBase(final RocksDB callGraphDB, final ColumnFamilyHandle defaultHandle, final ColumnFamilyHandle gid2URIFamilyHandle, final ColumnFamilyHandle uri2GIDFamilyHandle, final String kbMetadataPathname, final boolean readOnly) {
 		GIDAppearsIn = new Long2ObjectOpenHashMap<>();
 		GIDCalledBy = new Long2ObjectOpenHashMap<>();
 		callGraphs = new Long2ObjectOpenHashMap<>();
@@ -657,6 +661,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		GIDAppearsIn.defaultReturnValue(LongSets.EMPTY_SET);
 		GIDCalledBy.defaultReturnValue(LongSets.EMPTY_SET);
 
+		this.readOnly = readOnly;
 		this.callGraphDB = callGraphDB;
 		this.kbMetadataPathname = kbMetadataPathname;
 		this.defaultHandle = defaultHandle;
@@ -676,7 +681,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	@SuppressWarnings("resource")
-	public static KnowledgeBase getInstance(final String kbDir, final String kbMetadataPathname) throws RocksDBException, ClassNotFoundException, IOException {
+	public static KnowledgeBase getInstance(final String kbDir, final String kbMetadataPathname, final boolean readOnly) throws RocksDBException, ClassNotFoundException, IOException {
 		final boolean metadataExists = new File(kbMetadataPathname).exists();
 		final boolean kbDirExists = new File(kbDir).exists();
 		if (metadataExists != kbDirExists) throw new IllegalArgumentException("Either both or none of the knowledge-base directory and metadata must exist");
@@ -692,11 +697,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 		final KnowledgeBase kb;
 		if (metadataExists) {
 			kb = (KnowledgeBase) BinIO.loadObject(kbMetadataPathname);
+			kb.readOnly = readOnly;
 			kb.callGraphDB = db;
 			kb.defaultHandle = columnFamilyHandles.get(0);
 			kb.gid2uriFamilyHandle = columnFamilyHandles.get(1);
 			kb.uri2gidFamilyHandle = columnFamilyHandles.get(2);
-		} else kb = new KnowledgeBase(db, columnFamilyHandles.get(0), columnFamilyHandles.get(1), columnFamilyHandles.get(2), kbMetadataPathname);
+		} else kb = new KnowledgeBase(db, columnFamilyHandles.get(0), columnFamilyHandles.get(1), columnFamilyHandles.get(2), kbMetadataPathname, readOnly);
 		return kb;
 	}
 
@@ -723,6 +729,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @return the associated GID.
 	 */
 	protected long addURI(final FastenURI uri) {
+		if (readOnly) throw new IllegalStateException();
 		final byte[] uriBytes = uri.toString().getBytes(StandardCharsets.UTF_8);
 		try {
 			final byte[] result = callGraphDB.get(uri2gidFamilyHandle, uriBytes);
@@ -1068,13 +1075,14 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @throws RocksDBException
 	 */
 	public synchronized void add(final ExtendedRevisionCallGraph g, final long index) throws IOException, RocksDBException {
+		if (readOnly) throw new IllegalStateException();
 		callGraphs.put(index, new CallGraph(g, index));
 	}
 
 	@Override
 	public void close() throws IOException {
 		try {
-			BinIO.storeObject(this, kbMetadataPathname);
+			if (!readOnly) BinIO.storeObject(this, kbMetadataPathname);
 		} finally {
 			defaultHandle.close();
 			gid2uriFamilyHandle.close();

@@ -72,7 +72,7 @@ public class KBStats {
 		final String kbMetadataFilename = jsapResult.getString("kbmeta");
 		if (!new File(kbMetadataFilename).exists()) throw new IllegalArgumentException("No such file: " + kbMetadataFilename);
 		LOGGER.info("Loading KnowledgeBase metadata");
-		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
+		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename, true);
 		LOGGER.info("Number of graphs: " + kb.callGraphs.size());
 
 		final ProgressLogger pl = new ProgressLogger();

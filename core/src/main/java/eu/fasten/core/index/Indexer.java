@@ -145,7 +145,7 @@ public class Indexer {
 		if (new File(kbDir).exists()) throw new IllegalArgumentException("Knowledge base directory exists");
 		if (new File(kbMetadataFilename).exists()) throw new IllegalArgumentException("Knowledge-base metadata file exists");
 
-		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
+		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename, false);
 
 		final Indexer indexer = new Indexer(kb);
 
