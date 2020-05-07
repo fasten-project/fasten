@@ -120,9 +120,8 @@ public class RocksDao implements Closeable {
         final Long2IntOpenHashMap GID2Temporary = new Long2IntOpenHashMap();
         GID2Temporary.defaultReturnValue(-1);
         for (int i = 0; i < temporary2GID.length; i++) {
-            GID2Temporary.put(temporary2GID[i], i);
-            //final long result = GID2Temporary.put(temporary2GID[i], i);
-            //assert result == -1; // Internal and external GIDs should be
+            final long result = GID2Temporary.put(temporary2GID[i], i);
+            assert result == -1; // Internal and external GIDs should be
             // disjoint by construction
         }
         // Create, store and load compressed versions of the graph and of the transpose.
@@ -169,6 +168,7 @@ public class RocksDao implements Closeable {
         transposeProperties.load(propertyFile);
         propertyFile.close();
         kryo.writeObject(bbo, BVGraph.load(file.toString()));
+        kryo.writeObject(bbo, numInternal);
         // Write out properties
         kryo.writeObject(bbo, graphProperties);
         kryo.writeObject(bbo, transposeProperties);
@@ -188,10 +188,11 @@ public class RocksDao implements Closeable {
      * Returns the graph and its transpose in a 2-element array. The
      * graphs are cached, and read from the database if needed.
      *
+     * @param index Index of the graph in the database
      * @return an array containing the call graph and its transpose.
      * @throws RocksDBException if could not retrieve data from the database
      */
-    public KnowledgeBase.CallGraphData getGraphData(long index, int numInternal)
+    public KnowledgeBase.CallGraphData getGraphData(long index)
             throws RocksDBException {
         if (graphData != null) {
             final var graphData = this.graphData.get();
@@ -202,11 +203,12 @@ public class RocksDao implements Closeable {
         final byte[] buffer = rocksDb.get(Longs.toByteArray(index));
         final Input input = new Input(buffer);
         assert kryo != null;
-        final var graphs = new ImmutableGraph[] {
+        final var graphs = new ImmutableGraph[]{
                 kryo.readObject(input, BVGraph.class),
                 kryo.readObject(input, BVGraph.class)
         };
-        final Properties[] properties = new Properties[] {
+        final int numInternal = kryo.readObject(input, int.class);
+        final Properties[] properties = new Properties[]{
                 kryo.readObject(input, Properties.class),
                 kryo.readObject(input, Properties.class)
         };

@@ -91,7 +91,9 @@ public class GraphDatabasePlugin extends Plugin {
             }
             if (getPluginError().isEmpty()) {
                 processedRecord = true;
-                logger.info("Saved the '" + artifact + "' GID graph into RocksDB graph database");
+                logger.info("Saved the '" + artifact
+                        + "' GID graph into RocksDB graph database with index "
+                        + gidGraph.getIndex());
             }
         }
 
@@ -105,8 +107,8 @@ public class GraphDatabasePlugin extends Plugin {
          */
         public void saveToDatabase(GidGraph gidGraph, RocksDao rocksDao)
                 throws IOException, RocksDBException {
-            rocksDao.saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(),
-                    gidGraph.getEdges());
+            rocksDao.saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(),
+                    gidGraph.getNumInternalNodes(), gidGraph.getEdges());
         }
 
         @Override

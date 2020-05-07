@@ -55,7 +55,8 @@ public class RocksDaoTest {
                 "}");
         var graph = GidGraph.getGraph(json);
         rocksDao.saveToRocksDb(graph.getIndex(), graph.getNodes(), graph.getNumInternalNodes(), graph.getEdges());
-        var graphData = rocksDao.getGraphData(graph.getIndex(), graph.getNumInternalNodes());
+        var graphData = rocksDao.getGraphData(graph.getIndex());
+        assertEquals(graph.getNumInternalNodes(), graphData.nodes().size() - graphData.externalNodes().size());
         assertEquals(graph.getNodes().size(), graphData.nodes().size());
         assertEquals(new LongArrayList(graph.getNodes()), graphData.nodes());
         assertEquals(new LongArrayList(List.of(1L)), graphData.successors(0L));
