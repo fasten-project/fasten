@@ -26,15 +26,12 @@ import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.server.connectors.PostgresConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
-import org.json.JSONObject;
 import org.pf4j.JarPluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,38 +46,44 @@ public class FastenServer implements Runnable {
             paramLabel = "DIR",
             description = "Directory to load plugins from",
             defaultValue = ".")
-    private Path pluginPath;
+    Path pluginPath;
 
-    @Option(names = {"-s", "--skip_offsets"},
-            paramLabel = "skip",
-            description = "Adds one to offset of all the partitions of the consumers.",
-            defaultValue = "0")
-    private int skipOffsets;
+    @Option(names = {"-pl", "--plugin_list"},
+            paramLabel = "plugins",
+            description = "List of plugins to run. Can be used multiple times.")
+    List<String> plugins;
 
     @Option(names = {"-m", "--mode"},
             description = "Deployment or Development mode")
-    private boolean deployMode;
-
-    @Option(names = {"-kt", "--topic"},
-            paramLabel = "topic",
-            description = "JSON file consists of topics for plug-ins.")
-    private String pluginTopic;
+    boolean deployMode;
 
     @Option(names = {"-k", "--kafka_server"},
             paramLabel = "server.name:port",
             description = "Kafka server to connect to. Use multiple times for clusters.",
             defaultValue = "localhost:9092")
-    private List<String> kafkaServers;
+    List<String> kafkaServers;
+
+    @Option(names = {"-kt", "--topic"},
+            paramLabel = "topic",
+            description = "Kay-value pairs of Plugin and topic to consume from. Example - "
+                    + "OPAL:fasten.maven.pkg")
+    Map<String, String> pluginTopic;
+
+    @Option(names = {"-ks", "--skip_offsets"},
+            paramLabel = "skip",
+            description = "Adds one to offset of all the partitions of the consumers.",
+            defaultValue = "0")
+    int skipOffsets;
 
     @Option(names = {"-d", "--database"},
             paramLabel = "dbURL",
             description = "Database URL for connection")
-    private String dbUrl;
+    String dbUrl;
 
     @Option(names = {"-du", "--user"},
             paramLabel = "dbUser",
             description = "Database user name")
-    private String dbUser;
+    String dbUser;
 
 
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
@@ -95,12 +98,23 @@ public class FastenServer implements Runnable {
         jarPluginManager.loadPlugins();
         jarPluginManager.startPlugins();
 
+        // Stop plugins that are not passed as parameters.
+        jarPluginManager.getPlugins().stream()
+                .filter(x -> !plugins.contains(jarPluginManager
+                        .getExtensions(x.getPluginId()).get(0).getClass().getSimpleName()))
+                .forEach(x -> {
+                    jarPluginManager.stopPlugin(x.getPluginId());
+                    jarPluginManager.unloadPlugin(x.getPluginId());
+                });
+
         var plugins = jarPluginManager.getExtensions(FastenPlugin.class);
         var dbPlugins = jarPluginManager.getExtensions(DBConnector.class);
         var kafkaPlugins = jarPluginManager.getExtensions(KafkaPlugin.class);
 
         logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins: {} total plugins",
                 kafkaPlugins.size(), dbPlugins.size(), plugins.size());
+        plugins.forEach(x -> logger.info("{}, {}, {}", x.getClass().getSimpleName(),
+                x.version(), x.description()));
 
         makeDBConnection(dbPlugins);
 
@@ -139,21 +153,9 @@ public class FastenServer implements Runnable {
      */
     private List<FastenServerPlugin> setupKafkaPlugins(List<KafkaPlugin> kafkaPlugins) {
         if (pluginTopic != null) {
-            JSONObject jsonObject;
-            try {
-                jsonObject = new JSONObject(new String(Files.readAllBytes(Paths.get(pluginTopic))));
-            } catch (IOException e) {
-                logger.error("Failed to read the JSON file of the topics: {}", e.getMessage());
-                // Here, it reads the JSON string directly from the CLI, not a file.
-                jsonObject = new JSONObject(pluginTopic);
-            }
-
-            for (var k : kafkaPlugins) {
-                if (jsonObject.has(k.getClass().getSimpleName())) {
-                    k.setTopic(jsonObject.getJSONObject(k.getClass().getSimpleName())
-                            .get("consumer").toString());
-                }
-            }
+            kafkaPlugins.stream()
+                    .filter(x -> pluginTopic.containsKey(x.getClass().getSimpleName()))
+                    .forEach(x -> x.setTopic(pluginTopic.get(x.getClass().getSimpleName())));
         }
 
         return kafkaPlugins.stream().map(k -> {

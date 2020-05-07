@@ -284,7 +284,6 @@ public class MetadataDatabasePlugin extends Plugin {
         public void stop() {
         }
 
-        @Override
         public void setPluginError(Throwable throwable) {
             this.pluginError = throwable;
         }

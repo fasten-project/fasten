@@ -107,7 +107,7 @@ public abstract class AnalyzerPlugin extends Plugin {
 
         @Override
         public String description() {
-            return "Generates call graphs for Java packages using OPAL";
+            return "Generates call graphs for Java packages";
         }
 
         @Override
@@ -123,7 +123,6 @@ public abstract class AnalyzerPlugin extends Plugin {
             return this.pluginError;
         }
 
-        @Override
         public void setPluginError(Throwable throwable) {
             this.pluginError = throwable;
         }

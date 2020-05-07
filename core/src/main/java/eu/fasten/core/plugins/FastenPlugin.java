@@ -70,15 +70,6 @@ public interface FastenPlugin extends ExtensionPoint {
     void stop();
 
     /**
-     * These two methods should be implemented so that the FASTEN server can retrieve
-     * the plug-in's error and its exception type. This will help to reprocess certain types of
-     * failed records.
-     *
-     * @param throwable exception or error encountered during plugin execution
-     */
-    void setPluginError(Throwable throwable);
-
-    /**
      * Returns an Exception or Error that was encountered during plugin execution.
      *
      * @return exception or error

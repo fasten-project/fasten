@@ -41,7 +41,13 @@ public class PostgresConnector {
         if (!new Driver().acceptsURL(dbUrl)) {
             throw new IllegalArgumentException("Could not parse database URI: " + dbUrl);
         }
-        var connection = DriverManager.getConnection(dbUrl, user, System.getenv("DBPASS"));
+        var pass = System.getenv("FASTEN_DBPASS") != null ?  System.getenv("FASTEN_DBPASS")
+                : System.getenv("PGPASSWORD");
+
+        if (pass == null) {
+            throw new IllegalArgumentException("No password for DB is provided");
+        }
+        var connection = DriverManager.getConnection(dbUrl, user, pass);
         return DSL.using(connection, SQLDialect.POSTGRES);
     }
 }

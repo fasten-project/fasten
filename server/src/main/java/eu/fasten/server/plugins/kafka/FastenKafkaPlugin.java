@@ -21,8 +21,6 @@ package eu.fasten.server.plugins.kafka;
 import com.google.common.base.Strings;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,13 +48,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     private final KafkaPlugin<String, String> plugin;
 
-    private final String serverLogTopic = "fasten.server.logs";
-
     private final KafkaConsumer<String, String> connection;
-    private final KafkaProducer<String, String> serverLog;
     private final KafkaProducer<String, String> producer;
 
-    private final String consumerHostName;
     private final int skipOffsets;
 
     /**
@@ -70,14 +64,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         this.plugin = plugin;
 
         this.connection = new KafkaConsumer<>(p);
-        this.serverLog = new KafkaProducer<>(
-                this.setKafkaProducer(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG),
-                        plugin.getClass().getSimpleName() + "_server_logs"));
         this.producer = new KafkaProducer<>(
                 this.setKafkaProducer(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG),
                         plugin.getClass().getSimpleName() + "_CGS_status"));
 
-        this.consumerHostName = this.getConsumerHostName();
         this.skipOffsets = skipOffsets;
 
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
@@ -99,7 +89,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 } else {
                     doCommitSync();
 
-                    handleProducing(null, null);
+                    handleProducing(null);
                 }
             }
         } catch (WakeupException e) {
@@ -141,12 +131,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
         for (var r : records) {
             doCommitSync();
-
-            long startTime = System.currentTimeMillis();
             plugin.consume(r.value());
-            long endTime = System.currentTimeMillis();
-
-            handleProducing(r.value(), String.valueOf(endTime - startTime));
+            handleProducing(r.value());
         }
     }
 
@@ -154,18 +140,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Writes messages to server log and stdout/stderr topics.
      *
      * @param input input message [can be null]
-     * @param time  precessing time [can be null]
      */
-    private void handleProducing(String input, String time) {
+    private void handleProducing(String input) {
         if (plugin.getPluginError() == null) {
             var result = plugin.produce();
-
-            emitMessage(this.serverLog, this.serverLogTopic,
-                    "Timestamp: " + System.currentTimeMillis()
-                    + " | [" + this.consumerHostName + "] Plug-in "
-                    + plugin.getClass().getSimpleName()
-                    + " processed successfully record"
-                    + (StringUtils.isNotEmpty(time) ? " [in " + time + " ms]" : ""));
 
             emitMessage(this.producer, String.format("fasten.%s.out",
                     plugin.getClass().getSimpleName()),
@@ -189,7 +167,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         producer.send(errorRecord, (recordMetadata, e) -> {
             if (recordMetadata != null) {
-                logger.debug("Sent: {} to {}", msg, this.serverLogTopic);
+                logger.debug("Sent: {} to {}", msg, topic);
             } else {
                 e.printStackTrace();
             }
@@ -283,20 +261,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     /**
-     * Get host name of this consumer.
-     *
-     * @return consumers host name
-     */
-    private String getConsumerHostName() {
-        try {
-            return InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            logger.error("Could not find the consumer's hostname.");
-        }
-        return "Unknown";
-    }
-
-    /**
      * This method adds one to the offset of all the partitions of a topic.
      * This is useful when you want to skip an offset with FATAL errors when
      * the FASTEN server is restarted.
@@ -323,18 +287,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 logger.debug("Topic: {} | Current offset for partition {}: {}", topics.get(0),
                         tp, this.connection.position(tp));
 
-                emitMessage(this.serverLog, this.serverLogTopic, "Topic: " + topics.get(0)
-                        + "| Current offset for partition " + tp
-                        + ": " + this.connection.position(tp));
-
                 this.connection.seek(tp, this.connection.position(tp) + 1);
 
                 logger.debug("Topic: {} | Offset for partition {} is set to {}",
                         topics.get(0),
                         tp, this.connection.position(tp));
-                emitMessage(this.serverLog, this.serverLogTopic, "Topic: " + topics.get(0)
-                        + "| Offset for partition " + tp
-                        + " is set to " + this.connection.position(tp));
             }
         }
     }
