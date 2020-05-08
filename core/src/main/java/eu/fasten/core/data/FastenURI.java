@@ -61,8 +61,9 @@ public class FastenURI implements Serializable {
 				rawForge = forgeProductVersion.substring(0,  exclPos);
 				productVersion = forgeProductVersion.substring(exclPos + 1);
 				if (productVersion.indexOf('!') >= 0) throw new IllegalArgumentException("More than one forge");
-				if (rawForge.indexOf('$') >= 0) throw new IllegalArgumentException("Version / forge inverted or mixed");
 			}
+
+                      this.validateRawForge();
 
 			final var dollarPos = productVersion.indexOf('$');
 			if (dollarPos == -1) {
@@ -72,10 +73,10 @@ public class FastenURI implements Serializable {
 			else {
 				rawProduct = productVersion.substring(0, dollarPos);
 				rawVersion = productVersion.substring(dollarPos + 1);
-				if (rawVersion.indexOf('$') >= 0) throw new IllegalArgumentException("More than one version");
 			}
 
-			if (rawProduct.length() == 0) throw new IllegalArgumentException("The product cannot be empty");
+                      this.validateRawVersion();
+                      this.validateRawProduct();
 		}
 
 		final var path = uri.getRawPath();
@@ -91,8 +92,6 @@ public class FastenURI implements Serializable {
 
 			if (slashPos == -1)  throw new IllegalArgumentException("Missing entity");
 			rawNamespace = path.substring(1, slashPos);
-
-			if (rawNamespace.length() == 0) throw new IllegalArgumentException("The namespace cannot be empty");
 			rawEntity = path.substring(slashPos + 1);
 		}
 		else {
@@ -100,9 +99,8 @@ public class FastenURI implements Serializable {
 			rawNamespace = null;
 			rawEntity = path;
 		}
-
-		if (rawEntity.length() == 0) throw new IllegalArgumentException("The entity part cannot be empty");
-		if (rawEntity.indexOf(':') >= 0) throw new IllegalArgumentException("The entity part cannot contain colons");
+              this.validateRawNamespace();
+              this.validateRawEntity();
 	}
 
 	protected FastenURI(final String s) throws URISyntaxException {
@@ -209,6 +207,27 @@ public class FastenURI implements Serializable {
 	public String getRawNamespace() {
 		return rawNamespace;
 	}
+
+      protected void validateRawForge() {
+	   if (rawForge != null && rawForge.indexOf('$') >= 0) throw new IllegalArgumentException("Version / forge inverted or mixed");
+      }
+
+      protected void validateRawVersion() {
+	   if (rawVersion != null && rawVersion.indexOf('$') >= 0) throw new IllegalArgumentException("More than one version");
+      }
+
+      protected void validateRawProduct() {
+          if (rawProduct != null && rawProduct.length() == 0) throw new IllegalArgumentException("The product cannot be empty");
+      }
+
+      protected void validateRawNamespace() {
+          if (rawNamespace != null && rawNamespace.length() == 0) throw new IllegalArgumentException("The namespace cannot be empty");
+      }
+
+      protected void validateRawEntity() {
+          if (rawEntity != null && rawEntity.length() == 0) throw new IllegalArgumentException("The entity part cannot be empty");
+          if (rawEntity != null && rawEntity.indexOf(':') >= 0) throw new IllegalArgumentException("The entity part cannot contain colons");
+      }
 
 	private static int decode(final char c) {
 		if ((c >= '0') && (c <= '9')) return c - '0';

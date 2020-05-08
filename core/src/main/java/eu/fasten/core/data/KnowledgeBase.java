@@ -116,8 +116,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 		return index << 40 | gid;
 	}
 
-	public static long index(final long signature) {
-		return signature >>> 40;
+	public static int index(final long signature) {
+		return (int)(signature >>> 40);
 	}
 
 	public static long gid(final long signature) {
@@ -214,6 +214,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/** The RocksDB instance used by this indexer. */
 	private transient RocksDB callGraphDB;
 
+	/** The knowledged base is read-only. */
+	private boolean readOnly;
+
 	/** The {@link Kryo} object used to serialize data to the database. */
 	private transient Kryo kryo;
 
@@ -276,8 +279,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 		public final Long2IntOpenHashMap GID2LID;
 		/** A cached copy of the set of external nodes (TODO: immutable? slower but safer). */
 		private final LongOpenHashSet externalNodes;
+		/** The size in bytes of the RocksDB entry. */
+		public final int size;
 
-		public CallGraphData(final ImmutableGraph graph, final ImmutableGraph transpose, final Properties graphProperties, final Properties transposeProperties, final long[] LID2GID, final Long2IntOpenHashMap GID2LID, final int nInternal) {
+		public CallGraphData(final ImmutableGraph graph, final ImmutableGraph transpose, final Properties graphProperties, final Properties transposeProperties, final long[] LID2GID, final Long2IntOpenHashMap GID2LID, final int nInternal, final int size) {
 			super();
 			this.graph = graph;
 			this.transpose = transpose;
@@ -286,6 +291,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			this.LID2GID = LID2GID;
 			this.GID2LID = GID2LID;
 			this.externalNodes = new LongOpenHashSet(Arrays.copyOfRange(LID2GID, nInternal, LID2GID.length));
+			this.size = size;
 		}
 
 		@Override
@@ -365,13 +371,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 		 */
 		public final int nInternal;
 		/** The product described in this call graph. */
-		private final String product;
+		public final String product;
 		/** The version described in this call graph. */
-		private final String version;
+		public final String version;
 		/** The forge described in this call graph. */
-		private final String forge;
+		public final String forge;
 		/** The revision index of this call graph. */
-		private final long index;
+		public final long index;
 		/**
 		 * An array of two graphs: the call graph (index 0) and its transpose
 		 * (index 1).
@@ -410,6 +416,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 				final FastenURI uri = e.getValue();
 				final FastenURI genericUri = FastenURI.createSchemeless(null, null, null, uri.getRawNamespace(), uri.getRawEntity());
 				final long gid = addURI(genericUri);
+				// Fix gazillions of copies of Java classes in jars
 				addGidRev(GIDAppearsIn, gid, index);
 				jsonId2Temporary.put(jsonId, internalGIDs.size());
 				internalGIDs.add(gid);
@@ -515,10 +522,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 			kryo.writeObject(bbo, graphProperties);
 			kryo.writeObject(bbo, transposeProperties);
 
-			// Write out maps
+			// Write out LID2GID info
 			kryo.writeObject(bbo, LID2GID);
+			// This could be rebuilt if data were input correctly (i.e., no duplicate internal and external nodes, see assert above).
 			kryo.writeObject(bbo, GID2LID);
-
 			bbo.flush();
 
 			// Write to DB
@@ -549,7 +556,16 @@ public class KnowledgeBase implements Serializable, Closeable {
 				final Properties[] properties = new Properties[] { kryo.readObject(input, Properties.class), kryo.readObject(input, Properties.class) };
 				final long[] LID2GID = kryo.readObject(input, long[].class);
 				final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
-				final CallGraphData callGraphData = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, nInternal);
+
+				/* This might be reinstated if incoming data is correct. See assert above.
+				// Rebuild GID2LID from LID2GID
+				final int n = LID2GID.length;
+				final Long2IntOpenHashMap GID2LID = new Long2IntOpenHashMap(n);
+				GID2LID.defaultReturnValue(-1);
+				for (int i = 0; i < n; i++) GID2LID.put(LID2GID[i], i);
+				*/
+
+				final CallGraphData callGraphData = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, nInternal, buffer.length);
 				this.callGraphData = new SoftReference<>(callGraphData);
 				return callGraphData;
 			} catch (final RocksDBException e) {
@@ -631,12 +647,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/**
-	 * Creates a new knowledge base with no associated database; initializes
-	 * kryo. One has to explicitly call {@link #callGraphDB(RocksDB)} or
-	 * {@link #callGraphDB(String)} (typically only once) before using the
-	 * resulting instance.
+	 * Creates a new knowledge base with no associated database; initializes kryo. One has to explicitly
+	 * call {@link #callGraphDB(RocksDB)} or {@link #callGraphDB(String)} (typically only once) before
+	 * using the resulting instance.
+	 *
+	 * @param readOnly
 	 */
-	private KnowledgeBase(final RocksDB callGraphDB, final ColumnFamilyHandle defaultHandle, final ColumnFamilyHandle gid2URIFamilyHandle, final ColumnFamilyHandle uri2GIDFamilyHandle, final String kbMetadataPathname) {
+	private KnowledgeBase(final RocksDB callGraphDB, final ColumnFamilyHandle defaultHandle, final ColumnFamilyHandle gid2URIFamilyHandle, final ColumnFamilyHandle uri2GIDFamilyHandle, final String kbMetadataPathname, final boolean readOnly) {
 		GIDAppearsIn = new Long2ObjectOpenHashMap<>();
 		GIDCalledBy = new Long2ObjectOpenHashMap<>();
 		callGraphs = new Long2ObjectOpenHashMap<>();
@@ -644,6 +661,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		GIDAppearsIn.defaultReturnValue(LongSets.EMPTY_SET);
 		GIDCalledBy.defaultReturnValue(LongSets.EMPTY_SET);
 
+		this.readOnly = readOnly;
 		this.callGraphDB = callGraphDB;
 		this.kbMetadataPathname = kbMetadataPathname;
 		this.defaultHandle = defaultHandle;
@@ -663,7 +681,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	@SuppressWarnings("resource")
-	public static KnowledgeBase getInstance(final String kbDir, final String kbMetadataPathname) throws RocksDBException, ClassNotFoundException, IOException {
+	public static KnowledgeBase getInstance(final String kbDir, final String kbMetadataPathname, final boolean readOnly) throws RocksDBException, ClassNotFoundException, IOException {
 		final boolean metadataExists = new File(kbMetadataPathname).exists();
 		final boolean kbDirExists = new File(kbDir).exists();
 		if (metadataExists != kbDirExists) throw new IllegalArgumentException("Either both or none of the knowledge-base directory and metadata must exist");
@@ -679,11 +697,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 		final KnowledgeBase kb;
 		if (metadataExists) {
 			kb = (KnowledgeBase) BinIO.loadObject(kbMetadataPathname);
+			kb.readOnly = readOnly;
 			kb.callGraphDB = db;
 			kb.defaultHandle = columnFamilyHandles.get(0);
 			kb.gid2uriFamilyHandle = columnFamilyHandles.get(1);
 			kb.uri2gidFamilyHandle = columnFamilyHandles.get(2);
-		} else kb = new KnowledgeBase(db, columnFamilyHandles.get(0), columnFamilyHandles.get(1), columnFamilyHandles.get(2), kbMetadataPathname);
+		} else kb = new KnowledgeBase(db, columnFamilyHandles.get(0), columnFamilyHandles.get(1), columnFamilyHandles.get(2), kbMetadataPathname, readOnly);
 		return kb;
 	}
 
@@ -710,6 +729,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @return the associated GID.
 	 */
 	protected long addURI(final FastenURI uri) {
+		if (readOnly) throw new IllegalStateException();
 		final byte[] uriBytes = uri.toString().getBytes(StandardCharsets.UTF_8);
 		try {
 			final byte[] result = callGraphDB.get(uri2gidFamilyHandle, uriBytes);
@@ -767,7 +787,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/**
 	 * Returns the successors of a given node by signature.
 	 *
-	 * This method is semantically equivalent to {@link #successors(long)}, but it uses node signatures,
+	 * This method is semantically equivalent to {@link #successors(Node)}, but it uses node signatures,
 	 * allowing for faster visits. It is just useful for statistics and debugging.
 	 *
 	 * @param node a node signature.
@@ -844,17 +864,12 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/**
 	 * Returns the predecessors of a given node.
 	 *
-	 * @param node a node (for the form [<code>index</code>, <code>LID</code>])
-	 * @return the list of all predecessors; these are obtained as follows:
-	 *         <ul>
-	 *         <li>for every predecessor <code>x</code> of <code>node</code> in the call graph,
-	 *         [<code>index</code>, <code>LID</code>] is a predecessor
-	 *         <li>let <code>g</code> be the GID of <code>node</code>: for every index
-	 *         <code>otherIndex</code> that calls <code>g</code> (i.e., where <code>g</code> is the GID
-	 *         of an external node), and for all the predecessors <code>x</code> of the node with GID
-	 *         <code>g</code> in <code>otherIndex</code>, [<code>otherIndex</code>, <code>x</code>] is a
-	 *         predecessor.
-	 *         </ul>
+	 * This method is semantically equivalent to {@link #predecessor(Node)}, but it uses node
+	 * signatures, allowing for faster visits. It is just useful for statistics and debugging.
+	 *
+	 * @param node a node signature.
+	 * @return the set of signatures of predecessors.
+	 * @see #predecessor(Node)
 	 */
 	public LongList predecessors(final long nodeSig) {
 		final long gid = gid(nodeSig);
@@ -935,32 +950,39 @@ public class KnowledgeBase implements Serializable, Closeable {
 		// Visit queue
 		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
 		queue.enqueue(start);
+		result.add(start);
 
 		while (!queue.isEmpty()) {
 			final Node node = queue.dequeue();
-			if (result.add(node)) for (final Node s : successors(node))
-				if (!result.contains(s)) queue.enqueue(s);
+			for (final Node s : successors(node)) if (!result.contains(s)) {
+				queue.enqueue(s);
+				result.add(s);
+			}
 		}
 
 		return result;
 	}
 
 	/**
-	 * The set of all node signatures that are reachable from <code>start</code>.
+	 * The set of all node signatures that are reachable from the signature <code>startSig</code>.
 	 *
 	 * @param start the starting node.
-	 * @return the set of all node signatures for which there is a directed path from <code>start</code>
-	 *         to that node.
+	 * @return the set of all node signatures for which there is a directed path from
+	 *         <code>startSig</code> to that node.
 	 */
 	public synchronized LongSet reaches(final long startSig) {
 		final LongOpenHashSet result = new LongOpenHashSet();
 		// Visit queue
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
 		queue.enqueue(startSig);
+		result.add(startSig);
 
 		while (!queue.isEmpty()) {
 			final long nodeSig = queue.dequeueLong();
-			if (result.add(nodeSig)) for (final long s : successors(nodeSig)) if (!result.contains(s)) queue.enqueue(s);
+			for (final long s : successors(nodeSig)) if (!result.contains(s)) {
+				queue.enqueue(s);
+				result.add(s);
+			}
 		}
 
 		return result;
@@ -980,22 +1002,25 @@ public class KnowledgeBase implements Serializable, Closeable {
 	}
 
 	/**
-	 * The set of all nodes that are coreachable from <code>start</code>.
+	 * The set of all nodes that are coreachable from the <code>start</code>.
 	 *
 	 * @param start the starting node.
-	 * @return the set of all nodes for which there is a directed path from that
-	 *         node to <code>start</code>.
+	 * @return the set of all nodes for which there is a directed path from that node to
+	 *         <code>start</code>.
 	 */
 	public synchronized ObjectLinkedOpenHashSet<Node> coreaches(final Node start) {
 		final ObjectLinkedOpenHashSet<Node> result = new ObjectLinkedOpenHashSet<>();
 		// Visit queue
 		final ObjectArrayFIFOQueue<Node> queue = new ObjectArrayFIFOQueue<>();
 		queue.enqueue(start);
+		result.add(start);
 
 		while (!queue.isEmpty()) {
 			final Node node = queue.dequeue();
-			if (result.add(node)) for (final Node s : predecessors(node))
-				if (!result.contains(s)) queue.enqueue(s);
+			for (final Node s : predecessors(node)) if (!result.contains(s)) {
+				queue.enqueue(s);
+				result.add(s);
+			}
 		}
 
 		return result;
@@ -1017,21 +1042,25 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 
 	/**
-	 * The set of all nodes signatures that are coreachable from <code>start</code>.
+	 * The set of all nodes signatures that are coreachable from <code>startSig</code>.
 	 *
 	 * @param start the starting node signature.
 	 * @return the set of all node signatures for which there is a directed path from that node to
-	 *         <code>start</code>.
+	 *         <code>startSig</code>.
 	 */
 	public synchronized LongSet coreaches(final long startSig) {
 		final LongOpenHashSet result = new LongOpenHashSet();
 		// Visit queue
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
 		queue.enqueue(startSig);
+		result.add(startSig);
 
 		while (!queue.isEmpty()) {
 			final long nodeSig = queue.dequeueLong();
-			if (result.add(nodeSig)) for (final long s : predecessors(nodeSig)) if (!result.contains(s)) queue.enqueue(s);
+			for (final long s : predecessors(nodeSig)) if (!result.contains(s)) {
+				queue.enqueue(s);
+				result.add(s);
+			}
 		}
 
 		return result;
@@ -1046,13 +1075,14 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @throws RocksDBException
 	 */
 	public synchronized void add(final ExtendedRevisionCallGraph g, final long index) throws IOException, RocksDBException {
+		if (readOnly) throw new IllegalStateException();
 		callGraphs.put(index, new CallGraph(g, index));
 	}
 
 	@Override
 	public void close() throws IOException {
 		try {
-			BinIO.storeObject(this, kbMetadataPathname);
+			if (!readOnly) BinIO.storeObject(this, kbMetadataPathname);
 		} finally {
 			defaultHandle.close();
 			gid2uriFamilyHandle.close();
