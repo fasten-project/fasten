@@ -18,9 +18,9 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.server.db.PostgresConnector;
-import eu.fasten.server.kafka.FastenKafkaConnection;
-import eu.fasten.server.kafka.FastenKafkaConsumer;
+import eu.fasten.server.connectors.PostgresConnector;
+import eu.fasten.server.connectors.KafkaConnector;
+import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
@@ -72,12 +72,6 @@ public class Main implements Runnable {
             defaultValue = "postgres")
     String dbUser;
 
-    @CommandLine.Option(names = {"-p", "--pass"},
-            paramLabel = "dbPass",
-            description = "Database user password",
-            defaultValue = "pass123")
-    String dbPass;
-
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -88,12 +82,12 @@ public class Main implements Runnable {
         try {
             var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
             metadataPlugin.setTopic(topic);
-            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
+            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
 
             if (jsonFile == null || jsonFile.isEmpty()) {
-                var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
+                var properties = KafkaConnector.kafkaProperties(kafkaServers,
                         this.getClass().getCanonicalName());
-                new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
+                new FastenKafkaPlugin(properties, metadataPlugin, skipOffsets).start();
             } else {
                 final FileReader reader;
                 try {
@@ -106,7 +100,7 @@ public class Main implements Runnable {
                 try {
                     final var record = new ConsumerRecord<>(topic, 0, 0L, "test",
                             jsonCallgraph.toString());
-                    metadataPlugin.consume(topic, record);
+                    metadataPlugin.consume(record.value());
                 } catch (IllegalArgumentException e) {
                     logger.error("Incorrect database URL", e);
                 }

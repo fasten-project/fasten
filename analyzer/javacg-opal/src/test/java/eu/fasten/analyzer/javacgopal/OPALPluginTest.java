@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.FileNotFoundException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONException;
@@ -35,7 +36,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 public class OPALPluginTest {
 
     static OPALPlugin.OPAL opalPlugin;
-    final String topic = "maven.packages";
+    final String topic = "fasten.maven.pkg";
 
     @BeforeClass
     public static void instantiatePlugin() {
@@ -44,14 +45,16 @@ public class OPALPluginTest {
 
     @Test
     public void testConsumerTopic() {
-        assertEquals("maven.packages", opalPlugin.consumerTopics().get(0));
+        assertTrue(opalPlugin.consumeTopic().isPresent());
+        assertEquals("fasten.maven.pkg", opalPlugin.consumeTopic().get().get(0));
     }
 
     @Test
     public void testSetTopic() {
         String topicName = "fasten.mvn.pkg";
         opalPlugin.setTopic(topicName);
-        assertEquals(topicName, opalPlugin.consumerTopics().get(0));
+        assertTrue(opalPlugin.consumeTopic().isPresent());
+        assertEquals(topicName, opalPlugin.consumeTopic().get().get(0));
     }
 
     @Test
@@ -64,15 +67,14 @@ public class OPALPluginTest {
             + "    \"date\":\"1574072773\"\n"
             + "}");
 
-        final var cg = opalPlugin
-            .consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON.toString()), false);
+        opalPlugin.consume(coordinateJSON.toString());
 
         final var extendedRevisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(
             new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
 
-        JSONAssert
-            .assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString(),
-                false);
+        assertTrue(opalPlugin.produce().isPresent());
+        JSONAssert.assertEquals(extendedRevisionCallGraph.toJSON().toString(),
+                opalPlugin.produce().get(), false);
     }
 
     @Test
@@ -85,15 +87,15 @@ public class OPALPluginTest {
             + "    \"date\":\"1574072773\"\n"
             + "}");
 
-        var cg = opalPlugin
-            .consume(new ConsumerRecord<>(topic, 1, 0, "foo", coordinateJSON1.toString()), false);
+        opalPlugin.consume(coordinateJSON1.toString());
 
         var extendedRevisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(
             new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3"), 1574072773);
 
+        assertTrue(opalPlugin.produce().isPresent());
         JSONAssert
-            .assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString(),
-                false);
+            .assertEquals(extendedRevisionCallGraph.toJSON().toString(),
+                    opalPlugin.produce().get(), false);
     }
 
     @Test
@@ -105,9 +107,10 @@ public class OPALPluginTest {
             + "    \"date\":\"1574072773\"\n"
             + "}");
 
-        var cg = opalPlugin
-            .consume(new ConsumerRecord<>(topic, 1, 0, "bar", emptyCGCoordinate.toString()), false);
-
+        opalPlugin.consume(emptyCGCoordinate.toString());
+        assertTrue(opalPlugin.produce().isPresent());
+        var graph = opalPlugin.produce().get();
+        var cg = new ExtendedRevisionCallGraph(new JSONObject(graph));
         //Based on plugin's logs this artifact's call graph should be empty.
         assertTrue(cg.isCallGraphEmpty());
     }
@@ -121,12 +124,10 @@ public class OPALPluginTest {
             + "    \"date\":\"1521511260\"\n"
             + "}");
 
-        opalPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()), false);
-        JSONObject error = new JSONObject(opalPlugin.getPluginError());
+        opalPlugin.consume(noJARFile.toString());
+        var error = opalPlugin.getPluginError();
 
-        assertEquals(FileNotFoundException.class.getSimpleName(), error.get("type"));
-        assertEquals(opalPlugin.getClass().getSimpleName(), error.get("plugin"));
-        assertFalse(opalPlugin.recordProcessSuccessful());
+        assertEquals(FileNotFoundException.class.getSimpleName(), error.getClass().getSimpleName());
     }
 
     @Test
@@ -145,11 +146,6 @@ public class OPALPluginTest {
         // TODO: An assert is pointless here. Because we need to find the root cause of the NullPointerException in PartialCallGraph class.
         // This test shows that FASTEN URIs of a type's methods can be null! Check out the method toListOfString in ExtendedRevisionCallGraph class.
         // The described problem is patched at the very high level with a if block!
-    }
-
-    @Test
-    public void testProducerTopic() {
-        assertEquals("opal_callgraphs", opalPlugin.producerTopic());
     }
 
     @Test

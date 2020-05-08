@@ -23,13 +23,13 @@ import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.plugins.KafkaConsumer;
+import eu.fasten.core.plugins.KafkaPlugin;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.exception.DataAccessException;
@@ -49,12 +49,12 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBExtension implements KafkaConsumer<String>, DBConnector {
+    public static class MetadataDBExtension implements KafkaPlugin<String, String>, DBConnector {
 
-        private String topic = "opal_callgraphs";
+        private String topic = "fasten.OPAL.out";
         private static DSLContext dslContext;
         private boolean processedRecord = false;
-        private String pluginError = "";
+        private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
@@ -65,8 +65,8 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList(topic));
+        public Optional<List<String>> consumeTopic() {
+            return Optional.of(new ArrayList<>(Collections.singletonList(topic)));
         }
 
         @Override
@@ -75,14 +75,13 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public void consume(String topic, ConsumerRecord<String, String> record) {
-
-            final var consumedJson = new JSONObject(record.value());
+        public void consume(String record) {
+            final var consumedJson = new JSONObject(record).getJSONObject("payload");
             final var artifact = consumedJson.optString("product") + "@"
                     + consumedJson.optString("version");
             this.processedRecord = false;
             this.restartTransaction = false;
-            this.pluginError = "";
+            this.pluginError = null;
             ExtendedRevisionCallGraph callgraph;
             try {
                 callgraph = new ExtendedRevisionCallGraph(consumedJson);
@@ -114,7 +113,7 @@ public class MetadataDatabasePlugin extends Plugin {
                             }
                             throw e;
                         }
-                        if (getPluginError().isEmpty()) {
+                        if (getPluginError() == null) {
                             processedRecord = true;
                             restartTransaction = false;
                             logger.info("Saved the '" + artifact + "' callgraph metadata "
@@ -126,6 +125,11 @@ public class MetadataDatabasePlugin extends Plugin {
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
                     && transactionRestartCount < transactionRestartLimit);
+        }
+
+        @Override
+        public Optional<String> produce() {
+            return Optional.empty();
         }
 
         /**
@@ -256,11 +260,6 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public boolean recordProcessSuccessful() {
-            return this.processedRecord;
-        }
-
-        @Override
         public String name() {
             return "Metadata plugin";
         }
@@ -273,6 +272,11 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
+        public String version() {
+            return "0.0.1";
+        }
+
+        @Override
         public void start() {
         }
 
@@ -280,16 +284,12 @@ public class MetadataDatabasePlugin extends Plugin {
         public void stop() {
         }
 
-        @Override
         public void setPluginError(Throwable throwable) {
-            this.pluginError =
-                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
-                            throwable.getMessage()).put("trace", throwable.getStackTrace())
-                            .put("type", throwable.getClass().getSimpleName()).toString();
+            this.pluginError = throwable;
         }
 
         @Override
-        public String getPluginError() {
+        public Throwable getPluginError() {
             return this.pluginError;
         }
 
