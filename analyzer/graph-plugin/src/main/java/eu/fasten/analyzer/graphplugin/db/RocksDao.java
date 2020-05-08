@@ -44,7 +44,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -64,7 +63,6 @@ public class RocksDao implements Closeable {
     private final RocksDB rocksDb;
     private final ColumnFamilyHandle defaultHandle;
     private Kryo kryo;
-    private SoftReference<KnowledgeBase.CallGraphData> graphData;
     private final Logger logger = LoggerFactory.getLogger(RocksDao.class.getName());
 
     /**
@@ -184,21 +182,14 @@ public class RocksDao implements Closeable {
     }
 
     /**
-     * Returns the graph and its transpose in a 2-element array. The
-     * graphs are cached, and read from the database if needed.
+     * Retrieves graph data from RocksDB database.
      *
-     * @param index Index of the graph in the database
-     * @return an array containing the call graph and its transpose.
-     * @throws RocksDBException if could not retrieve data from the database
+     * @param index Index of the graph
+     * @return CallGraphData stored in the database
+     * @throws RocksDBException if there was problem retrieving data from RocksDB
      */
     public KnowledgeBase.CallGraphData getGraphData(long index)
             throws RocksDBException {
-        if (graphData != null) {
-            final var graphData = this.graphData.get();
-            if (graphData != null) {
-                return graphData;
-            }
-        }
         final byte[] buffer = rocksDb.get(Longs.toByteArray(index));
         final Input input = new Input(buffer);
         assert kryo != null;
@@ -213,10 +204,8 @@ public class RocksDao implements Closeable {
         };
         final long[] LID2GID = kryo.readObject(input, long[].class);
         final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
-        final KnowledgeBase.CallGraphData graphData = new KnowledgeBase.CallGraphData(
+        return new KnowledgeBase.CallGraphData(
                 graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, numInternal);
-        this.graphData = new SoftReference<>(graphData);
-        return graphData;
     }
 
     @Override

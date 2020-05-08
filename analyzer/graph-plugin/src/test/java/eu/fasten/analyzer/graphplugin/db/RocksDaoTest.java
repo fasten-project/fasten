@@ -101,7 +101,7 @@ public class RocksDaoTest {
     @Test
     public void databaseTest3() throws IOException, RocksDBException {
         var json = new JSONObject("{" +
-                "\"index\": 2," +
+                "\"index\": 3," +
                 "\"product\": \"test\"," +
                 "\"version\": \"0.0.1\"," +
                 "\"nodes\": [255, 256, 257, 258]," +
@@ -128,7 +128,7 @@ public class RocksDaoTest {
     @Test
     public void databaseTest4() throws IOException, RocksDBException {
         var json = new JSONObject("{" +
-                "\"index\": 2," +
+                "\"index\": 4," +
                 "\"product\": \"test\"," +
                 "\"version\": \"0.0.1\"," +
                 "\"nodes\": [255, 256, 257, 258]," +
@@ -163,5 +163,59 @@ public class RocksDaoTest {
         assertEquals(new LongOpenHashSet((graph.getNodes())), new LongOpenHashSet(graphData.nodes()));
         assertEquals(graph.getEdges().size(), graphData.numArcs());
         assertEquals(new LongOpenHashSet(graph.getNodes().subList(graph.getNumInternalNodes(), graph.getNodes().size())), graphData.externalNodes());
+    }
+
+    @Test
+    public void multipleGraphsDatabaseTest() throws IOException, RocksDBException {
+        var json1 = new JSONObject("{" +
+                "\"index\": 1," +
+                "\"product\": \"test1\"," +
+                "\"version\": \"0.0.1\"," +
+                "\"nodes\": [1, 2, 3, 4, 5]," +
+                "\"numInternalNodes\": 3," +
+                "\"edges\": [[1, 3], [1, 5], [2, 4], [3, 4], [1, 2], [4, 1]]" +
+                "}");
+        var graph1 = GidGraph.getGraph(json1);
+        rocksDao.saveToRocksDb(graph1.getIndex(), graph1.getNodes(), graph1.getNumInternalNodes(), graph1.getEdges());
+        var graphData1 = rocksDao.getGraphData(graph1.getIndex());
+        assertEquals(graph1.getNumInternalNodes(), graphData1.nodes().size() - graphData1.externalNodes().size());
+        assertEquals(graph1.getNodes().size(), graphData1.nodes().size());
+        assertEquals(new LongOpenHashSet(graph1.getNodes()), new LongOpenHashSet(graphData1.nodes()));
+        assertEquals(new LongArrayList(List.of(3L, 2L, 5L)), graphData1.successors(1L));
+        assertEquals(new LongArrayList(List.of(4L)), graphData1.successors(2L));
+        assertEquals(new LongArrayList(List.of(4L)), graphData1.successors(3L));
+        assertEquals(new LongArrayList(List.of(1L)), graphData1.successors(4L));
+        assertEquals(new LongArrayList(), graphData1.successors(5L));
+        assertEquals(new LongArrayList(List.of(4L)), graphData1.predecessors(1L));
+        assertEquals(new LongArrayList(List.of(1L)), graphData1.predecessors(2L));
+        assertEquals(new LongArrayList(List.of(1L)), graphData1.predecessors(3L));
+        assertEquals(new LongArrayList(List.of(3L, 2L)), graphData1.predecessors(4L));
+        assertEquals(new LongArrayList(List.of(1L)), graphData1.predecessors(5L));
+        assertEquals(graph1.getEdges().size(), graphData1.numArcs());
+        assertEquals(new LongOpenHashSet(List.of(4L, 5L)), graphData1.externalNodes());
+
+        var json2 = new JSONObject("{" +
+                "\"index\": 2," +
+                "\"product\": \"test2\"," +
+                "\"version\": \"0.0.1\"," +
+                "\"nodes\": [255, 256, 257, 258]," +
+                "\"numInternalNodes\": 3," +
+                "\"edges\": [[255, 256], [255, 258], [256, 257], [257, 258]]" +
+                "}");
+        var graph2 = GidGraph.getGraph(json2);
+        rocksDao.saveToRocksDb(graph2.getIndex(), graph2.getNodes(), graph2.getNumInternalNodes(), graph2.getEdges());
+        var graphData2 = rocksDao.getGraphData(graph2.getIndex());
+        assertEquals(graph2.getNumInternalNodes(), graphData2.nodes().size() - graphData2.externalNodes().size());
+        assertEquals(graph2.getNodes().size(), graphData2.nodes().size());
+        assertEquals(new LongOpenHashSet(graph2.getNodes()), new LongOpenHashSet(graphData2.nodes()));
+        assertEquals(new LongArrayList(List.of(256L, 258L)), graphData2.successors(255L));
+        assertEquals(new LongArrayList(List.of(257L)), graphData2.successors(256L));
+        assertEquals(new LongArrayList(List.of(258L)), graphData2.successors(257L));
+        assertEquals(new LongArrayList(), graphData2.predecessors(255L));
+        assertEquals(new LongArrayList(List.of(255L)), graphData2.predecessors(256L));
+        assertEquals(new LongArrayList(List.of(256L)), graphData2.predecessors(257L));
+        assertEquals(new LongArrayList(List.of(255L, 257L)), graphData2.predecessors(258L));
+        assertEquals(graph2.getEdges().size(), graphData2.numArcs());
+        assertEquals(new LongOpenHashSet(List.of(258L)), graphData2.externalNodes());
     }
 }
