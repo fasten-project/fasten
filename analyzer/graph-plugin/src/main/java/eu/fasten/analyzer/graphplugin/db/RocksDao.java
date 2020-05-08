@@ -204,8 +204,8 @@ public class RocksDao implements Closeable {
         };
         final long[] LID2GID = kryo.readObject(input, long[].class);
         final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
-        return new KnowledgeBase.CallGraphData(
-                graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, numInternal);
+        return new KnowledgeBase.CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
+                LID2GID, GID2LID, numInternal, buffer.length);
     }
 
     @Override
