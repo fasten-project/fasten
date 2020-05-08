@@ -39,6 +39,7 @@ import eu.fasten.core.data.KnowledgeBase.CallGraphData;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.stat.SummaryStats;
+import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.ImmutableGraph;
 import it.unimi.dsi.webgraph.LazyIntIterator;
 
@@ -73,7 +74,7 @@ public class VisitStats {
 
 	public static void main(final String[] args) throws JSAPException, ClassNotFoundException, RocksDBException, IOException {
 		final SimpleJSAP jsap = new SimpleJSAP(VisitStats.class.getName(),
-				"Computes (co)reachable set statistics for a prototype knowledge base.",
+				"Computes (co)reachable set statistics for revisions call graphs of a prototype knowledge base.",
 				new Parameter[] {
 						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'm', "min", "Consider only graphs with at least this number of internal nodes." ),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
@@ -89,7 +90,7 @@ public class VisitStats {
 		final String kbMetadataFilename = jsapResult.getString("kbmeta");
 		if (!new File(kbMetadataFilename).exists()) throw new IllegalArgumentException("No such file: " + kbMetadataFilename);
 		LOGGER.info("Loading KnowledgeBase metadata");
-		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
+		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename, true);
 		LOGGER.info("Number of graphs: " + kb.callGraphs.size());
 
 		final ProgressLogger pl = new ProgressLogger();
@@ -100,19 +101,29 @@ public class VisitStats {
 
 		final SummaryStats reachable = new SummaryStats();
 		final SummaryStats coreachable = new SummaryStats();
+		final SummaryStats size = new SummaryStats();
 
-		int totGraphs = 0;
-		final int statGraphs = 0;
+		long totGraphs = 0;
+		long statGraphs = 0;
 
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
 			pl.update();
-			if (callGraph.nInternal < minNodes) continue;
-			final CallGraphData callGraphData = callGraph.callGraphData();
 			totGraphs++;
+			if (callGraph.nInternal < minNodes) continue;
+			statGraphs++;
+			final CallGraphData callGraphData = callGraph.callGraphData();
+			size.add(callGraphData.numNodes());
+			final ImmutableGraph graph = new ArrayListMutableGraph(callGraphData.rawGraph()).immutableView();
+			final ImmutableGraph transpose = new ArrayListMutableGraph(callGraphData.rawTranspose()).immutableView();
+
 			for (int startNode = 0; startNode < callGraphData.numNodes(); startNode++) {
-				reachable.add(reachable(callGraphData.rawGraph(), startNode));
-				coreachable.add(reachable(callGraphData.rawTranspose(), startNode));
+				reachable.add(reachable(graph, startNode));
+				coreachable.add(reachable(transpose, startNode));
 			}
+
+			System.out.println("Size stats: " + size);
+			System.out.println("Reachable sets stats: " + reachable);
+			System.out.println("Coreachable sets stats: " + coreachable);
 
 		}
 
@@ -121,6 +132,7 @@ public class VisitStats {
 		kb.close();
 		System.out.println("Graphs in the kb: " + totGraphs);
 		System.out.println("Graphs considered for the stats: " + statGraphs);
+		System.out.println("Size stats: " + size);
 		System.out.println("Reachable sets stats: " + reachable);
 		System.out.println("Coreachable sets stats: " + coreachable);
 	}
