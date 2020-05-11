@@ -124,7 +124,7 @@ public class MetadataDatabasePlugin extends Plugin {
                             processedRecord = true;
                             restartTransaction = false;
                             logger.info("Saved the '" + artifact + "' callgraph metadata "
-                                    + "to the database with package ID = " + id);
+                                    + "to the database with package version ID = " + id);
                         }
                     });
                 } catch (Exception expected) {
@@ -271,7 +271,7 @@ public class MetadataDatabasePlugin extends Plugin {
             } else {
                 writeGraphToFile(edgesGraph);
             }
-            return packageId;
+            return packageVersionId;
         }
 
         private Timestamp getProperTimestamp(long timestamp) {
@@ -296,7 +296,7 @@ public class MetadataDatabasePlugin extends Plugin {
             logger.debug("Writing GIDs graph for {} to file", artifact);
             try {
                 var json = new JSONObject();
-                json.put("payload", gidGraph.toJSONString());
+                json.put("payload", new JSONObject(gidGraph.toJSONString()));
                 Files.write(Paths.get("gid_graph.txt"), json.toString().getBytes());
             } catch (IOException e) {
                 setPluginError(e);
