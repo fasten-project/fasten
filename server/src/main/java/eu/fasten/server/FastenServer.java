@@ -117,8 +117,9 @@ public class FastenServer implements Runnable {
         var kafkaPlugins = jarPluginManager.getExtensions(KafkaPlugin.class);
         var graphDbPlugins = jarPluginManager.getExtensions(GraphDBConnector.class);
 
-        logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins: {} total plugins",
-                kafkaPlugins.size(), dbPlugins.size(), plugins.size());
+        logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:" +
+                        " {} total plugins",
+                kafkaPlugins.size(), dbPlugins.size(), graphDbPlugins.size(), plugins.size());
         plugins.forEach(x -> logger.info("{}, {}, {}", x.getClass().getSimpleName(),
                 x.version(), x.description()));
 
@@ -206,12 +207,12 @@ public class FastenServer implements Runnable {
         if (ObjectUtils.allNotNull(graphDbDir)) {
             graphDbPlugins.forEach((p) -> {
                 p.setRocksDbDir(graphDbDir);
-                logger.debug("Set Graph DB connection successfully for plug-in {}",
+                logger.debug("Set Graph DB location successfully for plug-in {}",
                         p.getClass().getSimpleName());
             });
         } else {
-            logger.error("Couldn't make a DB connection. Make sure that you have "
-                    + "provided a valid DB URL, username and password.");
+            logger.error("Couldn't set a GraphDB location. Make sure that you have "
+                    + "provided a valid path.");
         }
     }
 
