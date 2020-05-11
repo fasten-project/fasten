@@ -20,6 +20,7 @@ package eu.fasten.analyzer.graphplugin;
 
 import eu.fasten.analyzer.graphplugin.db.RocksDao;
 import eu.fasten.core.data.graphdb.GidGraph;
+import eu.fasten.core.plugins.GraphDBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.IOException;
 import java.util.Collections;
@@ -41,7 +42,7 @@ public class GraphDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class GraphDBExtension implements KafkaPlugin<String, String> {
+    public static class GraphDBExtension implements KafkaPlugin<String, String>, GraphDBConnector {
 
         private String consumerTopic = "fasten.MetadataDBExtension.out";
         private Throwable pluginError = null;
