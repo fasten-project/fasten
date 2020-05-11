@@ -20,12 +20,11 @@ package eu.fasten.analyzer.graphplugin;
 
 import eu.fasten.analyzer.graphplugin.db.RocksDao;
 import eu.fasten.core.data.graphdb.GidGraph;
-import eu.fasten.core.plugins.KafkaConsumer;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import java.util.Optional;
+import eu.fasten.core.plugins.KafkaPlugin;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -42,22 +41,21 @@ public class GraphDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class GraphDBExtension implements KafkaConsumer<String> {
+    public static class GraphDBExtension implements KafkaPlugin<String, String> {
 
-        private String consumerTopic = "fasten.cg.gid_graphs";
-        private boolean processedRecord = false;
-        private String pluginError = "";
+        private String consumerTopic = "fasten.MetadataDBExtension.out";
+        private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(GraphDBExtension.class.getName());
         private RocksDao rocksDao;
         private String rocksDbDir = "graphDB";
 
-        @Override
-        public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList(consumerTopic));
-        }
-
         public void setRocksDbDir(String dir) {
             this.rocksDbDir = dir;
+        }
+
+        @Override
+        public Optional<List<String>> consumeTopic() {
+            return Optional.of(Collections.singletonList(consumerTopic));
         }
 
         @Override
@@ -66,14 +64,19 @@ public class GraphDatabasePlugin extends Plugin {
         }
 
         @Override
-        public void consume(String topic, ConsumerRecord<String, String> record) {
-            var json = new JSONObject(record.value());
+        public Optional<String> produce() {
+            return Optional.empty();
+        }
+
+        @Override
+        public void consume(String record) {
+            this.pluginError = null;
+            var json = new JSONObject(record).getJSONObject("payload");
             GidGraph gidGraph;
             try {
                 gidGraph = GidGraph.getGraph(json);
             } catch (JSONException e) {
                 logger.error("Could not parse GID graph", e);
-                processedRecord = false;
                 setPluginError(e);
                 return;
             }
@@ -85,12 +88,10 @@ public class GraphDatabasePlugin extends Plugin {
                 saveToDatabase(gidGraph, rocksDao);
             } catch (RocksDBException | IOException e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
-                processedRecord = false;
                 setPluginError(e);
                 return;
             }
-            if (getPluginError().isEmpty()) {
-                processedRecord = true;
+            if (getPluginError() == null) {
                 logger.info("Saved the '" + artifact
                         + "' GID graph into RocksDB graph database with index "
                         + gidGraph.getIndex());
@@ -112,11 +113,6 @@ public class GraphDatabasePlugin extends Plugin {
         }
 
         @Override
-        public boolean recordProcessSuccessful() {
-            return this.processedRecord;
-        }
-
-        @Override
         public String name() {
             return "Graph plugin";
         }
@@ -129,12 +125,16 @@ public class GraphDatabasePlugin extends Plugin {
         }
 
         @Override
+        public String version() {
+            return "0.0.1";
+        }
+
+        @Override
         public void start() {
             try {
                 this.rocksDao = new RocksDao(rocksDbDir);
             } catch (RocksDBException e) {
                 logger.error("Could not create RocksDao instance", e);
-                processedRecord = false;
                 setPluginError(e);
             }
         }
@@ -145,16 +145,12 @@ public class GraphDatabasePlugin extends Plugin {
             rocksDao = null;
         }
 
-        @Override
         public void setPluginError(Throwable throwable) {
-            this.pluginError =
-                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
-                            throwable.getMessage()).put("trace", throwable.getStackTrace())
-                            .put("type", throwable.getClass().getSimpleName()).toString();
+            this.pluginError = throwable;
         }
 
         @Override
-        public String getPluginError() {
+        public Throwable getPluginError() {
             return this.pluginError;
         }
 

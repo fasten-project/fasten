@@ -16,20 +16,24 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.plugins;
+package eu.fasten.server.plugins;
 
-import org.jooq.DSLContext;
-
-/**
- * A plug-in that needs to get access to a database should implement this interface.
- */
-public interface DBConnector extends FastenPlugin {
+public interface FastenServerPlugin extends Runnable {
 
     /**
-     * This methods sets a DB connection for plug-ins.
-     *
-     * @param dslContext A DSL context for JOOQ to query the database.
+     * Starts the fasten plugin in a separate thread.
      */
-    void setDBConnection(DSLContext dslContext);
+    void start();
 
+    /**
+     * Stops the fasten plugin.
+     */
+    void stop();
+
+    /**
+     * Returns the current thread the fasten plugin is running on.
+     *
+     * @return current plugin thread
+     */
+    Thread thread();
 }

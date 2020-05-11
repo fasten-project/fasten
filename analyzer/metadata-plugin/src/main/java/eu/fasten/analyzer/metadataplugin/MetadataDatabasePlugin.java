@@ -24,19 +24,17 @@ import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.plugins.KafkaConsumer;
-import eu.fasten.core.plugins.KafkaProducer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import eu.fasten.core.plugins.KafkaPlugin;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.exception.DataAccessException;
@@ -56,18 +54,17 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBExtension implements
-            KafkaConsumer<String>, KafkaProducer, DBConnector {
+    public static class MetadataDBExtension implements KafkaPlugin<String, String>, DBConnector {
 
-        private String consumerTopic = "fasten.opal.cg.3";
-        private String producerTopic = "fasten.cg.gid_graphs";
-        private org.apache.kafka.clients.producer.KafkaProducer<Object, String> kafkaProducer;
+        private String consumerTopic = "fasten.OPAL.out";
         private static DSLContext dslContext;
         private boolean processedRecord = false;
-        private String pluginError = "";
+        private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
+        private GidGraph gidGraph = null;
+        public boolean writeToKafka = true;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -75,8 +72,8 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList(consumerTopic));
+        public Optional<List<String>> consumeTopic() {
+            return Optional.of(Collections.singletonList(consumerTopic));
         }
 
         @Override
@@ -85,14 +82,13 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public void consume(String topic, ConsumerRecord<String, String> record) {
-
-            final var consumedJson = new JSONObject(record.value());
-            final var artifact = consumedJson.optString("product") + "@"
-                    + consumedJson.optString("version");
+        public void consume(String record) {
             this.processedRecord = false;
             this.restartTransaction = false;
-            this.pluginError = "";
+            this.pluginError = null;
+            final var consumedJson = new JSONObject(record).getJSONObject("payload");
+            final var artifact = consumedJson.optString("product") + "@"
+                    + consumedJson.optString("version");
             ExtendedRevisionCallGraph callgraph;
             try {
                 callgraph = new ExtendedRevisionCallGraph(consumedJson);
@@ -124,7 +120,7 @@ public class MetadataDatabasePlugin extends Plugin {
                             }
                             throw e;
                         }
-                        if (getPluginError().isEmpty()) {
+                        if (getPluginError() == null) {
                             processedRecord = true;
                             restartTransaction = false;
                             logger.info("Saved the '" + artifact + "' callgraph metadata "
@@ -136,6 +132,15 @@ public class MetadataDatabasePlugin extends Plugin {
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
                     && transactionRestartCount < transactionRestartLimit);
+        }
+
+        @Override
+        public Optional<String> produce() {
+            if (gidGraph == null) {
+                return Optional.empty();
+            } else {
+                return Optional.of(gidGraph.toJSONString());
+            }
         }
 
         /**
@@ -261,8 +266,8 @@ public class MetadataDatabasePlugin extends Plugin {
             }
             var edgesGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
                     nodes, internalCallablesIds.size(), edges);
-            if (this.kafkaProducer != null) {
-                this.sendGraphToKafka(edgesGraph);
+            if (writeToKafka) {
+                this.gidGraph = edgesGraph;
             } else {
                 writeGraphToFile(edgesGraph);
             }
@@ -282,29 +287,6 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         /**
-         * Sends GIDs graph to Kafka.
-         *
-         * @param gidGraph Graph consisting of Global IDs
-         */
-        public void sendGraphToKafka(GidGraph gidGraph) {
-            var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
-            logger.debug("Writing GIDs graph for {} to Kafka", artifact);
-            final var record = new ProducerRecord<Object, String>(
-                    this.producerTopic(),
-                    artifact,
-                    gidGraph.toJSONString()
-            );
-            kafkaProducer.send(record, (recordMetadata, e) -> {
-                if (recordMetadata != null) {
-                    logger.debug("Sent: {} to {}", artifact, this.producerTopic());
-                } else {
-                    setPluginError(e);
-                    logger.error("Failed to write message to Kafka: " + e.getMessage(), e);
-                }
-            });
-        }
-
-        /**
          * Writes GIDs graph to file.
          *
          * @param gidGraph Graph consisting of Global IDs
@@ -321,11 +303,6 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public boolean recordProcessSuccessful() {
-            return this.processedRecord;
-        }
-
-        @Override
         public String name() {
             return "Metadata plugin";
         }
@@ -339,6 +316,11 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
+        public String version() {
+            return "0.0.1";
+        }
+
+        @Override
         public void start() {
         }
 
@@ -346,38 +328,18 @@ public class MetadataDatabasePlugin extends Plugin {
         public void stop() {
         }
 
-        @Override
         public void setPluginError(Throwable throwable) {
-            this.pluginError =
-                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
-                            throwable.getMessage()).put("trace", throwable.getStackTrace())
-                            .put("type", throwable.getClass().getSimpleName()).toString();
+            this.pluginError = throwable;
         }
 
         @Override
-        public String getPluginError() {
+        public Throwable getPluginError() {
             return this.pluginError;
         }
 
         @Override
         public void freeResource() {
 
-        }
-
-        @Override
-        public String producerTopic() {
-            return this.producerTopic;
-        }
-
-        @Override
-        public void setKafkaProducer(
-                org.apache.kafka.clients.producer.KafkaProducer<Object, String> producer) {
-            this.kafkaProducer = producer;
-        }
-
-        @Override
-        public void setProducerTopic(String topicName) {
-            this.producerTopic = topicName;
         }
     }
 }

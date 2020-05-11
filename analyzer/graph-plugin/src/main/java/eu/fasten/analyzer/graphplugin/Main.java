@@ -59,8 +59,6 @@ public class Main implements Runnable {
             return;
         }
         final JSONObject graph = new JSONObject(new JSONTokener(reader));
-        final var record = new ConsumerRecord<>(
-                "fasten.cg.gid_graphs", 0, 0L, "test",graph.toString());
-        graphPlugin.consume("fasten.cg.gid_graphs", record);
+        graphPlugin.consume(graph.toString());
     }
 }

@@ -20,9 +20,9 @@ package eu.fasten.analyzer.graphplugin;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 import eu.fasten.analyzer.graphplugin.db.RocksDao;
 import eu.fasten.core.data.graphdb.GidGraph;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +37,7 @@ public class GraphDatabasePluginTest {
     @BeforeEach
     public void setUp() {
         graphDBExtension = new GraphDatabasePlugin.GraphDBExtension();
-        graphDBExtension.setTopic("fasten.cg.gid_graphs");
+        graphDBExtension.setTopic("fasten.MetadataDBExtension.out");
     }
 
     @Test
@@ -58,48 +58,38 @@ public class GraphDatabasePluginTest {
 
     @Test
     public void consumeTest() {
-        var json = new JSONObject("{" +
+        var json ="{\"payload\": {" +
                 "\"index\": 1," +
                 "\"product\": \"test\"," +
                 "\"version\": \"0.0.1\"," +
                 "\"nodes\": [0, 1, 2]," +
                 "\"numInternalNodes\": 2," +
                 "\"edges\": [[0, 1], [1, 2]]" +
-                "}");
-        var graph = GidGraph.getGraph(json);
-        var record = new ConsumerRecord<>("fasten.cg.gid_graphs", 1, 0L, graph.getProduct(), graph.toJSONString());
-        graphDBExtension.consume("fasten.cg.gid_graphs", record);
-        assertTrue(graphDBExtension.recordProcessSuccessful());
-        assertTrue(graphDBExtension.getPluginError().isEmpty());
+                "}}";
+        graphDBExtension.consume(json);
+        assertNull(graphDBExtension.getPluginError());
     }
 
     @Test
     public void consumeJsonErrorTest() {
-        var topic = "fasten.cg.gid_graphs";
-        var record = new ConsumerRecord<>(topic, 1, 0L, "test", "{\"foo\":\"bar\"}");
-        graphDBExtension.consume(topic, record);
-        assertFalse(graphDBExtension.recordProcessSuccessful());
+        graphDBExtension.consume("{\"payload\":{\"foo\":\"bar\"}}");
+        assertNotNull(graphDBExtension.getPluginError());
     }
 
     @Test
     public void consumerTopicsTest() {
-        var topics = Collections.singletonList("fasten.cg.gid_graphs");
-        assertEquals(topics, graphDBExtension.consumerTopics());
+        var topics = Optional.of(Collections.singletonList("fasten.MetadataDBExtension.out"));
+        assertEquals(topics, graphDBExtension.consumeTopic());
     }
 
     @Test
     public void consumerTopicChangeTest() {
-        var topics1 = Collections.singletonList("fasten.cg.gid_graphs");
-        assertEquals(topics1, graphDBExtension.consumerTopics());
+        var topics1 = Optional.of(Collections.singletonList("fasten.MetadataDBExtension.out"));
+        assertEquals(topics1, graphDBExtension.consumeTopic());
         var differentTopic = "DifferentKafkaTopic";
-        var topics2 = Collections.singletonList(differentTopic);
+        var topics2 = Optional.of(Collections.singletonList(differentTopic));
         graphDBExtension.setTopic(differentTopic);
-        assertEquals(topics2, graphDBExtension.consumerTopics());
-    }
-
-    @Test
-    public void recordProcessSuccessfulTest() {
-        assertFalse(graphDBExtension.recordProcessSuccessful());
+        assertEquals(topics2, graphDBExtension.consumeTopic());
     }
 
     @Test

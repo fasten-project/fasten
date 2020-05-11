@@ -19,8 +19,7 @@
 package eu.fasten.analyzer.javacgwala;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
@@ -29,7 +28,6 @@ import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,7 +39,6 @@ import org.mockito.Mockito;
 @Disabled("Disabled until a way to make Wala platform independent found")
 class WALAPluginTest {
 
-    final String topic = "maven.packages";
     static WALAPlugin.WALA walaPlugin;
 
     @BeforeAll
@@ -51,14 +48,16 @@ class WALAPluginTest {
 
     @Test
     public void testConsumerTopic() {
-        assertEquals("maven.packages", walaPlugin.consumerTopics().get(0));
+        assertTrue(walaPlugin.consumeTopic().isPresent());
+        assertEquals("fasten.maven.pkg", walaPlugin.consumeTopic().get().get(0));
     }
 
     @Test
     public void testSetTopic() {
         String topicName = "fasten.mvn.pkg";
         walaPlugin.setTopic(topicName);
-        assertEquals(topicName, walaPlugin.consumerTopics().get(0));
+        assertTrue(walaPlugin.consumeTopic().isPresent());
+        assertEquals(topicName, walaPlugin.consumeTopic().get().get(0));
     }
 
     @Test
@@ -71,15 +70,14 @@ class WALAPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        ExtendedRevisionCallGraph cg = walaPlugin
-                .consume(new ConsumerRecord<>(topic, 1, 0, "foo",
-                        coordinateJSON.toString()), false);
+        walaPlugin.consume(coordinateJSON.toString());
 
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
         var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
                 1574072773);
 
-        assertEquals(revisionCallGraph.toJSON().toString(), cg.toJSON().toString());
+        assertTrue(walaPlugin.produce().isPresent());
+        assertEquals(revisionCallGraph.toJSON().toString(), walaPlugin.produce().get());
     }
 
     @Test
@@ -91,11 +89,9 @@ class WALAPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        ExtendedRevisionCallGraph cg = walaPlugin
-                .consume(new ConsumerRecord<>(topic, 1, 0, "bar",
-                        emptyCGCoordinate.toString()), false);
+        walaPlugin.consume(emptyCGCoordinate.toString());
 
-        assertNull(cg);
+        assertTrue(walaPlugin.produce().isEmpty());
     }
 
     @Test
@@ -107,12 +103,11 @@ class WALAPluginTest {
                 "    \"date\":\"1521511260\"\n" +
                 "}");
 
-        walaPlugin.consume(topic, new ConsumerRecord<>(topic, 1, 0, "bar", noJARFile.toString()));
-        JSONObject error = new JSONObject(walaPlugin.getPluginError());
+        walaPlugin.consume(noJARFile.toString());
+        var error = walaPlugin.getPluginError();
 
-        assertEquals(FileNotFoundException.class.getSimpleName(), error.get("type"));
-        assertEquals(walaPlugin.getClass().getSimpleName(), error.get("plugin"));
-        assertFalse(walaPlugin.recordProcessSuccessful());
+        assertTrue(walaPlugin.produce().isPresent());
+        assertEquals(FileNotFoundException.class.getSimpleName(), error.getClass().getSimpleName());
     }
 
     @Test
@@ -125,18 +120,14 @@ class WALAPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        ExtendedRevisionCallGraph cg = walaPlugin.consume(new ConsumerRecord<>(topic, 1, 0, "foo",
-                coordinateJSON1.toString()), false);
+        walaPlugin.consume(coordinateJSON1.toString());
+
         var coordinate = new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3");
         ExtendedRevisionCallGraph extendedRevisionCallGraph =
                 PartialCallGraph.createExtendedRevisionCallGraph(coordinate, 1574072773);
 
-        assertEquals(extendedRevisionCallGraph.toJSON().toString(), cg.toJSON().toString());
-    }
-
-    @Test
-    public void testProducerTopic() {
-        assertEquals("wala_callgraphs", walaPlugin.producerTopic());
+        assertTrue(walaPlugin.produce().isPresent());
+        assertEquals(extendedRevisionCallGraph.toJSON().toString(), walaPlugin.produce().get());
     }
 
     @Test
@@ -147,7 +138,6 @@ class WALAPluginTest {
     @Test
     public void sendToKafkaTest() throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
         KafkaProducer<Object, String> producer = Mockito.mock(KafkaProducer.class);
-        walaPlugin.setKafkaProducer(producer);
 
         Mockito.when(producer.send(Mockito.any())).thenReturn(null);
 
@@ -158,15 +148,14 @@ class WALAPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        ExtendedRevisionCallGraph cg = walaPlugin
-                .consume(new ConsumerRecord<>(topic, 1, 0, "foo",
-                        coordinateJSON.toString()), true);
+        walaPlugin.consume(coordinateJSON.toString());
 
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
         var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
                 1574072773);
 
-        assertEquals(revisionCallGraph.toJSON().toString(), cg.toJSON().toString());
+        assertTrue(walaPlugin.produce().isPresent());
+        assertEquals(revisionCallGraph.toJSON().toString(), walaPlugin.produce().get());
     }
 
 }

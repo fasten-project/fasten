@@ -18,15 +18,10 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.server.db.PostgresConnector;
-import eu.fasten.server.kafka.FastenKafkaConnection;
-import eu.fasten.server.kafka.FastenKafkaConsumer;
-import eu.fasten.server.kafka.FastenKafkaProducer;
+import eu.fasten.server.connectors.PostgresConnector;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
-import java.util.List;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
@@ -55,12 +50,6 @@ public class Main implements Runnable {
             defaultValue = "postgres")
     String dbUser;
 
-    @CommandLine.Option(names = {"-p", "--pass"},
-            paramLabel = "dbPass",
-            description = "Database user password",
-            defaultValue = "pass123")
-    String dbPass;
-
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -70,7 +59,7 @@ public class Main implements Runnable {
     public void run() {
         try {
             var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
-            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
+            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
             final FileReader reader;
             try {
                 reader = new FileReader(jsonFile);
@@ -78,11 +67,10 @@ public class Main implements Runnable {
                 logger.error("Could not find the JSON file at " + jsonFile, e);
                 return;
             }
+            metadataPlugin.writeToKafka = false;
             final JSONObject jsonCallgraph = new JSONObject(new JSONTokener(reader));
             try {
-                final var record = new ConsumerRecord<>("fasten.opal.cg.3", 0, 0L, "test",
-                        jsonCallgraph.toString());
-                metadataPlugin.consume("fasten.cg.opal.3", record);
+                metadataPlugin.consume(jsonCallgraph.toString());
             } catch (IllegalArgumentException e) {
                 logger.error("Incorrect database URL", e);
             }
