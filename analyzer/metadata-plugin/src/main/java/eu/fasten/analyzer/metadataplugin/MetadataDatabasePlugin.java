@@ -24,10 +24,10 @@ import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
+import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import eu.fasten.core.plugins.KafkaPlugin;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -295,7 +295,9 @@ public class MetadataDatabasePlugin extends Plugin {
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
             logger.debug("Writing GIDs graph for {} to file", artifact);
             try {
-                Files.write(Paths.get("gid_graph.txt"), gidGraph.toJSONString().getBytes());
+                var json = new JSONObject();
+                json.put("payload", gidGraph.toJSONString());
+                Files.write(Paths.get("gid_graph.txt"), json.toString().getBytes());
             } catch (IOException e) {
                 setPluginError(e);
                 logger.error("Failed to write GIDs graph to file: " + e.getMessage(), e);

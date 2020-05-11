@@ -20,7 +20,6 @@ package eu.fasten.analyzer.graphplugin;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
@@ -34,7 +33,7 @@ public class Main implements Runnable {
 
     @CommandLine.Option(names = {"-f", "--file"},
             paramLabel = "JSON",
-            description = "Path to JSON file which contains edges")
+            description = "Path to JSON file which contains GID Graph as payload")
     String jsonFile;
 
     @CommandLine.Option(names = {"-d", "--directory"},

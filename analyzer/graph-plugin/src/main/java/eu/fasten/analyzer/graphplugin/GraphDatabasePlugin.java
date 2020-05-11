@@ -20,11 +20,11 @@ package eu.fasten.analyzer.graphplugin;
 
 import eu.fasten.analyzer.graphplugin.db.RocksDao;
 import eu.fasten.core.data.graphdb.GidGraph;
+import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import eu.fasten.core.plugins.KafkaPlugin;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;

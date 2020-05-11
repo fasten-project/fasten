@@ -57,261 +57,235 @@ public class MetadataDatabasePluginTest {
        assertNotNull(metadataDBExtension.getPluginError());
    }
 
-   @Test
-   public void saveToDatabaseTest() {
-       var metadataDao = Mockito.mock(MetadataDao.class);
-       var json = new JSONObject("{\n" +
-               "  \"product\": \"test.product\",\n" +
-               "  \"forge\": \"mvn\",\n" +
-               "  \"generator\": \"OPAL\",\n" +
-               "  \"depset\": [],\n" +
-               "  \"version\": \"1.0.0\",\n" +
-               "  \"cha\": {\n" +
-               "    \"/package/class\": {\n" +
-               "      \"methods\": {\n" +
-               "        \"1\": \"/package/class.method()%2Fjava.lang%2FVoid\",\n" +
-               "        \"2\": \"/package/class.toString()%2Fjava.lang%2FString\"\n" +
-               "      },\n" +
-               "      \"superInterfaces\": [],\n" +
-               "      \"sourceFile\": \"file.java\",\n" +
-               "      \"superClasses\": [\n" +
-               "        \"/java.lang/Object\"\n" +
-               "      ]\n" +
-               "    }\n" +
-               "  },\n" +
-               "  \"graph\": {\n" +
-               "    \"internalCalls\": [\n" +
-               "      [\n" +
-               "        1,\n" +
-               "        2\n" +
-               "      ]\n" +
-               "    ],\n" +
-               "    \"externalCalls\": [\n" +
-               "      [\n" +
-               "        \"1\",\n" +
-               "        \"///dep/service.call()%2Fjava.lang%2FObject\",\n" +
-               "        {\n" +
-               "          \"invokevirtual\": \"1\"\n" +
-               "        }\n" +
-               "      ]\n" +
-               "    ]\n" +
-               "  },\n" +
-               "  \"timestamp\": 123\n" +
-               "}");
-       long packageId = 8;
-       Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
-               null)).thenReturn(packageId);
+    @Test
+    public void saveToDatabaseTest() {
+        var metadataDao = Mockito.mock(MetadataDao.class);
+        var json = new JSONObject("{\n" +
+                "  \"product\": \"test.product\",\n" +
+                "  \"forge\": \"mvn\",\n" +
+                "  \"generator\": \"OPAL\",\n" +
+                "  \"depset\": [],\n" +
+                "  \"version\": \"1.0.0\",\n" +
+                "  \"cha\": {\n" +
+                "    \"/package/class\": {\n" +
+                "      \"methods\": {\n" +
+                "        \"1\": \"/package/class.method()%2Fjava.lang%2FVoid\",\n" +
+                "        \"2\": \"/package/class.toString()%2Fjava.lang%2FString\"\n" +
+                "      },\n" +
+                "      \"superInterfaces\": [],\n" +
+                "      \"sourceFile\": \"file.java\",\n" +
+                "      \"superClasses\": [\n" +
+                "        \"/java.lang/Object\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  },\n" +
+                "  \"graph\": {\n" +
+                "    \"internalCalls\": [\n" +
+                "      [\n" +
+                "        1,\n" +
+                "        2\n" +
+                "      ]\n" +
+                "    ],\n" +
+                "    \"externalCalls\": [\n" +
+                "      [\n" +
+                "        \"1\",\n" +
+                "        \"///dep/service.call()%2Fjava.lang%2FObject\",\n" +
+                "        {\n" +
+                "          \"invokevirtual\": \"1\"\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    ]\n" +
+                "  },\n" +
+                "  \"timestamp\": 123\n" +
+                "}");
+        long packageId = 8;
+        Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
+                null)).thenReturn(packageId);
+        long packageVersionId = 42;
+        Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
+                json.getString("version"), new Timestamp(json.getLong("timestamp")), null)).thenReturn(packageVersionId);
+        long moduleId = 10;
+        var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
+                "      \"superClasses\": [\n" +
+                "        \"/java.lang/Object\"\n" +
+                "      ]}");
+        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
+                moduleMetadata)).thenReturn(moduleId);
+        long fileId = 3;
+        Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
+        Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
+        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        assertEquals(packageId, id);
 
-       long packageVersionId = 42;
-       Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
-               json.getString("version"), new Timestamp(json.getLong("timestamp")), null)).thenReturn(packageVersionId);
-       long moduleId = 10;
-       var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
-               "      \"sourceFile\": \"file.java\",\n" +
-               "      \"superClasses\": [\n" +
-               "        \"/java.lang/Object\"\n" +
-               "      ]}");
-       Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
-               moduleMetadata)).thenReturn(moduleId);
+        Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
+        Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
+                json.getString("version"), new Timestamp(json.getLong("timestamp") * 1000), null);
+    }
 
-       Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
-               ".lang%2FVoid", true, null, null)).thenReturn(64L);
-       Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.toString()%2Fjava" +
-               ".lang%2FString", true, null, null)).thenReturn(65L);
-       Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
-               ".lang%2FObject", false, null, null)).thenReturn(100L);
-       long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
-       assertEquals(packageId, id);
+    @Test
+    public void saveToDatabaseTest2() {
+        var metadataDao = Mockito.mock(MetadataDao.class);
+        var json = new JSONObject("{\n" +
+                "  \"product\": \"test.product\",\n" +
+                "  \"forge\": \"mvn\",\n" +
+                "  \"generator\": \"OPAL\",\n" +
+                "  \"depset\": [" +
+                "       [\n" +
+                "           {\n" +
+                "               \"product\": \"test.dependency\",\n" +
+                "               \"forge\": \"mvn\",\n" +
+                "               \"constraints\": [\n" +
+                "                 \"[1.0.0]\"\n" +
+                "               ]\n" +
+                "           }" +
+                "       ]\n" +
+                "],\n" +
+                "  \"version\": \"1.0.0\",\n" +
+                "  \"cha\": {\n" +
+                "    \"/package/class\": {\n" +
+                "      \"methods\": {\n" +
+                "        \"1\": \"/package/class.method()%2Fjava.lang%2FVoid\",\n" +
+                "        \"2\": \"/package/class.toString()%2Fjava.lang%2FString\"\n" +
+                "      },\n" +
+                "      \"superInterfaces\": [],\n" +
+                "      \"sourceFile\": \"file.java\",\n" +
+                "      \"superClasses\": [\n" +
+                "        \"/java.lang/Object\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  },\n" +
+                "  \"graph\": {\n" +
+                "    \"internalCalls\": [\n" +
+                "      [\n" +
+                "        1,\n" +
+                "        2\n" +
+                "      ]\n" +
+                "    ],\n" +
+                "    \"externalCalls\": [\n" +
+                "      [\n" +
+                "        \"1\",\n" +
+                "        \"///dep/service.call()%2Fjava.lang%2FObject\",\n" +
+                "        {\n" +
+                "          \"invokevirtual\": \"1\"\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    ]\n" +
+                "  },\n" +
+                "}");
+        long packageId = 8;
+        Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
+                null)).thenReturn(packageId);
 
-       Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
-       Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
-               json.getString("version"), new Timestamp(json.getLong("timestamp") * 1000), null);
-   }
+        long packageVersionId = 42;
+        Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
+                json.getString("version"), null, null))
+                .thenReturn(packageVersionId);
 
-   @Test
-   public void saveToDatabaseTest2() {
-       var metadataDao = Mockito.mock(MetadataDao.class);
-       var json = new JSONObject("{\n" +
-               "  \"product\": \"test.product\",\n" +
-               "  \"forge\": \"mvn\",\n" +
-               "  \"generator\": \"OPAL\",\n" +
-               "  \"depset\": [" +
-               "       [\n" +
-               "           {\n" +
-               "               \"product\": \"test.dependency\",\n" +
-               "               \"forge\": \"mvn\",\n" +
-               "               \"constraints\": [\n" +
-               "                 \"[1.0.0]\"\n" +
-               "               ]\n" +
-               "           }" +
-               "       ]\n" +
-               "],\n" +
-               "  \"version\": \"1.0.0\",\n" +
-               "  \"cha\": {\n" +
-               "    \"/package/class\": {\n" +
-               "      \"methods\": {\n" +
-               "        \"1\": \"/package/class.method()%2Fjava.lang%2FVoid\",\n" +
-               "        \"2\": \"/package/class.toString()%2Fjava.lang%2FString\"\n" +
-               "      },\n" +
-               "      \"superInterfaces\": [],\n" +
-               "      \"sourceFile\": \"file.java\",\n" +
-               "      \"superClasses\": [\n" +
-               "        \"/java.lang/Object\"\n" +
-               "      ]\n" +
-               "    }\n" +
-               "  },\n" +
-               "  \"graph\": {\n" +
-               "    \"internalCalls\": [\n" +
-               "      [\n" +
-               "        1,\n" +
-               "        2\n" +
-               "      ]\n" +
-               "    ],\n" +
-               "    \"externalCalls\": [\n" +
-               "      [\n" +
-               "        \"1\",\n" +
-               "        \"///dep/service.call()%2Fjava.lang%2FObject\",\n" +
-               "        {\n" +
-               "          \"invokevirtual\": \"1\"\n" +
-               "        }\n" +
-               "      ]\n" +
-               "    ]\n" +
-               "  },\n" +
-               "}");
-       long packageId = 8;
-       Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
-               null)).thenReturn(packageId);
+        long depPackageId = 128;
+        Mockito.when(metadataDao.insertPackage("test.dependency", "mvn", null, null, null))
+                .thenReturn(depPackageId);
 
-       long packageVersionId = 42;
-       Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
-               json.getString("version"), null, null))
-               .thenReturn(packageVersionId);
+        long moduleId = 10;
+        var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
+                "      \"superClasses\": [\n" +
+                "        \"/java.lang/Object\"\n" +
+                "      ]}");
+        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
+                moduleMetadata)).thenReturn(moduleId);
+        long fileId = 3;
+        Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
+        Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
+        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        assertEquals(packageId, id);
 
-       long depPackageId = 128;
-       Mockito.when(metadataDao.insertPackage("test.dependency", "mvn", null, null, null))
-               .thenReturn(depPackageId);
+        Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
+                null);
+        Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
+                json.getString("version"), null, null);
+        Mockito.verify(metadataDao).insertPackage("test.dependency", "mvn", null, null, null);
+    }
 
-       long moduleId = 10;
-       var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
-               "      \"sourceFile\": \"file.java\",\n" +
-               "      \"superClasses\": [\n" +
-               "        \"/java.lang/Object\"\n" +
-               "      ]}");
-       Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
-               moduleMetadata)).thenReturn(moduleId);
+    @Test
+    public void saveToDatabaseTest3() {
+        var metadataDao = Mockito.mock(MetadataDao.class);
+        var json = new JSONObject("{\n" +
+                "  \"product\": \"test.product\",\n" +
+                "  \"forge\": \"mvn\",\n" +
+                "  \"generator\": \"OPAL\",\n" +
+                "  \"depset\": [" +
+                "       [\n" +
+                "           {\n" +
+                "               \"product\": \"test.dependency\",\n" +
+                "               \"forge\": \"mvn\",\n" +
+                "               \"constraints\": [\n" +
+                "                 \"[1.0.0]\"\n" +
+                "               ]\n" +
+                "           }" +
+                "       ]\n" +
+                "],\n" +
+                "  \"version\": \"1.0.0\",\n" +
+                "  \"cha\": {\n" +
+                "    \"/package/class\": {\n" +
+                "      \"methods\": {\n" +
+                "        \"1\": \"/package/class.method()%2Fjava.lang%2FVoid\",\n" +
+                "        \"2\": \"/package/class.toString()%2Fjava.lang%2FString\"\n" +
+                "      },\n" +
+                "      \"superInterfaces\": [],\n" +
+                "      \"sourceFile\": \"file.java\",\n" +
+                "      \"superClasses\": [\n" +
+                "        \"/java.lang/Object\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  },\n" +
+                "  \"graph\": {\n" +
+                "    \"internalCalls\": [\n" +
+                "      [\n" +
+                "        1,\n" +
+                "        2\n" +
+                "      ]\n" +
+                "    ],\n" +
+                "    \"externalCalls\": [\n" +
+                "      [\n" +
+                "        \"1\",\n" +
+                "        \"///dep/service.call()%2Fjava.lang%2FObject\",\n" +
+                "        {\n" +
+                "          \"invokevirtual\": \"1\"\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    ]\n" +
+                "  },\n" +
+                "}");
+        long packageId = 8;
+        Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
+                null)).thenReturn(packageId);
 
-       Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
-               ".lang%2FVoid", true, null, null)).thenReturn(64L);
-       Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.toString()%2Fjava" +
-               ".lang%2FString", true, null, null)).thenReturn(65L);
-       Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
+        long packageVersionId = 42;
+        Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
+                json.getString("version"), null, null))
+                .thenReturn(packageVersionId);
 
-       Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
-               ".lang%2FObject", false, null, null)).thenReturn(100L);
-       var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
-       Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
+        long depPackageId = 128;
+        Mockito.when(metadataDao.insertPackage("test.dependency", "mvn", null, null, null)).thenReturn(depPackageId);
 
-       long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
-       assertEquals(packageId, id);
+        long moduleId = 10;
+        var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
+                "      \"superClasses\": [\n" +
+                "        \"/java.lang/Object\"\n" +
+                "      ]}");
+        Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
+                moduleMetadata)).thenReturn(moduleId);
+        long fileId = 3;
+        Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
+        Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
+        metadataDBExtension.setPluginError(new RuntimeException());
+        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        assertEquals(packageId, id);
 
-       Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
-               null);
-       Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
-               json.getString("version"), null, null);
-       Mockito.verify(metadataDao).insertPackage("test.dependency", "mvn", null, null, null);
-   }
-
-   @Test
-   public void saveToDatabaseTest3() {
-       var metadataDao = Mockito.mock(MetadataDao.class);
-       var json = new JSONObject("{\n" +
-               "  \"product\": \"test.product\",\n" +
-               "  \"forge\": \"mvn\",\n" +
-               "  \"generator\": \"OPAL\",\n" +
-               "  \"depset\": [" +
-               "       [\n" +
-               "           {\n" +
-               "               \"product\": \"test.dependency\",\n" +
-               "               \"forge\": \"mvn\",\n" +
-               "               \"constraints\": [\n" +
-               "                 \"[1.0.0]\"\n" +
-               "               ]\n" +
-               "           }" +
-               "       ]\n" +
-               "],\n" +
-               "  \"version\": \"1.0.0\",\n" +
-               "  \"cha\": {\n" +
-               "    \"/package/class\": {\n" +
-               "      \"methods\": {\n" +
-               "        \"1\": \"/package/class.method()%2Fjava.lang%2FVoid\",\n" +
-               "        \"2\": \"/package/class.toString()%2Fjava.lang%2FString\"\n" +
-               "      },\n" +
-               "      \"superInterfaces\": [],\n" +
-               "      \"sourceFile\": \"file.java\",\n" +
-               "      \"superClasses\": [\n" +
-               "        \"/java.lang/Object\"\n" +
-               "      ]\n" +
-               "    }\n" +
-               "  },\n" +
-               "  \"graph\": {\n" +
-               "    \"internalCalls\": [\n" +
-               "      [\n" +
-               "        1,\n" +
-               "        2\n" +
-               "      ]\n" +
-               "    ],\n" +
-               "    \"externalCalls\": [\n" +
-               "      [\n" +
-               "        \"1\",\n" +
-               "        \"///dep/service.call()%2Fjava.lang%2FObject\",\n" +
-               "        {\n" +
-               "          \"invokevirtual\": \"1\"\n" +
-               "        }\n" +
-               "      ]\n" +
-               "    ]\n" +
-               "  },\n" +
-               "}");
-       long packageId = 8;
-       Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
-               null)).thenReturn(packageId);
-
-       long packageVersionId = 42;
-       Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
-               json.getString("version"), null, null))
-               .thenReturn(packageVersionId);
-
-       long depPackageId = 128;
-       Mockito.when(metadataDao.insertPackage("test.dependency", "mvn", null, null, null)).thenReturn(depPackageId);
-
-       long moduleId = 10;
-       var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
-               "      \"sourceFile\": \"file.java\",\n" +
-               "      \"superClasses\": [\n" +
-               "        \"/java.lang/Object\"\n" +
-               "      ]}");
-       Mockito.when(metadataDao.insertModule(packageVersionId, "package", null,
-               moduleMetadata)).thenReturn(moduleId);
-
-       Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.method()%2Fjava" +
-               ".lang%2FVoid", true, null, null)).thenReturn(64L);
-       Mockito.when(metadataDao.insertCallable(moduleId, "/package/class.toString()%2Fjava" +
-               ".lang%2FString", true, null, null)).thenReturn(65L);
-       Mockito.when(metadataDao.insertEdge(64L, 65L, null)).thenReturn(1L);
-
-       Mockito.when(metadataDao.insertCallable(null, "///dep/service.call()%2Fjava" +
-               ".lang%2FObject", false, null, null)).thenReturn(100L);
-       var callMetadata = new JSONObject("{\"invokevirtual\": \"1\"}");
-       Mockito.when(metadataDao.insertEdge(64L, 100L, callMetadata)).thenReturn(5L);
-
-       metadataDBExtension.setPluginError(new RuntimeException());
-       long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
-       assertEquals(packageId, id);
-
-       Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
-               null);
-       Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
-               json.getString("version"), null, null);
-   }
+        Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
+                null);
+        Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
+                json.getString("version"), null, null);
+    }
 
    @Test
    public void saveToDatabaseEmptyJsonTest() {
