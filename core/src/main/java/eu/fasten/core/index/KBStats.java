@@ -41,6 +41,7 @@ import com.martiansoftware.jsap.UnflaggedOption;
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.CallGraph;
 import eu.fasten.core.data.KnowledgeBase.CallGraphData;
+import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.logging.ProgressLogger;
 
 
@@ -101,7 +102,11 @@ public class KBStats {
 		final StatsAccumulator bitsPerLinkt = new StatsAccumulator();
 		final StatsAccumulator bytes = new StatsAccumulator();
 		final StatsAccumulator rawBytes = new StatsAccumulator();
-		final StatsAccumulator inflation = new StatsAccumulator();
+		final StatsAccumulator deflation = new StatsAccumulator();
+
+		final StatsAccumulator[] deflationBySize = new StatsAccumulator[30];
+		for (int i = 0; i < deflationBySize.length; i++) deflationBySize[i] = new StatsAccumulator();
+
 		int totGraphs = 0, statGraphs = 0;
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
 			if (totGraphs++ == n) break;
@@ -113,9 +118,10 @@ public class KBStats {
 				System.out.println("Arcs: " + arcs.snapshot());
 				System.out.println("Bytes: " + bytes.snapshot());
 				System.out.println("Raw bytes: " + rawBytes.snapshot());
-				System.out.println("Inflation: " + inflation.snapshot());
+				System.out.println("Deflation: " + deflation.snapshot());
 				System.out.println("Bits/link: " + bitsPerLink.snapshot());
 				System.out.println("Transpose bits/link: " + bitsPerLinkt.snapshot());
+				for (int i = 0; i < deflationBySize.length; i++) if (deflationBySize[i].count() != 0) System.out.println("Deflation by size [" + ((1L << i) - 1) + ".." + ((1L << i + 1) - 1) + "):" + deflationBySize[i].snapshot());
 			}
 
 			pl.update();
@@ -129,7 +135,8 @@ public class KBStats {
 			bytes.add(b);
 			final long r = callGraphData.numArcs() * 16 + callGraphData.numNodes() * 2 * 8 + callGraphData.numNodes() * (8 + 8) * 3 / 2;
 			rawBytes.add(r);
-			inflation.add((double)r/b);
+			deflation.add((double)b / r);
+			deflationBySize[Fast.ceilLog2(callGraphData.numNodes() + 1)].add((double)b / r);
 			internalNodes.add(callGraph.nInternal);
 			internalNodeRatio.add(((double)callGraph.nInternal)/callGraphData.numNodes());
 			final double bpl = Double.parseDouble((callGraphData.graphProperties.getProperty("bitsperlink")));
@@ -179,9 +186,10 @@ public class KBStats {
 		System.out.println("Arcs: " + arcs.snapshot());
 		System.out.println("Bytes: " + bytes.snapshot());
 		System.out.println("Raw bytes: " + rawBytes.snapshot());
-		System.out.println("Inflation: " + inflation.snapshot());
+		System.out.println("deflation: " + deflation.snapshot());
 		System.out.println("Bits/link: " + bitsPerLink.snapshot());
 		System.out.println("Transpose bits/link: " + bitsPerLinkt.snapshot());
+		for (int i = 0; i < deflationBySize.length; i++) if (deflationBySize[i].count() != 0) System.out.println("Deflation by size [" + ((1L << i) - 1) + ".." + ((1L << i + 1) - 1) + "): " + deflationBySize[i].snapshot());
 	}
 
 }
