@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -49,7 +50,12 @@ public class Main implements Runnable {
     @Override
     public void run() {
         var graphPlugin = new GraphDatabasePlugin.GraphDBExtension();
-        graphPlugin.setRocksDbDir(dir);
+        try {
+            graphPlugin.setRocksDbDir(dir);
+        } catch (RocksDBException e) {
+            System.err.println("Could not set RocksDB location");
+            return;
+        }
         final FileReader reader;
         try {
             reader = new FileReader(jsonFile);

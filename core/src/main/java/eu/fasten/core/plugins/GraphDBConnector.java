@@ -18,6 +18,8 @@
 
 package eu.fasten.core.plugins;
 
+import org.rocksdb.RocksDBException;
+
 /**
  * A plug-in that needs to access graph database (RocksDB)
  */
@@ -28,5 +30,5 @@ public interface GraphDBConnector extends FastenPlugin {
      *
      * @param dir Path to database directory
      */
-    void setRocksDbDir(String dir);
+    void setRocksDbDir(String dir) throws RocksDBException;
 }

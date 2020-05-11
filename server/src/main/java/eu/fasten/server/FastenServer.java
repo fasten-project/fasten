@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
 import org.pf4j.JarPluginManager;
+import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -206,9 +207,14 @@ public class FastenServer implements Runnable {
     private void setGraphDBLocation(List<GraphDBConnector> graphDbPlugins) {
         if (ObjectUtils.allNotNull(graphDbDir)) {
             graphDbPlugins.forEach((p) -> {
-                p.setRocksDbDir(graphDbDir);
-                logger.debug("Set Graph DB location successfully for plug-in {}",
-                        p.getClass().getSimpleName());
+                try {
+                    p.setRocksDbDir(graphDbDir);
+                    logger.debug("Set Graph DB location successfully for plug-in {}",
+                            p.getClass().getSimpleName());
+                } catch (RocksDBException e) {
+                    logger.error("Couldn't set GraphDB location for plug-in {}\n{}",
+                            p.getClass().getSimpleName(), e.getStackTrace());
+                }
             });
         } else {
             logger.error("Couldn't set a GraphDB location. Make sure that you have "

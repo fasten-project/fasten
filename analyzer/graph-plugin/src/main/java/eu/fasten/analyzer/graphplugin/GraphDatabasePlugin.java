@@ -50,8 +50,9 @@ public class GraphDatabasePlugin extends Plugin {
         private RocksDao rocksDao;
         private String rocksDbDir = "graphDB";
 
-        public void setRocksDbDir(String dir) {
+        public void setRocksDbDir(String dir) throws RocksDBException {
             this.rocksDbDir = dir;
+            this.rocksDao = new RocksDao(rocksDbDir);
         }
 
         @Override
