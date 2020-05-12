@@ -44,13 +44,18 @@ public class FastenServer implements Runnable {
 
     @Option(names = {"-p", "--plugin_dir"},
             paramLabel = "DIR",
-            description = "Directory to load plugins from",
-            defaultValue = ".")
+            description = "Directory to load plugins from.",
+            required = true)
     Path pluginPath;
+
+    @Option(names = {"-la", "--list_all"},
+            description = "List all values and ext.")
+    boolean showPlugins;
 
     @Option(names = {"-pl", "--plugin_list"},
             paramLabel = "plugins",
-            description = "List of plugins to run. Can be used multiple times.")
+            description = "List of plugins to run. Can be used multiple times.",
+            split = ",")
     List<String> plugins;
 
     @Option(names = {"-m", "--mode"},
@@ -66,7 +71,8 @@ public class FastenServer implements Runnable {
     @Option(names = {"-kt", "--topic"},
             paramLabel = "topic",
             description = "Kay-value pairs of Plugin and topic to consume from. Example - "
-                    + "OPAL:fasten.maven.pkg")
+                    + "OPAL=fasten.maven.pkg",
+            split = ",")
     Map<String, String> pluginTopic;
 
     @Option(names = {"-ks", "--skip_offsets"},
@@ -97,6 +103,13 @@ public class FastenServer implements Runnable {
         JarPluginManager jarPluginManager = new JarPluginManager(pluginPath);
         jarPluginManager.loadPlugins();
         jarPluginManager.startPlugins();
+        if (showPlugins) {
+            System.out.println("Available plugins:");
+            jarPluginManager.getExtensions(FastenPlugin.class)
+                    .forEach(x -> System.out.println(String.format("\t%s %s %s",
+                            x.getClass().getSimpleName(), x.version(), x.description())));
+            System.exit(0);
+        }
 
         // Stop plugins that are not passed as parameters.
         jarPluginManager.getPlugins().stream()
@@ -196,6 +209,10 @@ public class FastenServer implements Runnable {
     private void setLoggingLevel() {
         var root = (ch.qos.logback.classic.Logger) LoggerFactory
                 .getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+        if (showPlugins) {
+            root.setLevel(Level.OFF);
+            return;
+        }
         if (deployMode) {
             root.setLevel(Level.INFO);
             logger.info("FASTEN server started in deployment mode");
