@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.graphplugin.db;
+package eu.fasten.core.data.graphdb;
 
 import static eu.fasten.core.data.KnowledgeBase.bfsperm;
 

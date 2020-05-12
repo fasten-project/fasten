@@ -21,7 +21,7 @@ package eu.fasten.analyzer.graphplugin;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
-import eu.fasten.analyzer.graphplugin.db.RocksDao;
+import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.graphdb.GidGraph;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -43,16 +43,17 @@ public class GraphDatabasePluginTest {
     @Test
     public void saveToDatabaseTest() throws IOException, RocksDBException {
         var rocksDao = Mockito.mock(RocksDao.class);
-        var json = new JSONObject("{" +
+        var json = new JSONObject("{\"payload\": {" +
                 "\"index\": 1," +
                 "\"product\": \"test\"," +
                 "\"version\": \"0.0.1\"," +
                 "\"nodes\": [1, 2, 3]," +
                 "\"numInternalNodes\": 2," +
                 "\"edges\": [[1, 2], [2, 3]]" +
-                "}");
-        var graph = GidGraph.getGraph(json);
-        graphDBExtension.saveToDatabase(graph, rocksDao);
+                "}}");
+        var graph = GidGraph.getGraph(json.getJSONObject("payload"));
+        graphDBExtension.setRocksDao(rocksDao);
+        graphDBExtension.consume(json.toString());
         Mockito.verify(rocksDao).saveToRocksDb(graph.getIndex(), graph.getNodes(), graph.getNumInternalNodes(), graph.getEdges());
     }
 

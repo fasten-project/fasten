@@ -18,8 +18,8 @@
 
 package eu.fasten.analyzer.graphplugin;
 
-import eu.fasten.analyzer.graphplugin.db.RocksDao;
 import eu.fasten.core.data.graphdb.GidGraph;
+import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.plugins.GraphDBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.IOException;
@@ -48,11 +48,9 @@ public class GraphDatabasePlugin extends Plugin {
         private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(GraphDBExtension.class.getName());
         private RocksDao rocksDao;
-        private String rocksDbDir = "graphDB";
 
-        public void setRocksDbDir(String dir) throws RocksDBException {
-            this.rocksDbDir = dir;
-            this.rocksDao = new RocksDao(rocksDbDir);
+        public void setRocksDao(RocksDao rocksDao) {
+            this.rocksDao = rocksDao;
         }
 
         @Override
@@ -84,10 +82,8 @@ public class GraphDatabasePlugin extends Plugin {
             }
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
             try {
-                if (rocksDao == null) {
-                    rocksDao = new RocksDao(rocksDbDir);
-                }
-                saveToDatabase(gidGraph, rocksDao);
+                rocksDao.saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(),
+                        gidGraph.getNumInternalNodes(), gidGraph.getEdges());
             } catch (RocksDBException | IOException e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
                 setPluginError(e);
@@ -98,20 +94,6 @@ public class GraphDatabasePlugin extends Plugin {
                         + "' GID graph into RocksDB graph database with index "
                         + gidGraph.getIndex());
             }
-        }
-
-        /**
-         * Inserts a graph into RocksDB.
-         *
-         * @param gidGraph Graph with Global IDs
-         * @param rocksDao Database Access Object for RocksDB
-         * @throws IOException      if there was a problem writing to files
-         * @throws RocksDBException if there was a problem inserting in the database
-         */
-        public void saveToDatabase(GidGraph gidGraph, RocksDao rocksDao)
-                throws IOException, RocksDBException {
-            rocksDao.saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(),
-                    gidGraph.getNumInternalNodes(), gidGraph.getEdges());
         }
 
         @Override
@@ -133,12 +115,6 @@ public class GraphDatabasePlugin extends Plugin {
 
         @Override
         public void start() {
-            try {
-                this.rocksDao = new RocksDao(rocksDbDir);
-            } catch (RocksDBException e) {
-                logger.error("Could not create RocksDao instance", e);
-                setPluginError(e);
-            }
         }
 
         @Override

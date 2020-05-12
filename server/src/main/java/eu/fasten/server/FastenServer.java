@@ -25,6 +25,7 @@ import eu.fasten.core.plugins.GraphDBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.server.connectors.PostgresConnector;
+import eu.fasten.server.connectors.RocksDBConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
 import java.nio.file.Path;
@@ -34,7 +35,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
 import org.pf4j.JarPluginManager;
-import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -118,14 +118,14 @@ public class FastenServer implements Runnable {
         var kafkaPlugins = jarPluginManager.getExtensions(KafkaPlugin.class);
         var graphDbPlugins = jarPluginManager.getExtensions(GraphDBConnector.class);
 
-        logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:" +
-                        " {} total plugins",
+        logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:"
+                        + " {} total plugins",
                 kafkaPlugins.size(), dbPlugins.size(), graphDbPlugins.size(), plugins.size());
         plugins.forEach(x -> logger.info("{}, {}, {}", x.getClass().getSimpleName(),
                 x.version(), x.description()));
 
         makeDBConnection(dbPlugins);
-        setGraphDBLocation(graphDbPlugins);
+        makeGraphDBConnection(graphDbPlugins);
 
         var kafkaServerPlugins = setupKafkaPlugins(kafkaPlugins);
 
@@ -200,25 +200,25 @@ public class FastenServer implements Runnable {
     }
 
     /**
-     * Setup RocksDB directory for GraphDB plugins.
+     * Setup RocksDB connection for GraphDB plugins.
      *
      * @param graphDbPlugins list of Graph DB plugins
      */
-    private void setGraphDBLocation(List<GraphDBConnector> graphDbPlugins) {
+    private void makeGraphDBConnection(List<GraphDBConnector> graphDbPlugins) {
         if (ObjectUtils.allNotNull(graphDbDir)) {
             graphDbPlugins.forEach((p) -> {
                 try {
-                    p.setRocksDbDir(graphDbDir);
-                    logger.debug("Set Graph DB location successfully for plug-in {}",
+                    p.setRocksDao(RocksDBConnector.createRocksDBAccessObject(graphDbDir));
+                    logger.debug("Set Graph DB connection successfully for plug-in {}",
                             p.getClass().getSimpleName());
-                } catch (RocksDBException e) {
-                    logger.error("Couldn't set GraphDB location for plug-in {}\n{}",
+                } catch (RuntimeException e) {
+                    logger.error("Couldn't set GraphDB connection for plug-in {}\n{}",
                             p.getClass().getSimpleName(), e.getStackTrace());
                 }
             });
         } else {
-            logger.error("Couldn't set a GraphDB location. Make sure that you have "
-                    + "provided a valid path.");
+            logger.error("Couldn't set a GraphDB connection. Make sure that you have "
+                    + "provided a valid directory to the database.");
         }
     }
 

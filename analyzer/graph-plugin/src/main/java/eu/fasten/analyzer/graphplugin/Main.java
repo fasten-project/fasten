@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.graphplugin;
 
+import eu.fasten.core.data.graphdb.RocksDao;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import org.json.JSONObject;
@@ -51,7 +52,7 @@ public class Main implements Runnable {
     public void run() {
         var graphPlugin = new GraphDatabasePlugin.GraphDBExtension();
         try {
-            graphPlugin.setRocksDbDir(dir);
+            graphPlugin.setRocksDao(new RocksDao(dir));
         } catch (RocksDBException e) {
             System.err.println("Could not set RocksDB location");
             return;

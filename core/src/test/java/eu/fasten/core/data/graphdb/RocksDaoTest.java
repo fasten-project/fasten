@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.graphplugin.db;
+package eu.fasten.core.data.graphdb;
 
-import eu.fasten.core.data.graphdb.GidGraph;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.apache.commons.io.FileUtils;

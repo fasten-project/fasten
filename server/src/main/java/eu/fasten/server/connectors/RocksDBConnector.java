@@ -16,19 +16,25 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.plugins;
+package eu.fasten.server.connectors;
 
 import eu.fasten.core.data.graphdb.RocksDao;
+import org.rocksdb.RocksDBException;
 
-/**
- * A plug-in that needs to access graph database (RocksDB)
- */
-public interface GraphDBConnector extends FastenPlugin {
+public class RocksDBConnector {
 
     /**
-     * Sets RocksDB connection.
+     * Creates Database Access Object for RocksDB.
      *
-     * @param rocksDao RocksDB Database Access Object
+     * @param dbDir Directory where the database is stored
+     * @return RocksDao instance
+     * @throws RuntimeException if there was a problem opening connection to RocksDB
      */
-    void setRocksDao(RocksDao rocksDao);
+    public static RocksDao createRocksDBAccessObject(String dbDir) throws RuntimeException {
+        try {
+            return new RocksDao(dbDir);
+        } catch (RocksDBException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
