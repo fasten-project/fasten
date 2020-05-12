@@ -26,6 +26,7 @@
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20180813</version>
+            <scope>provided</scope>
     </dependency>
     <dependency>
         <groupId>eu.fasten</groupId>
@@ -79,7 +80,8 @@
 <!--                                    <exclude>org.codehaus.mojo:animal-sniffer-annotations:*</exclude>-->
 <!--                                    <exclude>it.unimi.dsi:webgraph:*</exclude>-->
 <!--                                    <exclude>it.unimi.dsi:sux4j:*</exclude>-->
-<!--                                    <exclude>org.rocksdb:rocksdbjni:*</exclude>-->
+                                        <exclude>org.rocksdb:rocksdbjni:*</exclude>
+                                        <exclude>org.jooq:jooq:*</exclude>
 <!--                                    <exclude>com.googlecode.javaewah:*</exclude>-->
 <!--                                    <exclude>org.checkerframework:checker-qual:*</exclude>-->
 <!--                                    <exclude>org.objenesis:objenesis:*</exclude>-->
@@ -129,6 +131,7 @@
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
                                 <exclude>eu/fasten/core/plugins/*</exclude>
+                                <exclude>eu/fasten/core/data/graphdb/*</exclude>
                             </excludes>
                         </filter>
                     </filters>

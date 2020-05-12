@@ -55,6 +55,12 @@
             <artifactId>jooq</artifactId>
             <version>3.12.3</version>
         </dependency>
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>6.2.4</version>
+        </dependency>
+
     </dependencies>
 
     <build>
