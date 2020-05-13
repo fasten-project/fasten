@@ -225,8 +225,8 @@ public class FastenServer implements Runnable {
                     logger.debug("Set Graph DB connection successfully for plug-in {}",
                             p.getClass().getSimpleName());
                 } catch (RuntimeException e) {
-                    logger.error("Couldn't set GraphDB connection for plug-in {}\n{}",
-                            p.getClass().getSimpleName(), e.getStackTrace());
+                    logger.error("Couldn't set GraphDB connection for plug-in {}",
+                            p.getClass().getSimpleName(), e);
                 }
             });
         } else {
