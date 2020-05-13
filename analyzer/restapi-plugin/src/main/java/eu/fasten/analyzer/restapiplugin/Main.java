@@ -1,6 +1,6 @@
 package eu.fasten.analyzer.restapiplugin;
 
-import eu.fasten.server.db.PostgresConnector;
+import eu.fasten.server.connectors.PostgresConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -24,12 +24,6 @@ public class Main implements Runnable{
             defaultValue = "postgres")
     String dbUser;
 
-    @CommandLine.Option(names = {"-p", "--pass"},
-            paramLabel = "dbPass",
-            description = "Database user password",
-            defaultValue = "pass123")
-    String dbPass;
-
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
     }
@@ -38,7 +32,7 @@ public class Main implements Runnable{
     public void run() {
         try {
             var restAPIPlugin = new RestAPIPlugin.RestAPIExtension();
-            restAPIPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
+            restAPIPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
 
             restAPIPlugin.start();
 

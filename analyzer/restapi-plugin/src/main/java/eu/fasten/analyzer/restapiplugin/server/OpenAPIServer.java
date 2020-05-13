@@ -1,12 +1,14 @@
 package eu.fasten.analyzer.restapiplugin.server;
 
+import eu.fasten.analyzer.restapiplugin.db.MetadataDao;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
@@ -14,11 +16,13 @@ import io.vertx.ext.web.api.RequestParameters;
 import io.vertx.ext.web.api.contract.RouterFactoryOptions;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 public class OpenAPIServer extends AbstractVerticle {
+
+    private static DSLContext dslContext;
+
+    public OpenAPIServer(DSLContext dsl) {
+        dslContext = dsl;
+    }
 
     HttpServer server;
     Logger logger = LoggerFactory.getLogger("OpenAPI3RouterFactory");
@@ -27,6 +31,8 @@ public class OpenAPIServer extends AbstractVerticle {
     public void start(Future<Void> future) {
         OpenAPI3RouterFactory.create(this.vertx, "openapispec.json", asyncResult -> {
             if (asyncResult.succeeded()) {
+
+                var metadataDao = new MetadataDao(dslContext);
                 OpenAPI3RouterFactory routerFactory = asyncResult.result();
 
                 // Enable automatic response when ValidationException is thrown
@@ -46,20 +52,38 @@ public class OpenAPIServer extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId("get_metadata_api__pkg_manager___product___version__get",
                         routingContext -> {
                             RequestParameters params = routingContext.get("parsedParameters");
-                            String pkg_manager = params.pathParameter("pkg_manager").getString();
+                            String pkgManager = params.pathParameter("pkg_manager").getString();
                             String product = params.pathParameter("product").getString();
                             String version = params.pathParameter("version").getString();
-                            System.out.println("DEBUG: Parsed parameters converted to string (" + pkg_manager + ", "
-                                    + product + ", " + version + ")."); // update this to logger.debug
-                            // TODO: call a function to do the DB query
-                            JsonObject reply = dummyFunction(pkg_manager, product, version);
-                            if (!reply.isEmpty())
-                                routingContext.response().setStatusCode(200)
-                                        .putHeader(HttpHeaders.CONTENT_TYPE, "application/json").end(reply.encode());
-                            else
-                                routingContext.fail(404, new Exception("Query not found!"));
-                            // TODO: nice to have more specifc exceptions ex: pkg not found, product not
-                            // found etc.
+
+                            // TODO: update this to logger.debug
+                            System.out.println("DEBUG: Parsed parameters converted to string (" + pkgManager + ", "
+                                    + product + ", " + version + ").");
+
+                            dslContext.transaction(transaction -> {
+                                metadataDao.setContext(DSL.using(transaction));
+                                try {
+                                    // TODO: update this to logger.debug
+                                    System.out.println("DEBUG: Got the DSL context"); // update this to logger.debug
+
+                                    String allMetadata = metadataDao.getAllMetadataForPkg(pkgManager, product, version);
+
+                                    // TODO: update this to logger.debug
+                                    System.out.println("DEBUG: Got the reply: "+allMetadata.substring(0,300)+"...");
+
+                                    if (!allMetadata.isEmpty())
+                                        routingContext.response().setStatusCode(200)
+                                            .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                                            .end(allMetadata);
+                                    else
+                                        routingContext.fail(404, new Exception("Query not found!"));
+                                        // TODO: nice to have more specific exceptions ex: pkg not found, product not found etc.
+                                } catch (RuntimeException e) {
+                                    routingContext.fail(404, new Exception("Error querying the database!"));
+                                    logger.error("Error querying the database: ", e);
+                                    throw e;
+                                }
+                            });
                         });
 
                 // Generate the router
@@ -114,16 +138,6 @@ public class OpenAPIServer extends AbstractVerticle {
                 logger.info("Verticle failed");
             }
         });
-    }
-
-    private JsonObject dummyFunction(String pkg_manager, String product, String version) {
-        String msg = "Package manager: "+pkg_manager+", Product: "+product+", Version: "+version+".";
-
-        JsonObject result = new JsonObject().put("message", msg);
-
-        logger.info(result);
-
-        return result;
     }
 
     @Override
