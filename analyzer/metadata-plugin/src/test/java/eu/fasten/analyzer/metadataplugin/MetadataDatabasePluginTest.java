@@ -103,7 +103,7 @@ public class MetadataDatabasePluginTest {
                 null)).thenReturn(packageId);
         long packageVersionId = 42;
         Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
-                json.getString("version"), new Timestamp(json.getLong("timestamp")), null)).thenReturn(packageVersionId);
+                json.getString("version"), new Timestamp(json.getLong("timestamp") * 1000), null)).thenReturn(packageVersionId);
         long moduleId = 10;
         var moduleMetadata = new JSONObject("{\"superInterfaces\": [],\n" +
                 "      \"superClasses\": [\n" +
@@ -115,7 +115,7 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
-        assertEquals(packageId, id);
+        assertEquals(packageVersionId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
         Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
@@ -196,7 +196,7 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
-        assertEquals(packageId, id);
+        assertEquals(packageVersionId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 null);
@@ -279,7 +279,7 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         metadataDBExtension.setPluginError(new RuntimeException());
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
-        assertEquals(packageId, id);
+        assertEquals(packageVersionId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
                 null);
@@ -339,7 +339,7 @@ public class MetadataDatabasePluginTest {
     var file = "gid_graph.txt";
     assertTrue(new File(file).exists());
     var jsonFile = new JSONObject(Files.readString(Paths.get(file)));
-    assertEquals(graph, GidGraph.getGraph(jsonFile));
+    assertEquals(graph, GidGraph.getGraph(jsonFile.getJSONObject("payload")));
     assertTrue(new File(file).delete());
     }
 }
