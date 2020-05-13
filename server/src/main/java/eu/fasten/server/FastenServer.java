@@ -21,9 +21,11 @@ package eu.fasten.server;
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.FastenPlugin;
+import eu.fasten.core.plugins.GraphDBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.server.connectors.PostgresConnector;
+import eu.fasten.server.connectors.RocksDBConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
 import java.nio.file.Path;
@@ -91,6 +93,10 @@ public class FastenServer implements Runnable {
             description = "Database user name")
     String dbUser;
 
+    @Option(names = {"-gd", "--graphdb_dir"},
+            paramLabel = "dir",
+            description = "Path to directory with RocksDB database")
+    String graphDbDir;
 
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
@@ -123,13 +129,16 @@ public class FastenServer implements Runnable {
         var plugins = jarPluginManager.getExtensions(FastenPlugin.class);
         var dbPlugins = jarPluginManager.getExtensions(DBConnector.class);
         var kafkaPlugins = jarPluginManager.getExtensions(KafkaPlugin.class);
+        var graphDbPlugins = jarPluginManager.getExtensions(GraphDBConnector.class);
 
-        logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins: {} total plugins",
-                kafkaPlugins.size(), dbPlugins.size(), plugins.size());
+        logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:"
+                        + " {} total plugins",
+                kafkaPlugins.size(), dbPlugins.size(), graphDbPlugins.size(), plugins.size());
         plugins.forEach(x -> logger.info("{}, {}, {}", x.getClass().getSimpleName(),
                 x.version(), x.description()));
 
         makeDBConnection(dbPlugins);
+        makeGraphDBConnection(graphDbPlugins);
 
         var kafkaServerPlugins = setupKafkaPlugins(kafkaPlugins);
 
@@ -200,6 +209,29 @@ public class FastenServer implements Runnable {
         } else {
             logger.error("Couldn't make a DB connection. Make sure that you have "
                     + "provided a valid DB URL, username and password.");
+        }
+    }
+
+    /**
+     * Setup RocksDB connection for GraphDB plugins.
+     *
+     * @param graphDbPlugins list of Graph DB plugins
+     */
+    private void makeGraphDBConnection(List<GraphDBConnector> graphDbPlugins) {
+        if (ObjectUtils.allNotNull(graphDbDir)) {
+            graphDbPlugins.forEach((p) -> {
+                try {
+                    p.setRocksDao(RocksDBConnector.createRocksDBAccessObject(graphDbDir));
+                    logger.debug("Set Graph DB connection successfully for plug-in {}",
+                            p.getClass().getSimpleName());
+                } catch (RuntimeException e) {
+                    logger.error("Couldn't set GraphDB connection for plug-in {}\n{}",
+                            p.getClass().getSimpleName(), e.getStackTrace());
+                }
+            });
+        } else {
+            logger.error("Couldn't set a GraphDB connection. Make sure that you have "
+                    + "provided a valid directory to the database.");
         }
     }
 

@@ -331,7 +331,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 
 		@Override
-		public LongSet xternalNodes() {
+		public LongSet externalNodes() {
 			return externalNodes;
 		}
 

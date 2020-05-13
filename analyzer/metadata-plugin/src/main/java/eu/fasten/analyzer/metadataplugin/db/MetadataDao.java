@@ -39,13 +39,10 @@ import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Query;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class MetadataDao {
 
     private DSLContext context;
-    private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
 
     public MetadataDao(DSLContext context) {
         this.context = context;

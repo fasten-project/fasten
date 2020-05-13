@@ -1,0 +1,3259 @@
+{
+    "product": "org.xwiki.commons.xwiki-commons-legacy-component-api",
+    "forge": "mvn",
+    "generator": "OPAL",
+    "depset": [[
+        {
+            "product": "org.xwiki.commons.xwiki-commons-component-api",
+            "forge": "mvn",
+            "constraints": ["[..]"]
+        },
+        {
+            "product": "org.xwiki.commons.xwiki-commons-component-api",
+            "forge": "mvn",
+            "constraints": ["[..]"]
+        }
+    ]],
+    "version": "10.5",
+    "cha": {
+        "/org.xwiki.component.logging/VoidLogger": {
+            "methods": {
+                "190": "/org.xwiki.component.logging/VoidLogger.error(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "191": "/org.xwiki.component.logging/VoidLogger.error(%2Fjava.lang%2FString,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "192": "/org.xwiki.component.logging/VoidLogger.error(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                "193": "/org.xwiki.component.logging/VoidLogger.error(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "194": "/org.xwiki.component.logging/VoidLogger.info(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "195": "/org.xwiki.component.logging/VoidLogger.info(%2Fjava.lang%2FString,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "196": "/org.xwiki.component.logging/VoidLogger.info(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                "185": "/org.xwiki.component.logging/VoidLogger.VoidLogger()%2Fjava.lang%2FVoidType",
+                "197": "/org.xwiki.component.logging/VoidLogger.info(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "186": "/org.xwiki.component.logging/VoidLogger.debug(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "198": "/org.xwiki.component.logging/VoidLogger.isDebugEnabled()%2Fjava.lang%2FBooleanType",
+                "187": "/org.xwiki.component.logging/VoidLogger.debug(%2Fjava.lang%2FString,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "199": "/org.xwiki.component.logging/VoidLogger.isErrorEnabled()%2Fjava.lang%2FBooleanType",
+                "188": "/org.xwiki.component.logging/VoidLogger.debug(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                "200": "/org.xwiki.component.logging/VoidLogger.isInfoEnabled()%2Fjava.lang%2FBooleanType",
+                "189": "/org.xwiki.component.logging/VoidLogger.debug(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "201": "/org.xwiki.component.logging/VoidLogger.isWarnEnabled()%2Fjava.lang%2FBooleanType",
+                "202": "/org.xwiki.component.logging/VoidLogger.warn(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "203": "/org.xwiki.component.logging/VoidLogger.warn(%2Fjava.lang%2FString,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "204": "/org.xwiki.component.logging/VoidLogger.warn(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                "205": "/org.xwiki.component.logging/VoidLogger.warn(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": ["/org.xwiki.component.logging/Logger"],
+            "sourceFile": "VoidLogger.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.descriptor/DefaultComponentRole": {
+            "methods": {
+                "121": "/org.xwiki.component.descriptor/DefaultComponentRole.setRoleType(%2Fjava.lang.reflect%2FType)%2Fjava.lang%2FVoidType",
+                "122": "/org.xwiki.component.descriptor/DefaultComponentRole.toString()%2Fjava.lang%2FString",
+                "112": "/org.xwiki.component.descriptor/DefaultComponentRole.DefaultComponentRole()%2Fjava.lang%2FVoidType",
+                "113": "/org.xwiki.component.descriptor/DefaultComponentRole.DefaultComponentRole(ComponentRole)%2Fjava.lang%2FVoidType",
+                "114": "/org.xwiki.component.descriptor/DefaultComponentRole.equals(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                "115": "/org.xwiki.component.descriptor/DefaultComponentRole.getRole()%2Fjava.lang%2FClass",
+                "116": "/org.xwiki.component.descriptor/DefaultComponentRole.getRoleHint()%2Fjava.lang%2FString",
+                "117": "/org.xwiki.component.descriptor/DefaultComponentRole.getRoleType()%2Fjava.lang.reflect%2FType",
+                "118": "/org.xwiki.component.descriptor/DefaultComponentRole.hashCode()%2Fjava.lang%2FIntegerType",
+                "119": "/org.xwiki.component.descriptor/DefaultComponentRole.setRole(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType",
+                "120": "/org.xwiki.component.descriptor/DefaultComponentRole.setRoleHint(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": ["/org.xwiki.component.descriptor/ComponentRole"],
+            "sourceFile": "DefaultComponentRole.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.util/ReflectionMethodUtils": {
+            "methods": {
+                "253": "/org.xwiki.component.util/ReflectionMethodUtils.getMethodParameterAnnotations(%2Fjava.lang.reflect%2FMethod,%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FClass,%2Fjava.lang%2FBooleanType)%2Fjava.util%2FList",
+                "251": "/org.xwiki.component.util/ReflectionMethodUtils.ReflectionMethodUtils()%2Fjava.lang%2FVoidType",
+                "252": "/org.xwiki.component.util/ReflectionMethodUtils.getMethodParameterAnnotations(%2Fjava.lang.reflect%2FMethod,%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FClass)%2Fjava.util%2FList"
+            },
+            "superInterfaces": [],
+            "sourceFile": "ReflectionMethodUtils.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.manager/ComponentLookupException": {
+            "methods": {
+                "208": "/org.xwiki.component.manager/ComponentLookupException.ComponentLookupException(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "209": "/org.xwiki.component.manager/ComponentLookupException.ComponentLookupException(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": ["/java.io/Serializable"],
+            "sourceFile": "ComponentLookupException.java",
+            "superClasses": [
+                "/java.lang/Exception",
+                "/java.lang/Throwable",
+                "/java.lang/Object"
+            ]
+        },
+        "/org.xwiki.component.phase/LogEnabled": {
+            "methods": {"77": "/org.xwiki.component.phase/LogEnabled.enableLogging(%2Forg.xwiki.component.logging%2FLogger)%2Fjava.lang%2FVoidType"},
+            "superInterfaces": [],
+            "sourceFile": "LogEnabled.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.manager/ComponentLifecycleException": {
+            "methods": {
+                "206": "/org.xwiki.component.manager/ComponentLifecycleException.ComponentLifecycleException(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "207": "/org.xwiki.component.manager/ComponentLifecycleException.ComponentLifecycleException(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": ["/java.io/Serializable"],
+            "sourceFile": "ComponentLifecycleException.java",
+            "superClasses": [
+                "/java.lang/Exception",
+                "/java.lang/Throwable",
+                "/java.lang/Object"
+            ]
+        },
+        "/org.xwiki.component.descriptor/ComponentDescriptor": {
+            "methods": {
+                "11": "/org.xwiki.component.descriptor/ComponentDescriptor.getComponentDependencies()%2Fjava.util%2FCollection",
+                "12": "/org.xwiki.component.descriptor/ComponentDescriptor.getImplementation()%2Fjava.lang%2FClass",
+                "13": "/org.xwiki.component.descriptor/ComponentDescriptor.getInstantiationStrategy()ComponentInstantiationStrategy"
+            },
+            "superInterfaces": ["/org.xwiki.component.descriptor/ComponentRole"],
+            "sourceFile": "ComponentDescriptor.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.phase/Disposable": {
+            "methods": {"75": "/org.xwiki.component.phase/Disposable.dispose()%2Fjava.lang%2FVoidType"},
+            "superInterfaces": [],
+            "sourceFile": "Disposable.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.util/DefaultParameterizedType": {
+            "methods": {
+                "232": "/org.xwiki.component.util/DefaultParameterizedType.DefaultParameterizedType(%2Fjava.lang.reflect%2FParameterizedType)%2Fjava.lang%2FVoidType",
+                "233": "/org.xwiki.component.util/DefaultParameterizedType.DefaultParameterizedType(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FClass,%2Fjava.lang.reflect%2FType%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "234": "/org.xwiki.component.util/DefaultParameterizedType.equals(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                "235": "/org.xwiki.component.util/DefaultParameterizedType.getActualTypeArguments()%2Fjava.lang.reflect%2FType%25255B%25255D",
+                "236": "/org.xwiki.component.util/DefaultParameterizedType.getOwnerType()%2Fjava.lang.reflect%2FType",
+                "237": "/org.xwiki.component.util/DefaultParameterizedType.getRawType()%2Fjava.lang.reflect%2FType",
+                "238": "/org.xwiki.component.util/DefaultParameterizedType.hashCode()%2Fjava.lang%2FIntegerType",
+                "239": "/org.xwiki.component.util/DefaultParameterizedType.toString()%2Fjava.lang%2FString"
+            },
+            "superInterfaces": [
+                "/java.lang.reflect/Type",
+                "/java.lang.reflect/ParameterizedType"
+            ],
+            "sourceFile": "DefaultParameterizedType.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.internal.multi/AbstractGenericComponentManager": {
+            "methods": {
+                "78": "/org.xwiki.component.internal.multi/AbstractGenericComponentManager.AbstractGenericComponentManager()%2Fjava.lang%2FVoidType",
+                "79": "/org.xwiki.component.internal.multi/AbstractGenericComponentManager.getComponentManager()%2Forg.xwiki.component.manager%2FComponentManager",
+                "80": "/org.xwiki.component.internal.multi/AbstractGenericComponentManager.getComponentManagerInternal()%2Forg.xwiki.component.manager%2FComponentManager",
+                "81": "/org.xwiki.component.internal.multi/AbstractGenericComponentManager.getInternalParent()%2Forg.xwiki.component.manager%2FComponentManager",
+                "82": "/org.xwiki.component.internal.multi/AbstractGenericComponentManager.getKey()%2Fjava.lang%2FString",
+                "83": "/org.xwiki.component.internal.multi/AbstractGenericComponentManager.registerComponent(%2Forg.xwiki.component.descriptor%2FComponentDescriptor)%2Fjava.lang%2FVoidType",
+                "84": "/org.xwiki.component.internal.multi/AbstractGenericComponentManager.registerComponent(%2Forg.xwiki.component.descriptor%2FComponentDescriptor,%2Fjava.lang%2FObject)%2Fjava.lang%2FVoidType",
+                "85": "/org.xwiki.component.internal.multi/AbstractGenericComponentManager.setInternalParent(%2Forg.xwiki.component.manager%2FComponentManager)%2Fjava.lang%2FVoidType",
+                "86": "/org.xwiki.component.internal.multi/AbstractGenericComponentManager.unregisterComponent(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": [
+                "/org.xwiki.component.manager/CompatibilityComponentManager",
+                "/org.xwiki.component.manager/ComponentManager"
+            ],
+            "sourceFile": "AbstractGenericComponentManager.java",
+            "superClasses": [
+                "/org.xwiki.component.internal.multi/DelegateComponentManager",
+                "/java.lang/Object"
+            ]
+        },
+        "/org.xwiki.component.manager/ComponentManager": {
+            "methods": {
+                "66": "/org.xwiki.component.manager/ComponentManager.setComponentEventManager(ComponentEventManager)%2Fjava.lang%2FVoidType",
+                "55": "/org.xwiki.component.manager/ComponentManager.getComponentEventManager()ComponentEventManager",
+                "67": "/org.xwiki.component.manager/ComponentManager.setParent(ComponentManager)%2Fjava.lang%2FVoidType",
+                "56": "/org.xwiki.component.manager/ComponentManager.getInstance(%2Fjava.lang.reflect%2FType)%2Fjava.lang%2FObject",
+                "68": "/org.xwiki.component.manager/ComponentManager.unregisterComponent(%2Forg.xwiki.component.descriptor%2FComponentDescriptor)%2Fjava.lang%2FVoidType",
+                "57": "/org.xwiki.component.manager/ComponentManager.getInstance(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FString)%2Fjava.lang%2FObject",
+                "69": "/org.xwiki.component.manager/ComponentManager.unregisterComponent(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "58": "/org.xwiki.component.manager/ComponentManager.getInstanceList(%2Fjava.lang.reflect%2FType)%2Fjava.util%2FList",
+                "59": "/org.xwiki.component.manager/ComponentManager.getInstanceMap(%2Fjava.lang.reflect%2FType)%2Fjava.util%2FMap",
+                "60": "/org.xwiki.component.manager/ComponentManager.getParent()ComponentManager",
+                "61": "/org.xwiki.component.manager/ComponentManager.hasComponent(%2Fjava.lang.reflect%2FType)%2Fjava.lang%2FBooleanType",
+                "62": "/org.xwiki.component.manager/ComponentManager.hasComponent(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FString)%2Fjava.lang%2FBooleanType",
+                "52": "/org.xwiki.component.manager/ComponentManager.getComponentDescriptor(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FString)%2Forg.xwiki.component.descriptor%2FComponentDescriptor",
+                "63": "/org.xwiki.component.manager/ComponentManager.registerComponent(%2Forg.xwiki.component.descriptor%2FComponentDescriptor)%2Fjava.lang%2FVoidType",
+                "64": "/org.xwiki.component.manager/ComponentManager.registerComponent(%2Forg.xwiki.component.descriptor%2FComponentDescriptor,%2Fjava.lang%2FObject)%2Fjava.lang%2FVoidType",
+                "53": "/org.xwiki.component.manager/ComponentManager.getComponentDescriptorList(%2Fjava.lang%2FClass)%2Fjava.util%2FList",
+                "65": "/org.xwiki.component.manager/ComponentManager.release(%2Fjava.lang%2FObject)%2Fjava.lang%2FVoidType",
+                "54": "/org.xwiki.component.manager/ComponentManager.getComponentDescriptorList(%2Fjava.lang.reflect%2FType)%2Fjava.util%2FList"
+            },
+            "superInterfaces": ["/org.xwiki.component.manager/CompatibilityComponentManager"],
+            "sourceFile": "ComponentManager.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.internal.multi/DefaultComponentManagerManager": {
+            "methods": {
+                "125": "/org.xwiki.component.internal.multi/DefaultComponentManagerManager.getComponentManager(%2Fjava.lang%2FString,%2Fjava.lang%2FBooleanType)%2Forg.xwiki.component.manager%2FComponentManager",
+                "123": "/org.xwiki.component.internal.multi/DefaultComponentManagerManager.DefaultComponentManagerManager()%2Fjava.lang%2FVoidType",
+                "124": "/org.xwiki.component.internal.multi/DefaultComponentManagerManager.createComponentManager(%2Fjava.lang%2FString)%2Forg.xwiki.component.manager%2FComponentManager"
+            },
+            "superInterfaces": ["/org.xwiki.component.internal.multi/ComponentManagerManager"],
+            "sourceFile": "DefaultComponentManagerManager.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.internal.multi/ComponentManagerManager": {
+            "methods": {"19": "/org.xwiki.component.internal.multi/ComponentManagerManager.getComponentManager(%2Fjava.lang%2FString,%2Fjava.lang%2FBooleanType)%2Forg.xwiki.component.manager%2FComponentManager"},
+            "superInterfaces": [],
+            "sourceFile": "ComponentManagerManager.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.manager/CompatibilityComponentManager": {
+            "methods": {
+                "44": "/org.xwiki.component.manager/CompatibilityComponentManager.lookup(%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FObject",
+                "45": "/org.xwiki.component.manager/CompatibilityComponentManager.lookupList(%2Fjava.lang%2FClass)%2Fjava.util%2FList",
+                "46": "/org.xwiki.component.manager/CompatibilityComponentManager.lookupMap(%2Fjava.lang%2FClass)%2Fjava.util%2FMap",
+                "47": "/org.xwiki.component.manager/CompatibilityComponentManager.unregisterComponent(%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "40": "/org.xwiki.component.manager/CompatibilityComponentManager.getComponentDescriptor(%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Forg.xwiki.component.descriptor%2FComponentDescriptor",
+                "41": "/org.xwiki.component.manager/CompatibilityComponentManager.hasComponent(%2Fjava.lang%2FClass)%2Fjava.lang%2FBooleanType",
+                "42": "/org.xwiki.component.manager/CompatibilityComponentManager.hasComponent(%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FBooleanType",
+                "43": "/org.xwiki.component.manager/CompatibilityComponentManager.lookup(%2Fjava.lang%2FClass)%2Fjava.lang%2FObject"
+            },
+            "superInterfaces": [],
+            "sourceFile": "CompatibilityComponentManager.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.internal.multi/ComponentManagerFactory": {
+            "methods": {
+                "17": "/org.xwiki.component.internal.multi/ComponentManagerFactory.createComponentManager(%2Forg.xwiki.component.manager%2FComponentManager)%2Forg.xwiki.component.manager%2FComponentManager",
+                "18": "/org.xwiki.component.internal.multi/ComponentManagerFactory.createComponentManager(%2Fjava.lang%2FString,%2Forg.xwiki.component.manager%2FComponentManager)%2Forg.xwiki.component.manager%2FComponentManager"
+            },
+            "superInterfaces": [],
+            "sourceFile": "ComponentManagerFactory.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.phase/InitializationException": {
+            "methods": {
+                "231": "/org.xwiki.component.phase/InitializationException.InitializationException(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                "230": "/org.xwiki.component.phase/InitializationException.InitializationException(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": ["/java.io/Serializable"],
+            "sourceFile": "InitializationException.java",
+            "superClasses": [
+                "/java.lang/Exception",
+                "/java.lang/Throwable",
+                "/java.lang/Object"
+            ]
+        },
+        "/org.xwiki.component.phase/Initializable": {
+            "methods": {"76": "/org.xwiki.component.phase/Initializable.initialize()%2Fjava.lang%2FVoidType"},
+            "superInterfaces": [],
+            "sourceFile": "Initializable.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.logging/AbstractLogEnabled": {
+            "methods": {
+                "181": "/org.xwiki.component.logging/AbstractLogEnabled.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+                "182": "/org.xwiki.component.logging/AbstractLogEnabled.AbstractLogEnabled()%2Fjava.lang%2FVoidType",
+                "183": "/org.xwiki.component.logging/AbstractLogEnabled.enableLogging(Logger)%2Fjava.lang%2FVoidType",
+                "184": "/org.xwiki.component.logging/AbstractLogEnabled.getLogger()Logger"
+            },
+            "superInterfaces": ["/org.xwiki.component.phase/LogEnabled"],
+            "sourceFile": "AbstractLogEnabled.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.internal.multi/DelegateComponentManager": {
+            "methods": {
+                "150": "/org.xwiki.component.internal.multi/DelegateComponentManager.setComponentManager(%2Forg.xwiki.component.manager%2FComponentManager)%2Fjava.lang%2FVoidType",
+                "151": "/org.xwiki.component.internal.multi/DelegateComponentManager.setParent(%2Forg.xwiki.component.manager%2FComponentManager)%2Fjava.lang%2FVoidType",
+                "130": "/org.xwiki.component.internal.multi/DelegateComponentManager.getComponentDescriptorList(%2Fjava.lang.reflect%2FType)%2Fjava.util%2FList",
+                "152": "/org.xwiki.component.internal.multi/DelegateComponentManager.unregisterComponent(%2Forg.xwiki.component.descriptor%2FComponentDescriptor)%2Fjava.lang%2FVoidType",
+                "131": "/org.xwiki.component.internal.multi/DelegateComponentManager.getComponentEventManager()%2Forg.xwiki.component.manager%2FComponentEventManager",
+                "153": "/org.xwiki.component.internal.multi/DelegateComponentManager.unregisterComponent(%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "132": "/org.xwiki.component.internal.multi/DelegateComponentManager.getComponentManager()%2Forg.xwiki.component.manager%2FComponentManager",
+                "154": "/org.xwiki.component.internal.multi/DelegateComponentManager.unregisterComponent(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "133": "/org.xwiki.component.internal.multi/DelegateComponentManager.getInstance(%2Fjava.lang.reflect%2FType)%2Fjava.lang%2FObject",
+                "134": "/org.xwiki.component.internal.multi/DelegateComponentManager.getInstance(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FString)%2Fjava.lang%2FObject",
+                "135": "/org.xwiki.component.internal.multi/DelegateComponentManager.getInstanceList(%2Fjava.lang.reflect%2FType)%2Fjava.util%2FList",
+                "136": "/org.xwiki.component.internal.multi/DelegateComponentManager.getInstanceMap(%2Fjava.lang.reflect%2FType)%2Fjava.util%2FMap",
+                "137": "/org.xwiki.component.internal.multi/DelegateComponentManager.getParent()%2Forg.xwiki.component.manager%2FComponentManager",
+                "138": "/org.xwiki.component.internal.multi/DelegateComponentManager.hasComponent(%2Fjava.lang%2FClass)%2Fjava.lang%2FBooleanType",
+                "139": "/org.xwiki.component.internal.multi/DelegateComponentManager.hasComponent(%2Fjava.lang.reflect%2FType)%2Fjava.lang%2FBooleanType",
+                "140": "/org.xwiki.component.internal.multi/DelegateComponentManager.hasComponent(%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FBooleanType",
+                "141": "/org.xwiki.component.internal.multi/DelegateComponentManager.hasComponent(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FString)%2Fjava.lang%2FBooleanType",
+                "142": "/org.xwiki.component.internal.multi/DelegateComponentManager.lookup(%2Fjava.lang%2FClass)%2Fjava.lang%2FObject",
+                "143": "/org.xwiki.component.internal.multi/DelegateComponentManager.lookup(%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FObject",
+                "144": "/org.xwiki.component.internal.multi/DelegateComponentManager.lookupList(%2Fjava.lang%2FClass)%2Fjava.util%2FList",
+                "145": "/org.xwiki.component.internal.multi/DelegateComponentManager.lookupMap(%2Fjava.lang%2FClass)%2Fjava.util%2FMap",
+                "146": "/org.xwiki.component.internal.multi/DelegateComponentManager.registerComponent(%2Forg.xwiki.component.descriptor%2FComponentDescriptor)%2Fjava.lang%2FVoidType",
+                "147": "/org.xwiki.component.internal.multi/DelegateComponentManager.registerComponent(%2Forg.xwiki.component.descriptor%2FComponentDescriptor,%2Fjava.lang%2FObject)%2Fjava.lang%2FVoidType",
+                "148": "/org.xwiki.component.internal.multi/DelegateComponentManager.release(%2Fjava.lang%2FObject)%2Fjava.lang%2FVoidType",
+                "126": "/org.xwiki.component.internal.multi/DelegateComponentManager.DelegateComponentManager()%2Fjava.lang%2FVoidType",
+                "149": "/org.xwiki.component.internal.multi/DelegateComponentManager.setComponentEventManager(%2Forg.xwiki.component.manager%2FComponentEventManager)%2Fjava.lang%2FVoidType",
+                "127": "/org.xwiki.component.internal.multi/DelegateComponentManager.getComponentDescriptor(%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Forg.xwiki.component.descriptor%2FComponentDescriptor",
+                "128": "/org.xwiki.component.internal.multi/DelegateComponentManager.getComponentDescriptor(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FString)%2Forg.xwiki.component.descriptor%2FComponentDescriptor",
+                "129": "/org.xwiki.component.internal.multi/DelegateComponentManager.getComponentDescriptorList(%2Fjava.lang%2FClass)%2Fjava.util%2FList"
+            },
+            "superInterfaces": [
+                "/org.xwiki.component.manager/CompatibilityComponentManager",
+                "/org.xwiki.component.manager/ComponentManager"
+            ],
+            "sourceFile": "DelegateComponentManager.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.util/ObjectUtils": {
+            "methods": {
+                "250": "/org.xwiki.component.util/ObjectUtils.hasCode(%2Fjava.lang%2FObject)%2Fjava.lang%2FIntegerType",
+                "248": "/org.xwiki.component.util/ObjectUtils.ObjectUtils()%2Fjava.lang%2FVoidType",
+                "249": "/org.xwiki.component.util/ObjectUtils.equals(%2Fjava.lang%2FObject,%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType"
+            },
+            "superInterfaces": [],
+            "sourceFile": "ObjectUtils.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.descriptor/ComponentDependency": {
+            "methods": {
+                "8": "/org.xwiki.component.descriptor/ComponentDependency.getHints()%2Fjava.lang%2FString%25255B%25255D",
+                "9": "/org.xwiki.component.descriptor/ComponentDependency.getMappingType()%2Fjava.lang%2FClass",
+                "10": "/org.xwiki.component.descriptor/ComponentDependency.getName()%2Fjava.lang%2FString"
+            },
+            "superInterfaces": ["/org.xwiki.component.descriptor/ComponentRole"],
+            "sourceFile": "ComponentDependency.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.manager/ComponentManagerInitializer": {
+            "methods": {"70": "/org.xwiki.component.manager/ComponentManagerInitializer.initialize(ComponentManager)%2Fjava.lang%2FVoidType"},
+            "superInterfaces": [],
+            "sourceFile": "ComponentManagerInitializer.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.manager/ProviderLookupException": {
+            "methods": {
+                "218": "/org.xwiki.component.manager/ProviderLookupException.ProviderLookupException(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "219": "/org.xwiki.component.manager/ProviderLookupException.ProviderLookupException(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": ["/java.io/Serializable"],
+            "sourceFile": "ProviderLookupException.java",
+            "superClasses": [
+                "/java.lang/Exception",
+                "/java.lang/Throwable",
+                "/java.lang/Object"
+            ]
+        },
+        "/org.xwiki.component.manager/ComponentEventManager": {
+            "methods": {
+                "50": "/org.xwiki.component.manager/ComponentEventManager.notifyComponentUnregistered(%2Forg.xwiki.component.descriptor%2FComponentDescriptor)%2Fjava.lang%2FVoidType",
+                "48": "/org.xwiki.component.manager/ComponentEventManager.notifyComponentRegistered(%2Forg.xwiki.component.descriptor%2FComponentDescriptor)%2Fjava.lang%2FVoidType",
+                "51": "/org.xwiki.component.manager/ComponentEventManager.notifyComponentUnregistered(%2Forg.xwiki.component.descriptor%2FComponentDescriptor,ComponentManager)%2Fjava.lang%2FVoidType",
+                "49": "/org.xwiki.component.manager/ComponentEventManager.notifyComponentRegistered(%2Forg.xwiki.component.descriptor%2FComponentDescriptor,ComponentManager)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": [],
+            "sourceFile": "ComponentEventManager.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.descriptor/ComponentInstantiationStrategy": {
+            "methods": {
+                "242": "/org.xwiki.component.descriptor/ComponentInstantiationStrategy.valueOf(%2Fjava.lang%2FString)ComponentInstantiationStrategy",
+                "243": "/org.xwiki.component.descriptor/ComponentInstantiationStrategy.values()ComponentInstantiationStrategy%25255B%25255D",
+                "240": "/org.xwiki.component.descriptor/ComponentInstantiationStrategy.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+                "241": "/org.xwiki.component.descriptor/ComponentInstantiationStrategy.ComponentInstantiationStrategy(%2Fjava.lang%2FString,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": [],
+            "sourceFile": "ComponentInstantiationStrategy.java",
+            "superClasses": ["/java.lang/Enum"]
+        },
+        "/org.xwiki.component.annotation/Component": {
+            "methods": {
+                "0": "/org.xwiki.component.annotation/Component.hints()%2Fjava.lang%2FString%25255B%25255D",
+                "1": "/org.xwiki.component.annotation/Component.roles()%2Fjava.lang%2FClass%25255B%25255D",
+                "2": "/org.xwiki.component.annotation/Component.staticRegistration()%2Fjava.lang%2FBooleanType",
+                "3": "/org.xwiki.component.annotation/Component.value()%2Fjava.lang%2FString"
+            },
+            "superInterfaces": ["/java.lang.annotation/Annotation"],
+            "sourceFile": "Component.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.descriptor/DefaultComponentDescriptor": {
+            "methods": {
+                "110": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.setInstantiationStrategy(ComponentInstantiationStrategy)%2Fjava.lang%2FVoidType",
+                "100": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.DefaultComponentDescriptor()%2Fjava.lang%2FVoidType",
+                "111": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.toString()%2Fjava.lang%2FString",
+                "101": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.DefaultComponentDescriptor(ComponentDescriptor)%2Fjava.lang%2FVoidType",
+                "102": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.addComponentDependency(ComponentDependency)%2Fjava.lang%2FVoidType",
+                "103": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.addComponentDependency(%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "104": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.equals(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                "105": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.getComponentDependencies()%2Fjava.util%2FCollection",
+                "106": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.getImplementation()%2Fjava.lang%2FClass",
+                "107": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.getInstantiationStrategy()ComponentInstantiationStrategy",
+                "108": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.hashCode()%2Fjava.lang%2FIntegerType",
+                "109": "/org.xwiki.component.descriptor/DefaultComponentDescriptor.setImplementation(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": [
+                "/org.xwiki.component.descriptor/ComponentRole",
+                "/org.xwiki.component.descriptor/ComponentDescriptor"
+            ],
+            "sourceFile": "DefaultComponentDescriptor.java",
+            "superClasses": [
+                "/org.xwiki.component.descriptor/DefaultComponentRole",
+                "/java.lang/Object"
+            ]
+        },
+        "/org.xwiki.component.namespace/NamespaceUtils": {
+            "methods": {
+                "244": "/org.xwiki.component.namespace/NamespaceUtils.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+                "245": "/org.xwiki.component.namespace/NamespaceUtils.NamespaceUtils()%2Fjava.lang%2FVoidType",
+                "246": "/org.xwiki.component.namespace/NamespaceUtils.getPrefix(%2Fjava.lang%2FString)%2Fjava.lang%2FString",
+                "247": "/org.xwiki.component.namespace/NamespaceUtils.toNamespace(%2Fjava.lang%2FString)Namespace"
+            },
+            "superInterfaces": [],
+            "sourceFile": "NamespaceUtils.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.annotation/Role": {
+            "methods": {},
+            "superInterfaces": ["/java.lang.annotation/Annotation"],
+            "sourceFile": "Role.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.namespace/Namespace": {
+            "methods": {
+                "220": "/org.xwiki.component.namespace/Namespace.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+                "221": "/org.xwiki.component.namespace/Namespace.Namespace(%2Fjava.lang%2FString,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "222": "/org.xwiki.component.namespace/Namespace.equals(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                "223": "/org.xwiki.component.namespace/Namespace.getType()%2Fjava.lang%2FString",
+                "224": "/org.xwiki.component.namespace/Namespace.getValue()%2Fjava.lang%2FString",
+                "225": "/org.xwiki.component.namespace/Namespace.hashCode()%2Fjava.lang%2FIntegerType",
+                "226": "/org.xwiki.component.namespace/Namespace.serialize()%2Fjava.lang%2FString",
+                "227": "/org.xwiki.component.namespace/Namespace.toString()%2Fjava.lang%2FString"
+            },
+            "superInterfaces": [],
+            "sourceFile": "Namespace.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.internal.namespace/DefaultNamespaceValidator": {
+            "methods": {
+                "176": "/org.xwiki.component.internal.namespace/DefaultNamespaceValidator.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+                "177": "/org.xwiki.component.internal.namespace/DefaultNamespaceValidator.DefaultNamespaceValidator()%2Fjava.lang%2FVoidType",
+                "180": "/org.xwiki.component.internal.namespace/DefaultNamespaceValidator.isAllowed(%2Fjava.util%2FCollection,%2Fjava.lang%2FString)%2Fjava.lang%2FBooleanType",
+                "178": "/org.xwiki.component.internal.namespace/DefaultNamespaceValidator.checkAllowed(%2Fjava.util%2FCollection,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "179": "/org.xwiki.component.internal.namespace/DefaultNamespaceValidator.isAllowed(%2Fjava.lang%2FString,%2Fjava.lang%2FString)%2Fjava.lang%2FBooleanType"
+            },
+            "superInterfaces": ["/org.xwiki.component.namespace/NamespaceValidator"],
+            "sourceFile": "DefaultNamespaceValidator.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.manager/ComponentManagerCompatibilityAspect": {
+            "methods": {
+                "210": "/org.xwiki.component.manager/ComponentManagerCompatibilityAspect.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+                "211": "/org.xwiki.component.manager/ComponentManagerCompatibilityAspect.ComponentManagerCompatibilityAspect()%2Fjava.lang%2FVoidType",
+                "212": "/org.xwiki.component.manager/ComponentManagerCompatibilityAspect.ajc$declare_parents_1()%2Fjava.lang%2FVoidType",
+                "213": "/org.xwiki.component.manager/ComponentManagerCompatibilityAspect.ajc$postClinit()%2Fjava.lang%2FVoidType",
+                "214": "/org.xwiki.component.manager/ComponentManagerCompatibilityAspect.aspectOf()ComponentManagerCompatibilityAspect",
+                "215": "/org.xwiki.component.manager/ComponentManagerCompatibilityAspect.hasAspect()%2Fjava.lang%2FBooleanType"
+            },
+            "superInterfaces": [],
+            "sourceFile": "ComponentManagerCompatibilityAspect.aj",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect": {
+            "methods": {
+                "170": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethodDispatch1$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$lookupList(DelegateComponentManager,%2Fjava.lang%2FClass)%2Fjava.util%2FList",
+                "160": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethod$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$lookup(DelegateComponentManager,%2Fjava.lang%2FClass)%2Fjava.lang%2FObject",
+                "171": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethodDispatch1$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$lookupMap(DelegateComponentManager,%2Fjava.lang%2FClass)%2Fjava.util%2FMap",
+                "161": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethod$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$lookup(DelegateComponentManager,%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FObject",
+                "172": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethodDispatch1$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$unregisterComponent(DelegateComponentManager,%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "162": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethod$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$lookupList(DelegateComponentManager,%2Fjava.lang%2FClass)%2Fjava.util%2FList",
+                "173": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$postClinit()%2Fjava.lang%2FVoidType",
+                "163": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethod$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$lookupMap(DelegateComponentManager,%2Fjava.lang%2FClass)%2Fjava.util%2FMap",
+                "174": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.aspectOf()DelegateComponentManagerCompatibilityAspect",
+                "164": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethod$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$unregisterComponent(DelegateComponentManager,%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "175": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.hasAspect()%2Fjava.lang%2FBooleanType",
+                "165": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethodDispatch1$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$getComponentDescriptor(DelegateComponentManager,%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Forg.xwiki.component.descriptor%2FComponentDescriptor",
+                "166": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethodDispatch1$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$hasComponent(DelegateComponentManager,%2Fjava.lang%2FClass)%2Fjava.lang%2FBooleanType",
+                "155": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+                "167": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethodDispatch1$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$hasComponent(DelegateComponentManager,%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FBooleanType",
+                "156": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.DelegateComponentManagerCompatibilityAspect()%2Fjava.lang%2FVoidType",
+                "168": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethodDispatch1$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$lookup(DelegateComponentManager,%2Fjava.lang%2FClass)%2Fjava.lang%2FObject",
+                "157": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethod$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$getComponentDescriptor(DelegateComponentManager,%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Forg.xwiki.component.descriptor%2FComponentDescriptor",
+                "169": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethodDispatch1$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$lookup(DelegateComponentManager,%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FObject",
+                "158": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethod$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$hasComponent(DelegateComponentManager,%2Fjava.lang%2FClass)%2Fjava.lang%2FBooleanType",
+                "159": "/org.xwiki.component.internal.multi/DelegateComponentManagerCompatibilityAspect.ajc$interMethod$org_xwiki_component_internal_multi_DelegateComponentManagerCompatibilityAspect$org_xwiki_component_internal_multi_DelegateComponentManager$hasComponent(DelegateComponentManager,%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang%2FBooleanType"
+            },
+            "superInterfaces": [],
+            "sourceFile": "DelegateComponentManagerCompatibilityAspect.aj",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.annotation/InstantiationStrategy": {
+            "methods": {"5": "/org.xwiki.component.annotation/InstantiationStrategy.value()%2Forg.xwiki.component.descriptor%2FComponentInstantiationStrategy"},
+            "superInterfaces": ["/java.lang.annotation/Annotation"],
+            "sourceFile": "InstantiationStrategy.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.descriptor/DefaultComponentDependency": {
+            "methods": {
+                "99": "/org.xwiki.component.descriptor/DefaultComponentDependency.setRole(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType",
+                "88": "/org.xwiki.component.descriptor/DefaultComponentDependency.DefaultComponentDependency(ComponentDependency)%2Fjava.lang%2FVoidType",
+                "89": "/org.xwiki.component.descriptor/DefaultComponentDependency.equals(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                "90": "/org.xwiki.component.descriptor/DefaultComponentDependency.equals(ComponentDependency)%2Fjava.lang%2FBooleanType",
+                "91": "/org.xwiki.component.descriptor/DefaultComponentDependency.getHints()%2Fjava.lang%2FString%25255B%25255D",
+                "92": "/org.xwiki.component.descriptor/DefaultComponentDependency.getMappingType()%2Fjava.lang%2FClass",
+                "93": "/org.xwiki.component.descriptor/DefaultComponentDependency.getName()%2Fjava.lang%2FString",
+                "94": "/org.xwiki.component.descriptor/DefaultComponentDependency.getRole()%2Fjava.lang%2FClass",
+                "95": "/org.xwiki.component.descriptor/DefaultComponentDependency.hashCode()%2Fjava.lang%2FIntegerType",
+                "96": "/org.xwiki.component.descriptor/DefaultComponentDependency.setHints(%2Fjava.lang%2FString%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "97": "/org.xwiki.component.descriptor/DefaultComponentDependency.setMappingType(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType",
+                "98": "/org.xwiki.component.descriptor/DefaultComponentDependency.setName(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "87": "/org.xwiki.component.descriptor/DefaultComponentDependency.DefaultComponentDependency()%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": [
+                "/org.xwiki.component.descriptor/ComponentRole",
+                "/org.xwiki.component.descriptor/ComponentDependency"
+            ],
+            "sourceFile": "DefaultComponentDependency.java",
+            "superClasses": [
+                "/org.xwiki.component.descriptor/DefaultComponentRole",
+                "/java.lang/Object"
+            ]
+        },
+        "/org.xwiki.component.manager/NamespacedComponentManager": {
+            "methods": {"71": "/org.xwiki.component.manager/NamespacedComponentManager.getNamespace()%2Fjava.lang%2FString"},
+            "superInterfaces": [
+                "/org.xwiki.component.manager/CompatibilityComponentManager",
+                "/org.xwiki.component.manager/ComponentManager"
+            ],
+            "sourceFile": "NamespacedComponentManager.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.util/ReflectionUtils": {
+            "methods": {
+                "270": "/org.xwiki.component.util/ReflectionUtils.resolveType(%2Fjava.lang.reflect%2FType,%2Fjava.lang%2FClass,%2Fjava.lang.reflect%2FType%25255B%25255D,%2Fjava.lang%2FClass)%2Fjava.lang.reflect%2FType",
+                "260": "/org.xwiki.component.util/ReflectionUtils.getLastFieldGenericArgument(%2Fjava.lang.reflect%2FField)%2Fjava.lang.reflect%2FType",
+                "271": "/org.xwiki.component.util/ReflectionUtils.resolveTypes(%2Fjava.lang.reflect%2FType%25255B%25255D,%2Fjava.util%2FMap)%2Fjava.lang.reflect%2FType%25255B%25255D",
+                "261": "/org.xwiki.component.util/ReflectionUtils.getLastGenericClassType(%2Fjava.lang%2FClass,%2Fjava.lang%2FClass)%2Fjava.lang%2FClass",
+                "272": "/org.xwiki.component.util/ReflectionUtils.setFieldValue(%2Fjava.lang%2FObject,%2Fjava.lang%2FString,%2Fjava.lang%2FObject)%2Fjava.lang%2FVoidType",
+                "262": "/org.xwiki.component.util/ReflectionUtils.getLastGenericFieldType(%2Fjava.lang.reflect%2FField)%2Fjava.lang%2FClass",
+                "273": "/org.xwiki.component.util/ReflectionUtils.unserializeType(%2Fjava.lang%2FString,%2Fjava.lang%2FClassLoader)%2Fjava.lang.reflect%2FType",
+                "263": "/org.xwiki.component.util/ReflectionUtils.getLastTypeGenericArgument(%2Fjava.lang.reflect%2FType)%2Fjava.lang.reflect%2FType",
+                "264": "/org.xwiki.component.util/ReflectionUtils.getTypeClass(%2Fjava.lang.reflect%2FType)%2Fjava.lang%2FClass",
+                "265": "/org.xwiki.component.util/ReflectionUtils.resolveSuperArguments(%2Fjava.lang.reflect%2FType%25255B%25255D,%2Fjava.lang.reflect%2FType)%2Fjava.lang.reflect%2FType%25255B%25255D",
+                "254": "/org.xwiki.component.util/ReflectionUtils.ReflectionUtils()%2Fjava.lang%2FVoidType",
+                "266": "/org.xwiki.component.util/ReflectionUtils.resolveSuperArguments(%2Fjava.lang.reflect%2FType%25255B%25255D,%2Fjava.lang%2FClass,%2Fjava.lang.reflect%2FType%25255B%25255D)%2Fjava.lang.reflect%2FType%25255B%25255D",
+                "255": "/org.xwiki.component.util/ReflectionUtils.getAllFields(%2Fjava.lang%2FClass)%2Fjava.util%2FCollection",
+                "256": "/org.xwiki.component.util/ReflectionUtils.getDirectAnnotation(%2Fjava.lang%2FClass,%2Fjava.lang.reflect%2FAnnotatedElement)%2Fjava.lang.annotation%2FAnnotation",
+                "267": "/org.xwiki.component.util/ReflectionUtils.resolveType(%2Fjava.lang.reflect%2FType,%2Fjava.lang.reflect%2FType)%2Fjava.lang.reflect%2FType",
+                "257": "/org.xwiki.component.util/ReflectionUtils.getDirectTypes(%2Fjava.lang.reflect%2FType)%2Fjava.util%2FList",
+                "268": "/org.xwiki.component.util/ReflectionUtils.resolveType(%2Fjava.lang.reflect%2FType,%2Fjava.util%2FMap)%2Fjava.lang.reflect%2FType",
+                "258": "/org.xwiki.component.util/ReflectionUtils.getField(%2Fjava.lang%2FClass,%2Fjava.lang%2FString)%2Fjava.lang.reflect%2FField",
+                "269": "/org.xwiki.component.util/ReflectionUtils.resolveType(%2Fjava.lang%2FClass,%2Fjava.lang.reflect%2FType%25255B%25255D,%2Fjava.lang%2FClass)%2Fjava.lang.reflect%2FType",
+                "259": "/org.xwiki.component.util/ReflectionUtils.getGenericClassType(%2Fjava.lang%2FClass,%2Fjava.lang%2FClass)%2Fjava.lang.reflect%2FType"
+            },
+            "superInterfaces": [],
+            "sourceFile": "ReflectionUtils.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.descriptor/ComponentRole": {
+            "methods": {
+                "15": "/org.xwiki.component.descriptor/ComponentRole.getRoleHint()%2Fjava.lang%2FString",
+                "16": "/org.xwiki.component.descriptor/ComponentRole.getRoleType()%2Fjava.lang.reflect%2FType",
+                "14": "/org.xwiki.component.descriptor/ComponentRole.getRole()%2Fjava.lang%2FClass"
+            },
+            "superInterfaces": [],
+            "sourceFile": "ComponentRole.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.annotation/ComponentRole": {
+            "methods": {},
+            "superInterfaces": ["/java.lang.annotation/Annotation"],
+            "sourceFile": "ComponentRole.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.namespace/NamespaceValidator": {
+            "methods": {
+                "73": "/org.xwiki.component.namespace/NamespaceValidator.checkAllowed(%2Fjava.util%2FCollection,%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "74": "/org.xwiki.component.namespace/NamespaceValidator.isAllowed(%2Fjava.util%2FCollection,%2Fjava.lang%2FString)%2Fjava.lang%2FBooleanType"
+            },
+            "superInterfaces": [],
+            "sourceFile": "NamespaceValidator.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.namespace/NamespaceContextExecutor": {
+            "methods": {"72": "/org.xwiki.component.namespace/NamespaceContextExecutor.execute(Namespace,%2Fjava.util.concurrent%2FCallable)%2Fjava.lang%2FObject"},
+            "superInterfaces": [],
+            "sourceFile": "NamespaceContextExecutor.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.namespace/NamespaceNotAllowedException": {
+            "methods": {
+                "228": "/org.xwiki.component.namespace/NamespaceNotAllowedException.NamespaceNotAllowedException(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "229": "/org.xwiki.component.namespace/NamespaceNotAllowedException.NamespaceNotAllowedException(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": ["/java.io/Serializable"],
+            "sourceFile": "NamespaceNotAllowedException.java",
+            "superClasses": [
+                "/java.lang/Exception",
+                "/java.lang/Throwable",
+                "/java.lang/Object"
+            ]
+        },
+        "/org.xwiki.component.manager/ComponentRepositoryException": {
+            "methods": {
+                "217": "/org.xwiki.component.manager/ComponentRepositoryException.ComponentRepositoryException(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                "216": "/org.xwiki.component.manager/ComponentRepositoryException.ComponentRepositoryException(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": ["/java.io/Serializable"],
+            "sourceFile": "ComponentRepositoryException.java",
+            "superClasses": [
+                "/java.lang/Exception",
+                "/java.lang/Throwable",
+                "/java.lang/Object"
+            ]
+        },
+        "/org.xwiki.component.annotation/Requirement": {
+            "methods": {
+                "6": "/org.xwiki.component.annotation/Requirement.hints()%2Fjava.lang%2FString%25255B%25255D",
+                "7": "/org.xwiki.component.annotation/Requirement.value()%2Fjava.lang%2FString"
+            },
+            "superInterfaces": ["/java.lang.annotation/Annotation"],
+            "sourceFile": "Requirement.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.logging/Logger": {
+            "methods": {
+                "33": "/org.xwiki.component.logging/Logger.isErrorEnabled()%2Fjava.lang%2FBooleanType",
+                "22": "/org.xwiki.component.logging/Logger.debug(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                "34": "/org.xwiki.component.logging/Logger.isInfoEnabled()%2Fjava.lang%2FBooleanType",
+                "23": "/org.xwiki.component.logging/Logger.debug(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "35": "/org.xwiki.component.logging/Logger.isWarnEnabled()%2Fjava.lang%2FBooleanType",
+                "24": "/org.xwiki.component.logging/Logger.error(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "36": "/org.xwiki.component.logging/Logger.warn(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "25": "/org.xwiki.component.logging/Logger.error(%2Fjava.lang%2FString,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "37": "/org.xwiki.component.logging/Logger.warn(%2Fjava.lang%2FString,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "26": "/org.xwiki.component.logging/Logger.error(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                "38": "/org.xwiki.component.logging/Logger.warn(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                "27": "/org.xwiki.component.logging/Logger.error(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "39": "/org.xwiki.component.logging/Logger.warn(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "28": "/org.xwiki.component.logging/Logger.info(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "29": "/org.xwiki.component.logging/Logger.info(%2Fjava.lang%2FString,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "30": "/org.xwiki.component.logging/Logger.info(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                "20": "/org.xwiki.component.logging/Logger.debug(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+                "31": "/org.xwiki.component.logging/Logger.info(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType",
+                "32": "/org.xwiki.component.logging/Logger.isDebugEnabled()%2Fjava.lang%2FBooleanType",
+                "21": "/org.xwiki.component.logging/Logger.debug(%2Fjava.lang%2FString,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FVoidType"
+            },
+            "superInterfaces": [],
+            "sourceFile": "Logger.java",
+            "superClasses": ["/java.lang/Object"]
+        },
+        "/org.xwiki.component.annotation/DisposePriority": {
+            "methods": {"4": "/org.xwiki.component.annotation/DisposePriority.value()%2Fjava.lang%2FIntegerType"},
+            "superInterfaces": ["/java.lang.annotation/Annotation"],
+            "sourceFile": "DisposePriority.java",
+            "superClasses": ["/java.lang/Object"]
+        }
+    },
+    "graph": {
+        "internalCalls": [
+            [
+                130,
+                130
+            ],
+            [
+                146,
+                146
+            ],
+            [
+                163,
+                132
+            ],
+            [
+                178,
+                180
+            ],
+            [
+                114,
+                116
+            ],
+            [
+                130,
+                132
+            ],
+            [
+                210,
+                213
+            ],
+            [
+                114,
+                117
+            ],
+            [
+                259,
+                237
+            ],
+            [
+                163,
+                145
+            ],
+            [
+                147,
+                132
+            ],
+            [
+                99,
+                92
+            ],
+            [
+                149,
+                79
+            ],
+            [
+                227,
+                226
+            ],
+            [
+                164,
+                132
+            ],
+            [
+                131,
+                131
+            ],
+            [
+                147,
+                147
+            ],
+            [
+                83,
+                84
+            ],
+            [
+                131,
+                132
+            ],
+            [
+                115,
+                117
+            ],
+            [
+                94,
+                263
+            ],
+            [
+                94,
+                264
+            ],
+            [
+                133,
+                79
+            ],
+            [
+                148,
+                132
+            ],
+            [
+                178,
+                228
+            ],
+            [
+                99,
+                117
+            ],
+            [
+                164,
+                153
+            ],
+            [
+                99,
+                121
+            ],
+            [
+                165,
+                127
+            ],
+            [
+                180,
+                179
+            ],
+            [
+                84,
+                83
+            ],
+            [
+                249,
+                89
+            ],
+            [
+                84,
+                84
+            ],
+            [
+                148,
+                148
+            ],
+            [
+                260,
+                263
+            ],
+            [
+                261,
+                235
+            ],
+            [
+                261,
+                237
+            ],
+            [
+                134,
+                79
+            ],
+            [
+                100,
+                112
+            ],
+            [
+                249,
+                104
+            ],
+            [
+                149,
+                132
+            ],
+            [
+                101,
+                88
+            ],
+            [
+                151,
+                79
+            ],
+            [
+                249,
+                114
+            ],
+            [
+                213,
+                211
+            ],
+            [
+                261,
+                259
+            ],
+            [
+                133,
+                132
+            ],
+            [
+                133,
+                133
+            ],
+            [
+                149,
+                149
+            ],
+            [
+                101,
+                102
+            ],
+            [
+                181,
+                185
+            ],
+            [
+                101,
+                105
+            ],
+            [
+                166,
+                138
+            ],
+            [
+                250,
+                95
+            ],
+            [
+                101,
+                106
+            ],
+            [
+                101,
+                107
+            ],
+            [
+                101,
+                109
+            ],
+            [
+                97,
+                233
+            ],
+            [
+                135,
+                79
+            ],
+            [
+                246,
+                223
+            ],
+            [
+                101,
+                110
+            ],
+            [
+                84,
+                125
+            ],
+            [
+                97,
+                235
+            ],
+            [
+                97,
+                236
+            ],
+            [
+                101,
+                113
+            ],
+            [
+                250,
+                108
+            ],
+            [
+                152,
+                79
+            ],
+            [
+                250,
+                118
+            ],
+            [
+                84,
+                146
+            ],
+            [
+                118,
+                116
+            ],
+            [
+                134,
+                132
+            ],
+            [
+                262,
+                260
+            ],
+            [
+                84,
+                147
+            ],
+            [
+                118,
+                117
+            ],
+            [
+                134,
+                134
+            ],
+            [
+                246,
+                247
+            ],
+            [
+                262,
+                264
+            ],
+            [
+                263,
+                235
+            ],
+            [
+                167,
+                140
+            ],
+            [
+                247,
+                221
+            ],
+            [
+                136,
+                79
+            ],
+            [
+                151,
+                132
+            ],
+            [
+                103,
+                87
+            ],
+            [
+                103,
+                99
+            ],
+            [
+                135,
+                132
+            ],
+            [
+                135,
+                135
+            ],
+            [
+                151,
+                151
+            ],
+            [
+                264,
+                237
+            ],
+            [
+                99,
+                233
+            ],
+            [
+                168,
+                142
+            ],
+            [
+                137,
+                79
+            ],
+            [
+                99,
+                236
+            ],
+            [
+                99,
+                237
+            ],
+            [
+                152,
+                132
+            ],
+            [
+                103,
+                120
+            ],
+            [
+                115,
+                264
+            ],
+            [
+                154,
+                79
+            ],
+            [
+                87,
+                112
+            ],
+            [
+                136,
+                132
+            ],
+            [
+                154,
+                86
+            ],
+            [
+                136,
+                136
+            ],
+            [
+                152,
+                152
+            ],
+            [
+                264,
+                264
+            ],
+            [
+                232,
+                233
+            ],
+            [
+                104,
+                105
+            ],
+            [
+                104,
+                106
+            ],
+            [
+                265,
+                235
+            ],
+            [
+                232,
+                235
+            ],
+            [
+                104,
+                107
+            ],
+            [
+                88,
+                91
+            ],
+            [
+                232,
+                236
+            ],
+            [
+                86,
+                154
+            ],
+            [
+                249,
+                222
+            ],
+            [
+                232,
+                237
+            ],
+            [
+                88,
+                93
+            ],
+            [
+                169,
+                143
+            ],
+            [
+                88,
+                96
+            ],
+            [
+                104,
+                114
+            ],
+            [
+                88,
+                98
+            ],
+            [
+                249,
+                234
+            ],
+            [
+                88,
+                113
+            ],
+            [
+                137,
+                132
+            ],
+            [
+                137,
+                137
+            ],
+            [
+                89,
+                90
+            ],
+            [
+                265,
+                266
+            ],
+            [
+                139,
+                79
+            ],
+            [
+                170,
+                144
+            ],
+            [
+                250,
+                225
+            ],
+            [
+                154,
+                132
+            ],
+            [
+                153,
+                164
+            ],
+            [
+                250,
+                238
+            ],
+            [
+                122,
+                116
+            ],
+            [
+                122,
+                117
+            ],
+            [
+                154,
+                154
+            ],
+            [
+                267,
+                235
+            ],
+            [
+                234,
+                235
+            ],
+            [
+                90,
+                91
+            ],
+            [
+                234,
+                236
+            ],
+            [
+                267,
+                237
+            ],
+            [
+                234,
+                237
+            ],
+            [
+                90,
+                93
+            ],
+            [
+                266,
+                271
+            ],
+            [
+                171,
+                145
+            ],
+            [
+                157,
+                79
+            ],
+            [
+                138,
+                158
+            ],
+            [
+                90,
+                114
+            ],
+            [
+                139,
+                132
+            ],
+            [
+                267,
+                264
+            ],
+            [
+                268,
+                233
+            ],
+            [
+                268,
+                235
+            ],
+            [
+                239,
+                111
+            ],
+            [
+                139,
+                139
+            ],
+            [
+                268,
+                236
+            ],
+            [
+                268,
+                237
+            ],
+            [
+                141,
+                79
+            ],
+            [
+                267,
+                269
+            ],
+            [
+                239,
+                122
+            ],
+            [
+                172,
+                153
+            ],
+            [
+                158,
+                79
+            ],
+            [
+                155,
+                173
+            ],
+            [
+                108,
+                105
+            ],
+            [
+                108,
+                106
+            ],
+            [
+                108,
+                107
+            ],
+            [
+                220,
+                221
+            ],
+            [
+                157,
+                127
+            ],
+            [
+                268,
+                271
+            ],
+            [
+                157,
+                132
+            ],
+            [
+                124,
+                134
+            ],
+            [
+                108,
+                118
+            ],
+            [
+                173,
+                156
+            ],
+            [
+                159,
+                79
+            ],
+            [
+                140,
+                159
+            ],
+            [
+                141,
+                132
+            ],
+            [
+                92,
+                117
+            ],
+            [
+                270,
+                233
+            ],
+            [
+                270,
+                235
+            ],
+            [
+                270,
+                236
+            ],
+            [
+                125,
+                124
+            ],
+            [
+                253,
+                252
+            ],
+            [
+                253,
+                253
+            ],
+            [
+                141,
+                141
+            ],
+            [
+                269,
+                270
+            ],
+            [
+                158,
+                132
+            ],
+            [
+                158,
+                138
+            ],
+            [
+                160,
+                79
+            ],
+            [
+                270,
+                264
+            ],
+            [
+                270,
+                266
+            ],
+            [
+                94,
+                92
+            ],
+            [
+                270,
+                269
+            ],
+            [
+                222,
+                223
+            ],
+            [
+                222,
+                224
+            ],
+            [
+                159,
+                132
+            ],
+            [
+                159,
+                140
+            ],
+            [
+                161,
+                79
+            ],
+            [
+                128,
+                79
+            ],
+            [
+                142,
+                160
+            ],
+            [
+                239,
+                227
+            ],
+            [
+                94,
+                117
+            ],
+            [
+                111,
+                106
+            ],
+            [
+                111,
+                107
+            ],
+            [
+                95,
+                91
+            ],
+            [
+                271,
+                268
+            ],
+            [
+                239,
+                237
+            ],
+            [
+                95,
+                93
+            ],
+            [
+                239,
+                239
+            ],
+            [
+                79,
+                80
+            ],
+            [
+                79,
+                81
+            ],
+            [
+                160,
+                132
+            ],
+            [
+                162,
+                79
+            ],
+            [
+                160,
+                142
+            ],
+            [
+                129,
+                79
+            ],
+            [
+                78,
+                126
+            ],
+            [
+                143,
+                161
+            ],
+            [
+                95,
+                117
+            ],
+            [
+                95,
+                118
+            ],
+            [
+                273,
+                233
+            ],
+            [
+                124,
+                246
+            ],
+            [
+                146,
+                79
+            ],
+            [
+                127,
+                157
+            ],
+            [
+                128,
+                128
+            ],
+            [
+                240,
+                241
+            ],
+            [
+                146,
+                83
+            ],
+            [
+                161,
+                132
+            ],
+            [
+                128,
+                132
+            ],
+            [
+                163,
+                79
+            ],
+            [
+                130,
+                79
+            ],
+            [
+                161,
+                143
+            ],
+            [
+                144,
+                162
+            ],
+            [
+                147,
+                79
+            ],
+            [
+                129,
+                129
+            ],
+            [
+                273,
+                273
+            ],
+            [
+                147,
+                84
+            ],
+            [
+                162,
+                132
+            ],
+            [
+                113,
+                116
+            ],
+            [
+                129,
+                132
+            ],
+            [
+                113,
+                117
+            ],
+            [
+                113,
+                120
+            ],
+            [
+                257,
+                264
+            ],
+            [
+                113,
+                121
+            ],
+            [
+                257,
+                267
+            ],
+            [
+                164,
+                79
+            ],
+            [
+                92,
+                264
+            ],
+            [
+                131,
+                79
+            ],
+            [
+                80,
+                125
+            ],
+            [
+                162,
+                144
+            ],
+            [
+                145,
+                163
+            ],
+            [
+                146,
+                132
+            ],
+            [
+                97,
+                117
+            ],
+            [
+                97,
+                121
+            ],
+            [
+                148,
+                79
+            ]
+        ],
+        "externalCalls": [
+            [
+                "257",
+                "///java.util/Collections.emptyList()List",
+                {"invokestatic": "1"}
+            ],
+            [
+                "273",
+                "///java.util/List.toArray(%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FObject%25255B%25255D",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "252",
+                "///java.lang.reflect/Method.getParameterAnnotations()%2Fjava.lang.annotation%2FAnnotation%25255B%25255D%25255B%25255D",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "253",
+                "///java.lang.reflect/Method.getDeclaringClass()%2Fjava.lang%2FClass",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "252",
+                "///java.util/ArrayList.ArrayList()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "238",
+                "///java.util/Arrays.hashCode(%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FIntegerType",
+                {"invokestatic": "1"}
+            ],
+            [
+                "177",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "179",
+                "///org.apache.commons.lang3/StringUtils.equals(%2Fjava.lang%2FCharSequence,%2Fjava.lang%2FCharSequence)%2Fjava.lang%2FBooleanType",
+                {"invokestatic": "1"}
+            ],
+            [
+                "182",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "255",
+                "///java.lang/NoClassDefFoundError.NoClassDefFoundError(String)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "185",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "176",
+                "///java.util/Set.add(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "2"}
+            ],
+            [
+                "214",
+                "///org.aspectj.lang/NoAspectBoundException.NoAspectBoundException(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "257",
+                "///java.lang/Class.getGenericSuperclass()%2Fjava.lang.reflect%2FType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "111",
+                "///org.apache.commons.lang3.builder/ToStringBuilder.append(%2Fjava.lang%2FString,%2Fjava.lang%2FObject)ToStringBuilder",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "176",
+                "///java.util/HashSet.HashSet()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "101",
+                "///java.util/Iterator.next()%2Fjava.lang%2FObject",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "273",
+                "///java.lang/String.substring(IntegerType,IntegerType)String",
+                {"invokevirtual": "3"}
+            ],
+            [
+                "273",
+                "///java.lang/String.contains(CharSequence)BooleanType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "269",
+                "///java.lang/Class.getGenericSuperclass()%2Fjava.lang.reflect%2FType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "255",
+                "///java.lang/Class.getDeclaredFields()%2Fjava.lang.reflect%2FField%25255B%25255D",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "266",
+                "///java.util/HashMap.HashMap()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "122",
+                "///org.apache.commons.lang3.builder/ToStringBuilder.append(%2Fjava.lang%2FString,%2Fjava.lang%2FObject)ToStringBuilder",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "156",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "89",
+                "///java.lang/Object.getClass()Class",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "256",
+                "///java.lang.reflect/AnnotatedElement.getDeclaredAnnotations()%2Fjava.lang.annotation%2FAnnotation%25255B%25255D",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "273",
+                "///java.lang/String.substring(IntegerType)String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "114",
+                "///java.util/Objects.equals(%2Fjava.lang%2FObject,%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokestatic": "2"}
+            ],
+            [
+                "234",
+                "///java.util/Arrays.equals(%2Fjava.lang%2FObject%25255B%25255D,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FBooleanType",
+                {"invokestatic": "1"}
+            ],
+            [
+                "108",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.HashCodeBuilder()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "272",
+                "///java.lang.reflect/Field.getName()%2Fjava.lang%2FString",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "233",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "122",
+                "///org.xwiki.text/XWikiToStringBuilder.XWikiToStringBuilder(%2Fjava.lang%2FObject)%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "179",
+                "///java.util.regex/Matcher.matches()%2Fjava.lang%2FBooleanType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "174",
+                "///org.aspectj.lang/NoAspectBoundException.NoAspectBoundException(%2Fjava.lang%2FString,%2Fjava.lang%2FThrowable)%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "244",
+                "///java.util/Set.add(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "3"}
+            ],
+            [
+                "225",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.toHashCode()%2Fjava.lang%2FIntegerType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "118",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.HashCodeBuilder()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "111",
+                "///org.xwiki.text/XWikiToStringBuilder.XWikiToStringBuilder(%2Fjava.lang%2FObject)%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "104",
+                "///java.util/Objects.equals(%2Fjava.lang%2FObject,%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokestatic": "3"}
+            ],
+            [
+                "241",
+                "///java.lang/Enum.Enum(String,IntegerType)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "125",
+                "///java.util/Map.put(%2Fjava.lang%2FObject,%2Fjava.lang%2FObject)%2Fjava.lang%2FObject",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "244",
+                "///java.util/HashSet.HashSet()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "252",
+                "///java.util/List.add(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "114",
+                "///java.lang/Object.getClass()Class",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "90",
+                "///java.util/Objects.equals(%2Fjava.lang%2FObject,%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokestatic": "1"}
+            ],
+            [
+                "273",
+                "///java.lang/String.charAt(IntegerType)CharType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "211",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "260",
+                "///java.lang.reflect/Field.getGenericType()Type",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "261",
+                "///java.lang/Class.isAssignableFrom(Class)BooleanType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "101",
+                "///java.util/Collection.iterator()Iterator",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "104",
+                "///java.lang/Object.getClass()Class",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "95",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.HashCodeBuilder()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "259",
+                "///java.lang/Class.isAssignableFrom(Class)BooleanType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "268",
+                "///java.util/Map.get(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "273",
+                "///java.lang/String.indexOf(String)IntegerType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "221",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "222",
+                "///org.apache.commons.lang3/StringUtils.equals(%2Fjava.lang%2FCharSequence,%2Fjava.lang%2FCharSequence)%2Fjava.lang%2FBooleanType",
+                {"invokestatic": "2"}
+            ],
+            [
+                "255",
+                "///java.lang/StringBuilder.toString()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "247",
+                "///java.lang/StringBuilder.toString()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "258",
+                "///java.lang/NoSuchFieldException.NoSuchFieldException(String)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "239",
+                "///java.lang/StringBuilder.toString()String",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "100",
+                "///java.util/ArrayList.ArrayList()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "101",
+                "///java.util/ArrayList.ArrayList()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "272",
+                "///java.lang.reflect/Field.setAccessible(%2Fjava.lang%2FBooleanType)%2Fjava.lang%2FVoidType",
+                {"invokevirtual": "3"}
+            ],
+            [
+                "226",
+                "///java.lang/StringBuilder.toString()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "272",
+                "///java.lang/RuntimeException.RuntimeException(String,Throwable)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "230",
+                "///java.lang/Exception.Exception(String)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "228",
+                "///java.lang/Exception.Exception(String)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "180",
+                "///java.util/Collection.iterator()Iterator",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "218",
+                "///java.lang/Exception.Exception(String)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "216",
+                "///java.lang/Exception.Exception(String)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "80",
+                "///org.xwiki.component.internal.multi/AbstractGenericComponentManager.getKey()%2Fjava.lang%2FString",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "247",
+                "///java.lang/StringBuilder.append(CharType)StringBuilder",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "84",
+                "///org.xwiki.component.internal.multi/AbstractGenericComponentManager.getKey()%2Fjava.lang%2FString",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "272",
+                "///java.lang/Class.getSuperclass()Class",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "208",
+                "///java.lang/Exception.Exception(String)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "178",
+                "///java.lang/StringBuilder.append(Object)StringBuilder",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "273",
+                "///java.lang/String.length()IntegerType",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "258",
+                "///java.lang/StringBuilder.append(String)StringBuilder",
+                {"invokevirtual": "5"}
+            ],
+            [
+                "238",
+                "///java.util/Objects.hashCode(%2Fjava.lang%2FObject)%2Fjava.lang%2FIntegerType",
+                {"invokestatic": "2"}
+            ],
+            [
+                "226",
+                "///java.lang/StringBuilder.append(CharType)StringBuilder",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "206",
+                "///java.lang/Exception.Exception(String)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "258",
+                "///java.lang/Class.getSuperclass()Class",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "239",
+                "///java.lang/StringBuilder.append(CharType)StringBuilder",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "272",
+                "///java.lang/StringBuilder.append(String)StringBuilder",
+                {"invokevirtual": "5"}
+            ],
+            [
+                "272",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "18"}
+            ],
+            [
+                "273",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "11",
+                    "invokeinterface": "3"
+                }
+            ],
+            [
+                "258",
+                "///java.lang/StringBuilder.StringBuilder()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "225",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.HashCodeBuilder()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "176",
+                "///java.util.regex/Pattern.compile(%2Fjava.lang%2FString)Pattern",
+                {"invokestatic": "1"}
+            ],
+            [
+                "178",
+                "///java.lang/StringBuilder.toString()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "118",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.toHashCode()%2Fjava.lang%2FIntegerType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "272",
+                "///java.lang/Class.getName()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "257",
+                "///java.util/LinkedList.LinkedList()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "256",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "2"}
+            ],
+            [
+                "257",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "2",
+                    "invokeinterface": "2"
+                }
+            ],
+            [
+                "113",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "258",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "9"}
+            ],
+            [
+                "112",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "259",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "2",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "260",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "261",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "2"
+                }
+            ],
+            [
+                "108",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.toHashCode()%2Fjava.lang%2FIntegerType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "266",
+                "///java.util/Collections.emptyMap()Map",
+                {"invokestatic": "1"}
+            ],
+            [
+                "263",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "123",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "264",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "2"
+                }
+            ],
+            [
+                "272",
+                "///java.lang/String.equalsIgnoreCase(String)BooleanType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "265",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "266",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "267",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "2"}
+            ],
+            [
+                "272",
+                "///java.lang/StringBuilder.StringBuilder()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "234",
+                "///java.util/Objects.equals(%2Fjava.lang%2FObject,%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokestatic": "2"}
+            ],
+            [
+                "268",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "4"}
+            ],
+            [
+                "269",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "126",
+                "///java.lang/Object.Object()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "270",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "2"}
+            ],
+            [
+                "258",
+                "///java.lang/Class.getName()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "256",
+                "///java.lang.annotation/Annotation.annotationType()%2Fjava.lang%2FClass",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "95",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.toHashCode()%2Fjava.lang%2FIntegerType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "255",
+                "///java.util/Map.put(%2Fjava.lang%2FObject,%2Fjava.lang%2FObject)%2Fjava.lang%2FObject",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "255",
+                "///java.lang/NoClassDefFoundError.getMessage()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "273",
+                "///java.lang/Class.forName(String,BooleanType,ClassLoader)Class",
+                {"invokestatic": "2"}
+            ],
+            [
+                "180",
+                "///java.util/Iterator.next()%2Fjava.lang%2FObject",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "90",
+                "///java.util/Arrays.equals(%2Fjava.lang%2FObject%25255B%25255D,%2Fjava.lang%2FObject%25255B%25255D)%2Fjava.lang%2FBooleanType",
+                {"invokestatic": "1"}
+            ],
+            [
+                "103",
+                "///java.util/List.add(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "235",
+                "///java.lang.reflect/Type%255B%255D.clone()%2Fjava.lang%2FObject",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "102",
+                "///java.util/List.add(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "79",
+                "///java.lang/RuntimeException.RuntimeException(String)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "108",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.append(%2Fjava.lang%2FObject)HashCodeBuilder",
+                {"invokevirtual": "3"}
+            ],
+            [
+                "125",
+                "///java.util/Map.get(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "253",
+                "///java.util/List.addAll(Collection)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "2"}
+            ],
+            [
+                "179",
+                "///java.util.regex/Pattern.matcher(%2Fjava.lang%2FCharSequence)Matcher",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "272",
+                "///java.lang.reflect/Field.set(%2Fjava.lang%2FObject,%2Fjava.lang%2FObject)%2Fjava.lang%2FVoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "272",
+                "///java.lang/Object.getClass()Class",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "222",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "122",
+                "///org.apache.commons.lang3.builder/ToStringBuilder.toString()%2Fjava.lang%2FString",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "265",
+                "///java.lang/Object.getClass()Class",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "266",
+                "///java.util/Map.put(%2Fjava.lang%2FObject,%2Fjava.lang%2FObject)%2Fjava.lang%2FObject",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "264",
+                "///java.lang/Object.getClass()Class",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "111",
+                "///org.apache.commons.lang3.builder/ToStringBuilder.toString()%2Fjava.lang%2FString",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "178",
+                "///java.lang/StringBuilder.append(String)StringBuilder",
+                {"invokevirtual": "4"}
+            ],
+            [
+                "118",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.append(%2Fjava.lang%2FObject)HashCodeBuilder",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "243",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "255",
+                "///java.lang/Class.getName()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "239",
+                "///java.lang/StringBuilder.StringBuilder()VoidType",
+                {"invokespecial": "2"}
+            ],
+            [
+                "244",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "3"}
+            ],
+            [
+                "252",
+                "///java.lang/Class.isInstance(Object)BooleanType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "246",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "247",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "10",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "253",
+                "///java.lang.reflect/Method.getParameterTypes()%2Fjava.lang%2FClass%25255B%25255D",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "253",
+                "///java.lang.reflect/Method.getName()%2Fjava.lang%2FString",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "249",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "226",
+                "///java.lang/StringBuilder.StringBuilder()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "250",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "253",
+                "///java.lang/Class.getInterfaces()Class%25255B%25255D",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "252",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "2",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "253",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "11",
+                    "invokeinterface": "2"
+                }
+            ],
+            [
+                "258",
+                "///java.lang/Class.getDeclaredField(String)%2Fjava.lang.reflect%2FField",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "255",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "13",
+                    "invokeinterface": "3"
+                }
+            ],
+            [
+                "179",
+                "///java.util.regex/Matcher.group(%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FString",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "225",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "3"}
+            ],
+            [
+                "226",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "6"}
+            ],
+            [
+                "253",
+                "///java.lang/Class.getAnnotation(Class)%2Fjava.lang.annotation%2FAnnotation",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "227",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "239",
+                "///java.lang/Class.getName()String",
+                {"invokevirtual": "6"}
+            ],
+            [
+                "255",
+                "///java.lang/StringBuilder.StringBuilder()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "95",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.append(%2Fjava.lang%2FObject)HashCodeBuilder",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "232",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "3"}
+            ],
+            [
+                "264",
+                "///java.lang.reflect/Array.newInstance(%2Fjava.lang%2FClass,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FObject",
+                {"invokestatic": "1"}
+            ],
+            [
+                "234",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "3"}
+            ],
+            [
+                "235",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "247",
+                "///java.lang/StringBuilder.StringBuilder()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "247",
+                "///java.util/Set.contains(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "239",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "24",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "239",
+                "///java.lang/StringBuilder.append(String)StringBuilder",
+                {"invokevirtual": "11"}
+            ],
+            [
+                "179",
+                "///java.lang/String.matches(String)BooleanType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "146",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "209",
+                "///java.lang/Exception.Exception(String,Throwable)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "147",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "148",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "149",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "255",
+                "///java.lang/Class.getSuperclass()Class",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "151",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "253",
+                "///java.lang/Class.getSuperclass()Class",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "152",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "219",
+                "///java.lang/Exception.Exception(String,Throwable)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "154",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "247",
+                "///java.lang/String.length()IntegerType",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "217",
+                "///java.lang/Exception.Exception(String,Throwable)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "157",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "226",
+                "///java.lang/StringBuilder.append(String)StringBuilder",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "158",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "159",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "128",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "255",
+                "///java.lang/StringBuilder.append(String)StringBuilder",
+                {"invokevirtual": "5"}
+            ],
+            [
+                "129",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "253",
+                "///java.lang/Class.getMethod(String,Class%25255B%25255D)%2Fjava.lang.reflect%2FMethod",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "130",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "131",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "133",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "95",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.append(%2Fjava.lang%2FObject%25255B%25255D)HashCodeBuilder",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "134",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "269",
+                "///java.lang/Class.getGenericInterfaces()%2Fjava.lang.reflect%2FType%25255B%25255D",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "135",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "136",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "247",
+                "///java.lang/StringBuilder.append(String)StringBuilder",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "137",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "259",
+                "///java.lang/Class.getGenericInterfaces()%2Fjava.lang.reflect%2FType%25255B%25255D",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "139",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "257",
+                "///java.lang/Class.getGenericInterfaces()%2Fjava.lang.reflect%2FType%25255B%25255D",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "273",
+                "///java.lang/String.lastIndexOf(String)IntegerType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "255",
+                "///java.lang.reflect/Field.isSynthetic()%2Fjava.lang%2FBooleanType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "207",
+                "///java.lang/Exception.Exception(String,Throwable)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "141",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "123",
+                "///java.util.concurrent/ConcurrentHashMap.ConcurrentHashMap()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "176",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "2"}
+            ],
+            [
+                "178",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "7"}
+            ],
+            [
+                "179",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "4",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "180",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "3"}
+            ],
+            [
+                "272",
+                "///java.lang/StringBuilder.toString()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "180",
+                "///java.util/Iterator.hasNext()%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "160",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "273",
+                "///java.lang/String.replaceAll(String,String)String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "161",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "255",
+                "///java.util/LinkedHashMap.LinkedHashMap()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "162",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "163",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "124",
+                "///org.xwiki.component.internal.multi/ComponentManagerFactory.createComponentManager(%2Fjava.lang%2FString,%2Forg.xwiki.component.manager%2FComponentManager)%2Forg.xwiki.component.manager%2FComponentManager",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "164",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "165",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "231",
+                "///java.lang/Exception.Exception(String,Throwable)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "166",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "167",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "229",
+                "///java.lang/Exception.Exception(String,Throwable)VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "168",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "169",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "179",
+                "///java.util/Set.contains(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "178",
+                "///java.lang/StringBuilder.StringBuilder()VoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "170",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "171",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "258",
+                "///java.lang/StringBuilder.toString()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "172",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "80",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "83",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "84",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "1",
+                    "invokeinterface": "3"
+                }
+            ],
+            [
+                "255",
+                "///java.util/Map.values()Collection",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "88",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "3",
+                    "invokeinterface": "3"
+                }
+            ],
+            [
+                "89",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "225",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.append(%2Fjava.lang%2FObject)HashCodeBuilder",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "247",
+                "///java.lang/String.charAt(IntegerType)CharType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "90",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "2",
+                    "invokeinterface": "2"
+                }
+            ],
+            [
+                "273",
+                "///java.util/List.add(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "2"}
+            ],
+            [
+                "92",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "94",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "95",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "8"}
+            ],
+            [
+                "108",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.appendSuper(%2Fjava.lang%2FIntegerType)HashCodeBuilder",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "257",
+                "///java.util/List.add(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "2"}
+            ],
+            [
+                "242",
+                "///java.lang/Enum.valueOf(Class,String)Enum",
+                {"invokestatic": "1"}
+            ],
+            [
+                "79",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "113",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "2",
+                    "invokeinterface": "2"
+                }
+            ],
+            [
+                "114",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "4",
+                    "invokeinterface": "2"
+                }
+            ],
+            [
+                "115",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "88",
+                "///java.lang/String%255B%255D.clone()Object",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "118",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "5"}
+            ],
+            [
+                "255",
+                "///java.lang.reflect/Field.getName()%2Fjava.lang%2FString",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "95",
+                "///org.apache.commons.lang3.builder/HashCodeBuilder.appendSuper(%2Fjava.lang%2FIntegerType)HashCodeBuilder",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "272",
+                "///java.lang.reflect/Field.isAccessible()%2Fjava.lang%2FBooleanType",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "122",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "6"}
+            ],
+            [
+                "124",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "2"}
+            ],
+            [
+                "125",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "2"}
+            ],
+            [
+                "97",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "4",
+                    "invokeinterface": "2"
+                }
+            ],
+            [
+                "111",
+                "///java.lang/Class.getName()String",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "99",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "4",
+                    "invokeinterface": "2"
+                }
+            ],
+            [
+                "101",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "3",
+                    "invokeinterface": "6"
+                }
+            ],
+            [
+                "102",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "103",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "2",
+                    "invokeinterface": "1"
+                }
+            ],
+            [
+                "104",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {
+                    "invokevirtual": "5",
+                    "invokeinterface": "3"
+                }
+            ],
+            [
+                "108",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "8"}
+            ],
+            [
+                "101",
+                "///java.util/Iterator.hasNext()%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "243",
+                "///org.xwiki.component.descriptor/ComponentInstantiationStrategy%255B%255D.clone()%2Fjava.lang%2FObject",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "111",
+                "///java.lang/NullPointerException.NullPointerException()VoidType",
+                {"invokevirtual": "7"}
+            ],
+            [
+                "247",
+                "///java.lang/String.substring(IntegerType,IntegerType)String",
+                {"invokevirtual": "3"}
+            ],
+            [
+                "272",
+                "///java.lang/Class.getDeclaredFields()%2Fjava.lang.reflect%2FField%25255B%25255D",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "273",
+                "///java.util/ArrayList.ArrayList()%2Fjava.lang%2FVoidType",
+                {"invokespecial": "1"}
+            ],
+            [
+                "266",
+                "///java.lang/Class.getTypeParameters()%2Fjava.lang.reflect%2FTypeVariable%25255B%25255D",
+                {"invokevirtual": "1"}
+            ],
+            [
+                "264",
+                "///java.lang.reflect/GenericArrayType.getGenericComponentType()Type",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "255",
+                "///java.util/Map.containsKey(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+                {"invokeinterface": "1"}
+            ],
+            [
+                "226",
+                "///java.lang/String.replace(CharSequence,CharSequence)String",
+                {"invokevirtual": "2"}
+            ],
+            [
+                "239",
+                "///java.lang/String.replace(CharSequence,CharSequence)String",
+                {"invokevirtual": "1"}
+            ]
+        ]
+    },
+    "timestamp": 0
+}
