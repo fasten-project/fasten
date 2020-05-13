@@ -18,14 +18,10 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.server.db.PostgresConnector;
-import eu.fasten.server.kafka.FastenKafkaConnection;
-import eu.fasten.server.kafka.FastenKafkaConsumer;
+import eu.fasten.server.connectors.PostgresConnector;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
-import java.util.List;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
@@ -35,25 +31,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "MetadataPlugin")
 public class Main implements Runnable {
 
-    private static Logger logger = LoggerFactory.getLogger(Main.class);
-
-    @CommandLine.Option(names = {"-t", "--topic"},
-            paramLabel = "topic",
-            description = "Kafka topic from which to consume call graphs",
-            defaultValue = "opal_callgraphs")
-    String topic;
-
-    @CommandLine.Option(names = {"-s", "--skip_offsets"},
-            paramLabel = "skip",
-            description = "Adds one to offset of all the partitions of the consumers.",
-            defaultValue = "0")
-    int skipOffsets;
-
-    @CommandLine.Option(names = {"-k", "--kafka_server"},
-            paramLabel = "server.name:port",
-            description = "Kafka server to connect to. Use multiple times for clusters.",
-            defaultValue = "localhost:9092")
-    List<String> kafkaServers;
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     @CommandLine.Option(names = {"-f", "--file"},
             paramLabel = "JSON",
@@ -72,12 +50,6 @@ public class Main implements Runnable {
             defaultValue = "postgres")
     String dbUser;
 
-    @CommandLine.Option(names = {"-p", "--pass"},
-            paramLabel = "dbPass",
-            description = "Database user password",
-            defaultValue = "pass123")
-    String dbPass;
-
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -87,29 +59,20 @@ public class Main implements Runnable {
     public void run() {
         try {
             var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
-            metadataPlugin.setTopic(topic);
-            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
-
-            if (jsonFile == null || jsonFile.isEmpty()) {
-                var properties = FastenKafkaConnection.kafkaProperties(kafkaServers,
-                        this.getClass().getCanonicalName());
-                new FastenKafkaConsumer(properties, metadataPlugin, skipOffsets).start();
-            } else {
-                final FileReader reader;
-                try {
-                    reader = new FileReader(jsonFile);
-                } catch (FileNotFoundException e) {
-                    logger.error("Could not find the JSON file at " + jsonFile, e);
-                    return;
-                }
-                final JSONObject jsonCallgraph = new JSONObject(new JSONTokener(reader));
-                try {
-                    final var record = new ConsumerRecord<>(topic, 0, 0L, "test",
-                            jsonCallgraph.toString());
-                    metadataPlugin.consume(topic, record);
-                } catch (IllegalArgumentException e) {
-                    logger.error("Incorrect database URL", e);
-                }
+            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
+            final FileReader reader;
+            try {
+                reader = new FileReader(jsonFile);
+            } catch (FileNotFoundException e) {
+                logger.error("Could not find the JSON file at " + jsonFile, e);
+                return;
+            }
+            metadataPlugin.writeToKafka = false;
+            final JSONObject jsonCallgraph = new JSONObject(new JSONTokener(reader));
+            try {
+                metadataPlugin.consume(jsonCallgraph.toString());
+            } catch (IllegalArgumentException e) {
+                logger.error("Incorrect database URL", e);
             }
         } catch (SQLException e) {
             logger.error("Could not connect to the database", e);

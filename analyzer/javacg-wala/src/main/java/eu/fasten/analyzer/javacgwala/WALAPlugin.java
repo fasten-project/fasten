@@ -38,8 +38,6 @@ public class WALAPlugin extends AnalyzerPlugin {
     @Extension
     public static class WALA extends AnalyzerPlugin.ANALYZER {
 
-        private static String produceTopic = "wala_callgraphs";
-
         @Override
         public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
                                                            final JSONObject kafkaConsumedJson)
@@ -50,13 +48,8 @@ public class WALAPlugin extends AnalyzerPlugin {
         }
 
         @Override
-        public String producerTopic() {
-            return produceTopic;
-        }
-
-        @Override
-        public void setProducerTopic(String topicName) {
-            produceTopic = topicName;
+        public String version() {
+            return "0.0.1";
         }
     }
 }

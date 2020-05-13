@@ -18,31 +18,27 @@
 
 package eu.fasten.server;
 
-import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.server.db.PostgresConnector;
-import eu.fasten.server.kafka.FastenKafkaConnection;
-import org.apache.commons.lang3.ObjectUtils;
 import ch.qos.logback.classic.Level;
+import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.FastenPlugin;
-import eu.fasten.core.plugins.KafkaConsumer;
-import eu.fasten.core.plugins.KafkaProducer;
-import eu.fasten.server.kafka.FastenKafkaConsumer;
-import eu.fasten.server.kafka.FastenKafkaProducer;
-import org.json.JSONObject;
+import eu.fasten.core.plugins.GraphDBConnector;
+import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.server.connectors.KafkaConnector;
+import eu.fasten.server.connectors.PostgresConnector;
+import eu.fasten.server.connectors.RocksDBConnector;
+import eu.fasten.server.plugins.FastenServerPlugin;
+import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
+import java.nio.file.Path;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.ObjectUtils;
 import org.pf4j.JarPluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
-
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 
 @CommandLine.Command(name = "FastenServer", mixinStandardHelpOptions = true)
@@ -50,148 +46,212 @@ public class FastenServer implements Runnable {
 
     @Option(names = {"-p", "--plugin_dir"},
             paramLabel = "DIR",
-            description = "Directory to load plugins from",
-            defaultValue = ".")
-    private Path pluginPath;
+            description = "Directory to load plugins from.",
+            required = true)
+    Path pluginPath;
 
-    @Option(names = {"-t", "--topic"},
-            paramLabel = "topic",
-            description = "JSON file consists of topics for plug-ins.")
-    private String pluginTopic;
+    @Option(names = {"-la", "--list_all"},
+            description = "List all values and ext.")
+    boolean showPlugins;
 
-    @Option(names = {"-k", "--kafka_server"},
-            paramLabel = "server.name:port",
-            description = "Kafka server to connect to. Use multiple times for clusters.",
-            defaultValue = "localhost:9092")
-    private List<String> kafkaServers;
-
-    @Option(names = {"-d", "--database"},
-            paramLabel = "dbURL",
-            description = "Database URL for connection")
-    private String dbUrl;
-
-    @Option(names = {"-u", "--user"},
-            paramLabel = "dbUser",
-            description = "Database user name")
-    private String dbUser;
-
-    @Option(names = {"-pw", "--pass"},
-            paramLabel = "dbPass",
-            description = "Database user password")
-    private String dbPass;
-
-    @Option(names = {"-s", "--skip_offsets"},
-            paramLabel = "skip",
-            description = "Adds one to offset of all the partitions of the consumers.",
-            defaultValue = "0")
-    private int skipOffsets;
+    @Option(names = {"-pl", "--plugin_list"},
+            paramLabel = "plugins",
+            description = "List of plugins to run. Can be used multiple times.",
+            split = ",")
+    List<String> plugins;
 
     @Option(names = {"-m", "--mode"},
             description = "Deployment or Development mode")
     boolean deployMode;
 
-    private static Logger logger = LoggerFactory.getLogger(FastenServer.class);
+    @Option(names = {"-k", "--kafka_server"},
+            paramLabel = "server.name:port",
+            description = "Kafka server to connect to. Use multiple times for clusters.",
+            defaultValue = "localhost:9092")
+    List<String> kafkaServers;
 
-    private List<FastenKafkaConsumer> consumers;
-    private List<FastenKafkaProducer> producers;
+    @Option(names = {"-kt", "--topic"},
+            paramLabel = "topic",
+            description = "Kay-value pairs of Plugin and topic to consume from. Example - "
+                    + "OPAL=fasten.maven.pkg",
+            split = ",")
+    Map<String, String> pluginTopic;
 
-    public static void setLoggingLevel(Level level) {
-        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-        root.setLevel(level);
-    }
+    @Option(names = {"-ks", "--skip_offsets"},
+            paramLabel = "skip",
+            description = "Adds one to offset of all the partitions of the consumers.",
+            defaultValue = "0")
+    int skipOffsets;
 
+    @Option(names = {"-d", "--database"},
+            paramLabel = "dbURL",
+            description = "Database URL for connection")
+    String dbUrl;
+
+    @Option(names = {"-du", "--user"},
+            paramLabel = "dbUser",
+            description = "Database user name")
+    String dbUser;
+
+    @Option(names = {"-gd", "--graphdb_dir"},
+            paramLabel = "dir",
+            description = "Path to directory with RocksDB database")
+    String graphDbDir;
+
+    private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
+
+    @Override
     public void run() {
-
-        if(deployMode) {
-            setLoggingLevel(Level.INFO);
-            logger.info("FASTEN server started in deployment mode");
-        } else {
-            setLoggingLevel(Level.DEBUG);
-            logger.info("FASTEN server started in development mode");
-        }
-
-        // Register shutdown actions
-        // TODO: Fix the null pointer exception for the following ShutdownHook
-//        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-//                        logger.debug("Shutting down...");
-//                        if (consumers != null) {
-//                            consumers.forEach(c -> c.shutdown());
-//                        }
-//                    }));
+        setLoggingLevel();
 
         logger.debug("Loading plugins from: {}", pluginPath);
 
         JarPluginManager jarPluginManager = new JarPluginManager(pluginPath);
         jarPluginManager.loadPlugins();
         jarPluginManager.startPlugins();
+        if (showPlugins) {
+            System.out.println("Available plugins:");
+            jarPluginManager.getExtensions(FastenPlugin.class)
+                    .forEach(x -> System.out.println(String.format("\t%s %s %s",
+                            x.getClass().getSimpleName(), x.version(), x.description())));
+            System.exit(0);
+        }
 
-        List<FastenPlugin> plugins = jarPluginManager.getExtensions(FastenPlugin.class);
-        List<KafkaConsumer> kafkaConsumers = jarPluginManager.getExtensions(KafkaConsumer.class);
-        List<KafkaProducer> kafkaProducers = jarPluginManager.getExtensions(KafkaProducer.class);
-        List<DBConnector> dbPlugins = jarPluginManager.getExtensions(DBConnector.class);
+        // Stop plugins that are not passed as parameters.
+        jarPluginManager.getPlugins().stream()
+                .filter(x -> !plugins.contains(jarPluginManager
+                        .getExtensions(x.getPluginId()).get(0).getClass().getSimpleName()))
+                .forEach(x -> {
+                    jarPluginManager.stopPlugin(x.getPluginId());
+                    jarPluginManager.unloadPlugin(x.getPluginId());
+                });
 
-        logger.info("Plugin init done: {} KafkaConsumers, {} KafkaProducers, {} DB plug-ins: {} total plugins",
-                kafkaConsumers.size(), kafkaProducers.size(), dbPlugins.size(), plugins.size());
+        var plugins = jarPluginManager.getExtensions(FastenPlugin.class);
+        var dbPlugins = jarPluginManager.getExtensions(DBConnector.class);
+        var kafkaPlugins = jarPluginManager.getExtensions(KafkaPlugin.class);
+        var graphDbPlugins = jarPluginManager.getExtensions(GraphDBConnector.class);
 
-        // Change the default topics of the plug-ins if a JSON file of the topics is given
-        if(pluginTopic != null) {
-            JSONObject jsonObject;
+        logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:"
+                        + " {} total plugins",
+                kafkaPlugins.size(), dbPlugins.size(), graphDbPlugins.size(), plugins.size());
+        plugins.forEach(x -> logger.info("{}, {}, {}", x.getClass().getSimpleName(),
+                x.version(), x.description()));
+
+        makeDBConnection(dbPlugins);
+        makeGraphDBConnection(graphDbPlugins);
+
+        var kafkaServerPlugins = setupKafkaPlugins(kafkaPlugins);
+
+        kafkaServerPlugins.forEach(FastenServerPlugin::start);
+
+        waitForInterruption(kafkaServerPlugins);
+    }
+
+    /**
+     * Joins threads of kafka plugins, waits for the interrupt signal and sends
+     * shutdown signal to all threads.
+     *
+     * @param plugins list of kafka plugins
+     */
+    private void waitForInterruption(List<FastenServerPlugin> plugins) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            plugins.forEach(FastenServerPlugin::stop);
+            logger.info("Fasten server has been successfully stopped");
+        }));
+
+        plugins.forEach(c -> {
             try {
-                jsonObject = new JSONObject(new String(Files.readAllBytes(Paths.get(pluginTopic))));
-            } catch (IOException e) {
-                logger.error("Failed to read the JSON file of the topics: {}", e.getMessage());
-                // Here, it reads the JSON string directly from the CLI, not a file.
-                jsonObject = new JSONObject(pluginTopic);
+                c.thread().join();
+            } catch (InterruptedException e) {
+                logger.debug("Couldn't join consumers");
             }
+        });
+    }
 
-            for(KafkaConsumer k: kafkaConsumers) {
-                if(jsonObject.has(k.getClass().getSimpleName())) {
-                    k.setTopic(jsonObject.getJSONObject(k.getClass().getSimpleName()).get("consumer").toString());
-                }
-            }
-
-            for(KafkaProducer k: kafkaProducers) {
-                if(jsonObject.has(k.getClass().getSimpleName())) {
-                    k.setProducerTopic(jsonObject.getJSONObject(k.getClass().getSimpleName()).get("producer").toString());
-                }
-            }
+    /**
+     * Changes Kafka topics of consumers ad producers if specified in command line.
+     *
+     * @param kafkaPlugins list of consumers
+     */
+    private List<FastenServerPlugin> setupKafkaPlugins(List<KafkaPlugin> kafkaPlugins) {
+        if (pluginTopic != null) {
+            kafkaPlugins.stream()
+                    .filter(x -> pluginTopic.containsKey(x.getClass().getSimpleName()))
+                    .forEach(x -> x.setTopic(pluginTopic.get(x.getClass().getSimpleName())));
         }
 
-        // Here, a DB connection is made for the plug-ins that need it.
-        if (ObjectUtils.allNotNull(dbUrl, dbUser, dbPass)){
-
-            dbPlugins.forEach((p) -> {
-                try {
-                    p.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser, dbPass));
-                    logger.debug("Set DB connection successfully for plug-in {}", p.getClass().getSimpleName());
-                } catch (SQLException e) {
-                    logger.error("Couldn't set DB connection for plug-in {}\n{}", p.getClass().getSimpleName(), e.getStackTrace());
-                }
-            });
-
-        } else {
-            logger.error("Couldn't make a DB connection. Make sure that you have provided a valid DB URL, username and password.");
-        }
-
-        this.producers = kafkaProducers.stream().map(k -> {
-            var properties = FastenKafkaConnection.producerProperties(kafkaServers,
-                    k.getClass().getCanonicalName());
-
-            return new FastenKafkaProducer(properties, k);
-
-        }).collect(Collectors.toList());
-
-        this.producers.forEach(c -> c.start());
-
-        this.consumers = kafkaConsumers.stream().map(k -> {
-            var properties = FastenKafkaConnection.kafkaProperties(
+        return kafkaPlugins.stream().map(k -> {
+            var properties = KafkaConnector.kafkaProperties(
                     kafkaServers,
                     k.getClass().getCanonicalName());
 
-            return new FastenKafkaConsumer(properties, k, skipOffsets);
+            return new FastenKafkaPlugin(properties, k, skipOffsets);
         }).collect(Collectors.toList());
+    }
 
-        this.consumers.forEach(c -> c.start());
+    /**
+     * Setup DB connection for DB plugins.
+     *
+     * @param dbPlugins list of DB plugins
+     */
+    private void makeDBConnection(List<DBConnector> dbPlugins) {
+        if (ObjectUtils.allNotNull(dbUrl, dbUser)) {
+            dbPlugins.forEach((p) -> {
+                try {
+                    p.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
+                    logger.debug("Set DB connection successfully for plug-in {}",
+                            p.getClass().getSimpleName());
+                } catch (SQLException e) {
+                    logger.error("Couldn't set DB connection for plug-in {}\n{}",
+                            p.getClass().getSimpleName(), e.getStackTrace());
+                }
+            });
+        } else {
+            logger.error("Couldn't make a DB connection. Make sure that you have "
+                    + "provided a valid DB URL, username and password.");
+        }
+    }
+
+    /**
+     * Setup RocksDB connection for GraphDB plugins.
+     *
+     * @param graphDbPlugins list of Graph DB plugins
+     */
+    private void makeGraphDBConnection(List<GraphDBConnector> graphDbPlugins) {
+        if (ObjectUtils.allNotNull(graphDbDir)) {
+            graphDbPlugins.forEach((p) -> {
+                try {
+                    p.setRocksDao(RocksDBConnector.createRocksDBAccessObject(graphDbDir));
+                    logger.debug("Set Graph DB connection successfully for plug-in {}",
+                            p.getClass().getSimpleName());
+                } catch (RuntimeException e) {
+                    logger.error("Couldn't set GraphDB connection for plug-in {}\n{}",
+                            p.getClass().getSimpleName(), e.getStackTrace());
+                }
+            });
+        } else {
+            logger.error("Couldn't set a GraphDB connection. Make sure that you have "
+                    + "provided a valid directory to the database.");
+        }
+    }
+
+    /**
+     * Sets logging level depending on the command line argument.
+     */
+    private void setLoggingLevel() {
+        var root = (ch.qos.logback.classic.Logger) LoggerFactory
+                .getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+        if (showPlugins) {
+            root.setLevel(Level.OFF);
+            return;
+        }
+        if (deployMode) {
+            root.setLevel(Level.INFO);
+            logger.info("FASTEN server started in deployment mode");
+        } else {
+            root.setLevel(Level.DEBUG);
+            logger.info("FASTEN server started in development mode");
+        }
     }
 
     public static void main(String[] args) {

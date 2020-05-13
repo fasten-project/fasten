@@ -20,16 +20,21 @@ package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.plugins.KafkaConsumer;
+import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.exception.DataAccessException;
@@ -49,15 +54,17 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBExtension implements KafkaConsumer<String>, DBConnector {
+    public static class MetadataDBExtension implements KafkaPlugin<String, String>, DBConnector {
 
-        private String topic = "opal_callgraphs";
+        private String consumerTopic = "fasten.OPAL.out";
         private static DSLContext dslContext;
         private boolean processedRecord = false;
-        private String pluginError = "";
+        private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
+        private GidGraph gidGraph = null;
+        public boolean writeToKafka = true;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -65,24 +72,23 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         @Override
-        public List<String> consumerTopics() {
-            return new ArrayList<>(Collections.singletonList(topic));
+        public Optional<List<String>> consumeTopic() {
+            return Optional.of(Collections.singletonList(consumerTopic));
         }
 
         @Override
         public void setTopic(String topicName) {
-            this.topic = topicName;
+            this.consumerTopic = topicName;
         }
 
         @Override
-        public void consume(String topic, ConsumerRecord<String, String> record) {
-
-            final var consumedJson = new JSONObject(record.value());
-            final var artifact = consumedJson.optString("product") + "@"
-                    + consumedJson.optString("version");
+        public void consume(String record) {
             this.processedRecord = false;
             this.restartTransaction = false;
-            this.pluginError = "";
+            this.pluginError = null;
+            final var consumedJson = new JSONObject(record).getJSONObject("payload");
+            final var artifact = consumedJson.optString("product") + "@"
+                    + consumedJson.optString("version");
             ExtendedRevisionCallGraph callgraph;
             try {
                 callgraph = new ExtendedRevisionCallGraph(consumedJson);
@@ -114,11 +120,11 @@ public class MetadataDatabasePlugin extends Plugin {
                             }
                             throw e;
                         }
-                        if (getPluginError().isEmpty()) {
+                        if (getPluginError() == null) {
                             processedRecord = true;
                             restartTransaction = false;
                             logger.info("Saved the '" + artifact + "' callgraph metadata "
-                                    + "to the database with package ID = " + id);
+                                    + "to the database with package version ID = " + id);
                         }
                     });
                 } catch (Exception expected) {
@@ -126,6 +132,15 @@ public class MetadataDatabasePlugin extends Plugin {
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
                     && transactionRestartCount < transactionRestartLimit);
+        }
+
+        @Override
+        public Optional<String> produce() {
+            if (gidGraph == null) {
+                return Optional.empty();
+            } else {
+                return Optional.of(gidGraph.toJSONString());
+            }
         }
 
         /**
@@ -179,7 +194,8 @@ public class MetadataDatabasePlugin extends Plugin {
                 for (var methodEntry : type.getMethods().entrySet()) {
                     var localId = (long) methodEntry.getKey();
                     var uri = methodEntry.getValue().toString();
-                    internalCallables.add(new CallablesRecord(localId, moduleId, uri, true, null, null));
+                    internalCallables.add(new CallablesRecord(localId, moduleId, uri, true,
+                            null, null));
                 }
             }
 
@@ -189,8 +205,11 @@ public class MetadataDatabasePlugin extends Plugin {
             for (var call : internalCalls) {
                 var sourceLocalId = (long) call.get(0);
                 var targetLocalId = (long) call.get(1);
-                internalEdges.add(new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
+                internalEdges.add(
+                        new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
             }
+
+            var nodes = new LinkedList<Long>();
 
             final var externalCalls = graph.getExternalCalls();
             var externalEdges = new ArrayList<EdgesRecord>(graph.getExternalCalls().size());
@@ -216,9 +235,14 @@ public class MetadataDatabasePlugin extends Plugin {
                 internalCallablesIds.addAll(ids);
             }
 
+            for (var internalId : internalCallablesIds) {
+                nodes.addFirst(internalId);
+            }
+
             var internalLidToGidMap = new HashMap<Long, Long>();
             for (int i = 0; i < internalCallables.size(); i++) {
-                internalLidToGidMap.put(internalCallables.get(i).getId(), internalCallablesIds.get(i));
+                internalLidToGidMap.put(internalCallables.get(i).getId(),
+                        internalCallablesIds.get(i));
             }
             for (var edge : internalEdges) {
                 edge.setSourceId(internalLidToGidMap.get(edge.getSourceId()));
@@ -239,8 +263,14 @@ public class MetadataDatabasePlugin extends Plugin {
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
             }
-
-            return packageId;
+            var edgesGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
+                    nodes, internalCallablesIds.size(), edges);
+            if (writeToKafka) {
+                this.gidGraph = edgesGraph;
+            } else {
+                writeGraphToFile(edgesGraph);
+            }
+            return packageVersionId;
         }
 
         private Timestamp getProperTimestamp(long timestamp) {
@@ -255,9 +285,22 @@ public class MetadataDatabasePlugin extends Plugin {
             }
         }
 
-        @Override
-        public boolean recordProcessSuccessful() {
-            return this.processedRecord;
+        /**
+         * Writes GIDs graph to file.
+         *
+         * @param gidGraph Graph consisting of Global IDs
+         */
+        public void writeGraphToFile(GidGraph gidGraph) {
+            var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
+            logger.debug("Writing GIDs graph for {} to file", artifact);
+            try {
+                var json = new JSONObject();
+                json.put("payload", new JSONObject(gidGraph.toJSONString()));
+                Files.write(Paths.get("gid_graph.txt"), json.toString().getBytes());
+            } catch (IOException e) {
+                setPluginError(e);
+                logger.error("Failed to write GIDs graph to file: " + e.getMessage(), e);
+            }
         }
 
         @Override
@@ -269,7 +312,13 @@ public class MetadataDatabasePlugin extends Plugin {
         public String description() {
             return "Metadata plugin. "
                     + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
-                    + " and populates metadata database with consumed data.";
+                    + " and populates metadata database with consumed data"
+                    + " and writes graph of GIDs of callgraph to another Kafka topic.";
+        }
+
+        @Override
+        public String version() {
+            return "0.0.1";
         }
 
         @Override
@@ -280,16 +329,12 @@ public class MetadataDatabasePlugin extends Plugin {
         public void stop() {
         }
 
-        @Override
         public void setPluginError(Throwable throwable) {
-            this.pluginError =
-                    new JSONObject().put("plugin", this.getClass().getSimpleName()).put("msg",
-                            throwable.getMessage()).put("trace", throwable.getStackTrace())
-                            .put("type", throwable.getClass().getSimpleName()).toString();
+            this.pluginError = throwable;
         }
 
         @Override
-        public String getPluginError() {
+        public Throwable getPluginError() {
             return this.pluginError;
         }
 
@@ -297,6 +342,5 @@ public class MetadataDatabasePlugin extends Plugin {
         public void freeResource() {
 
         }
-
     }
 }
