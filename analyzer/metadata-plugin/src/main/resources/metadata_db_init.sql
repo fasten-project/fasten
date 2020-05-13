@@ -68,7 +68,7 @@ CREATE TABLE binary_module_contents
 CREATE TABLE callables
 (
     id               BIGSERIAL PRIMARY KEY,
-    module_id        BIGINT REFERENCES modules (id),
+    module_id        BIGINT  NOT NULL REFERENCES modules (id),
     fasten_uri       TEXT    NOT NULL,
     is_internal_call BOOLEAN NOT NULL,
     created_at       TIMESTAMP,
@@ -137,5 +137,17 @@ ALTER TABLE edges
     ADD CONSTRAINT unique_source_target UNIQUE USING INDEX unique_source_target;
 
 ALTER TABLE callables
-    ADD CONSTRAINT check_module_id CHECK ((module_id IS NULL AND is_internal_call IS false) OR
+    ADD CONSTRAINT check_module_id CHECK ((module_id = -1 AND is_internal_call IS false) OR
                                           (module_id IS NOT NULL AND is_internal_call IS true));
+
+INSERT INTO packages (id, package_name, forge)
+VALUES (-1, 'external_callables_library', 'mvn')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO package_versions (id, package_id, version, cg_generator)
+VALUES (-1, -1, '0.0.1', 'OPAL')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO modules (id, package_version_id, namespace)
+VALUES (-1, -1, 'global_external_callables')
+ON CONFLICT DO NOTHING;
