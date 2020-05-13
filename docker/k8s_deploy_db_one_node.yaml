@@ -16,16 +16,11 @@ spec:
       containers:
         - name: fasten-server-db
           image: monster93/fasten.server.db:v0.1b
-          args: ["-k", "kafka-0.kafka-headless.codefeedr:9092", "-t", "$(FASTEN_CONFIG)", "-d", "$(PSQL_DB)", "-u", "$(PSQL_USER)", "-pw", "$(PSQL_SECRET)"]
+          args: ["-k", "kafka-0.kafka-headless.codefeedr:9092", "-kt", "MetadataDBExtension=fasten.OPAL.out", "-pl", "MetadataDBExtension", "-d", "$(PSQL_DB)", "-du", "$(PSQL_USER)"]
           ports:
             - containerPort: 3010
           env:
-            - name: FASTEN_CONFIG
-              valueFrom:
-                configMapKeyRef:
-                  key: fasten.topics
-                  name: fasten.config
-            - name: PSQL_SECRET
+            - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
                   key: psql-pwd
