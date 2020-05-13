@@ -47,10 +47,10 @@ public class GraphDatabasePlugin extends Plugin {
         private String consumerTopic = "fasten.MetadataDBExtension.out";
         private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(GraphDBExtension.class.getName());
-        private RocksDao rocksDao;
+        private static RocksDao rocksDao;
 
         public void setRocksDao(RocksDao rocksDao) {
-            this.rocksDao = rocksDao;
+            GraphDBExtension.rocksDao = rocksDao;
         }
 
         @Override
