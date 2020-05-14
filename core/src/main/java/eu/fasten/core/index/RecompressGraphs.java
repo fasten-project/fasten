@@ -32,6 +32,7 @@ import com.martiansoftware.jsap.JSAPException;
 import com.martiansoftware.jsap.JSAPResult;
 import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
+import com.martiansoftware.jsap.Switch;
 import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.KnowledgeBase;
@@ -40,6 +41,7 @@ import eu.fasten.core.data.KnowledgeBase.CallGraphData;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.util.Properties;
 import it.unimi.dsi.webgraph.BVGraph;
+import it.unimi.dsi.webgraph.EFGraph;
 
 
 public class RecompressGraphs {
@@ -57,6 +59,7 @@ public class RecompressGraphs {
 						new FlaggedOption("zetaK", JSAP.INTEGER_PARSER, String.valueOf(BVGraph.DEFAULT_ZETA_K), JSAP.NOT_REQUIRED, 'k', "zeta-k", "The k parameter for zeta-k codes."),
 						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'M', "min", "Consider only graphs with at least this number of internal nodes."),
 						new FlaggedOption("n", JSAP.LONG_PARSER, Long.toString(Long.MAX_VALUE), JSAP.NOT_REQUIRED, 'n', "n", "Analyze just this number of graphs."),
+						new Switch("eliasFano", 'e', "elias-fano", "Recompress as Elias-Fano."),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
 		});
@@ -76,6 +79,7 @@ public class RecompressGraphs {
 		int maxRefCount = jsapResult.getInt("maxRefCount");
 		if (maxRefCount == -1) maxRefCount = Integer.MAX_VALUE;
 		final int minIntervalLength = jsapResult.getInt("minIntervalLength");
+		final boolean ef = jsapResult.getBoolean("eliasFano");
 
 		final int minNodes = jsapResult.getInt("min");
 		final long n = jsapResult.getLong("n");
@@ -106,15 +110,22 @@ public class RecompressGraphs {
 			System.out.print('\t');
 			System.out.print(callGraph.version);
 
-			BVGraph.store(callGraphData.rawGraph(), f);
-			BVGraph.store(callGraphData.rawGraph(), f, windowSize, maxRefCount, minIntervalLength, zetaK, flags, 1, null);
+			if (ef) {
+				EFGraph.store(callGraphData.rawGraph(), f, null);
+			} else {
+				BVGraph.store(callGraphData.rawGraph(), f, windowSize, maxRefCount, minIntervalLength, zetaK, flags, 1, null);
+			}
 			Properties properties = new Properties(f + BVGraph.PROPERTIES_EXTENSION);
 			System.out.print('\t');
 			System.out.print(callGraphData.graphProperties.get("bitsperlink"));
 			System.out.print('\t');
 			System.out.print(properties.getString("bitsperlink"));
 
-			BVGraph.store(callGraphData.rawTranspose(), f, windowSize, maxRefCount, minIntervalLength, zetaK, flags, 1, null);
+			if (ef) {
+				EFGraph.store(callGraphData.rawTranspose(), f, null);
+			} else {
+				BVGraph.store(callGraphData.rawTranspose(), f, windowSize, maxRefCount, minIntervalLength, zetaK, flags, 1, null);
+			}
 			properties = new Properties(f + BVGraph.PROPERTIES_EXTENSION);
 			System.out.print('\t');
 			System.out.print(callGraphData.transposeProperties.get("bitsperlink"));
