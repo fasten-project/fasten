@@ -108,6 +108,7 @@ public class KBStats {
 		for (int i = 0; i < deflationBySize.length; i++) deflationBySize[i] = new StatsAccumulator();
 
 		int totGraphs = 0, statGraphs = 0;
+		long totSize = 0;
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
 			if (totGraphs++ == n) break;
 
@@ -127,6 +128,7 @@ public class KBStats {
 			pl.update();
 			final CallGraphData callGraphData = callGraph.callGraphData();
 			if (callGraphData.numNodes() < minNodes) continue;
+			totSize += callGraphData.size;
 			if (gsdFlag) gsdStream.println(callGraphData.numNodes());
 			statGraphs++;
 			nodes.add(callGraphData.numNodes());
@@ -180,6 +182,7 @@ public class KBStats {
 		System.out.println("Graphs in the kb: " + kb.callGraphs.size());
 		System.out.println("Graphs examined: " + totGraphs);
 		System.out.println("Graphs considered for the stats: " + statGraphs);
+		System.out.println("Storage size of graphs considered for the stats: " + totSize);
 		System.out.println("Nodes: " + nodes.snapshot());
 		System.out.println("Internal nodes: " + internalNodes.snapshot());
 		System.out.println("Internal node ratio: " + internalNodeRatio.snapshot());
@@ -191,5 +194,4 @@ public class KBStats {
 		System.out.println("Transpose bits/link: " + bitsPerLinkt.snapshot());
 		for (int i = 0; i < deflationBySize.length; i++) if (deflationBySize[i].count() != 0) System.out.println("Deflation by size [" + ((1L << i) - 1) + ".." + ((1L << i + 1) - 1) + "): " + deflationBySize[i].snapshot());
 	}
-
 }
