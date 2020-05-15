@@ -692,7 +692,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		final List<ColumnFamilyDescriptor> cfDescriptors = Arrays.asList(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, cfOptions), new ColumnFamilyDescriptor(GID2URI, cfOptions), new ColumnFamilyDescriptor(URI2GID, cfOptions));
 
 		final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
-		final RocksDB db = RocksDB.open(dbOptions, kbDir, cfDescriptors, columnFamilyHandles);
+		final RocksDB db = readOnly ? RocksDB.openReadOnly(dbOptions, kbDir, cfDescriptors, columnFamilyHandles) : RocksDB.open(dbOptions, kbDir, cfDescriptors, columnFamilyHandles);
 
 		final KnowledgeBase kb;
 		if (metadataExists) {
