@@ -115,7 +115,7 @@ public class Keys {
         public static final UniqueKey<BinaryModulesRecord> BINARY_MODULES_PKEY = Internal.createUniqueKey(BinaryModules.BINARY_MODULES, "binary_modules_pkey", BinaryModules.BINARY_MODULES.ID);
         public static final UniqueKey<BinaryModulesRecord> UNIQUE_VERSION_NAME = Internal.createUniqueKey(BinaryModules.BINARY_MODULES, "unique_version_name", BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME);
         public static final UniqueKey<CallablesRecord> CALLABLES_PKEY = Internal.createUniqueKey(Callables.CALLABLES, "callables_pkey", Callables.CALLABLES.ID);
-        public static final UniqueKey<CallablesRecord> UNIQUE_URI_CALL = Internal.createUniqueKey(Callables.CALLABLES, "unique_uri_call", Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_INTERNAL_CALL);
+        public static final UniqueKey<CallablesRecord> UNIQUE_URI_CALL = Internal.createUniqueKey(Callables.CALLABLES, "unique_uri_call", Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.IS_INTERNAL_CALL);
         public static final UniqueKey<DependenciesRecord> UNIQUE_VERSION_DEPENDENCY_RANGE = Internal.createUniqueKey(Dependencies.DEPENDENCIES, "unique_version_dependency_range", Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID, Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE);
         public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = Internal.createUniqueKey(Edges.EDGES, "unique_source_target", Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID);
         public static final UniqueKey<FilesRecord> FILES_PKEY = Internal.createUniqueKey(Files.FILES, "files_pkey", Files.FILES.ID);

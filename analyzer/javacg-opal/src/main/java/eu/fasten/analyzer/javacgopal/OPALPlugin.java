@@ -36,8 +36,6 @@ public class OPALPlugin extends AnalyzerPlugin {
     @Extension
     public static class OPAL extends AnalyzerPlugin.ANALYZER {
 
-        private static String produceTopic = "opal_callgraphs";
-
         @Override
         public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
                                                            final JSONObject kafkaConsumedJson) {
@@ -51,13 +49,8 @@ public class OPALPlugin extends AnalyzerPlugin {
         }
 
         @Override
-        public String producerTopic() {
-            return produceTopic;
-        }
-
-        @Override
-        public void setProducerTopic(String topicName) {
-            produceTopic = topicName;
+        public String version() {
+            return "0.0.1";
         }
     }
 }

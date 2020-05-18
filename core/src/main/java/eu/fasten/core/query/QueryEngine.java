@@ -88,7 +88,7 @@ public class QueryEngine {
 		final String kbDir = jsapResult.getString("kb");
 		final String kbMetadataFilename = jsapResult.getString("kbmeta");
 
-		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename);
+		final KnowledgeBase kb = KnowledgeBase.getInstance(kbDir, kbMetadataFilename, true);
 
 		final BufferedReader br = new BufferedReader( new InputStreamReader( jsapResult.userSpecified( "input" ) ? new FileInputStream( jsapResult.getString( "input") ) : System.in ) );
 

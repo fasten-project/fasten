@@ -68,7 +68,7 @@ CREATE TABLE binary_module_contents
 CREATE TABLE callables
 (
     id               BIGSERIAL PRIMARY KEY,
-    module_id        BIGINT REFERENCES modules (id),
+    module_id        BIGINT  NOT NULL REFERENCES modules (id),
     fasten_uri       TEXT    NOT NULL,
     is_internal_call BOOLEAN NOT NULL,
     created_at       TIMESTAMP,
@@ -81,6 +81,20 @@ CREATE TABLE edges
     target_id BIGINT NOT NULL REFERENCES callables (id),
     metadata  JSONB  NOT NULL
 );
+
+-- CREATE INDEX CONCURRENTLY package_versions_package_id ON package_versions USING btree (package_id);
+-- CREATE INDEX CONCURRENTLY dependencies_package_version_id ON dependencies USING btree (package_version_id);
+-- CREATE INDEX CONCURRENTLY dependencies_dependency_id ON dependencies USING btree (dependency_id);
+-- CREATE INDEX CONCURRENTLY files_package_version_id ON files USING btree (package_version_id);
+-- CREATE INDEX CONCURRENTLY modules_package_version_id ON modules USING btree (package_version_id);
+-- CREATE INDEX CONCURRENTLY module_contents_module_id ON module_contents USING btree (module_id);
+-- CREATE INDEX CONCURRENTLY module_contents_file_id ON module_contents USING btree (file_id);
+-- CREATE INDEX CONCURRENTLY binary_modules_package_version_id ON binary_modules USING btree (package_version_id);
+-- CREATE INDEX CONCURRENTLY binary_module_contents_binary_module_id ON binary_module_contents USING btree (binary_module_id);
+-- CREATE INDEX CONCURRENTLY binary_module_contents_file_id ON binary_module_contents USING btree (file_id);
+-- CREATE INDEX CONCURRENTLY callables_module_id ON callables USING btree (module_id);
+-- CREATE INDEX CONCURRENTLY edges_source_id ON edges USING btree (source_id);
+-- CREATE INDEX CONCURRENTLY edges_target_id ON edges USING btree (target_id);
 
 CREATE UNIQUE INDEX CONCURRENTLY unique_package_forge ON packages USING btree (package_name, forge);
 ALTER TABLE packages
@@ -114,10 +128,26 @@ CREATE UNIQUE INDEX CONCURRENTLY unique_version_path ON files USING btree (packa
 ALTER TABLE files
     ADD CONSTRAINT unique_version_path UNIQUE USING INDEX unique_version_path;
 
-CREATE UNIQUE INDEX CONCURRENTLY unique_uri_call ON callables USING btree (fasten_uri, is_internal_call);
+CREATE UNIQUE INDEX CONCURRENTLY unique_uri_call ON callables USING btree (module_id, fasten_uri, is_internal_call);
 ALTER TABLE callables
     ADD CONSTRAINT unique_uri_call UNIQUE USING INDEX unique_uri_call;
 
 CREATE UNIQUE INDEX CONCURRENTLY unique_source_target ON edges USING btree (source_id, target_id);
 ALTER TABLE edges
     ADD CONSTRAINT unique_source_target UNIQUE USING INDEX unique_source_target;
+
+ALTER TABLE callables
+    ADD CONSTRAINT check_module_id CHECK ((module_id = -1 AND is_internal_call IS false) OR
+                                          (module_id IS NOT NULL AND is_internal_call IS true));
+
+INSERT INTO packages (id, package_name, forge)
+VALUES (-1, 'external_callables_library', 'mvn')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO package_versions (id, package_id, version, cg_generator)
+VALUES (-1, -1, '0.0.1', 'OPAL')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO modules (id, package_version_id, namespace)
+VALUES (-1, -1, 'global_external_callables')
+ON CONFLICT DO NOTHING;

@@ -6,12 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.net.URISyntaxException;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-class FastenURITest {
+public class FastenURITest {
 
 	@Test
-	void testCreation() throws URISyntaxException {
+	public void testCreation() throws URISyntaxException {
 		var fastenURI = new FastenURI("fasten://a!b$c/∂∂∂/πππ");
 		assertEquals("fasten", fastenURI.getScheme());
 		assertEquals("a", fastenURI.getForge());
@@ -117,7 +117,7 @@ class FastenURITest {
 	}
 
 	@Test
-	void testRawNonRow() throws URISyntaxException {
+	public void testRawNonRow() throws URISyntaxException {
 		final var fastenURI = new FastenURI("fasten://a%2F!b%2F$c%2F/∂∂∂%2F/πππ%2F");
 		assertEquals("fasten", fastenURI.getScheme());
 		assertEquals("a/", fastenURI.getForge());

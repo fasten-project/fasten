@@ -16,15 +16,14 @@
  * limitations under the License.
  */
 
-package eu.fasten.server.db;
+package eu.fasten.server.connectors;
 
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.postgresql.Driver;
-
-import java.sql.DriverManager;
-import java.sql.SQLException;
 
 public class PostgresConnector {
 
@@ -33,15 +32,20 @@ public class PostgresConnector {
      *
      * @param dbUrl URL of the database to connect
      * @param user  Database user name
-     * @param pass  Database user password
      * @return DSLContext for jOOQ to query the database
      * @throws SQLException             if failed to set up connection
      * @throws IllegalArgumentException if database URL has incorrect format and cannot be parsed
      */
-    public static DSLContext getDSLContext(String dbUrl, String user, String pass)
+    public static DSLContext getDSLContext(String dbUrl, String user)
             throws SQLException, IllegalArgumentException {
         if (!new Driver().acceptsURL(dbUrl)) {
             throw new IllegalArgumentException("Could not parse database URI: " + dbUrl);
+        }
+        var pass = System.getenv("FASTEN_DBPASS") != null ?  System.getenv("FASTEN_DBPASS")
+                : System.getenv("PGPASSWORD");
+
+        if (pass == null) {
+            throw new IllegalArgumentException("No password for DB is provided");
         }
         var connection = DriverManager.getConnection(dbUrl, user, pass);
         return DSL.using(connection, SQLDialect.POSTGRES);
