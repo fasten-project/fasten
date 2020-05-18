@@ -73,8 +73,7 @@ public class RocksDao implements Closeable {
      */
     public RocksDao(final String dbDir) throws RocksDBException {
         RocksDB.loadLibrary();
-        final ColumnFamilyOptions cfOptions = new ColumnFamilyOptions()
-                .setCompressionType(CompressionType.LZ4_COMPRESSION);
+        final ColumnFamilyOptions cfOptions = new ColumnFamilyOptions();
         final DBOptions dbOptions = new DBOptions()
                 .setCreateIfMissing(true)
                 .setCreateMissingColumnFamilies(true);
