@@ -140,6 +140,7 @@ public class RecompressGraphs {
 
 		LOGGER.info("Closing KnowledgeBase");
 		kb.close();
+		new File(f.toString());
 		new File(f.toString() + BVGraph.PROPERTIES_EXTENSION).delete();
 		new File(f.toString() + BVGraph.OFFSETS_EXTENSION).delete();
 		new File(f.toString() + BVGraph.GRAPH_EXTENSION).delete();
