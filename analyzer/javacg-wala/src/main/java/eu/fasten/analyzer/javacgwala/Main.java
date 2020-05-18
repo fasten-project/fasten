@@ -20,7 +20,6 @@ package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.BufferedReader;
 import java.io.File;
@@ -81,7 +80,8 @@ public class Main implements Runnable {
             }
 
             for (var coordinate : coordinates) {
-                dependencies.addAll(MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()));
+                dependencies.addAll(MavenCoordinate.MavenResolver
+                        .resolveDependencies(coordinate.getCoordinate()));
             }
             var ercg = PartialCallGraph.generateERCG(setRunner.pathToFile.path,
                     setRunner.pathToFile.product, setRunner.pathToFile.version,

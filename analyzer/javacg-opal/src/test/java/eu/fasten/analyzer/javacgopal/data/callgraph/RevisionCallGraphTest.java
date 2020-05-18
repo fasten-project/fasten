@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -36,8 +36,8 @@ import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ExtendedRevisionCallGraphTest {
-    static ExtendedRevisionCallGraph cg;
+public class RevisionCallGraphTest {
+    static RevisionCallGraph cg;
     static String cgString;
 
     /**
@@ -64,7 +64,7 @@ public class ExtendedRevisionCallGraphTest {
                 .getResource("DiffExampleFirst.class"))
                 .getFile()));
 
-        cg = ExtendedRevisionCallGraph.extendedBuilder()
+        cg = RevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product(mavenCoordinate.getProduct())
             .cgGenerator(partialCG.getGENERATOR())
@@ -102,7 +102,7 @@ public class ExtendedRevisionCallGraphTest {
             + "\"timestamp\":1574072773}";
     }
 
-    public static void assertSLF4j(ExtendedRevisionCallGraph cg) {
+    public static void assertSLF4j(RevisionCallGraph cg) {
         assertNotNull(cg);
         assertEquals("mvn", cg.forge);
         assertEquals("1.7.29", cg.version);
@@ -129,7 +129,7 @@ public class ExtendedRevisionCallGraphTest {
                 .orElseThrow(RuntimeException::new)
         );
 
-        final var rcg = ExtendedRevisionCallGraph.extendedBuilder()
+        final var rcg = RevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product(coord.getProduct())
             .version(coord.getVersionConstraint())
@@ -146,7 +146,7 @@ public class ExtendedRevisionCallGraphTest {
     @Test
     public void testExtendedRevisionCallGraph() throws JSONException {
 
-        final var cgFromJSON = new ExtendedRevisionCallGraph(new JSONObject(cgString));
+        final var cgFromJSON = new RevisionCallGraph(new JSONObject(cgString));
 
         assertEquals("mvn", cgFromJSON.forge);
         assertEquals("diff.example", cgFromJSON.product);
@@ -190,14 +190,14 @@ public class ExtendedRevisionCallGraphTest {
                 + " 4=/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoidType},"
                 + " superClasses=[/java.lang/Object],"
                 + " superInterfaces=[]}}",
-            ExtendedRevisionCallGraph.getCHAFromJSON(new JSONObject(cgString).getJSONObject("cha"))
+            RevisionCallGraph.getCHAFromJSON(new JSONObject(cgString).getJSONObject("cha"))
                 .toString());
     }
 
     @Test
     public void testSortInternalCalls() throws JSONException {
         final var unorderdCGString = cgString.replace("[[1,2],[2,3],[3,4]]", "[[2,3],[3,4],[1,2]]");
-        final var unorderedCG = new ExtendedRevisionCallGraph(new JSONObject(unorderdCGString));
+        final var unorderedCG = new RevisionCallGraph(new JSONObject(unorderdCGString));
         assertEquals("[[2, 3], [3, 4], [1, 2]]",
             unorderedCG.getGraph().getInternalCalls().toString());
         unorderedCG.sortInternalCalls();
@@ -214,7 +214,7 @@ public class ExtendedRevisionCallGraphTest {
                 .orElseThrow(RuntimeException::new)
         );
 
-        final var rcg = ExtendedRevisionCallGraph.extendedBuilder()
+        final var rcg = RevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product(coord.getProduct())
             .version(coord.getVersionConstraint())

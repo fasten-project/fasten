@@ -24,7 +24,7 @@ import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import eu.fasten.analyzer.javacgwala.data.core.CallType;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 class PartialCallGraphTest {
 
     private static PartialCallGraph graph;
-    private static ExtendedRevisionCallGraph.Type type;
+    private static RevisionCallGraph.Type type;
 
 
     @BeforeAll

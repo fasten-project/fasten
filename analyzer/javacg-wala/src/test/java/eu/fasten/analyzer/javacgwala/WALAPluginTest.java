@@ -25,7 +25,7 @@ import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -123,11 +123,11 @@ class WALAPluginTest {
         walaPlugin.consume(coordinateJSON1.toString());
 
         var coordinate = new MavenCoordinate("com.zarbosoft", "coroutines-core", "0.0.3");
-        ExtendedRevisionCallGraph extendedRevisionCallGraph =
+        RevisionCallGraph revisionCallGraph =
                 PartialCallGraph.createExtendedRevisionCallGraph(coordinate, 1574072773);
 
         assertTrue(walaPlugin.produce().isPresent());
-        assertEquals(extendedRevisionCallGraph.toJSON().toString(), walaPlugin.produce().get());
+        assertEquals(revisionCallGraph.toJSON().toString(), walaPlugin.produce().get());
     }
 
     @Test

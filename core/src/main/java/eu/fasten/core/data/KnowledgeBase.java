@@ -388,14 +388,14 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 		// ALERT unsynchronized update of Knowledge Base maps.
 		/**
-		 * Creates a call graph from a {@link ExtendedRevisionCallGraph}. All
+		 * Creates a call graph from a {@link RevisionCallGraph}. All
 		 * maps of the knowledge base (e.g. {@link KnowledgeBase#GIDAppearsIn})
 		 * are updated appropriately. The graphs are stored in the database.
 		 *
 		 * @param g the revision call graph.
 		 * @param index the revision index.
 		 */
-		protected CallGraph(final ExtendedRevisionCallGraph g, final long index) throws IOException, RocksDBException {
+		protected CallGraph(final RevisionCallGraph g, final long index) throws IOException, RocksDBException {
 			product = g.product;
 			version = g.version;
 			forge = g.forge;
@@ -1074,7 +1074,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @throws IOException
 	 * @throws RocksDBException
 	 */
-	public synchronized void add(final ExtendedRevisionCallGraph g, final long index) throws IOException, RocksDBException {
+	public synchronized void add(final RevisionCallGraph g, final long index) throws IOException, RocksDBException {
 		if (readOnly) throw new IllegalStateException();
 		callGraphs.put(index, new CallGraph(g, index));
 	}

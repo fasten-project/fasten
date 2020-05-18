@@ -28,8 +28,8 @@ import com.ibm.wala.types.TypeReference;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.analyzer.javacgwala.data.core.InternalMethod;
 import eu.fasten.analyzer.javacgwala.data.core.Method;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.RevisionCallGraph;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -226,7 +226,7 @@ public class ClassHierarchyAnalyzer {
                 new LinkedList<>());
 
         partialCallGraph.getClassHierarchy().put(getClassURI(klass),
-                new ExtendedRevisionCallGraph.Type(sourceFileName,
+                new RevisionCallGraph.Type(sourceFileName,
                         new HashMap<>(), superClasses, interfaces));
     }
 

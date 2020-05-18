@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.merge;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -37,8 +37,8 @@ public class CallGraphDifferentiator {
      * @throws IOException throws IOException.
      */
     public static void diffInFile(final String resultPath, final int graphNumber,
-                                  final ExtendedRevisionCallGraph firstGraph,
-                                  final ExtendedRevisionCallGraph secondGraph) throws IOException {
+                                  final RevisionCallGraph firstGraph,
+                                  final RevisionCallGraph secondGraph) throws IOException {
 
         final String graphPath =
             resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;

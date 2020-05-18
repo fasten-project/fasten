@@ -1,6 +1,6 @@
 package eu.fasten.analyzer.baseanalyzer;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,7 +24,7 @@ public abstract class AnalyzerPlugin extends Plugin {
 
         private String consumeTopic = "fasten.maven.pkg";
         private Throwable pluginError;
-        private ExtendedRevisionCallGraph graph;
+        private RevisionCallGraph graph;
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -91,7 +91,7 @@ public abstract class AnalyzerPlugin extends Plugin {
          * @param kafkaConsumedJson Consumed JSON
          * @return Generated ExtendedRevisionCallGraph
          */
-        public abstract ExtendedRevisionCallGraph generateCallGraph(
+        public abstract RevisionCallGraph generateCallGraph(
                 final MavenCoordinate mavenCoordinate,
                 final JSONObject kafkaConsumedJson) throws Exception;
 
