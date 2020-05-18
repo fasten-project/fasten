@@ -109,6 +109,10 @@ public class RecompressGraphs {
 			System.out.print(callGraph.product);
 			System.out.print('\t');
 			System.out.print(callGraph.version);
+			System.out.print('\t');
+			System.out.print(callGraphData.rawGraph().numNodes());
+			System.out.print('\t');
+			System.out.print(callGraphData.rawGraph().numArcs());
 
 			if (ef) {
 				EFGraph.store(callGraphData.rawGraph(), f, null);
