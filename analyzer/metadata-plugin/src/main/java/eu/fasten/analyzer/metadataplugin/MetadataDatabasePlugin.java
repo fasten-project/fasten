@@ -218,6 +218,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 var sourceLocalId = (long) call.getKey();
                 var uri = call.getValue().toString();
                 var targetId = metadataDao.insertCallable(-1L, uri, false, null, null);
+                nodes.add(targetId);
                 var edgeMetadata = new JSONObject(callEntry.getValue());
                 externalEdges.add(new EdgesRecord(sourceLocalId, targetId,
                         JSONB.valueOf(edgeMetadata.toString())));

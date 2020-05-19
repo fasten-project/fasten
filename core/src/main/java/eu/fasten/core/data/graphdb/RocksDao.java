@@ -32,6 +32,7 @@ import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterators;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.io.InputBitStream;
 import it.unimi.dsi.io.NullInputStream;
 import it.unimi.dsi.lang.MutableString;
@@ -110,6 +111,17 @@ public class RocksDao implements Closeable {
      */
     public void saveToRocksDb(long index, List<Long> nodes, int numInternal, List<List<Long>> edges)
             throws IOException, RocksDBException {
+        var nodesSet = new LongOpenHashSet(nodes);
+        var edgeNodesSet = new LongOpenHashSet();
+        for (var edge : edges) {
+            edgeNodesSet.addAll(edge);
+        }
+        // Nodes list must contain all nodes which are in edges
+        if (!nodesSet.containsAll(edgeNodesSet)) {
+            edgeNodesSet.removeAll(nodesSet);
+            throw new IllegalArgumentException("Some nodes from edges are not in the nodes list:\n"
+                    + edgeNodesSet);
+        }
         final long[] temporary2GID = new long[nodes.size()];
         var nodesList = new LongArrayList(nodes);
         LongIterators.unwrap(nodesList.iterator(), temporary2GID);
