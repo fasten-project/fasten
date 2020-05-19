@@ -119,18 +119,16 @@ public class RecompressGraphs {
 				final ImmutableGraph symGraph = new ArrayListMutableGraph(Transform.symmetrize(graph)).immutableView();
 				final LayeredLabelPropagation clustering = new LayeredLabelPropagation(symGraph, 0);
 				final int[] perm = clustering.computePermutation(LayeredLabelPropagation.DEFAULT_GAMMAS, null);
-				final int[] inv = Util.invertPermutation(perm);
+
+				Util.invertPermutationInPlace(perm);
 				final int[] sorted = new int[numNodes];
 				int internal = 0, external = nInternal;
 				for (int j = 0; j < numNodes; j++) {
-					if (inv[j] < nInternal) sorted[internal++] = inv[j];
-					else sorted[external++] = inv[j];
+					if (perm[j] < nInternal) sorted[internal++] = perm[j];
+					else sorted[external++] = perm[j];
 				}
-
-				assert internal == nInternal;
-				assert external == numNodes;
-
 				Util.invertPermutationInPlace(sorted);
+
 				graph = new ArrayListMutableGraph(Transform.map(graph, sorted)).immutableView();
 				transpose = new ArrayListMutableGraph(Transform.map(transpose, sorted)).immutableView();
 			}
