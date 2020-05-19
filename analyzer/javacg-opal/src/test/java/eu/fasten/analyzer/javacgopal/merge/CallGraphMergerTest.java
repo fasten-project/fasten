@@ -20,7 +20,7 @@ package eu.fasten.analyzer.javacgopal.merge;
 
 import static org.junit.Assert.assertEquals;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
@@ -30,8 +30,8 @@ import org.junit.Test;
 
 public class CallGraphMergerTest {
 
-    static ExtendedRevisionCallGraph artifact;
-    static ExtendedRevisionCallGraph dependency;
+    static RevisionCallGraph artifact;
+    static RevisionCallGraph dependency;
 
     @BeforeClass
     public static void generateCallGraph() {
@@ -57,7 +57,7 @@ public class CallGraphMergerTest {
             Thread.currentThread().getContextClassLoader().getResource("Importer.class")
                 .getFile()));
 
-        artifact = ExtendedRevisionCallGraph.extendedBuilder()
+        artifact = RevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product("ImporterGroup.ImporterArtifact")
             .version("1.0.0")
@@ -85,7 +85,7 @@ public class CallGraphMergerTest {
             Thread.currentThread().getContextClassLoader().getResource("Imported.class")
                 .getFile()));
 
-        dependency = ExtendedRevisionCallGraph.extendedBuilder()
+        dependency = RevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product("ImportedGroup.ImportedArtifact")
             .version("1.7.29")

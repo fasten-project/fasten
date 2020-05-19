@@ -13,8 +13,6 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.Test;
 
-import eu.fasten.core.data.RevisionCallGraph.Constraint;
-import eu.fasten.core.data.RevisionCallGraph.Dependency;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
 
 public class RevisionCallGraphTest {
@@ -54,7 +52,7 @@ public class RevisionCallGraphTest {
 
 		String spec = "[\"[3.1..  7.1   ]\",\"[   9]\",\"[10.3  ..]\"]";
 		JSONArray cs = new JSONArray(spec);
-		List<Constraint> constraints = RevisionCallGraph.Constraint.constraints(cs);
+		List<RevisionCallGraph.Constraint> constraints = RevisionCallGraph.Constraint.constraints(cs);
 		assertEquals(3, constraints.size());
 		assertEquals("3.1", constraints.get(0).lowerBound);
 		assertEquals("7.1", constraints.get(0).upperBound);
@@ -69,7 +67,7 @@ public class RevisionCallGraphTest {
 	@Test
 	public void testDependency() {
 		RevisionCallGraph.Dependency d;
-		d = new RevisionCallGraph.Dependency("maven", "foo.bar", ObjectLists.singleton(new Constraint("[3.1..7.1]")));
+		d = new RevisionCallGraph.Dependency("maven", "foo.bar", ObjectLists.singleton(new RevisionCallGraph.Constraint("[3.1..7.1]")));
 		assertEquals("maven", d.forge);
 		assertEquals("foo.bar", d.product);
 		assertEquals(1, d.constraints.size());
@@ -81,7 +79,7 @@ public class RevisionCallGraphTest {
 		d = new RevisionCallGraph.Dependency(json);
 		assertEquals("maven", d.forge);
 		assertEquals("foo.bar", d.product);
-		List<Constraint> constraints = d.constraints;
+		List<RevisionCallGraph.Constraint> constraints = d.constraints;
 		assertEquals(3, constraints.size());
 		assertEquals("3.1", constraints.get(0).lowerBound);
 		assertEquals("7.1", constraints.get(0).upperBound);
@@ -100,11 +98,11 @@ public class RevisionCallGraphTest {
 				"[{\"forge\": \"other\", \"product\": \"bar.nee\", \"constraints\": [\"[..9]\",\"[10.3  ..]\"] }]" +
 				"]";
 		JSONArray json = new JSONArray(spec);
-		List<List<Dependency>> depset = RevisionCallGraph.Dependency.depset(json);
-		Dependency d = depset.get(0).get(0);
+		List<List<RevisionCallGraph.Dependency>> depset = RevisionCallGraph.Dependency.depset(json);
+		RevisionCallGraph.Dependency d = depset.get(0).get(0);
 		assertEquals("maven", d.forge);
 		assertEquals("foo.bar", d.product);
-		List<Constraint> constraints = d.constraints;
+		List<RevisionCallGraph.Constraint> constraints = d.constraints;
 		assertEquals(3, constraints.size());
 		assertEquals("3.1", constraints.get(0).lowerBound);
 		assertEquals("7.1", constraints.get(0).upperBound);
@@ -122,39 +120,73 @@ public class RevisionCallGraphTest {
 		assertEquals("10.3", constraints.get(1).lowerBound);
 		assertNull(constraints.get(1).upperBound);
 
-        assertJsonEquals(new JSONArray(spec.replaceAll(" ", "")), Dependency.toJSON(depset));
+        assertJsonEquals(new JSONArray(spec.replaceAll(" ", "")), RevisionCallGraph.Dependency.toJSON(depset));
 	}
 
 	@Test
-	public void testCallGraph() throws JSONException, URISyntaxException {
+	public void testCallGraph() throws JSONException {
 		String callGraph = "{\n" +
 				"    \"forge\": \"mvn\",\n" +
 				"    \"product\": \"foo\",\n" +
 				"    \"version\": \"2.0\",\n" +
+				"    \"generator\": \"OPAL\",\n" +
 				"    \"depset\":\n" +
 				"      [\n" +
 				"        [{ \"forge\": \"mvn\", \"product\": \"a\", \"constraints\": [\"[1.0..2.0]\", \"[4.2..]\"]}],\n" +
 				"        [{ \"forge\": \"other\", \"product\": \"b\", \"constraints\": [\"[4.3.2]\"]},\n" +
 				"        { \"forge\": \"other\", \"product\": \"c\", \"constraints\": [\"[1.1..2.0]\"]}]\n" +
 				"      ],\n" +
-				"    \"graph\": \n" +
-				"      [\n" +
-				"        [\"/my.package/A.f(A)B\",\n" +
-				"         \"/my.other.package/C.g(%2Fmy.package%2FA)%2Fmy.package%2FB\"],\n" +
-				"        [\"/my.package/A.g(A,%2F%2Fjdk%2Fjava.lang%2Fint)%2F%2Fjdk%2Fjava.lang%2Fint\",\n" +
-				"         \"//b/their.package/TheirClass.method(TheirOtherClass)TheirOtherClass\"],\n" +
-				"      ]\n" +
+				" \"cha\": {\n" +
+				"     \"/my.package/A\": {\n" +
+				"       \"methods\": {\n" +
+				"         \"1\": \"/my.package/A.f(A)B\",\n" +
+				"         \"2\": \"/my.package/A.g(A,%2F%2Fjdk%2Fjava.lang%2Fint)%2F%2Fjdk%2Fjava.lang%2Fint\",\n" +
+				"       },\n" +
+				"       \"superInterfaces\": [],\n" +
+				"       \"sourceFile\": \"A.java\",\n" +
+				"       \"superClasses\": [\n" +
+				"         \"/java.lang/Object\"\n" +
+				"       ]\n" +
+				"     },\n" +
+				"   \"/my.other.package/C\": {\n" +
+				"     \"methods\": {\n" +
+				"       \"3\": \"/my.other.package/C.g(%2Fmy.package%2FA)%2Fmy.package%2FB\",\n" +
+				"     },\n" +
+				"     \"superInterfaces\": [],\n" +
+				"     \"sourceFile\": \"C.java\",\n" +
+				"     \"superClasses\": [\n" +
+				"       \"/java.lang/Object\"\n" +
+				"     ]\n" +
+				"   }\n" +
+				"},\n" +
+				" \"graph\": {\n" +
+				"     \"internalCalls\": [\n" +
+				"       [\n" +
+				"         1,\n" +
+				"         3\n" +
+				"       ]\n" +
+				"     ],\n" +
+				"     \"externalCalls\": [\n" +
+				"       [\n" +
+				"         \"2\",\n" +
+				"         \"//b/their.package/TheirClass.method(TheirOtherClass)TheirOtherClass\",\n" +
+				"         {\n" +
+				"           \"invokevirtual\":\"1\"\n" +
+				"         }\n" +
+				"       ]\n" +
+				"     ]\n" +
+				"   }\n" +
 				"}";
 		JSONObject json = new JSONObject(callGraph);
-		RevisionCallGraph cg = new RevisionCallGraph(json, false);
+		RevisionCallGraph cg = new RevisionCallGraph(json);
 		assertEquals("mvn", cg.forge);
 		assertEquals("foo", cg.product);
 		assertEquals("2.0", cg.version);
-		List<List<Dependency>> depset = cg.depset;
+		List<List<RevisionCallGraph.Dependency>> depset = cg.depset;
 		assertEquals(2, depset.size());
 		assertEquals("mvn", depset.get(0).get(0).forge);
 		assertEquals("a", depset.get(0).get(0).product);
-		List<Constraint> constraints = depset.get(0).get(0).constraints;
+		List<RevisionCallGraph.Constraint> constraints = depset.get(0).get(0).constraints;
 		assertEquals(2, constraints.size());
 		assertEquals("1.0", constraints.get(0).lowerBound);
 		assertEquals("2.0", constraints.get(0).upperBound);

@@ -15,7 +15,7 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.rocksdb.RocksDBException;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.Node;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -165,7 +165,7 @@ public class IndexerTest {
 		KnowledgeBase kb = KnowledgeBase.getInstance(kbDir.toString(), meta, false);
 
 		for (int index = 0; index < jsonSpec.length; index++)
-			kb.add(new ExtendedRevisionCallGraph(new JSONObject(jsonSpec[index])), index);
+			kb.add(new RevisionCallGraph(new JSONObject(jsonSpec[index])), index);
 
 		for(int pass = 0; pass < 2; pass++) {
 			for(final var entry : kb.callGraphs.long2ObjectEntrySet()) {

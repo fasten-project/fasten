@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.merge.CallGraphDifferentiator;
 
@@ -81,7 +81,7 @@ public class Main implements Runnable {
             }
         }
 
-        final ExtendedRevisionCallGraph revisionCallGraph;
+        final RevisionCallGraph revisionCallGraph;
         try {
             logger.info("Generating call graph for the Maven coordinate: {}",
                 this.fullCoordinate.mavenCoordStr);

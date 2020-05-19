@@ -24,7 +24,7 @@ import static org.junit.Assert.assertNotNull;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.OPALType;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
@@ -99,7 +99,7 @@ public class PartialCallGraphTest {
             .createExtendedRevisionCallGraph(
                 new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
 
-        eu.fasten.analyzer.javacgopal.data.callgraph.ExtendedRevisionCallGraphTest.assertSLF4j(rcg);
+        RevisionCallGraphTest.assertSLF4j(rcg);
 
     }
 
@@ -297,7 +297,7 @@ public class PartialCallGraphTest {
 
         final var mock = new HashMap(Map.of(FastenURI.create(
             "/name.space/SingleSourceToTarget"),
-            new ExtendedRevisionCallGraph.Type("SingleSourceToTarget.java",
+            new RevisionCallGraph.Type("SingleSourceToTarget.java",
                 methodsMap,
                 new LinkedList<>(Arrays.asList(new FastenJavaURI("/java.lang/Object"))),
                 new ArrayList<>())));

@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
@@ -89,9 +89,9 @@ public class MetadataDatabasePlugin extends Plugin {
             final var consumedJson = new JSONObject(record).getJSONObject("payload");
             final var artifact = consumedJson.optString("product") + "@"
                     + consumedJson.optString("version");
-            ExtendedRevisionCallGraph callgraph;
+            RevisionCallGraph callgraph;
             try {
-                callgraph = new ExtendedRevisionCallGraph(consumedJson);
+                callgraph = new RevisionCallGraph(consumedJson);
             } catch (JSONException | IllegalArgumentException e) {
                 logger.error("Error parsing JSON callgraph for '" + artifact + "'", e);
                 processedRecord = false;
@@ -150,7 +150,7 @@ public class MetadataDatabasePlugin extends Plugin {
          * @param metadataDao Data Access Object to insert records in the database
          * @return Package ID saved in the database
          */
-        public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
+        public long saveToDatabase(RevisionCallGraph callGraph, MetadataDao metadataDao) {
             final var timestamp = this.getProperTimestamp(callGraph.timestamp);
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
                     null, null, null);
@@ -183,9 +183,9 @@ public class MetadataDatabasePlugin extends Plugin {
                 var type = cha.get(fastenUri);
                 var moduleMetadata = new JSONObject();
                 moduleMetadata.put("superInterfaces",
-                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
+                        RevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
                 moduleMetadata.put("superClasses",
-                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
+                        RevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
                 long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
                         null, moduleMetadata);
                 var fileName = type.getSourceFileName();

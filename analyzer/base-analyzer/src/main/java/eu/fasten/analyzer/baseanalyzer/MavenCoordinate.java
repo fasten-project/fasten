@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.baseanalyzer;
 
-import eu.fasten.core.data.RevisionCallGraph;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -35,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import eu.fasten.core.data.RevisionCallGraph;
 import org.dom4j.DocumentException;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;

@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import org.jooq.DSLContext;
@@ -114,7 +114,7 @@ public class MetadataDatabasePluginTest {
         long fileId = 3;
         Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
-        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = metadataDBExtension.saveToDatabase(new RevisionCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
@@ -195,7 +195,7 @@ public class MetadataDatabasePluginTest {
         long fileId = 3;
         Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
-        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = metadataDBExtension.saveToDatabase(new RevisionCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
@@ -278,7 +278,7 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         metadataDBExtension.setPluginError(new RuntimeException());
-        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = metadataDBExtension.saveToDatabase(new RevisionCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
@@ -292,7 +292,7 @@ public class MetadataDatabasePluginTest {
        var metadataDao = Mockito.mock(MetadataDao.class);
        var json = new JSONObject();
        assertThrows(JSONException.class, () -> metadataDBExtension
-               .saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao));
+               .saveToDatabase(new RevisionCallGraph(json), metadataDao));
    }
 
    @Test
