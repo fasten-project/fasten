@@ -38,6 +38,7 @@ import com.martiansoftware.jsap.UnflaggedOption;
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.CallGraph;
 import eu.fasten.core.data.KnowledgeBase.CallGraphData;
+import it.unimi.dsi.Util;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.util.Properties;
 import it.unimi.dsi.webgraph.ArrayListMutableGraph;
@@ -106,18 +107,32 @@ public class RecompressGraphs {
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
 			if (i++ >= n) break;
 			pl.update();
-			if (callGraph.nInternal < minNodes) continue;
+			final int nInternal = callGraph.nInternal;
+			if (nInternal < minNodes) continue;
 			final CallGraphData callGraphData = callGraph.callGraphData();
 
 			ImmutableGraph graph = callGraphData.rawGraph();
 			ImmutableGraph transpose = callGraphData.rawTranspose();
+			final int numNodes = graph.numNodes();
 
 			if (llp) {
 				final ImmutableGraph symGraph = new ArrayListMutableGraph(Transform.symmetrize(graph)).immutableView();
 				final LayeredLabelPropagation clustering = new LayeredLabelPropagation(symGraph, 0);
 				final int[] perm = clustering.computePermutation(LayeredLabelPropagation.DEFAULT_GAMMAS, null);
-				graph = new ArrayListMutableGraph(Transform.map(graph, perm)).immutableView();
-				transpose = new ArrayListMutableGraph(Transform.map(transpose, perm)).immutableView();
+				final int[] inv = Util.invertPermutation(perm);
+				final int[] sorted = new int[numNodes];
+				int internal = 0, external = nInternal;
+				for (int j = 0; j < numNodes; j++) {
+					if (inv[j] < nInternal) sorted[internal++] = inv[j];
+					else sorted[external++] = inv[j];
+				}
+
+				assert internal == nInternal;
+				assert external == numNodes;
+
+				Util.invertPermutationInPlace(sorted);
+				graph = new ArrayListMutableGraph(Transform.map(graph, sorted)).immutableView();
+				transpose = new ArrayListMutableGraph(Transform.map(transpose, sorted)).immutableView();
 			}
 
 			System.out.print(callGraph.index);
@@ -126,7 +141,7 @@ public class RecompressGraphs {
 			System.out.print('\t');
 			System.out.print(callGraph.version);
 			System.out.print('\t');
-			System.out.print(graph.numNodes());
+			System.out.print(numNodes);
 			System.out.print('\t');
 			System.out.print(graph.numArcs());
 
