@@ -23,6 +23,8 @@ import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.FileNotFoundException;
+
+import eu.fasten.core.plugins.CallGraphGeneratorPlugin;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.PluginWrapper;
@@ -34,7 +36,7 @@ public class OPALPlugin extends AnalyzerPlugin {
     }
 
     @Extension
-    public static class OPAL extends AnalyzerPlugin.ANALYZER {
+    public static class OPAL extends AnalyzerPlugin.ANALYZER implements CallGraphGeneratorPlugin {
 
         @Override
         public RevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,

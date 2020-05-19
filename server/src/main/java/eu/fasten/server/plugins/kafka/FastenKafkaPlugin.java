@@ -19,12 +19,20 @@
 package eu.fasten.server.plugins.kafka;
 
 import com.google.common.base.Strings;
+import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.core.plugins.CallGraphGeneratorPlugin;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -53,6 +61,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     private final int skipOffsets;
 
+    private final String writeDirectory;
+
     /**
      * Constructs a FastenKafkaConsumer.
      *
@@ -60,7 +70,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param plugin      Kafka plugin
      * @param skipOffsets skip offset number
      */
-    public FastenKafkaPlugin(Properties p, KafkaPlugin<String, String> plugin, int skipOffsets) {
+    public FastenKafkaPlugin(Properties p, KafkaPlugin<String, String> plugin,
+                             int skipOffsets, String writeDirectory) {
         this.plugin = plugin;
 
         this.connection = new KafkaConsumer<>(p);
@@ -69,6 +80,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                         plugin.getClass().getSimpleName() + "_CGS_status"));
 
         this.skipOffsets = skipOffsets;
+        this.writeDirectory = writeDirectory;
 
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
@@ -144,10 +156,18 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private void handleProducing(String input) {
         if (plugin.getPluginError() == null) {
             var result = plugin.produce();
+            String payload = null;
+            if (result.isPresent()) {
+                if (plugin instanceof CallGraphGeneratorPlugin) {
+                    payload = writeToFile(result.get());
+                } else {
+                    payload = result.get();
+                }
+            }
 
             emitMessage(this.producer, String.format("fasten.%s.out",
                     plugin.getClass().getSimpleName()),
-                    getStdOutMsg(input, result.orElse(null)));
+                    getStdOutMsg(input, payload));
         } else {
             emitMessage(this.producer, String.format("fasten.%s.err",
                     plugin.getClass().getSimpleName()),
@@ -163,9 +183,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param msg      message
      */
     private void emitMessage(KafkaProducer<String, String> producer, String topic, String msg) {
-        ProducerRecord<String, String> errorRecord = new ProducerRecord<>(topic, msg);
+        ProducerRecord<String, String> record = new ProducerRecord<>(topic, msg);
 
-        producer.send(errorRecord, (recordMetadata, e) -> {
+        producer.send(record, (recordMetadata, e) -> {
             if (recordMetadata != null) {
                 logger.debug("Sent: {} to {}", msg, topic);
             } else {
@@ -174,6 +194,40 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         });
 
         producer.flush();
+    }
+
+    /**
+     * Writes {@link RevisionCallGraph} to JSON file and return JSON object containing
+     * a link to to written file.
+     *
+     * @param callgraph String of JSON representation of {@link RevisionCallGraph}
+     * @return Path to a newly written JSON file
+     */
+    private String writeToFile(String callgraph) {
+        RevisionCallGraph graph = new RevisionCallGraph(new JSONObject(callgraph));
+
+        try {
+            File directory = new File(this.writeDirectory
+                    + "/" + graph.product + "/" + graph.version);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+
+            File file = new File(directory.getAbsolutePath()
+                    + "/" + plugin.getClass().getSimpleName() + "_callgraph.json");
+            FileWriter fw = new FileWriter(file.getAbsoluteFile());
+            BufferedWriter bw = new BufferedWriter(fw);
+            bw.write(graph.toJSON().toString());
+            bw.close();
+
+            JSONObject link = new JSONObject();
+            link.put("link", file.getAbsolutePath());
+            return link.toString();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return callgraph;
     }
 
     /**

@@ -98,6 +98,11 @@ public class FastenServer implements Runnable {
             description = "Path to directory with RocksDB database")
     String graphDbDir;
 
+    @Option(names = {"-cgd", "--callgraph_dir"},
+            paramLabel = "dir",
+            description = "Path to directory with call graphs")
+    String callgraphDir;
+
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     @Override
@@ -185,7 +190,7 @@ public class FastenServer implements Runnable {
                     kafkaServers,
                     k.getClass().getCanonicalName());
 
-            return new FastenKafkaPlugin(properties, k, skipOffsets);
+            return new FastenKafkaPlugin(properties, k, skipOffsets, callgraphDir);
         }).collect(Collectors.toList());
     }
 
