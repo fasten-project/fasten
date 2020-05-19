@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
@@ -71,7 +70,8 @@ public class PermuteKnowledgeBase {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PermuteKnowledgeBase.class);
 
-	public static void main(final String[] args) throws JSAPException, ClassNotFoundException, RocksDBException, IOException, ConfigurationException {
+	@SuppressWarnings("resource")
+	public static void main(final String[] args) throws JSAPException, ClassNotFoundException, RocksDBException, IOException {
 		final SimpleJSAP jsap = new SimpleJSAP(PermuteKnowledgeBase.class.getName(),
 				"Permutes a knowledge base using LLP.",
 				new Parameter[] {
@@ -107,7 +107,7 @@ public class PermuteKnowledgeBase {
 		kryo.register(long[].class);
 		kryo.register(Long2IntOpenHashMap.class);
 
-		final ProgressLogger pl = new ProgressLogger();
+		final ProgressLogger pl = new ProgressLogger(LOGGER);
 
 		pl.itemsName = "graphs";
 		pl.count = kb.size();
@@ -191,9 +191,11 @@ public class PermuteKnowledgeBase {
 
 			// Write to DB
 			db.put(columnFamilyHandles.get(0), key, 0, 8, fbaos.array, 0, fbaos.length);
+			pl.update();
 		}
 
 		db.close();
+		pl.done();
 		new File(f.toString());
 		new File(f.toString() + BVGraph.PROPERTIES_EXTENSION).delete();
 		new File(f.toString() + BVGraph.OFFSETS_EXTENSION).delete();
