@@ -68,6 +68,11 @@ public class Main implements Runnable {
             description = "Artifact, maven coordinate or file path")
         String artifact;
 
+        @CommandLine.Option(names = {"-t", "--timestamp"},
+            paramLabel = "TS",
+            description = "Release TS",
+            defaultValue = "0")
+        String timestamp;
         @CommandLine.Option(names = {"-m", "--mode"},
             paramLabel = "MODE",
             description = "Input of algorithms are {FILE or COORD}",
@@ -94,11 +99,6 @@ public class Main implements Runnable {
             description = "Generate call graph for artifact")
         boolean doGenerate;
 
-        @CommandLine.Option(names = {"-t", "--timestamp"},
-            paramLabel = "TS",
-            description = "Release TS",
-            defaultValue = "0")
-        String timestamp;
 
     }
 
@@ -215,7 +215,8 @@ public class Main implements Runnable {
         } else {
             revisionCallGraph =
                 PartialCallGraph.createExtendedRevisionCallGraph((MavenCoordinate) artifact,
-                    Long.parseLong(this.commands.computations.tools.opal.timestamp));
+                    Long.parseLong(this.commands.computations.timestamp));
+
         }
 
         logger.info("Generated the call graph in {} seconds.",
