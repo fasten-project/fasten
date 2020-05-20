@@ -1,5 +1,5 @@
-###OPAL Plugin
-####This tool generates call graphs in FASTEN format using [OPAL](https://www.opal-project.de/) call graph generator version `1.0.0`. This tool can also merge the resulted call graphs.
+# OPAL Plugin
+#### This tool generates call graphs in FASTEN format using [OPAL](https://www.opal-project.de/) call graph generator version '1.0.0'. This tool can also merge the resulted call graphs.
 
 The arguments that this tool takes are as follows:
 - By passing argument -a you specify the artifact you want to work with.
@@ -12,24 +12,29 @@ The arguments that this tool takes are as follows:
 - Argument -t is a timestamp that will be written in the RevisionCallGraph as the release timestamp of the artifact.
 - By passing -w you specify that the results should be written to the file.
 
-####Here there are some examples of how this tool works:
+# Examples
+## Generate
+Generating call graph for `org.slf4j:slf4j-api:1.7.29`:
+```
+-g -a "org.slf4j:slf4j-api:1.7.29" -m COORD
+```
 
-1- Generating call graph for `org.slf4j:slf4j-api:1.7.29`:
+Result will be written in the given path:
+```
+-g -a "org.slf4j:slf4j-api:1.7.29" -m COORD -o <ResultPath> -w
+```
 
-- `-g -a "org.slf4j:slf4j-api:1.7.29" -m COORD`
+The input will be a path to a jar file or `.class` files instead of maven coordinate:
+```
+-g -a <InputPath> -m FILE -o <ResultPath> -w
+```
+## Merge
+This command generates a call graph for artifact and dependencies that we pass and stitches the artifact call graph to the passed dependencies using the specified algorithm.
+```
+-s -a <ArtifactPath> -d <DepPath1>,<DepPath2>,... -m FILE -o <ResultPath> -w -l CHA
+```
 
-1- Result will be written in the given path:
-
-- `-g -a "org.slf4j:slf4j-api:1.7.29" -m COORD -o <ResultPath> -w`
-
-1- The input will be a path to a jar file or `.class` files instead of maven coordinate:
-
-- `-g -a <InputPath> -m FILE -o <ResultPath> -w`
-
-1- This command generates a call graph for artifact and dependencies that we pass and stitches the artifact call graph to the passed dependencies using the specified algorithm.
-
-- `-s -a <ArtifactPath> -d <DepPath1>,<DepPath2>,... -m FILE -o <ResultPath> -w -l CHA`
-
-1- Stitches the maven coordinates call graphs and writes the artifact resolved call graph in the output path:
-
-`-s -a abbot:costello:1.4.0 -d abbot:abbot:1.4.0 -m COORD -o <ResultPath> -w -l CHA`
+Stitches the maven coordinates call graphs and writes the artifact resolved call graph in the output path:
+```
+-s -a abbot:costello:1.4.0 -d abbot:abbot:1.4.0 -m COORD -o <ResultPath> -w -l CHA
+```
