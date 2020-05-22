@@ -77,30 +77,7 @@ public class Main implements Runnable {
             description = "Write to stdout")
     boolean writeToStdout;
 
-    static class CoordinateComponents {
-        @CommandLine.Option(names = {"-g", "--group"},
-                paramLabel = "GROUP",
-                description = "Maven group id",
-                required = true)
-        String group;
-
-        @CommandLine.Option(names = {"-a", "--artifact"},
-                paramLabel = "ARTIFACT",
-                description = "Maven artifact id",
-                required = true)
-        String artifact;
-
-        @CommandLine.Option(names = {"-v", "--version"},
-                paramLabel = "VERSION",
-                description = "Maven version id",
-                required = true)
-        String version;
-    }
-
     static class FullCoordinate {
-        @CommandLine.ArgGroup(exclusive = false)
-        CoordinateComponents coordinateComponents;
-
         @CommandLine.Option(names = {"-c", "--coord"},
                 paramLabel = "COORD",
                 description = "Maven coordinates string",
@@ -121,7 +98,7 @@ public class Main implements Runnable {
                 defaultValue = "PRODUCT")
         String product;
 
-        @CommandLine.Option(names = {"-pv", "--productversion"},
+        @CommandLine.Option(names = {"-v", "--version"},
                 paramLabel = "VERSION",
                 description = "Callgraph version",
                 defaultValue = "0.0.0")
@@ -129,7 +106,8 @@ public class Main implements Runnable {
 
         @CommandLine.Option(names = {"-d", "--dependencies"},
                 paramLabel = "DEPENDENCIES",
-                description = "One or more dependency coordinate to merge with the artifact")
+                description = "One or more dependency coordinate to merge with the artifact",
+                split = ",")
         String[] dependencies;
     }
 
@@ -152,8 +130,7 @@ public class Main implements Runnable {
      * parameters.
      */
     public static void main(String[] args) {
-        final int exitCode = new CommandLine(new Main()).execute(args);
-        System.exit(exitCode);
+        System.exit(new CommandLine(new Main()).execute(args));
     }
 
     /**
@@ -194,16 +171,9 @@ public class Main implements Runnable {
 
         } else if (setRunner.set != null) {
             consumeSet(setRunner.set);
-        } else {
-            if (this.setRunner.fullCoordinate.mavenCoordStr != null) {
-                mavenCoordinate = MavenCoordinate
-                        .fromString(this.setRunner.fullCoordinate.mavenCoordStr);
-            } else {
-                mavenCoordinate = new MavenCoordinate(
-                        this.setRunner.fullCoordinate.coordinateComponents.group,
-                        this.setRunner.fullCoordinate.coordinateComponents.artifact,
-                        this.setRunner.fullCoordinate.coordinateComponents.version);
-            }
+        } else if (this.setRunner.fullCoordinate.mavenCoordStr != null) {
+            mavenCoordinate = MavenCoordinate
+                    .fromString(this.setRunner.fullCoordinate.mavenCoordStr);
 
             try {
                 final var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(
