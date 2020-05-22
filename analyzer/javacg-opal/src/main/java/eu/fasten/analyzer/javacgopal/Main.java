@@ -49,11 +49,6 @@ public class Main implements Runnable {
         defaultValue = "")
     String output;
 
-    @CommandLine.Option(names = {"-w", "--write"},
-        paramLabel = "WRITE",
-        description = "Write results to file")
-    boolean write;
-
     static class Commands {
 
         @CommandLine.ArgGroup(exclusive = false)
@@ -140,14 +135,22 @@ public class Main implements Runnable {
                     final var artifact = getArtifactCoordinate();
                     logger.info("Generating call graph for the Maven coordinate: {}", artifact);
                     try {
-                        generate(artifact, this.write);
+                        if(this.output!=null) {
+                            generate(artifact, true);
+                        }else {
+                            System.out.println(generate(artifact, false));
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
                 } else if (commands.computations.mode.equals("FILE")) {
                     try {
-                        generate(getArtifactFile(), this.write);
+                        if(this.output!=null) {
+                            generate(getArtifactFile(), true);
+                        }else {
+                            System.out.println(generate(getArtifactFile(), false));
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -189,10 +192,12 @@ public class Main implements Runnable {
         result = CallGraphMerger.mergeCallGraph(art, deps,
             this.commands.computations.tools.merge.algorithm);
 
-        if (this.write) {
+        if (this.output != null) {
             if (result != null) {
                 CallGraphUtils.writeToFile(this.output, result.toJSON().toString(4), "");
             }
+        }else {
+            System.out.println(result.toJSON().toString(4));
         }
 
         return result;
