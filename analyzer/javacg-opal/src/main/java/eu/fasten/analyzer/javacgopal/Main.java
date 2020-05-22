@@ -45,8 +45,7 @@ public class Main implements Runnable {
 
     @CommandLine.Option(names = {"-o", "--output"},
         paramLabel = "OUT",
-        description = "Output directory path",
-        defaultValue = "")
+        description = "Output directory path")
     String output;
 
     static class Commands {
@@ -138,7 +137,7 @@ public class Main implements Runnable {
                         if(this.output!=null) {
                             generate(artifact, true);
                         }else {
-                            System.out.println(generate(artifact, false));
+                            System.out.println(generate(artifact, false).toJSON().toString(4));
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -149,7 +148,7 @@ public class Main implements Runnable {
                         if(this.output!=null) {
                             generate(getArtifactFile(), true);
                         }else {
-                            System.out.println(generate(getArtifactFile(), false));
+                            System.out.println(generate(getArtifactFile(), false).toJSON().toString(4));
                         }
                     } catch (IOException e) {
                         e.printStackTrace();

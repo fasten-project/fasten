@@ -25,7 +25,7 @@
             <groupId>eu.fasten.analyzer</groupId>
             <artifactId>base-analyzer</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <!--<scope>provided</scope>-->
+<!--            <scope>provided</scope>-->
         </dependency>
         <dependency>
             <groupId>de.opal-project</groupId>
