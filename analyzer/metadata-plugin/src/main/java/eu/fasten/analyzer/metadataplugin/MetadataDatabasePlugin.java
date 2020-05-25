@@ -54,7 +54,7 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBExtension implements KafkaPlugin<String, String>, DBConnector {
+    public static class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
         private String consumerTopic = "fasten.OPAL.out";
         private static DSLContext dslContext;

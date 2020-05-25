@@ -18,7 +18,7 @@ public abstract class AnalyzerPlugin extends Plugin {
         super(wrapper);
     }
 
-    public abstract static class ANALYZER implements KafkaPlugin<String, String> {
+    public abstract static class ANALYZER implements KafkaPlugin {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
 

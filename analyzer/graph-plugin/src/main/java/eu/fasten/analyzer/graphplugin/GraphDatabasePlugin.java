@@ -42,7 +42,7 @@ public class GraphDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class GraphDBExtension implements KafkaPlugin<String, String>, GraphDBConnector {
+    public static class GraphDBExtension implements KafkaPlugin, GraphDBConnector {
 
         private String consumerTopic = "fasten.MetadataDBExtension.out";
         private Throwable pluginError = null;

@@ -57,7 +57,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     private Thread thread;
 
-    private final KafkaPlugin<String, String> plugin;
+    private final KafkaPlugin plugin;
 
     private final KafkaConsumer<String, String> connection;
     private final KafkaProducer<String, String> producer;
@@ -73,7 +73,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param plugin      Kafka plugin
      * @param skipOffsets skip offset number
      */
-    public FastenKafkaPlugin(Properties p, KafkaPlugin<String, String> plugin,
+    public FastenKafkaPlugin(Properties p, KafkaPlugin plugin,
                              int skipOffsets, String writeDirectory) {
         this.plugin = plugin;
 
@@ -219,7 +219,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 File directory = new File(this.writeDirectory
                         + "/" + graph.forge + "/" + firstLetter + "/" + artifactId);
                 if (!directory.exists()) {
-                    directory.mkdirs();
+                    if (!directory.mkdirs()) {
+                        throw new IOException("Failed to create parent directories");
+                    }
                 }
 
                 File file = new File(directory.getAbsolutePath()
