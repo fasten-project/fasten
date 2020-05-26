@@ -6,7 +6,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +30,15 @@ public class GitClonerTest {
     public void cloneRepoTest() throws GitAPIException, IOException {
         var repo = Path.of(baseDir, "mvn/f/fasten").toFile();
         var path = gitCloner.cloneRepo("fasten", "https://github.com/fasten-project/fasten.git");
+        Assertions.assertEquals(repo.getAbsolutePath(), path);
+        Assertions.assertTrue(repo.exists());
+        Assertions.assertTrue(repo.isDirectory());
+    }
+
+    @Test
+    public void cloneRepoWithoutExtensionTest() throws GitAPIException, IOException {
+        var repo = Path.of(baseDir, "mvn/f/fasten").toFile();
+        var path = gitCloner.cloneRepo("fasten", "https://github.com/fasten-project/fasten");
         Assertions.assertEquals(repo.getAbsolutePath(), path);
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());

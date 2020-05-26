@@ -1,10 +1,8 @@
 package eu.fasten.analyzer.repoclonerplugin;
 
+import java.io.IOException;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Paths;
 
 public class GitCloner {
 
@@ -14,21 +12,26 @@ public class GitCloner {
         this.baseDir = baseDir;
     }
 
+    /**
+     * Clones git repository from provided URL into hierarchical directory structure.
+     *
+     * @param artifact Name of the repository
+     * @param repoUrl  URL at which the repository is located
+     * @return Path to directory to which the repository was cloned
+     * @throws GitAPIException if there was an error when cloning repository
+     * @throws IOException     if could not create a directory for repository
+     */
     public String cloneRepo(String artifact, String repoUrl) throws GitAPIException, IOException {
         if (!repoUrl.endsWith(".git")) {
             repoUrl += ".git";
         }
-        var dir = this.getDirectoryFromHierarchy(artifact);
+        var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
+        var dir = dirHierarchy.getDirectoryFromHierarchy(artifact);
         if (dir.exists()) {
             Git.open(dir).pull().call();
         } else {
             Git.cloneRepository().setURI(repoUrl).setDirectory(dir).call();
         }
         return dir.getAbsolutePath();
-    }
-
-    public File getDirectoryFromHierarchy(String artifact) {
-        var dir = Paths.get(this.baseDir, "mvn", String.valueOf(artifact.charAt(0)), artifact);
-        return new File(dir.toString());
     }
 }
