@@ -31,7 +31,7 @@ import eu.fasten.core.data.GOV3LongFunction.Builder;
 import it.unimi.dsi.bits.TransformationStrategies;
 import it.unimi.dsi.sux4j.mph.Hashes;
 
-public class GOV3FunctionTest {
+public class GOV3LongFunctionTest {
 	@Test
 	public void testHash() {
 		final long[] expected = new long[2];

@@ -141,16 +141,8 @@ public class GOV3LongFunction extends GOV3Function<Long> {
 		h0 = Long.rotateLeft(h0, 63);
 		h1 += h0;
 
-		switch (tuple.length) {
-		case 4:
-			tuple[3] = h3;
-		case 3:
-			tuple[2] = h2;
-		case 2:
-			tuple[1] = h1;
-		case 1:
-			tuple[0] = h0;
-		}
+		tuple[1] = h1;
+		tuple[0] = h0;
 	}
 
 	public long getLong(final long l) {
