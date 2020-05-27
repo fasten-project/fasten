@@ -40,14 +40,26 @@ public class RepoClonerPlugin extends Plugin {
     @Extension
     public static class RepoCloner implements KafkaPlugin<String, String> {
 
-        private String consumerTopic = "fasten.MetadataDBExtension.out";
+        private String consumerTopic = "fasten.POMAnalyzer.out";
         private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(RepoCloner.class.getName());
         private String repoPath = null;
+        private String jarPath = null;
+        private String artifact = null;
+        private String group = null;
+        private String version = null;
         private String baseDir = "";
 
         public void setBaseDir(String baseDir) {
             this.baseDir = baseDir;
+        }
+
+        public String getRepoPath() {
+            return repoPath;
+        }
+
+        public String getJarPath() {
+            return jarPath;
         }
 
         @Override
@@ -62,36 +74,78 @@ public class RepoClonerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            if (repoPath == null) {
+            if (artifact == null && group == null & version == null) {
                 return Optional.empty();
             } else {
-                return Optional.of(repoPath);
+                var json = new JSONObject();
+                json.put("artifact", artifact);
+                json.put("group", group);
+                json.put("version", version);
+                if (repoPath != null) {
+                    json.put("repoPath", repoPath);
+                }
+                if (jarPath != null) {
+                    json.put("jarPath", jarPath);
+                }
+                return Optional.of(json.toString());
             }
         }
 
         @Override
         public void consume(String record) {
             this.pluginError = null;
+            this.artifact = null;
+            this.group = null;
+            this.version = null;
             this.repoPath = null;
+            this.jarPath = null;
             var json = new JSONObject(record).getJSONObject("payload");
-            var gitCloner = new GitCloner(baseDir);
-            var artifact = json.getString("artifact");
-            var repoUrl = json.getString("repoUrl");
-            try {
-                cloneRepo(artifact, repoUrl, gitCloner);
-            } catch (GitAPIException | IOException e) {
-                logger.error("Error cloning repository for '" + artifact + "'", e);
-                this.pluginError = e;
-                return;
+            artifact = json.getString("artifact");
+            group = json.getString("group");
+            version = json.getString("version");
+            var repoUrl = json.optString("repoUrl");
+            var jarUrl = json.optString("jarUrl");
+            if (repoUrl != null && !repoUrl.isEmpty()) {
+                try {
+                    var gitCloner = new GitCloner(baseDir);
+                    cloneRepo(artifact, repoUrl, gitCloner);
+                } catch (GitAPIException | IOException e) {
+                    logger.error("Error cloning repository for '" + artifact + "'", e);
+                    this.pluginError = e;
+                    return;
+                }
+                if (getPluginError() == null) {
+                    logger.info("Cloned the repo of '" + artifact + "' to " + repoPath);
+                }
+            } else {
+                logger.info("Repository URL not found");
             }
-            if (getPluginError() == null) {
-                logger.info("Cloned the repo of '" + artifact + "' to " + repoPath);
+            if (jarUrl != null && !jarUrl.isEmpty()) {
+                var product = group + ":" + artifact + ":" + version;
+                try {
+                    var jarDownloader = new JarDownloader(baseDir);
+                    downloadJar(product.replaceAll(":", "-"), jarUrl, jarDownloader);
+                } catch (IOException e) {
+                    logger.error("Error downloading JAR file for '" + product + "'", e);
+                    this.pluginError = e;
+                    return;
+                }
+                if (getPluginError() == null) {
+                    logger.info("Downloaded the JAR file for '" + product + "' to " + jarPath);
+                }
+            } else {
+                logger.info("JAR file URL not found");
             }
         }
 
         public void cloneRepo(String artifact, String repoUrl, GitCloner gitCloner)
                 throws GitAPIException, IOException {
             repoPath = gitCloner.cloneRepo(artifact, repoUrl);
+        }
+
+        public void downloadJar(String product, String jarUrl, JarDownloader jarDownloader)
+                throws IOException {
+            jarPath = jarDownloader.downloadJarFile(jarUrl, product);
         }
 
         @Override
@@ -102,9 +156,9 @@ public class RepoClonerPlugin extends Plugin {
         @Override
         public String description() {
             return "Repo Cloner Plugin. "
-                    + "Consumes GitHub repository URL, clones the repo to the provided directory,"
-                    + " updates Metadata Database with file information "
-                    + "and produces path to directory where the repo was cloned to.";
+                    + "Consumes GitHub repository URL and JAR file URL (if present), "
+                    + "clones the repo and downloads the JAR file to the provided directory "
+                    + "and produces path to directory with repository and path to JAR file.";
         }
 
         @Override

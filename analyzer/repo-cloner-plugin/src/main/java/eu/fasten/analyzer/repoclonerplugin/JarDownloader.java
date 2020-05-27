@@ -6,11 +6,11 @@ import java.net.URL;
 import java.nio.file.Paths;
 import org.apache.commons.io.FileUtils;
 
-public class MavenSourcesDownloader {
+public class JarDownloader {
 
     private final String baseDir;
 
-    public MavenSourcesDownloader(String baseDir) {
+    public JarDownloader(String baseDir) {
         this.baseDir = baseDir;
     }
 
@@ -22,7 +22,7 @@ public class MavenSourcesDownloader {
      * @return Path to saved JAR file
      * @throws IOException if could not save the file
      */
-    public String downloadJarSources(String jarUrl, String product) throws IOException {
+    public String downloadJarFile(String jarUrl, String product) throws IOException {
         if (!jarUrl.endsWith(".jar")) {
             throw new IllegalArgumentException("Invalid link to download JAR");
         }

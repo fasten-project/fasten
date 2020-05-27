@@ -9,15 +9,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class MavenSourcesDownloaderTest {
+public class JarDownloaderTest {
 
-    private MavenSourcesDownloader sourceDownloader;
+    private JarDownloader jarDownloader;
     private String baseDir;
 
     @BeforeEach
     public void setup() throws IOException {
         this.baseDir = Files.createTempDirectory("").toString();
-        this.sourceDownloader = new MavenSourcesDownloader(baseDir);
+        this.jarDownloader = new JarDownloader(baseDir);
     }
 
     @AfterEach
@@ -30,7 +30,7 @@ public class MavenSourcesDownloaderTest {
         var jarUrl = "https://search.maven.org/remotecontent?filepath=junit/junit/4.11/junit-4.11-sources.jar";
         var product = "junit-4.11";
         var jar = Path.of(baseDir, "mvn/j/" + product + "/" + product + ".jar").toFile();
-        var path = sourceDownloader.downloadJarSources(jarUrl, product);
+        var path = jarDownloader.downloadJarFile(jarUrl, product);
         Assertions.assertEquals(jar.getAbsolutePath(), path);
         Assertions.assertTrue(jar.exists());
         Assertions.assertTrue(jar.isFile());
@@ -40,7 +40,7 @@ public class MavenSourcesDownloaderTest {
     public void downloadJarErrorTest() throws IOException {
         var jarUrl = "https://search.maven.org/";
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            sourceDownloader.downloadJarSources(jarUrl, "test");
+            jarDownloader.downloadJarFile(jarUrl, "test");
         });
     }
 }

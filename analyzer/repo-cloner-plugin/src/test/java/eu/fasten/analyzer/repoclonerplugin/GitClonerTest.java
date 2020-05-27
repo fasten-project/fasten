@@ -43,4 +43,13 @@ public class GitClonerTest {
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());
     }
+
+    @Test
+    public void cloneRepoWithoutExtensionWithSlashTest() throws GitAPIException, IOException {
+        var repo = Path.of(baseDir, "mvn/f/fasten").toFile();
+        var path = gitCloner.cloneRepo("fasten", "https://github.com/fasten-project/fasten/");
+        Assertions.assertEquals(repo.getAbsolutePath(), path);
+        Assertions.assertTrue(repo.exists());
+        Assertions.assertTrue(repo.isDirectory());
+    }
 }

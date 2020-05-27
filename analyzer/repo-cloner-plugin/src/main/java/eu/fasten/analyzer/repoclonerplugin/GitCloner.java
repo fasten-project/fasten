@@ -22,6 +22,9 @@ public class GitCloner {
      * @throws IOException     if could not create a directory for repository
      */
     public String cloneRepo(String artifact, String repoUrl) throws GitAPIException, IOException {
+        if (repoUrl.endsWith("/")) {
+            repoUrl = repoUrl.substring(0, repoUrl.length() - 1);
+        }
         if (!repoUrl.endsWith(".git")) {
             repoUrl += ".git";
         }
