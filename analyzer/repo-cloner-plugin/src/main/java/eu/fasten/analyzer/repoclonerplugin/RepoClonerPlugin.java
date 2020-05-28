@@ -51,11 +51,11 @@ public class RepoClonerPlugin extends Plugin {
         private String artifact = null;
         private String group = null;
         private String version = null;
-        private String baseDir = "";
+        private static String baseDir = "";
 
         @Override
         public void setBaseDir(String baseDir) {
-            this.baseDir = baseDir;
+            RepoCloner.baseDir = baseDir;
         }
 
         public String getRepoPath() {
