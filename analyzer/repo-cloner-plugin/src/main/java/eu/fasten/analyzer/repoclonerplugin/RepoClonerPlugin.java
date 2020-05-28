@@ -20,6 +20,7 @@ package eu.fasten.analyzer.repoclonerplugin;
 
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.JarDownloader;
+import eu.fasten.core.plugins.DataWriter;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.IOException;
 import java.util.Collections;
@@ -40,7 +41,7 @@ public class RepoClonerPlugin extends Plugin {
     }
 
     @Extension
-    public static class RepoCloner implements KafkaPlugin<String, String> {
+    public static class RepoCloner implements KafkaPlugin<String, String>, DataWriter {
 
         private String consumerTopic = "fasten.POMAnalyzer.out";
         private Throwable pluginError = null;
@@ -52,6 +53,7 @@ public class RepoClonerPlugin extends Plugin {
         private String version = null;
         private String baseDir = "";
 
+        @Override
         public void setBaseDir(String baseDir) {
             this.baseDir = baseDir;
         }
