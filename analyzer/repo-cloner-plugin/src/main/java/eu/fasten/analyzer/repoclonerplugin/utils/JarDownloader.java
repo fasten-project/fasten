@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.repoclonerplugin;
+package eu.fasten.analyzer.repoclonerplugin.utils;
 
 import java.io.File;
 import java.io.IOException;

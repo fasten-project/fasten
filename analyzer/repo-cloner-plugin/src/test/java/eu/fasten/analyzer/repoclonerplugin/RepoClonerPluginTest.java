@@ -18,6 +18,8 @@
 
 package eu.fasten.analyzer.repoclonerplugin;
 
+import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
+import eu.fasten.analyzer.repoclonerplugin.utils.JarDownloader;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
@@ -56,8 +58,8 @@ public class RepoClonerPluginTest {
     public void consumeTest() {
         var json = new JSONObject("{\n" +
                 "\t\"payload\": {\n" +
-                "\t\t\"artifact\": \"junit\",\n" +
-                "\t\t\"group\": \"junit\",\n" +
+                "\t\t\"artifactId\": \"junit\",\n" +
+                "\t\t\"groupId\": \"junit\",\n" +
                 "\t\t\"version\": \"4.11\",\n" +
                 "\t\t\"repoUrl\": \"https://github.com/junit-team/junit4.git\",\n" +
                 "\t\t\"jarUrl\": \"https://search.maven.org/remotecontent?filepath=junit/junit/4.11/junit-4.11-sources.jar\"\n" +
@@ -67,8 +69,8 @@ public class RepoClonerPluginTest {
         var repoPath = Paths.get(baseDir, "mvn", "j", "junit").toAbsolutePath().toString();
         var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-junit-4.11.jar").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
-                "\t\"artifact\": \"junit\",\n" +
-                "\t\"group\": \"junit\",\n" +
+                "\t\"artifactId\": \"junit\",\n" +
+                "\t\"groupId\": \"junit\",\n" +
                 "\t\"version\": \"4.11\",\n" +
                 "\t\"repoPath\": \"" + repoPath + "\",\n" +
                 "\t\"jarPath\": \"" + jarPath + "\"\n" +
@@ -85,8 +87,8 @@ public class RepoClonerPluginTest {
     public void consumeWithoutJarTest() {
         var json = new JSONObject("{\n" +
                 "\t\"payload\": {\n" +
-                "\t\t\"artifact\": \"junit\",\n" +
-                "\t\t\"group\": \"junit\",\n" +
+                "\t\t\"artifactId\": \"junit\",\n" +
+                "\t\t\"groupId\": \"junit\",\n" +
                 "\t\t\"version\": \"4.11\",\n" +
                 "\t\t\"repoUrl\": \"https://github.com/junit-team/junit4.git\"\n" +
                 "\t}\n" +
@@ -95,8 +97,8 @@ public class RepoClonerPluginTest {
         var repoPath = Paths.get(baseDir, "mvn", "j", "junit").toAbsolutePath().toString();
         var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-junit-4.11.jar").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
-                "\t\"artifact\": \"junit\",\n" +
-                "\t\"group\": \"junit\",\n" +
+                "\t\"artifactId\": \"junit\",\n" +
+                "\t\"groupId\": \"junit\",\n" +
                 "\t\"version\": \"4.11\",\n" +
                 "\t\"repoPath\": \"" + repoPath + "\"\n" +
                 "}").toString();
@@ -111,8 +113,8 @@ public class RepoClonerPluginTest {
     public void consumeWithoutRepoTest() {
         var json = new JSONObject("{\n" +
                 "\t\"payload\": {\n" +
-                "\t\t\"artifact\": \"junit\",\n" +
-                "\t\t\"group\": \"junit\",\n" +
+                "\t\t\"artifactId\": \"junit\",\n" +
+                "\t\t\"groupId\": \"junit\",\n" +
                 "\t\t\"version\": \"4.11\",\n" +
                 "\t\t\"jarUrl\": \"https://search.maven.org/remotecontent?filepath=junit/junit/4.11/junit-4.11-sources.jar\"\n" +
                 "\t}\n" +
@@ -121,8 +123,8 @@ public class RepoClonerPluginTest {
         var repoPath = Paths.get(baseDir, "mvn", "j", "junit").toAbsolutePath().toString();
         var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-junit-4.11.jar").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
-                "\t\"artifact\": \"junit\",\n" +
-                "\t\"group\": \"junit\",\n" +
+                "\t\"artifactId\": \"junit\",\n" +
+                "\t\"groupId\": \"junit\",\n" +
                 "\t\"version\": \"4.11\",\n" +
                 "\t\"jarPath\": \"" + jarPath + "\"\n" +
                 "}").toString();
@@ -137,8 +139,8 @@ public class RepoClonerPluginTest {
     public void consumeOnlyCoordinateTest() {
         var json = new JSONObject("{\n" +
                 "\t\"payload\": {\n" +
-                "\t\t\"artifact\": \"junit\",\n" +
-                "\t\t\"group\": \"junit\",\n" +
+                "\t\t\"artifactId\": \"junit\",\n" +
+                "\t\t\"groupId\": \"junit\",\n" +
                 "\t\t\"version\": \"4.11\"\n" +
                 "\t}\n" +
                 "}");
@@ -146,8 +148,8 @@ public class RepoClonerPluginTest {
         var repoPath = Paths.get(baseDir, "mvn", "j", "junit").toAbsolutePath().toString();
         var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-junit-4.11.jar").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
-                "\t\"artifact\": \"junit\",\n" +
-                "\t\"group\": \"junit\",\n" +
+                "\t\"artifactId\": \"junit\",\n" +
+                "\t\"groupId\": \"junit\",\n" +
                 "\t\"version\": \"4.11\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
@@ -165,8 +167,8 @@ public class RepoClonerPluginTest {
     @Test
     public void cloneRepoTest() throws GitAPIException, IOException {
         var gitCloner = Mockito.mock(GitCloner.class);
-        Mockito.when(gitCloner.cloneRepo(Mockito.anyString(), Mockito.anyString())).thenReturn("test/path");
-        repoCloner.cloneRepo("test", "https://testurl.com", gitCloner);
+        Mockito.when(gitCloner.cloneRepo(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn("test/path");
+        repoCloner.cloneRepo("test", "group", "https://testurl.com", gitCloner);
         assertEquals("test/path", repoCloner.getRepoPath());
     }
 

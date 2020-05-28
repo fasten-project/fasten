@@ -32,8 +32,8 @@ public class Main implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     @CommandLine.Option(names = {"-f", "--file"},
-            paramLabel = "JSON",
-            description = "Path to JSON file which contains GID Graph as payload")
+            paramLabel = "JSON File",
+            description = "Path to JSON file which contains maven coordinate, repoUrl and jarUrl")
     String jsonFile;
 
     @CommandLine.Option(names = {"-d", "--base-dir"},
@@ -59,5 +59,7 @@ public class Main implements Runnable {
         }
         final JSONObject json = new JSONObject(new JSONTokener(reader));
         repoCloner.consume(json.toString());
+        var resultOptional = repoCloner.produce();
+        resultOptional.ifPresent(System.out::println);
     }
 }

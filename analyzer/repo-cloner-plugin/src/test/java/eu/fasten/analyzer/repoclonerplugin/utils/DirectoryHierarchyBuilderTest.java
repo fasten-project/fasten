@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.repoclonerplugin;
+package eu.fasten.analyzer.repoclonerplugin.utils;
 
+import eu.fasten.analyzer.repoclonerplugin.utils.DirectoryHierarchyBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

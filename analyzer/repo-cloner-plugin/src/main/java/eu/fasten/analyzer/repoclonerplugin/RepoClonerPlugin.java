@@ -18,6 +18,8 @@
 
 package eu.fasten.analyzer.repoclonerplugin;
 
+import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
+import eu.fasten.analyzer.repoclonerplugin.utils.JarDownloader;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.IOException;
 import java.util.Collections;
@@ -78,8 +80,8 @@ public class RepoClonerPlugin extends Plugin {
                 return Optional.empty();
             } else {
                 var json = new JSONObject();
-                json.put("artifact", artifact);
-                json.put("group", group);
+                json.put("artifactId", artifact);
+                json.put("groupId", group);
                 json.put("version", version);
                 if (repoPath != null) {
                     json.put("repoPath", repoPath);
@@ -100,22 +102,24 @@ public class RepoClonerPlugin extends Plugin {
             this.repoPath = null;
             this.jarPath = null;
             var json = new JSONObject(record).getJSONObject("payload");
-            artifact = json.getString("artifact");
-            group = json.getString("group");
+            artifact = json.getString("artifactId");
+            group = json.getString("groupId");
             version = json.getString("version");
             var repoUrl = json.optString("repoUrl");
             var jarUrl = json.optString("jarUrl");
             if (repoUrl != null && !repoUrl.isEmpty()) {
                 try {
                     var gitCloner = new GitCloner(baseDir);
-                    cloneRepo(artifact, repoUrl, gitCloner);
+                    cloneRepo(artifact, group, repoUrl, gitCloner);
                 } catch (GitAPIException | IOException e) {
-                    logger.error("Error cloning repository for '" + artifact + "'", e);
+                    logger.error("Error cloning repository for '" + group + ":" + artifact
+                            + "' from " + repoUrl, e);
                     this.pluginError = e;
                     return;
                 }
                 if (getPluginError() == null) {
-                    logger.info("Cloned the repo of '" + artifact + "' to " + repoPath);
+                    logger.info("Cloned the repo of '" + group + ":" + artifact
+                            + "' to " + repoPath);
                 }
             } else {
                 logger.info("Repository URL not found");
@@ -126,7 +130,8 @@ public class RepoClonerPlugin extends Plugin {
                     var jarDownloader = new JarDownloader(baseDir);
                     downloadJar(product.replaceAll(":", "-"), jarUrl, jarDownloader);
                 } catch (IOException e) {
-                    logger.error("Error downloading JAR file for '" + product + "'", e);
+                    logger.error("Error downloading JAR file for '" + product
+                            + "' from " + jarUrl, e);
                     this.pluginError = e;
                     return;
                 }
@@ -138,9 +143,9 @@ public class RepoClonerPlugin extends Plugin {
             }
         }
 
-        public void cloneRepo(String artifact, String repoUrl, GitCloner gitCloner)
+        public void cloneRepo(String artifact, String group, String repoUrl, GitCloner gitCloner)
                 throws GitAPIException, IOException {
-            repoPath = gitCloner.cloneRepo(artifact, repoUrl);
+            repoPath = gitCloner.cloneRepo(artifact, group, repoUrl);
         }
 
         public void downloadJar(String product, String jarUrl, JarDownloader jarDownloader)

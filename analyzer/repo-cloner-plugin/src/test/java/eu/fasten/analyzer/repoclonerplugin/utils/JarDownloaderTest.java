@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.repoclonerplugin;
+package eu.fasten.analyzer.repoclonerplugin.utils;
 
+import eu.fasten.analyzer.repoclonerplugin.utils.JarDownloader;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
