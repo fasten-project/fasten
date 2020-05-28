@@ -47,7 +47,7 @@ public class FastenServer implements Runnable {
     @Option(names = {"-p", "--plugin_dir"},
             paramLabel = "DIR",
             description = "Directory to load plugins from.",
-            required = true)
+            defaultValue = "./plugins")
     Path pluginPath;
 
     @Option(names = {"-la", "--list_all"},
@@ -200,8 +200,8 @@ public class FastenServer implements Runnable {
      * @param dbPlugins list of DB plugins
      */
     private void makeDBConnection(List<DBConnector> dbPlugins) {
-        if (ObjectUtils.allNotNull(dbUrl, dbUser)) {
-            dbPlugins.forEach((p) -> {
+        dbPlugins.forEach((p) -> {
+            if (ObjectUtils.allNotNull(dbUrl, dbUser)) {
                 try {
                     p.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
                     logger.debug("Set DB connection successfully for plug-in {}",
@@ -210,11 +210,11 @@ public class FastenServer implements Runnable {
                     logger.error("Couldn't set DB connection for plug-in {}\n{}",
                             p.getClass().getSimpleName(), e.getStackTrace());
                 }
-            });
-        } else {
-            logger.error("Couldn't make a DB connection. Make sure that you have "
-                    + "provided a valid DB URL, username and password.");
-        }
+            } else {
+                logger.error("Couldn't make a DB connection. Make sure that you have "
+                        + "provided a valid DB URL, username and password.");
+            }
+        });
     }
 
     /**
@@ -223,8 +223,8 @@ public class FastenServer implements Runnable {
      * @param graphDbPlugins list of Graph DB plugins
      */
     private void makeGraphDBConnection(List<GraphDBConnector> graphDbPlugins) {
-        if (ObjectUtils.allNotNull(graphDbDir)) {
-            graphDbPlugins.forEach((p) -> {
+        graphDbPlugins.forEach((p) -> {
+            if (ObjectUtils.allNotNull(graphDbDir)) {
                 try {
                     p.setRocksDao(RocksDBConnector.createRocksDBAccessObject(graphDbDir));
                     logger.debug("Set Graph DB connection successfully for plug-in {}",
@@ -233,11 +233,11 @@ public class FastenServer implements Runnable {
                     logger.error("Couldn't set GraphDB connection for plug-in {}",
                             p.getClass().getSimpleName(), e);
                 }
-            });
-        } else {
-            logger.error("Couldn't set a GraphDB connection. Make sure that you have "
-                    + "provided a valid directory to the database.");
-        }
+            } else {
+                logger.error("Couldn't set a GraphDB connection. Make sure that you have "
+                        + "provided a valid directory to the database.");
+            }
+        });
     }
 
     /**

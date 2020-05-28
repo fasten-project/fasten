@@ -111,6 +111,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             logger.debug("Caught wakeup exception");
         } finally {
             connection.close();
+            producer.close();
+            logger.info("Plugin {} stopped", plugin.name());
         }
     }
 
