@@ -44,9 +44,11 @@ public class JarDownloader {
         if (!jarUrl.endsWith(".jar")) {
             throw new IllegalArgumentException("Invalid link to download JAR");
         }
+        var urlParts = jarUrl.split("/");
+        var jarName = urlParts[urlParts.length - 1];
         var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
         var jarPath = Paths.get(dirHierarchy.getDirectoryFromHierarchy(product).getAbsolutePath(),
-                product + ".jar");
+                jarName);
         FileUtils.copyURLToFile(new URL(jarUrl), new File(jarPath.toString()));
         return jarPath.toString();
     }

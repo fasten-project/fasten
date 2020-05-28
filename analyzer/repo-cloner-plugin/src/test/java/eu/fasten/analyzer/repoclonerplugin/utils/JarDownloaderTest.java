@@ -47,8 +47,8 @@ public class JarDownloaderTest {
     @Test
     public void downloadJarTest() throws IOException {
         var jarUrl = "https://search.maven.org/remotecontent?filepath=junit/junit/4.11/junit-4.11-sources.jar";
-        var product = "junit-4.11";
-        var jar = Path.of(baseDir, "mvn/j/" + product + "/" + product + ".jar").toFile();
+        var product = "junit-junit-4.11";
+        var jar = Path.of(baseDir, "mvn/j/" + product + "/" + "junit-4.11-sources.jar").toFile();
         var path = jarDownloader.downloadJarFile(jarUrl, product);
         Assertions.assertEquals(jar.getAbsolutePath(), path);
         Assertions.assertTrue(jar.exists());
@@ -56,7 +56,7 @@ public class JarDownloaderTest {
     }
 
     @Test
-    public void downloadJarErrorTest() throws IOException {
+    public void downloadJarErrorTest() {
         var jarUrl = "https://search.maven.org/";
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             jarDownloader.downloadJarFile(jarUrl, "test");

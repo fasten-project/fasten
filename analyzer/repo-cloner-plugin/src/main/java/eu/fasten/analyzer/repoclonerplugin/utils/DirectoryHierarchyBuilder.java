@@ -33,4 +33,9 @@ public class DirectoryHierarchyBuilder {
         var dir = Paths.get(this.baseDir, "mvn", String.valueOf(name.charAt(0)), name);
         return new File(dir.toString());
     }
+
+    public File getDirectoryFromHierarchy(String artifact, String name) {
+        var dir = Paths.get(this.baseDir, "mvn", String.valueOf(artifact.charAt(0)), name);
+        return new File(dir.toString());
+    }
 }

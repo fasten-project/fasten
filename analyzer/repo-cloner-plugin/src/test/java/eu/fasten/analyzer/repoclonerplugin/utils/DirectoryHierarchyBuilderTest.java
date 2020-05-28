@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.repoclonerplugin.utils;
 
-import eu.fasten.analyzer.repoclonerplugin.utils.DirectoryHierarchyBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -31,5 +30,15 @@ public class DirectoryHierarchyBuilderTest {
         var hierarchyBuilder = new DirectoryHierarchyBuilder(baseDir);
         var dir = hierarchyBuilder.getDirectoryFromHierarchy(name);
         Assertions.assertEquals("test/mvn/f/folder", dir.getPath());
+    }
+
+    @Test
+    public void getDirectoryFromHierarchyWithArtifactTest() {
+        String baseDir = "test";
+        String name = "folder";
+        String artifact = "artifact";
+        var hierarchyBuilder = new DirectoryHierarchyBuilder(baseDir);
+        var dir = hierarchyBuilder.getDirectoryFromHierarchy(artifact, name);
+        Assertions.assertEquals("test/mvn/a/folder", dir.getPath());
     }
 }

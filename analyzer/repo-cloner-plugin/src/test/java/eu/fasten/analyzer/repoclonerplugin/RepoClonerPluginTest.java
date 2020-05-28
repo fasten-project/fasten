@@ -66,8 +66,8 @@ public class RepoClonerPluginTest {
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
-        var repoPath = Paths.get(baseDir, "mvn", "j", "junit").toAbsolutePath().toString();
-        var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-junit-4.11.jar").toAbsolutePath().toString();
+        var repoPath = Paths.get(baseDir, "mvn", "j", "junit-junit", "junit4").toAbsolutePath().toString();
+        var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-4.11-sources.jar").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
                 "\t\"artifactId\": \"junit\",\n" +
                 "\t\"groupId\": \"junit\",\n" +
@@ -94,7 +94,7 @@ public class RepoClonerPluginTest {
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
-        var repoPath = Paths.get(baseDir, "mvn", "j", "junit").toAbsolutePath().toString();
+        var repoPath = Paths.get(baseDir, "mvn", "j", "junit-junit", "junit4").toAbsolutePath().toString();
         var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-junit-4.11.jar").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
                 "\t\"artifactId\": \"junit\",\n" +
@@ -121,7 +121,7 @@ public class RepoClonerPluginTest {
                 "}");
         repoCloner.consume(json.toString());
         var repoPath = Paths.get(baseDir, "mvn", "j", "junit").toAbsolutePath().toString();
-        var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-junit-4.11.jar").toAbsolutePath().toString();
+        var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-4.11-sources.jar").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
                 "\t\"artifactId\": \"junit\",\n" +
                 "\t\"groupId\": \"junit\",\n" +

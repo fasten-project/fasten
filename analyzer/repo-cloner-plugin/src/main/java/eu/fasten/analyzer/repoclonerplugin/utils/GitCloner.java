@@ -53,7 +53,7 @@ public class GitCloner {
         var repoName = urlParts[urlParts.length - 1].split(".git")[0];
         var productLocation = Paths.get(group + "-" + artifact, repoName).toString();
         var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
-        var dir = dirHierarchy.getDirectoryFromHierarchy(productLocation);
+        var dir = dirHierarchy.getDirectoryFromHierarchy(artifact, productLocation);
         if (dir.exists()) {
             Git.open(dir).pull().call();
         } else {
