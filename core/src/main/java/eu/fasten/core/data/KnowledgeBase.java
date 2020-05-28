@@ -107,8 +107,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 	private static final long serialVersionUID = 1L;
 	private static final Logger LOGGER = LoggerFactory.getLogger(KnowledgeBase.class);
 
-	private static final byte[] URI2GID = "URI2GID".getBytes();
-	private static final byte[] GID2URI = "GID2URI".getBytes();
+	public static final byte[] URI2GID = "URI2GID".getBytes();
+	public static final byte[] GID2URI = "GID2URI".getBytes();
 
 	public static long signature(final long gid, final long index) {
 		if (index > 1L << 24) throw new IndexOutOfBoundsException("Index too large: " + index);
@@ -351,6 +351,39 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 		public ImmutableGraph rawTranspose() {
 			return transpose;
+		}
+
+		@Override
+		public String toString() {
+			final StringBuilder sb = new StringBuilder();
+			for (final long gid : LID2GID) {
+				sb.append(gid).append(": ").append(successors(gid));
+			}
+			return sb.toString();
+		}
+
+		@Override
+		public boolean equals(final Object o) {
+			if (o == this) return true;
+			if (!(o instanceof DirectedGraph)) return false;
+			final DirectedGraph graph = (DirectedGraph)o;
+			if (numNodes() != graph.numNodes()) return false;
+			if (!new LongOpenHashSet(nodes()).equals(new LongOpenHashSet(graph.nodes()))) return false;
+			for(final long node: nodes()) {
+				if (!new LongOpenHashSet(successors(node)).equals(new LongOpenHashSet(graph.successors(node)))) return false;
+				if (!new LongOpenHashSet(predecessors(node)).equals(new LongOpenHashSet(graph.predecessors(node)))) return false;
+			}
+			return true;
+		}
+
+		@Override
+		public int hashCode() {
+			long h = HashCommon.mix(numNodes()) ^ HashCommon.murmurHash3(numArcs());
+			for (final long node : nodes()) {
+				for (final long succ : successors(node)) h ^= HashCommon.murmurHash3(h ^ succ);
+				for (final long pred : predecessors(node)) h ^= HashCommon.murmurHash3(h ^ pred);
+			}
+			return (int)(h ^ h >>> 32);
 		}
 	}
 

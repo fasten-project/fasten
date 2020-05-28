@@ -25,7 +25,7 @@
             <groupId>eu.fasten.analyzer</groupId>
             <artifactId>base-analyzer</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <!--<scope>provided</scope>-->
+<!--            <scope>provided</scope>-->
         </dependency>
         <dependency>
             <groupId>de.opal-project</groupId>
@@ -42,6 +42,11 @@
             <artifactId>jsonassert</artifactId>
             <version>1.5.0</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.0.4</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -90,6 +95,8 @@
                                 <excludes>
                                     <!--                                    <exclude>com.typesafe.play:play-json_2.11:*</exclude>-->
                                     <!--                                    <exclude>com.typesafe.play:play-functional_2.11:*</exclude>-->
+
+                                    <!-- Comment the following two lines if you want to build the stand-alone JAR file of the OPAL plug-in  -->
                                     <exclude>org.slf4j:slf4j-simple:*</exclude>
                                     <exclude>org.slf4j:slf4j-api:*</exclude>
                                 </excludes>

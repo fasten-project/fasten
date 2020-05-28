@@ -24,7 +24,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 
-public class CallGraphDifferentiator {
+public class CallGraphUtils {
 
     /**
      * It writes two ProposalRevisionCallGraphs together with their differences in the provided.
