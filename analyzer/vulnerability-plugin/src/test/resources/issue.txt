@@ -1,0 +1,82 @@
+{
+  "url": "https://api.github.com/repos/python/cpython/issues/32",
+  "repository_url": "https://api.github.com/repos/python/cpython",
+  "labels_url": "https://api.github.com/repos/python/cpython/issues/32/labels{/name}",
+  "comments_url": "https://api.github.com/repos/python/cpython/issues/32/comments",
+  "events_url": "https://api.github.com/repos/python/cpython/issues/32/events",
+  "html_url": "https://github.com/python/cpython/pull/32",
+  "id": 207018637,
+  "node_id": "MDExOlB1bGxSZXF1ZXN0MTA1NzczNTU4",
+  "number": 32,
+  "title": "bpo-29576: Improve some deprecations in the importlib",
+  "user": {
+    "login": "Carreau",
+    "id": 335567,
+    "node_id": "MDQ6VXNlcjMzNTU2Nw==",
+    "avatar_url": "https://avatars3.githubusercontent.com/u/335567?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/Carreau",
+    "html_url": "https://github.com/Carreau",
+    "followers_url": "https://api.github.com/users/Carreau/followers",
+    "following_url": "https://api.github.com/users/Carreau/following{/other_user}",
+    "gists_url": "https://api.github.com/users/Carreau/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/Carreau/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/Carreau/subscriptions",
+    "organizations_url": "https://api.github.com/users/Carreau/orgs",
+    "repos_url": "https://api.github.com/users/Carreau/repos",
+    "events_url": "https://api.github.com/users/Carreau/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/Carreau/received_events",
+    "type": "User",
+    "site_admin": false
+  },
+  "labels": [
+    {
+      "id": 536945472,
+      "node_id": "MDU6TGFiZWw1MzY5NDU0NzI=",
+      "url": "https://api.github.com/repos/python/cpython/labels/CLA%20signed",
+      "name": "CLA signed",
+      "color": "0e8a16",
+      "default": false,
+      "description": null
+    }
+  ],
+  "state": "closed",
+  "locked": false,
+  "assignee": null,
+  "assignees": [
+
+  ],
+  "milestone": null,
+  "comments": 5,
+  "created_at": "2017-02-12T00:22:29Z",
+  "updated_at": "2017-02-16T02:05:16Z",
+  "closed_at": "2017-02-16T02:00:32Z",
+  "author_association": "CONTRIBUTOR",
+  "pull_request": {
+    "url": "https://api.github.com/repos/python/cpython/pulls/32",
+    "html_url": "https://github.com/python/cpython/pull/32",
+    "diff_url": "https://github.com/python/cpython/pull/32.diff",
+    "patch_url": "https://github.com/python/cpython/pull/32.patch"
+  },
+  "body": "Add the python version since the functionality is deprecated,\r\nand raise a couple of deprecation warnings in a few places.\r\n\r\nTheses functions are marked as deprecated in the documentation, but\r\nespecially in existing codebase, programmers tends to not re-check\r\nwhether functions are deprecated. So trigger the warning when possible.\r\n\r\nIt's also more probable that a developer will drop deprecated\r\nfunctionality if we immediately give them information about\r\nreplacement API, and not have them to go find it in the documentation.\r\n\r\nInclude deprecation information in DocString as well, as many tools pull\r\ndocumentation from there and not from docs.python.org.\r\n",
+  "closed_by": {
+    "login": "brettcannon",
+    "id": 54418,
+    "node_id": "MDQ6VXNlcjU0NDE4",
+    "avatar_url": "https://avatars0.githubusercontent.com/u/54418?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/brettcannon",
+    "html_url": "https://github.com/brettcannon",
+    "followers_url": "https://api.github.com/users/brettcannon/followers",
+    "following_url": "https://api.github.com/users/brettcannon/following{/other_user}",
+    "gists_url": "https://api.github.com/users/brettcannon/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/brettcannon/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/brettcannon/subscriptions",
+    "organizations_url": "https://api.github.com/users/brettcannon/orgs",
+    "repos_url": "https://api.github.com/users/brettcannon/repos",
+    "events_url": "https://api.github.com/users/brettcannon/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/brettcannon/received_events",
+    "type": "User",
+    "site_admin": false
+  }
+}
