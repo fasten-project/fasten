@@ -229,9 +229,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 File file = new File(directory.getAbsolutePath()
                         + "/" + artifactId + "(" + groupId + ")-v" + graph.version + ".json");
                 FileWriter fw = new FileWriter(file.getAbsoluteFile());
-                BufferedWriter bw = new BufferedWriter(fw);
-                bw.write(graph.toJSON().toString());
-                bw.close();
+                fw.write(graph.toJSON().toString());
+                fw.flush();
+                fw.close();
 
                 JSONObject link = new JSONObject();
                 link.put("link", file.getAbsolutePath());

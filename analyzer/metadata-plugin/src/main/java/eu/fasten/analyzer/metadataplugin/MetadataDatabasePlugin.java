@@ -87,18 +87,23 @@ public class MetadataDatabasePlugin extends Plugin {
             this.restartTransaction = false;
             this.pluginError = null;
             final var consumedJson = new JSONObject(record).getJSONObject("payload");
+            final var path = consumedJson.getString("link");
             final var artifact = consumedJson.optString("product") + "@"
                     + consumedJson.optString("version");
-            RevisionCallGraph callgraph;
+            final RevisionCallGraph callgraph;
+            String cg = "";
             try {
-                callgraph = new RevisionCallGraph(consumedJson);
-            } catch (JSONException | IllegalArgumentException e) {
+                cg = new String(Files.readAllBytes(Paths.get(path)));
+            } catch (FileNotFoundException e) {
                 logger.error("Error parsing JSON callgraph for '" + artifact + "'", e);
                 processedRecord = false;
                 setPluginError(e);
                 return;
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-
+            callgraph = new RevisionCallGraph(new JSONObject(cg));
+            System.out.println(callgraph.product);
             int transactionRestartCount = 0;
             do {
                 try {
