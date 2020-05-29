@@ -27,7 +27,7 @@ import java.io.IOException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class CallGraphDifferentiatorTest {
+public class CallGraphUtilsTest {
 
     static RevisionCallGraph firstGraph;
     static RevisionCallGraph secondGraph;
@@ -68,6 +68,6 @@ public class CallGraphDifferentiatorTest {
 
     @Test
     public void testDiff() throws IOException {
-        CallGraphDifferentiator.diffInFile("", 1, firstGraph, secondGraph);
+        CallGraphUtils.diffInFile("", 1, firstGraph, secondGraph);
     }
 }
