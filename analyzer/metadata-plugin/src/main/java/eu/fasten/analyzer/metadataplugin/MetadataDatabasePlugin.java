@@ -25,7 +25,10 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
@@ -41,6 +44,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -88,22 +92,21 @@ public class MetadataDatabasePlugin extends Plugin {
             this.pluginError = null;
             final var consumedJson = new JSONObject(record).getJSONObject("payload");
             final var path = consumedJson.getString("link");
-            final var artifact = consumedJson.optString("product") + "@"
-                    + consumedJson.optString("version");
+
             final RevisionCallGraph callgraph;
-            String cg = "";
             try {
-                cg = new String(Files.readAllBytes(Paths.get(path)));
-            } catch (FileNotFoundException e) {
-                logger.error("Error parsing JSON callgraph for '" + artifact + "'", e);
+                JSONTokener tokener = new JSONTokener(new FileReader(path));
+                callgraph = new RevisionCallGraph(new JSONObject(tokener));
+            } catch (JSONException | FileNotFoundException e) {
+                logger.error("Error parsing JSON callgraph for '"
+                        + Paths.get(path).getFileName() + "'", e);
                 processedRecord = false;
                 setPluginError(e);
                 return;
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-            callgraph = new RevisionCallGraph(new JSONObject(cg));
-            System.out.println(callgraph.product);
+
+            final var artifact = callgraph.product + "@" + callgraph.version;
+
             int transactionRestartCount = 0;
             do {
                 try {
