@@ -252,11 +252,13 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @return map containing groupId and artifactId
      */
     private Optional<Map<String, String>> findCoordinate(JSONObject input) {
-        if (input.get("groupId") != null && input.get("artifactId") != null) {
+        if (input.get("groupId") != null && input.get("artifactId") != null
+                && input.getString("version") != null) {
             Map<String, String> map = new HashMap<>();
 
-            map.put("groupId", input.get("groupId").toString());
-            map.put("artifactId", input.get("artifactId").toString());
+            map.put("groupId", input.getString("groupId"));
+            map.put("artifactId", input.getString("artifactId"));
+            map.put("version", input.getString("version"));
 
             return Optional.of(map);
         }
