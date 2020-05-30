@@ -161,6 +161,13 @@ public class FastenServer implements Runnable {
     private void waitForInterruption(List<FastenServerPlugin> plugins) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             plugins.forEach(FastenServerPlugin::stop);
+            plugins.forEach(c -> {
+                try {
+                    c.thread().join();
+                } catch (InterruptedException e) {
+                    logger.debug("Couldn't join consumers");
+                }
+            });
             logger.info("Fasten server has been successfully stopped");
         }));
 

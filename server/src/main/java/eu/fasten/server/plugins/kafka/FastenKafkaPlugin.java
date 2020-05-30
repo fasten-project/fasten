@@ -23,8 +23,6 @@ import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.CallGraphGeneratorPlugin;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
-
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -35,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -59,6 +57,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     private final KafkaPlugin plugin;
 
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private final KafkaConsumer<String, String> connection;
     private final KafkaProducer<String, String> producer;
 
@@ -98,7 +97,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 skipPartitionOffsets();
             }
 
-            while (true) {
+            while (!closed.get()) {
                 if (plugin.consumeTopic().isPresent()) {
                     handleConsuming();
                 } else {
@@ -107,11 +106,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     handleProducing(null);
                 }
             }
-        } catch (WakeupException e) {
-            logger.debug("Caught wakeup exception");
+        } catch (Exception e) {
+            logger.error("Error occurred while processing call graphs");
         } finally {
             connection.close();
-            producer.close();
             logger.info("Plugin {} stopped", plugin.name());
         }
     }
@@ -129,7 +127,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Sends a wake up signal to Kafka consumer and stops it.
      */
     public void stop() {
-        connection.wakeup();
+        closed.set(true);
     }
 
     /**
@@ -159,7 +157,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param input input message [can be null]
      */
     private void handleProducing(String input) {
-        if (plugin.getPluginError() == null) {
+        try {
+            if (plugin.getPluginError() != null) {
+                throw plugin.getPluginError();
+            }
+
             var result = plugin.produce();
             String payload = null;
             if (result.isPresent()) {
@@ -173,10 +175,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             emitMessage(this.producer, String.format("fasten.%s.out",
                     plugin.getClass().getSimpleName()),
                     getStdOutMsg(input, payload));
-        } else {
+
+        } catch (Throwable e) {
             emitMessage(this.producer, String.format("fasten.%s.err",
                     plugin.getClass().getSimpleName()),
-                    getStdErrMsg(input));
+                    getStdErrMsg(input, e));
         }
     }
 
@@ -205,43 +208,41 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Writes {@link RevisionCallGraph} to JSON file and return JSON object containing
      * a link to to written file.
      *
-     * @param input     message that triggered computation of the call graph
-     * @param callgraph String of JSON representation of {@link RevisionCallGraph}
+     * @param input  message that triggered computation of the call graph
+     * @param result String of JSON representation of {@link RevisionCallGraph}
      * @return Path to a newly written JSON file
      */
-    private String writeToFile(String input, String callgraph) {
-        RevisionCallGraph graph = new RevisionCallGraph(new JSONObject(callgraph));
+    private String writeToFile(String input, String result) throws IOException {
         var coordinate = findCoordinate(new JSONObject(input));
-        if (coordinate.isPresent()) {
-            var groupId = coordinate.get().get("groupId");
-            var artifactId = coordinate.get().get("artifactId");
+        if (coordinate.isEmpty()) {
+            throw new IOException("Writing failed. Couldn't find Maven coordinate in input");
+        }
 
-            var firstLetter = artifactId.substring(0, 1);
-            try {
-                File directory = new File(this.writeDirectory
-                        + "/" + graph.forge + "/" + firstLetter + "/" + artifactId);
-                if (!directory.exists()) {
-                    if (!directory.mkdirs()) {
-                        throw new IOException("Failed to create parent directories");
-                    }
-                }
+        var groupId = coordinate.get().get("groupId");
+        var artifactId = coordinate.get().get("artifactId");
+        var version = coordinate.get().get("version");
+        var product = artifactId + "_" + groupId + "_" + version;
 
-                File file = new File(directory.getAbsolutePath()
-                        + "/" + artifactId + "(" + groupId + ")-v" + graph.version + ".json");
-                FileWriter fw = new FileWriter(file.getAbsoluteFile());
-                fw.write(graph.toJSON().toString());
-                fw.flush();
-                fw.close();
+        var firstLetter = artifactId.substring(0, 1);
 
-                JSONObject link = new JSONObject();
-                link.put("link", file.getAbsolutePath());
-                return link.toString();
-
-            } catch (IOException e) {
-                logger.error("Failed to write call graph for {} to a file", graph.product);
+        File directory = new File(this.writeDirectory
+                + "/" + "mvn" + "/" + firstLetter + "/" + artifactId);
+        if (!directory.exists()) {
+            if (!directory.mkdirs()) {
+                throw new IOException("Failed to create parent directories");
             }
         }
-        return callgraph;
+
+        File file = new File(directory.getAbsolutePath()
+                + "/" + product + ".json");
+        FileWriter fw = new FileWriter(file.getAbsoluteFile());
+        fw.write(result);
+        fw.flush();
+        fw.close();
+
+        JSONObject link = new JSONObject();
+        link.put("link", file.getAbsolutePath());
+        return link.toString();
     }
 
     /**
@@ -294,7 +295,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param input consumed record
      * @return stderr message
      */
-    private String getStdErrMsg(String input) {
+    private String getStdErrMsg(String input, Throwable pluginError) {
         JSONObject stderrMsg = new JSONObject();
         stderrMsg.put("created_at", System.currentTimeMillis() / 1000L);
         stderrMsg.put("plugin_name", plugin.getClass().getSimpleName());
@@ -302,7 +303,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         stderrMsg.put("input", !Strings.isNullOrEmpty(input) ? new JSONObject(input) : "");
 
-        Throwable pluginError = plugin.getPluginError();
         JSONObject error = new JSONObject();
         error.put("error", pluginError.getClass().getSimpleName());
         error.put("msg", pluginError.getMessage());
