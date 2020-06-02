@@ -60,6 +60,11 @@ public class FastenServer implements Runnable {
             split = ",")
     List<String> plugins;
 
+    @Option(names = {"-po", "--plugin_output"},
+            paramLabel = "dir",
+            description = "Path to directory with call graphs")
+    Map<String, String> callgraphDir;
+
     @Option(names = {"-m", "--mode"},
             description = "Deployment or Development mode")
     boolean deployMode;
@@ -97,11 +102,6 @@ public class FastenServer implements Runnable {
             paramLabel = "dir",
             description = "Path to directory with RocksDB database")
     String graphDbDir;
-
-    @Option(names = {"-cgd", "--callgraph_dir"},
-            paramLabel = "dir",
-            description = "Path to directory with call graphs")
-    String callgraphDir;
 
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
@@ -197,7 +197,7 @@ public class FastenServer implements Runnable {
                     kafkaServers,
                     k.getClass().getCanonicalName());
 
-            return new FastenKafkaPlugin(properties, k, skipOffsets, callgraphDir);
+            return new FastenKafkaPlugin(properties, k, skipOffsets, callgraphDir.get(k.getClass().getSimpleName()));
         }).collect(Collectors.toList());
     }
 

@@ -20,7 +20,6 @@ package eu.fasten.server.plugins.kafka;
 
 import com.google.common.base.Strings;
 import eu.fasten.core.data.RevisionCallGraph;
-import eu.fasten.core.plugins.CallGraphGeneratorPlugin;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import java.io.File;
@@ -165,7 +164,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             var result = plugin.produce();
             String payload = null;
             if (result.isPresent()) {
-                if (plugin instanceof CallGraphGeneratorPlugin) {
+                if (writeDirectory != null && !writeDirectory.equals("")) {
                     payload = writeToFile(input, result.get());
                 } else {
                     payload = result.get();

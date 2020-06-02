@@ -25,8 +25,6 @@ import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.IOException;
-
-import eu.fasten.core.plugins.CallGraphGeneratorPlugin;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.PluginWrapper;
@@ -38,7 +36,7 @@ public class WALAPlugin extends AnalyzerPlugin {
     }
 
     @Extension
-    public static class WALA extends AnalyzerPlugin.ANALYZER implements CallGraphGeneratorPlugin {
+    public static class WALA extends AnalyzerPlugin.ANALYZER {
 
         @Override
         public RevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
