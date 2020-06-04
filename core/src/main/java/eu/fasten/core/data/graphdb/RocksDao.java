@@ -92,6 +92,7 @@ public class RocksDao implements Closeable {
     private void initKryo() {
         kryo = new Kryo();
         kryo.register(BVGraph.class, new BVGraphSerializer(kryo));
+		kryo.register(boolean.class);
         kryo.register(byte[].class);
         kryo.register(InputBitStream.class);
         kryo.register(NullInputStream.class);
@@ -100,7 +101,7 @@ public class RocksDao implements Closeable {
         kryo.register(Properties.class);
         kryo.register(long[].class);
         kryo.register(Long2IntOpenHashMap.class);
-		kryo.register(GOV3LongFunction.class);
+		kryo.register(GOV3LongFunction.class, new FieldSerializer<>(kryo, GOV3LongFunction.class));
     }
 
     /**
