@@ -325,9 +325,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 
 		@Override
-		public LongList nodes() {
+		public LongSet nodes() {
 			// TODO maybe cache this
-			return LongArrayList.wrap(LID2GID.clone());
+			return new LongOpenHashSet(LID2GID);
 		}
 
 		@Override
