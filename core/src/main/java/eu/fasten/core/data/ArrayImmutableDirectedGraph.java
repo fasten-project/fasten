@@ -50,7 +50,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
  * offsets in the array.
  */
 
-public class ArrayImmutableDirectedGraph {
+public class ArrayImmutableDirectedGraph implements DirectedGraph {
 	public static class Builder {
 		private final Long2ObjectArrayMap<LongOpenHashSet> graph = new Long2ObjectArrayMap<>();
 		private final LongOpenHashSet externalNodes = new LongOpenHashSet();
@@ -128,14 +128,17 @@ public class ArrayImmutableDirectedGraph {
 		this.externalNodes = externalNodes;
 	}
 
+	@Override
 	public int numNodes() {
 		return GID2Offset.size();
 	}
 
+	@Override
 	public long numArcs() {
 		return (succpred.length - GID2Offset.size()) / 2;
 	}
 
+	@Override
 	public LongList successors(final long node) {
 		final int offset = GID2Offset.get(node);
 		if (offset == -1) throw new IllegalArgumentException("No such node: " + node);
@@ -143,6 +146,7 @@ public class ArrayImmutableDirectedGraph {
 		return LongArrayList.wrap(Arrays.copyOfRange(succpred, offset + 1, offset + 1 + outdegree));
 	}
 
+	@Override
 	public LongList predecessors(final long node) {
 		int offset = GID2Offset.get(node);
 		if (offset == -1) throw new IllegalArgumentException("No such node: " + node);
@@ -152,18 +156,22 @@ public class ArrayImmutableDirectedGraph {
 		return LongArrayList.wrap(Arrays.copyOfRange(succpred, offset, offset + indegree));
 	}
 
+	@Override
 	public LongSet nodes() {
 		return GID2Offset.keySet();
 	}
 
+	@Override
 	public LongSet externalNodes() {
 		return externalNodes;
 	}
 
+	@Override
 	public boolean isInternal(final long node) {
 		return !externalNodes.contains(node);
 	}
 
+	@Override
 	public boolean isExternal(final long node) {
 		return externalNodes.contains(node);
 	}

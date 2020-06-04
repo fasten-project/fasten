@@ -68,7 +68,7 @@ public interface DirectedGraph {
 	 *
 	 * @return the set of nodes of the graph. // TODO this should be a LongSet.
 	 */
-	public LongList nodes();
+	public LongSet nodes();
 
 	/**
 	 * The set of external nodes of the graph.
