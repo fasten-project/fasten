@@ -92,7 +92,7 @@ public class RocksDao implements Closeable {
     private void initKryo() {
         kryo = new Kryo();
         kryo.register(BVGraph.class, new BVGraphSerializer(kryo));
-		kryo.register(boolean.class);
+		kryo.register(Boolean.class);
         kryo.register(byte[].class);
         kryo.register(InputBitStream.class);
         kryo.register(NullInputStream.class);
@@ -192,6 +192,7 @@ public class RocksDao implements Closeable {
         propertyFile = new FileInputStream(file + BVGraph.PROPERTIES_EXTENSION);
         transposeProperties.load(propertyFile);
         propertyFile.close();
+		kryo.writeObject(bbo, Boolean.TRUE);
         kryo.writeObject(bbo, BVGraph.load(file.toString()));
         kryo.writeObject(bbo, numInternal);
         // Write out properties
@@ -221,6 +222,8 @@ public class RocksDao implements Closeable {
         final byte[] buffer = rocksDb.get(Longs.toByteArray(index));
         final Input input = new Input(buffer);
         assert kryo != null;
+		final boolean compressed = kryo.readObject(input, Boolean.class).booleanValue();
+
         final var graphs = new ImmutableGraph[]{
                 kryo.readObject(input, BVGraph.class),
                 kryo.readObject(input, BVGraph.class)
