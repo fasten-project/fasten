@@ -27,10 +27,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang.StringUtils;
@@ -165,7 +162,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             String payload = null;
             if (result.isPresent()) {
                 if (writeDirectory != null && !writeDirectory.equals("")) {
-                    payload = writeToFile(input, result.get());
+                    payload = writeToFile(result.get());
                 } else {
                     payload = result.get();
                 }
@@ -207,33 +204,22 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Writes {@link RevisionCallGraph} to JSON file and return JSON object containing
      * a link to to written file.
      *
-     * @param input  message that triggered computation of the call graph
      * @param result String of JSON representation of {@link RevisionCallGraph}
      * @return Path to a newly written JSON file
      */
-    private String writeToFile(String input, String result) throws IOException {
-        var coordinate = findCoordinate(new JSONObject(input));
-        if (coordinate.isEmpty()) {
-            throw new IOException("Writing failed. Couldn't find Maven coordinate in input");
-        }
+    private String writeToFile(String result)
+            throws IOException, NullPointerException {
+        var path = plugin.getOutputPath();
+        var pathWithoutFilename = path.substring(0, path.lastIndexOf("/"));
 
-        var groupId = coordinate.get().get("groupId");
-        var artifactId = coordinate.get().get("artifactId");
-        var version = coordinate.get().get("version");
-        var product = artifactId + "_" + groupId + "_" + version;
-
-        var firstLetter = artifactId.substring(0, 1);
-
-        File directory = new File(this.writeDirectory
-                + "/" + "mvn" + "/" + firstLetter + "/" + artifactId);
+        File directory = new File(this.writeDirectory + pathWithoutFilename);
         if (!directory.exists()) {
             if (!directory.mkdirs()) {
                 throw new IOException("Failed to create parent directories");
             }
         }
 
-        File file = new File(directory.getAbsolutePath()
-                + "/" + product + ".json");
+        File file = new File(this.writeDirectory + path);
         FileWriter fw = new FileWriter(file.getAbsoluteFile());
         fw.write(result);
         fw.flush();
@@ -242,33 +228,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         JSONObject link = new JSONObject();
         link.put("link", file.getAbsolutePath());
         return link.toString();
-    }
-
-    /**
-     * Recursively finds Maven coordinate from the input JSON.
-     *
-     * @param input input of the latest stdout message
-     * @return map containing groupId and artifactId
-     */
-    private Optional<Map<String, String>> findCoordinate(JSONObject input) {
-        if (input.opt("groupId") != null && input.opt("artifactId") != null
-                && input.opt("version") != null) {
-            Map<String, String> map = new HashMap<>();
-
-            map.put("groupId", input.getString("groupId"));
-            map.put("artifactId", input.getString("artifactId"));
-            map.put("version", input.getString("version"));
-
-            return Optional.of(map);
-        }
-
-        var previousInput = input.getJSONObject("input");
-
-        if (previousInput != null) {
-            return findCoordinate(previousInput);
-        } else {
-            return Optional.empty();
-        }
     }
 
     /**

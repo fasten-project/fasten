@@ -69,6 +69,11 @@ public class GraphDatabasePlugin extends Plugin {
         }
 
         @Override
+        public String getOutputPath() {
+            return ".";
+        }
+
+        @Override
         public void consume(String record) {
             this.pluginError = null;
             var json = new JSONObject(record).getJSONObject("payload");

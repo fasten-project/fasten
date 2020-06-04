@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -149,6 +150,20 @@ public class MetadataDatabasePlugin extends Plugin {
             } else {
                 return Optional.of(gidGraph.toJSONString());
             }
+        }
+
+        @Override
+        public String getOutputPath() {
+            var productSplit = this.gidGraph.getProduct().split("\\.");
+
+            var groupId = String.join(".", Arrays.copyOf(productSplit, productSplit.length - 1));
+            var artifactId = productSplit[productSplit.length - 1];
+            var version = this.gidGraph.getVersion();
+            var product = artifactId + "_" + groupId + "_" + version;
+
+            var firstLetter = artifactId.substring(0, 1);
+
+            return "/mvn/" + firstLetter + "/" + artifactId + "/" + product + ".json";
         }
 
         /**

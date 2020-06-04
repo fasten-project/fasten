@@ -54,4 +54,6 @@ public interface KafkaPlugin extends FastenPlugin {
      * @return optional result of the computation
      */
     Optional<String> produce();
+
+    String getOutputPath();
 }

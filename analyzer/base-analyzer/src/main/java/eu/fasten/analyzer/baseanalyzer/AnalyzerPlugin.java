@@ -3,6 +3,7 @@ package eu.fasten.analyzer.baseanalyzer;
 import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -62,6 +63,20 @@ public abstract class AnalyzerPlugin extends Plugin {
             } else {
                 return Optional.empty();
             }
+        }
+
+        @Override
+        public String getOutputPath() {
+            var productSplit = this.graph.product.split("\\.");
+
+            var groupId = String.join(".", Arrays.copyOf(productSplit, productSplit.length - 1));
+            var artifactId = productSplit[productSplit.length - 1];
+            var version = this.graph.version;
+            var product = artifactId + "_" + groupId + "_" + version;
+
+            var firstLetter = artifactId.substring(0, 1);
+
+            return "/mvn/" + firstLetter + "/" + artifactId + "/" + product + ".json";
         }
 
         /**

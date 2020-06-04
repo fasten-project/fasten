@@ -48,6 +48,11 @@ public class DummyAnalyzerPlugin extends Plugin {
         }
 
         @Override
+        public String getOutputPath() {
+            return ".";
+        }
+
+        @Override
         public String name() {
             return "DummyAnalyzer";
         }
