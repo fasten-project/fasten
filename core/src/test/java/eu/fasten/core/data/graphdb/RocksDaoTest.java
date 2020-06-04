@@ -61,7 +61,7 @@ public class RocksDaoTest {
         var graphData = rocksDao.getGraphData(graph.getIndex());
         assertEquals(graph.getNumInternalNodes(), graphData.nodes().size() - graphData.externalNodes().size());
         assertEquals(graph.getNodes().size(), graphData.nodes().size());
-        assertEquals(new LongArrayList(graph.getNodes()), graphData.nodes());
+        assertEquals(new LongOpenHashSet(graph.getNodes()), graphData.nodes());
         assertEquals(new LongArrayList(List.of(1L)), graphData.successors(0L));
         assertEquals(new LongArrayList(List.of(2L)), graphData.successors(1L));
         assertEquals(new LongArrayList(List.of(0L)), graphData.predecessors(1L));
@@ -85,7 +85,7 @@ public class RocksDaoTest {
         var graphData = rocksDao.getGraphData(graph.getIndex());
         assertEquals(graph.getNumInternalNodes(), graphData.nodes().size() - graphData.externalNodes().size());
         assertEquals(graph.getNodes().size(), graphData.nodes().size());
-        assertEquals(new LongArrayList(graph.getNodes()), graphData.nodes());
+        assertEquals(new LongOpenHashSet(graph.getNodes()), graphData.nodes());
         assertEquals(new LongArrayList(List.of(256L, 258L)), graphData.successors(255L));
         assertEquals(new LongArrayList(List.of(257L)), graphData.successors(256L));
         assertEquals(new LongArrayList(List.of(258L)), graphData.successors(257L));
@@ -166,7 +166,7 @@ public class RocksDaoTest {
         var graphData = rocksDao.getGraphData(graph.getIndex());
         assertEquals(graph.getNumInternalNodes(), graphData.nodes().size() - graphData.externalNodes().size());
         assertEquals(graph.getNodes().size(), graphData.nodes().size());
-        assertEquals(new LongArrayList(graph.getNodes()), graphData.nodes());
+        assertEquals(new LongOpenHashSet(graph.getNodes()), graphData.nodes());
         assertEquals(new LongArrayList(List.of(9223372036854775805L, 9223372036854775807L)), graphData.successors(9223372036854775804L));
         assertEquals(new LongArrayList(List.of(9223372036854775806L)), graphData.successors(9223372036854775805L));
         assertEquals(new LongArrayList(List.of(9223372036854775807L)), graphData.successors(9223372036854775806L));
