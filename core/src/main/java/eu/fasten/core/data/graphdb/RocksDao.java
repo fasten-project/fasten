@@ -179,6 +179,7 @@ public class RocksDao implements Closeable {
         propertyFile.close();
         final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
         final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
+        kryo.writeObject(bbo, Boolean.TRUE);
         kryo.writeObject(bbo, BVGraph.load(file.toString()));
         // Compute LIDs according to the current node renumbering based on BFS
         final long[] LID2GID = new long[temporary2GID.length];
@@ -192,7 +193,6 @@ public class RocksDao implements Closeable {
         propertyFile = new FileInputStream(file + BVGraph.PROPERTIES_EXTENSION);
         transposeProperties.load(propertyFile);
         propertyFile.close();
-		kryo.writeObject(bbo, Boolean.TRUE);
         kryo.writeObject(bbo, BVGraph.load(file.toString()));
         kryo.writeObject(bbo, numInternal);
         // Write out properties
