@@ -101,7 +101,7 @@ public class RocksDao implements Closeable {
         kryo.register(Properties.class);
         kryo.register(long[].class);
         kryo.register(Long2IntOpenHashMap.class);
-		kryo.register(GOV3LongFunction.class, new FieldSerializer<>(kryo, GOV3LongFunction.class));
+		kryo.register(GOV3LongFunction.class, new JavaSerializer());
     }
 
     /**

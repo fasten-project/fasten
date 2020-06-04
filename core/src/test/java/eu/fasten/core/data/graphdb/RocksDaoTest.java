@@ -113,7 +113,7 @@ public class RocksDaoTest {
         assertEquals(graph.getNumInternalNodes(), graphData.nodes().size() - graphData.externalNodes().size());
         assertEquals(graph.getNodes().size(), graphData.nodes().size());
         assertEquals(new LongOpenHashSet((graph.getNodes())), new LongOpenHashSet(graphData.nodes()));
-        assertEquals(new LongArrayList(List.of(258L, 256L)), graphData.successors(255L));
+        assertEquals(new LongArrayList(List.of(256L, 258L)), graphData.successors(255L));
         assertEquals(new LongArrayList(List.of(257L)), graphData.successors(256L));
         assertEquals(new LongArrayList(List.of(258L)), graphData.successors(257L));
         assertEquals(new LongArrayList(List.of()), graphData.predecessors(255L));
@@ -140,7 +140,7 @@ public class RocksDaoTest {
         assertEquals(graph.getNumInternalNodes(), graphData.nodes().size() - graphData.externalNodes().size());
         assertEquals(graph.getNodes().size(), graphData.nodes().size());
         assertEquals(new LongOpenHashSet((graph.getNodes())), new LongOpenHashSet(graphData.nodes()));
-        assertEquals(new LongArrayList(List.of(258L, 256L)), graphData.successors(255L));
+        assertEquals(new LongArrayList(List.of(256L, 258L)), graphData.successors(255L));
         assertEquals(new LongArrayList(List.of(257L)), graphData.successors(256L));
         assertEquals(new LongArrayList(List.of(258L)), graphData.successors(257L));
         assertEquals(new LongArrayList(List.of()), graphData.predecessors(255L));
@@ -207,7 +207,7 @@ public class RocksDaoTest {
         assertEquals(graph1.getNumInternalNodes(), graphData1.nodes().size() - graphData1.externalNodes().size());
         assertEquals(graph1.getNodes().size(), graphData1.nodes().size());
         assertEquals(new LongOpenHashSet(graph1.getNodes()), new LongOpenHashSet(graphData1.nodes()));
-        assertEquals(new LongArrayList(List.of(3L, 2L, 5L)), graphData1.successors(1L));
+        assertEquals(new LongArrayList(List.of(2L, 3L, 5L)), graphData1.successors(1L));
         assertEquals(new LongArrayList(List.of(4L)), graphData1.successors(2L));
         assertEquals(new LongArrayList(List.of(4L)), graphData1.successors(3L));
         assertEquals(new LongArrayList(List.of(1L)), graphData1.successors(4L));
@@ -215,7 +215,7 @@ public class RocksDaoTest {
         assertEquals(new LongArrayList(List.of(4L)), graphData1.predecessors(1L));
         assertEquals(new LongArrayList(List.of(1L)), graphData1.predecessors(2L));
         assertEquals(new LongArrayList(List.of(1L)), graphData1.predecessors(3L));
-        assertEquals(new LongArrayList(List.of(3L, 2L)), graphData1.predecessors(4L));
+        assertEquals(new LongArrayList(List.of(2L, 3L)), graphData1.predecessors(4L));
         assertEquals(new LongArrayList(List.of(1L)), graphData1.predecessors(5L));
         assertEquals(graph1.getEdges().size(), graphData1.numArcs());
         assertEquals(new LongOpenHashSet(List.of(4L, 5L)), graphData1.externalNodes());
