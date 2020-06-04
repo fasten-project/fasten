@@ -55,5 +55,12 @@ public interface KafkaPlugin extends FastenPlugin {
      */
     Optional<String> produce();
 
+    /**
+     * Returns a relative path to a file, the result of processing
+     * a record should be written to. THe path has the following hierarchy:
+     * /forge/first-letter-of-artifactId/artifactId/artifactId_groupId_Version.json
+     *
+     * @return relative path to the output file
+     */
     String getOutputPath();
 }

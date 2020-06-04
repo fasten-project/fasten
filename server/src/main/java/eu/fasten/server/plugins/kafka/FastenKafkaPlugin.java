@@ -32,16 +32,13 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.CommitFailedException;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,18 +61,16 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     /**
      * Constructs a FastenKafkaConsumer.
      *
-     * @param p           properties of a consumer
-     * @param plugin      Kafka plugin
-     * @param skipOffsets skip offset number
+     * @param consumerProperties properties of a consumer
+     * @param plugin             Kafka plugin
+     * @param skipOffsets        skip offset number
      */
-    public FastenKafkaPlugin(Properties p, KafkaPlugin plugin,
-                             int skipOffsets, String writeDirectory) {
+    public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory) {
         this.plugin = plugin;
 
-        this.connection = new KafkaConsumer<>(p);
-        this.producer = new KafkaProducer<>(
-                this.setKafkaProducer(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG),
-                        plugin.getClass().getSimpleName() + "_CGS_status"));
+        this.connection = new KafkaConsumer<>(consumerProperties);
+        this.producer = new KafkaProducer<>(producerProperties);
 
         this.skipOffsets = skipOffsets;
         this.writeDirectory = writeDirectory;
@@ -213,10 +208,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         var pathWithoutFilename = path.substring(0, path.lastIndexOf("/"));
 
         File directory = new File(this.writeDirectory + pathWithoutFilename);
-        if (!directory.exists()) {
-            if (!directory.mkdirs()) {
-                throw new IOException("Failed to create parent directories");
-            }
+        if (!directory.exists() && !directory.mkdirs()) {
+            throw new IOException("Failed to create parent directories");
         }
 
         File file = new File(this.writeDirectory + path);
@@ -293,25 +286,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
     }
 
-    /**
-     * Sets up a connection for producing error logs of a plug-in into a Kafka topic.
-     *
-     * @param serverAddress address of server
-     * @param clientID      client id
-     * @return properties for producer
-     */
-    private Properties setKafkaProducer(String serverAddress, String clientID) {
-
-        Properties p = new Properties();
-        p.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, serverAddress);
-        p.setProperty(ProducerConfig.CLIENT_ID_CONFIG, clientID);
-        p.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-                StringSerializer.class.getName());
-        p.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                StringSerializer.class.getName());
-
-        return p;
-    }
 
     /**
      * This method adds one to the offset of all the partitions of a topic.

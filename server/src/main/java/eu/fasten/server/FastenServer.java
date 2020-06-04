@@ -193,11 +193,15 @@ public class FastenServer implements Runnable {
         }
 
         return kafkaPlugins.stream().map(k -> {
-            var properties = KafkaConnector.kafkaProperties(
+            var consumerProperties = KafkaConnector.kafkaConsumerProperties(
+                    kafkaServers,
+                    k.getClass().getCanonicalName());
+            var producerProperties = KafkaConnector.kafkaProducerProperties(
                     kafkaServers,
                     k.getClass().getCanonicalName());
 
-            return new FastenKafkaPlugin(properties, k, skipOffsets, callgraphDir.get(k.getClass().getSimpleName()));
+            return new FastenKafkaPlugin(consumerProperties, producerProperties, k, skipOffsets,
+                    callgraphDir.get(k.getClass().getSimpleName()));
         }).collect(Collectors.toList());
     }
 
