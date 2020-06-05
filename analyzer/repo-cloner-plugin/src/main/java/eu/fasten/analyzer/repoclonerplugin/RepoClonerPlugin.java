@@ -56,7 +56,7 @@ public class RepoClonerPlugin extends Plugin {
             RepoCloner.baseDir = baseDir;
         }
 
-        public String getRepoPath() {
+        String getRepoPath() {
             return repoPath;
         }
 
@@ -72,13 +72,15 @@ public class RepoClonerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            if (artifact == null && group == null & version == null) {
+            if (artifact == null && group == null) {
                 return Optional.empty();
             } else {
                 var json = new JSONObject();
                 json.put("artifactId", artifact);
                 json.put("groupId", group);
-                json.put("version", version);
+                if (version != null) {
+                    json.put("version", version);
+                }
                 if (repoPath != null) {
                     json.put("repoPath", repoPath);
                 }
@@ -96,30 +98,31 @@ public class RepoClonerPlugin extends Plugin {
             var json = new JSONObject(record).getJSONObject("payload");
             artifact = json.getString("artifactId");
             group = json.getString("groupId");
-            version = json.getString("version");
+            version = json.optString("version");
             var repoUrl = json.optString("repoUrl");
             if (repoUrl != null && !repoUrl.isEmpty()) {
                 try {
                     var gitCloner = new GitCloner(baseDir);
-                    cloneRepo(artifact, group, repoUrl, gitCloner);
+                    cloneRepo(repoUrl, gitCloner);
                 } catch (GitAPIException | IOException e) {
                     logger.error("Error cloning repository for '" + group + ":" + artifact
-                            + "' from " + repoUrl, e);
+                            + ((version == null) ? "" : ":" + version) + "' from " + repoUrl, e);
                     this.pluginError = e;
                     return;
                 }
                 if (getPluginError() == null) {
                     logger.info("Cloned the repo of '" + group + ":" + artifact
-                            + "' to " + repoPath);
+                            + ((version == null) ? "" : ":" + version) + "' from " + repoUrl
+                            + " to " + repoPath);
                 }
             } else {
                 logger.info("Repository URL not found");
             }
         }
 
-        public void cloneRepo(String artifact, String group, String repoUrl, GitCloner gitCloner)
+        public void cloneRepo(String repoUrl, GitCloner gitCloner)
                 throws GitAPIException, IOException {
-            repoPath = gitCloner.cloneRepo(artifact, group, repoUrl);
+            repoPath = gitCloner.cloneRepo(repoUrl);
         }
 
         @Override

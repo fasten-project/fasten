@@ -24,21 +24,12 @@ import org.junit.jupiter.api.Test;
 public class DirectoryHierarchyBuilderTest {
 
     @Test
-    public void getDirectoryFromHierarchyTest() {
-        String baseDir = "test";
-        String name = "folder";
-        var hierarchyBuilder = new DirectoryHierarchyBuilder(baseDir);
-        var dir = hierarchyBuilder.getDirectoryFromHierarchy(name);
-        Assertions.assertEquals("test/mvn/f/folder", dir.getPath());
-    }
-
-    @Test
     public void getDirectoryFromHierarchyWithArtifactTest() {
         String baseDir = "test";
-        String name = "folder";
-        String artifact = "artifact";
+        String name = "repo";
+        String owner = "test";
         var hierarchyBuilder = new DirectoryHierarchyBuilder(baseDir);
-        var dir = hierarchyBuilder.getDirectoryFromHierarchy(artifact, name);
-        Assertions.assertEquals("test/mvn/a/folder", dir.getPath());
+        var dir = hierarchyBuilder.getDirectoryFromHierarchy(owner, name);
+        Assertions.assertEquals("test/t/test/repo", dir.getPath());
     }
 }

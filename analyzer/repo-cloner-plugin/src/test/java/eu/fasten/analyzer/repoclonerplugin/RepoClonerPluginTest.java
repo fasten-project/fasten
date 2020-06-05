@@ -64,11 +64,33 @@ public class RepoClonerPluginTest {
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
-        var repoPath = Paths.get(baseDir, "mvn", "j", "junit-junit", "junit4").toAbsolutePath().toString();
+        var repoPath = Paths.get(baseDir, "j", "junit-team", "junit4").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
                 "\t\"artifactId\": \"junit\",\n" +
                 "\t\"groupId\": \"junit\",\n" +
                 "\t\"version\": \"4.11\",\n" +
+                "\t\"repoPath\": \"" + repoPath + "\"\n" +
+                "}").toString();
+        var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
+        assertEquals(expected, actual);
+        assertTrue(new File(repoPath).exists());
+        assertTrue(new File(repoPath).isDirectory());
+    }
+
+    @Test
+    public void consumeWithoutVersionTest() {
+        var json = new JSONObject("{\n" +
+                "\t\"payload\": {\n" +
+                "\t\t\"artifactId\": \"junit\",\n" +
+                "\t\t\"groupId\": \"junit\",\n" +
+                "\t\t\"repoUrl\": \"https://github.com/junit-team/junit4.git\"\n" +
+                "\t}\n" +
+                "}");
+        repoCloner.consume(json.toString());
+        var repoPath = Paths.get(baseDir, "j", "junit-team", "junit4").toAbsolutePath().toString();
+        var expected = new JSONObject("{\n" +
+                "\t\"artifactId\": \"junit\",\n" +
+                "\t\"groupId\": \"junit\",\n" +
                 "\t\"repoPath\": \"" + repoPath + "\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
@@ -87,7 +109,6 @@ public class RepoClonerPluginTest {
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
-        var repoPath = Paths.get(baseDir, "mvn", "j", "junit").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
                 "\t\"artifactId\": \"junit\",\n" +
                 "\t\"groupId\": \"junit\",\n" +
@@ -95,7 +116,23 @@ public class RepoClonerPluginTest {
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
         assertEquals(expected, actual);
-        assertFalse(new File(repoPath).exists());
+    }
+
+    @Test
+    public void consumeOnlyCoordinateWithoutVersionTest() {
+        var json = new JSONObject("{\n" +
+                "\t\"payload\": {\n" +
+                "\t\t\"artifactId\": \"junit\",\n" +
+                "\t\t\"groupId\": \"junit\",\n" +
+                "\t}\n" +
+                "}");
+        repoCloner.consume(json.toString());
+        var expected = new JSONObject("{\n" +
+                "\t\"artifactId\": \"junit\",\n" +
+                "\t\"groupId\": \"junit\",\n" +
+                "}").toString();
+        var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -107,8 +144,8 @@ public class RepoClonerPluginTest {
     @Test
     public void cloneRepoTest() throws GitAPIException, IOException {
         var gitCloner = Mockito.mock(GitCloner.class);
-        Mockito.when(gitCloner.cloneRepo(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn("test/path");
-        repoCloner.cloneRepo("test", "group", "https://testurl.com", gitCloner);
+        Mockito.when(gitCloner.cloneRepo(Mockito.anyString())).thenReturn("test/path");
+        repoCloner.cloneRepo("https://testurl.com", gitCloner);
         assertEquals("test/path", repoCloner.getRepoPath());
     }
 

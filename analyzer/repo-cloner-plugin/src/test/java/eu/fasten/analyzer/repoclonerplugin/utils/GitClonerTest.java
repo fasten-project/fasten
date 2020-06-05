@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.repoclonerplugin.utils;
 
-import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.AfterEach;
@@ -47,8 +46,8 @@ public class GitClonerTest {
 
     @Test
     public void cloneRepoTest() throws GitAPIException, IOException {
-        var repo = Path.of(baseDir, "mvn/f/eu.fasten-fasten/fasten").toFile();
-        var path = gitCloner.cloneRepo("fasten", "eu.fasten", "https://github.com/fasten-project/fasten.git");
+        var repo = Path.of(baseDir, "f/fasten-project/fasten").toFile();
+        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten.git");
         Assertions.assertEquals(repo.getAbsolutePath(), path);
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());
@@ -56,8 +55,8 @@ public class GitClonerTest {
 
     @Test
     public void cloneRepoWithoutExtensionTest() throws GitAPIException, IOException {
-        var repo = Path.of(baseDir, "mvn/f/eu.fasten-fasten/fasten").toFile();
-        var path = gitCloner.cloneRepo("fasten", "eu.fasten", "https://github.com/fasten-project/fasten");
+        var repo = Path.of(baseDir, "f/fasten-project/fasten").toFile();
+        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten");
         Assertions.assertEquals(repo.getAbsolutePath(), path);
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());
@@ -65,8 +64,8 @@ public class GitClonerTest {
 
     @Test
     public void cloneRepoWithoutExtensionWithSlashTest() throws GitAPIException, IOException {
-        var repo = Path.of(baseDir, "mvn/f/eu.fasten-fasten/fasten").toFile();
-        var path = gitCloner.cloneRepo("fasten", "eu.fasten", "https://github.com/fasten-project/fasten/");
+        var repo = Path.of(baseDir, "f/fasten-project/fasten").toFile();
+        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten/");
         Assertions.assertEquals(repo.getAbsolutePath(), path);
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());

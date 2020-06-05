@@ -29,13 +29,15 @@ public class DirectoryHierarchyBuilder {
         this.baseDir = baseDir;
     }
 
-    public File getDirectoryFromHierarchy(String name) {
-        var dir = Paths.get(this.baseDir, "mvn", String.valueOf(name.charAt(0)), name);
-        return new File(dir.toString());
-    }
-
-    public File getDirectoryFromHierarchy(String artifact, String name) {
-        var dir = Paths.get(this.baseDir, "mvn", String.valueOf(artifact.charAt(0)), name);
-        return new File(dir.toString());
+    /**
+     * Provides hierarchical directory structure.
+     *
+     * @param dir Upper level directory name
+     * @param subDir Lower level directory name
+     * @return Directory at {@link #baseDir}/<first letter of dir>/<dir>/<subDir>
+     */
+    public File getDirectoryFromHierarchy(String dir, String subDir) {
+        var path = Paths.get(this.baseDir, String.valueOf(dir.charAt(0)), dir, subDir);
+        return new File(path.toString());
     }
 }
