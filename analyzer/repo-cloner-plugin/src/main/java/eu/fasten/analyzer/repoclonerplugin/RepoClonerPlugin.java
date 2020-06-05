@@ -78,7 +78,7 @@ public class RepoClonerPlugin extends Plugin {
                 var json = new JSONObject();
                 json.put("artifactId", artifact);
                 json.put("groupId", group);
-                if (version != null) {
+                if (version != null && !version.isEmpty()) {
                     json.put("version", version);
                 }
                 if (repoPath != null) {

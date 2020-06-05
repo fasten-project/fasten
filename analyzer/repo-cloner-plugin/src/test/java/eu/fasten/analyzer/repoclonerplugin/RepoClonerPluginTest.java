@@ -57,18 +57,18 @@ public class RepoClonerPluginTest {
     public void consumeTest() {
         var json = new JSONObject("{\n" +
                 "\t\"payload\": {\n" +
-                "\t\t\"artifactId\": \"junit\",\n" +
-                "\t\t\"groupId\": \"junit\",\n" +
-                "\t\t\"version\": \"4.11\",\n" +
-                "\t\t\"repoUrl\": \"https://github.com/junit-team/junit4.git\"\n" +
+                "\t\t\"artifactId\": \"fasten\",\n" +
+                "\t\t\"groupId\": \"fasten-project\",\n" +
+                "\t\t\"version\": \"1\",\n" +
+                "\t\t\"repoUrl\": \"https://github.com/fasten-project/fasten.git\"\n" +
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
-        var repoPath = Paths.get(baseDir, "j", "junit-team", "junit4").toAbsolutePath().toString();
+        var repoPath = Paths.get(baseDir, "f", "fasten-project", "fasten").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
-                "\t\"artifactId\": \"junit\",\n" +
-                "\t\"groupId\": \"junit\",\n" +
-                "\t\"version\": \"4.11\",\n" +
+                "\t\"artifactId\": \"fasten\",\n" +
+                "\t\"groupId\": \"fasten-project\",\n" +
+                "\t\"version\": \"1\",\n" +
                 "\t\"repoPath\": \"" + repoPath + "\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
@@ -81,16 +81,16 @@ public class RepoClonerPluginTest {
     public void consumeWithoutVersionTest() {
         var json = new JSONObject("{\n" +
                 "\t\"payload\": {\n" +
-                "\t\t\"artifactId\": \"junit\",\n" +
-                "\t\t\"groupId\": \"junit\",\n" +
-                "\t\t\"repoUrl\": \"https://github.com/junit-team/junit4.git\"\n" +
+                "\t\t\"artifactId\": \"fasten\",\n" +
+                "\t\t\"groupId\": \"fasten-project\",\n" +
+                "\t\t\"repoUrl\": \"https://github.com/fasten-project/fasten.git\"\n" +
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
-        var repoPath = Paths.get(baseDir, "j", "junit-team", "junit4").toAbsolutePath().toString();
+        var repoPath = Paths.get(baseDir, "f", "fasten-project", "fasten").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
-                "\t\"artifactId\": \"junit\",\n" +
-                "\t\"groupId\": \"junit\",\n" +
+                "\t\"artifactId\": \"fasten\",\n" +
+                "\t\"groupId\": \"fasten-project\",\n" +
                 "\t\"repoPath\": \"" + repoPath + "\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
@@ -103,16 +103,16 @@ public class RepoClonerPluginTest {
     public void consumeOnlyCoordinateTest() {
         var json = new JSONObject("{\n" +
                 "\t\"payload\": {\n" +
-                "\t\t\"artifactId\": \"junit\",\n" +
-                "\t\t\"groupId\": \"junit\",\n" +
-                "\t\t\"version\": \"4.11\"\n" +
+                "\t\t\"artifactId\": \"fasten\",\n" +
+                "\t\t\"groupId\": \"fasten-project\",\n" +
+                "\t\t\"version\": \"1\"\n" +
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
         var expected = new JSONObject("{\n" +
-                "\t\"artifactId\": \"junit\",\n" +
-                "\t\"groupId\": \"junit\",\n" +
-                "\t\"version\": \"4.11\"\n" +
+                "\t\"artifactId\": \"fasten\",\n" +
+                "\t\"groupId\": \"fasten-project\",\n" +
+                "\t\"version\": \"1\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
         assertEquals(expected, actual);
@@ -122,14 +122,14 @@ public class RepoClonerPluginTest {
     public void consumeOnlyCoordinateWithoutVersionTest() {
         var json = new JSONObject("{\n" +
                 "\t\"payload\": {\n" +
-                "\t\t\"artifactId\": \"junit\",\n" +
-                "\t\t\"groupId\": \"junit\",\n" +
+                "\t\t\"artifactId\": \"fasten\",\n" +
+                "\t\t\"groupId\": \"fasten-project\",\n" +
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
         var expected = new JSONObject("{\n" +
-                "\t\"artifactId\": \"junit\",\n" +
-                "\t\"groupId\": \"junit\",\n" +
+                "\t\"artifactId\": \"fasten\",\n" +
+                "\t\"groupId\": \"fasten-project\",\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
         assertEquals(expected, actual);

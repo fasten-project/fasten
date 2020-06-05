@@ -44,6 +44,12 @@
             <version>0.0.1-SNAPSHOT</version>
             <!--            <scope>provided</scope>-->
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.4.0</version>
+            <scope>test</scope>
+        </dependency>
         <!--        NB! Uncomment the following 3 dependencies if you want to run Main class-->
         <!--        <dependency>-->
         <!--            <groupId>org.slf4j</groupId>-->
@@ -55,11 +61,11 @@
         <!--            <artifactId>slf4j-api</artifactId>-->
         <!--            <version>1.7.30</version>-->
         <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.pf4j</groupId>-->
-        <!--            <artifactId>pf4j</artifactId>-->
-        <!--            <version>3.1.0</version>-->
-        <!--        </dependency>-->
+                <dependency>
+                    <groupId>org.pf4j</groupId>
+                    <artifactId>pf4j</artifactId>
+                    <version>3.1.0</version>
+                </dependency>
     </dependencies>
 
     <build>
@@ -172,6 +178,12 @@
                     <source>1.11</source>
                     <target>1.11</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
             </plugin>
         </plugins>
     </build>
