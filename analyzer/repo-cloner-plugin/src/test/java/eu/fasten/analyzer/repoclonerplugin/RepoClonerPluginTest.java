@@ -19,7 +19,6 @@
 package eu.fasten.analyzer.repoclonerplugin;
 
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
-import eu.fasten.analyzer.repoclonerplugin.utils.JarDownloader;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
@@ -61,41 +60,11 @@ public class RepoClonerPluginTest {
                 "\t\t\"artifactId\": \"junit\",\n" +
                 "\t\t\"groupId\": \"junit\",\n" +
                 "\t\t\"version\": \"4.11\",\n" +
-                "\t\t\"repoUrl\": \"https://github.com/junit-team/junit4.git\",\n" +
-                "\t\t\"jarUrl\": \"https://search.maven.org/remotecontent?filepath=junit/junit/4.11/junit-4.11-sources.jar\"\n" +
-                "\t}\n" +
-                "}");
-        repoCloner.consume(json.toString());
-        var repoPath = Paths.get(baseDir, "mvn", "j", "junit-junit", "junit4").toAbsolutePath().toString();
-        var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-4.11-sources.jar").toAbsolutePath().toString();
-        var expected = new JSONObject("{\n" +
-                "\t\"artifactId\": \"junit\",\n" +
-                "\t\"groupId\": \"junit\",\n" +
-                "\t\"version\": \"4.11\",\n" +
-                "\t\"repoPath\": \"" + repoPath + "\",\n" +
-                "\t\"jarPath\": \"" + jarPath + "\"\n" +
-                "}").toString();
-        var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
-        assertEquals(expected, actual);
-        assertTrue(new File(repoPath).exists());
-        assertTrue(new File(repoPath).isDirectory());
-        assertTrue(new File(jarPath).exists());
-        assertTrue(new File(jarPath).isFile());
-    }
-
-    @Test
-    public void consumeWithoutJarTest() {
-        var json = new JSONObject("{\n" +
-                "\t\"payload\": {\n" +
-                "\t\t\"artifactId\": \"junit\",\n" +
-                "\t\t\"groupId\": \"junit\",\n" +
-                "\t\t\"version\": \"4.11\",\n" +
                 "\t\t\"repoUrl\": \"https://github.com/junit-team/junit4.git\"\n" +
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
         var repoPath = Paths.get(baseDir, "mvn", "j", "junit-junit", "junit4").toAbsolutePath().toString();
-        var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-junit-4.11.jar").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
                 "\t\"artifactId\": \"junit\",\n" +
                 "\t\"groupId\": \"junit\",\n" +
@@ -106,33 +75,6 @@ public class RepoClonerPluginTest {
         assertEquals(expected, actual);
         assertTrue(new File(repoPath).exists());
         assertTrue(new File(repoPath).isDirectory());
-        assertFalse(new File(jarPath).exists());
-    }
-
-    @Test
-    public void consumeWithoutRepoTest() {
-        var json = new JSONObject("{\n" +
-                "\t\"payload\": {\n" +
-                "\t\t\"artifactId\": \"junit\",\n" +
-                "\t\t\"groupId\": \"junit\",\n" +
-                "\t\t\"version\": \"4.11\",\n" +
-                "\t\t\"jarUrl\": \"https://search.maven.org/remotecontent?filepath=junit/junit/4.11/junit-4.11-sources.jar\"\n" +
-                "\t}\n" +
-                "}");
-        repoCloner.consume(json.toString());
-        var repoPath = Paths.get(baseDir, "mvn", "j", "junit").toAbsolutePath().toString();
-        var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-4.11-sources.jar").toAbsolutePath().toString();
-        var expected = new JSONObject("{\n" +
-                "\t\"artifactId\": \"junit\",\n" +
-                "\t\"groupId\": \"junit\",\n" +
-                "\t\"version\": \"4.11\",\n" +
-                "\t\"jarPath\": \"" + jarPath + "\"\n" +
-                "}").toString();
-        var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
-        assertEquals(expected, actual);
-        assertFalse(new File(repoPath).exists());
-        assertTrue(new File(jarPath).exists());
-        assertTrue(new File(jarPath).isFile());
     }
 
     @Test
@@ -146,7 +88,6 @@ public class RepoClonerPluginTest {
                 "}");
         repoCloner.consume(json.toString());
         var repoPath = Paths.get(baseDir, "mvn", "j", "junit").toAbsolutePath().toString();
-        var jarPath = Paths.get(baseDir, "mvn", "j", "junit-junit-4.11", "junit-junit-4.11.jar").toAbsolutePath().toString();
         var expected = new JSONObject("{\n" +
                 "\t\"artifactId\": \"junit\",\n" +
                 "\t\"groupId\": \"junit\",\n" +
@@ -155,7 +96,6 @@ public class RepoClonerPluginTest {
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
         assertEquals(expected, actual);
         assertFalse(new File(repoPath).exists());
-        assertFalse(new File(jarPath).exists());
     }
 
     @Test
@@ -170,14 +110,6 @@ public class RepoClonerPluginTest {
         Mockito.when(gitCloner.cloneRepo(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn("test/path");
         repoCloner.cloneRepo("test", "group", "https://testurl.com", gitCloner);
         assertEquals("test/path", repoCloner.getRepoPath());
-    }
-
-    @Test
-    public void downloadJarTest() throws IOException {
-        var jarDownloader = Mockito.mock(JarDownloader.class);
-        Mockito.when(jarDownloader.downloadJarFile(Mockito.anyString(), Mockito.anyString())).thenReturn("test/path/sources.jar");
-        repoCloner.downloadJar("test", "https://testurl.com/sources.jar", jarDownloader);
-        assertEquals("test/path/sources.jar", repoCloner.getJarPath());
     }
 
     @Test
@@ -205,9 +137,9 @@ public class RepoClonerPluginTest {
     @Test
     public void descriptionTest() {
         var description = "Repo Cloner Plugin. "
-                + "Consumes GitHub repository URL and JAR file URL (if present), "
-                + "clones the repo and downloads the JAR file to the provided directory "
-                + "and produces path to directory with repository and path to JAR file.";
+                + "Consumes GitHub repository URL (if present), "
+                + "clones the repo to the provided directory building directory hierarchy"
+                + "and produces the path to directory with repository.";
         assertEquals(description, repoCloner.description());
     }
 

@@ -19,7 +19,6 @@
 package eu.fasten.analyzer.repoclonerplugin;
 
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
-import eu.fasten.analyzer.repoclonerplugin.utils.JarDownloader;
 import eu.fasten.core.plugins.DataWriter;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.IOException;
@@ -47,7 +46,6 @@ public class RepoClonerPlugin extends Plugin {
         private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(RepoCloner.class.getName());
         private String repoPath = null;
-        private String jarPath = null;
         private String artifact = null;
         private String group = null;
         private String version = null;
@@ -60,10 +58,6 @@ public class RepoClonerPlugin extends Plugin {
 
         public String getRepoPath() {
             return repoPath;
-        }
-
-        public String getJarPath() {
-            return jarPath;
         }
 
         @Override
@@ -88,9 +82,6 @@ public class RepoClonerPlugin extends Plugin {
                 if (repoPath != null) {
                     json.put("repoPath", repoPath);
                 }
-                if (jarPath != null) {
-                    json.put("jarPath", jarPath);
-                }
                 return Optional.of(json.toString());
             }
         }
@@ -102,13 +93,11 @@ public class RepoClonerPlugin extends Plugin {
             this.group = null;
             this.version = null;
             this.repoPath = null;
-            this.jarPath = null;
             var json = new JSONObject(record).getJSONObject("payload");
             artifact = json.getString("artifactId");
             group = json.getString("groupId");
             version = json.getString("version");
             var repoUrl = json.optString("repoUrl");
-            var jarUrl = json.optString("jarUrl");
             if (repoUrl != null && !repoUrl.isEmpty()) {
                 try {
                     var gitCloner = new GitCloner(baseDir);
@@ -126,33 +115,11 @@ public class RepoClonerPlugin extends Plugin {
             } else {
                 logger.info("Repository URL not found");
             }
-            if (jarUrl != null && !jarUrl.isEmpty()) {
-                var product = group + ":" + artifact + ":" + version;
-                try {
-                    var jarDownloader = new JarDownloader(baseDir);
-                    downloadJar(product.replaceAll(":", "-"), jarUrl, jarDownloader);
-                } catch (IOException e) {
-                    logger.error("Error downloading JAR file for '" + product
-                            + "' from " + jarUrl, e);
-                    this.pluginError = e;
-                    return;
-                }
-                if (getPluginError() == null) {
-                    logger.info("Downloaded the JAR file for '" + product + "' to " + jarPath);
-                }
-            } else {
-                logger.info("JAR file URL not found");
-            }
         }
 
         public void cloneRepo(String artifact, String group, String repoUrl, GitCloner gitCloner)
                 throws GitAPIException, IOException {
             repoPath = gitCloner.cloneRepo(artifact, group, repoUrl);
-        }
-
-        public void downloadJar(String product, String jarUrl, JarDownloader jarDownloader)
-                throws IOException {
-            jarPath = jarDownloader.downloadJarFile(jarUrl, product);
         }
 
         @Override
@@ -163,9 +130,9 @@ public class RepoClonerPlugin extends Plugin {
         @Override
         public String description() {
             return "Repo Cloner Plugin. "
-                    + "Consumes GitHub repository URL and JAR file URL (if present), "
-                    + "clones the repo and downloads the JAR file to the provided directory "
-                    + "and produces path to directory with repository and path to JAR file.";
+                    + "Consumes GitHub repository URL (if present), "
+                    + "clones the repo to the provided directory building directory hierarchy"
+                    + "and produces the path to directory with repository.";
         }
 
         @Override
