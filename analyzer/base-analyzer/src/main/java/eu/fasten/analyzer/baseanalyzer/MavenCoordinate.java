@@ -92,7 +92,7 @@ public class MavenCoordinate {
     }
 
     public String getProduct() {
-        return groupID + "." + artifactID;
+        return groupID + ":" + artifactID;
     }
 
     public String getCoordinate() {

@@ -77,7 +77,7 @@ public class RevisionCallGraphTest {
 
         cg.sortInternalCalls();
 
-        cgString = "{\"product\":\"diff.example\","
+        cgString = "{\"product\":\"diff:example\","
             + "\"forge\":\"mvn\","
             + "\"generator\":\"OPAL\","
             + "\"depset\":[],"
@@ -107,9 +107,9 @@ public class RevisionCallGraphTest {
         assertEquals("mvn", cg.forge);
         assertEquals("1.7.29", cg.version);
         assertEquals(1574072773, cg.timestamp);
-        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"), cg.uri);
-        assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"), cg.forgelessUri);
-        assertEquals("org.slf4j.slf4j-api", cg.product);
+        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
+        assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
+        assertEquals("org.slf4j:slf4j-api", cg.product);
         assertNotEquals(0, cg.getGraph().size());
     }
 
@@ -149,7 +149,7 @@ public class RevisionCallGraphTest {
         final var cgFromJSON = new RevisionCallGraph(new JSONObject(cgString));
 
         assertEquals("mvn", cgFromJSON.forge);
-        assertEquals("diff.example", cgFromJSON.product);
+        assertEquals("diff:example", cgFromJSON.product);
         assertEquals("0.0.1", cgFromJSON.version);
         assertEquals(1574072773, cgFromJSON.timestamp);
         assertEquals("OPAL", cgFromJSON.getCgGenerator());
