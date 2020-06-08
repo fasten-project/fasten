@@ -7,7 +7,7 @@ spec:
   selector:
     matchLabels:
       app: fasten-server-db-monster
-  replicas: 15
+  replicas: 2
   template:
     metadata:
       labels:
@@ -16,24 +16,29 @@ spec:
       containers:
         - name: fasten-server-db
           image: monster93/fasten.server.db:v0.1b
-          args: ["-k", "kafka-0.kafka-headless.codefeedr:9092", "-kt", "MetadataDBExtension=fasten.OPAL.out", "-pl", "MetadataDBExtension", "-d", "$(PSQL_DB)", "-du", "$(PSQL_USER)"]
+          args: ["-k", "$(KAFKA_ADDR)", "-pl", "MetadataDBExtension", "-kt", "MetadataDBExtension=fasten.opal.cg.3", "-d", "$(PSQL_DB)", "-du", "$(PSQL_USER)"]
           ports:
             - containerPort: 3010
           env:
-            - name: PGPASSWORD
+            - name: FASTEN_DBPASS
               valueFrom:
                 secretKeyRef:
-                  key: psql-pwd
-                  name: psql.pwd
+                  key: psql.pwd
+                  name: psql-pwd
             - name: PSQL_DB
               valueFrom:
-                secretKeyRef:
+                configMapKeyRef:
                   key: psql.db.url
                   name: psql.db
             - name: PSQL_USER
               valueFrom:
-                secretKeyRef:
+                configMapKeyRef:
                   key: psql.db.username
-                  name: psql.db.user       
+                  name: psql.db.user
+            - name: KAFKA_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  key: kafka.addr
+                  name: kafka         
       nodeSelector:
         monster.node: "true"
