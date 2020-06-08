@@ -48,10 +48,8 @@ public abstract class AnalyzerPlugin extends Plugin {
                     return;
                 }
 
-                var productSplit = graph.product.split("\\.");
-
-                var groupId = String.join(".", Arrays.copyOf(productSplit, productSplit.length - 1));
-                var artifactId = productSplit[productSplit.length - 1];
+                var groupId = graph.product.split(":")[0];
+                var artifactId = graph.product.split(":")[1];
                 var version = graph.version;
                 var product = artifactId + "_" + groupId + "_" + version;
 

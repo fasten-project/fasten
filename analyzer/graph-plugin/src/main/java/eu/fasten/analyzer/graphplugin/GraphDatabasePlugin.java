@@ -89,10 +89,8 @@ public class GraphDatabasePlugin extends Plugin {
             }
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
 
-            var productSplit = gidGraph.getProduct().split("\\.");
-
-            var groupId = String.join(".", Arrays.copyOf(productSplit, productSplit.length - 1));
-            var artifactId = productSplit[productSplit.length - 1];
+            var groupId = gidGraph.getProduct().split(":")[0];
+            var artifactId = gidGraph.getProduct().split(":")[1];
             var version = gidGraph.getVersion();
             var product = artifactId + "_" + groupId + "_" + version;
 

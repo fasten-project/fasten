@@ -32,7 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -107,10 +106,9 @@ public class MetadataDatabasePlugin extends Plugin {
             }
 
             final var artifact = callgraph.product + "@" + callgraph.version;
-            var productSplit = callgraph.product.split("\\.");
 
-            var groupId = String.join(".", Arrays.copyOf(productSplit, productSplit.length - 1));
-            var artifactId = productSplit[productSplit.length - 1];
+            var groupId = callgraph.product.split(":")[0];
+            var artifactId = callgraph.product.split(":")[1];
             var version = callgraph.version;
             var product = artifactId + "_" + groupId + "_" + version;
 
