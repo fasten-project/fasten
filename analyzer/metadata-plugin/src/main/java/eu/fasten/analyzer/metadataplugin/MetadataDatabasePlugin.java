@@ -28,7 +28,6 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
@@ -70,6 +69,7 @@ public class MetadataDatabasePlugin extends Plugin {
         private final int transactionRestartLimit = 3;
         private GidGraph gidGraph = null;
         public boolean writeToKafka = true;
+        private String outputPath;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -107,6 +107,16 @@ public class MetadataDatabasePlugin extends Plugin {
             }
 
             final var artifact = callgraph.product + "@" + callgraph.version;
+            var productSplit = callgraph.product.split("\\.");
+
+            var groupId = String.join(".", Arrays.copyOf(productSplit, productSplit.length - 1));
+            var artifactId = productSplit[productSplit.length - 1];
+            var version = callgraph.version;
+            var product = artifactId + "_" + groupId + "_" + version;
+
+            var firstLetter = artifactId.substring(0, 1);
+
+            outputPath = "/mvn/" + firstLetter + "/" + artifactId + "/" + product + ".json";
 
             int transactionRestartCount = 0;
             do {
@@ -154,16 +164,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public String getOutputPath() {
-            var productSplit = this.gidGraph.getProduct().split("\\.");
-
-            var groupId = String.join(".", Arrays.copyOf(productSplit, productSplit.length - 1));
-            var artifactId = productSplit[productSplit.length - 1];
-            var version = this.gidGraph.getVersion();
-            var product = artifactId + "_" + groupId + "_" + version;
-
-            var firstLetter = artifactId.substring(0, 1);
-
-            return "/mvn/" + firstLetter + "/" + artifactId + "/" + product + ".json";
+            return outputPath;
         }
 
         /**

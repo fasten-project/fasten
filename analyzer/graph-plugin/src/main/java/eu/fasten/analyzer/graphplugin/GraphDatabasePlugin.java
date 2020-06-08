@@ -23,6 +23,7 @@ import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.plugins.GraphDBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +49,7 @@ public class GraphDatabasePlugin extends Plugin {
         private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(GraphDBExtension.class.getName());
         private static RocksDao rocksDao;
+        private String outputPath;
 
         public void setRocksDao(RocksDao rocksDao) {
             GraphDBExtension.rocksDao = rocksDao;
@@ -70,7 +72,7 @@ public class GraphDatabasePlugin extends Plugin {
 
         @Override
         public String getOutputPath() {
-            return ".";
+            return this.outputPath;
         }
 
         @Override
@@ -86,6 +88,17 @@ public class GraphDatabasePlugin extends Plugin {
                 return;
             }
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
+
+            var productSplit = gidGraph.getProduct().split("\\.");
+
+            var groupId = String.join(".", Arrays.copyOf(productSplit, productSplit.length - 1));
+            var artifactId = productSplit[productSplit.length - 1];
+            var version = gidGraph.getVersion();
+            var product = artifactId + "_" + groupId + "_" + version;
+
+            var firstLetter = artifactId.substring(0, 1);
+
+            outputPath = "/mvn/" + firstLetter + "/" + artifactId + "/" + product + ".json";
             try {
                 rocksDao.saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(),
                         gidGraph.getNumInternalNodes(), gidGraph.getEdges());

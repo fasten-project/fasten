@@ -26,6 +26,7 @@ public abstract class AnalyzerPlugin extends Plugin {
         private String consumeTopic = "fasten.maven.pkg";
         private Throwable pluginError;
         private RevisionCallGraph graph;
+        private String outputPath;
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -47,6 +48,17 @@ public abstract class AnalyzerPlugin extends Plugin {
                     return;
                 }
 
+                var productSplit = graph.product.split("\\.");
+
+                var groupId = String.join(".", Arrays.copyOf(productSplit, productSplit.length - 1));
+                var artifactId = productSplit[productSplit.length - 1];
+                var version = graph.version;
+                var product = artifactId + "_" + groupId + "_" + version;
+
+                var firstLetter = artifactId.substring(0, 1);
+
+                outputPath = "/mvn/" + firstLetter + "/" + artifactId + "/" + product + ".json";
+
                 logger.info("Call graph successfully generated for {}!",
                         mavenCoordinate.getCoordinate());
 
@@ -67,16 +79,7 @@ public abstract class AnalyzerPlugin extends Plugin {
 
         @Override
         public String getOutputPath() {
-            var productSplit = this.graph.product.split("\\.");
-
-            var groupId = String.join(".", Arrays.copyOf(productSplit, productSplit.length - 1));
-            var artifactId = productSplit[productSplit.length - 1];
-            var version = this.graph.version;
-            var product = artifactId + "_" + groupId + "_" + version;
-
-            var firstLetter = artifactId.substring(0, 1);
-
-            return "/mvn/" + firstLetter + "/" + artifactId + "/" + product + ".json";
+            return outputPath;
         }
 
         /**
