@@ -21,7 +21,6 @@ package eu.fasten.analyzer.javacgwala;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.RevisionCallGraph;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -35,7 +34,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.json.JSONException;
@@ -60,6 +58,12 @@ public class Main implements Runnable {
             description = "Path to JRE 8",
             required = true)
     String jrePath;
+
+    @CommandLine.Option(names = {"-r"},
+            paramLabel = "REPOS",
+            description = "Maven repositories",
+            split = ",")
+    List<String> repos;
 
     @CommandLine.Option(names = {"-t", "--timestamp"},
             paramLabel = "TS",
@@ -151,7 +155,11 @@ public class Main implements Runnable {
             final List<MavenCoordinate> coordinates = new ArrayList<>();
             if (setRunner.pathToFile.dependencies != null) {
                 for (String currentCoordinate : setRunner.pathToFile.dependencies) {
-                    coordinates.add(MavenCoordinate.fromString(currentCoordinate));
+                    var coordinate = MavenCoordinate.fromString(currentCoordinate);
+                    if (repos.size() > 0) {
+                        coordinate.setMavenRepos(repos);
+                    }
+                    coordinates.add(coordinate);
                 }
             }
 
@@ -174,6 +182,9 @@ public class Main implements Runnable {
         } else if (this.setRunner.fullCoordinate.mavenCoordStr != null) {
             mavenCoordinate = MavenCoordinate
                     .fromString(this.setRunner.fullCoordinate.mavenCoordStr);
+            if (repos.size() > 0) {
+                mavenCoordinate.setMavenRepos(repos);
+            }
 
             try {
                 final var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(
@@ -205,6 +216,9 @@ public class Main implements Runnable {
 
         for (var coordinate : getCoordinates(path)) {
             final var mavenCoordinate = getMavenCoordinate(coordinate);
+            if (mavenCoordinate != null && repos.size() > 0) {
+                mavenCoordinate.setMavenRepos(repos);
+            }
 
             try {
                 var cg = PartialCallGraph.createExtendedRevisionCallGraph(
