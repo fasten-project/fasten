@@ -70,7 +70,7 @@ public class RevisionCallGraphTest {
             .cgGenerator(partialCG.getGENERATOR())
             .version(mavenCoordinate.getVersionConstraint()).timestamp(1574072773)
             .depset(
-                MavenCoordinate.MavenResolver.resolveDependencies(mavenCoordinate.getCoordinate()))
+                MavenCoordinate.MavenResolver.resolveDependencies(mavenCoordinate))
             .graph(partialCG.getGraph())
             .classHierarchy(partialCG.getClassHierarchy())
             .build();
@@ -125,7 +125,7 @@ public class RevisionCallGraphTest {
 
         final var coord = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
         final var partialCG = new PartialCallGraph(
-            MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29")
+            MavenCoordinate.MavenResolver.downloadJar(coord)
                 .orElseThrow(RuntimeException::new)
         );
 
@@ -135,7 +135,7 @@ public class RevisionCallGraphTest {
             .version(coord.getVersionConstraint())
             .cgGenerator(partialCG.getGENERATOR())
             .timestamp(1574072773)
-            .depset(MavenCoordinate.MavenResolver.resolveDependencies(coord.getCoordinate()))
+            .depset(MavenCoordinate.MavenResolver.resolveDependencies(coord))
             .graph(partialCG.getGraph())
             .classHierarchy(partialCG.getClassHierarchy())
             .build();
@@ -210,7 +210,7 @@ public class RevisionCallGraphTest {
 
         final var coord = new MavenCoordinate("activemq", "activemq", "release-1.5");
         final var partialCG = new PartialCallGraph(
-            MavenCoordinate.MavenResolver.downloadJar("activemq:activemq:release-1.5")
+            MavenCoordinate.MavenResolver.downloadJar(coord)
                 .orElseThrow(RuntimeException::new)
         );
 
@@ -220,7 +220,7 @@ public class RevisionCallGraphTest {
             .version(coord.getVersionConstraint())
             .cgGenerator(partialCG.getGENERATOR())
             .timestamp(1574072773)
-            .depset(MavenCoordinate.MavenResolver.resolveDependencies(coord.getCoordinate()))
+            .depset(MavenCoordinate.MavenResolver.resolveDependencies(coord))
             .graph(partialCG.getGraph())
             .classHierarchy(partialCG.getClassHierarchy())
             .build();

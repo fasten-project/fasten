@@ -157,7 +157,7 @@ public class Main implements Runnable {
 
             for (var coordinate : coordinates) {
                 dependencies.addAll(MavenCoordinate.MavenResolver
-                        .resolveDependencies(coordinate.getCoordinate()));
+                        .resolveDependencies(coordinate));
             }
             var rcg = PartialCallGraph.generateERCG(setRunner.pathToFile.path,
                     setRunner.pathToFile.product, setRunner.pathToFile.version,

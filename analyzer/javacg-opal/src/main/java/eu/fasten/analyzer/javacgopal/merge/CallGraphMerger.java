@@ -39,7 +39,7 @@ public class CallGraphMerger {
     public static CallGraphMerger resolve(final MavenCoordinate coordinate) {
 
         final var PDN =
-            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate());
+            MavenCoordinate.MavenResolver.resolveDependencies(coordinate);
 
         final List<List<FastenURI>> depencencyList = getDependenciesURI(PDN);
 

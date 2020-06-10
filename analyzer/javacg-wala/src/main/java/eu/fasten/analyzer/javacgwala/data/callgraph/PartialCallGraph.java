@@ -125,7 +125,7 @@ public class PartialCallGraph {
 
         return new RevisionCallGraph("mvn", coordinate.getProduct(),
                 coordinate.getVersionConstraint(), timestamp, "WALA",
-                MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+                MavenCoordinate.MavenResolver.resolveDependencies(coordinate),
                 partialCallGraph.getClassHierarchy(),
                 partialCallGraph.getGraph());
     }
