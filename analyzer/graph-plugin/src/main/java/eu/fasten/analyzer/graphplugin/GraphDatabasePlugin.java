@@ -22,13 +22,16 @@ import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.plugins.GraphDBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
-import java.util.Arrays;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -79,14 +82,23 @@ public class GraphDatabasePlugin extends Plugin {
         public void consume(String record) {
             this.pluginError = null;
             var json = new JSONObject(record).getJSONObject("payload");
-            GidGraph gidGraph;
+            final var path = json.getString("dir");
+
+            final GidGraph gidGraph;
             try {
-                gidGraph = GidGraph.getGraph(json);
+                JSONTokener tokener = new JSONTokener(new FileReader(path));
+                gidGraph = GidGraph.getGraph(new JSONObject(tokener));
             } catch (JSONException e) {
                 logger.error("Could not parse GID graph", e);
                 setPluginError(e);
                 return;
+            } catch (FileNotFoundException e) {
+                logger.error("Error parsing JSON callgraph for '"
+                        + Paths.get(path).getFileName() + "'", e);
+                setPluginError(e);
+                return;
             }
+
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
 
             var groupId = gidGraph.getProduct().split(":")[0];

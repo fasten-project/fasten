@@ -57,6 +57,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final int skipOffsets;
 
     private final String writeDirectory;
+    private final String writeLink;
 
     /**
      * Constructs a FastenKafkaConsumer.
@@ -66,7 +67,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param skipOffsets        skip offset number
      */
     public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory) {
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink) {
         this.plugin = plugin;
 
         this.connection = new KafkaConsumer<>(consumerProperties);
@@ -74,6 +75,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         this.skipOffsets = skipOffsets;
         this.writeDirectory = writeDirectory;
+        this.writeLink = writeLink.endsWith("/")
+                ? writeLink.substring(0, writeLink.length() - 1) : writeLink;
 
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
@@ -112,6 +115,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         this.thread = new Thread(this);
         this.thread.setName(this.plugin.getClass().getSimpleName() + "_plugin");
         this.thread.start();
+        this.plugin.start();
     }
 
     /**
@@ -219,7 +223,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         fw.close();
 
         JSONObject link = new JSONObject();
-        link.put("link", file.getAbsolutePath());
+        link.put("dir", file.getAbsolutePath());
+        link.put("link", this.writeLink + path);
         return link.toString();
     }
 

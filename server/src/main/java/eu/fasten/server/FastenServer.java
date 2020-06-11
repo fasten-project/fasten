@@ -63,7 +63,12 @@ public class FastenServer implements Runnable {
     @Option(names = {"-po", "--plugin_output"},
             paramLabel = "dir",
             description = "Path to directory with call graphs")
-    Map<String, String> callgraphDir;
+    Map<String, String> outputDirs;
+
+    @Option(names = {"-pol", "--plugin_output_link"},
+            paramLabel = "dir",
+            description = "Path to directory with call graphs")
+    Map<String, String> outputLinks;
 
     @Option(names = {"-m", "--mode"},
             description = "Deployment or Development mode")
@@ -201,7 +206,8 @@ public class FastenServer implements Runnable {
                     k.getClass().getCanonicalName());
 
             return new FastenKafkaPlugin(consumerProperties, producerProperties, k, skipOffsets,
-                    callgraphDir.get(k.getClass().getSimpleName()));
+                    outputDirs.get(k.getClass().getSimpleName()),
+                    outputLinks.get(k.getClass().getSimpleName()));
         }).collect(Collectors.toList());
     }
 

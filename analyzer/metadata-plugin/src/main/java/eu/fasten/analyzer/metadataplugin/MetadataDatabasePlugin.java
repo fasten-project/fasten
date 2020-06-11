@@ -91,7 +91,7 @@ public class MetadataDatabasePlugin extends Plugin {
             this.restartTransaction = false;
             this.pluginError = null;
             final var consumedJson = new JSONObject(record).getJSONObject("payload");
-            final var path = consumedJson.getString("link");
+            final var path = consumedJson.getString("dir");
 
             final RevisionCallGraph callgraph;
             try {
