@@ -25,9 +25,6 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,7 +61,6 @@ public class MetadataDatabasePlugin extends Plugin {
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
         private GidGraph gidGraph = null;
-        public boolean writeToKafka = true;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -264,13 +260,8 @@ public class MetadataDatabasePlugin extends Plugin {
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
             }
-            var edgesGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
+            this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
                     nodes, internalCallablesIds.size(), edges);
-            if (writeToKafka) {
-                this.gidGraph = edgesGraph;
-            } else {
-                writeGraphToFile(edgesGraph);
-            }
             return packageVersionId;
         }
 
@@ -283,24 +274,6 @@ public class MetadataDatabasePlugin extends Plugin {
                 } else {
                     return new Timestamp(timestamp);
                 }
-            }
-        }
-
-        /**
-         * Writes GIDs graph to file.
-         *
-         * @param gidGraph Graph consisting of Global IDs
-         */
-        public void writeGraphToFile(GidGraph gidGraph) {
-            var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
-            logger.debug("Writing GIDs graph for {} to file", artifact);
-            try {
-                var json = new JSONObject();
-                json.put("payload", new JSONObject(gidGraph.toJSONString()));
-                Files.write(Paths.get("gid_graph.txt"), json.toString().getBytes());
-            } catch (IOException e) {
-                setPluginError(e);
-                logger.error("Failed to write GIDs graph to file: " + e.getMessage(), e);
             }
         }
 
