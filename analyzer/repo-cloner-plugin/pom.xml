@@ -38,12 +38,12 @@
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>eu.fasten</groupId>
-            <artifactId>server</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <!--            <scope>provided</scope>-->
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>eu.fasten</groupId>-->
+<!--            <artifactId>server</artifactId>-->
+<!--            <version>0.0.1-SNAPSHOT</version>-->
+<!--            &lt;!&ndash;            <scope>provided</scope>&ndash;&gt;-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
@@ -61,11 +61,11 @@
         <!--            <artifactId>slf4j-api</artifactId>-->
         <!--            <version>1.7.30</version>-->
         <!--        </dependency>-->
-                <dependency>
-                    <groupId>org.pf4j</groupId>
-                    <artifactId>pf4j</artifactId>
-                    <version>3.1.0</version>
-                </dependency>
+<!--                <dependency>-->
+<!--                    <groupId>org.pf4j</groupId>-->
+<!--                    <artifactId>pf4j</artifactId>-->
+<!--                    <version>3.1.0</version>-->
+<!--                </dependency>-->
     </dependencies>
 
     <build>
@@ -85,13 +85,14 @@
                             <artifactSet>
                                 <excludes>
                                     <exclude>org.apache.kafka:kafka-clients:*</exclude>
+                                    <exclude>org.rocksdb:*</exclude>
 <!--                                    <exclude>org.eclipse.jgit:org.eclipse.jgit:*</exclude>-->
-                                    <!--                                    <exclude>com.martiansoftware:jsap:*</exclude>-->
-                                    <!--                                    <exclude>it.unimi.dsi:dsiutils:*</exclude>-->
-                                    <!--                                    <exclude>it.unimi.dsi:fastutil:*</exclude>-->
+                                                                        <exclude>com.martiansoftware:jsap:*</exclude>
+                                                                        <exclude>it.unimi.dsi:dsiutils:*</exclude>
+                                                                        <exclude>it.unimi.dsi:fastutil:*</exclude>
                                     <!--                                    <exclude>org.codehaus.mojo:animal-sniffer-annotations:*</exclude>-->
-                                    <!--                                    <exclude>it.unimi.dsi:webgraph:*</exclude>-->
-                                    <!--                                    <exclude>it.unimi.dsi:sux4j:*</exclude>-->
+                                                                        <exclude>it.unimi.dsi:webgraph:*</exclude>
+                                                                        <exclude>it.unimi.dsi:sux4j:*</exclude>
                                     <!--                                    <exclude>com.googlecode.javaewah:*</exclude>-->
                                     <!--                                    <exclude>org.checkerframework:checker-qual:*</exclude>-->
                                     <!--                                    <exclude>org.objenesis:objenesis:*</exclude>-->
@@ -114,10 +115,10 @@
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>eu.fasten.analyzer.repo-cloner-plugin.Main</Main-Class>
+                                        <Main-Class>eu.fasten.analyzer.repoclonerplugin.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.repo-cloner-plugin.RepoClonerPlugin
+                                        <Plugin-Class>eu.fasten.analyzer.repoclonerplugin.RepoClonerPlugin
                                         </Plugin-Class>
                                         <Plugin-Id>repo-cloner-plugin</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
