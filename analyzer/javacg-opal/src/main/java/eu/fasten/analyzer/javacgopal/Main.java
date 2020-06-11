@@ -255,7 +255,8 @@ public class Main implements Runnable {
         if (this.commands.computations.tools.merge.dependencies != null) {
             for (String currentCoordinate : this.commands.computations.tools.merge.dependencies) {
                 var coordinate = MavenCoordinate.fromString(currentCoordinate);
-                if (this.commands.computations.repos != null) {
+                if (this.commands.computations.repos != null
+                    && this.commands.computations.repos.size() > 0) {
                     coordinate.setMavenRepos(this.commands.computations.repos);
                 }
                 result.add(coordinate);
@@ -276,7 +277,8 @@ public class Main implements Runnable {
         MavenCoordinate result = null;
         if (this.commands.computations.artifact != null) {
             result = MavenCoordinate.fromString(this.commands.computations.artifact);
-            if (this.commands.computations.repos != null) {
+            if (this.commands.computations.repos != null
+                && this.commands.computations.repos.size() > 0) {
                 result.setMavenRepos(this.commands.computations.repos);
             }
         }
