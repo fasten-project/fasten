@@ -18,20 +18,13 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
 import eu.fasten.core.data.RevisionCallGraph;
-import eu.fasten.core.data.graphdb.GidGraph;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import org.jooq.DSLContext;
-import org.jooq.JSONB;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -324,22 +317,5 @@ public class MetadataDatabasePluginTest {
             + " and populates metadata database with consumed data"
             + " and writes graph of GIDs of callgraph to another Kafka topic.";
     assertEquals(description, metadataDBExtension.description());
-    }
-
-    @Test
-    public void writeGraphToFileTest() throws IOException {
-    var nodes = List.of(1L, 2L, 3L);
-    var edge1 = new EdgesRecord(1L, 2L, JSONB.valueOf(""));
-    var edge2 = new EdgesRecord(2L, 3L, JSONB.valueOf(""));
-    var edges = List.of(edge1, edge2);
-    var product = "test";
-    var version = "0.0.1";
-    var graph = new GidGraph(1L, product, version, nodes, 2, edges);
-    metadataDBExtension.writeGraphToFile(graph);
-    var file = "gid_graph.txt";
-    assertTrue(new File(file).exists());
-    var jsonFile = new JSONObject(Files.readString(Paths.get(file)));
-    assertEquals(graph, GidGraph.getGraph(jsonFile.getJSONObject("payload")));
-    assertTrue(new File(file).delete());
     }
 }
