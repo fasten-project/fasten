@@ -174,7 +174,7 @@ public class RepoClonerPluginTest {
     @Test
     public void descriptionTest() {
         var description = "Repo Cloner Plugin. "
-                + "Consumes GitHub repository URL (if present), "
+                + "Consumes a repository URL, "
                 + "clones the repo to the provided directory building directory hierarchy"
                 + "and produces the path to directory with repository.";
         assertEquals(description, repoCloner.description());

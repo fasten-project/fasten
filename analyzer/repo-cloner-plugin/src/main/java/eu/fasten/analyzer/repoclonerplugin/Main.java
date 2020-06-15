@@ -33,12 +33,13 @@ public class Main implements Runnable {
 
     @CommandLine.Option(names = {"-f", "--file"},
             paramLabel = "JSON File",
-            description = "Path to JSON file which contains maven coordinate, repoUrl and jarUrl")
+            description = "Path to JSON file which contains repoUrl and optional artifactId, "
+                    + "groupId and version")
     String jsonFile;
 
     @CommandLine.Option(names = {"-d", "--base-dir"},
             paramLabel = "Directory",
-            description = "Path to base directory where repo hierarchy must be crated")
+            description = "Path to base directory where repo hierarchy will be crated")
     String baseDir;
 
     public static void main(String[] args) {
@@ -54,7 +55,7 @@ public class Main implements Runnable {
         try {
             reader = new FileReader(jsonFile);
         } catch (FileNotFoundException e) {
-            logger.error("Could not find the JSON file at " + jsonFile, e);
+            logger.error("Could not find input JSON " + jsonFile, e);
             return;
         }
         final JSONObject json = new JSONObject(new JSONTokener(reader));

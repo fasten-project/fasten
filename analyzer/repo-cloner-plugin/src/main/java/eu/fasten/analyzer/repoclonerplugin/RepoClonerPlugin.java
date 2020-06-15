@@ -72,18 +72,22 @@ public class RepoClonerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            if (artifact == null && group == null) {
+            var json = new JSONObject();
+            if (artifact != null && !artifact.isEmpty()) {
+                json.put("artifactId", artifact);
+            }
+            if (group != null && !group.isEmpty()) {
+                json.put("groupId", group);
+            }
+            if (version != null && !version.isEmpty()) {
+                json.put("version", version);
+            }
+            if (repoPath != null && !repoPath.isEmpty()) {
+                json.put("repoPath", repoPath);
+            }
+            if (json.isEmpty()) {
                 return Optional.empty();
             } else {
-                var json = new JSONObject();
-                json.put("artifactId", artifact);
-                json.put("groupId", group);
-                if (version != null && !version.isEmpty()) {
-                    json.put("version", version);
-                }
-                if (repoPath != null) {
-                    json.put("repoPath", repoPath);
-                }
                 return Optional.of(json.toString());
             }
         }
@@ -96,24 +100,30 @@ public class RepoClonerPlugin extends Plugin {
             this.version = null;
             this.repoPath = null;
             var json = new JSONObject(record).getJSONObject("payload");
-            artifact = json.getString("artifactId");
-            group = json.getString("groupId");
+            artifact = json.optString("artifactId");
+            group = json.optString("groupId");
             version = json.optString("version");
+            String product = null;
+            if (artifact != null && !artifact.isEmpty()
+                    && group != null && !group.isEmpty()) {
+                product = group + ":" + artifact + ((version == null) ? "" : ":" + version);
+            }
             var repoUrl = json.optString("repoUrl");
             if (repoUrl != null && !repoUrl.isEmpty()) {
                 try {
                     var gitCloner = new GitCloner(baseDir);
                     cloneRepo(repoUrl, gitCloner);
                 } catch (GitAPIException | IOException e) {
-                    logger.error("Error cloning repository for '" + group + ":" + artifact
-                            + ((version == null) ? "" : ":" + version) + "' from " + repoUrl, e);
+                    logger.error("Error cloning repository"
+                            + (product == null ? "" : "for '" + product + "'")
+                            + " from " + repoUrl, e);
                     this.pluginError = e;
                     return;
                 }
                 if (getPluginError() == null) {
-                    logger.info("Cloned the repo of '" + group + ":" + artifact
-                            + ((version == null) ? "" : ":" + version) + "' from " + repoUrl
-                            + " to " + repoPath);
+                    logger.info("Cloned repository"
+                            + (product == null ? "" : "of '" + product + "'")
+                            + " from " + repoUrl + " to " + repoPath);
                 }
             } else {
                 logger.info("Repository URL not found");
@@ -133,7 +143,7 @@ public class RepoClonerPlugin extends Plugin {
         @Override
         public String description() {
             return "Repo Cloner Plugin. "
-                    + "Consumes GitHub repository URL (if present), "
+                    + "Consumes a repository URL, "
                     + "clones the repo to the provided directory building directory hierarchy"
                     + "and produces the path to directory with repository.";
         }
