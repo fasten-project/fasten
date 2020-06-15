@@ -25,6 +25,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -114,7 +115,9 @@ public class MetadataDatabasePlugin extends Plugin {
 
             var firstLetter = artifactId.substring(0, 1);
 
-            outputPath = "/mvn/" + firstLetter + "/" + artifactId + "/" + product + ".json";
+            outputPath = File.separator + "mvn" + File.separator
+                    + firstLetter + File.separator
+                    + artifactId + File.separator + product + ".json";
 
             int transactionRestartCount = 0;
             do {

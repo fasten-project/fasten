@@ -62,12 +62,12 @@ public class FastenServer implements Runnable {
 
     @Option(names = {"-po", "--plugin_output"},
             paramLabel = "dir",
-            description = "Path to directory with call graphs")
+            description = "Path to directory where plugin output messages will be stored")
     Map<String, String> outputDirs;
 
     @Option(names = {"-pol", "--plugin_output_link"},
             paramLabel = "dir",
-            description = "Path to directory with call graphs")
+            description = "HTTP link to the root directory where output messages will be stored")
     Map<String, String> outputLinks;
 
     @Option(names = {"-m", "--mode"},

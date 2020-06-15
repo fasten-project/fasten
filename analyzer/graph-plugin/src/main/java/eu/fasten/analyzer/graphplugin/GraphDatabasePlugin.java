@@ -22,6 +22,7 @@ import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.plugins.GraphDBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -108,7 +109,9 @@ public class GraphDatabasePlugin extends Plugin {
 
             var firstLetter = artifactId.substring(0, 1);
 
-            outputPath = "/mvn/" + firstLetter + "/" + artifactId + "/" + product + ".json";
+            outputPath = File.separator + "mvn" + File.separator
+                    + firstLetter + File.separator
+                    + artifactId + File.separator + product + ".json";
             try {
                 rocksDao.saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(),
                         gidGraph.getNumInternalNodes(), gidGraph.getEdges());

@@ -74,9 +74,18 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         this.producer = new KafkaProducer<>(producerProperties);
 
         this.skipOffsets = skipOffsets;
-        this.writeDirectory = writeDirectory;
-        this.writeLink = writeLink.endsWith("/")
-                ? writeLink.substring(0, writeLink.length() - 1) : writeLink;
+        if (writeDirectory != null) {
+            this.writeDirectory = writeDirectory.endsWith(File.separator)
+                    ? writeDirectory.substring(0, writeDirectory.length() - 1) : writeDirectory;
+        } else {
+            this.writeDirectory = null;
+        }
+        if (writeLink != null) {
+            this.writeLink = writeLink.endsWith(File.separator)
+                    ? writeLink.substring(0, writeLink.length() - 1) : writeLink;
+        } else {
+            this.writeLink = null;
+        }
 
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
@@ -158,13 +167,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             }
 
             var result = plugin.produce();
-            String payload = null;
-            if (result.isPresent()) {
-                if (writeDirectory != null && !writeDirectory.equals("")) {
-                    payload = writeToFile(result.get());
-                } else {
-                    payload = result.get();
-                }
+            String payload = result.orElse(null);
+            if (result.isPresent() && writeDirectory != null && !writeDirectory.equals("")) {
+                    payload = writeToFile(payload);
             }
 
             emitMessage(this.producer, String.format("fasten.%s.out",
@@ -209,7 +214,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private String writeToFile(String result)
             throws IOException, NullPointerException {
         var path = plugin.getOutputPath();
-        var pathWithoutFilename = path.substring(0, path.lastIndexOf("/"));
+        var pathWithoutFilename = path.substring(0, path.lastIndexOf(File.separator));
 
         File directory = new File(this.writeDirectory + pathWithoutFilename);
         if (!directory.exists() && !directory.mkdirs()) {
@@ -224,7 +229,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         JSONObject link = new JSONObject();
         link.put("dir", file.getAbsolutePath());
-        link.put("link", this.writeLink + path);
+
+        if (this.writeLink != null && !this.writeLink.equals("")) {
+            link.put("link", this.writeLink + path);
+        }
         return link.toString();
     }
 

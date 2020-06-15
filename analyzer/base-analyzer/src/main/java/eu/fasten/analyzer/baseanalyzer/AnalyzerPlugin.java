@@ -2,6 +2,7 @@ package eu.fasten.analyzer.baseanalyzer;
 
 import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,7 +56,9 @@ public abstract class AnalyzerPlugin extends Plugin {
 
                 var firstLetter = artifactId.substring(0, 1);
 
-                outputPath = "/mvn/" + firstLetter + "/" + artifactId + "/" + product + ".json";
+                outputPath = File.separator + "mvn" + File.separator
+                        + firstLetter + File.separator
+                        + artifactId + File.separator + product + ".json";
 
                 logger.info("Call graph successfully generated for {}!",
                         mavenCoordinate.getCoordinate());

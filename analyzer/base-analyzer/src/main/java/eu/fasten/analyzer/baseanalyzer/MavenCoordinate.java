@@ -276,7 +276,7 @@ public class MavenCoordinate {
 
                 final var dependency = new RevisionCallGraph.Dependency(
                         "mvn",
-                        groupId + "." + artifactId,
+                        groupId + ":" + artifactId,
                         Collections.singletonList(new RevisionCallGraph
                                 .Constraint(version, version)));
                 depList.add(dependency);
