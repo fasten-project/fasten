@@ -19,10 +19,7 @@
 package eu.fasten.server;
 
 import ch.qos.logback.classic.Level;
-import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.plugins.FastenPlugin;
-import eu.fasten.core.plugins.GraphDBConnector;
-import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.core.plugins.*;
 import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.server.connectors.PostgresConnector;
 import eu.fasten.server.connectors.RocksDBConnector;
@@ -98,6 +95,11 @@ public class FastenServer implements Runnable {
             description = "Path to directory with RocksDB database")
     String graphDbDir;
 
+    @Option(names = {"-b", "--base_dir"},
+            paramLabel = "PATH",
+            description = "Path to base directory to which data will be written")
+    String baseDir;
+
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     @Override
@@ -130,6 +132,7 @@ public class FastenServer implements Runnable {
         var dbPlugins = jarPluginManager.getExtensions(DBConnector.class);
         var kafkaPlugins = jarPluginManager.getExtensions(KafkaPlugin.class);
         var graphDbPlugins = jarPluginManager.getExtensions(GraphDBConnector.class);
+        var dataWriterPlugins = jarPluginManager.getExtensions(DataWriter.class);
 
         logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:"
                         + " {} total plugins",
@@ -139,6 +142,7 @@ public class FastenServer implements Runnable {
 
         makeDBConnection(dbPlugins);
         makeGraphDBConnection(graphDbPlugins);
+        setBaseDirectory(dataWriterPlugins);
 
         var kafkaServerPlugins = setupKafkaPlugins(kafkaPlugins);
 
@@ -232,6 +236,22 @@ public class FastenServer implements Runnable {
         } else {
             logger.error("Couldn't set a GraphDB connection. Make sure that you have "
                     + "provided a valid directory to the database.");
+        }
+    }
+
+    /**
+     * Sets base directory to Data Writer plugins
+     *
+     * @param dataWriterPlugins list of Data Writer plugins
+     */
+    private void setBaseDirectory(List<DataWriter> dataWriterPlugins) {
+        if (ObjectUtils.allNotNull(baseDir)) {
+            dataWriterPlugins.forEach((p) -> {
+                p.setBaseDir(baseDir);
+            });
+        } else {
+            logger.error("Couldn't set a base directory. Make sure that you have "
+                    + "provided a valid path to base directory.");
         }
     }
 
