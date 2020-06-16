@@ -30,6 +30,7 @@
         <module>metadata-plugin</module>
         <module>graph-plugin</module>
         <module>base-analyzer</module>
+        <module>pom-analyzer</module>
     </modules>
 
     <build>

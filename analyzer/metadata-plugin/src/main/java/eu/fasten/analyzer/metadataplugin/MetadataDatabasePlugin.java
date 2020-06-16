@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
