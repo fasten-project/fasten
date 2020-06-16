@@ -33,7 +33,7 @@ public class MavenCoordinateTest {
 
     @Test
     public void testResolveDependencies() {
-        var deps = MavenCoordinate.MavenResolver.resolveDependencies("com.ibm.wala:com.ibm.wala.core:1.5.4");
+        var deps = MavenCoordinate.MavenResolver.resolveDependencies(new MavenCoordinate("com.ibm.wala", "com.ibm.wala.core", "1.5.4"));
         assertNotNull(deps);
         assertEquals(1, deps.size());
         assertEquals(1, deps.get(0).stream().filter(x -> x.product.contains("shrike")).toArray().length);
@@ -51,10 +51,10 @@ public class MavenCoordinateTest {
         var pomText = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 
         MavenCoordinate.MavenResolver resolver = Mockito.mock(MavenCoordinate.MavenResolver.class);
-        Mockito.when(resolver.downloadPom("coordinate")).thenReturn(java.util.Optional.of(pomText));
-        Mockito.doCallRealMethod().when(resolver).getDependencies("coordinate");
+        Mockito.when(resolver.downloadPom(Mockito.any())).thenReturn(java.util.Optional.of(pomText));
+        Mockito.doCallRealMethod().when(resolver).getDependencies(Mockito.any());
 
-        var deps = resolver.getDependencies("coordinate");
+        var deps = resolver.getDependencies(new MavenCoordinate("coordinate", "artifact", "version"));
         assertNotNull(deps);
         assertEquals("mvn", deps.get(0).get(0).forge);
         assertEquals("mvn", deps.get(0).get(1).forge);
@@ -68,15 +68,19 @@ public class MavenCoordinateTest {
     public void testURLFromCoordinates() {
 
         assertEquals("https://repo.maven.apache.org/maven2/com/ibm/wala/com.ibm.wala.core/1.5.4/com.ibm.wala.core-1.5.4.jar",
-                MavenCoordinate.fromString("com.ibm.wala:com.ibm.wala.core:1.5.4").toJarUrl());
+                MavenCoordinate.fromString("com.ibm.wala:com.ibm.wala.core:1.5.4")
+                        .toJarUrl("https://repo.maven.apache.org/maven2/"));
 
         assertEquals("https://repo.maven.apache.org/maven2/org/elasticsearch/elasticsearch/5.0.2/elasticsearch-5.0.2.pom",
-                MavenCoordinate.fromString("org.elasticsearch:elasticsearch:5.0.2").toPomUrl());
+                MavenCoordinate.fromString("org.elasticsearch:elasticsearch:5.0.2")
+                        .toPomUrl("https://repo.maven.apache.org/maven2/"));
 
         assertEquals("https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.13/commons-codec-1.13.pom",
-                MavenCoordinate.fromString("commons-codec:commons-codec:1.13").toPomUrl());
+                MavenCoordinate.fromString("commons-codec:commons-codec:1.13")
+                        .toPomUrl("https://repo.maven.apache.org/maven2/"));
 
         assertEquals("https://repo.maven.apache.org/maven2/org/codefeedr/codefeedr-plugin-mongodb_2.12/0.1.3/codefeedr-plugin-mongodb_2.12-0.1.3.jar",
-                MavenCoordinate.fromString("org.codefeedr:codefeedr-plugin-mongodb_2.12:0.1.3").toJarUrl());
+                MavenCoordinate.fromString("org.codefeedr:codefeedr-plugin-mongodb_2.12:0.1.3")
+                        .toJarUrl("https://repo.maven.apache.org/maven2/"));
     }
 }

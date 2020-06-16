@@ -375,13 +375,13 @@ public class PartialCallGraph {
         final MavenCoordinate coordinate, final long timestamp)
         throws FileNotFoundException {
         final var partialCallGraph = new PartialCallGraph(
-            MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate())
+            MavenCoordinate.MavenResolver.downloadJar(coordinate)
                 .orElseThrow(RuntimeException::new)
         );
 
         return new RevisionCallGraph("mvn", coordinate.getProduct(),
             coordinate.getVersionConstraint(), timestamp, partialCallGraph.getGENERATOR(),
-            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+            MavenCoordinate.MavenResolver.resolveDependencies(coordinate),
             partialCallGraph.getClassHierarchy(),
             partialCallGraph.getGraph());
     }

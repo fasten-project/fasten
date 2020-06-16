@@ -21,7 +21,6 @@ package eu.fasten.analyzer.javacgwala;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.RevisionCallGraph;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -35,7 +34,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.json.JSONException;
@@ -55,11 +53,11 @@ public class Main implements Runnable {
     @CommandLine.ArgGroup()
     SetRunner setRunner;
 
-    @CommandLine.Option(names = {"-jre"},
-            paramLabel = "JRE",
-            description = "Path to JRE 8",
-            required = true)
-    String jrePath;
+    @CommandLine.Option(names = {"-r"},
+            paramLabel = "REPOS",
+            description = "Maven repositories",
+            split = ",")
+    List<String> repos;
 
     @CommandLine.Option(names = {"-t", "--timestamp"},
             paramLabel = "TS",
@@ -138,26 +136,23 @@ public class Main implements Runnable {
      */
     public void run() {
         MavenCoordinate mavenCoordinate;
-        try {
-            PropertiesConfiguration props = new PropertiesConfiguration("wala.properties");
-            props.setProperty("java_runtime_dir", jrePath);
-            props.save();
-        } catch (ConfigurationException e) {
-            logger.info("Could not load wala.properties");
-        }
-        if (setRunner.pathToFile != null) {
+        if (setRunner != null && setRunner.pathToFile != null) {
             final List<List<RevisionCallGraph.Dependency>> dependencies = new ArrayList<>();
 
             final List<MavenCoordinate> coordinates = new ArrayList<>();
             if (setRunner.pathToFile.dependencies != null) {
                 for (String currentCoordinate : setRunner.pathToFile.dependencies) {
-                    coordinates.add(MavenCoordinate.fromString(currentCoordinate));
+                    var coordinate = MavenCoordinate.fromString(currentCoordinate);
+                    if (repos.size() > 0) {
+                        coordinate.setMavenRepos(repos);
+                    }
+                    coordinates.add(coordinate);
                 }
             }
 
             for (var coordinate : coordinates) {
                 dependencies.addAll(MavenCoordinate.MavenResolver
-                        .resolveDependencies(coordinate.getCoordinate()));
+                        .resolveDependencies(coordinate));
             }
             var rcg = PartialCallGraph.generateERCG(setRunner.pathToFile.path,
                     setRunner.pathToFile.product, setRunner.pathToFile.version,
@@ -169,11 +164,14 @@ public class Main implements Runnable {
                 logger.info("Couldn't write to the file");
             }
 
-        } else if (setRunner.set != null) {
+        } else if (setRunner != null && setRunner.set != null) {
             consumeSet(setRunner.set);
-        } else if (this.setRunner.fullCoordinate.mavenCoordStr != null) {
+        } else if (setRunner != null && setRunner.fullCoordinate.mavenCoordStr != null) {
             mavenCoordinate = MavenCoordinate
                     .fromString(this.setRunner.fullCoordinate.mavenCoordStr);
+            if (repos != null && repos.size() > 0) {
+                mavenCoordinate.setMavenRepos(repos);
+            }
 
             try {
                 final var revisionCallGraph = PartialCallGraph.createExtendedRevisionCallGraph(
@@ -205,6 +203,9 @@ public class Main implements Runnable {
 
         for (var coordinate : getCoordinates(path)) {
             final var mavenCoordinate = getMavenCoordinate(coordinate);
+            if (mavenCoordinate != null && repos != null && repos.size() > 0) {
+                mavenCoordinate.setMavenRepos(repos);
+            }
 
             try {
                 var cg = PartialCallGraph.createExtendedRevisionCallGraph(

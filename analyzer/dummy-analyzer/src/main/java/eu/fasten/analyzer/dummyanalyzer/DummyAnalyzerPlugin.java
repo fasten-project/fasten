@@ -17,7 +17,7 @@ public class DummyAnalyzerPlugin extends Plugin {
     }
 
     @Extension
-    public static class DummyAnalyzer implements KafkaPlugin<String, String> {
+    public static class DummyAnalyzer implements KafkaPlugin {
 
         private String consumeTopic = "fasten.mvn.pkg";
         private final Logger logger = LoggerFactory.getLogger(DummyAnalyzer.class.getName());
@@ -45,6 +45,11 @@ public class DummyAnalyzerPlugin extends Plugin {
                 e.printStackTrace();
             }
             return Optional.empty();
+        }
+
+        @Override
+        public String getOutputPath() {
+            return ".";
         }
 
         @Override

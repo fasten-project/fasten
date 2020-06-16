@@ -25,6 +25,12 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +44,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -51,7 +58,7 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBExtension implements KafkaPlugin<String, String>, DBConnector {
+    public static class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
         private String consumerTopic = "fasten.OPAL.out";
         private static DSLContext dslContext;
@@ -61,6 +68,8 @@ public class MetadataDatabasePlugin extends Plugin {
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
         private GidGraph gidGraph = null;
+        public boolean writeToKafka = true;
+        private String outputPath;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -83,17 +92,32 @@ public class MetadataDatabasePlugin extends Plugin {
             this.restartTransaction = false;
             this.pluginError = null;
             final var consumedJson = new JSONObject(record).getJSONObject("payload");
-            final var artifact = consumedJson.optString("product") + "@"
-                    + consumedJson.optString("version");
-            RevisionCallGraph callgraph;
+            final var path = consumedJson.getString("dir");
+
+            final RevisionCallGraph callgraph;
             try {
-                callgraph = new RevisionCallGraph(consumedJson);
-            } catch (JSONException | IllegalArgumentException e) {
-                logger.error("Error parsing JSON callgraph for '" + artifact + "'", e);
+                JSONTokener tokener = new JSONTokener(new FileReader(path));
+                callgraph = new RevisionCallGraph(new JSONObject(tokener));
+            } catch (JSONException | FileNotFoundException e) {
+                logger.error("Error parsing JSON callgraph for '"
+                        + Paths.get(path).getFileName() + "'", e);
                 processedRecord = false;
                 setPluginError(e);
                 return;
             }
+
+            final var artifact = callgraph.product + "@" + callgraph.version;
+
+            var groupId = callgraph.product.split(":")[0];
+            var artifactId = callgraph.product.split(":")[1];
+            var version = callgraph.version;
+            var product = artifactId + "_" + groupId + "_" + version;
+
+            var firstLetter = artifactId.substring(0, 1);
+
+            outputPath = File.separator + "mvn" + File.separator
+                    + firstLetter + File.separator
+                    + artifactId + File.separator + product + ".json";
 
             int transactionRestartCount = 0;
             do {
@@ -137,6 +161,11 @@ public class MetadataDatabasePlugin extends Plugin {
             } else {
                 return Optional.of(gidGraph.toJSONString());
             }
+        }
+
+        @Override
+        public String getOutputPath() {
+            return outputPath;
         }
 
         /**
