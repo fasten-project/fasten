@@ -68,7 +68,6 @@ public class MetadataDatabasePlugin extends Plugin {
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
         private GidGraph gidGraph = null;
-        public boolean writeToKafka = true;
         private String outputPath;
 
         @Override

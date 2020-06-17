@@ -109,8 +109,7 @@ public class GraphDatabasePlugin extends Plugin {
 
             var firstLetter = artifactId.substring(0, 1);
 
-            outputPath = File.separator + "mvn" + File.separator
-                    + firstLetter + File.separator
+            outputPath = File.separator + firstLetter + File.separator
                     + artifactId + File.separator + product + ".json";
             try {
                 rocksDao.saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(),

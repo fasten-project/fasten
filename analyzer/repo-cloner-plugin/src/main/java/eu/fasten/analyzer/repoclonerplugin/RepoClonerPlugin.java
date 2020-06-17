@@ -21,6 +21,7 @@ package eu.fasten.analyzer.repoclonerplugin;
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
 import eu.fasten.core.plugins.DataWriter;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +41,7 @@ public class RepoClonerPlugin extends Plugin {
     }
 
     @Extension
-    public static class RepoCloner implements KafkaPlugin<String, String>, DataWriter {
+    public static class RepoCloner implements KafkaPlugin, DataWriter {
 
         private String consumerTopic = "fasten.POMAnalyzer.out";
         private Throwable pluginError = null;
@@ -50,6 +51,7 @@ public class RepoClonerPlugin extends Plugin {
         private String group = null;
         private String version = null;
         private static String baseDir = "";
+        private String outputPath = null;
 
         @Override
         public void setBaseDir(String baseDir) {
@@ -93,6 +95,11 @@ public class RepoClonerPlugin extends Plugin {
         }
 
         @Override
+        public String getOutputPath() {
+            return this.outputPath;
+        }
+
+        @Override
         public void consume(String record) {
             this.pluginError = null;
             this.artifact = null;
@@ -108,6 +115,10 @@ public class RepoClonerPlugin extends Plugin {
                     && group != null && !group.isEmpty()) {
                 product = group + ":" + artifact + ((version == null) ? "" : ":" + version);
             }
+            outputPath = File.separator
+                    + (artifact == null ? "" : artifact.charAt(0) + File.separator)
+                    + artifact + File.separator
+                    + (product == null ? "unknown" : product.replace(":", "_")) + ".json";
             var repoUrl = json.optString("repoUrl");
             if (repoUrl != null && !repoUrl.isEmpty()) {
                 try {
