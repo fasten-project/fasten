@@ -19,24 +19,26 @@
 package eu.fasten.server.plugins.kafka;
 
 import com.google.common.base.Strings;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.CommitFailedException;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,29 +48,44 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     private Thread thread;
 
-    private final KafkaPlugin<String, String> plugin;
+    private final KafkaPlugin plugin;
 
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private final KafkaConsumer<String, String> connection;
     private final KafkaProducer<String, String> producer;
 
     private final int skipOffsets;
 
+    private final String writeDirectory;
+    private final String writeLink;
+
     /**
      * Constructs a FastenKafkaConsumer.
      *
-     * @param p           properties of a consumer
-     * @param plugin      Kafka plugin
-     * @param skipOffsets skip offset number
+     * @param consumerProperties properties of a consumer
+     * @param plugin             Kafka plugin
+     * @param skipOffsets        skip offset number
      */
-    public FastenKafkaPlugin(Properties p, KafkaPlugin<String, String> plugin, int skipOffsets) {
+    public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink) {
         this.plugin = plugin;
 
-        this.connection = new KafkaConsumer<>(p);
-        this.producer = new KafkaProducer<>(
-                this.setKafkaProducer(p.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG),
-                        plugin.getClass().getSimpleName() + "_CGS_status"));
+        this.connection = new KafkaConsumer<>(consumerProperties);
+        this.producer = new KafkaProducer<>(producerProperties);
 
         this.skipOffsets = skipOffsets;
+        if (writeDirectory != null) {
+            this.writeDirectory = writeDirectory.endsWith(File.separator)
+                    ? writeDirectory.substring(0, writeDirectory.length() - 1) : writeDirectory;
+        } else {
+            this.writeDirectory = null;
+        }
+        if (writeLink != null) {
+            this.writeLink = writeLink.endsWith(File.separator)
+                    ? writeLink.substring(0, writeLink.length() - 1) : writeLink;
+        } else {
+            this.writeLink = null;
+        }
 
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
@@ -83,7 +100,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 skipPartitionOffsets();
             }
 
-            while (true) {
+            while (!closed.get()) {
                 if (plugin.consumeTopic().isPresent()) {
                     handleConsuming();
                 } else {
@@ -92,10 +109,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     handleProducing(null);
                 }
             }
-        } catch (WakeupException e) {
-            logger.debug("Caught wakeup exception");
+        } catch (Exception e) {
+            logger.error("Error occurred while processing call graphs");
         } finally {
             connection.close();
+            logger.info("Plugin {} stopped", plugin.name());
         }
     }
 
@@ -106,13 +124,14 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         this.thread = new Thread(this);
         this.thread.setName(this.plugin.getClass().getSimpleName() + "_plugin");
         this.thread.start();
+        this.plugin.start();
     }
 
     /**
      * Sends a wake up signal to Kafka consumer and stops it.
      */
     public void stop() {
-        connection.wakeup();
+        closed.set(true);
     }
 
     /**
@@ -142,16 +161,25 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param input input message [can be null]
      */
     private void handleProducing(String input) {
-        if (plugin.getPluginError() == null) {
+        try {
+            if (plugin.getPluginError() != null) {
+                throw plugin.getPluginError();
+            }
+
             var result = plugin.produce();
+            String payload = result.orElse(null);
+            if (result.isPresent() && writeDirectory != null && !writeDirectory.equals("")) {
+                    payload = writeToFile(payload);
+            }
 
             emitMessage(this.producer, String.format("fasten.%s.out",
                     plugin.getClass().getSimpleName()),
-                    getStdOutMsg(input, result.orElse(null)));
-        } else {
+                    getStdOutMsg(input, payload));
+
+        } catch (Throwable e) {
             emitMessage(this.producer, String.format("fasten.%s.err",
                     plugin.getClass().getSimpleName()),
-                    getStdErrMsg(input));
+                    getStdErrMsg(input, e));
         }
     }
 
@@ -163,9 +191,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param msg      message
      */
     private void emitMessage(KafkaProducer<String, String> producer, String topic, String msg) {
-        ProducerRecord<String, String> errorRecord = new ProducerRecord<>(topic, msg);
+        ProducerRecord<String, String> record = new ProducerRecord<>(topic, msg);
 
-        producer.send(errorRecord, (recordMetadata, e) -> {
+        producer.send(record, (recordMetadata, e) -> {
             if (recordMetadata != null) {
                 logger.debug("Sent: {} to {}", msg, topic);
             } else {
@@ -174,6 +202,38 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         });
 
         producer.flush();
+    }
+
+    /**
+     * Writes {@link RevisionCallGraph} to JSON file and return JSON object containing
+     * a link to to written file.
+     *
+     * @param result String of JSON representation of {@link RevisionCallGraph}
+     * @return Path to a newly written JSON file
+     */
+    private String writeToFile(String result)
+            throws IOException, NullPointerException {
+        var path = plugin.getOutputPath();
+        var pathWithoutFilename = path.substring(0, path.lastIndexOf(File.separator));
+
+        File directory = new File(this.writeDirectory + pathWithoutFilename);
+        if (!directory.exists() && !directory.mkdirs()) {
+            throw new IOException("Failed to create parent directories");
+        }
+
+        File file = new File(this.writeDirectory + path);
+        FileWriter fw = new FileWriter(file.getAbsoluteFile());
+        fw.write(result);
+        fw.flush();
+        fw.close();
+
+        JSONObject link = new JSONObject();
+        link.put("dir", file.getAbsolutePath());
+
+        if (this.writeLink != null && !this.writeLink.equals("")) {
+            link.put("link", this.writeLink + path);
+        }
+        return link.toString();
     }
 
     /**
@@ -201,7 +261,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param input consumed record
      * @return stderr message
      */
-    private String getStdErrMsg(String input) {
+    private String getStdErrMsg(String input, Throwable pluginError) {
         JSONObject stderrMsg = new JSONObject();
         stderrMsg.put("created_at", System.currentTimeMillis() / 1000L);
         stderrMsg.put("plugin_name", plugin.getClass().getSimpleName());
@@ -209,7 +269,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         stderrMsg.put("input", !Strings.isNullOrEmpty(input) ? new JSONObject(input) : "");
 
-        Throwable pluginError = plugin.getPluginError();
         JSONObject error = new JSONObject();
         error.put("error", pluginError.getClass().getSimpleName());
         error.put("msg", pluginError.getMessage());
@@ -240,25 +299,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
     }
 
-    /**
-     * Sets up a connection for producing error logs of a plug-in into a Kafka topic.
-     *
-     * @param serverAddress address of server
-     * @param clientID      client id
-     * @return properties for producer
-     */
-    private Properties setKafkaProducer(String serverAddress, String clientID) {
-
-        Properties p = new Properties();
-        p.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, serverAddress);
-        p.setProperty(ProducerConfig.CLIENT_ID_CONFIG, clientID);
-        p.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-                StringSerializer.class.getName());
-        p.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                StringSerializer.class.getName());
-
-        return p;
-    }
 
     /**
      * This method adds one to the offset of all the partitions of a topic.

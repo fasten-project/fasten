@@ -21,7 +21,9 @@ package eu.fasten.server.connectors;
 import java.util.List;
 import java.util.Properties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 
 public class KafkaConnector {
 
@@ -32,7 +34,7 @@ public class KafkaConnector {
      * @param groupId         group id
      * @return Kafka Properties
      */
-    public static Properties kafkaProperties(List<String> serverAddresses, String groupId) {
+    public static Properties kafkaConsumerProperties(List<String> serverAddresses, String groupId) {
         String deserializer = StringDeserializer.class.getName();
         Properties properties = new Properties();
 
@@ -45,7 +47,6 @@ public class KafkaConnector {
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "5");
-        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "20000000");
 
         // Gives more time to the consumer for processing the records so
         // that the broker will NOT kill the consumer.
@@ -53,5 +54,25 @@ public class KafkaConnector {
         properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "700000");
 
         return properties;
+    }
+
+    /**
+     * Sets up a connection for producing messages to Kafka.
+     *
+     * @param serverAddresses address of server
+     * @param groupID         group id
+     * @return properties for producer
+     */
+    public static Properties kafkaProducerProperties(List<String> serverAddresses, String groupID) {
+        Properties p = new Properties();
+        p.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                String.join(",", serverAddresses));
+        p.setProperty(ProducerConfig.CLIENT_ID_CONFIG, groupID + "_producer");
+        p.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class.getName());
+        p.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class.getName());
+
+        return p;
     }
 }

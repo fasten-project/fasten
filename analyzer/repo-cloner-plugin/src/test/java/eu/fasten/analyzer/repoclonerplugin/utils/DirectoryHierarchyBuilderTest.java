@@ -16,25 +16,20 @@
  * limitations under the License.
  */
 
-package eu.fasten.server.utils;
+package eu.fasten.analyzer.repoclonerplugin.utils;
 
-import java.util.Iterator;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Convert Iterators to Streams
- *
- * from here: https://stackoverflow.com/a/28118885
- */
-public class StreamUtils {
+public class DirectoryHierarchyBuilderTest {
 
-    public static <T> Stream<T> asStream(Iterator<T> sourceIterator) {
-        return asStream(sourceIterator, false);
-    }
-
-    public static <T> Stream<T> asStream(Iterator<T> sourceIterator, boolean parallel) {
-        Iterable<T> iterable = () -> sourceIterator;
-        return StreamSupport.stream(iterable.spliterator(), parallel);
+    @Test
+    public void getDirectoryFromHierarchyWithArtifactTest() {
+        String baseDir = "test";
+        String name = "repo";
+        String owner = "test";
+        var hierarchyBuilder = new DirectoryHierarchyBuilder(baseDir);
+        var dir = hierarchyBuilder.getDirectoryFromHierarchy(owner, name);
+        Assertions.assertEquals("test/t/test/repo", dir.getPath());
     }
 }

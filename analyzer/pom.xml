@@ -31,6 +31,7 @@
         <module>graph-plugin</module>
         <module>base-analyzer</module>
         <module>pom-analyzer</module>
+        <module>repo-cloner-plugin</module>
     </modules>
 
     <build>

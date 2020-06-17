@@ -73,22 +73,22 @@ public class PartialCallGraphTest {
     public static void generateCallGraph() {
 
         jarFile = new File(
-            Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class")
-                .getFile());
+                Thread.currentThread().getContextClassLoader().getResource("SingleSourceToTarget.class")
+                        .getFile());
         singleSourceToTarget = new PartialCallGraph(jarFile);
         artifactInOpalFormat = Project.apply(jarFile);
         cg = PartialCallGraph.generateCallGraph(jarFile);
         cha = PartialCallGraph.createCHA(cg);
         methodsList =
-            new ArrayList<>(JavaConverters.asJavaCollection(cg.callGraph().project().allMethods()));
+                new ArrayList<>(JavaConverters.asJavaCollection(cg.callGraph().project().allMethods()));
         methodsMap = new HashMap<>(Map.of(
-            0, FastenURI.create(
-                "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType"),
-            1,
-            FastenURI.create("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava"
-                + ".lang%2FVoidType"),
-            2, FastenURI
-                .create("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType")));
+                0, FastenURI.create(
+                        "/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType"),
+                1,
+                FastenURI.create("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava"
+                        + ".lang%2FVoidType"),
+                2, FastenURI
+                        .create("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType")));
 
     }
 
@@ -96,8 +96,8 @@ public class PartialCallGraphTest {
     public void testCreate() throws FileNotFoundException {
 
         final var rcg = PartialCallGraph
-            .createExtendedRevisionCallGraph(
-                new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
+                .createExtendedRevisionCallGraph(
+                        new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29"), 1574072773);
 
         RevisionCallGraphTest.assertSLF4j(rcg);
 
@@ -105,6 +105,7 @@ public class PartialCallGraphTest {
 
     /**
      * Given an external arc and a graph returns the number of that arc in the graph.
+     *
      * @param cg     call graph
      * @param source String of FastenURI of source node
      * @param target String of FastenURI of target node
@@ -117,9 +118,9 @@ public class PartialCallGraphTest {
             if (method.getValue().toString().equals(source)) {
                 for (final var call : cg.getExternalCalls().entrySet()) {
                     if (call.getKey().getLeft().equals(method.getKey())) {
-                        arcs.add(new FastenURI[] {
-                            method.getValue(),
-                            call.getKey().getRight()}
+                        arcs.add(new FastenURI[]{
+                                method.getValue(),
+                                call.getKey().getRight()}
                         );
                     }
                 }
@@ -136,6 +137,7 @@ public class PartialCallGraphTest {
 
     /**
      * Given an internal arc and a graph returns the number of that arc in the graph.
+     *
      * @param cg     call graph
      * @param source String of FastenURI of source node
      * @param target String of FastenURI of target node
@@ -149,9 +151,9 @@ public class PartialCallGraphTest {
             if (method.getValue().toString().equals(source)) {
                 for (final var call : cg.getInternalCalls()) {
                     if (call.get(0).equals(method.getKey())) {
-                        arcs.add(new FastenURI[] {
-                            method.getValue(),
-                            cg.mapOfAllMethods().get(call.get(1))}
+                        arcs.add(new FastenURI[]{
+                                method.getValue(),
+                                cg.mapOfAllMethods().get(call.get(1))}
                         );
                     }
                 }
@@ -171,13 +173,13 @@ public class PartialCallGraphTest {
 
         final var cg = PartialCallGraph.generateCallGraph(jarFile);
         final var allMethods =
-            new ArrayList<>(JavaConverters.asJavaCollection(cg.callGraph().project().allMethods()));
+                new ArrayList<>(JavaConverters.asJavaCollection(cg.callGraph().project().allMethods()));
         assertEquals("public void <init>()", allMethods.get(0).toString());
         assertEquals("public static void sourceMethod()", allMethods.get(1).toString());
         assertEquals("public static void targetMethod()", allMethods.get(2).toString());
 
         final var ExternalCalls =
-            new ArrayList<>(JavaConverters.asJavaCollection(cg.unresolvedMethodCalls()));
+                new ArrayList<>(JavaConverters.asJavaCollection(cg.unresolvedMethodCalls()));
         assertEquals("public void <init>()", ExternalCalls.get(0).caller().toString());
         assertEquals("java.lang.Object", ExternalCalls.get(0).calleeClass().toJava());
         assertEquals("<init>", ExternalCalls.get(0).calleeName());
@@ -188,12 +190,12 @@ public class PartialCallGraphTest {
     @Test
     public void testFindEntryPoints() {
         var entryPoints = PartialCallGraph.findEntryPoints(
-            JavaConverters.asJavaIterable(artifactInOpalFormat.allMethodsWithBody()));
+                JavaConverters.asJavaIterable(artifactInOpalFormat.allMethodsWithBody()));
         assertEquals(3, entryPoints.size());
         assertEquals("public void <init>()", entryPoints.head().toString());
         assertEquals("public static void sourceMethod()", entryPoints.tail().head().toString());
         assertEquals("public static void targetMethod()",
-            entryPoints.tail().tail().head().toString());
+                entryPoints.tail().tail().head().toString());
 
     }
 
@@ -203,20 +205,20 @@ public class PartialCallGraphTest {
         assertNotNull(singleSourceToTarget);
         assertEquals("OPAL", singleSourceToTarget.getGENERATOR());
         assertEquals("PartialCallGraph{"
-                + "classHierarchy={"
-                + "/name.space/SingleSourceToTarget="
-                + "Type{"
-                + "sourceFileName='SingleSourceToTarget.java', "
-                + "methods={"
-                + "0=/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava"
-                + ".lang%2FVoidType, "
-                + "1=/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoidType, "
-                + "2=/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType}, "
-                + "superClasses=[/java.lang/Object], "
-                + "superInterfaces=[]}}, "
-                + "internalCalls=[1,2], "
-                + "externalCalls={(0,///java.lang/Object.Object()VoidType)={invokespecial=1}}}",
-            singleSourceToTarget.toString());
+                        + "classHierarchy={"
+                        + "/name.space/SingleSourceToTarget="
+                        + "Type{"
+                        + "sourceFileName='SingleSourceToTarget.java', "
+                        + "methods={"
+                        + "0=/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava"
+                        + ".lang%2FVoidType, "
+                        + "1=/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoidType, "
+                        + "2=/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType}, "
+                        + "superClasses=[/java.lang/Object], "
+                        + "superInterfaces=[]}}, "
+                        + "internalCalls=[1,2], "
+                        + "externalCalls={(0,///java.lang/Object.Object()VoidType)={invokespecial=1}}}",
+                singleSourceToTarget.toString());
 
     }
 
@@ -226,43 +228,43 @@ public class PartialCallGraphTest {
 
         //This artifact has some duplicate arcs in OPAL result.
         final var cg = new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(
-            "HTTPClient"
-                + ":HTTPClient"
-                + ":0.3-3").orElseThrow(RuntimeException::new));
+                new MavenCoordinate("HTTPClient", "HTTPClient", "0.3-3"))
+                .orElseThrow(RuntimeException::new));
 
         final var cg1 = new PartialCallGraph(MavenCoordinate.MavenResolver.downloadJar(
-            "ca.eandb.util:eandb-util:0.2.2").orElseThrow(RuntimeException::new));
+                new MavenCoordinate("ca.eandb.util", "eandb-util", "0.2.2"))
+                .orElseThrow(RuntimeException::new));
 
         //Based on logs this arc of the internal calls was duplicated.
         //Before removing duplicates the size of this duplicate arcs was 32.
         assertEquals(1, numberOfThisInternalArc(cg,
-            "/HTTPClient/IdempotentSequence.main(%2Fjava.lang%2FString%25255B%25255D)%2Fjava"
-                + ".lang%2FVoidType",
-            "/HTTPClient/Request.Request(HTTPConnection,%2Fjava.lang%2FString,%2Fjava"
-                + ".lang%2FString,NVPair%25255B%25255D,%2Fjava.lang%2FByteType%25255B%25255D,"
-                + "HttpOutputStream,%2Fjava.lang%2FBooleanType)%2Fjava.lang%2FVoidType"));
+                "/HTTPClient/IdempotentSequence.main(%2Fjava.lang%2FString%25255B%25255D)%2Fjava"
+                        + ".lang%2FVoidType",
+                "/HTTPClient/Request.Request(HTTPConnection,%2Fjava.lang%2FString,%2Fjava"
+                        + ".lang%2FString,NVPair%25255B%25255D,%2Fjava.lang%2FByteType%25255B%25255D,"
+                        + "HttpOutputStream,%2Fjava.lang%2FBooleanType)%2Fjava.lang%2FVoidType"));
 
         //Based on logs this arc of the external calls was duplicated.
         //Before removing duplicates the size of this duplicate arcs was 3.
         assertEquals(1, numberOfThisExternalArc(cg,
-            "/HTTPClient/UncompressInputStream.read(%2Fjava.lang%2FByteType%25255B%25255D,%2Fjava"
-                + ".lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FIntegerType",
-            "///java.lang/System.arraycopy(Object,IntegerType,Object,IntegerType,IntegerType)"
-                + "VoidType"));
+                "/HTTPClient/UncompressInputStream.read(%2Fjava.lang%2FByteType%25255B%25255D,%2Fjava"
+                        + ".lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FIntegerType",
+                "///java.lang/System.arraycopy(Object,IntegerType,Object,IntegerType,IntegerType)"
+                        + "VoidType"));
 
         //Due to same name of Wrapper and primitive it was a confusion in overloaded methods in CHA
         assertEquals(1, numberOfThisExternalArc(cg1,
-            "/ca.eandb.util/FloatArray.add(%2Fjava.lang%2FFloatType)%2Fjava.lang%2FBooleanType",
-            "///java.lang/NullPointerException.NullPointerException()VoidType"));
+                "/ca.eandb.util/FloatArray.add(%2Fjava.lang%2FFloatType)%2Fjava.lang%2FBooleanType",
+                "///java.lang/NullPointerException.NullPointerException()VoidType"));
         assertEquals(1, numberOfThisExternalArc(cg1,
-            "/ca.eandb.util/FloatArray.add(%2Fjava.lang%2FFloat)%2Fjava.lang%2FBooleanType",
-            "///java.lang/NullPointerException.NullPointerException()VoidType"));
+                "/ca.eandb.util/FloatArray.add(%2Fjava.lang%2FFloat)%2Fjava.lang%2FBooleanType",
+                "///java.lang/NullPointerException.NullPointerException()VoidType"));
 
         assertEquals(1, numberOfThisExternalArc(cg1,
-            "/ca.eandb.util/ByteArray.add(%2Fjava.lang%2FIntegerType,"
-                + "%2Fjava.lang%2FByteType)%2Fjava.lang%2FVoidType",
-            "///java.lang/NullPointerException.NullPointerException()"
-                + "VoidType"));
+                "/ca.eandb.util/ByteArray.add(%2Fjava.lang%2FIntegerType,"
+                        + "%2Fjava.lang%2FByteType)%2Fjava.lang%2FVoidType",
+                "///java.lang/NullPointerException.NullPointerException()"
+                        + "VoidType"));
 
 
     }
@@ -271,24 +273,24 @@ public class PartialCallGraphTest {
     public void testToURIInterfaces() {
 
         assertEquals(new ArrayList<>(), PartialCallGraph.toURIInterfaces(
-            cha.get(methodsList.get(0).declaringClassFile().thisType()).getSuperInterfaces()));
+                cha.get(methodsList.get(0).declaringClassFile().thisType()).getSuperInterfaces()));
     }
 
     @Test
     public void testToURIClasses() {
 
         assertEquals(
-            new LinkedList<FastenURI>(Arrays.asList(new FastenJavaURI("/java.lang/Object"))),
-            PartialCallGraph.toURIClasses(
-                cha.get(methodsList.get(0).declaringClassFile().thisType()).getSuperClasses()));
+                new LinkedList<FastenURI>(Arrays.asList(new FastenJavaURI("/java.lang/Object"))),
+                PartialCallGraph.toURIClasses(
+                        cha.get(methodsList.get(0).declaringClassFile().thisType()).getSuperClasses()));
     }
 
     @Test
     public void testToURIMethods() {
 
         assertEquals(methodsMap,
-            PartialCallGraph.toURIMethods(
-                cha.get(methodsList.get(0).declaringClassFile().thisType()).getMethods())
+                PartialCallGraph.toURIMethods(
+                        cha.get(methodsList.get(0).declaringClassFile().thisType()).getMethods())
         );
     }
 
@@ -296,14 +298,14 @@ public class PartialCallGraphTest {
     public void testToURIHierarchy() {
 
         final var mock = new HashMap(Map.of(FastenURI.create(
-            "/name.space/SingleSourceToTarget"),
-            new RevisionCallGraph.Type("SingleSourceToTarget.java",
-                methodsMap,
-                new LinkedList<>(Arrays.asList(new FastenJavaURI("/java.lang/Object"))),
-                new ArrayList<>())));
+                "/name.space/SingleSourceToTarget"),
+                new RevisionCallGraph.Type("SingleSourceToTarget.java",
+                        methodsMap,
+                        new LinkedList<>(Arrays.asList(new FastenJavaURI("/java.lang/Object"))),
+                        new ArrayList<>())));
 
         assertEquals(mock.toString().replace(" ", ""),
-            PartialCallGraph.asURIHierarchy(cha).toString().replace(" ", ""));
+                PartialCallGraph.asURIHierarchy(cha).toString().replace(" ", ""));
 
     }
 

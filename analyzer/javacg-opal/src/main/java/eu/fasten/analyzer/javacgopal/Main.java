@@ -38,7 +38,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "JavaCGOpal")
 public class Main implements Runnable {
 
-    private static Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
     Commands commands;
@@ -62,11 +62,18 @@ public class Main implements Runnable {
             description = "Artifact, maven coordinate or file path")
         String artifact;
 
+        @CommandLine.Option(names = {"-r"},
+            paramLabel = "REPOS",
+            description = "Maven repositories",
+            split = ",")
+        List<String> repos;
+
         @CommandLine.Option(names = {"-t", "--timestamp"},
             paramLabel = "TS",
             description = "Release TS",
             defaultValue = "0")
         String timestamp;
+
         @CommandLine.Option(names = {"-m", "--mode"},
             paramLabel = "MODE",
             description = "Input of algorithms are {FILE or COORD}",
@@ -134,9 +141,9 @@ public class Main implements Runnable {
                     final var artifact = getArtifactCoordinate();
                     logger.info("Generating call graph for the Maven coordinate: {}", artifact);
                     try {
-                        if(this.output!=null) {
+                        if (this.output != null) {
                             generate(artifact, true);
-                        }else {
+                        } else {
                             System.out.println(generate(artifact, false).toJSON().toString(4));
                         }
                     } catch (IOException e) {
@@ -145,9 +152,9 @@ public class Main implements Runnable {
 
                 } else if (commands.computations.mode.equals("FILE")) {
                     try {
-                        if(this.output!=null) {
+                        if (this.output != null) {
                             generate(getArtifactFile(), true);
-                        }else {
+                        } else {
                             System.out.println(generate(getArtifactFile(), false).toJSON().toString(4));
                         }
                     } catch (IOException e) {
@@ -180,7 +187,7 @@ public class Main implements Runnable {
     }
 
     public <T> RevisionCallGraph merge(final T artifact,
-                                               final List<T> dependencies) throws IOException {
+                                       final List<T> dependencies) throws IOException {
 
         final RevisionCallGraph result;
         final var deps = new ArrayList<RevisionCallGraph>();
@@ -195,7 +202,7 @@ public class Main implements Runnable {
             if (result != null) {
                 CallGraphUtils.writeToFile(this.output, result.toJSON().toString(4), "");
             }
-        }else {
+        } else {
             System.out.println(result.toJSON().toString(4));
         }
 
@@ -213,7 +220,7 @@ public class Main implements Runnable {
             final var cg = new PartialCallGraph((File) artifact);
             revisionCallGraph =
                 RevisionCallGraph.extendedBuilder().graph(cg.getGraph())
-                    .product(((File) artifact).getName().replace(".class", "").replace("$",""))
+                    .product(((File) artifact).getName().replace(".class", "").replace("$", ""))
                     .version("").timestamp(0).cgGenerator("").depset(new ArrayList<>()).forge("")
                     .classHierarchy(cg.getClassHierarchy()).build();
         } else {
@@ -247,7 +254,12 @@ public class Main implements Runnable {
         final var result = new ArrayList<MavenCoordinate>();
         if (this.commands.computations.tools.merge.dependencies != null) {
             for (String currentCoordinate : this.commands.computations.tools.merge.dependencies) {
-                result.add(MavenCoordinate.fromString(currentCoordinate));
+                var coordinate = MavenCoordinate.fromString(currentCoordinate);
+                if (this.commands.computations.repos != null
+                    && this.commands.computations.repos.size() > 0) {
+                    coordinate.setMavenRepos(this.commands.computations.repos);
+                }
+                result.add(coordinate);
             }
         }
         return result;
@@ -265,6 +277,10 @@ public class Main implements Runnable {
         MavenCoordinate result = null;
         if (this.commands.computations.artifact != null) {
             result = MavenCoordinate.fromString(this.commands.computations.artifact);
+            if (this.commands.computations.repos != null
+                && this.commands.computations.repos.size() > 0) {
+                result.setMavenRepos(this.commands.computations.repos);
+            }
         }
         return result;
     }
