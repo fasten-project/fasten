@@ -1,11 +1,14 @@
 package eu.fasten.analyzer.pomanalyzer;
 
+import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
+import org.jooq.DSLContext;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -17,11 +20,12 @@ public class POMAnalyzerPlugin extends Plugin {
     }
 
     @Extension
-    public static class POMAnalyzer implements KafkaPlugin<String, String> {
+    public static class POMAnalyzer implements KafkaPlugin, DBConnector {
 
         private String consumerTopic = "fasten.maven.pkg";
         private final Logger logger = LoggerFactory.getLogger(POMAnalyzer.class.getName());
         private Throwable pluginError = null;
+        private static DSLContext dslContext;
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -42,6 +46,11 @@ public class POMAnalyzerPlugin extends Plugin {
         @Override
         public Optional<String> produce() {
             return Optional.empty();
+        }
+
+        @Override
+        public String getOutputPath() {
+            return File.separator + ""; // TODO: Change to actual output path
         }
 
         @Override
@@ -80,6 +89,11 @@ public class POMAnalyzerPlugin extends Plugin {
         @Override
         public void freeResource() {
 
+        }
+
+        @Override
+        public void setDBConnection(DSLContext dslContext) {
+            POMAnalyzer.dslContext = dslContext;
         }
     }
 }
