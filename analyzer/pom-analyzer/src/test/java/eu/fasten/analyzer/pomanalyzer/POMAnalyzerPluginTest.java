@@ -43,7 +43,8 @@ public class POMAnalyzerPluginTest {
         var description = "POM Analyzer plugin. Consumes Maven coordinate from Kafka topic, "
                 + "downloads pom.xml of that coordinate and analyzes it "
                 + "extracting relevant information such as dependency information "
-                + "and repository URL, and produces that information to Kafka topic.";
+                + "and repository URL, then inserts that data into Metadata Database "
+                + "and produces it to Kafka topic.";
         assertEquals(description, pomAnalyzer.description());
     }
 

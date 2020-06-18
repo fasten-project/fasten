@@ -28,8 +28,6 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -110,11 +108,12 @@ public class MetadataDatabasePlugin extends Plugin {
             var groupId = callgraph.product.split(":")[0];
             var artifactId = callgraph.product.split(":")[1];
             var version = callgraph.version;
+            var forge = callgraph.forge;
             var product = artifactId + "_" + groupId + "_" + version;
 
             var firstLetter = artifactId.substring(0, 1);
 
-            outputPath = File.separator + "mvn" + File.separator
+            outputPath = File.separator + forge + File.separator
                     + firstLetter + File.separator
                     + artifactId + File.separator + product + ".json";
 
