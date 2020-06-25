@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -114,9 +115,10 @@ public class RocksDao implements Closeable {
      * @throws IOException      if there was a problem writing to files
      * @throws RocksDBException if there was a problem inserting in the database
      */
-    public void saveToRocksDb(final long index, final List<Long> nodes, final int numInternal, final List<List<Long>> edges)
+    public void saveToRocksDb(final long index, List<Long> nodes, final int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
         final var nodesSet = new LongOpenHashSet(nodes);
+        nodes = nodesSet.parallelStream().collect(Collectors.toList());
         final var edgeNodesSet = new LongOpenHashSet();
         for (final var edge : edges) {
             edgeNodesSet.addAll(edge);
