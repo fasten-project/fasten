@@ -19,6 +19,8 @@
 package eu.fasten.analyzer.pomanalyzer.pom.data;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DependencyManagement {
@@ -27,7 +29,7 @@ public class DependencyManagement {
 
     /**
      * Constructor for DependencyManagement object.
-     * Defines the default dependency information for projects that inherit from this one.
+     * Defines the default dependency information for POMs that inherit from this one.
      * <p>
      * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependencyManagement)
      *
@@ -37,11 +39,34 @@ public class DependencyManagement {
         this.dependencies = dependencies;
     }
 
-    public JSONArray toJSON() {
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        DependencyManagement that = (DependencyManagement) o;
+        return dependencies.equals(that.dependencies);
+    }
+
+    public JSONObject toJSON() {
         final var dependenciesJson = new JSONArray();
         for (var dependency : this.dependencies) {
             dependenciesJson.put(dependency.toJSON());
         }
-        return dependenciesJson;
+        final var json = new JSONObject();
+        json.put("dependencies", dependenciesJson);
+        return json;
+    }
+
+    public static DependencyManagement fromJSON(JSONObject json) {
+        var dependencies = new ArrayList<Dependency>();
+        var dependenciesJson = json.getJSONArray("dependencies");
+        for (var i = 0; i < dependenciesJson.length(); i++) {
+            dependencies.add(Dependency.fromJSON(dependenciesJson.getJSONObject(i)));
+        }
+        return new DependencyManagement(dependencies);
     }
 }

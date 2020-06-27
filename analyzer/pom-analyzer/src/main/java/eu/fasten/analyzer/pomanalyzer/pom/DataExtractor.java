@@ -18,7 +18,11 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom;
 
+import eu.fasten.analyzer.pomanalyzer.pom.data.Dependency;
+import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
+import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyManagement;
 import org.dom4j.DocumentException;
+import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +36,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -45,6 +50,18 @@ public class DataExtractor {
         this.mavenRepos = Collections.singletonList("https://repo.maven.apache.org/maven2/");
     }
 
+    // TODO: Don't download POM twice if you want to extract both repo URL and dependency info.
+    //       Save/cache POM after each download and
+    //       before extracting check if this POM matches given Maven coordinate
+
+    /**
+     * Extracts repository URL from POM of certain Maven coordinate.
+     *
+     * @param artifactId artifactId of the coordinate
+     * @param groupId    groupId of the coordinate
+     * @param version    version of the coordinate
+     * @return Extracted repository URL as String
+     */
     public String extractRepoUrl(String artifactId, String groupId, String version) {
         String repoUrl = null;
         try {
@@ -61,6 +78,95 @@ public class DataExtractor {
                     + groupId + ":" + artifactId + ":" + version);
         }
         return repoUrl;
+    }
+
+    /**
+     * Extracts dependency information (dependencyManagement and list of dependencies)
+     * from certain Maven coordinate.
+     *
+     * @param artifactId of the coordinate
+     * @param groupId    groupId of the coordinate
+     * @param version    version of the coordinate
+     * @return Extracted dependency information as DependencyData
+     */
+    public DependencyData extractDependencyData(String artifactId, String groupId, String version) {
+        DependencyData dependencyData = null;
+        try {
+            var pom = new SAXReader().read(new ByteArrayInputStream(
+                    this.downloadPom(artifactId, groupId, version)
+                            .orElseThrow(RuntimeException::new).getBytes()));
+            var dependencyManagementNode = pom.getRootElement()
+                    .selectSingleNode("./*[local-name()='dependencyManagement']");
+            DependencyManagement dependencyManagement = null;
+            if (dependencyManagementNode != null) {
+                var dependenciesNode = dependencyManagementNode
+                        .selectSingleNode("./*[local-name()='dependencies']");
+                var dependencies = extractDependencies(dependenciesNode);
+                dependencyManagement = new DependencyManagement(dependencies);
+            } else {
+                dependencyManagement = new DependencyManagement(new ArrayList<>());
+            }
+            var dependenciesNode = pom.getRootElement()
+                    .selectSingleNode("./*[local-name()='dependencies']");
+            var dependencies = extractDependencies(dependenciesNode);
+            dependencyData = new DependencyData(dependencyManagement, dependencies);
+        } catch (FileNotFoundException | DocumentException e) {
+            logger.error("Error parsing POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        }
+        return dependencyData;
+    }
+
+    private List<Dependency> extractDependencies(Node dependenciesNode) {
+        ArrayList<Dependency> dependencies = new ArrayList<>();
+        if (dependenciesNode != null) {
+            for (var dependencyNode : dependenciesNode
+                    .selectNodes("./*[local-name()='dependency']")) {
+                var artifactNode = dependencyNode
+                        .selectSingleNode("./*[local-name()='artifactId']");
+                var groupNode = dependencyNode
+                        .selectSingleNode("./*[local-name()='groupId']");
+                var versionNode = dependencyNode
+                        .selectSingleNode("./*[local-name()='version']");
+                var exclusionsNode = dependencyNode
+                        .selectSingleNode("./*[local-name()='exclusions']");
+                var exclusions = new ArrayList<Dependency.Exclusion>();
+                if (exclusionsNode != null) {
+                    for (var exclusionNode : exclusionsNode
+                            .selectNodes("./*[local-name()='exclusion']")) {
+                        var exclusionArtifactNode = exclusionNode
+                                .selectSingleNode("./*[local-name()='artifactId']");
+                        var exclusionGroupNode = exclusionNode
+                                .selectSingleNode("./*[local-name()='groupId']");
+                        exclusions.add(new Dependency.Exclusion(
+                                exclusionArtifactNode.getText(),
+                                exclusionGroupNode.getText()
+                        ));
+                    }
+                }
+                var scopeNode = dependencyNode
+                        .selectSingleNode("./*[local-name()='scope']");
+                var optionalNode = dependencyNode
+                        .selectSingleNode("./*[local-name()='optional']");
+                var typeNode = dependencyNode
+                        .selectSingleNode("./*[local-name()='type']");
+                var classifierNode = dependencyNode
+                        .selectSingleNode("./*[local-name()='classifier']");
+                dependencies.add(new Dependency(
+                        artifactNode.getText(),
+                        groupNode.getText(),
+                        (versionNode != null) ? versionNode.getText() : "",
+                        exclusions,
+                        (scopeNode != null) ? scopeNode.getText() : "",
+                        (optionalNode != null) && Boolean.parseBoolean(
+                                optionalNode.getText()
+                        ),
+                        (typeNode != null) ? typeNode.getText() : "",
+                        (classifierNode != null) ? classifierNode.getText() : ""
+                ));
+            }
+        }
+        return dependencies;
     }
 
     private Optional<String> downloadPom(String artifactId, String groupId, String version)

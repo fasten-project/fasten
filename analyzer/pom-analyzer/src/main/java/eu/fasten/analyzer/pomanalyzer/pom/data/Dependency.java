@@ -20,7 +20,9 @@ package eu.fasten.analyzer.pomanalyzer.pom.data;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Dependency {
 
@@ -36,7 +38,7 @@ public class Dependency {
 
     /**
      * Constructor for Dependency object.
-     *
+     * <p>
      * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
      *
      * @param artifactId artifactId of dependency Maven coordinate
@@ -61,6 +63,43 @@ public class Dependency {
         this.classifier = classifier;
     }
 
+    public Dependency(final String artifactId, final String groupId, final String version) {
+        this(artifactId, groupId, version, new ArrayList<>(), "", false, "", "");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Dependency that = (Dependency) o;
+        if (optional != that.optional) {
+            return false;
+        }
+        if (!artifactId.equals(that.artifactId)) {
+            return false;
+        }
+        if (!groupId.equals(that.groupId)) {
+            return false;
+        }
+        if (!Objects.equals(version, that.version)) {
+            return false;
+        }
+        if (!Objects.equals(exclusions, that.exclusions)) {
+            return false;
+        }
+        if (!Objects.equals(scope, that.scope)) {
+            return false;
+        }
+        if (!Objects.equals(type, that.type)) {
+            return false;
+        }
+        return Objects.equals(classifier, that.classifier);
+    }
+
     public JSONObject toJSON() {
         final var json = new JSONObject();
         json.put("artifactId", this.artifactId);
@@ -76,6 +115,26 @@ public class Dependency {
         json.put("type", this.type);
         json.put("classifier", this.classifier);
         return json;
+    }
+
+    public static Dependency fromJSON(JSONObject json) {
+        var artifactId = json.getString("artifactId");
+        var groupId = json.getString("groupId");
+        var version = json.optString("version");
+        var exclusions = new ArrayList<Exclusion>();
+        if (json.has("exclusions")) {
+            var exclusionsJson = json.getJSONArray("exclusions");
+            for (var i = 0; i < exclusionsJson.length(); i++) {
+                exclusions.add(Exclusion.fromJSON(exclusionsJson.getJSONObject(i)));
+            }
+        }
+        var scope = json.optString("scope");
+        var optional = json.optBoolean("optional", false);
+        var type = json.optString("type");
+        var classifier = json.optString("classifier");
+        return new Dependency(
+                artifactId, groupId, version, exclusions, scope, optional, type, classifier
+        );
     }
 
 
@@ -96,11 +155,32 @@ public class Dependency {
             this.groupId = groupId;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            Exclusion exclusion = (Exclusion) o;
+            if (!artifactId.equals(exclusion.artifactId)) {
+                return false;
+            }
+            return groupId.equals(exclusion.groupId);
+        }
+
         public JSONObject toJSON() {
             final var json = new JSONObject();
             json.put("artifactId", this.artifactId);
             json.put("groupId", this.groupId);
             return json;
+        }
+
+        public static Exclusion fromJSON(JSONObject json) {
+            var artifactId = json.getString("artifactId");
+            var groupId = json.getString("groupId");
+            return new Exclusion(artifactId, groupId);
         }
     }
 

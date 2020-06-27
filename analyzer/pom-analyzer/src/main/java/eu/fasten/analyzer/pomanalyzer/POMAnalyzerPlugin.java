@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
+import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.jooq.DSLContext;
@@ -50,6 +51,7 @@ public class POMAnalyzerPlugin extends Plugin {
         private String group = null;
         private String version = null;
         private String repoUrl = null;
+        private DependencyData dependencyData = null;
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -73,6 +75,7 @@ public class POMAnalyzerPlugin extends Plugin {
             group = null;
             version = null;
             repoUrl = null;
+            dependencyData = null;
             logger.info("Consumed: " + record);
             var payload = new JSONObject(record).getJSONObject("payload");
             artifact = payload.getString("artifactId");
@@ -80,6 +83,7 @@ public class POMAnalyzerPlugin extends Plugin {
             version = payload.getString("version");
             var dataExtractor = new DataExtractor();
             repoUrl = dataExtractor.extractRepoUrl(artifact, group, version);
+            dependencyData = dataExtractor.extractDependencyData(artifact, group, version);
             logger.info("Extracted repository URL " + repoUrl
                     + " from " + group + ":" + artifact + ":" + version);
         }
@@ -92,6 +96,7 @@ public class POMAnalyzerPlugin extends Plugin {
                 json.put("groupId", group);
                 json.put("version", version);
                 json.put("repoUrl", repoUrl);
+                json.put("dependencyData", dependencyData.toJSON());
                 return Optional.of(json.toString());
             } else {
                 return Optional.empty();

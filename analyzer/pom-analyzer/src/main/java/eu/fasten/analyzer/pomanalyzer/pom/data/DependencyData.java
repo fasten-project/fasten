@@ -20,6 +20,7 @@ package eu.fasten.analyzer.pomanalyzer.pom.data;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DependencyData {
@@ -40,6 +41,21 @@ public class DependencyData {
         this.dependencies = dependencies;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        DependencyData that = (DependencyData) o;
+        if (!dependencyManagement.equals(that.dependencyManagement)) {
+            return false;
+        }
+        return dependencies.equals(that.dependencies);
+    }
+
     public JSONObject toJSON() {
         final var json = new JSONObject();
         json.put("dependencyManagement", this.dependencyManagement.toJSON());
@@ -49,5 +65,17 @@ public class DependencyData {
         }
         json.put("dependencies", dependenciesJson);
         return json;
+    }
+
+    public static DependencyData fromJSON(JSONObject json) {
+        var dependencyManagement = DependencyManagement.fromJSON(
+                json.getJSONObject("dependencyManagement")
+        );
+        var dependencies = new ArrayList<Dependency>();
+        var dependenciesJson = json.getJSONArray("dependencies");
+        for (var i = 0; i < dependenciesJson.length(); i++) {
+            dependencies.add(Dependency.fromJSON(dependenciesJson.getJSONObject(i)));
+        }
+        return new DependencyData(dependencyManagement, dependencies);
     }
 }
