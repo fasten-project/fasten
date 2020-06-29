@@ -184,3 +184,4 @@ modules.xml
 
 !/analyzer/javacg-wala/src/test/resources/*.jar
 !/analyzer/javacg-opalv3/lib/**/*.jar
+!/analyzer/javacg-opalv3/src/test/resources/*.class

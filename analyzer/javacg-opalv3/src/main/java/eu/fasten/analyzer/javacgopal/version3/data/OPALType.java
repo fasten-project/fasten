@@ -200,7 +200,7 @@ public class OPALType {
                     Map.of("first", getFirstLine(method),
                             "last", getLastLine(method),
                             "defined", method.instructionsOption().isDefined(),
-                            "access: ", getAccessModifier(method))));
+                            "access", getAccessModifier(method))));
         }
         return result;
     }
