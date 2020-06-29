@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;

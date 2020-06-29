@@ -18,9 +18,9 @@
 
 package eu.fasten.analyzer.javacgopal.version3;
 
-import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.version3.merge.CallGraphUtils;
+import eu.fasten.analyzer.javacgopal.version3.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.version3.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.version3.merge.CallGraphUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -273,7 +273,7 @@ public class MainV3 implements Runnable {
 
         if (this.write) {
             if (result != null) {
-                CallGraphUtils.writeToFile(this.output, result.toJSON(), "_"+result.product+"_merged");
+                CallGraphUtils.writeToFile(this.output, result.toJSON(), "_" + result.product + "_merged");
             }
         }
 
@@ -308,7 +308,7 @@ public class MainV3 implements Runnable {
 
         if (writeToFile) {
             CallGraphUtils
-                    .writeToFile(this.output, revisionCallGraph.toJSON(), "_"+revisionCallGraph.product);
+                    .writeToFile(this.output, revisionCallGraph.toJSON(), "_" + revisionCallGraph.product);
         }
         return revisionCallGraph;
     }

@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.version3.merge;
 
-import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
+import eu.fasten.analyzer.javacgopal.version3.data.MavenCoordinate;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;

@@ -1,7 +1,6 @@
 package eu.fasten.analyzer.javacgopal.version3.data;
 
 import com.google.common.collect.Lists;
-import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
 import eu.fasten.analyzer.javacgopal.version3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
