@@ -52,11 +52,6 @@ public class MainV3 implements Runnable {
             defaultValue = "")
     String output;
 
-    @CommandLine.Option(names = {"-w", "--write"},
-            paramLabel = "WRITE",
-            description = "Write results to file")
-    boolean write;
-
     static class Commands {
 
         @CommandLine.ArgGroup(exclusive = false)
@@ -181,7 +176,7 @@ public class MainV3 implements Runnable {
                     logger.info("Generating call graph for the Maven coordinate: {}", artifact);
                     try {
                         generate(artifact, commands.computations.main, commands.computations.genAlgorithm,
-                                this.write);
+                                !this.output.isEmpty());
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -189,7 +184,7 @@ public class MainV3 implements Runnable {
                 } else if (commands.computations.mode.equals("FILE")) {
                     try {
                         generate(getArtifactFile(), commands.computations.main,
-                                commands.computations.genAlgorithm, this.write);
+                                commands.computations.genAlgorithm, !this.output.isEmpty());
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -234,7 +229,7 @@ public class MainV3 implements Runnable {
                         }
                     }
                     result.put("reachableMethods", reachableMethods);
-                    if (this.write) {
+                    if (!this.output.isEmpty()) {
                         CallGraphUtils.writeToFile(this.output, result, "");
                     }
                 } catch (IOException e) {
@@ -271,7 +266,7 @@ public class MainV3 implements Runnable {
         result = CallGraphMergerV3.mergeCallGraph(art, deps,
                 commands.computations.tools.merge.mergeAlgorithm);
 
-        if (this.write) {
+        if (!this.output.isEmpty()) {
             if (result != null) {
                 CallGraphUtils.writeToFile(this.output, result.toJSON(), "_" + result.product + "_merged");
             }
@@ -350,7 +345,3 @@ public class MainV3 implements Runnable {
     }
 
 }
-//-g -a /Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars/J8DIM5.jar_split/SuperClass.class -n "" -l RTA -m FILE -o "graph" -w
-//-c -i "graph" -f JCG -w -o "converted"
-//-s -a /Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars/Unsafe4.jar_split/Demo.class -d /Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars/Unsafe4.jar_split/SafeTarget.class,/Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars/Unsafe4.jar_split/TargetInterface.class,/Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars/Unsafe4.jar_split/UnsafeTarget.class -n "" -w -o graph2
-//-c -i /Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars/Unsafe4.jar_split/cg/mergeV3UnsafeTarget /Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars/Unsafe4.jar_split/cg/mergeV3TargetInterface /Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars/Unsafe4.jar_split/cg/mergeV3Demo /Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars/Unsafe4.jar_split/cg/mergeV3SafeTarget   -f  JCG  -w  -o  /Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars/Unsafe4.jar_split/cg/mergeV3Jcg

@@ -66,10 +66,10 @@ public class Evaluator {
         final var resultGraphPath = langFeature.getAbsolutePath() + "/" + output+ "_"+fileName;
 
         final var cgCommand = new String[]{"-g", "-a", langFeature.getAbsolutePath(), "-n", mainClass, "-ga", algorithm,
-                "-m", "FILE", "-o", langFeature.getAbsolutePath() + "/" + output, "-w"};
+                "-m", "FILE", "-o", langFeature.getAbsolutePath() + "/" + output};
 
         final var convertCommand =
-                new String[]{"-c", "-i", resultGraphPath, "-f", "JCG", "-w", "-o",
+                new String[]{"-c", "-i", resultGraphPath, "-f", "JCG", "-o",
                         langFeature.getAbsolutePath() + "/" + output + "Jcg"};
 
         System.out.println("CG: " + Arrays.toString(cgCommand).replace(",", " "));
@@ -116,30 +116,15 @@ public class Evaluator {
         final var fileName = art.getName().replace(".class", "");
         final var resultGraphPath = langFeature.getAbsolutePath() + "/" + output+ "_"+fileName+"_merged";
         final var mergeCommand =
-                    new String[]{"-s", "-a", art.getAbsolutePath(), "-d", deps.replaceAll(".$", ""), "-ma", mergeAlg, "-ga", genAlg, "-n", main, "-w", "-o",
+                    new String[]{"-s", "-a", art.getAbsolutePath(), "-d", deps.replaceAll(".$", ""), "-ma", mergeAlg, "-ga", genAlg, "-n", main, "-o",
                             langFeature.getAbsolutePath() + "/" + output };
 
         System.out.println("mergeCommand :" + Arrays.toString(mergeCommand).replace(",", " "));
         MainV3.main(mergeCommand);
-        final var convertCommand = new String[]{"-c", "-i",resultGraphPath , "-f", "JCG", "-w", "-o",
+        final var convertCommand = new String[]{"-c", "-i",resultGraphPath , "-f", "JCG", "-o",
                 langFeature.getAbsolutePath() + "/" + output + "Jcg"};
 
         System.out.println("mergeConvert: " + Arrays.toString(convertCommand).replace(",", " "));
         MainV3.main(convertCommand);
-    }
-
-    private static File[] removeElement(final File[] files, final int rm_index) {
-        final File[] result = new File[files.length - 1];
-        for (int i = 0, k = 0; i <files.length; i++) {
-
-            // check if index is crossed, continue without copying
-            if (i == rm_index) {
-                continue;
-            }
-
-            // else copy the element
-            result[k++] = files[i];
-        }
-        return result;
     }
 }
