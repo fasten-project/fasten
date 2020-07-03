@@ -23,7 +23,6 @@ import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.analyzer.WalaResultAnalyzer;
 import eu.fasten.analyzer.javacgwala.data.core.CallType;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.FileNotFoundException;
@@ -41,7 +40,7 @@ public class PartialCallGraph {
 
     private final Map<Pair<Integer, FastenURI>, Map<String, String>> externalCalls;
 
-    private final Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
+    private final Map<FastenURI, RevisionCallGraph.Type> classHierarchy;
 
     /**
      * Construct a partial call graph with empty lists of resolved / unresolved calls.
@@ -52,12 +51,12 @@ public class PartialCallGraph {
         this.classHierarchy = new HashMap<>();
     }
 
-    public Map<FastenURI, ExtendedRevisionCallGraph.Type> getClassHierarchy() {
+    public Map<FastenURI, RevisionCallGraph.Type> getClassHierarchy() {
         return classHierarchy;
     }
 
-    public ExtendedRevisionCallGraph.Graph getGraph() {
-        return new ExtendedRevisionCallGraph.Graph(internalCalls, externalCalls);
+    public RevisionCallGraph.Graph getGraph() {
+        return new RevisionCallGraph.Graph(internalCalls, externalCalls);
     }
 
     public List<List<Integer>> getInternalCalls() {
@@ -108,43 +107,44 @@ public class PartialCallGraph {
     }
 
     /**
-     * Creates {@link ExtendedRevisionCallGraph} using WALA call graph generator for a given maven
+     * Creates {@link RevisionCallGraph} using WALA call graph generator for a given maven
      * coordinate. It also sets the forge to "mvn".
      *
      * @param coordinate maven coordinate of the revision to be processed.
      * @param timestamp  timestamp of the revision release.
-     * @return {@link ExtendedRevisionCallGraph} of the given coordinate.
+     * @return {@link RevisionCallGraph} of the given coordinate.
      * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
      *                               Maven central it throws this exception.
      */
-    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(
+    public static RevisionCallGraph createExtendedRevisionCallGraph(
             final MavenCoordinate coordinate,
             final long timestamp)
             throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
 
         final var partialCallGraph = CallGraphConstructor.build(coordinate);
 
-        return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
+        return new RevisionCallGraph("mvn", coordinate.getProduct(),
                 coordinate.getVersionConstraint(), timestamp, "WALA",
-                MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+                MavenCoordinate.MavenResolver.resolveDependencies(coordinate),
                 partialCallGraph.getClassHierarchy(),
                 partialCallGraph.getGraph());
     }
 
     /**
-     * Generates {@link ExtendedRevisionCallGraph} from a path to a file.
+     * Generates {@link RevisionCallGraph} from a path to a file.
      *
      * @param path path to a file
      * @return ExtendedRevisionCallGraph
      */
-    public static ExtendedRevisionCallGraph generateERCG(final String path, final String product,
-                                                         final String version, final long timestamp,
-                                                         final List<List<RevisionCallGraph.Dependency>> depset) {
+    public static RevisionCallGraph generateERCG(final String path, final String product,
+                                                 final String version, final long timestamp,
+                                                 final List<List<RevisionCallGraph.Dependency>>
+                                                         depset) {
         try {
             final var callgraph = CallGraphConstructor.generateCallGraph(path);
             final var partialCallgraph = WalaResultAnalyzer.wrap(callgraph);
 
-            return new ExtendedRevisionCallGraph("mvn", product, version, timestamp, "WALA", depset,
+            return new RevisionCallGraph("mvn", product, version, timestamp, "WALA", depset,
                     partialCallgraph.getClassHierarchy(), partialCallgraph.getGraph());
         } catch (Throwable e) {
             e.printStackTrace();

@@ -18,28 +18,6 @@
 
 package eu.fasten.core.data.graphdb;
 
-import static eu.fasten.core.data.KnowledgeBase.bfsperm;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.ByteBufferOutput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import com.google.common.primitives.Longs;
-import eu.fasten.core.data.KnowledgeBase;
-import eu.fasten.core.index.BVGraphSerializer;
-import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongIterators;
-import it.unimi.dsi.io.InputBitStream;
-import it.unimi.dsi.io.NullInputStream;
-import it.unimi.dsi.lang.MutableString;
-import it.unimi.dsi.sux4j.util.EliasFanoMonotoneLongBigList;
-import it.unimi.dsi.webgraph.ArrayListMutableGraph;
-import it.unimi.dsi.webgraph.BVGraph;
-import it.unimi.dsi.webgraph.ImmutableGraph;
-import it.unimi.dsi.webgraph.Transform;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,15 +26,42 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
+
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
-import org.rocksdb.CompressionType;
 import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import com.google.common.primitives.Longs;
+
+import eu.fasten.core.data.GOV3LongFunction;
+import eu.fasten.core.data.KnowledgeBase;
+import eu.fasten.core.index.BVGraphSerializer;
+import eu.fasten.core.index.LayeredLabelPropagation;
+import it.unimi.dsi.Util;
+import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongIterators;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.io.InputBitStream;
+import it.unimi.dsi.io.NullInputStream;
+import it.unimi.dsi.lang.MutableString;
+import it.unimi.dsi.sux4j.util.EliasFanoMonotoneLongBigList;
+import it.unimi.dsi.webgraph.ArrayListMutableGraph;
+import it.unimi.dsi.webgraph.BVGraph;
+import it.unimi.dsi.webgraph.ImmutableGraph;
+import it.unimi.dsi.webgraph.Transform;
 
 public class RocksDao implements Closeable {
 
@@ -73,8 +78,7 @@ public class RocksDao implements Closeable {
      */
     public RocksDao(final String dbDir) throws RocksDBException {
         RocksDB.loadLibrary();
-        final ColumnFamilyOptions cfOptions = new ColumnFamilyOptions()
-                .setCompressionType(CompressionType.LZ4_COMPRESSION);
+        final ColumnFamilyOptions cfOptions = new ColumnFamilyOptions();
         final DBOptions dbOptions = new DBOptions()
                 .setCreateIfMissing(true)
                 .setCreateMissingColumnFamilies(true);
@@ -89,6 +93,7 @@ public class RocksDao implements Closeable {
     private void initKryo() {
         kryo = new Kryo();
         kryo.register(BVGraph.class, new BVGraphSerializer(kryo));
+		kryo.register(Boolean.class);
         kryo.register(byte[].class);
         kryo.register(InputBitStream.class);
         kryo.register(NullInputStream.class);
@@ -97,6 +102,7 @@ public class RocksDao implements Closeable {
         kryo.register(Properties.class);
         kryo.register(long[].class);
         kryo.register(Long2IntOpenHashMap.class);
+		kryo.register(GOV3LongFunction.class, new JavaSerializer());
     }
 
     /**
@@ -109,10 +115,22 @@ public class RocksDao implements Closeable {
      * @throws IOException      if there was a problem writing to files
      * @throws RocksDBException if there was a problem inserting in the database
      */
-    public void saveToRocksDb(long index, List<Long> nodes, int numInternal, List<List<Long>> edges)
+    public void saveToRocksDb(final long index, List<Long> nodes, final int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
+        final var nodesSet = new LongOpenHashSet(nodes);
+        nodes = nodesSet.parallelStream().collect(Collectors.toList());
+        final var edgeNodesSet = new LongOpenHashSet();
+        for (final var edge : edges) {
+            edgeNodesSet.addAll(edge);
+        }
+        // Nodes list must contain all nodes which are in edges
+        if (!nodesSet.containsAll(edgeNodesSet)) {
+            edgeNodesSet.removeAll(nodesSet);
+            throw new IllegalArgumentException("Some nodes from edges are not in the nodes list:\n"
+                    + edgeNodesSet);
+        }
         final long[] temporary2GID = new long[nodes.size()];
-        var nodesList = new LongArrayList(nodes);
+        final var nodesList = new LongArrayList(nodes);
         LongIterators.unwrap(nodesList.iterator(), temporary2GID);
         // Compute the reverse map
         final Long2IntOpenHashMap GID2Temporary = new Long2IntOpenHashMap();
@@ -140,25 +158,38 @@ public class RocksDao implements Closeable {
         final var transposeProperties = new Properties();
         FileInputStream propertyFile;
         // Compress, load and serialize graph
-        final int[] bfsPerm = bfsperm(mutableGraph.immutableView(), -1, numInternal);
-        final ImmutableGraph graph = Transform.map(mutableGraph.immutableView(), bfsPerm);
+
+		final ImmutableGraph unpermutedGraph = mutableGraph.immutableView();
+		final int numNodes = unpermutedGraph.numNodes();
+		final ImmutableGraph symGraph = new ArrayListMutableGraph(Transform.symmetrize(unpermutedGraph)).immutableView();
+		final LayeredLabelPropagation clustering = new LayeredLabelPropagation(symGraph, null, Math.min(Runtime.getRuntime().availableProcessors(), 1 + numNodes / 100), 0, false);
+		final int[] perm = clustering.computePermutation(LayeredLabelPropagation.DEFAULT_GAMMAS, null);
+
+		Util.invertPermutationInPlace(perm);
+		final int[] sorted = new int[numNodes];
+		int internal = 0, external = numInternal;
+		for (int j = 0; j < numNodes; j++) {
+			if (perm[j] < numInternal) sorted[internal++] = perm[j];
+			else sorted[external++] = perm[j];
+		}
+		Util.invertPermutationInPlace(sorted);
+
+		final ImmutableGraph graph = Transform.map(unpermutedGraph, sorted);
         BVGraph.store(graph, file.toString());
         propertyFile = new FileInputStream(file + BVGraph.PROPERTIES_EXTENSION);
         graphProperties.load(propertyFile);
         propertyFile.close();
         final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
         final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
+        kryo.writeObject(bbo, Boolean.TRUE);
         kryo.writeObject(bbo, BVGraph.load(file.toString()));
         // Compute LIDs according to the current node renumbering based on BFS
         final long[] LID2GID = new long[temporary2GID.length];
-        final Long2IntOpenHashMap GID2LID = new Long2IntOpenHashMap();
-        GID2LID.defaultReturnValue(-1);
         for (int x = 0; x < temporary2GID.length; x++) {
-            LID2GID[bfsPerm[x]] = temporary2GID[x];
+			LID2GID[sorted[x]] = temporary2GID[x];
         }
-        for (int i = 0; i < temporary2GID.length; i++) {
-            GID2LID.put(LID2GID[i], i);
-        }
+
+		final GOV3LongFunction GID2LID = new GOV3LongFunction.Builder().keys(LongArrayList.wrap(LID2GID)).build();
         // Compress, load and serialize transpose graph
         BVGraph.store(Transform.transpose(graph), file.toString());
         propertyFile = new FileInputStream(file + BVGraph.PROPERTIES_EXTENSION);
@@ -188,11 +219,13 @@ public class RocksDao implements Closeable {
      * @return CallGraphData stored in the database
      * @throws RocksDBException if there was problem retrieving data from RocksDB
      */
-    public KnowledgeBase.CallGraphData getGraphData(long index)
+	public CallGraphData getGraphData(final long index)
             throws RocksDBException {
         final byte[] buffer = rocksDb.get(Longs.toByteArray(index));
         final Input input = new Input(buffer);
         assert kryo != null;
+		final boolean compressed = kryo.readObject(input, Boolean.class).booleanValue();
+
         final var graphs = new ImmutableGraph[]{
                 kryo.readObject(input, BVGraph.class),
                 kryo.readObject(input, BVGraph.class)
@@ -203,8 +236,8 @@ public class RocksDao implements Closeable {
                 kryo.readObject(input, Properties.class)
         };
         final long[] LID2GID = kryo.readObject(input, long[].class);
-        final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
-        return new KnowledgeBase.CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
+		final GOV3LongFunction GID2LID = kryo.readObject(input, GOV3LongFunction.class);
+		return new CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
                 LID2GID, GID2LID, numInternal, buffer.length);
     }
 

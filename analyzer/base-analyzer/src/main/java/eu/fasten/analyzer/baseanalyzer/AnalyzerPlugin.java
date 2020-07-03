@@ -1,8 +1,10 @@
 package eu.fasten.analyzer.baseanalyzer;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -18,13 +20,14 @@ public abstract class AnalyzerPlugin extends Plugin {
         super(wrapper);
     }
 
-    public abstract static class ANALYZER implements KafkaPlugin<String, String> {
+    public abstract static class ANALYZER implements KafkaPlugin {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
         private String consumeTopic = "fasten.maven.pkg";
         private Throwable pluginError;
-        private ExtendedRevisionCallGraph graph;
+        private RevisionCallGraph graph;
+        private String outputPath;
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -46,6 +49,17 @@ public abstract class AnalyzerPlugin extends Plugin {
                     return;
                 }
 
+                var groupId = graph.product.split(":")[0];
+                var artifactId = graph.product.split(":")[1];
+                var version = graph.version;
+                var product = artifactId + "_" + groupId + "_" + version;
+
+                var firstLetter = artifactId.substring(0, 1);
+
+                outputPath = File.separator + "mvn" + File.separator
+                        + firstLetter + File.separator
+                        + artifactId + File.separator + product + ".json";
+
                 logger.info("Call graph successfully generated for {}!",
                         mavenCoordinate.getCoordinate());
 
@@ -62,6 +76,11 @@ public abstract class AnalyzerPlugin extends Plugin {
             } else {
                 return Optional.empty();
             }
+        }
+
+        @Override
+        public String getOutputPath() {
+            return outputPath;
         }
 
         /**
@@ -91,7 +110,7 @@ public abstract class AnalyzerPlugin extends Plugin {
          * @param kafkaConsumedJson Consumed JSON
          * @return Generated ExtendedRevisionCallGraph
          */
-        public abstract ExtendedRevisionCallGraph generateCallGraph(
+        public abstract RevisionCallGraph generateCallGraph(
                 final MavenCoordinate mavenCoordinate,
                 final JSONObject kafkaConsumedJson) throws Exception;
 

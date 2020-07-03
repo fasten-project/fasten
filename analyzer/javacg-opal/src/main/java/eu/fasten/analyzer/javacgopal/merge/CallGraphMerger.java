@@ -19,10 +19,9 @@
 package eu.fasten.analyzer.javacgopal.merge;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.RevisionCallGraph;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,12 +39,12 @@ public class CallGraphMerger {
     public static CallGraphMerger resolve(final MavenCoordinate coordinate) {
 
         final var PDN =
-            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate());
+            MavenCoordinate.MavenResolver.resolveDependencies(coordinate);
 
         final List<List<FastenURI>> depencencyList = getDependenciesURI(PDN);
 
         for (List<FastenURI> fastenURIS : depencencyList) {
-            final List<ExtendedRevisionCallGraph> revisionCallGraphs =
+            final List<RevisionCallGraph> revisionCallGraphs =
                 loadRevisionCallGraph(fastenURIS);
 //                List<ExtendedRevisionCallGraph> resolvedCallGraphs =
 //                mergeCallGraphs(revisionCallGraphs);
@@ -54,10 +53,10 @@ public class CallGraphMerger {
         return null;
     }
 
-    public static ExtendedRevisionCallGraph mergeCallGraph(final ExtendedRevisionCallGraph artifact,
-                                                           final List<ExtendedRevisionCallGraph>
+    public static RevisionCallGraph mergeCallGraph(final RevisionCallGraph artifact,
+                                                   final List<RevisionCallGraph>
                                                                dependencies,
-                                                           final String algorithm) {
+                                                   final String algorithm) {
         if (algorithm.equals("RA")) {
             return mergeWithRA(artifact, dependencies);
         } else if (algorithm.equals("CHA")) {
@@ -71,8 +70,8 @@ public class CallGraphMerger {
     }
 
 
-    private static ExtendedRevisionCallGraph mergeWithCHA(ExtendedRevisionCallGraph artifact,
-                                                          List<ExtendedRevisionCallGraph> dependencies) {
+    private static RevisionCallGraph mergeWithCHA(RevisionCallGraph artifact,
+                                                  List<RevisionCallGraph> dependencies) {
 
         final Map<Pair<Integer, FastenURI>, Map<String, String>> result = new HashMap<>();
 
@@ -144,14 +143,14 @@ public class CallGraphMerger {
             }
         }
 
-        return ExtendedRevisionCallGraph.extendedBuilder().forge(artifact.forge)
+        return RevisionCallGraph.extendedBuilder().forge(artifact.forge)
             .cgGenerator(artifact.getCgGenerator())
             .classHierarchy(artifact.getClassHierarchy())
             .depset(artifact.depset)
             .product(artifact.product)
             .timestamp(artifact.timestamp)
             .version(artifact.version)
-            .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraph().getInternalCalls(),
+            .graph(new RevisionCallGraph.Graph(artifact.getGraph().getInternalCalls(),
                 result))
             .build();
     }
@@ -176,8 +175,8 @@ public class CallGraphMerger {
         return Entity.substring(Entity.indexOf(".") + 1);
     }
 
-    public static ExtendedRevisionCallGraph mergeWithRA(final ExtendedRevisionCallGraph artifact,
-                                                        final List<ExtendedRevisionCallGraph>
+    public static RevisionCallGraph mergeWithRA(final RevisionCallGraph artifact,
+                                                final List<RevisionCallGraph>
                                                             dependencies) {
 
         final Map<Pair<Integer, FastenURI>, Map<String, String>> result = new HashMap<>();
@@ -207,14 +206,14 @@ public class CallGraphMerger {
             }
         }
 
-        return ExtendedRevisionCallGraph.extendedBuilder().forge(artifact.forge)
+        return RevisionCallGraph.extendedBuilder().forge(artifact.forge)
             .cgGenerator(artifact.getCgGenerator())
             .classHierarchy(artifact.getClassHierarchy())
             .depset(artifact.depset)
             .product(artifact.product)
             .timestamp(artifact.timestamp)
             .version(artifact.version)
-            .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraph().getInternalCalls(),
+            .graph(new RevisionCallGraph.Graph(artifact.getGraph().getInternalCalls(),
                 result))
             .build();
     }
@@ -225,7 +224,7 @@ public class CallGraphMerger {
             + callee.getEntity().substring(0, callee.getEntity().indexOf(".")));
     }
 
-    private static List<ExtendedRevisionCallGraph> loadRevisionCallGraph(
+    private static List<RevisionCallGraph> loadRevisionCallGraph(
         final List<FastenURI> uri) {
 
         //TODO load RevisionCallGraphs

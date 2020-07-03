@@ -55,7 +55,7 @@ public class CallGraphConstructor {
         final long startTime = System.currentTimeMillis();
 
         final var rawGraph = generateCallGraph(MavenCoordinate.MavenResolver
-                .downloadJar(coordinate.getCoordinate()).orElse(null)
+                .downloadJar(coordinate).orElse(null)
                 .getAbsolutePath());
 
         logger.info("Generated the call graph in {} seconds.",

@@ -38,10 +38,14 @@ import com.martiansoftware.jsap.UnflaggedOption;
 import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.data.KnowledgeBase.CallGraph;
 import eu.fasten.core.data.KnowledgeBase.CallGraphData;
+import it.unimi.dsi.Util;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.util.Properties;
+import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.BVGraph;
 import it.unimi.dsi.webgraph.EFGraph;
+import it.unimi.dsi.webgraph.ImmutableGraph;
+import it.unimi.dsi.webgraph.Transform;
 
 
 public class RecompressGraphs {
@@ -59,6 +63,7 @@ public class RecompressGraphs {
 						new FlaggedOption("zetaK", JSAP.INTEGER_PARSER, String.valueOf(BVGraph.DEFAULT_ZETA_K), JSAP.NOT_REQUIRED, 'k', "zeta-k", "The k parameter for zeta-k codes."),
 						new FlaggedOption("min", JSAP.INTEGER_PARSER, "0", JSAP.NOT_REQUIRED, 'M', "min", "Consider only graphs with at least this number of internal nodes."),
 						new FlaggedOption("n", JSAP.LONG_PARSER, Long.toString(Long.MAX_VALUE), JSAP.NOT_REQUIRED, 'n', "n", "Analyze just this number of graphs."),
+						new Switch("llp", 'l', "llp", "Apply Layered Label Propagation before recompression."),
 						new Switch("eliasFano", 'e', "elias-fano", "Recompress as Elias-Fano."),
 						new UnflaggedOption("kb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The directory of the RocksDB instance containing the knowledge base." ),
 						new UnflaggedOption("kbmeta", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The file containing the knowledge base metadata." ),
@@ -80,6 +85,7 @@ public class RecompressGraphs {
 		if (maxRefCount == -1) maxRefCount = Integer.MAX_VALUE;
 		final int minIntervalLength = jsapResult.getInt("minIntervalLength");
 		final boolean ef = jsapResult.getBoolean("eliasFano");
+		final boolean llp = jsapResult.getBoolean("llp");
 
 		final int minNodes = jsapResult.getInt("min");
 		final long n = jsapResult.getLong("n");
@@ -101,19 +107,46 @@ public class RecompressGraphs {
 		for(final CallGraph callGraph: kb.callGraphs.values()) {
 			if (i++ >= n) break;
 			pl.update();
-			if (callGraph.nInternal < minNodes) continue;
+			final int nInternal = callGraph.nInternal;
+			if (nInternal < minNodes) continue;
 			final CallGraphData callGraphData = callGraph.callGraphData();
+
+			ImmutableGraph graph = callGraphData.rawGraph();
+			ImmutableGraph transpose = callGraphData.rawTranspose();
+			final int numNodes = graph.numNodes();
+
+			if (llp) {
+				final ImmutableGraph symGraph = new ArrayListMutableGraph(Transform.symmetrize(graph)).immutableView();
+				final LayeredLabelPropagation clustering = new LayeredLabelPropagation(symGraph, 0);
+				final int[] perm = clustering.computePermutation(LayeredLabelPropagation.DEFAULT_GAMMAS, null);
+
+				Util.invertPermutationInPlace(perm);
+				final int[] sorted = new int[numNodes];
+				int internal = 0, external = nInternal;
+				for (int j = 0; j < numNodes; j++) {
+					if (perm[j] < nInternal) sorted[internal++] = perm[j];
+					else sorted[external++] = perm[j];
+				}
+				Util.invertPermutationInPlace(sorted);
+
+				graph = new ArrayListMutableGraph(Transform.map(graph, sorted)).immutableView();
+				transpose = new ArrayListMutableGraph(Transform.map(transpose, sorted)).immutableView();
+			}
 
 			System.out.print(callGraph.index);
 			System.out.print('\t');
 			System.out.print(callGraph.product);
 			System.out.print('\t');
 			System.out.print(callGraph.version);
+			System.out.print('\t');
+			System.out.print(numNodes);
+			System.out.print('\t');
+			System.out.print(graph.numArcs());
 
 			if (ef) {
-				EFGraph.store(callGraphData.rawGraph(), f, null);
+				EFGraph.store(graph, f, null);
 			} else {
-				BVGraph.store(callGraphData.rawGraph(), f, windowSize, maxRefCount, minIntervalLength, zetaK, flags, 1, null);
+				BVGraph.store(graph, f, windowSize, maxRefCount, minIntervalLength, zetaK, flags, 1, null);
 			}
 			Properties properties = new Properties(f + BVGraph.PROPERTIES_EXTENSION);
 			System.out.print('\t');
@@ -122,9 +155,9 @@ public class RecompressGraphs {
 			System.out.print(properties.getString("bitsperlink"));
 
 			if (ef) {
-				EFGraph.store(callGraphData.rawTranspose(), f, null);
+				EFGraph.store(transpose, f, null);
 			} else {
-				BVGraph.store(callGraphData.rawTranspose(), f, windowSize, maxRefCount, minIntervalLength, zetaK, flags, 1, null);
+				BVGraph.store(transpose, f, windowSize, maxRefCount, minIntervalLength, zetaK, flags, 1, null);
 			}
 			properties = new Properties(f + BVGraph.PROPERTIES_EXTENSION);
 			System.out.print('\t');
@@ -136,6 +169,7 @@ public class RecompressGraphs {
 
 		LOGGER.info("Closing KnowledgeBase");
 		kb.close();
+		new File(f.toString());
 		new File(f.toString() + BVGraph.PROPERTIES_EXTENSION).delete();
 		new File(f.toString() + BVGraph.OFFSETS_EXTENSION).delete();
 		new File(f.toString() + BVGraph.GRAPH_EXTENSION).delete();

@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.javacgopal.merge;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,10 +27,10 @@ import java.io.IOException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class CallGraphDifferentiatorTest {
+public class CallGraphUtilsTest {
 
-    static ExtendedRevisionCallGraph firstGraph;
-    static ExtendedRevisionCallGraph secondGraph;
+    static RevisionCallGraph firstGraph;
+    static RevisionCallGraph secondGraph;
 
     @BeforeClass
     public static void generateCallGraph() throws FileNotFoundException {
@@ -41,7 +41,7 @@ public class CallGraphDifferentiatorTest {
 
         final var coord = new MavenCoordinate("mvn", "DiffExample", "1.7.29");
 
-        firstGraph = ExtendedRevisionCallGraph.extendedBuilder()
+        firstGraph = RevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product(coord.getProduct())
             .version(coord.getVersionConstraint())
@@ -55,7 +55,7 @@ public class CallGraphDifferentiatorTest {
             Thread.currentThread().getContextClassLoader().getResource("DiffExampleSecond.class")
                 .getFile()));
 
-        secondGraph = ExtendedRevisionCallGraph.extendedBuilder()
+        secondGraph = RevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product(coord.getProduct())
             .version(coord.getVersionConstraint())
@@ -68,6 +68,6 @@ public class CallGraphDifferentiatorTest {
 
     @Test
     public void testDiff() throws IOException {
-        CallGraphDifferentiator.diffInFile("", 1, firstGraph, secondGraph);
+        CallGraphUtils.diffInFile("", 1, firstGraph, secondGraph);
     }
 }

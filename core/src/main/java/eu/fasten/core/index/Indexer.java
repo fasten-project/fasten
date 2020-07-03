@@ -51,7 +51,7 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.KnowledgeBase;
 /** A sample in-memory indexer that reads, compresses and stores in memory
  *  graphs stored in JSON format and answers to impact queries.
@@ -87,7 +87,7 @@ public class Indexer {
 						final JSONObject json = new JSONObject(record.value());
 						try {
 							LOGGER.debug("Getting new record with key " + record.key());
-							kb.add(new ExtendedRevisionCallGraph(json), index++);
+							kb.add(new RevisionCallGraph(json), index++);
 							nIndexed++;
 							if (nIndexed >= max) {
 								stopIndexing[0] = true;
@@ -115,7 +115,7 @@ public class Indexer {
 			LOGGER.debug("Parsing " + file);
 			final FileReader reader = new FileReader(file);
 			final JSONObject json = new JSONObject(new JSONTokener(reader));
-			kb.add(new ExtendedRevisionCallGraph(json), index++);
+			kb.add(new RevisionCallGraph(json), index++);
 			nIndexed++;
 			if (nIndexed >= max)  break;
 			reader.close();

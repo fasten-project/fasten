@@ -57,25 +57,22 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
+        var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
         try {
-            var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
             metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
-            final FileReader reader;
-            try {
-                reader = new FileReader(jsonFile);
-            } catch (FileNotFoundException e) {
-                logger.error("Could not find the JSON file at " + jsonFile, e);
-                return;
-            }
-            metadataPlugin.writeToKafka = false;
-            final JSONObject jsonCallgraph = new JSONObject(new JSONTokener(reader));
-            try {
-                metadataPlugin.consume(jsonCallgraph.toString());
-            } catch (IllegalArgumentException e) {
-                logger.error("Incorrect database URL", e);
-            }
-        } catch (SQLException e) {
+        } catch (IllegalArgumentException | SQLException e) {
             logger.error("Could not connect to the database", e);
+            return;
         }
+        final FileReader reader;
+        try {
+            reader = new FileReader(jsonFile);
+        } catch (FileNotFoundException e) {
+            logger.error("Could not find the JSON file at " + jsonFile, e);
+            return;
+        }
+        final JSONObject jsonCallgraph = new JSONObject(new JSONTokener(reader));
+        metadataPlugin.consume(jsonCallgraph.toString());
+        metadataPlugin.produce().ifPresent(System.out::println);
     }
 }

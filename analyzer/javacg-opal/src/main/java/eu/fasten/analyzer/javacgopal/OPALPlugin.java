@@ -21,7 +21,7 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.baseanalyzer.AnalyzerPlugin;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import java.io.FileNotFoundException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -37,8 +37,8 @@ public class OPALPlugin extends AnalyzerPlugin {
     public static class OPAL extends AnalyzerPlugin.ANALYZER {
 
         @Override
-        public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
-                                                           final JSONObject kafkaConsumedJson) {
+        public RevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
+                                                   final JSONObject kafkaConsumedJson) {
             try {
                 return PartialCallGraph.createExtendedRevisionCallGraph(mavenCoordinate,
                     Long.parseLong(kafkaConsumedJson.get("date").toString()));

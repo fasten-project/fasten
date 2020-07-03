@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -36,8 +36,8 @@ import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ExtendedRevisionCallGraphTest {
-    static ExtendedRevisionCallGraph cg;
+public class RevisionCallGraphTest {
+    static RevisionCallGraph cg;
     static String cgString;
 
     /**
@@ -64,20 +64,20 @@ public class ExtendedRevisionCallGraphTest {
                 .getResource("DiffExampleFirst.class"))
                 .getFile()));
 
-        cg = ExtendedRevisionCallGraph.extendedBuilder()
+        cg = RevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product(mavenCoordinate.getProduct())
             .cgGenerator(partialCG.getGENERATOR())
             .version(mavenCoordinate.getVersionConstraint()).timestamp(1574072773)
             .depset(
-                MavenCoordinate.MavenResolver.resolveDependencies(mavenCoordinate.getCoordinate()))
+                MavenCoordinate.MavenResolver.resolveDependencies(mavenCoordinate))
             .graph(partialCG.getGraph())
             .classHierarchy(partialCG.getClassHierarchy())
             .build();
 
         cg.sortInternalCalls();
 
-        cgString = "{\"product\":\"diff.example\","
+        cgString = "{\"product\":\"diff:example\","
             + "\"forge\":\"mvn\","
             + "\"generator\":\"OPAL\","
             + "\"depset\":[],"
@@ -102,14 +102,14 @@ public class ExtendedRevisionCallGraphTest {
             + "\"timestamp\":1574072773}";
     }
 
-    public static void assertSLF4j(ExtendedRevisionCallGraph cg) {
+    public static void assertSLF4j(RevisionCallGraph cg) {
         assertNotNull(cg);
         assertEquals("mvn", cg.forge);
         assertEquals("1.7.29", cg.version);
         assertEquals(1574072773, cg.timestamp);
-        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j.slf4j-api$1.7.29"), cg.uri);
-        assertEquals(new FastenJavaURI("fasten://org.slf4j.slf4j-api$1.7.29"), cg.forgelessUri);
-        assertEquals("org.slf4j.slf4j-api", cg.product);
+        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
+        assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
+        assertEquals("org.slf4j:slf4j-api", cg.product);
         assertNotEquals(0, cg.getGraph().size());
     }
 
@@ -125,17 +125,17 @@ public class ExtendedRevisionCallGraphTest {
 
         final var coord = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
         final var partialCG = new PartialCallGraph(
-            MavenCoordinate.MavenResolver.downloadJar("org.slf4j:slf4j-api:1.7.29")
+            MavenCoordinate.MavenResolver.downloadJar(coord)
                 .orElseThrow(RuntimeException::new)
         );
 
-        final var rcg = ExtendedRevisionCallGraph.extendedBuilder()
+        final var rcg = RevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product(coord.getProduct())
             .version(coord.getVersionConstraint())
             .cgGenerator(partialCG.getGENERATOR())
             .timestamp(1574072773)
-            .depset(MavenCoordinate.MavenResolver.resolveDependencies(coord.getCoordinate()))
+            .depset(MavenCoordinate.MavenResolver.resolveDependencies(coord))
             .graph(partialCG.getGraph())
             .classHierarchy(partialCG.getClassHierarchy())
             .build();
@@ -146,10 +146,10 @@ public class ExtendedRevisionCallGraphTest {
     @Test
     public void testExtendedRevisionCallGraph() throws JSONException {
 
-        final var cgFromJSON = new ExtendedRevisionCallGraph(new JSONObject(cgString));
+        final var cgFromJSON = new RevisionCallGraph(new JSONObject(cgString));
 
         assertEquals("mvn", cgFromJSON.forge);
-        assertEquals("diff.example", cgFromJSON.product);
+        assertEquals("diff:example", cgFromJSON.product);
         assertEquals("0.0.1", cgFromJSON.version);
         assertEquals(1574072773, cgFromJSON.timestamp);
         assertEquals("OPAL", cgFromJSON.getCgGenerator());
@@ -190,14 +190,14 @@ public class ExtendedRevisionCallGraphTest {
                 + " 4=/name.space/DiffExampleFirst.d()%2Fjava.lang%2FVoidType},"
                 + " superClasses=[/java.lang/Object],"
                 + " superInterfaces=[]}}",
-            ExtendedRevisionCallGraph.getCHAFromJSON(new JSONObject(cgString).getJSONObject("cha"))
+            RevisionCallGraph.getCHAFromJSON(new JSONObject(cgString).getJSONObject("cha"))
                 .toString());
     }
 
     @Test
     public void testSortInternalCalls() throws JSONException {
         final var unorderdCGString = cgString.replace("[[1,2],[2,3],[3,4]]", "[[2,3],[3,4],[1,2]]");
-        final var unorderedCG = new ExtendedRevisionCallGraph(new JSONObject(unorderdCGString));
+        final var unorderedCG = new RevisionCallGraph(new JSONObject(unorderdCGString));
         assertEquals("[[2, 3], [3, 4], [1, 2]]",
             unorderedCG.getGraph().getInternalCalls().toString());
         unorderedCG.sortInternalCalls();
@@ -210,17 +210,17 @@ public class ExtendedRevisionCallGraphTest {
 
         final var coord = new MavenCoordinate("activemq", "activemq", "release-1.5");
         final var partialCG = new PartialCallGraph(
-            MavenCoordinate.MavenResolver.downloadJar("activemq:activemq:release-1.5")
+            MavenCoordinate.MavenResolver.downloadJar(coord)
                 .orElseThrow(RuntimeException::new)
         );
 
-        final var rcg = ExtendedRevisionCallGraph.extendedBuilder()
+        final var rcg = RevisionCallGraph.extendedBuilder()
             .forge("mvn")
             .product(coord.getProduct())
             .version(coord.getVersionConstraint())
             .cgGenerator(partialCG.getGENERATOR())
             .timestamp(1574072773)
-            .depset(MavenCoordinate.MavenResolver.resolveDependencies(coord.getCoordinate()))
+            .depset(MavenCoordinate.MavenResolver.resolveDependencies(coord))
             .graph(partialCG.getGraph())
             .classHierarchy(partialCG.getClassHierarchy())
             .build();

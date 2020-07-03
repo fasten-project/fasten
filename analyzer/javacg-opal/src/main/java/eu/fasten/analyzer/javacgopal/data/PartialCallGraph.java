@@ -21,7 +21,7 @@ package eu.fasten.analyzer.javacgopal.data;
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -63,9 +63,9 @@ public class PartialCallGraph {
 
     /**
      * Class hierarchy of this call graph, keys are {@link FastenURI} of classes of the artifact and
-     * values are {@link ExtendedRevisionCallGraph.Type}.
+     * values are {@link RevisionCallGraph.Type}.
      */
-    private final Map<FastenURI, ExtendedRevisionCallGraph.Type> classHierarchy;
+    private final Map<FastenURI, RevisionCallGraph.Type> classHierarchy;
 
     /**
      * Internal calls of the call graph, each element is a list of Integer that the first element is
@@ -150,13 +150,13 @@ public class PartialCallGraph {
     /**
      * Converts all of the members of the classHierarchy to {@link FastenURI}.
      * @param classHierarchy Map<{@link ObjectType},{@link OPALType}>
-     * @return A {@link Map} of {@link FastenURI} as key and {@link ExtendedRevisionCallGraph.Type}
+     * @return A {@link Map} of {@link FastenURI} as key and {@link RevisionCallGraph.Type}
      *     as value.
      */
-    public static Map<FastenURI, ExtendedRevisionCallGraph.Type> asURIHierarchy(
+    public static Map<FastenURI, RevisionCallGraph.Type> asURIHierarchy(
         final Map<ObjectType, OPALType> classHierarchy) {
 
-        final Map<FastenURI, ExtendedRevisionCallGraph.Type> result = new HashMap<>();
+        final Map<FastenURI, RevisionCallGraph.Type> result = new HashMap<>();
 
         for (final var aClass : classHierarchy.keySet()) {
 
@@ -171,7 +171,7 @@ public class PartialCallGraph {
 
             result.put(
                 OPALMethod.getTypeURI(aClass),
-                new ExtendedRevisionCallGraph.Type(type.getSourceFileName(),
+                new RevisionCallGraph.Type(type.getSourceFileName(),
                     toURIMethods(type.getMethods()),
                     superClassesURIs,
                     toURIInterfaces(type.getSuperInterfaces())));
@@ -363,25 +363,25 @@ public class PartialCallGraph {
 
 
     /**
-     * Creates {@link ExtendedRevisionCallGraph} using OPAL call graph generator for a given maven
+     * Creates {@link RevisionCallGraph} using OPAL call graph generator for a given maven
      * coordinate. It also sets the forge to "mvn".
      * @param coordinate maven coordinate of the revision to be processed.
      * @param timestamp  timestamp of the revision release.
-     * @return {@link ExtendedRevisionCallGraph} of the given coordinate.
+     * @return {@link RevisionCallGraph} of the given coordinate.
      * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
      *                               Maven central it throws this exception.
      */
-    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(
+    public static RevisionCallGraph createExtendedRevisionCallGraph(
         final MavenCoordinate coordinate, final long timestamp)
         throws FileNotFoundException {
         final var partialCallGraph = new PartialCallGraph(
-            MavenCoordinate.MavenResolver.downloadJar(coordinate.getCoordinate())
+            MavenCoordinate.MavenResolver.downloadJar(coordinate)
                 .orElseThrow(RuntimeException::new)
         );
 
-        return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
+        return new RevisionCallGraph("mvn", coordinate.getProduct(),
             coordinate.getVersionConstraint(), timestamp, partialCallGraph.getGENERATOR(),
-            MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()),
+            MavenCoordinate.MavenResolver.resolveDependencies(coordinate),
             partialCallGraph.getClassHierarchy(),
             partialCallGraph.getGraph());
     }
@@ -390,7 +390,7 @@ public class PartialCallGraph {
      * Given a call graph and a CHA it creates a list of internal calls. This list indicates source
      * and target methods by their unique within artifact ids existing in the cha.
      * @param cg  {@link ComputedCallGraph}
-     * @param cha A Map of {@link ObjectType} and {@link ExtendedRevisionCallGraph.Type}
+     * @param cha A Map of {@link ObjectType} and {@link RevisionCallGraph.Type}
      * @return a list of List of Integers that the first element of each int[] is the source method
      *     and the second one is the target method.
      */
@@ -425,7 +425,7 @@ public class PartialCallGraph {
      * indicates the source methods by their unique within artifact id existing in the cha, target
      * methods by their {@link FastenURI}, and a map that indicates the call type.
      * @param cg  {@link ComputedCallGraph}
-     * @param cha A Map of {@link ObjectType} and {@link ExtendedRevisionCallGraph.Type}
+     * @param cha A Map of {@link ObjectType} and {@link RevisionCallGraph.Type}
      * @return A map that each each entry of it is a {@link Pair} of source method's id, and target
      *     method's {@link FastenURI} as key and a map that shows call types as value. call types
      *     map's key is the name of JVM call type and the value is number of invocation by this call
@@ -482,7 +482,7 @@ public class PartialCallGraph {
         }
     }
 
-    public Map<FastenURI, ExtendedRevisionCallGraph.Type> getClassHierarchy() {
+    public Map<FastenURI, RevisionCallGraph.Type> getClassHierarchy() {
         return classHierarchy;
     }
 
@@ -490,8 +490,8 @@ public class PartialCallGraph {
         return "OPAL";
     }
 
-    public ExtendedRevisionCallGraph.Graph getGraph() {
-        return new ExtendedRevisionCallGraph.Graph(this.internalCalls, this.externalCalls);
+    public RevisionCallGraph.Graph getGraph() {
+        return new RevisionCallGraph.Graph(this.internalCalls, this.externalCalls);
     }
 
     /**

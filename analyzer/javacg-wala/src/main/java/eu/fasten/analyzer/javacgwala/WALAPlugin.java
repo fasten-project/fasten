@@ -23,7 +23,7 @@ import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import eu.fasten.analyzer.baseanalyzer.AnalyzerPlugin;
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import java.io.IOException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -39,8 +39,8 @@ public class WALAPlugin extends AnalyzerPlugin {
     public static class WALA extends AnalyzerPlugin.ANALYZER {
 
         @Override
-        public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
-                                                           final JSONObject kafkaConsumedJson)
+        public RevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
+                                                   final JSONObject kafkaConsumedJson)
                 throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {
 
             return PartialCallGraph.createExtendedRevisionCallGraph(mavenCoordinate,

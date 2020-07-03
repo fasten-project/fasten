@@ -30,6 +30,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,14 +46,18 @@ import org.slf4j.LoggerFactory;
  * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre".
  */
 public class MavenCoordinate {
-    final String mavenRepo = "https://repo.maven.apache.org/maven2/";
+    private List<String> mavenRepos;
 
     private final String groupID;
     private final String artifactID;
     private final String versionConstraint;
 
-    public String getMavenRepo() {
-        return mavenRepo;
+    public List<String> getMavenRepos() {
+        return mavenRepos;
+    }
+
+    public void setMavenRepos(List<String> mavenRepos) {
+        this.mavenRepos = mavenRepos;
     }
 
     public String getGroupID() {
@@ -75,6 +80,23 @@ public class MavenCoordinate {
      * @param version    Version
      */
     public MavenCoordinate(final String groupID, final String artifactID, final String version) {
+        this.mavenRepos = new ArrayList<>(Collections
+                .singletonList("https://repo.maven.apache.org/maven2/"));
+        this.groupID = groupID;
+        this.artifactID = artifactID;
+        this.versionConstraint = version;
+    }
+
+    /**
+     * Construct MavenCoordinate form groupID, artifactID, and version.
+     *
+     * @param repos      Maven repositories
+     * @param groupID    GroupID
+     * @param artifactID ArtifactID
+     * @param version    Version
+     */
+    public MavenCoordinate(final List<String> repos, final String groupID, final String artifactID, final String version) {
+        this.mavenRepos = repos;
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
@@ -92,7 +114,7 @@ public class MavenCoordinate {
     }
 
     public String getProduct() {
-        return groupID + "." + artifactID;
+        return groupID + ":" + artifactID;
     }
 
     public String getCoordinate() {
@@ -104,8 +126,8 @@ public class MavenCoordinate {
      *
      * @return URL
      */
-    public String toURL() {
-        return mavenRepo
+    public String toURL(String repo) {
+        return repo
                 + this.groupID.replace('.', '/')
                 + "/"
                 + this.artifactID
@@ -118,8 +140,8 @@ public class MavenCoordinate {
      *
      * @return JAR URL
      */
-    public String toJarUrl() {
-        return this.toURL()
+    public String toJarUrl(String repo) {
+        return this.toURL(repo)
                 + "/"
                 + this.artifactID
                 + "-"
@@ -132,8 +154,8 @@ public class MavenCoordinate {
      *
      * @return POM URL
      */
-    public String toPomUrl() {
-        return this.toURL()
+    public String toPomUrl(String repo) {
+        return this.toURL(repo)
                 + "/"
                 + this.artifactID
                 + "-"
@@ -145,7 +167,7 @@ public class MavenCoordinate {
      * A set of methods for downloading POM and JAR files given Maven coordinates.
      */
     public static class MavenResolver {
-        private static Logger logger = LoggerFactory.getLogger(MavenResolver.class);
+        private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
 
         /**
          * Returns information about the dependencies of the indicated artifact.
@@ -154,7 +176,7 @@ public class MavenCoordinate {
          * @return A java List of a given artifact's dependencies in FastenJson Dependency format
          */
         public static List<List<RevisionCallGraph.Dependency>> resolveDependencies(
-                final String mavenCoordinate) {
+                final MavenCoordinate mavenCoordinate) {
 
             var resolver = new MavenResolver();
             return resolver.getDependencies(mavenCoordinate);
@@ -167,7 +189,7 @@ public class MavenCoordinate {
          * @return A java List of a given artifact's dependencies in FastenJson Dependency format
          */
         public List<List<RevisionCallGraph.Dependency>> getDependencies(
-                final String mavenCoordinate) {
+                final MavenCoordinate mavenCoordinate) {
 
             final var dependencies = new ArrayList<List<RevisionCallGraph.Dependency>>();
 
@@ -246,7 +268,7 @@ public class MavenCoordinate {
                 if (versionSpec != null) {
                     version = versionSpec.getStringValue().startsWith("$")
                             ? properties.get(versionSpec.getStringValue()
-                                    .substring(2, versionSpec.getStringValue().length() - 1)) :
+                            .substring(2, versionSpec.getStringValue().length() - 1)) :
                             versionSpec.getStringValue();
                 } else {
                     version = "*";
@@ -254,7 +276,7 @@ public class MavenCoordinate {
 
                 final var dependency = new RevisionCallGraph.Dependency(
                         "mvn",
-                        groupId + "." + artifactId,
+                        groupId + ":" + artifactId,
                         Collections.singletonList(new RevisionCallGraph
                                 .Constraint(version, version)));
                 depList.add(dependency);
@@ -269,10 +291,17 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return The contents of the downloaded POM file as a string
          */
-        public Optional<String> downloadPom(final String mavenCoordinate)
+        public Optional<String> downloadPom(final MavenCoordinate mavenCoordinate)
                 throws FileNotFoundException {
-            return httpGetToFile(fromString(mavenCoordinate).toPomUrl(), ".pom")
-                    .flatMap(MavenResolver::fileToString);
+
+            for (var repo : mavenCoordinate.getMavenRepos()) {
+                var pom = httpGetToFile(mavenCoordinate.toPomUrl(repo), ".pom")
+                            .flatMap(MavenResolver::fileToString);
+                if (pom.isPresent()) {
+                    return pom;
+                }
+            }
+            return Optional.empty();
         }
 
         /**
@@ -281,10 +310,18 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return A temporary file on the filesystem
          */
-        public static Optional<File> downloadJar(final String mavenCoordinate)
+        public static Optional<File> downloadJar(final MavenCoordinate mavenCoordinate)
                 throws FileNotFoundException {
             logger.debug("Downloading JAR for " + mavenCoordinate);
-            return httpGetToFile(fromString(mavenCoordinate).toJarUrl(), ".jar");
+
+            for (var repo : mavenCoordinate.getMavenRepos()) {
+                var jar = httpGetToFile(mavenCoordinate.toJarUrl(repo), ".jar");
+
+                if (jar.isPresent()) {
+                    return jar;
+                }
+            }
+            return Optional.empty();
         }
 
         /**

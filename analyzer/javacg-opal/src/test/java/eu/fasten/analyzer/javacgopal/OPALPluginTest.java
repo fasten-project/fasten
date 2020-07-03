@@ -24,9 +24,8 @@ import static org.junit.Assert.assertTrue;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.RevisionCallGraph;
 import java.io.FileNotFoundException;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.BeforeClass;
@@ -110,7 +109,7 @@ public class OPALPluginTest {
         opalPlugin.consume(emptyCGCoordinate.toString());
         assertTrue(opalPlugin.produce().isPresent());
         var graph = opalPlugin.produce().get();
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(graph));
+        var cg = new RevisionCallGraph(new JSONObject(graph));
         //Based on plugin's logs this artifact's call graph should be empty.
         assertTrue(cg.isCallGraphEmpty());
     }

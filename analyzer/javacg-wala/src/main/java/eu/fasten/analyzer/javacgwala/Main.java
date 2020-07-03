@@ -20,11 +20,12 @@ package eu.fasten.analyzer.javacgwala;
 
 import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgwala.data.callgraph.PartialCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,6 +34,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -45,10 +48,16 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "JavaCGWala")
 public class Main implements Runnable {
 
-    private static Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     @CommandLine.ArgGroup()
     SetRunner setRunner;
+
+    @CommandLine.Option(names = {"-r"},
+            paramLabel = "REPOS",
+            description = "Maven repositories",
+            split = ",")
+    List<String> repos;
 
     @CommandLine.Option(names = {"-t", "--timestamp"},
             paramLabel = "TS",
@@ -56,13 +65,70 @@ public class Main implements Runnable {
             defaultValue = "0")
     String timestamp;
 
+    @CommandLine.Option(names = {"-o", "--output"},
+            paramLabel = "OUT",
+            description = "Output path")
+    String outputPath;
+
+    @CommandLine.Option(names = {"--stdout"},
+            paramLabel = "STDOUT",
+            description = "Write to stdout")
+    boolean writeToStdout;
+
+    static class FullCoordinate {
+        @CommandLine.Option(names = {"-c", "--coord"},
+                paramLabel = "COORD",
+                description = "Maven coordinates string",
+                required = true)
+        String mavenCoordStr;
+    }
+
+    static class PathToFile {
+        @CommandLine.Option(names = {"-f", "--path"},
+                paramLabel = "PATH",
+                description = "Path to file",
+                required = true)
+        String path;
+
+        @CommandLine.Option(names = {"-p", "--product"},
+                paramLabel = "PRODUCT",
+                description = "Product",
+                defaultValue = "PRODUCT")
+        String product;
+
+        @CommandLine.Option(names = {"-v", "--version"},
+                paramLabel = "VERSION",
+                description = "Callgraph version",
+                defaultValue = "0.0.0")
+        String version;
+
+        @CommandLine.Option(names = {"-d", "--dependencies"},
+                paramLabel = "DEPENDENCIES",
+                description = "One or more dependency coordinate to merge with the artifact",
+                split = ",")
+        String[] dependencies;
+    }
+
+    static class SetRunner {
+        @CommandLine.ArgGroup()
+        FullCoordinate fullCoordinate;
+
+        @CommandLine.ArgGroup(exclusive = false)
+        PathToFile pathToFile;
+
+        @CommandLine.Option(names = {"-s", "--set"},
+                paramLabel = "Set",
+                description = "Set of maven coordinates",
+                required = true)
+        String set;
+    }
+
     /**
      * Generates RevisionCallGraphs using Opal for the specified artifact in the command line
      * parameters.
      */
     public static void main(String[] args) {
-        final int exitCode = new CommandLine(new Main()).execute(args);
-        System.exit(exitCode);
+        System.exit(new CommandLine(new Main()).execute(args));
     }
 
     /**
@@ -70,35 +136,41 @@ public class Main implements Runnable {
      */
     public void run() {
         MavenCoordinate mavenCoordinate;
-        if (setRunner.pathToFile.path != null) {
+        if (setRunner != null && setRunner.pathToFile != null) {
             final List<List<RevisionCallGraph.Dependency>> dependencies = new ArrayList<>();
 
             final List<MavenCoordinate> coordinates = new ArrayList<>();
             if (setRunner.pathToFile.dependencies != null) {
                 for (String currentCoordinate : setRunner.pathToFile.dependencies) {
-                    coordinates.add(MavenCoordinate.fromString(currentCoordinate));
+                    var coordinate = MavenCoordinate.fromString(currentCoordinate);
+                    if (repos.size() > 0) {
+                        coordinate.setMavenRepos(repos);
+                    }
+                    coordinates.add(coordinate);
                 }
             }
 
             for (var coordinate : coordinates) {
-                dependencies.addAll(MavenCoordinate.MavenResolver.resolveDependencies(coordinate.getCoordinate()));
+                dependencies.addAll(MavenCoordinate.MavenResolver
+                        .resolveDependencies(coordinate));
             }
-            var ercg = PartialCallGraph.generateERCG(setRunner.pathToFile.path,
+            var rcg = PartialCallGraph.generateERCG(setRunner.pathToFile.path,
                     setRunner.pathToFile.product, setRunner.pathToFile.version,
-                    Long.parseLong(setRunner.pathToFile.timestamp), dependencies);
-            System.out.println(ercg.toJSON());
+                    Long.parseLong(timestamp), dependencies);
 
-        } else if (setRunner.set != null) {
+            try {
+                writeCallgraph(rcg);
+            } catch (IOException e) {
+                logger.info("Couldn't write to the file");
+            }
+
+        } else if (setRunner != null && setRunner.set != null) {
             consumeSet(setRunner.set);
-        } else {
-            if (this.setRunner.fullCoordinate.mavenCoordStr != null) {
-                mavenCoordinate = MavenCoordinate
-                        .fromString(this.setRunner.fullCoordinate.mavenCoordStr);
-            } else {
-                mavenCoordinate = new MavenCoordinate(
-                        this.setRunner.fullCoordinate.coordinateComponents.group,
-                        this.setRunner.fullCoordinate.coordinateComponents.artifact,
-                        this.setRunner.fullCoordinate.coordinateComponents.version);
+        } else if (setRunner != null && setRunner.fullCoordinate.mavenCoordStr != null) {
+            mavenCoordinate = MavenCoordinate
+                    .fromString(this.setRunner.fullCoordinate.mavenCoordStr);
+            if (repos != null && repos.size() > 0) {
+                mavenCoordinate.setMavenRepos(repos);
             }
 
             try {
@@ -106,7 +178,11 @@ public class Main implements Runnable {
                         mavenCoordinate,
                         Long.parseLong(this.timestamp));
 
-                System.out.println(revisionCallGraph.toJSON());
+                try {
+                    writeCallgraph(revisionCallGraph);
+                } catch (IOException e) {
+                    logger.info("Couldn't write to the file");
+                }
 
             } catch (Throwable e) {
                 logger.error("Failed to generate a call graph for Maven coordinate: {}, Error: {}",
@@ -127,6 +203,9 @@ public class Main implements Runnable {
 
         for (var coordinate : getCoordinates(path)) {
             final var mavenCoordinate = getMavenCoordinate(coordinate);
+            if (mavenCoordinate != null && repos != null && repos.size() > 0) {
+                mavenCoordinate.setMavenRepos(repos);
+            }
 
             try {
                 var cg = PartialCallGraph.createExtendedRevisionCallGraph(
@@ -142,6 +221,10 @@ public class Main implements Runnable {
                 logger.info("Call graph successfully generated for {}!",
                         mavenCoordinate.getCoordinate());
 
+                writeCallgraph(cg);
+
+            } catch (IOException e) {
+                logger.info("Couldn't write to the file");
             } catch (Throwable e) {
                 JSONObject error = new JSONObject().put("plugin", this.getClass().getSimpleName())
                         .put("msg", e.getMessage())
@@ -242,10 +325,8 @@ public class Main implements Runnable {
     private List<JSONObject> getCoordinates(String path) {
         try {
             File file = new File(path);
-
             BufferedReader br = new BufferedReader(new FileReader(file));
             return br.lines()
-                    .map(x -> x.substring(0, x.indexOf("url") - 2) + "}")
                     .map(JSONObject::new)
                     .collect(Collectors.toList());
 
@@ -257,80 +338,23 @@ public class Main implements Runnable {
         return new ArrayList<>();
     }
 
-    static class CoordinateComponents {
-        @CommandLine.Option(names = {"-g", "--group"},
-                paramLabel = "GROUP",
-                description = "Maven group id",
-                required = true)
-        String group;
-
-        @CommandLine.Option(names = {"-a", "--artifact"},
-                paramLabel = "ARTIFACT",
-                description = "Maven artifact id",
-                required = true)
-        String artifact;
-
-        @CommandLine.Option(names = {"-v", "--version"},
-                paramLabel = "VERSION",
-                description = "Maven version id",
-                required = true)
-        String version;
-    }
-
-    static class FullCoordinate {
-        @CommandLine.ArgGroup(exclusive = false)
-        CoordinateComponents coordinateComponents;
-
-        @CommandLine.Option(names = {"-c", "--coord"},
-                paramLabel = "COORD",
-                description = "Maven coordinates string",
-                required = true)
-        String mavenCoordStr;
-    }
-
-    static class PathToFile {
-        @CommandLine.Option(names = {"--path"},
-                paramLabel = "PATH",
-                description = "Path to file",
-                required = true)
-        String path;
-
-        @CommandLine.Option(names = {"-p", "--product"},
-                paramLabel = "PRODUCT",
-                description = "Product",
-                defaultValue = "PRODUCT")
-        String product;
-
-        @CommandLine.Option(names = {"--prodcutversion"},
-                paramLabel = "VERSION",
-                description = "Callgraph version",
-                defaultValue = "0.0.0")
-        String version;
-
-        @CommandLine.Option(names = {"--producttimestamp"},
-                paramLabel = "TS",
-                description = "Release TS",
-                defaultValue = "0")
-        String timestamp;
-
-        @CommandLine.Option(names = {"-d", "--dependencies"},
-                paramLabel = "DEPENDENCIES",
-                description = "One or more dependency coordinate to merge with the artifact")
-        String[] dependencies;
-    }
-
-    static class SetRunner {
-        @CommandLine.ArgGroup()
-        FullCoordinate fullCoordinate;
-
-        @CommandLine.ArgGroup(exclusive = false)
-        PathToFile pathToFile;
-
-        @CommandLine.Option(names = {"-s", "--set"},
-                paramLabel = "Set",
-                description = "Set of maven coordinates",
-                required = true)
-        String set;
+    /**
+     * Writes a callgraph to a specified path.
+     *
+     * @param graph a callgraph to write to file
+     * @throws IOException cannot write to a file
+     */
+    private void writeCallgraph(RevisionCallGraph graph) throws IOException {
+        if (this.outputPath != null) {
+            final BufferedWriter writer = new BufferedWriter(
+                    new FileWriter(outputPath + "/" + graph.product + "-v" + graph.version + ".json"));
+            writer.write(graph.toJSON().toString(4));
+            writer.close();
+            logger.info("Successfully written the call graph into a file");
+        }
+        if (writeToStdout) {
+            System.out.println(graph.toJSON().toString());
+        }
     }
 }
 

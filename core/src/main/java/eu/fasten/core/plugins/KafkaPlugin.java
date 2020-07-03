@@ -21,7 +21,7 @@ package eu.fasten.core.plugins;
 import java.util.List;
 import java.util.Optional;
 
-public interface KafkaPlugin<I, O> extends FastenPlugin {
+public interface KafkaPlugin extends FastenPlugin {
     /**
      * Returns an optional singleton list with a Kafka topic from which messages
      * need to be consumed. If Optional.empty() is returned, the plugin
@@ -44,7 +44,7 @@ public interface KafkaPlugin<I, O> extends FastenPlugin {
      *
      * @param record a record to process
      */
-    void consume(I record);
+    void consume(String record);
 
     /**
      * Return an optional results of the computation. The result is appended to
@@ -53,5 +53,14 @@ public interface KafkaPlugin<I, O> extends FastenPlugin {
      *
      * @return optional result of the computation
      */
-    Optional<O> produce();
+    Optional<String> produce();
+
+    /**
+     * Returns a relative path to a file, the result of processing
+     * a record should be written to. THe path has the following hierarchy:
+     * /forge/first-letter-of-artifactId/artifactId/artifactId_groupId_Version.json
+     *
+     * @return relative path to the output file
+     */
+    String getOutputPath();
 }
