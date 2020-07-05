@@ -34,12 +34,9 @@ public class PartialCallGraph {
      * Given a file, algorithm and main class (in case of application package)
      * it creates a {@link PartialCallGraph} for it using OPAL.
      *
-     * @param file      file to be process
-     * @param mainClass main class of the package in case the package is an application
-     * @param algorithm algorithm to be used for generating a call graph
+     * @param constructor call graph constructor
      */
-    public PartialCallGraph(final File file, final String mainClass, final String algorithm) {
-        CallGraphConstructor constructor = new CallGraphConstructor(file, mainClass, algorithm);
+    public PartialCallGraph(CallGraphConstructor constructor) {
         this.graph = new ExtendedRevisionCallGraphV3.Graph();
 
         logger.info("Creating internal CHA");
@@ -78,10 +75,10 @@ public class PartialCallGraph {
             final MavenCoordinate coordinate, final String mainClass,
             final String algorithm, final long timestamp)
             throws FileNotFoundException {
-        final var partialCallGraph = new PartialCallGraph(
+        final var partialCallGraph = new PartialCallGraph(new CallGraphConstructor(
                 new MavenCoordinate.MavenResolver().downloadJar(coordinate)
-                        .orElseThrow(RuntimeException::new), mainClass, algorithm
-        );
+                        .orElseThrow(RuntimeException::new), mainClass, algorithm));
+
         return new ExtendedRevisionCallGraphV3("mvn", coordinate.getProduct(),
                 coordinate.getVersionConstraint(), timestamp, partialCallGraph.getNodeCount(), "OPAL",
                 MavenCoordinate.MavenResolver.resolveDependencies(coordinate),

@@ -25,12 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.RevisionCallGraph;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Objects;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -40,9 +38,9 @@ class PartialCallGraphTest {
 
     @BeforeAll
     static void setUp() {
-        singleCallCG = new PartialCallGraph(
+        singleCallCG = new PartialCallGraph(new CallGraphConstructor(
                 new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                        .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA");
+                        .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA"));
     }
 
     @Test
@@ -129,18 +127,14 @@ class PartialCallGraphTest {
     @Test
     void createExtendedRevisionCallGraph() throws FileNotFoundException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
-        var rcg = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
+        var cg = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
                 "", "CHA", 1574072773);
-        assertSLF4j(rcg);
-    }
-
-    public static void assertSLF4j(RevisionCallGraph cg) {
-        Assert.assertNotNull(cg);
-        Assert.assertEquals("mvn", cg.forge);
-        Assert.assertEquals("1.7.29", cg.version);
-        Assert.assertEquals(1574072773, cg.timestamp);
-        Assert.assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
-        Assert.assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
-        Assert.assertEquals("org.slf4j:slf4j-api", cg.product);
+        assertNotNull(cg);
+        assertEquals("mvn", cg.forge);
+        assertEquals("1.7.29", cg.version);
+        assertEquals(1574072773, cg.timestamp);
+        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
+        assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
+        assertEquals("org.slf4j:slf4j-api", cg.product);
     }
 }
