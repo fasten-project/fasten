@@ -21,9 +21,11 @@ package eu.fasten.analyzer.javacgopal.version3.data;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -102,10 +104,14 @@ class MavenCoordinateTest {
                 coordinate.toPomUrl("repo/"));
     }
 
+    // ------------------
+    // Maven Resolver Tests
+    // ------------------
+
     @Test
-    public void testResolveDependenciesWithProfile() throws IOException {
+    void testResolveDependenciesWithProfile() throws IOException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("testpom.txt"))
+                .getResource("maven-resolver-test-pom/test-pom-profiles.txt"))
                 .getFile()).getAbsolutePath();
 
         FileInputStream inputStream = new FileInputStream(file);
@@ -117,11 +123,116 @@ class MavenCoordinateTest {
 
         var deps = resolver.getDependencies(new MavenCoordinate("coordinate", "artifact", "version"));
         assertNotNull(deps);
-        assertEquals("mvn", deps.get(0).get(0).forge);
-        assertEquals("mvn", deps.get(0).get(1).forge);
+        assertEquals(1, deps.size());
+        assertEquals(3, deps.get(0).size());
+
         assertEquals("org.slf4j:slf4j-simple", deps.get(0).get(0).product);
-        assertEquals("org.dom4j:dom4j", deps.get(0).get(1).product);
         assertEquals("[1.7.30]", deps.get(0).get(0).constraints.get(0).toString());
+
+        assertEquals("org.dom4j:dom4j", deps.get(0).get(1).product);
         assertEquals("[*]", deps.get(0).get(1).constraints.get(0).toString());
+
+        assertEquals("info.picocli:picocli", deps.get(0).get(2).product);
+        assertEquals("[1.0.0]", deps.get(0).get(2).constraints.get(0).toString());
+    }
+
+    @Test
+    void testResolveDependenciesWithProfileEmptyDependencies() throws IOException {
+        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource("maven-resolver-test-pom/test-pom-profiles-empty-dependencies.txt"))
+                .getFile()).getAbsolutePath();
+
+        FileInputStream inputStream = new FileInputStream(file);
+        var pomText = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+
+        MavenCoordinate.MavenResolver resolver = Mockito.mock(MavenCoordinate.MavenResolver.class);
+        Mockito.when(resolver.downloadPom(Mockito.any())).thenReturn(java.util.Optional.of(pomText));
+        Mockito.doCallRealMethod().when(resolver).getDependencies(Mockito.any());
+
+        var deps = resolver.getDependencies(new MavenCoordinate("coordinate", "artifact", "version"));
+        assertNotNull(deps);
+        assertEquals(0, deps.size());
+    }
+
+    @Test
+    void testResolveDependenciesWithProfileAbsentDependencies() throws IOException {
+        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource("maven-resolver-test-pom/test-pom-profiles-absent-dependencies.txt"))
+                .getFile()).getAbsolutePath();
+
+        FileInputStream inputStream = new FileInputStream(file);
+        var pomText = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+
+        MavenCoordinate.MavenResolver resolver = Mockito.mock(MavenCoordinate.MavenResolver.class);
+        Mockito.when(resolver.downloadPom(Mockito.any())).thenReturn(java.util.Optional.of(pomText));
+        Mockito.doCallRealMethod().when(resolver).getDependencies(Mockito.any());
+
+        var deps = resolver.getDependencies(new MavenCoordinate("coordinate", "artifact", "version"));
+        assertNotNull(deps);
+        assertEquals(0, deps.size());
+    }
+
+    @Test
+    void testResolveDependenciesEmptyDependencies() throws IOException {
+        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource("maven-resolver-test-pom/test-pom-empty-dependencies.txt"))
+                .getFile()).getAbsolutePath();
+
+        FileInputStream inputStream = new FileInputStream(file);
+        var pomText = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+
+        MavenCoordinate.MavenResolver resolver = Mockito.mock(MavenCoordinate.MavenResolver.class);
+        Mockito.when(resolver.downloadPom(Mockito.any())).thenReturn(java.util.Optional.of(pomText));
+        Mockito.doCallRealMethod().when(resolver).getDependencies(Mockito.any());
+
+        var deps = resolver.getDependencies(new MavenCoordinate("coordinate", "artifact", "version"));
+        assertNotNull(deps);
+        assertEquals(1, deps.size());
+        assertEquals("org.dom4j:dom4j", deps.get(0).get(0).product);
+        assertEquals("[*]", deps.get(0).get(0).constraints.get(0).toString());
+    }
+
+    @Test
+    void downloadPomEmptyRepos() throws FileNotFoundException {
+        MavenCoordinate coordinate =
+                new MavenCoordinate(new ArrayList<>(), "group", "artifact", "version");
+
+        var resolver = new MavenCoordinate.MavenResolver();
+        var pom = resolver.downloadPom(coordinate);
+
+        assertTrue(pom.isEmpty());
+    }
+
+    @Test
+    void downloadPomWrongRepos() throws FileNotFoundException {
+        MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
+                .singletonList("repo")), "group", "artifact", "version");
+
+        var resolver = new MavenCoordinate.MavenResolver();
+        var pom = resolver.downloadPom(coordinate);
+
+        assertTrue(pom.isEmpty());
+    }
+
+    @Test
+    void downloadJarEmptyRepos() throws FileNotFoundException {
+        MavenCoordinate coordinate =
+                new MavenCoordinate(new ArrayList<>(), "group", "artifact", "version");
+
+        var resolver = new MavenCoordinate.MavenResolver();
+        var jar = resolver.downloadJar(coordinate);
+
+        assertTrue(jar.isEmpty());
+    }
+
+    @Test
+    void downloadJarWrongRepos() throws FileNotFoundException {
+        MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
+                .singletonList("repo")), "group", "artifact", "version");
+
+        var resolver = new MavenCoordinate.MavenResolver();
+        var jar = resolver.downloadJar(coordinate);
+
+        assertTrue(jar.isEmpty());
     }
 }
