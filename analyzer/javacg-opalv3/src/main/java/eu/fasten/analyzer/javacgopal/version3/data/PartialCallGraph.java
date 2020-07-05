@@ -79,7 +79,7 @@ public class PartialCallGraph {
             final String algorithm, final long timestamp)
             throws FileNotFoundException {
         final var partialCallGraph = new PartialCallGraph(
-                MavenCoordinate.MavenResolver.downloadJar(coordinate)
+                new MavenCoordinate.MavenResolver().downloadJar(coordinate)
                         .orElseThrow(RuntimeException::new), mainClass, algorithm
         );
         return new ExtendedRevisionCallGraphV3("mvn", coordinate.getProduct(),

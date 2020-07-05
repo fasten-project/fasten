@@ -19,12 +19,15 @@
 package eu.fasten.analyzer.javacgopal.version3.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Objects;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -33,13 +36,70 @@ import org.mockito.Mockito;
 class MavenCoordinateTest {
 
     @Test
-    public void testResolveDependencies() {
-        var deps = MavenCoordinate.MavenResolver.resolveDependencies(new MavenCoordinate("com.ibm.wala", "com.ibm.wala.core", "1.5.4"));
-        assertNotNull(deps);
-        assertEquals(1, deps.size());
-        assertEquals(1, deps.get(0).stream().filter(x -> x.product.contains("shrike")).toArray().length);
-        assertEquals(1, deps.get(0).stream().filter(x -> x.product.contains("util")).toArray().length);
-        assertEquals("[1.5.4]", deps.get(0).get(0).constraints.get(0).toString());
+    void constructorTest() {
+        MavenCoordinate coordinate1 = new MavenCoordinate("group", "artifact", "version");
+        MavenCoordinate coordinate2 = new MavenCoordinate(new ArrayList<>(Collections
+                .singletonList("repo")), "group", "artifact", "version");
+
+        assertEquals("group", coordinate1.getGroupID());
+        assertEquals(coordinate1.getGroupID(), coordinate2.getGroupID());
+
+        assertEquals("artifact", coordinate1.getArtifactID());
+        assertEquals(coordinate1.getArtifactID(), coordinate2.getArtifactID());
+
+        assertEquals("version", coordinate1.getVersionConstraint());
+        assertEquals(coordinate1.getVersionConstraint(), coordinate2.getVersionConstraint());
+
+        assertEquals(new ArrayList<>(Collections
+                        .singletonList("https://repo.maven.apache.org/maven2/")),
+                coordinate1.getMavenRepos());
+        assertNotEquals(coordinate1.getMavenRepos(), coordinate2.getMavenRepos());
+
+        var repos = new ArrayList<>(Collections.singletonList("repo"));
+        coordinate1.setMavenRepos(repos);
+
+        assertEquals(coordinate1.getMavenRepos(), coordinate2.getMavenRepos());
+    }
+
+    @Test
+    void fromString() {
+        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
+
+        assertEquals("GroupID", coordinate.getGroupID());
+        assertEquals("ArtifactID", coordinate.getArtifactID());
+        assertEquals("Version", coordinate.getVersionConstraint());
+    }
+
+    @Test
+    void getProduct() {
+        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
+        assertEquals("GroupID:ArtifactID", coordinate.getProduct());
+    }
+
+    @Test
+    void getCoordinate() {
+        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
+        assertEquals("GroupID:ArtifactID:Version", coordinate.getCoordinate());
+    }
+
+    @Test
+    void toURL() {
+        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
+        assertEquals("repo/GroupID/ArtifactID/Version", coordinate.toURL("repo/"));
+    }
+
+    @Test
+    void toJarUrl() {
+        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
+        assertEquals("repo/GroupID/ArtifactID/Version/ArtifactID-Version.jar",
+                coordinate.toJarUrl("repo/"));
+    }
+
+    @Test
+    void toPomUrl() {
+        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
+        assertEquals("repo/GroupID/ArtifactID/Version/ArtifactID-Version.pom",
+                coordinate.toPomUrl("repo/"));
     }
 
     @Test
@@ -63,25 +123,5 @@ class MavenCoordinateTest {
         assertEquals("org.dom4j:dom4j", deps.get(0).get(1).product);
         assertEquals("[1.7.30]", deps.get(0).get(0).constraints.get(0).toString());
         assertEquals("[*]", deps.get(0).get(1).constraints.get(0).toString());
-    }
-
-    @Test
-    public void testURLFromCoordinates() {
-
-        assertEquals("https://repo.maven.apache.org/maven2/com/ibm/wala/com.ibm.wala.core/1.5.4/com.ibm.wala.core-1.5.4.jar",
-                MavenCoordinate.fromString("com.ibm.wala:com.ibm.wala.core:1.5.4")
-                        .toJarUrl("https://repo.maven.apache.org/maven2/"));
-
-        assertEquals("https://repo.maven.apache.org/maven2/org/elasticsearch/elasticsearch/5.0.2/elasticsearch-5.0.2.pom",
-                MavenCoordinate.fromString("org.elasticsearch:elasticsearch:5.0.2")
-                        .toPomUrl("https://repo.maven.apache.org/maven2/"));
-
-        assertEquals("https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.13/commons-codec-1.13.pom",
-                MavenCoordinate.fromString("commons-codec:commons-codec:1.13")
-                        .toPomUrl("https://repo.maven.apache.org/maven2/"));
-
-        assertEquals("https://repo.maven.apache.org/maven2/org/codefeedr/codefeedr-plugin-mongodb_2.12/0.1.3/codefeedr-plugin-mongodb_2.12-0.1.3.jar",
-                MavenCoordinate.fromString("org.codefeedr:codefeedr-plugin-mongodb_2.12:0.1.3")
-                        .toJarUrl("https://repo.maven.apache.org/maven2/"));
     }
 }

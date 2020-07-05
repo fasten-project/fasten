@@ -309,7 +309,7 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return A temporary file on the filesystem
          */
-        public static Optional<File> downloadJar(final MavenCoordinate mavenCoordinate)
+        public Optional<File> downloadJar(final MavenCoordinate mavenCoordinate)
                 throws FileNotFoundException {
             logger.debug("Downloading JAR for " + mavenCoordinate);
 
