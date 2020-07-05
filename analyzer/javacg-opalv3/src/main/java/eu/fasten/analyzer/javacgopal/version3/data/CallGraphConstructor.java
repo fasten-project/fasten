@@ -57,7 +57,7 @@ public class CallGraphConstructor {
                         ConfigValueFactory.fromAnyRef(true));
 
         Config config;
-        if (mainClass.isEmpty()) {
+        if (mainClass == null || mainClass.isEmpty()) {
             config = baseConfig
                     .withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis",
                             ConfigValueFactory
@@ -100,18 +100,6 @@ public class CallGraphConstructor {
                 break;
             case "CHA":
                 result = project.get(CHACallGraphKey$.MODULE$);
-                break;
-            case "CTA":
-                result = project.get(CTACallGraphKey$.MODULE$);
-                break;
-            case "FTA":
-                result = project.get(FTACallGraphKey$.MODULE$);
-                break;
-            case "MTA":
-                result = project.get(MTACallGraphKey$.MODULE$);
-                break;
-            case "XTA":
-                result = project.get(XTACallGraphKey$.MODULE$);
                 break;
             case "AllocationSiteBasedPointsTo":
                 result = project.get(AllocationSiteBasedPointsToCallGraphKey$.MODULE$);
