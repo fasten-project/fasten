@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal.version3;
 
 import eu.fasten.analyzer.javacgopal.version3.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.version3.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.version3.merge.CallGraphMerger;
 import eu.fasten.analyzer.javacgopal.version3.merge.CallGraphUtils;
 import java.io.File;
 import java.io.IOException;
@@ -263,7 +264,7 @@ public class MainV3 implements Runnable {
         final var art = generate(artifact, this.commands.computations.main,
                 commands.computations.genAlgorithm, true);
 
-        result = CallGraphMergerV3.mergeCallGraph(art, deps,
+        result = CallGraphMerger.mergeCallGraph(art, deps,
                 commands.computations.tools.merge.mergeAlgorithm);
 
         if (!this.output.isEmpty()) {
