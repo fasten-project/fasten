@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.analyzer.javacgopal.version3.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,11 +69,140 @@ class OPALTypeTest {
     }
 
     @Test
-    void getType() {
+    void getTypeWithSuperClassesWithSuperInterface() {
+        var wrapperType = Mockito.mock(ObjectType.class);
+        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
+
+        var baseType = Mockito.mock(BaseType.class);
+        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
+        Mockito.when(baseType.toString()).thenReturn("typeName");
+
+        var type = Mockito.mock(ObjectType.class);
+        Mockito.when(type.asBaseType()).thenReturn(baseType);
+        Mockito.when(type.isBaseType()).thenReturn(true);
+
+        var chain = new $colon$amp$colon<>(type, Chain.empty());
+        var qualifiedCollection = Mockito.mock(QualifiedCollection.class);
+        Mockito.when(qualifiedCollection.s()).thenReturn(chain);
+
+        var uidSet = Mockito.mock(UIDSet.class);
+        Mockito.when(uidSet.nonEmpty()).thenReturn(true);
+
+        var uidSetInterfaces = new UIDSet1<>(type);
+
+        var classHierarchy = Mockito.mock(ClassHierarchy.class);
+        Mockito.when(classHierarchy.supertypes(type)).thenReturn(uidSet);
+        Mockito.when(classHierarchy.allSuperclassTypesInInitializationOrder(type))
+                .thenReturn(qualifiedCollection);
+        Mockito.when(classHierarchy.allSuperinterfacetypes(type, false))
+                .thenReturn(uidSetInterfaces);
+
+        var arrayOfParameters = new RefArray<FieldType>(new FieldType[]{type});
+
+        var descriptor = Mockito.mock(MethodDescriptor.class);
+        Mockito.when(descriptor.parameterTypes()).thenReturn(arrayOfParameters);
+        Mockito.when(descriptor.returnType()).thenReturn(type);
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        Mockito.when(declaredMethod.descriptor()).thenReturn(descriptor);
+        Mockito.when(declaredMethod.name()).thenReturn("methodName");
+        Mockito.when(declaredMethod.declaringClassType()).thenReturn(type);
+
+        var methods = new HashMap<DeclaredMethod, Integer>();
+        methods.put(declaredMethod, 123);
+
+        var resultType = OPALType.getType(classHierarchy, methods, type);
+
+        assertNotNull(resultType);
+        assertNotNull(resultType.get(FastenURI.create("/some.package/typeName")));
+
+        var ERCGType = resultType.get(FastenURI.create("/some.package/typeName"));
+        assertEquals(1, resultType.size());
+        assertEquals(1, ERCGType.getMethods().size());
+        assertEquals("", ERCGType.getSourceFileName());
+        assertEquals(1, ERCGType.getSuperClasses().size());
+        assertEquals(1, ERCGType.getSuperInterfaces().size());
+        assertNotNull(ERCGType.getMethods().get(123));
+
+        var node = ERCGType.getMethods().get(123);
+        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+                node.getUri());
+        assertEquals(0, node.getMetadata().size());
+
+        assertEquals(FastenURI.create("/some.package/typeName"),
+                ERCGType.getSuperInterfaces().get(0));
+
+        assertEquals(FastenURI.create("/some.package/typeName"),
+                ERCGType.getSuperClasses().get(0));
+    }
+
+
+    @Test
+    void getTypeNoSuperClassesWithSuperInterface() {
+        var wrapperType = Mockito.mock(ObjectType.class);
+        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
+
+        var baseType = Mockito.mock(BaseType.class);
+        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
+        Mockito.when(baseType.toString()).thenReturn("typeName");
+
+        var type = Mockito.mock(ObjectType.class);
+        Mockito.when(type.asBaseType()).thenReturn(baseType);
+        Mockito.when(type.isBaseType()).thenReturn(true);
+
+        var qualifiedCollection = Mockito.mock(QualifiedCollection.class);
+        Mockito.when(qualifiedCollection.s()).thenReturn(null);
+
+        var uidSet = Mockito.mock(UIDSet.class);
+        Mockito.when(uidSet.nonEmpty()).thenReturn(false);
+
+        var uidSetInterfaces = new UIDSet1<>(type);
+
+        var classHierarchy = Mockito.mock(ClassHierarchy.class);
+        Mockito.when(classHierarchy.supertypes(type)).thenReturn(uidSet);
+        Mockito.when(classHierarchy.allSuperclassTypesInInitializationOrder(type))
+                .thenReturn(qualifiedCollection);
+        Mockito.when(classHierarchy.allSuperinterfacetypes(type, false))
+                .thenReturn(uidSetInterfaces);
+
+        var arrayOfParameters = new RefArray<FieldType>(new FieldType[]{type});
+
+        var descriptor = Mockito.mock(MethodDescriptor.class);
+        Mockito.when(descriptor.parameterTypes()).thenReturn(arrayOfParameters);
+        Mockito.when(descriptor.returnType()).thenReturn(type);
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        Mockito.when(declaredMethod.descriptor()).thenReturn(descriptor);
+        Mockito.when(declaredMethod.name()).thenReturn("methodName");
+        Mockito.when(declaredMethod.declaringClassType()).thenReturn(type);
+
+        var methods = new HashMap<DeclaredMethod, Integer>();
+        methods.put(declaredMethod, 123);
+
+        var resultType = OPALType.getType(classHierarchy, methods, type);
+
+        assertNotNull(resultType);
+        assertNotNull(resultType.get(FastenURI.create("/some.package/typeName")));
+
+        var ERCGType = resultType.get(FastenURI.create("/some.package/typeName"));
+        assertEquals(1, resultType.size());
+        assertEquals(1, ERCGType.getMethods().size());
+        assertEquals("", ERCGType.getSourceFileName());
+        assertEquals(0, ERCGType.getSuperClasses().size());
+        assertEquals(1, ERCGType.getSuperInterfaces().size());
+        assertNotNull(ERCGType.getMethods().get(123));
+
+        var node = ERCGType.getMethods().get(123);
+        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+                node.getUri());
+        assertEquals(0, node.getMetadata().size());
+
+        assertEquals(FastenURI.create("/some.package/typeName"),
+                ERCGType.getSuperInterfaces().get(0));
     }
 
     @Test
-    void getTypeNoSuperClassesNoSuperInterfaces() {
+    void getTypeNoSuperClassesNoSuperInterfacesAlternative() {
         var wrapperType = Mockito.mock(ObjectType.class);
         Mockito.when(wrapperType.packageName()).thenReturn("some/package");
 
@@ -96,6 +243,59 @@ class OPALTypeTest {
         assertEquals(30, node.getMetadata().get("last"));
         assertEquals(true, node.getMetadata().get("defined"));
         assertEquals("private", node.getMetadata().get("access"));
+    }
+
+    @Test
+    void getTypeWithSuperClassesWithSuperInterfacesAlternative() {
+        var wrapperType = Mockito.mock(ObjectType.class);
+        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
+
+        var baseType = Mockito.mock(BaseType.class);
+        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
+        Mockito.when(baseType.toString()).thenReturn("typeName");
+
+        var type = Mockito.mock(ObjectType.class);
+        Mockito.when(type.asBaseType()).thenReturn(baseType);
+        Mockito.when(type.isBaseType()).thenReturn(true);
+
+        var method = createMethod();
+        Mockito.when(method.isPrivate()).thenReturn(true);
+
+        var methods = new HashMap<Method, Integer>();
+        methods.put(method, 123);
+
+        var chain = new $colon$amp$colon<>(type, Chain.empty());
+        var interfaces = new ArrayList<ObjectType>();
+        interfaces.add(type);
+
+        var opalType = new OPALType(methods, chain, interfaces, "source.java");
+
+        var resultType = OPALType.getType(opalType, type);
+
+        assertNotNull(resultType);
+        assertNotNull(resultType.get(FastenURI.create("/some.package/typeName")));
+
+        var ERCGType = resultType.get(FastenURI.create("/some.package/typeName"));
+        assertEquals(1, resultType.size());
+        assertEquals(1, ERCGType.getMethods().size());
+        assertEquals("source.java", ERCGType.getSourceFileName());
+        assertEquals(1, ERCGType.getSuperClasses().size());
+        assertEquals(1, ERCGType.getSuperInterfaces().size());
+        assertNotNull(ERCGType.getMethods().get(123));
+
+        var node = ERCGType.getMethods().get(123);
+        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+                node.getUri());
+        assertEquals(4, node.getMetadata().size());
+        assertEquals(10, node.getMetadata().get("first"));
+        assertEquals(30, node.getMetadata().get("last"));
+        assertEquals(true, node.getMetadata().get("defined"));
+        assertEquals("private", node.getMetadata().get("access"));
+
+        assertEquals(FastenURI.create("/some.package/typeName"),
+                ERCGType.getSuperClasses().getFirst());
+        assertEquals(FastenURI.create("/some.package/typeName"),
+                ERCGType.getSuperInterfaces().get(0));
     }
 
     @Test
