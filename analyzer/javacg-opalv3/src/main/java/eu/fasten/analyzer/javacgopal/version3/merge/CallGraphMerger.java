@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-
 public class CallGraphMerger {
 
     private static Logger logger = LoggerFactory.getLogger(CallGraphMerger.class);
@@ -99,25 +98,29 @@ public class CallGraphMerger {
         final var methods = artifact.mapOfAllMethodsV3();
         final var universalCHA = createUniversalCHA(dependencies, artifact);
         for (final var arc : artifact.getGraphV3().getExternalCalls().entrySet()) {
-            final var call = new Call(arc.getKey(), arc.getValue(), methods.get(arc.getKey().get(1)));
+
             for (final var dep : dependencies) {
                 final var product = dep.product + "$" + dep.version;
-                for (final var typeEntry : dep.getClassHierarchyV3().get(Scope.internalTypes).entrySet()) {
-                    final var depType = typeEntry.getValue();
+                for (final var depTypeEntry : dep.getClassHierarchyV3().get(Scope.internalTypes).entrySet()) {
+                    final var depType = depTypeEntry.getValue();
+                    final var depTypeUri = depTypeEntry.getKey();
+                    final var call = new Call(arc.getKey(), arc.getValue(), methods.get(arc.getKey().get(1)));
+
                     if (call.isConstructor()) {
-                        resolveSuperConstructors(result, call, depType, product, artifact);
-                    }
-                    for (final var cs : arc.getValue().entrySet()) {
-                        final var callSite = (OPALCallSite) cs.getValue();
-                        final var receiverType = FastenURI.create(callSite.getReceiver());
+                        resolveClassInits(result, call, depTypeEntry, product, universalCHA);
+                    } else {
+                        for (final var cs : arc.getValue().entrySet()) {
+                            final var callSite = (OPALCallSite) cs.getValue();
+                            final var receiverTypeUri = FastenURI.create(callSite.getReceiver());
 
-                        if (typeEntry.getKey().equals(receiverType)) {
-                            resolveIfDefined(result, call, depType, product);
-                        }
-                        if (callSite.is("invokevirtual", "invokeinterface", "invokedynamic")) {
-
-                            if (checkSuperTypes(receiverType, universalCHA, typeEntry.getKey())) {
+                            if (depTypeUri.equals(receiverTypeUri)) {
                                 resolveIfDefined(result, call, depType, product);
+                            }
+                            if (callSite.is("invokevirtual", "invokeinterface", "invokedynamic")) {
+
+                                if (firstTypeExtendsSecond(depTypeUri, receiverTypeUri, universalCHA)) {
+                                    resolveIfDefined(result, call, depType, product);
+                                }
                             }
                         }
                     }
@@ -127,22 +130,22 @@ public class CallGraphMerger {
         return buildRCG(artifact, result);
     }
 
-    private static void resolveSuperConstructors(final CGHA result, final Call call, final Type depType,
-                                                 final String product,
-                                                 final ExtendedRevisionCallGraphV3 artifact) {
-        for (FastenURI superClass : artifact.getClassHierarchyV3().get(Scope.internalTypes)
-                .getOrDefault(getTypeURI(call.target.getUri()), new Type("")).getSuperClasses()) {
-
-            final var superTypename = getTypeName(superClass);
+    private static void resolveClassInits(final CGHA result, final Call call, final Map.Entry<FastenURI, Type> depType,
+                                          final String product,
+                                          final org.jgrapht.Graph<FastenURI, DefaultEdge> cha) {
+        final var constructorType = getTypeURI(call.target.getUri());
+        if (depType.getKey().equals(constructorType)
+                || firstTypeExtendsSecond(constructorType, depType.getKey(), cha)) {
             final var callToSuper = new Call(Arrays.asList(call.indices.get(1), result.nodeCount), call.metadata,
-                    new Node(call.target.changeName(superTypename, superTypename), call.target.getMetadata()));
+                    new Node(call.target.changeName(getTypeName(depType.getKey()), "%3Cinit%3E"),
+                            call.target.getMetadata()));
 
-            resolveIfDefined(result, callToSuper, depType, product);
+            resolveIfDefined(result, callToSuper, depType.getValue(), product);
         }
     }
 
     private static String getTypeName(final FastenURI type) {
-        return type.toString().substring(type.toString().lastIndexOf("/"));
+        return type.toString().substring(type.toString().lastIndexOf("/")+1);
     }
 
     private static org.jgrapht.Graph<FastenURI, DefaultEdge> createUniversalCHA(
@@ -181,11 +184,11 @@ public class CallGraphMerger {
                 .ifPresent(node -> resolve(cgha, new Call(call.indices, call.metadata, node.getValue()), product));
     }
 
-    private static boolean checkSuperTypes(final FastenURI receiverType,
-                                           final org.jgrapht.Graph<FastenURI, DefaultEdge> cha, FastenURI depType) {
+    private static boolean firstTypeExtendsSecond(final FastenURI firstType, final FastenURI secondType,
+                                                  final org.jgrapht.Graph<FastenURI, DefaultEdge> cha) {
 
-        for (final var fastenURI : Graphs.predecessorListOf(cha, depType)) {
-            if (fastenURI.equals(receiverType)) {
+        for (final var fastenURI : Graphs.predecessorListOf(cha, firstType)) {
+            if (fastenURI.equals(secondType)) {
                 return true;
             }
         }

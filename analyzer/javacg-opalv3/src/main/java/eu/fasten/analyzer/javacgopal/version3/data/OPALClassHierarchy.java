@@ -147,9 +147,9 @@ public class OPALClassHierarchy {
         } else {
             putExternalCall(source, externalCalls, targetDeclaration, metadata);
         }
-//        if (target.isConstructor()) {
-//            externalCalls.put(this.getInternalCallKeys(target, target), new HashMap<>());
-//        }
+        if (target.isConstructor()) {
+            externalCalls.put(this.getInternalCallKeys(target, target), new HashMap<>());
+        }
     }
 
     public <T> void putExternalCall(final T source,

@@ -488,7 +488,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
         final private FastenURI uri;
         final private Map<Object, Object> metadata;
 
-        public Node(FastenURI uri, Map metadata) {
+        public Node(final FastenURI uri, final Map metadata) {
             this.uri = uri;
             this.metadata = metadata;
         }
@@ -509,11 +509,12 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
         }
 
         public String getMethodName(){
-            return StringUtils.substringBetween(getEntity(), getClassName(),"(");
+            return StringUtils.substringBetween(getEntity(), getClassName() + ".","(");
         }
 
-        public FastenURI changeName(String className, String methodName){
-            return FastenURI.create(this.getUri().toString().replace(getClassName(),className).replace(getMethodName(),methodName));
+        public FastenURI changeName(final String className, final String methodName){
+            final var uri = this.getUri().toString().replace("/" + getClassName() + ".", "/" + className + ".");
+            return FastenURI.create(uri.replace( "."+ getMethodName() + "(", "." + methodName + "(") );
         }
     }
 
