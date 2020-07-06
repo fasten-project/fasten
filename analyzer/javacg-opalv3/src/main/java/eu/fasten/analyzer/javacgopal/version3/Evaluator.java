@@ -21,7 +21,7 @@ public class Evaluator {
             final var languageFeature = new File(args[0]);
             String main = extractMain(languageFeature);
             generateOpal(languageFeature, main, "RTA", "cg/opalV3");
-            generateMerge(languageFeature, main, "RTA", "RA", "cg/mergeV3");
+            generateMerge(languageFeature, main, "RTA", "CHA", "cg/mergeV3");
         }else {
             final var splitJars = resourceDir.listFiles(f -> f.getPath().endsWith("_split"));
             var counter = 0;
@@ -37,7 +37,7 @@ public class Evaluator {
                 String main = extractMain(langFeature);
                 generateOpal(langFeature, main, "RTA", "cg/opalV3");
 
-                if (!generateMerge(langFeature, main, "RTA", "RA","cg/mergeV3")) {
+                if (!generateMerge(langFeature, main, "RTA", "CHA","cg/mergeV3")) {
                     singleClass++;
                 }
             }

@@ -7,10 +7,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.opalj.br.ClassHierarchy;
-import org.opalj.br.DeclaredMethod;
-import org.opalj.br.Method;
-import org.opalj.br.ObjectType;
+
+import org.opalj.br.*;
+import org.opalj.br.analyses.DeclaredMethodsKey$;
 import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.JavaConverters;
@@ -139,18 +138,21 @@ public class OPALClassHierarchy {
     }
 
     //TODO: refactor and find a cleaner way
-    public <T> void getCalls(final T source, final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
+    public <T> void putCalls(final T source, final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
                              final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
                              final DeclaredMethod targetDeclaration, Map<Object, Object> metadata, final Method target) {
         if (source instanceof Method) {
             final var call = this.getInternalCallKeys((Method) source, target);
             internalCalls.put(call, getInternalMetadata(internalCalls, metadata, call));
         } else {
-            getExternalCall(source, externalCalls, targetDeclaration, metadata);
+            putExternalCall(source, externalCalls, targetDeclaration, metadata);
         }
+//        if (target.isConstructor()) {
+//            externalCalls.put(this.getInternalCallKeys(target, target), new HashMap<>());
+//        }
     }
 
-    public <T> void getExternalCall(final T source,
+    public <T> void putExternalCall(final T source,
                                     final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
                                     final DeclaredMethod targetDeclaration, final Map<Object, Object> metadata) {
         final var call = this.getExternalCallKeys(source, targetDeclaration);
@@ -192,13 +194,13 @@ public class OPALClassHierarchy {
 
                     if (targetDeclaration.hasMultipleDefinedMethods()) {
                         for (final var target : JavaConverters.asJavaIterable(targetDeclaration.definedMethods())) {
-                            this.getCalls(source, internalCalls, externalCalls, targetDeclaration, metadata, target);
+                            this.putCalls(source, internalCalls, externalCalls, targetDeclaration, metadata, target);
                         }
                     } else if (targetDeclaration.hasSingleDefinedMethod()) {
-                        this.getCalls(source, internalCalls, externalCalls, targetDeclaration, metadata,
+                        this.putCalls(source, internalCalls, externalCalls, targetDeclaration, metadata,
                                 targetDeclaration.definedMethod());
                     } else if (targetDeclaration.isVirtualOrHasSingleDefinedMethod()) {
-                        this.getExternalCall(source, externalCalls, targetDeclaration, metadata);
+                        this.putExternalCall(source, externalCalls, targetDeclaration, metadata);
                     }
                 }
             }

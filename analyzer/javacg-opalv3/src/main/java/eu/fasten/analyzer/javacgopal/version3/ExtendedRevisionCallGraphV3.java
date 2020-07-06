@@ -33,6 +33,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -497,6 +499,21 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
 
         public Map<Object, Object> getMetadata() {
             return metadata;
+        }
+
+        public String getEntity(){
+            return this.uri.getEntity();
+        }
+        public String getClassName(){
+            return getEntity().substring(0,getEntity().indexOf("."));
+        }
+
+        public String getMethodName(){
+            return StringUtils.substringBetween(getEntity(), getClassName(),"(");
+        }
+
+        public FastenURI changeName(String className, String methodName){
+            return FastenURI.create(this.getUri().toString().replace(getClassName(),className).replace(getMethodName(),methodName));
         }
     }
 

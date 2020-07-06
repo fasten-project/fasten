@@ -28,6 +28,7 @@ import eu.fasten.core.data.FastenURI;
 
 import java.util.*;
 
+import org.apache.commons.collections.ListUtils;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -80,6 +81,13 @@ public class CallGraphMergerV3 {
             this.metadata = metadata;
             this.target = target;
         }
+
+        public boolean isConstructor() {
+            if (indices.get(0).equals(indices.get(1))) {
+                return true;
+            }
+            return false;
+        }
     }
 
     private static ExtendedRevisionCallGraphV3 mergeWithCHA(final ExtendedRevisionCallGraphV3 artifact,
@@ -88,19 +96,19 @@ public class CallGraphMergerV3 {
                 artifact.getClassHierarchyV3().getOrDefault(Scope.resolvedTypes, new HashMap<>()),
                 artifact.getNodeCount());
         final var methods = artifact.mapOfAllMethodsV3();
-        dependencies.add(artifact);
-        final var universalCHA = createUniversalCHA(dependencies);
+        final var universalCHA = createUniversalCHA(dependencies, artifact);
         for (final var arc : artifact.getGraphV3().getExternalCalls().entrySet()) {
             final var call = new Call(arc.getKey(), arc.getValue(), methods.get(arc.getKey().get(1)));
-
-            for (final var cs : arc.getValue().entrySet()) {
-                final var callSite = (OPALCallSite) cs.getValue();
-                final var receiverType = FastenURI.create(callSite.getReceiver());
-
-                for (final var dep : dependencies) {
-                    final var product = dep.product + "$" + dep.version;
-                    for (final var typeEntry : dep.getClassHierarchyV3().get(Scope.internalTypes).entrySet()) {
-                        final var depType = typeEntry.getValue();
+            for (final var dep : dependencies) {
+                final var product = dep.product + "$" + dep.version;
+                for (final var typeEntry : dep.getClassHierarchyV3().get(Scope.internalTypes).entrySet()) {
+                    final var depType = typeEntry.getValue();
+                    if (call.isConstructor()) {
+                        resolveSuperConstructors(result, call, depType, product, artifact);
+                    }
+                    for (final var cs : arc.getValue().entrySet()) {
+                        final var callSite = (OPALCallSite) cs.getValue();
+                        final var receiverType = FastenURI.create(callSite.getReceiver());
 
                         if (typeEntry.getKey().equals(receiverType)) {
                             resolveIfDefined(result, call, depType, product);
@@ -118,8 +126,26 @@ public class CallGraphMergerV3 {
         return buildRCG(artifact, result);
     }
 
+    private static void resolveSuperConstructors(final CGHA result, final Call call, final Type depType,
+                                                 final String product,
+                                                 final ExtendedRevisionCallGraphV3 artifact) {
+        for (FastenURI superClass : artifact.getClassHierarchyV3().get(Scope.internalTypes)
+                .getOrDefault(getTypeURI(call.target.getUri()), new Type("")).getSuperClasses()) {
+
+            final var superTypename = getTypeName(superClass);
+            final var callToSuper = new Call(Arrays.asList(call.indices.get(1), result.nodeCount), call.metadata,
+                    new Node(call.target.changeName(superTypename, superTypename), call.target.getMetadata()));
+
+            resolveIfDefined(result, callToSuper, depType, product);
+        }
+    }
+
+    private static String getTypeName(final FastenURI type) {
+        return type.toString().substring(type.toString().lastIndexOf("/"));
+    }
+
     private static org.jgrapht.Graph<FastenURI, DefaultEdge> createUniversalCHA(
-            final List<ExtendedRevisionCallGraphV3> dependencies) {
+            final List<ExtendedRevisionCallGraphV3> dependencies, final ExtendedRevisionCallGraphV3 artifact) {
 
         final var result = new DefaultDirectedGraph<FastenURI, DefaultEdge>(DefaultEdge.class);
         for (final var dependency : dependencies) {
