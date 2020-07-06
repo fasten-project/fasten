@@ -25,11 +25,12 @@
                     <groupId>org.dom4j</groupId>
                     <artifactId>dom4j</artifactId>
                 </dependency>
+                <dependency>
+                    <groupId>info.picocli</groupId>
+                    <artifactId>picocli</artifactId>
+                    <version>1.0.0</version>
+                </dependency>
             </dependencies>
-        </profile>
-        <profile>
-            <id>Profile2</id>
-            <dependencies></dependencies>
         </profile>
     </profiles>
 </project>

@@ -75,8 +75,8 @@ public class OPALCallSite {
     public String toString() {
         return "{" +
                 "line=" + line +
-                ", type='" + type + '\'' +
-                ", receiver='" + receiver + '\'' +
-                '}';
+                ", type='" + type +
+                "', receiver='" + receiver +
+                "'}";
     }
 }

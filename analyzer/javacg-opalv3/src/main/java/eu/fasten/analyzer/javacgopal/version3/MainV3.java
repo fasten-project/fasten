@@ -18,8 +18,10 @@
 
 package eu.fasten.analyzer.javacgopal.version3;
 
+import eu.fasten.analyzer.javacgopal.version3.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.version3.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.version3.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.version3.merge.CallGraphMerger;
 import eu.fasten.analyzer.javacgopal.version3.merge.CallGraphUtils;
 import java.io.File;
 import java.io.IOException;
@@ -263,7 +265,7 @@ public class MainV3 implements Runnable {
         final var art = generate(artifact, this.commands.computations.main,
                 commands.computations.genAlgorithm, true);
 
-        result = CallGraphMergerV3.mergeCallGraph(art, deps,
+        result = CallGraphMerger.mergeCallGraph(art, deps,
                 commands.computations.tools.merge.mergeAlgorithm);
 
         if (!this.output.isEmpty()) {
@@ -285,7 +287,8 @@ public class MainV3 implements Runnable {
 
         if (artifact instanceof File) {
             logger.info("Generating graph for {}", ((File) artifact).getAbsolutePath());
-            final var cg = new PartialCallGraph((File) artifact, mainClass, algorithm);
+            final var cg = new PartialCallGraph(
+                    new CallGraphConstructor((File) artifact, mainClass, algorithm));
             revisionCallGraph =
                     ExtendedRevisionCallGraphV3.extendedBuilderV3().graph(cg.getGraph())
                             .product(((File) artifact).getName().replace(".class", "").replace("$", ""))
