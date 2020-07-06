@@ -31,6 +31,27 @@ import java.util.ArrayList;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.opalj.br.BaseType;
+import org.opalj.br.ClassFile;
+import org.opalj.br.ClassHierarchy;
+import org.opalj.br.Code;
+import org.opalj.br.DeclaredMethod;
+import org.opalj.br.FieldType;
+import org.opalj.br.Method;
+import org.opalj.br.MethodDescriptor;
+import org.opalj.br.ObjectType;
+import org.opalj.br.analyses.Project;
+import org.opalj.br.instructions.Instruction;
+import org.opalj.collection.QualifiedCollection;
+import org.opalj.collection.immutable.ConstArray;
+import org.opalj.collection.immutable.RefArray;
+import org.opalj.collection.immutable.UIDSet;
+import org.opalj.collection.immutable.UIDSet1;
+import org.opalj.tac.cg.CallGraph;
+import scala.Option;
+import scala.collection.Iterator;
+import scala.collection.mutable.HashSet;
 
 class PartialCallGraphTest {
 
@@ -136,5 +157,225 @@ class PartialCallGraphTest {
         assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
         assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
         assertEquals("org.slf4j:slf4j-api", cg.product);
+    }
+
+    @Test
+    void internalExternalCHAMultipleDeclarations() {
+        var classFile = Mockito.mock(ClassFile.class);
+        var type = Mockito.mock(ObjectType.class);
+
+        var method = createMethod(classFile, type);
+        var methods = new RefArray<Method>(new Method[]{method});
+
+        var arr = ConstArray._UNSAFE_from(new Method[]{method, method});
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
+        Mockito.when(declaredMethod.hasMultipleDefinedMethods()).thenReturn(true);
+
+        var classHierarchy = createClassHierarchy(type);
+
+        Mockito.when(classFile.methods()).thenReturn(methods);
+        Mockito.when(classFile.thisType()).thenReturn(type);
+        Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
+
+        var classFiles = new HashSet<ClassFile>();
+        classFiles.add(classFile);
+
+        var project = Mockito.mock(Project.class);
+        Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
+        Mockito.when(project.allClassFiles()).thenReturn(classFiles);
+
+        var callGraph = createCallGraph(declaredMethod);
+
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        Mockito.when(constructor.getProject()).thenReturn(project);
+        Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
+
+        var pcg = new PartialCallGraph(constructor);
+        assertNotNull(pcg);
+
+        Mockito.verify(callGraph, Mockito.times(2)).calleesOf(declaredMethod);
+    }
+
+    @Test
+    void internalExternalCHASingleDeclaration() {
+        var classFile = Mockito.mock(ClassFile.class);
+        var type = Mockito.mock(ObjectType.class);
+
+        var method = createMethod(classFile, type);
+        var methods = new RefArray<Method>(new Method[]{method});
+
+        var arr = ConstArray._UNSAFE_from(new Method[]{method});
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
+        Mockito.when(declaredMethod.hasSingleDefinedMethod()).thenReturn(true);
+
+        var classHierarchy = createClassHierarchy(type);
+
+        Mockito.when(classFile.methods()).thenReturn(methods);
+        Mockito.when(classFile.thisType()).thenReturn(type);
+        Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
+
+        var classFiles = new HashSet<ClassFile>();
+        classFiles.add(classFile);
+
+        var project = Mockito.mock(Project.class);
+        Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
+        Mockito.when(project.allClassFiles()).thenReturn(classFiles);
+
+        var callGraph = createCallGraph(declaredMethod);
+
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        Mockito.when(constructor.getProject()).thenReturn(project);
+        Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
+
+        var pcg = new PartialCallGraph(constructor);
+        assertNotNull(pcg);
+
+        Mockito.verify(declaredMethod, Mockito.times(1)).definedMethod();
+        Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
+    }
+
+    @Test
+    void internalExternalCHAVirtual() {
+        var classFile = Mockito.mock(ClassFile.class);
+        var type = Mockito.mock(ObjectType.class);
+
+        var method = createMethod(classFile, type);
+        var methods = new RefArray<Method>(new Method[]{method});
+
+        var arr = ConstArray._UNSAFE_from(new Method[]{method, method});
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
+        Mockito.when(declaredMethod.isVirtualOrHasSingleDefinedMethod()).thenReturn(true);
+
+        var classHierarchy = createClassHierarchy(type);
+
+        Mockito.when(classFile.methods()).thenReturn(methods);
+        Mockito.when(classFile.thisType()).thenReturn(type);
+        Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
+
+        var classFiles = new HashSet<ClassFile>();
+        classFiles.add(classFile);
+
+        var project = Mockito.mock(Project.class);
+        Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
+        Mockito.when(project.allClassFiles()).thenReturn(classFiles);
+
+        var callGraph = createCallGraph(declaredMethod);
+
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        Mockito.when(constructor.getProject()).thenReturn(project);
+        Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
+
+        var pcg = new PartialCallGraph(constructor);
+        assertNotNull(pcg);
+
+        Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
+    }
+
+    @Test
+    void internalExternalCHANoDefinition() {
+        var classFile = Mockito.mock(ClassFile.class);
+        var type = Mockito.mock(ObjectType.class);
+
+        var method = createMethod(classFile, type);
+        var methods = new RefArray<Method>(new Method[]{method});
+
+        var arr = ConstArray._UNSAFE_from(new Method[]{method, method});
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
+
+        var classHierarchy = createClassHierarchy(type);
+
+        Mockito.when(classFile.methods()).thenReturn(methods);
+        Mockito.when(classFile.thisType()).thenReturn(type);
+        Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
+
+        var classFiles = new HashSet<ClassFile>();
+        classFiles.add(classFile);
+
+        var project = Mockito.mock(Project.class);
+        Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
+        Mockito.when(project.allClassFiles()).thenReturn(classFiles);
+
+        var callGraph = createCallGraph(declaredMethod);
+
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        Mockito.when(constructor.getProject()).thenReturn(project);
+        Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
+
+        var pcg = new PartialCallGraph(constructor);
+        assertNotNull(pcg);
+
+        Mockito.verify(callGraph, Mockito.never()).calleesOf(Mockito.any());
+    }
+
+    private Method createMethod(ClassFile classFile, ObjectType type) {
+        var wrapperType = Mockito.mock(ObjectType.class);
+        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
+
+        var baseType = Mockito.mock(BaseType.class);
+        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
+        Mockito.when(baseType.toString()).thenReturn("typeName");
+
+        Mockito.when(type.asBaseType()).thenReturn(baseType);
+        Mockito.when(type.isBaseType()).thenReturn(true);
+
+        var arrayOfParameters = new RefArray<FieldType>(new FieldType[]{type});
+
+        var descriptor = Mockito.mock(MethodDescriptor.class);
+        Mockito.when(descriptor.parameterTypes()).thenReturn(arrayOfParameters);
+        Mockito.when(descriptor.returnType()).thenReturn(type);
+
+        var code = Mockito.mock(Code.class);
+        Mockito.when(code.firstLineNumber()).thenReturn(Option.apply(10));
+        Mockito.when(code.lineNumber(20)).thenReturn(Option.apply(30));
+        Mockito.when(code.codeSize()).thenReturn(20);
+
+        var method = Mockito.mock(Method.class);
+        Mockito.when(method.descriptor()).thenReturn(descriptor);
+        Mockito.when(method.name()).thenReturn("methodName");
+        Mockito.when(method.declaringClassFile()).thenReturn(classFile);
+        Mockito.when(method.body()).thenReturn(Option.apply(code));
+        Mockito.when(method.instructionsOption()).thenReturn(Option.apply(new Instruction[]{}));
+
+        return method;
+    }
+
+    private ClassHierarchy createClassHierarchy(ObjectType type) {
+        var qualifiedCollection = Mockito.mock(QualifiedCollection.class);
+        Mockito.when(qualifiedCollection.s()).thenReturn(null);
+
+        var uidSet = Mockito.mock(UIDSet.class);
+        Mockito.when(uidSet.nonEmpty()).thenReturn(false);
+
+        var uidSetInterfaces = new UIDSet1<>(type);
+
+        var classHierarchy = Mockito.mock(ClassHierarchy.class);
+        Mockito.when(classHierarchy.supertypes(type)).thenReturn(uidSet);
+        Mockito.when(classHierarchy.allSuperclassTypesInInitializationOrder(type))
+                .thenReturn(qualifiedCollection);
+        Mockito.when(classHierarchy.allSuperinterfacetypes(type, false))
+                .thenReturn(uidSetInterfaces);
+
+        return classHierarchy;
+    }
+
+    private CallGraph createCallGraph(DeclaredMethod declaredMethod) {
+        var sourceDeclarations = new HashSet<DeclaredMethod>();
+        sourceDeclarations.add(declaredMethod);
+
+        var sourceDeclarationIterator = Mockito.mock(Iterator.class);
+        Mockito.when(sourceDeclarationIterator.toIterable()).thenReturn(sourceDeclarations);
+
+        var callGraph = Mockito.mock(CallGraph.class);
+        Mockito.when(callGraph.reachableMethods()).thenReturn(sourceDeclarationIterator);
+
+        return callGraph;
     }
 }

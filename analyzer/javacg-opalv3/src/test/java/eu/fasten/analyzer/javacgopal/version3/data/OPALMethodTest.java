@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.javacgopal.version3.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import eu.fasten.core.data.FastenJavaURI;
@@ -80,6 +81,12 @@ class OPALMethodTest {
 
         assertEquals(FastenJavaURI.create("//productName/some.package/typeName.methodName(%2Fparameter.package%2FparameterName)%2Freturn.package%2FtypeReturnName"),
                 OPALMethod.toCanonicalSchemelessURI("productName", type, "methodName", descriptor));
+    }
+
+    @Test
+    void defaultConstructor() {
+        var method = new OPALMethod();
+        assertNotNull(method);
     }
 
     @Test
