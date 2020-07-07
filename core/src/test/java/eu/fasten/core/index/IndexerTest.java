@@ -7,7 +7,11 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
@@ -206,7 +210,7 @@ public class IndexerTest {
 			kb.close();
 			kb = KnowledgeBase.getInstance(kbDir.toString(), meta, false);
 		}
-
+		kb.close();
 		FileUtils.deleteDirectory(kbDir.toFile());
 		FileUtils.deleteQuietly(new File(meta));
 	}
