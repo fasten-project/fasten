@@ -21,6 +21,7 @@ package eu.fasten.analyzer.pomanalyzer.pom;
 import eu.fasten.analyzer.pomanalyzer.pom.data.Dependency;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyManagement;
+import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
@@ -46,13 +47,12 @@ public class DataExtractor {
     private List<String> mavenRepos;
     private static final Logger logger = LoggerFactory.getLogger(DataExtractor.class);
 
+    private String mavenCoordinate = null;
+    private String pomContents = null;
+
     public DataExtractor() {
         this.mavenRepos = Collections.singletonList("https://repo.maven.apache.org/maven2/");
     }
-
-    // TODO: Don't download POM twice if you want to extract both repo URL and dependency info.
-    //       Save/cache POM after each download and
-    //       before extracting check if this POM matches given Maven coordinate
 
     /**
      * Extracts repository URL from POM of certain Maven coordinate.
@@ -65,9 +65,15 @@ public class DataExtractor {
     public String extractRepoUrl(String artifactId, String groupId, String version) {
         String repoUrl = null;
         try {
-            var pom = new SAXReader().read(new ByteArrayInputStream(
-                    this.downloadPom(artifactId, groupId, version)
-                            .orElseThrow(RuntimeException::new).getBytes()));
+            ByteArrayInputStream pomByteStream;
+            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
+                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
+            } else {
+                pomByteStream = new ByteArrayInputStream(
+                        this.downloadPom(artifactId, groupId, version)
+                                .orElseThrow(RuntimeException::new).getBytes());
+            }
+            var pom = new SAXReader().read(pomByteStream);
             var scm = pom.getRootElement().selectSingleNode("./*[local-name()='scm']");
             if (scm != null) {
                 var url = scm.selectSingleNode("./*[local-name()='url']");
@@ -92,12 +98,18 @@ public class DataExtractor {
     public DependencyData extractDependencyData(String artifactId, String groupId, String version) {
         DependencyData dependencyData = null;
         try {
-            var pom = new SAXReader().read(new ByteArrayInputStream(
-                    this.downloadPom(artifactId, groupId, version)
-                            .orElseThrow(RuntimeException::new).getBytes()));
+            ByteArrayInputStream pomByteStream;
+            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
+                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
+            } else {
+                pomByteStream = new ByteArrayInputStream(
+                        this.downloadPom(artifactId, groupId, version)
+                                .orElseThrow(RuntimeException::new).getBytes());
+            }
+            var pom = new SAXReader().read(pomByteStream);
             var dependencyManagementNode = pom.getRootElement()
                     .selectSingleNode("./*[local-name()='dependencyManagement']");
-            DependencyManagement dependencyManagement = null;
+            DependencyManagement dependencyManagement;
             if (dependencyManagementNode != null) {
                 var dependenciesNode = dependencyManagementNode
                         .selectSingleNode("./*[local-name()='dependencies']");
@@ -175,6 +187,8 @@ public class DataExtractor {
             var pomUrl = this.getPomUrl(artifactId, groupId, version, repo);
             var pom = httpGetToFile(pomUrl).flatMap(DataExtractor::fileToString);
             if (pom.isPresent()) {
+                this.mavenCoordinate = groupId + ":" + artifactId + ":" + version;
+                this.pomContents = pom.get();
                 return pom;
             }
         }

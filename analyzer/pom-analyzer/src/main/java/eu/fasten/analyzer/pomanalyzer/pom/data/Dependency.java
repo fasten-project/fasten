@@ -28,7 +28,7 @@ public class Dependency {
 
     public final String artifactId;
     public final String groupId;
-    public final String version;
+    public final String version;    // TODO: Change type to String[] as in RevisionCallGraph
 
     public final List<Exclusion> exclusions;
     public final String scope;

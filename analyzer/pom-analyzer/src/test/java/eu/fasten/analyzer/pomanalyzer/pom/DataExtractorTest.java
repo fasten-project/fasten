@@ -66,4 +66,34 @@ public class DataExtractorTest {
         var actual = dataExtractor.extractDependencyData("junit", "junit", "4.12");
         assertEquals(expected, actual);
     }
+
+    @Test
+    public void extractAllDataTest() {
+        var expectedDependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
+                "   \"dependencyManagement\":{\n" +
+                "      \"dependencies\":[\n" +
+                "\n" +
+                "      ]\n" +
+                "   },\n" +
+                "   \"dependencies\":[\n" +
+                "      {\n" +
+                "         \"groupId\":\"org.hamcrest\",\n" +
+                "         \"scope\":\"\",\n" +
+                "         \"classifier\":\"\",\n" +
+                "         \"artifactId\":\"hamcrest-core\",\n" +
+                "         \"exclusions\":[\n" +
+                "\n" +
+                "         ],\n" +
+                "         \"optional\":false,\n" +
+                "         \"type\":\"\",\n" +
+                "         \"version\":\"1.3\"\n" +
+                "      }\n" +
+                "   ]\n" +
+                "}\n"));
+        var actualDependencyData = dataExtractor.extractDependencyData("junit", "junit", "4.12");
+        var expectedRepoUrl = "http://github.com/junit-team/junit/tree/master";
+        var actualRepoUrl = dataExtractor.extractRepoUrl("junit", "junit", "4.12");
+        assertEquals(expectedRepoUrl, actualRepoUrl);
+        assertEquals(expectedDependencyData, actualDependencyData);
+    }
 }
