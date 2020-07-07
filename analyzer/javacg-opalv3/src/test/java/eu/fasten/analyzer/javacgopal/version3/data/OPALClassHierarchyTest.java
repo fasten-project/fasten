@@ -320,7 +320,127 @@ class OPALClassHierarchyTest {
     }
 
     @Test
-    void putCalls() {
+    void putCallsSourceMethod() {
+        var objectType = Mockito.mock(ObjectType.class);
+
+        var thisType = Mockito.mock(ObjectType.class);
+        Mockito.when(thisType.asObjectType()).thenReturn(objectType);
+
+        var classFile = Mockito.mock(ClassFile.class);
+        Mockito.when(classFile.thisType()).thenReturn(thisType);
+
+        var source = Mockito.mock(Method.class);
+        Mockito.when(source.declaringClassFile()).thenReturn(classFile);
+        var target = Mockito.mock(Method.class);
+        Mockito.when(target.declaringClassFile()).thenReturn(classFile);
+
+        var methods = new HashMap<Method, Integer>();
+        methods.put(source, 123);
+        methods.put(target, 234);
+
+        var type = new OPALType(methods, Chain.empty(), new ArrayList<>(), "source.java");
+
+        var internal = new HashMap<ObjectType, OPALType>();
+        internal.put(objectType, type);
+
+        var classHierarchy = new OPALClassHierarchy(internal, new HashMap<>(), 5);
+
+        var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+        var internalCallKeys = classHierarchy.getInternalCallKeys(source, target);
+        internalCalls.put(internalCallKeys, new HashMap<>());
+
+        var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+
+        var newMetadata = new HashMap<>();
+        newMetadata.put(10, "newMetadata");
+
+        assertEquals(0, internalCalls.get(internalCallKeys).size());
+
+        classHierarchy.putCalls(source, internalCalls, externalCalls, null, newMetadata, target);
+
+        assertEquals(1, internalCalls.get(internalCallKeys).size());
+        assertEquals("newMetadata", internalCalls.get(internalCallKeys).get(10));
+    }
+
+    @Test
+    void putCallsSourceDeclaredMethod() {
+        var objectType = Mockito.mock(ObjectType.class);
+
+        var thisType = Mockito.mock(ObjectType.class);
+        Mockito.when(thisType.asObjectType()).thenReturn(objectType);
+
+        var classFile = Mockito.mock(ClassFile.class);
+        Mockito.when(classFile.thisType()).thenReturn(thisType);
+
+        var source = Mockito.mock(DeclaredMethod.class);
+        var target = Mockito.mock(Method.class);
+        Mockito.when(target.declaringClassFile()).thenReturn(classFile);
+
+        var type = new OPALType(new HashMap<>(), Chain.empty(), new ArrayList<>(), "source.java");
+
+        var internal = new HashMap<ObjectType, OPALType>();
+        internal.put(objectType, type);
+
+        var classHierarchy = new OPALClassHierarchy(internal, new HashMap<>(), 5);
+
+        var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+        externalCalls.put(List.of(5, 6), new HashMap<>());
+
+        var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+
+        var newMetadata = new HashMap<>();
+        newMetadata.put(10, "newMetadata");
+
+        assertEquals(0, externalCalls.get(List.of(5, 6)).size());
+
+        classHierarchy.putCalls(source, internalCalls, externalCalls,
+                Mockito.mock(DeclaredMethod.class), newMetadata, target);
+
+        assertEquals(1, externalCalls.get(List.of(5, 6)).size());
+        assertEquals("newMetadata", externalCalls.get(List.of(5, 6)).get(10));
+    }
+
+    @Test
+    void putCallsTargetConstructor() {
+        var objectType = Mockito.mock(ObjectType.class);
+
+        var thisType = Mockito.mock(ObjectType.class);
+        Mockito.when(thisType.asObjectType()).thenReturn(objectType);
+
+        var classFile = Mockito.mock(ClassFile.class);
+        Mockito.when(classFile.thisType()).thenReturn(thisType);
+
+        var source = Mockito.mock(DeclaredMethod.class);
+        var target = Mockito.mock(Method.class);
+        Mockito.when(target.declaringClassFile()).thenReturn(classFile);
+        Mockito.when(target.isConstructor()).thenReturn(true);
+
+        var methods = new HashMap<Method, Integer>();
+        methods.put(target, 6);
+
+        var type = new OPALType(methods, Chain.empty(), new ArrayList<>(), "source.java");
+
+        var internal = new HashMap<ObjectType, OPALType>();
+        internal.put(objectType, type);
+
+        var classHierarchy = new OPALClassHierarchy(internal, new HashMap<>(), 5);
+
+        var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+        externalCalls.put(List.of(5, 6), new HashMap<>());
+
+        var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+
+        var newMetadata = new HashMap<>();
+        newMetadata.put(10, "newMetadata");
+
+        assertEquals(0, externalCalls.get(List.of(5, 6)).size());
+
+        classHierarchy.putCalls(source, internalCalls, externalCalls,
+                Mockito.mock(DeclaredMethod.class), newMetadata, target);
+
+        assertEquals(2, externalCalls.size());
+        assertEquals("newMetadata", externalCalls.get(List.of(5, 6)).get(10));
+        assertEquals(0, externalCalls.get(List.of(6, 6)).size());
     }
 
     @Test
