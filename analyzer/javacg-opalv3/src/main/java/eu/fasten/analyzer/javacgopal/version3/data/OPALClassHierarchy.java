@@ -150,7 +150,7 @@ public class OPALClassHierarchy {
             return Arrays.asList(this.addMethodToExternals((DeclaredMethod) source),
                     this.internalCHA.get(((Method) target).declaringClassFile().thisType().asObjectType())
                             .getMethods().get(target));
-        } else if  (source instanceof DeclaredMethod){
+        } else if (source instanceof DeclaredMethod) {
             return Arrays.asList(this.addMethodToExternals((DeclaredMethod) source),
                     this.addMethodToExternals((DeclaredMethod) target));
         } else {
@@ -158,6 +158,16 @@ public class OPALClassHierarchy {
         }
     }
 
+    /**
+     * Put calls to either internal or external maps of calls
+     *
+     * @param source            source method
+     * @param internalCalls     map of internal calls
+     * @param externalCalls     map of external calls
+     * @param targetDeclaration target method declaration
+     * @param metadata          metadata to put along the call
+     * @param target            target method
+     */
     public void putCalls(final Object source, final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
                          final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
                          final DeclaredMethod targetDeclaration, Map<Object, Object> metadata, final Method target) {
@@ -172,6 +182,14 @@ public class OPALClassHierarchy {
         }
     }
 
+    /**
+     * Put external call to the list of calls
+     *
+     * @param source            source method
+     * @param externalCalls     map of external calls
+     * @param targetDeclaration target method declaration
+     * @param metadata          metadata to put along the call
+     */
     public void putExternalCall(final Object source,
                                 final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
                                 final DeclaredMethod targetDeclaration, final Map<Object, Object> metadata) {
@@ -181,6 +199,14 @@ public class OPALClassHierarchy {
         externalCalls.put(call, externalMetadata);
     }
 
+    /**
+     * Get metadata of internal calls
+     *
+     * @param internalCalls map of internal calls
+     * @param metadata      new metadata to add
+     * @param call          call to add metadata to
+     * @return internal metadata
+     */
     public Map<Object, Object> getInternalMetadata(final Map<List<Integer>, Map<Object, Object>> internalCalls,
                                                    final Map<Object, Object> metadata, final List<Integer> call) {
         final var internalMetadata = internalCalls.getOrDefault(call, new HashMap<>());
@@ -188,6 +214,13 @@ public class OPALClassHierarchy {
         return internalMetadata;
     }
 
+    /**
+     * Append a sub-graph to already existing ExtendedRevisionCallGraph
+     *
+     * @param source      source method
+     * @param targets     list of targets
+     * @param resultGraph already existing ExtendedRevisionCallGraph
+     */
     public void appendGraph(final Object source,
                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
                             ExtendedRevisionCallGraphV3.Graph resultGraph) {
@@ -195,6 +228,13 @@ public class OPALClassHierarchy {
         resultGraph.append(edges);
     }
 
+    /**
+     * Given a source method and a list of targets return a sub-graph of ExtendedRevisionCallGraph.
+     *
+     * @param source  source method
+     * @param targets list of targets
+     * @return ExtendedRevisionCallGraph sub-graph
+     */
     public ExtendedRevisionCallGraphV3.Graph getSubGraph(final Object source,
                                                          final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets) {
 
@@ -228,7 +268,13 @@ public class OPALClassHierarchy {
         return new ExtendedRevisionCallGraphV3.Graph(internalCalls, externalCalls);
     }
 
-
+    /**
+     * Get call site for a method.
+     *
+     * @param source source method
+     * @param pc     pc
+     * @return call site
+     */
     public Map<Object, Object> getCallSite(final Method source, final Integer pc) {
         final var instruction = source.instructionsOption().get()[pc].mnemonic();
         final var receiverType = OPALMethod
