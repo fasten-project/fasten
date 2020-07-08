@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.analyzer.javacgopalv3.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import eu.fasten.analyzer.javacgopalv3.data.OPALMethod;
 import eu.fasten.core.data.FastenJavaURI;
 import java.util.ArrayList;
 import java.util.List;

@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopalv3;
 
-import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.analyzer.javacgopal.evaluation.JCGFormat;
-import eu.fasten.analyzer.javacgopal.merge.CallGraphUtils;
-import eu.fasten.analyzer.javacgopal.merge.CallGraphMerger;
+import eu.fasten.analyzer.javacgopalv3.data.CallGraphConstructor;
+import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgopalv3.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopalv3.evaluation.JCGFormat;
+import eu.fasten.analyzer.javacgopalv3.merge.CallGraphUtils;
+import eu.fasten.analyzer.javacgopalv3.merge.CallGraphMerger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

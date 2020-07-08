@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.analyzer.javacgopalv3.data;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;

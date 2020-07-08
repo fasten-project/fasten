@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.scalawrapper;
+package eu.fasten.analyzer.javacgopalv3.scalawrapper;
 
 import java.io.File;
 import java.io.FileInputStream;

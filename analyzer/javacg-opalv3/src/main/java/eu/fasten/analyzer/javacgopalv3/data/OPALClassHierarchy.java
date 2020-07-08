@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.analyzer.javacgopalv3.data;
 
-import eu.fasten.analyzer.javacgopal.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
+import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.Arrays;

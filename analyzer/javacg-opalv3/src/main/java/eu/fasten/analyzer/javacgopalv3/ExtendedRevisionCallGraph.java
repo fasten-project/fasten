@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.javacgopalv3;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import eu.fasten.analyzer.javacgopal.data.OPALCallSite;
+import eu.fasten.analyzer.javacgopalv3.data.OPALCallSite;
 import eu.fasten.core.data.FastenURI;
 import java.io.IOException;
 import java.util.ArrayList;

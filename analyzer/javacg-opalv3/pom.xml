@@ -115,12 +115,12 @@
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>eu.fasten.analyzer.opalversion3.Main</Main-Class>
+                                        <Main-Class>eu.fasten.analyzer.javacgopalv3.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.javacgopal.OPALPlugin
+                                        <Plugin-Class>eu.fasten.analyzer.javacgopalv3.OPALV3Plugin
                                         </Plugin-Class>
-                                        <Plugin-Id>opal-plugin</Plugin-Id>
+                                        <Plugin-Id>opal-plugin-v3</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
                                         <Plugin-Description>Given a Maven coordinate, generates call
                                             graphs and puts them into a Kafka topic

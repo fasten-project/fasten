@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.merge;
+package eu.fasten.analyzer.javacgopalv3.merge;
 
-import eu.fasten.analyzer.javacgopal.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopal.data.OPALCallSite;
+import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopalv3.data.OPALCallSite;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 
