@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3.evaluation;
+package eu.fasten.analyzer.javacgopal.evaluation;
 
-import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraph.Node;
-import eu.fasten.analyzer.javacgopal.version3.data.OPALCallSite;
+import eu.fasten.analyzer.javacgopal.data.OPALCallSite;
+import eu.fasten.analyzer.javacgopal.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.ExtendedRevisionCallGraph.Node;
 import eu.fasten.core.data.FastenURI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;

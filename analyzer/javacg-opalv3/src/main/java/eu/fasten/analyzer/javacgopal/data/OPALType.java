@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3.data;
+package eu.fasten.analyzer.javacgopal.data;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
-import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopal.version3.scalawrapper.JavaToScalaConverter;
+import eu.fasten.analyzer.javacgopal.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;

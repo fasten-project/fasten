@@ -1,6 +1,6 @@
-package eu.fasten.analyzer.javacgopal.version3.evaluation;
+package eu.fasten.analyzer.javacgopal.evaluation;
 
-import eu.fasten.analyzer.javacgopal.version3.Main;
+import eu.fasten.analyzer.javacgopal.Main;
 import org.json.JSONObject;
 
 import java.io.File;
