@@ -295,7 +295,7 @@ public class MavenCoordinate {
 
             for (var repo : mavenCoordinate.getMavenRepos()) {
                 var pom = httpGetToFile(mavenCoordinate.toPomUrl(repo), ".pom")
-                            .flatMap(MavenResolver::fileToString);
+                        .flatMap(MavenResolver::fileToString);
                 if (pom.isPresent()) {
                     return pom;
                 }

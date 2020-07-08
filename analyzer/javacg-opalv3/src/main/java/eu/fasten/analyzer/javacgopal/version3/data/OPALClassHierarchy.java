@@ -1,15 +1,35 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.analyzer.javacgopal.version3.data;
 
 import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
 import eu.fasten.analyzer.javacgopal.version3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.opalj.br.*;
-import org.opalj.br.analyses.DeclaredMethodsKey$;
+import org.opalj.br.ClassHierarchy;
+import org.opalj.br.DeclaredMethod;
+import org.opalj.br.Method;
+import org.opalj.br.ObjectType;
 import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.JavaConverters;
@@ -120,7 +140,7 @@ public class OPALClassHierarchy {
      * @param target target method
      * @return list of call ids
      */
-    public <T, E> List<Integer> getExternalCallKeys(final T source, final E target) {
+    public List<Integer> getExternalCallKeys(final Object source, final Object target) {
         if (source instanceof Method && target instanceof DeclaredMethod) {
             return Arrays.asList(this.internalCHA.get(((Method) source).declaringClassFile().thisType().asObjectType())
                             .getMethods()
@@ -130,17 +150,27 @@ public class OPALClassHierarchy {
             return Arrays.asList(this.addMethodToExternals((DeclaredMethod) source),
                     this.internalCHA.get(((Method) target).declaringClassFile().thisType().asObjectType())
                             .getMethods().get(target));
-        } else {
-            assert source instanceof DeclaredMethod;
+        } else if (source instanceof DeclaredMethod) {
             return Arrays.asList(this.addMethodToExternals((DeclaredMethod) source),
                     this.addMethodToExternals((DeclaredMethod) target));
+        } else {
+            return new ArrayList<>();
         }
     }
 
-    //TODO: refactor and find a cleaner way
-    public <T> void putCalls(final T source, final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
-                             final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
-                             final DeclaredMethod targetDeclaration, Map<Object, Object> metadata, final Method target) {
+    /**
+     * Put calls to either internal or external maps of calls
+     *
+     * @param source            source method
+     * @param internalCalls     map of internal calls
+     * @param externalCalls     map of external calls
+     * @param targetDeclaration target method declaration
+     * @param metadata          metadata to put along the call
+     * @param target            target method
+     */
+    public void putCalls(final Object source, final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
+                         final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
+                         final DeclaredMethod targetDeclaration, Map<Object, Object> metadata, final Method target) {
         if (source instanceof Method) {
             final var call = this.getInternalCallKeys((Method) source, target);
             internalCalls.put(call, getInternalMetadata(internalCalls, metadata, call));
@@ -152,15 +182,31 @@ public class OPALClassHierarchy {
         }
     }
 
-    public <T> void putExternalCall(final T source,
-                                    final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
-                                    final DeclaredMethod targetDeclaration, final Map<Object, Object> metadata) {
+    /**
+     * Put external call to the list of calls
+     *
+     * @param source            source method
+     * @param externalCalls     map of external calls
+     * @param targetDeclaration target method declaration
+     * @param metadata          metadata to put along the call
+     */
+    public void putExternalCall(final Object source,
+                                final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
+                                final DeclaredMethod targetDeclaration, final Map<Object, Object> metadata) {
         final var call = this.getExternalCallKeys(source, targetDeclaration);
         final var externalMetadata = externalCalls.getOrDefault(call, new HashMap<>());
         externalMetadata.putAll(metadata);
         externalCalls.put(call, externalMetadata);
     }
 
+    /**
+     * Get metadata of internal calls
+     *
+     * @param internalCalls map of internal calls
+     * @param metadata      new metadata to add
+     * @param call          call to add metadata to
+     * @return internal metadata
+     */
     public Map<Object, Object> getInternalMetadata(final Map<List<Integer>, Map<Object, Object>> internalCalls,
                                                    final Map<Object, Object> metadata, final List<Integer> call) {
         final var internalMetadata = internalCalls.getOrDefault(call, new HashMap<>());
@@ -168,16 +214,29 @@ public class OPALClassHierarchy {
         return internalMetadata;
     }
 
-    //TODO: find a better way to add external calls to external CHA while generating a call graph
-    public <T> void appendGraph(final T source,
-                                final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
-                                ExtendedRevisionCallGraphV3.Graph resultGraph) {
+    /**
+     * Append a sub-graph to already existing ExtendedRevisionCallGraph
+     *
+     * @param source      source method
+     * @param targets     list of targets
+     * @param resultGraph already existing ExtendedRevisionCallGraph
+     */
+    public void appendGraph(final Object source,
+                            final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
+                            ExtendedRevisionCallGraphV3.Graph resultGraph) {
         final var edges = this.getSubGraph(source, targets);
         resultGraph.append(edges);
     }
 
-    public <T> ExtendedRevisionCallGraphV3.Graph getSubGraph(final T source,
-                                                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets) {
+    /**
+     * Given a source method and a list of targets return a sub-graph of ExtendedRevisionCallGraph.
+     *
+     * @param source  source method
+     * @param targets list of targets
+     * @return ExtendedRevisionCallGraph sub-graph
+     */
+    public ExtendedRevisionCallGraphV3.Graph getSubGraph(final Object source,
+                                                         final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets) {
 
         final var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
         final var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
@@ -209,7 +268,13 @@ public class OPALClassHierarchy {
         return new ExtendedRevisionCallGraphV3.Graph(internalCalls, externalCalls);
     }
 
-
+    /**
+     * Get call site for a method.
+     *
+     * @param source source method
+     * @param pc     pc
+     * @return call site
+     */
     public Map<Object, Object> getCallSite(final Method source, final Integer pc) {
         final var instruction = source.instructionsOption().get()[pc].mnemonic();
         final var receiverType = OPALMethod

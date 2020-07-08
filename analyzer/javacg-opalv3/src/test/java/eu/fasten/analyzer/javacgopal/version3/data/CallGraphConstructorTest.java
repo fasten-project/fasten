@@ -18,15 +18,15 @@
 
 package eu.fasten.analyzer.javacgopal.version3.data;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.Objects;
 import org.apache.commons.lang.StringUtils;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.ExpectedException;
-import scala.NotImplementedError;
 
 class CallGraphConstructorTest {
 
