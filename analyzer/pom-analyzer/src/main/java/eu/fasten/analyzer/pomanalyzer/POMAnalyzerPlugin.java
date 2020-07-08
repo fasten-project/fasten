@@ -82,8 +82,8 @@ public class POMAnalyzerPlugin extends Plugin {
             group = payload.getString("groupId");
             version = payload.getString("version");
             var dataExtractor = new DataExtractor();
-            repoUrl = dataExtractor.extractRepoUrl(artifact, group, version);
-            dependencyData = dataExtractor.extractDependencyData(artifact, group, version);
+            repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
+            dependencyData = dataExtractor.extractDependencyData(group, artifact, version);
             logger.info("Extracted repository URL " + repoUrl
                     + " from " + group + ":" + artifact + ":" + version);
         }

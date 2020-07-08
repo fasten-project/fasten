@@ -68,6 +68,13 @@ public class DataExtractorTest {
     }
 
     @Test
+    public void extractDependencyDataWithPropertiesTest() {
+        var expected = DependencyData.fromJSON(new JSONObject("{\"dependencyManagement\":{\"dependencies\":[]},\"dependencies\":[{\"groupId\":\"org.springframework.boot\",\"scope\":\"\",\"classifier\":\"\",\"artifactId\":\"spring-boot-starter-logging\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"*\"},{\"groupId\":\"com.squareup.okhttp3\",\"scope\":\"\",\"classifier\":\"\",\"artifactId\":\"okhttp\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"3.14.4\"},{\"groupId\":\"com.squareup.okhttp3\",\"scope\":\"\",\"classifier\":\"\",\"artifactId\":\"logging-interceptor\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"3.14.4\"},{\"groupId\":\"com.squareup.okhttp3\",\"scope\":\"\",\"classifier\":\"\",\"artifactId\":\"okhttp-tls\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"3.14.4\"},{\"groupId\":\"com.google.code.gson\",\"scope\":\"\",\"classifier\":\"\",\"artifactId\":\"gson\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"2.8.5\"},{\"groupId\":\"io.gsonfire\",\"scope\":\"\",\"classifier\":\"\",\"artifactId\":\"gson-fire\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"1.8.3\"},{\"groupId\":\"org.apache.commons\",\"scope\":\"\",\"classifier\":\"\",\"artifactId\":\"commons-lang3\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"*\"},{\"groupId\":\"org.junit.jupiter\",\"scope\":\"test\",\"classifier\":\"\",\"artifactId\":\"junit-jupiter-api\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"*\"},{\"groupId\":\"org.junit.jupiter\",\"scope\":\"test\",\"classifier\":\"\",\"artifactId\":\"junit-jupiter-engine\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"*\"}]}\n"));
+        var actual = dataExtractor.extractDependencyData("au.org.consumerdatastandards", "client", "1.1.1");
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void extractAllDataTest() {
         var expectedDependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +

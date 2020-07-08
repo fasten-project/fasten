@@ -21,7 +21,6 @@ package eu.fasten.analyzer.pomanalyzer.pom;
 import eu.fasten.analyzer.pomanalyzer.pom.data.Dependency;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyManagement;
-import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
@@ -39,7 +38,9 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class DataExtractor {
@@ -57,12 +58,12 @@ public class DataExtractor {
     /**
      * Extracts repository URL from POM of certain Maven coordinate.
      *
-     * @param artifactId artifactId of the coordinate
      * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
      * @param version    version of the coordinate
      * @return Extracted repository URL as String
      */
-    public String extractRepoUrl(String artifactId, String groupId, String version) {
+    public String extractRepoUrl(String groupId, String artifactId, String version) {
         String repoUrl = null;
         try {
             ByteArrayInputStream pomByteStream;
@@ -90,12 +91,12 @@ public class DataExtractor {
      * Extracts dependency information (dependencyManagement and list of dependencies)
      * from certain Maven coordinate.
      *
-     * @param artifactId of the coordinate
      * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
      * @param version    version of the coordinate
      * @return Extracted dependency information as DependencyData
      */
-    public DependencyData extractDependencyData(String artifactId, String groupId, String version) {
+    public DependencyData extractDependencyData(String groupId, String artifactId, String version) {
         DependencyData dependencyData = null;
         try {
             ByteArrayInputStream pomByteStream;
@@ -107,20 +108,28 @@ public class DataExtractor {
                                 .orElseThrow(RuntimeException::new).getBytes());
             }
             var pom = new SAXReader().read(pomByteStream);
+            Map<String, String> properties = new HashMap<>();
+            var propertiesRoot = pom.getRootElement()
+                    .selectSingleNode("./*[local-name() ='properties']");
+            if (propertiesRoot != null) {
+                for (final var property : propertiesRoot.selectNodes("*")) {
+                    properties.put(property.getName(), property.getStringValue());
+                }
+            }
             var dependencyManagementNode = pom.getRootElement()
                     .selectSingleNode("./*[local-name()='dependencyManagement']");
             DependencyManagement dependencyManagement;
             if (dependencyManagementNode != null) {
                 var dependenciesNode = dependencyManagementNode
                         .selectSingleNode("./*[local-name()='dependencies']");
-                var dependencies = extractDependencies(dependenciesNode);
+                var dependencies = extractDependencies(dependenciesNode, properties);
                 dependencyManagement = new DependencyManagement(dependencies);
             } else {
                 dependencyManagement = new DependencyManagement(new ArrayList<>());
             }
             var dependenciesNode = pom.getRootElement()
                     .selectSingleNode("./*[local-name()='dependencies']");
-            var dependencies = extractDependencies(dependenciesNode);
+            var dependencies = extractDependencies(dependenciesNode, properties);
             dependencyData = new DependencyData(dependencyManagement, dependencies);
         } catch (FileNotFoundException | DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -129,7 +138,8 @@ public class DataExtractor {
         return dependencyData;
     }
 
-    private List<Dependency> extractDependencies(Node dependenciesNode) {
+    private List<Dependency> extractDependencies(Node dependenciesNode,
+                                                 Map<String, String> properties) {
         ArrayList<Dependency> dependencies = new ArrayList<>();
         if (dependenciesNode != null) {
             for (var dependencyNode : dependenciesNode
@@ -164,10 +174,22 @@ public class DataExtractor {
                         .selectSingleNode("./*[local-name()='type']");
                 var classifierNode = dependencyNode
                         .selectSingleNode("./*[local-name()='classifier']");
+                String version;
+                if (versionNode != null) {
+                    version = versionNode.getStringValue().startsWith("$")
+                            ? properties.get(versionNode.getStringValue()
+                            .substring(2, versionNode.getStringValue().length() - 1)) :
+                            versionNode.getStringValue();
+                    if (version == null) {
+                        version = "*";
+                    }
+                } else {
+                    version = "*";
+                }
                 dependencies.add(new Dependency(
                         artifactNode.getText(),
                         groupNode.getText(),
-                        (versionNode != null) ? versionNode.getText() : "",
+                        version,
                         exclusions,
                         (scopeNode != null) ? scopeNode.getText() : "",
                         (optionalNode != null) && Boolean.parseBoolean(
