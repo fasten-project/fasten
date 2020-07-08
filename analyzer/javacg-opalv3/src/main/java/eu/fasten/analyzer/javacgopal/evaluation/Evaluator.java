@@ -1,7 +1,6 @@
-package eu.fasten.analyzer.javacgopal.version3;
+package eu.fasten.analyzer.javacgopal.version3.evaluation;
 
-import eu.fasten.analyzer.javacgopal.version3.merge.CallGraphUtils;
-import org.apache.commons.lang3.StringUtils;
+import eu.fasten.analyzer.javacgopal.version3.Main;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -75,9 +74,9 @@ public class Evaluator {
                         langFeature.getAbsolutePath() + "/" + output + "Jcg"};
 
         System.out.println("CG: " + Arrays.toString(cgCommand).replace(",", " "));
-        eu.fasten.analyzer.javacgopal.version3.MainV3.main(cgCommand);
+        Main.main(cgCommand);
         System.out.println("Convert: " + Arrays.toString(convertCommand).replace(",", " "));
-        eu.fasten.analyzer.javacgopal.version3.MainV3.main(convertCommand);
+        Main.main(convertCommand);
 
     }
 
@@ -121,7 +120,7 @@ public class Evaluator {
                         langFeature.getAbsolutePath() + "/" + output};
 
         System.out.println("mergeCommand :" + Arrays.toString(mergeCommand).replace(",", " "));
-        MainV3.main(mergeCommand);
+        Main.main(mergeCommand);
 
 
         String input = "";
@@ -141,6 +140,6 @@ public class Evaluator {
                 langFeature.getAbsolutePath() + "/" + output + "Jcg"};
 
         System.out.println("mergeConvert: " + Arrays.toString(convertCommand).replace(",", " "));
-        MainV3.main(convertCommand);
+        Main.main(convertCommand);
     }
 }

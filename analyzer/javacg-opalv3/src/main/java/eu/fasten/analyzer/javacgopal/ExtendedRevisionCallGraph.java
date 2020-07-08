@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3;
+package eu.fasten.analyzer.javacgopal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import eu.fasten.analyzer.javacgopal.version3.data.OPALCallSite;
+import eu.fasten.analyzer.javacgopal.data.OPALCallSite;
 import eu.fasten.core.data.FastenURI;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,9 +39,9 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExtendedRevisionCallGraphV3 {
+public class ExtendedRevisionCallGraph {
 
-    private static final Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraphV3.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
 
     /**
      * For each class in the revision, class hierarchy keeps a {@link Type} that is accessible by
@@ -99,7 +99,7 @@ public class ExtendedRevisionCallGraphV3 {
     private final String cgGenerator;
 
     /**
-     * Creates {@link ExtendedRevisionCallGraphV3} with the given data.
+     * Creates {@link ExtendedRevisionCallGraph} with the given data.
      *
      * @param forge          the forge.
      * @param product        the product.
@@ -112,10 +112,10 @@ public class ExtendedRevisionCallGraphV3 {
      *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
-    public ExtendedRevisionCallGraphV3(final String forge, final String product, final String version,
-                                       final long timestamp, int nodeCount, final String cgGenerator,
-                                       final Map<Scope, Map<FastenURI, Type>> classHierarchy,
-                                       final Graph graph) {
+    public ExtendedRevisionCallGraph(final String forge, final String product, final String version,
+                                     final long timestamp, int nodeCount, final String cgGenerator,
+                                     final Map<Scope, Map<FastenURI, Type>> classHierarchy,
+                                     final Graph graph) {
 
         this.forge = forge;
         this.product = product;
@@ -129,7 +129,7 @@ public class ExtendedRevisionCallGraphV3 {
         this.graph = graph;
     }
 
-    private ExtendedRevisionCallGraphV3(final ExtendedBuilder builder) {
+    private ExtendedRevisionCallGraph(final ExtendedBuilder builder) {
         this.forge = builder.forge;
         this.product = builder.product;
         this.version = builder.version;
@@ -143,11 +143,11 @@ public class ExtendedRevisionCallGraphV3 {
     }
 
     /**
-     * Creates {@link ExtendedRevisionCallGraphV3} for the given JSONObject.
+     * Creates {@link ExtendedRevisionCallGraph} for the given JSONObject.
      *
      * @param json JSONObject of a revision call graph.
      */
-    public ExtendedRevisionCallGraphV3(final JSONObject json) throws JSONException, IOException {
+    public ExtendedRevisionCallGraph(final JSONObject json) throws JSONException, IOException {
 
         this.forge = json.getString("forge");
         this.product = json.getString("product");
@@ -174,7 +174,7 @@ public class ExtendedRevisionCallGraphV3 {
     }
 
     /**
-     * Creates builder to build {@link ExtendedRevisionCallGraphV3}.
+     * Creates builder to build {@link ExtendedRevisionCallGraph}.
      *
      * @return created builder
      */
@@ -212,7 +212,7 @@ public class ExtendedRevisionCallGraphV3 {
     }
 
     /**
-     * Produces the JSON representation of this {@link ExtendedRevisionCallGraphV3}.
+     * Produces the JSON representation of this {@link ExtendedRevisionCallGraph}.
      *
      * @return the JSON representation.
      */
@@ -298,7 +298,7 @@ public class ExtendedRevisionCallGraphV3 {
     }
 
     /**
-     * Builder to build {@link ExtendedRevisionCallGraphV3}.
+     * Builder to build {@link ExtendedRevisionCallGraph}.
      */
     public static final class ExtendedBuilder {
         private String forge;
@@ -343,7 +343,7 @@ public class ExtendedRevisionCallGraphV3 {
             return this;
         }
 
-        public ExtendedBuilder graph(final ExtendedRevisionCallGraphV3.Graph graph) {
+        public ExtendedBuilder graph(final ExtendedRevisionCallGraph.Graph graph) {
             this.graph = graph;
             return this;
         }
@@ -353,8 +353,8 @@ public class ExtendedRevisionCallGraphV3 {
             return this;
         }
 
-        public ExtendedRevisionCallGraphV3 build() {
-            return new ExtendedRevisionCallGraphV3(this);
+        public ExtendedRevisionCallGraph build() {
+            return new ExtendedRevisionCallGraph(this);
         }
     }
 

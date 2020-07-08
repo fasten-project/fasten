@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3.scalawrapper;
+package eu.fasten.analyzer.javacgopal.scalawrapper;
 
 import org.opalj.br.Method;
 import scala.collection.Iterable;

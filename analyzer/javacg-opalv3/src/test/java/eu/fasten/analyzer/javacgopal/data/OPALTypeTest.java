@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3.data;
+package eu.fasten.analyzer.javacgopal.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opalj.br.BaseType;
@@ -118,21 +119,21 @@ class OPALTypeTest {
 
         var ERCGType = resultType.get(FastenURI.create("/some.package/typeName"));
         assertEquals(1, resultType.size());
-        assertEquals(1, ERCGType.getMethods().size());
-        assertEquals("", ERCGType.getSourceFileName());
-        assertEquals(1, ERCGType.getSuperClasses().size());
-        assertEquals(1, ERCGType.getSuperInterfaces().size());
+        Assertions.assertEquals(1, ERCGType.getMethods().size());
+        Assertions.assertEquals("", ERCGType.getSourceFileName());
+        Assertions.assertEquals(1, ERCGType.getSuperClasses().size());
+        Assertions.assertEquals(1, ERCGType.getSuperInterfaces().size());
         assertNotNull(ERCGType.getMethods().get(123));
 
         var node = ERCGType.getMethods().get(123);
-        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
                 node.getUri());
-        assertEquals(0, node.getMetadata().size());
+        Assertions.assertEquals(0, node.getMetadata().size());
 
-        assertEquals(FastenURI.create("/some.package/typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName"),
                 ERCGType.getSuperInterfaces().get(0));
 
-        assertEquals(FastenURI.create("/some.package/typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName"),
                 ERCGType.getSuperClasses().get(0));
     }
 
@@ -186,18 +187,18 @@ class OPALTypeTest {
 
         var ERCGType = resultType.get(FastenURI.create("/some.package/typeName"));
         assertEquals(1, resultType.size());
-        assertEquals(1, ERCGType.getMethods().size());
-        assertEquals("", ERCGType.getSourceFileName());
-        assertEquals(0, ERCGType.getSuperClasses().size());
-        assertEquals(1, ERCGType.getSuperInterfaces().size());
+        Assertions.assertEquals(1, ERCGType.getMethods().size());
+        Assertions.assertEquals("", ERCGType.getSourceFileName());
+        Assertions.assertEquals(0, ERCGType.getSuperClasses().size());
+        Assertions.assertEquals(1, ERCGType.getSuperInterfaces().size());
         assertNotNull(ERCGType.getMethods().get(123));
 
         var node = ERCGType.getMethods().get(123);
-        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
                 node.getUri());
-        assertEquals(0, node.getMetadata().size());
+        Assertions.assertEquals(0, node.getMetadata().size());
 
-        assertEquals(FastenURI.create("/some.package/typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName"),
                 ERCGType.getSuperInterfaces().get(0));
     }
 
@@ -229,20 +230,20 @@ class OPALTypeTest {
 
         var ERCGType = resultType.get(FastenURI.create("/some.package/typeName"));
         assertEquals(1, resultType.size());
-        assertEquals(1, ERCGType.getMethods().size());
-        assertEquals("source.java", ERCGType.getSourceFileName());
-        assertEquals(0, ERCGType.getSuperClasses().size());
-        assertEquals(0, ERCGType.getSuperInterfaces().size());
+        Assertions.assertEquals(1, ERCGType.getMethods().size());
+        Assertions.assertEquals("source.java", ERCGType.getSourceFileName());
+        Assertions.assertEquals(0, ERCGType.getSuperClasses().size());
+        Assertions.assertEquals(0, ERCGType.getSuperInterfaces().size());
         assertNotNull(ERCGType.getMethods().get(123));
 
         var node = ERCGType.getMethods().get(123);
-        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
                 node.getUri());
-        assertEquals(4, node.getMetadata().size());
-        assertEquals(10, node.getMetadata().get("first"));
-        assertEquals(30, node.getMetadata().get("last"));
-        assertEquals(true, node.getMetadata().get("defined"));
-        assertEquals("private", node.getMetadata().get("access"));
+        Assertions.assertEquals(4, node.getMetadata().size());
+        Assertions.assertEquals(10, node.getMetadata().get("first"));
+        Assertions.assertEquals(30, node.getMetadata().get("last"));
+        Assertions.assertEquals(true, node.getMetadata().get("defined"));
+        Assertions.assertEquals("private", node.getMetadata().get("access"));
     }
 
     @Test
@@ -277,24 +278,24 @@ class OPALTypeTest {
 
         var ERCGType = resultType.get(FastenURI.create("/some.package/typeName"));
         assertEquals(1, resultType.size());
-        assertEquals(1, ERCGType.getMethods().size());
-        assertEquals("source.java", ERCGType.getSourceFileName());
-        assertEquals(1, ERCGType.getSuperClasses().size());
-        assertEquals(1, ERCGType.getSuperInterfaces().size());
+        Assertions.assertEquals(1, ERCGType.getMethods().size());
+        Assertions.assertEquals("source.java", ERCGType.getSourceFileName());
+        Assertions.assertEquals(1, ERCGType.getSuperClasses().size());
+        Assertions.assertEquals(1, ERCGType.getSuperInterfaces().size());
         assertNotNull(ERCGType.getMethods().get(123));
 
         var node = ERCGType.getMethods().get(123);
-        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
                 node.getUri());
-        assertEquals(4, node.getMetadata().size());
-        assertEquals(10, node.getMetadata().get("first"));
-        assertEquals(30, node.getMetadata().get("last"));
-        assertEquals(true, node.getMetadata().get("defined"));
-        assertEquals("private", node.getMetadata().get("access"));
+        Assertions.assertEquals(4, node.getMetadata().size());
+        Assertions.assertEquals(10, node.getMetadata().get("first"));
+        Assertions.assertEquals(30, node.getMetadata().get("last"));
+        Assertions.assertEquals(true, node.getMetadata().get("defined"));
+        Assertions.assertEquals("private", node.getMetadata().get("access"));
 
-        assertEquals(FastenURI.create("/some.package/typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName"),
                 ERCGType.getSuperClasses().getFirst());
-        assertEquals(FastenURI.create("/some.package/typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName"),
                 ERCGType.getSuperInterfaces().get(0));
     }
 
@@ -326,9 +327,9 @@ class OPALTypeTest {
         methods.put(declaredMethod, 123);
 
         assertNotNull(OPALType.toURIDeclaredMethods(methods).get(123));
-        assertEquals(0,
+        Assertions.assertEquals(0,
                 OPALType.toURIDeclaredMethods(methods).get(123).getMetadata().size());
-        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
                 OPALType.toURIDeclaredMethods(methods).get(123).getUri());
     }
 
@@ -386,13 +387,13 @@ class OPALTypeTest {
         assertNotNull(OPALType.toURIMethods(methods).get(123));
 
         var node = OPALType.toURIMethods(methods).get(123);
-        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
                 node.getUri());
-        assertEquals(4, node.getMetadata().size());
-        assertEquals(10, node.getMetadata().get("first"));
-        assertEquals(30, node.getMetadata().get("last"));
-        assertEquals(true, node.getMetadata().get("defined"));
-        assertEquals("private", node.getMetadata().get("access"));
+        Assertions.assertEquals(4, node.getMetadata().size());
+        Assertions.assertEquals(10, node.getMetadata().get("first"));
+        Assertions.assertEquals(30, node.getMetadata().get("last"));
+        Assertions.assertEquals(true, node.getMetadata().get("defined"));
+        Assertions.assertEquals("private", node.getMetadata().get("access"));
     }
 
     @Test
@@ -414,10 +415,10 @@ class OPALTypeTest {
         Mockito.when(method.instructionsOption()).thenReturn(Option.empty());
 
         node = OPALType.toURIMethods(methods).get(123);
-        assertEquals("", node.getMetadata().get("first"));
-        assertEquals("", node.getMetadata().get("last"));
-        assertEquals(false, node.getMetadata().get("defined"));
-        assertEquals("public", node.getMetadata().get("access"));
+        Assertions.assertEquals("", node.getMetadata().get("first"));
+        Assertions.assertEquals("", node.getMetadata().get("last"));
+        Assertions.assertEquals(false, node.getMetadata().get("defined"));
+        Assertions.assertEquals("public", node.getMetadata().get("access"));
     }
 
     @Test
@@ -435,9 +436,9 @@ class OPALTypeTest {
 
         var node = OPALType.toURIMethods(methods).get(123);
 
-        assertEquals("notFound", node.getMetadata().get("first"));
-        assertEquals("notFound", node.getMetadata().get("last"));
-        assertEquals("packagePrivate", node.getMetadata().get("access"));
+        Assertions.assertEquals("notFound", node.getMetadata().get("first"));
+        Assertions.assertEquals("notFound", node.getMetadata().get("last"));
+        Assertions.assertEquals("packagePrivate", node.getMetadata().get("access"));
     }
 
     @Test
@@ -454,7 +455,7 @@ class OPALTypeTest {
 
         var node = OPALType.toURIMethods(methods).get(123);
 
-        assertEquals("protected", node.getMetadata().get("access"));
+        Assertions.assertEquals("protected", node.getMetadata().get("access"));
     }
 
     @Test
@@ -469,7 +470,7 @@ class OPALTypeTest {
 
         var node = OPALType.toURIMethods(methods).get(123);
 
-        assertEquals("notFound", node.getMetadata().get("access"));
+        Assertions.assertEquals("notFound", node.getMetadata().get("access"));
     }
 
     private Method createMethod() {

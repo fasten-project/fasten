@@ -21,7 +21,7 @@ package eu.fasten.analyzer.javacgopal.version3.data;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
-import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
+import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopal.version3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
@@ -81,16 +81,16 @@ public class OPALType {
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link ExtendedRevisionCallGraphV3.Type}.
+     * corresponding {@link ExtendedRevisionCallGraph.Type}.
      *
      * @param projectHierarchy class hierarchy of the project
      * @param methods          methods belonging to this type
      * @param aClass           object type
      * @return map of FastenURI and corresponding Types
      */
-    public static Map<FastenURI, ExtendedRevisionCallGraphV3.Type> getType(ClassHierarchy projectHierarchy,
-                                                                           final Map<DeclaredMethod, Integer> methods,
-                                                                           final ObjectType aClass) {
+    public static Map<FastenURI, ExtendedRevisionCallGraph.Type> getType(ClassHierarchy projectHierarchy,
+                                                                         final Map<DeclaredMethod, Integer> methods,
+                                                                         final ObjectType aClass) {
         final var superTypes = extractSuperClasses(projectHierarchy, aClass);
 
         final LinkedList<FastenURI> superClassesURIs;
@@ -101,7 +101,7 @@ public class OPALType {
         }
 
         return Map.of(OPALMethod.getTypeURI(aClass),
-                new ExtendedRevisionCallGraphV3.Type("",
+                new ExtendedRevisionCallGraph.Type("",
                         toURIDeclaredMethods(methods),
                         superClassesURIs,
                         toURIInterfaces(extractSuperInterfaces(projectHierarchy, aClass))));
@@ -109,14 +109,14 @@ public class OPALType {
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link ExtendedRevisionCallGraphV3.Type}.
+     * corresponding {@link ExtendedRevisionCallGraph.Type}.
      *
      * @param type   OPAL type
      * @param aClass object type
      * @return map of FastenURI and corresponding Types
      */
-    public static Map<FastenURI, ExtendedRevisionCallGraphV3.Type> getType(final OPALType type,
-                                                                           final ObjectType aClass) {
+    public static Map<FastenURI, ExtendedRevisionCallGraph.Type> getType(final OPALType type,
+                                                                         final ObjectType aClass) {
         final LinkedList<FastenURI> superClassesURIs;
         if (type.getSuperClasses() != null) {
             superClassesURIs = toURIClasses(type.getSuperClasses());
@@ -125,7 +125,7 @@ public class OPALType {
         }
 
         return Map.of(OPALMethod.getTypeURI(aClass),
-                new ExtendedRevisionCallGraphV3.Type(type.getSourceFileName(),
+                new ExtendedRevisionCallGraph.Type(type.getSourceFileName(),
                         toURIMethods(type.getMethods()),
                         superClassesURIs,
                         toURIInterfaces(type.getSuperInterfaces())));
@@ -133,18 +133,18 @@ public class OPALType {
 
     /**
      * Convert a map of {@link DeclaredMethod} to a BiMap of
-     * {@link ExtendedRevisionCallGraphV3.Node}.
+     * {@link ExtendedRevisionCallGraph.Node}.
      *
      * @param methods map of methods to convert
      * @return BiMap of Nodes
      */
-    public static BiMap<Integer, ExtendedRevisionCallGraphV3.Node> toURIDeclaredMethods(
+    public static BiMap<Integer, ExtendedRevisionCallGraph.Node> toURIDeclaredMethods(
             final Map<DeclaredMethod, Integer> methods) {
-        final BiMap<Integer, ExtendedRevisionCallGraphV3.Node> result = HashBiMap.create();
+        final BiMap<Integer, ExtendedRevisionCallGraph.Node> result = HashBiMap.create();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
-            result.put(entry.getValue(), new ExtendedRevisionCallGraphV3.Node(
+            result.put(entry.getValue(), new ExtendedRevisionCallGraph.Node(
                     OPALMethod.toCanonicalSchemelessURI(null,
                             method.declaringClassType(), method.name(),
                             method.descriptor()), new HashMap<>()));
@@ -190,13 +190,13 @@ public class OPALType {
      * @return A Map in which the unique id of each method in the artifact is the key and the
      * {@link FastenURI} of the method is the value.
      */
-    public static BiMap<Integer, ExtendedRevisionCallGraphV3.Node> toURIMethods(
+    public static BiMap<Integer, ExtendedRevisionCallGraph.Node> toURIMethods(
             final Map<Method, Integer> methods) {
-        final BiMap<Integer, ExtendedRevisionCallGraphV3.Node> result = HashBiMap.create();
+        final BiMap<Integer, ExtendedRevisionCallGraph.Node> result = HashBiMap.create();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
-            result.put(entry.getValue(), new ExtendedRevisionCallGraphV3.Node(getUri(method),
+            result.put(entry.getValue(), new ExtendedRevisionCallGraph.Node(getUri(method),
                     Map.of("first", getFirstLine(method),
                             "last", getLastLine(method),
                             "defined", method.instructionsOption().isDefined(),
