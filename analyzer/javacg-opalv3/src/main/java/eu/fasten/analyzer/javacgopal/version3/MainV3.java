@@ -175,7 +175,8 @@ public class MainV3 implements Runnable {
 
                 if (commands.computations.mode.equals("COORD")) {
                     final var artifact = getArtifactCoordinate();
-                    logger.info("Generating call graph for the Maven coordinate: {}", artifact);
+                    logger.info("Generating call graph for the Maven coordinate: {}",
+                            artifact.getCoordinate());
                     try {
                         generate(artifact, commands.computations.main, commands.computations.genAlgorithm,
                                 !this.output.isEmpty());
@@ -306,7 +307,7 @@ public class MainV3 implements Runnable {
 
         if (writeToFile) {
             CallGraphUtils
-                    .writeToFile(this.output, revisionCallGraph.toJSON(), "_" + revisionCallGraph.product);
+                    .writeToFile(this.output, revisionCallGraph.toJSON(), "");
         }
         return revisionCallGraph;
     }
