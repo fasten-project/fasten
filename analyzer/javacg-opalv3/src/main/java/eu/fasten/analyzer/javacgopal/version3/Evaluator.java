@@ -1,6 +1,7 @@
 package eu.fasten.analyzer.javacgopal.version3;
 
 import eu.fasten.analyzer.javacgopal.version3.merge.CallGraphUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -22,7 +23,7 @@ public class Evaluator {
             String main = extractMain(languageFeature);
             generateOpal(languageFeature, main, "RTA", "cg/opalV3");
             generateMerge(languageFeature, main, "RTA", "CHA", "cg/mergeV3");
-        }else {
+        } else {
             final var splitJars = resourceDir.listFiles(f -> f.getPath().endsWith("_split"));
             var counter = 0;
             final var tot = splitJars.length;
@@ -32,16 +33,17 @@ public class Evaluator {
                 counter += 1;
                 System.out.println("\n" +
                         "*************************" +
-                        "number: " + counter + "/" + tot + " : " + langFeature.getAbsoluteFile() );
+                        "number: " + counter + "/" + tot + " : " + langFeature.getAbsoluteFile());
 
                 String main = extractMain(langFeature);
                 generateOpal(langFeature, main, "RTA", "cg/opalV3");
 
-                if (!generateMerge(langFeature, main, "RTA", "CHA","cg/mergeV3")) {
+                if (!generateMerge(langFeature, main, "RTA", "CHA", "cg/mergeV3")) {
                     singleClass++;
                 }
             }
-            System.out.println("There was " + singleClass + " number of single class language features we couldn't merge!");
+            System.out.println(
+                    "There was " + singleClass + " number of single class language features we couldn't merge!");
         }
     }
 
@@ -63,7 +65,7 @@ public class Evaluator {
 
     public static void generateOpal(File langFeature, String mainClass, String algorithm, String output) {
         final var fileName = langFeature.getName().replace(".class", "");
-        final var resultGraphPath = langFeature.getAbsolutePath() + "/" + output+ "_"+fileName;
+        final var resultGraphPath = langFeature.getAbsolutePath() + "/" + output + "_" + fileName;
 
         final var cgCommand = new String[]{"-g", "-a", langFeature.getAbsolutePath(), "-n", mainClass, "-ga", algorithm,
                 "-m", "FILE", "-o", langFeature.getAbsolutePath() + "/" + output};
@@ -79,7 +81,8 @@ public class Evaluator {
 
     }
 
-    public static boolean generateMerge(final File langFeature, String main, String genAlg, String mergeAlg, final String output) {
+    public static boolean generateMerge(final File langFeature, String main, String genAlg, String mergeAlg,
+                                        final String output) {
 
         final var files = langFeature.listFiles(file -> file.getPath().endsWith(".class"));
         var deps = "";
@@ -87,17 +90,15 @@ public class Evaluator {
         if (files.length > 1) {
             for (int i = 0; i < files.length; i++) {
                 if (!main.isEmpty()) {
-                    if (files[i].getName().equals(main.split("[.]")[1]+".class")) {
+                    if (files[i].getName().equals(main.split("[.]")[1] + ".class")) {
                         art = files[i];
-                    }
-                    else{
+                    } else {
                         deps = deps + files[i].getAbsolutePath() + ",";
                     }
-                }else {
+                } else {
                     if (files[i].getName().equals("Demo.class")) {
                         art = files[i];
-                    }
-                    else{
+                    } else {
                         deps = deps + files[i].getAbsolutePath() + ",";
                     }
                 }
@@ -112,16 +113,31 @@ public class Evaluator {
         }
     }
 
-    private static void compute(File langFeature, String main, String output, String deps, File art, String genAlg, String mergeAlg) {
-        final var fileName = art.getName().replace(".class", "");
-        final var resultGraphPath = langFeature.getAbsolutePath() + "/" + output+ "_"+fileName+"_merged";
+    private static void compute(File langFeature, String main, String output, String deps, File art, String genAlg,
+                                String mergeAlg) {
         final var mergeCommand =
-                    new String[]{"-s", "-a", art.getAbsolutePath(), "-d", deps.replaceAll(".$", ""), "-ma", mergeAlg, "-ga", genAlg, "-n", main, "-o",
-                            langFeature.getAbsolutePath() + "/" + output };
+                new String[]{"-s", "-a", art.getAbsolutePath(), "-d", deps.replaceAll(".$", ""), "-ma", mergeAlg, "-ga",
+                        genAlg, "-n", main, "-o",
+                        langFeature.getAbsolutePath() + "/" + output};
 
         System.out.println("mergeCommand :" + Arrays.toString(mergeCommand).replace(",", " "));
         MainV3.main(mergeCommand);
-        final var convertCommand = new String[]{"-c", "-i",resultGraphPath , "-f", "JCG", "-o",
+
+
+        String input = "";
+        final var files =
+                new File(langFeature.getAbsolutePath() + "/cg")
+                        .listFiles(file -> (file.getName().startsWith("mergeV3") && !file.getName().endsWith("Demo")));
+        if (files.length > 1) {
+            for (int i = 0; i < files.length; i++) {
+                if (i == files.length - 1) {
+                    input = input + files[i].getAbsolutePath();
+                }else {
+                    input = input + files[i].getAbsolutePath() + ",";
+                }
+            }
+        }
+        final var convertCommand = new String[]{"-c", "-i", input, "-f", "JCG", "-o",
                 langFeature.getAbsolutePath() + "/" + output + "Jcg"};
 
         System.out.println("mergeConvert: " + Arrays.toString(convertCommand).replace(",", " "));
