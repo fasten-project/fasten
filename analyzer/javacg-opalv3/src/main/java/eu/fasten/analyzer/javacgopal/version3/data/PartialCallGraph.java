@@ -98,7 +98,6 @@ public class PartialCallGraph {
 
         return new ExtendedRevisionCallGraphV3("mvn", coordinate.getProduct(),
                 coordinate.getVersionConstraint(), timestamp, partialCallGraph.getNodeCount(), "OPAL",
-                MavenCoordinate.MavenResolver.resolveDependencies(coordinate),
                 partialCallGraph.getClassHierarchy(),
                 partialCallGraph.getGraph());
     }

@@ -293,7 +293,7 @@ public class MainV3 implements Runnable {
             revisionCallGraph =
                     ExtendedRevisionCallGraphV3.extendedBuilderV3().graph(cg.getGraph())
                             .product(((File) artifact).getName().replace(".class", "").replace("$", ""))
-                            .version("").timestamp(0).cgGenerator("").depset(new ArrayList<>()).forge("")
+                            .version("").timestamp(0).cgGenerator("").forge("")
                             .classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount()).build();
         } else {
             revisionCallGraph =

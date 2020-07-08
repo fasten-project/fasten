@@ -95,7 +95,7 @@ public class CallGraphMerger {
         final var result = new CGHA(artifact.getGraphV3().getResolvedCalls(),
                 artifact.getClassHierarchyV3().getOrDefault(Scope.resolvedTypes, new HashMap<>()),
                 artifact.getNodeCount());
-        final var methods = artifact.mapOfAllMethodsV3();
+        final var methods = artifact.mapOfAllMethods();
         final var universalCHA = createUniversalCHA(dependencies, artifact);
         for (final var arc : artifact.getGraphV3().getExternalCalls().entrySet()) {
 
@@ -226,7 +226,7 @@ public class CallGraphMerger {
         final var result = new CGHA(artifact.getGraphV3().getResolvedCalls(),
                 artifact.getClassHierarchyV3().getOrDefault(Scope.resolvedTypes, new HashMap<>()),
                 artifact.getNodeCount());
-        final var methods = artifact.mapOfAllMethodsV3();
+        final var methods = artifact.mapOfAllMethods();
 
         for (final var arc : artifact.getGraphV3().getExternalCalls().entrySet()) {
             final var call = new Call(arc.getKey(), arc.getValue(), methods.get(arc.getKey().get(1)));
@@ -248,7 +248,6 @@ public class CallGraphMerger {
         return ExtendedRevisionCallGraphV3.extendedBuilderV3().forge(artifact.forge)
                 .cgGenerator(artifact.getCgGenerator())
                 .classHierarchy(cha)
-                .depset(artifact.depset)
                 .product(artifact.product)
                 .timestamp(artifact.timestamp)
                 .version(artifact.version)

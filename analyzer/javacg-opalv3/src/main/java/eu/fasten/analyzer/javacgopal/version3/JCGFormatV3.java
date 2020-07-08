@@ -207,7 +207,7 @@ public class JCGFormatV3 {
 
         final Map<FastenURI, List<Pair<FastenURI, Map<Object, Object>>>> result = new HashMap<>();
 
-        final var methods = ercg.mapOfAllMethodsV3();
+        final var methods = ercg.mapOfAllMethods();
         for (final var internalCall : ercg.getGraphV3().getInternalCalls().entrySet()) {
             putCall(result, methods, internalCall);
         }

@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.version3.data;
 
-import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -169,141 +169,6 @@ public class MavenCoordinate {
         private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
 
         /**
-         * Returns information about the dependencies of the indicated artifact.
-         *
-         * @param mavenCoordinate Maven Coordinate
-         * @return A java List of a given artifact's dependencies in FastenJson Dependency format
-         */
-        public static List<List<RevisionCallGraph.Dependency>> resolveDependencies(
-                final MavenCoordinate mavenCoordinate) {
-
-            var resolver = new MavenResolver();
-            return resolver.getDependencies(mavenCoordinate);
-        }
-
-        /**
-         * Returns information about the dependencies of the indicated artifact.
-         *
-         * @param mavenCoordinate Maven Coordinate
-         * @return A java List of a given artifact's dependencies in FastenJson Dependency format
-         */
-        public List<List<RevisionCallGraph.Dependency>> getDependencies(
-                final MavenCoordinate mavenCoordinate) {
-
-            final var dependencies = new ArrayList<List<RevisionCallGraph.Dependency>>();
-
-            try {
-                var pom = new SAXReader().read(new ByteArrayInputStream(
-                        this.downloadPom(mavenCoordinate)
-                                .orElseThrow(RuntimeException::new).getBytes()));
-
-                Map<String, String> properties = new HashMap<>();
-
-                var propertiesRoot = pom.getRootElement()
-                        .selectSingleNode("./*[local-name() ='properties']");
-
-                if (propertiesRoot != null) {
-                    for (final var property : propertiesRoot.selectNodes("*")) {
-                        properties.put(property.getName(), property.getStringValue());
-                    }
-                }
-
-                var profilesRoot = pom.getRootElement()
-                        .selectSingleNode("./*[local-name() ='profiles']");
-
-                List<Node> profiles = new ArrayList<>();
-                if (profilesRoot != null) {
-                    profiles = profilesRoot.selectNodes("./*[local-name() ='profile']");
-                }
-
-                var outerDeps = pom.getRootElement()
-                        .selectSingleNode("./*[local-name()='dependencies']");
-
-                if (outerDeps != null) {
-                    var resolved = resolveLocalDependencies(outerDeps, properties);
-                    if (resolved.size() != 0) {
-                        dependencies.add(resolved);
-                    }
-                }
-
-                for (final var profile : profiles) {
-                    var dependenciesNode =
-                            profile.selectSingleNode("./*[local-name() ='dependencies']");
-                    if (dependenciesNode != null) {
-                        var resolved = resolveLocalDependencies(dependenciesNode, properties);
-                        if (resolved.size() != 0) {
-                            dependencies.add(resolved);
-                        }
-                    }
-                }
-            } catch (FileNotFoundException | DocumentException e) {
-                logger.error("Error parsing POM file for: " + mavenCoordinate);
-            }
-
-            return dependencies;
-        }
-
-        /**
-         * Return a list of dependencies in given profile node or of the entire project if profiles
-         * were not present in pom.xml.
-         *
-         * @param node       Dependencies node from profile or entire project
-         * @param properties A map containing properties from pom.xml
-         * @return List of dependencies
-         */
-        private List<RevisionCallGraph.Dependency> resolveLocalDependencies(
-                final Node node, Map<String, String> properties) {
-            final var depList = new ArrayList<RevisionCallGraph.Dependency>();
-
-            for (final var depNode : node.selectNodes("./*[local-name() = 'dependency']")) {
-                final var groupId = depNode
-                        .selectSingleNode("./*[local-name() = 'groupId']").getStringValue();
-                final var artifactId = depNode
-                        .selectSingleNode("./*[local-name() = 'artifactId']").getStringValue();
-                final var versionSpec = depNode
-                        .selectSingleNode("./*[local-name() = 'version']");
-
-                final String version;
-                if (versionSpec != null) {
-                    version = versionSpec.getStringValue().startsWith("$")
-                            ? properties.get(versionSpec.getStringValue()
-                            .substring(2, versionSpec.getStringValue().length() - 1)) :
-                            versionSpec.getStringValue();
-                } else {
-                    version = "*";
-                }
-
-                final var dependency = new RevisionCallGraph.Dependency(
-                        "mvn",
-                        groupId + ":" + artifactId,
-                        Collections.singletonList(new RevisionCallGraph
-                                .Constraint(version, version)));
-                depList.add(dependency);
-            }
-
-            return depList;
-        }
-
-        /**
-         * Download a POM file indicated by the provided Maven coordinate.
-         *
-         * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
-         * @return The contents of the downloaded POM file as a string
-         */
-        public Optional<String> downloadPom(final MavenCoordinate mavenCoordinate)
-                throws FileNotFoundException {
-
-            for (var repo : mavenCoordinate.getMavenRepos()) {
-                var pom = httpGetToFile(mavenCoordinate.toPomUrl(repo), ".pom")
-                        .flatMap(MavenResolver::fileToString);
-                if (pom.isPresent()) {
-                    return pom;
-                }
-            }
-            return Optional.empty();
-        }
-
-        /**
          * Download a JAR file indicated by the provided Maven coordinate.
          *
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
@@ -321,27 +186,6 @@ public class MavenCoordinate {
                 }
             }
             return Optional.empty();
-        }
-
-        /**
-         * Utility function that reads the contents of a file to a String.
-         */
-        private static Optional<String> fileToString(final File f) {
-            logger.trace("Loading file as string: " + f.toString());
-            try {
-                final var fr = new BufferedReader(new FileReader(f));
-                final StringBuilder result = new StringBuilder();
-                String line;
-                while ((line = fr.readLine()) != null) {
-                    result.append(line);
-                }
-                fr.close();
-                return Optional.of(result.toString());
-
-            } catch (IOException e) {
-                logger.error("Cannot read from file: " + f.toString(), e);
-                return Optional.empty();
-            }
         }
 
         /**
