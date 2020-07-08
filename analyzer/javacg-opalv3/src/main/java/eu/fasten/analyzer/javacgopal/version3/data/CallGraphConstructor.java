@@ -11,13 +11,9 @@ import java.util.stream.Stream;
 import org.opalj.br.analyses.Project;
 import org.opalj.tac.cg.AllocationSiteBasedPointsToCallGraphKey$;
 import org.opalj.tac.cg.CHACallGraphKey$;
-import org.opalj.tac.cg.CTACallGraphKey$;
 import org.opalj.tac.cg.CallGraph;
-import org.opalj.tac.cg.FTACallGraphKey$;
-import org.opalj.tac.cg.MTACallGraphKey$;
 import org.opalj.tac.cg.RTACallGraphKey$;
 import org.opalj.tac.cg.TypeBasedPointsToCallGraphKey$;
-import org.opalj.tac.cg.XTACallGraphKey$;
 
 public class CallGraphConstructor {
 

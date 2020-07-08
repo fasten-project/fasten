@@ -43,10 +43,14 @@ import org.opalj.br.instructions.Instruction;
 import org.opalj.br.instructions.MethodInvocationInstruction;
 import org.opalj.collection.QualifiedCollection;
 import org.opalj.collection.immutable.Chain;
+import org.opalj.collection.immutable.ConstArray;
 import org.opalj.collection.immutable.RefArray;
 import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 import scala.Option;
+import scala.Tuple2;
+import scala.collection.Iterator;
+import scala.collection.mutable.HashSet;
 
 class OPALClassHierarchyTest {
 
@@ -488,10 +492,189 @@ class OPALClassHierarchyTest {
 
     @Test
     void appendGraph() {
+        OPALClassHierarchy classHierarchy =
+                Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
+        var newGraph = Mockito.mock(ExtendedRevisionCallGraphV3.Graph.class);
+        var existingGraph = Mockito.mock(ExtendedRevisionCallGraphV3.Graph.class);
+
+        Mockito.doReturn(newGraph).when(classHierarchy).getSubGraph(Mockito.any(), Mockito.any());
+
+        var source = Mockito.mock(Method.class);
+        var targets = new HashSet<Tuple2<Object, Iterator<DeclaredMethod>>>().iterator();
+        classHierarchy.appendGraph(source, targets, existingGraph);
+
+        Mockito.verify(classHierarchy, Mockito.times(1)).getSubGraph(source, targets);
+        Mockito.verify(existingGraph, Mockito.times(1)).append(newGraph);
     }
 
     @Test
-    void getSubGraph() {
+    void getSubGraphTargetDeclarationNoDefinition() {
+        OPALClassHierarchy classHierarchy =
+                Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
+
+        Mockito.doNothing().when(classHierarchy)
+                .putCalls(Mockito.any(), Mockito.any(), Mockito.any(),
+                        Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.doNothing().when(classHierarchy)
+                .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.doReturn(Map.of(1, new OPALCallSite(20, "testType", "testReceiver")))
+                .when(classHierarchy).getCallSite(Mockito.any(), Mockito.any());
+
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        var targetDeclarations = new HashSet<DeclaredMethod>();
+        targetDeclarations.add(declaredMethod);
+
+        var tuple = new Tuple2<Object, Iterator<DeclaredMethod>>(1, targetDeclarations.iterator());
+        var tupleSet = new HashSet<Tuple2<Object, Iterator<DeclaredMethod>>>();
+        tupleSet.add(tuple);
+
+        var source = Mockito.mock(Method.class);
+        classHierarchy.getSubGraph(source, tupleSet.iterator());
+
+        Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1);
+        Mockito.verify(classHierarchy, Mockito.never()).putCalls(Mockito.any(), Mockito.any(),
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.never())
+                .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void getSubGraphTargetDeclarationMultipleDefinitions() {
+        OPALClassHierarchy classHierarchy =
+                Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
+
+        Mockito.doNothing().when(classHierarchy)
+                .putCalls(Mockito.any(), Mockito.any(), Mockito.any(),
+                        Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.doNothing().when(classHierarchy)
+                .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.doReturn(Map.of(1, new OPALCallSite(20, "testType", "testReceiver")))
+                .when(classHierarchy).getCallSite(Mockito.any(), Mockito.any());
+
+        var method = Mockito.mock(Method.class);
+        var arr = ConstArray._UNSAFE_from(new Method[]{method, method});
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        Mockito.when(declaredMethod.hasMultipleDefinedMethods()).thenReturn(true);
+        Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
+
+        var targetDeclarations = new HashSet<DeclaredMethod>();
+        targetDeclarations.add(declaredMethod);
+
+        var tuple = new Tuple2<Object, Iterator<DeclaredMethod>>(1, targetDeclarations.iterator());
+        var tupleSet = new HashSet<Tuple2<Object, Iterator<DeclaredMethod>>>();
+        tupleSet.add(tuple);
+
+        var source = Mockito.mock(Method.class);
+        classHierarchy.getSubGraph(source, tupleSet.iterator());
+
+        Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1);
+        Mockito.verify(classHierarchy, Mockito.times(2)).putCalls(Mockito.any(), Mockito.any(),
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.never())
+                .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void getSubGraphTargetDeclarationSingleDefinition() {
+        OPALClassHierarchy classHierarchy =
+                Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
+
+        Mockito.doNothing().when(classHierarchy)
+                .putCalls(Mockito.any(), Mockito.any(), Mockito.any(),
+                        Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.doNothing().when(classHierarchy)
+                .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.doReturn(Map.of(1, new OPALCallSite(20, "testType", "testReceiver")))
+                .when(classHierarchy).getCallSite(Mockito.any(), Mockito.any());
+
+        var method = Mockito.mock(Method.class);
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        Mockito.when(declaredMethod.hasSingleDefinedMethod()).thenReturn(true);
+        Mockito.when(declaredMethod.definedMethod()).thenReturn(method);
+
+        var targetDeclarations = new HashSet<DeclaredMethod>();
+        targetDeclarations.add(declaredMethod);
+
+        var tuple = new Tuple2<Object, Iterator<DeclaredMethod>>(1, targetDeclarations.iterator());
+        var tupleSet = new HashSet<Tuple2<Object, Iterator<DeclaredMethod>>>();
+        tupleSet.add(tuple);
+
+        var source = Mockito.mock(Method.class);
+        classHierarchy.getSubGraph(source, tupleSet.iterator());
+
+        Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1);
+        Mockito.verify(classHierarchy, Mockito.times(1)).putCalls(Mockito.any(), Mockito.any(),
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.never())
+                .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void getSubGraphTargetDeclarationVirtual() {
+        OPALClassHierarchy classHierarchy =
+                Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
+
+        Mockito.doNothing().when(classHierarchy)
+                .putCalls(Mockito.any(), Mockito.any(), Mockito.any(),
+                        Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.doNothing().when(classHierarchy)
+                .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.doReturn(Map.of(1, new OPALCallSite(20, "testType", "testReceiver")))
+                .when(classHierarchy).getCallSite(Mockito.any(), Mockito.any());
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        Mockito.when(declaredMethod.isVirtualOrHasSingleDefinedMethod()).thenReturn(true);
+
+        var targetDeclarations = new HashSet<DeclaredMethod>();
+        targetDeclarations.add(declaredMethod);
+
+        var tuple = new Tuple2<Object, Iterator<DeclaredMethod>>(1, targetDeclarations.iterator());
+        var tupleSet = new HashSet<Tuple2<Object, Iterator<DeclaredMethod>>>();
+        tupleSet.add(tuple);
+
+        var source = Mockito.mock(Method.class);
+        classHierarchy.getSubGraph(source, tupleSet.iterator());
+
+        Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1);
+        Mockito.verify(classHierarchy, Mockito.times(0)).putCalls(Mockito.any(), Mockito.any(),
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.times(1))
+                .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void getSubGraphSourceWrongType() {
+        OPALClassHierarchy classHierarchy =
+                Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
+
+        Mockito.doNothing().when(classHierarchy)
+                .putCalls(Mockito.any(), Mockito.any(), Mockito.any(),
+                        Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.doNothing().when(classHierarchy)
+                .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.doReturn(Map.of(1, new OPALCallSite(20, "testType", "testReceiver")))
+                .when(classHierarchy).getCallSite(Mockito.any(), Mockito.any());
+
+
+        var declaredMethod = Mockito.mock(DeclaredMethod.class);
+        var targetDeclarations = new HashSet<DeclaredMethod>();
+        targetDeclarations.add(declaredMethod);
+
+        var tuple = new Tuple2<Object, Iterator<DeclaredMethod>>(1, targetDeclarations.iterator());
+        var tupleSet = new HashSet<Tuple2<Object, Iterator<DeclaredMethod>>>();
+        tupleSet.add(tuple);
+
+        var source = Mockito.mock(DeclaredMethod.class);
+        classHierarchy.getSubGraph(source, tupleSet.iterator());
+
+        Mockito.verify(classHierarchy, Mockito.times(0)).getCallSite(Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.never()).putCalls(Mockito.any(), Mockito.any(),
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.never())
+                .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
     }
 
     @Test

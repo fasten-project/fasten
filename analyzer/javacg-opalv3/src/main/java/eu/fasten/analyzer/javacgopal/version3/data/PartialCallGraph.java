@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
 import eu.fasten.analyzer.javacgopal.version3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Comparator;
 import java.util.HashMap;
