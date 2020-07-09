@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3.merge;
+package eu.fasten.analyzer.javacgopalv3.merge;
 
 import eu.fasten.core.data.RevisionCallGraph;
 import java.io.BufferedWriter;

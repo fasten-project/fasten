@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3;
+package eu.fasten.analyzer.javacgopalv3.evaluation;
 
-import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3.Node;
-import eu.fasten.analyzer.javacgopal.version3.data.OPALCallSite;
+import eu.fasten.analyzer.javacgopalv3.data.OPALCallSite;
+import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph.Node;
 import eu.fasten.core.data.FastenURI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -35,9 +36,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class JCGFormatV3 {
+public class JCGFormat {
 
-    public static JSONObject convertERCGTOJCG(final ExtendedRevisionCallGraphV3 ercg) {
+    public static JSONObject convertERCGTOJCG(final ExtendedRevisionCallGraph ercg) {
 
         if (ercg.isCallGraphEmpty()) {
             return new JSONObject();
@@ -203,11 +204,11 @@ public class JCGFormatV3 {
     }
 
     private static Map<FastenURI, List<Pair<FastenURI, Map<Object, Object>>>> getAdjacencyList(
-            final ExtendedRevisionCallGraphV3 ercg) {
+            final ExtendedRevisionCallGraph ercg) {
 
         final Map<FastenURI, List<Pair<FastenURI, Map<Object, Object>>>> result = new HashMap<>();
 
-        final var methods = ercg.mapOfAllMethodsV3();
+        final var methods = ercg.mapOfAllMethods();
         for (final var internalCall : ercg.getGraphV3().getInternalCalls().entrySet()) {
             putCall(result, methods, internalCall);
         }

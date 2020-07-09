@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3.data;
+package eu.fasten.analyzer.javacgopalv3.data;
 
 import com.google.common.collect.Lists;
-import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
-import eu.fasten.analyzer.javacgopal.version3.scalawrapper.JavaToScalaConverter;
+import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
 import java.io.FileNotFoundException;
 import java.util.Comparator;
@@ -43,8 +43,8 @@ public class PartialCallGraph {
 
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
-    private final Map<ExtendedRevisionCallGraphV3.Scope, Map<FastenURI, ExtendedRevisionCallGraphV3.Type>> classHierarchy;
-    private final ExtendedRevisionCallGraphV3.Graph graph;
+    private final Map<ExtendedRevisionCallGraph.Scope, Map<FastenURI, ExtendedRevisionCallGraph.Type>> classHierarchy;
+    private final ExtendedRevisionCallGraph.Graph graph;
     private final int nodeCount;
 
     /**
@@ -54,7 +54,7 @@ public class PartialCallGraph {
      * @param constructor call graph constructor
      */
     public PartialCallGraph(CallGraphConstructor constructor) {
-        this.graph = new ExtendedRevisionCallGraphV3.Graph();
+        this.graph = new ExtendedRevisionCallGraph.Graph();
 
         logger.info("Creating internal CHA");
         final var cha = createInternalCHA(constructor.getProject());
@@ -66,11 +66,11 @@ public class PartialCallGraph {
         this.classHierarchy = cha.asURIHierarchy(constructor.getProject().classHierarchy());
     }
 
-    public Map<ExtendedRevisionCallGraphV3.Scope, Map<FastenURI, ExtendedRevisionCallGraphV3.Type>> getClassHierarchy() {
+    public Map<ExtendedRevisionCallGraph.Scope, Map<FastenURI, ExtendedRevisionCallGraph.Type>> getClassHierarchy() {
         return classHierarchy;
     }
 
-    public ExtendedRevisionCallGraphV3.Graph getGraph() {
+    public ExtendedRevisionCallGraph.Graph getGraph() {
         return graph;
     }
 
@@ -88,7 +88,7 @@ public class PartialCallGraph {
      * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
      *                               Maven central it throws this exception.
      */
-    public static ExtendedRevisionCallGraphV3 createExtendedRevisionCallGraph(
+    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(
             final MavenCoordinate coordinate, final String mainClass,
             final String algorithm, final long timestamp)
             throws FileNotFoundException {
@@ -96,9 +96,8 @@ public class PartialCallGraph {
                 new MavenCoordinate.MavenResolver().downloadJar(coordinate)
                         .orElseThrow(RuntimeException::new), mainClass, algorithm));
 
-        return new ExtendedRevisionCallGraphV3("mvn", coordinate.getProduct(),
+        return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
                 coordinate.getVersionConstraint(), timestamp, partialCallGraph.getNodeCount(), "OPAL",
-                MavenCoordinate.MavenResolver.resolveDependencies(coordinate),
                 partialCallGraph.getClassHierarchy(),
                 partialCallGraph.getGraph());
     }

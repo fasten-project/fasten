@@ -16,19 +16,24 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3.data;
+package eu.fasten.analyzer.javacgopalv3.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
+import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopalv3.data.CallGraphConstructor;
+import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgopalv3.data.OPALCallSite;
+import eu.fasten.analyzer.javacgopalv3.data.PartialCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Objects;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -69,51 +74,51 @@ class PartialCallGraphTest {
         var cha = singleCallCG.getClassHierarchy();
 
         assertNotNull(cha);
-        assertNotNull(cha.get(ExtendedRevisionCallGraphV3.Scope.internalTypes));
-        assertEquals(1, cha.get(ExtendedRevisionCallGraphV3.Scope.internalTypes).size());
-        assertEquals(1, cha.get(ExtendedRevisionCallGraphV3.Scope.externalTypes).size());
-        assertEquals(0, cha.get(ExtendedRevisionCallGraphV3.Scope.resolvedTypes).size());
+        assertNotNull(cha.get(ExtendedRevisionCallGraph.Scope.internalTypes));
+        assertEquals(1, cha.get(ExtendedRevisionCallGraph.Scope.internalTypes).size());
+        assertEquals(1, cha.get(ExtendedRevisionCallGraph.Scope.externalTypes).size());
+        assertEquals(0, cha.get(ExtendedRevisionCallGraph.Scope.resolvedTypes).size());
 
         // -------
         // Check internal types
         // -------
-        var SSTTInternalType = cha.get(ExtendedRevisionCallGraphV3.Scope.internalTypes)
+        var SSTTInternalType = cha.get(ExtendedRevisionCallGraph.Scope.internalTypes)
                 .get(FastenURI.create("/name.space/SingleSourceToTarget"));
 
         // Check filename
-        assertEquals("SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
+        Assertions.assertEquals("SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
 
         // Check super interfaces and classes
-        assertEquals(0, SSTTInternalType.getSuperInterfaces().size());
-        assertEquals(1, SSTTInternalType.getSuperClasses().size());
-        assertEquals(FastenURI.create("/java.lang/Object"), SSTTInternalType.getSuperClasses().get(0));
+        Assertions.assertEquals(0, SSTTInternalType.getSuperInterfaces().size());
+        Assertions.assertEquals(1, SSTTInternalType.getSuperClasses().size());
+        Assertions.assertEquals(FastenURI.create("/java.lang/Object"), SSTTInternalType.getSuperClasses().get(0));
 
         // Check methods
-        assertEquals(3, SSTTInternalType.getMethods().size());
+        Assertions.assertEquals(3, SSTTInternalType.getMethods().size());
 
-        assertEquals(FastenURI.create("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType"),
+        Assertions.assertEquals(FastenURI.create("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType"),
                 SSTTInternalType.getMethods().get(0).getUri());
-        assertEquals("public", SSTTInternalType.getMethods().get(0).getMetadata().get("access"));
-        assertEquals(true, SSTTInternalType.getMethods().get(0).getMetadata().get("defined"));
-        assertEquals(3, SSTTInternalType.getMethods().get(0).getMetadata().get("first"));
-        assertEquals(3, SSTTInternalType.getMethods().get(0).getMetadata().get("last"));
+        Assertions.assertEquals("public", SSTTInternalType.getMethods().get(0).getMetadata().get("access"));
+        Assertions.assertEquals(true, SSTTInternalType.getMethods().get(0).getMetadata().get("defined"));
+        Assertions.assertEquals(3, SSTTInternalType.getMethods().get(0).getMetadata().get("first"));
+        Assertions.assertEquals(3, SSTTInternalType.getMethods().get(0).getMetadata().get("last"));
 
         // -------
         // Check external types
         // -------
-        var SSTTExternalType = cha.get(ExtendedRevisionCallGraphV3.Scope.externalTypes)
+        var SSTTExternalType = cha.get(ExtendedRevisionCallGraph.Scope.externalTypes)
                 .get(FastenURI.create("/java.lang/Object"));
 
         // Check super interfaces and classes
-        assertEquals(0, SSTTExternalType.getSuperInterfaces().size());
-        assertEquals(0, SSTTExternalType.getSuperClasses().size());
+        Assertions.assertEquals(0, SSTTExternalType.getSuperInterfaces().size());
+        Assertions.assertEquals(0, SSTTExternalType.getSuperClasses().size());
 
         // Check methods
-        assertEquals(1, SSTTExternalType.getMethods().size());
+        Assertions.assertEquals(1, SSTTExternalType.getMethods().size());
 
-        assertEquals(FastenURI.create("/java.lang/Object.Object()VoidType"),
+        Assertions.assertEquals(FastenURI.create("/java.lang/Object.Object()VoidType"),
                 SSTTExternalType.getMethods().get(3).getUri());
-        assertEquals(0, SSTTExternalType.getMethods().get(3).getMetadata().size());
+        Assertions.assertEquals(0, SSTTExternalType.getMethods().get(3).getMetadata().size());
     }
 
     @Test
@@ -121,9 +126,9 @@ class PartialCallGraphTest {
         var graph = singleCallCG.getGraph();
 
         assertNotNull(graph);
-        assertEquals(1, graph.getInternalCalls().size());
-        assertEquals(1, graph.getExternalCalls().size());
-        assertEquals(0, graph.getResolvedCalls().size());
+        Assertions.assertEquals(1, graph.getInternalCalls().size());
+        Assertions.assertEquals(1, graph.getExternalCalls().size());
+        Assertions.assertEquals(0, graph.getResolvedCalls().size());
 
         // Check internal calls
         var internalCalls = graph.getInternalCalls();
@@ -151,12 +156,12 @@ class PartialCallGraphTest {
         var cg = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
                 "", "CHA", 1574072773);
         assertNotNull(cg);
-        assertEquals("mvn", cg.forge);
-        assertEquals("1.7.29", cg.version);
-        assertEquals(1574072773, cg.timestamp);
-        assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
-        assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
-        assertEquals("org.slf4j:slf4j-api", cg.product);
+        Assertions.assertEquals("mvn", cg.forge);
+        Assertions.assertEquals("1.7.29", cg.version);
+        Assertions.assertEquals(1574072773, cg.timestamp);
+        Assertions.assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
+        Assertions.assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
+        Assertions.assertEquals("org.slf4j:slf4j-api", cg.product);
     }
 
     @Test

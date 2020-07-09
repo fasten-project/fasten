@@ -16,13 +16,14 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3;
+package eu.fasten.analyzer.javacgopalv3;
 
-import eu.fasten.analyzer.javacgopal.version3.data.CallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.version3.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.version3.data.PartialCallGraph;
-import eu.fasten.analyzer.javacgopal.version3.merge.CallGraphMerger;
-import eu.fasten.analyzer.javacgopal.version3.merge.CallGraphUtils;
+import eu.fasten.analyzer.javacgopalv3.data.CallGraphConstructor;
+import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgopalv3.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopalv3.evaluation.JCGFormat;
+import eu.fasten.analyzer.javacgopalv3.merge.CallGraphUtils;
+import eu.fasten.analyzer.javacgopalv3.merge.CallGraphMerger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,9 +42,9 @@ import picocli.CommandLine;
  * Makes javacg-opal module runnable from command line.
  */
 @CommandLine.Command(name = "JavaCGOpal")
-public class MainV3 implements Runnable {
+public class Main implements Runnable {
 
-    private static Logger logger = LoggerFactory.getLogger(MainV3.class);
+    private static Logger logger = LoggerFactory.getLogger(Main.class);
 
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
     Commands commands;
@@ -165,7 +166,7 @@ public class MainV3 implements Runnable {
      * parameters.
      */
     public static void main(String[] args) {
-        new CommandLine(new MainV3()).execute(args);
+        new CommandLine(new Main()).execute(args);
     }
 
     public void run() {
@@ -175,7 +176,8 @@ public class MainV3 implements Runnable {
 
                 if (commands.computations.mode.equals("COORD")) {
                     final var artifact = getArtifactCoordinate();
-                    logger.info("Generating call graph for the Maven coordinate: {}", artifact);
+                    logger.info("Generating call graph for the Maven coordinate: {}",
+                            artifact.getCoordinate());
                     try {
                         generate(artifact, commands.computations.main, commands.computations.genAlgorithm,
                                 !this.output.isEmpty());
@@ -223,8 +225,8 @@ public class MainV3 implements Runnable {
                     for (final var input : this.commands.conversions.input) {
                         final var cg = new String(Files.readAllBytes((Paths.get(input))));
 
-                        final var mergeJCG = JCGFormatV3
-                                .convertERCGTOJCG(new ExtendedRevisionCallGraphV3(new JSONObject(cg))
+                        final var mergeJCG = JCGFormat
+                                .convertERCGTOJCG(new ExtendedRevisionCallGraph(new JSONObject(cg))
                                 );
                         if (!mergeJCG.isEmpty() && !mergeJCG.isNull("reachableMethods")) {
                             reachableMethods = concatArray(reachableMethods, (mergeJCG.getJSONArray("reachableMethods")));
@@ -254,11 +256,11 @@ public class MainV3 implements Runnable {
         return result;
     }
 
-    public <T> ExtendedRevisionCallGraphV3 merge(final T artifact,
-                                                 final List<T> dependencies) throws IOException {
+    public <T> ExtendedRevisionCallGraph merge(final T artifact,
+                                               final List<T> dependencies) throws IOException {
 
-        final ExtendedRevisionCallGraphV3 result;
-        final var deps = new ArrayList<ExtendedRevisionCallGraphV3>();
+        final ExtendedRevisionCallGraph result;
+        final var deps = new ArrayList<ExtendedRevisionCallGraph>();
         for (final var dep : dependencies) {
             deps.add(generate(dep, "", commands.computations.genAlgorithm, true));
         }
@@ -277,11 +279,11 @@ public class MainV3 implements Runnable {
         return result;
     }
 
-    public <T> ExtendedRevisionCallGraphV3 generate(final T artifact,
-                                                    final String mainClass,
-                                                    final String algorithm, final boolean writeToFile)
+    public <T> ExtendedRevisionCallGraph generate(final T artifact,
+                                                  final String mainClass,
+                                                  final String algorithm, final boolean writeToFile)
             throws IOException {
-        final ExtendedRevisionCallGraphV3 revisionCallGraph;
+        final ExtendedRevisionCallGraph revisionCallGraph;
 
         final long startTime = System.currentTimeMillis();
 
@@ -290,9 +292,9 @@ public class MainV3 implements Runnable {
             final var cg = new PartialCallGraph(
                     new CallGraphConstructor((File) artifact, mainClass, algorithm));
             revisionCallGraph =
-                    ExtendedRevisionCallGraphV3.extendedBuilderV3().graph(cg.getGraph())
+                    ExtendedRevisionCallGraph.extendedBuilderV3().graph(cg.getGraph())
                             .product(((File) artifact).getName().replace(".class", "").replace("$", ""))
-                            .version("").timestamp(0).cgGenerator("").depset(new ArrayList<>()).forge("")
+                            .version("").timestamp(0).cgGenerator("").forge("")
                             .classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount()).build();
         } else {
             revisionCallGraph =
@@ -306,7 +308,7 @@ public class MainV3 implements Runnable {
 
         if (writeToFile) {
             CallGraphUtils
-                    .writeToFile(this.output, revisionCallGraph.toJSON(), "_" + revisionCallGraph.product);
+                    .writeToFile(this.output, revisionCallGraph.toJSON(), "");
         }
         return revisionCallGraph;
     }

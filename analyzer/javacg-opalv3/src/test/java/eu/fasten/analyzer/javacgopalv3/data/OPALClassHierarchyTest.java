@@ -16,17 +16,21 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3.data;
+package eu.fasten.analyzer.javacgopalv3.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
+import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopalv3.data.OPALCallSite;
+import eu.fasten.analyzer.javacgopalv3.data.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopalv3.data.OPALType;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opalj.br.BaseType;
@@ -109,29 +113,29 @@ class OPALClassHierarchyTest {
         var uriHierarchy = opalClassHierarchy.asURIHierarchy(classHierarchy);
 
         assertNotNull(uriHierarchy);
-        assertEquals(1, uriHierarchy.get(ExtendedRevisionCallGraphV3.Scope.internalTypes).size());
-        assertEquals(1, uriHierarchy.get(ExtendedRevisionCallGraphV3.Scope.externalTypes).size());
+        assertEquals(1, uriHierarchy.get(ExtendedRevisionCallGraph.Scope.internalTypes).size());
+        assertEquals(1, uriHierarchy.get(ExtendedRevisionCallGraph.Scope.externalTypes).size());
 
         var internalUri = uriHierarchy
-                .get(ExtendedRevisionCallGraphV3.Scope.internalTypes)
+                .get(ExtendedRevisionCallGraph.Scope.internalTypes)
                 .get(FastenURI.create("/some.package/typeName"));
         var externalUri = uriHierarchy
-                .get(ExtendedRevisionCallGraphV3.Scope.externalTypes)
+                .get(ExtendedRevisionCallGraph.Scope.externalTypes)
                 .get(FastenURI.create("/some.package/typeName"));
 
-        assertEquals("source.java", internalUri.getSourceFileName());
-        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+        Assertions.assertEquals("source.java", internalUri.getSourceFileName());
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
                 internalUri.getMethods().get(123).getUri());
-        assertEquals(0, internalUri.getSuperInterfaces().size());
-        assertEquals(0, internalUri.getSuperClasses().size());
+        Assertions.assertEquals(0, internalUri.getSuperInterfaces().size());
+        Assertions.assertEquals(0, internalUri.getSuperClasses().size());
 
-        assertEquals("", externalUri.getSourceFileName());
-        assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
+        Assertions.assertEquals("", externalUri.getSourceFileName());
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName.methodName(typeName)typeName"),
                 externalUri.getMethods().get(4).getUri());
-        assertEquals(1, externalUri.getSuperInterfaces().size());
-        assertEquals(FastenURI.create("/some.package/typeName"),
+        Assertions.assertEquals(1, externalUri.getSuperInterfaces().size());
+        Assertions.assertEquals(FastenURI.create("/some.package/typeName"),
                 externalUri.getSuperInterfaces().get(0));
-        assertEquals(0, externalUri.getSuperClasses().size());
+        Assertions.assertEquals(0, externalUri.getSuperClasses().size());
     }
 
     private Method createMethod() {
@@ -494,8 +498,8 @@ class OPALClassHierarchyTest {
     void appendGraph() {
         OPALClassHierarchy classHierarchy =
                 Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
-        var newGraph = Mockito.mock(ExtendedRevisionCallGraphV3.Graph.class);
-        var existingGraph = Mockito.mock(ExtendedRevisionCallGraphV3.Graph.class);
+        var newGraph = Mockito.mock(ExtendedRevisionCallGraph.Graph.class);
+        var existingGraph = Mockito.mock(ExtendedRevisionCallGraph.Graph.class);
 
         Mockito.doReturn(newGraph).when(classHierarchy).getSubGraph(Mockito.any(), Mockito.any());
 

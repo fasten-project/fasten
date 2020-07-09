@@ -16,24 +16,21 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3;
+package eu.fasten.analyzer.javacgopalv3;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import eu.fasten.analyzer.javacgopal.version3.data.OPALCallSite;
+import eu.fasten.analyzer.javacgopalv3.data.OPALCallSite;
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.RevisionCallGraph;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONArray;
@@ -42,9 +39,9 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
+public class ExtendedRevisionCallGraph {
 
-    private static Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraphV3.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
 
     /**
      * For each class in the revision, class hierarchy keeps a {@link Type} that is accessible by
@@ -54,7 +51,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
      */
     private final Map<Scope, Map<FastenURI, Type>> classHierarchy;
 
-    private int nodeCount;
+    private final int nodeCount;
 
     public enum Scope {
         internalTypes,
@@ -71,43 +68,74 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
      */
     private final Graph graph;
 
+
+    /**
+     * The forge.
+     */
+    public final String forge;
+    /**
+     * The product.
+     */
+    public final String product;
+    /**
+     * The version.
+     */
+    public final String version;
+    /**
+     * The timestamp (if specified, or -1) in seconds from UNIX Epoch.
+     */
+    public final long timestamp;
+    /**
+     * The URI of this revision.
+     */
+    public final FastenURI uri;
+    /**
+     * The forgeless URI of this revision.
+     */
+    public final FastenURI forgelessUri;
     /**
      * Keeps the name of call graph generator that generated this revision call graph.
      */
     private final String cgGenerator;
 
     /**
-     * Creates {@link ExtendedRevisionCallGraphV3} with the given data.
+     * Creates {@link ExtendedRevisionCallGraph} with the given data.
      *
      * @param forge          the forge.
      * @param product        the product.
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param nodeCount
+     * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
-     * @param depset         the depset.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
-    public ExtendedRevisionCallGraphV3(final String forge, final String product, final String version,
-                                       final long timestamp, int nodeCount, final String cgGenerator,
-                                       final List<List<Dependency>> depset,
-                                       final Map<Scope, Map<FastenURI, Type>> classHierarchy,
-                                       final Graph graph) {
+    public ExtendedRevisionCallGraph(final String forge, final String product, final String version,
+                                     final long timestamp, int nodeCount, final String cgGenerator,
+                                     final Map<Scope, Map<FastenURI, Type>> classHierarchy,
+                                     final Graph graph) {
 
-        super(forge, product, version, timestamp, cgGenerator, depset, new HashMap<>(), null);
-        this.nodeCount = nodeCount;
+        this.forge = forge;
+        this.product = product;
+        this.version = version;
+        this.timestamp = timestamp;
+        uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
+        forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = cgGenerator;
         this.classHierarchy = classHierarchy;
+        this.nodeCount = nodeCount;
         this.graph = graph;
     }
 
-    private ExtendedRevisionCallGraphV3(final ExtendedBuilder builder) {
-        super(builder.forge, builder.product, builder.version, builder.timestamp,
-                builder.cgGenerator, builder.depset,
-                new HashMap<>(), null);
+    private ExtendedRevisionCallGraph(final ExtendedBuilder builder) {
+        this.forge = builder.forge;
+        this.product = builder.product;
+        this.version = builder.version;
+        this.timestamp = builder.timestamp;
+        uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
+        forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = builder.cgGenerator;
         this.classHierarchy = builder.classHierarchy;
         this.graph = builder.graph;
@@ -115,25 +143,22 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
     }
 
     /**
-     * Creates {@link ExtendedRevisionCallGraphV3} for the given JSONObject.
+     * Creates {@link ExtendedRevisionCallGraph} for the given JSONObject.
      *
      * @param json JSONObject of a revision call graph.
      */
-    public ExtendedRevisionCallGraphV3(final JSONObject json) throws JSONException, IOException {
+    public ExtendedRevisionCallGraph(final JSONObject json) throws JSONException, IOException {
 
-        super(json.getString("forge"),
-                json.getString("product"),
-                json.getString("version"),
-                getTimeStamp(json),
-                json.getString("generator"),
-                Dependency.depset(json.getJSONArray("depset")),
-                new HashMap<>(),
-                null);
-
+        this.forge = json.getString("forge");
+        this.product = json.getString("product");
+        this.version = json.getString("version");
+        this.timestamp = getTimeStamp(json);
+        uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
+        forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = json.getString("generator");
         this.graph = new Graph(json.getJSONObject("graph"));
-        this.classHierarchy = getCHAFromJSONV3(json.getJSONObject("cha"));
-
+        this.classHierarchy = getCHAFromJSON(json.getJSONObject("cha"));
+        this.nodeCount = json.getInt("nodes");
     }
 
     /**
@@ -149,7 +174,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
     }
 
     /**
-     * Creates builder to build {@link ExtendedRevisionCallGraphV3}.
+     * Creates builder to build {@link ExtendedRevisionCallGraph}.
      *
      * @return created builder
      */
@@ -162,7 +187,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
      *
      * @param cha JSONObject of a cha.
      */
-    public static Map<Scope, Map<FastenURI, Type>> getCHAFromJSONV3(final JSONObject cha) throws IOException {
+    public static Map<Scope, Map<FastenURI, Type>> getCHAFromJSON(final JSONObject cha) throws IOException {
 
         final Map<FastenURI, Type> internals = new HashMap<>();
         final Map<FastenURI, Type> externals = new HashMap<>();
@@ -187,11 +212,10 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
     }
 
     /**
-     * Produces the JSON representation of this {@link ExtendedRevisionCallGraphV3}.
+     * Produces the JSON representation of this {@link ExtendedRevisionCallGraph}.
      *
      * @return the JSON representation.
      */
-    @Override
     public JSONObject toJSON() {
 
         final var result = new JSONObject();
@@ -202,8 +226,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
         if (timestamp >= 0) {
             result.put("timestamp", timestamp);
         }
-        result.put("cha", toJSONV3(classHierarchy));
-        result.put("depset", Dependency.toJSON(depset));
+        result.put("cha", toJSON(classHierarchy));
         result.put("graph", graph.toJSON());
         result.put("nodes", nodeCount);
 
@@ -215,7 +238,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
      *
      * @return the JSON representation.
      */
-    public JSONObject toJSONV3(final Map<Scope, Map<FastenURI, Type>> cha) {
+    public JSONObject toJSON(final Map<Scope, Map<FastenURI, Type>> cha) {
 
         final var result = new JSONObject();
         final var internalTypes = new JSONObject();
@@ -244,7 +267,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
      *
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
-    public Map<Integer, Node> mapOfAllMethodsV3() {
+    public Map<Integer, Node> mapOfAllMethods() {
         Map<Integer, Node> result = new HashMap<>();
         for (final var aClass : this.getClassHierarchyV3().get(Scope.internalTypes).entrySet()) {
             result.putAll(aClass.getValue().getMethods());
@@ -275,7 +298,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
     }
 
     /**
-     * Builder to build {@link ExtendedRevisionCallGraphV3}.
+     * Builder to build {@link ExtendedRevisionCallGraph}.
      */
     public static final class ExtendedBuilder {
         private String forge;
@@ -283,7 +306,6 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
         private String version;
         private String cgGenerator;
         private long timestamp;
-        private List<List<Dependency>> depset = Collections.emptyList();
         private Map<Scope, Map<FastenURI, Type>> classHierarchy;
         private Graph graph;
         private int nodeCount;
@@ -321,12 +343,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
             return this;
         }
 
-        public ExtendedBuilder depset(final List<List<Dependency>> depset) {
-            this.depset = depset;
-            return this;
-        }
-
-        public ExtendedBuilder graph(final ExtendedRevisionCallGraphV3.Graph graph) {
+        public ExtendedBuilder graph(final ExtendedRevisionCallGraph.Graph graph) {
             this.graph = graph;
             return this;
         }
@@ -336,11 +353,10 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
             return this;
         }
 
-        public ExtendedRevisionCallGraphV3 build() {
-            return new ExtendedRevisionCallGraphV3(this);
+        public ExtendedRevisionCallGraph build() {
+            return new ExtendedRevisionCallGraph(this);
         }
     }
-
 
     public static class Graph {
 
@@ -379,13 +395,13 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
          *
          * @param graph JSONObject of a graph including its internal calls and external calls.
          */
-        public Graph(final JSONObject graph) throws IOException {
+        public Graph(final JSONObject graph) {
             this.internalCalls = extractCalls(graph, "internalCalls");
             this.externalCalls = extractCalls(graph, "externalCalls");
             this.resolvedCalls = extractCalls(graph, "resolvedCalls");
         }
 
-        private Map<List<Integer>, Map<Object, Object>> extractCalls(JSONObject graph, String key) throws IOException {
+        private Map<List<Integer>, Map<Object, Object>> extractCalls(JSONObject graph, String key) {
             final var internalCalls = graph.getJSONArray(key);
             final Map<List<Integer>, Map<Object, Object>> result = new HashMap<>();
             final int numberOfArcs = internalCalls.length();
@@ -402,7 +418,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
             this.resolvedCalls = new HashMap<>();
         }
 
-        public Map<List<Integer>, Map<Object, Object>> getCall(final JSONArray call) throws IOException {
+        public Map<List<Integer>, Map<Object, Object>> getCall(final JSONArray call) {
             final var callTypeJson = call.getJSONObject(2);
             final Map<Object, Object> callSite = new HashMap<>();
             for (String key : callTypeJson.keySet()) {
@@ -485,10 +501,11 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
     }
 
     public static class Node {
+
         final private FastenURI uri;
         final private Map<Object, Object> metadata;
 
-        public Node(final FastenURI uri, final Map metadata) {
+        public Node(final FastenURI uri, final Map<Object, Object> metadata) {
             this.uri = uri;
             this.metadata = metadata;
         }
@@ -501,20 +518,21 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
             return metadata;
         }
 
-        public String getEntity(){
+        public String getEntity() {
             return this.uri.getEntity();
         }
-        public String getClassName(){
-            return getEntity().substring(0,getEntity().indexOf("."));
+
+        public String getClassName() {
+            return getEntity().substring(0, getEntity().indexOf("."));
         }
 
-        public String getMethodName(){
-            return StringUtils.substringBetween(getEntity(), getClassName() + ".","(");
+        public String getMethodName() {
+            return StringUtils.substringBetween(getEntity(), getClassName() + ".", "(");
         }
 
-        public FastenURI changeName(final String className, final String methodName){
+        public FastenURI changeName(final String className, final String methodName) {
             final var uri = this.getUri().toString().replace("/" + getClassName() + ".", "/" + className + ".");
-            return FastenURI.create(uri.replace( "."+ getMethodName() + "(", "." + methodName + "(") );
+            return FastenURI.create(uri.replace("." + getMethodName() + "(", "." + methodName + "("));
         }
     }
 
@@ -522,6 +540,7 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
      * Each type is a class or an interface.
      */
     public static class Type {
+
         public Type(String sourceFileName) {
 
             this.sourceFileName = sourceFileName;
@@ -608,7 +627,6 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
             for (int i = 0; i < numberOfSuperInterfaces; i++) {
                 this.superInterfaces.add(FastenURI.create(superInterfacesJSON.getString(i)));
             }
-
         }
 
         /**
@@ -643,7 +661,6 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
          * @return the corresponding JSON representation.
          */
         public JSONObject toJSON(final Type type) {
-
             final var result = new JSONObject();
 
             result.put("methods", toMapOfString(type.methods));
@@ -688,5 +705,4 @@ public class ExtendedRevisionCallGraphV3 extends RevisionCallGraph {
             return methods.entrySet().stream().filter(node -> node.getValue().uri.getEntity().contains(signature)).findAny();
         }
     }
-
 }

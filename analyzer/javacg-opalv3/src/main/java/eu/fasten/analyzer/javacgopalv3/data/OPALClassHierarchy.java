@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3.data;
+package eu.fasten.analyzer.javacgopalv3.data;
 
-import eu.fasten.analyzer.javacgopal.version3.ExtendedRevisionCallGraphV3;
-import eu.fasten.analyzer.javacgopal.version3.scalawrapper.JavaToScalaConverter;
+import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,14 +75,14 @@ public class OPALClassHierarchy {
      * Converts all of the members of the classHierarchy to {@link FastenURI}.
      *
      * @param projectHierarchy OPAL class hierarachy
-     * @return A {@link Map} of {@link FastenURI} as key and {@link ExtendedRevisionCallGraphV3.Type}
+     * @return A {@link Map} of {@link FastenURI} as key and {@link ExtendedRevisionCallGraph.Type}
      * as value.
      */
-    public Map<ExtendedRevisionCallGraphV3.Scope, Map<FastenURI, ExtendedRevisionCallGraphV3.Type>> asURIHierarchy(
+    public Map<ExtendedRevisionCallGraph.Scope, Map<FastenURI, ExtendedRevisionCallGraph.Type>> asURIHierarchy(
             ClassHierarchy projectHierarchy) {
 
-        final Map<FastenURI, ExtendedRevisionCallGraphV3.Type> internalResult = new HashMap<>();
-        final Map<FastenURI, ExtendedRevisionCallGraphV3.Type> externalResult = new HashMap<>();
+        final Map<FastenURI, ExtendedRevisionCallGraph.Type> internalResult = new HashMap<>();
+        final Map<FastenURI, ExtendedRevisionCallGraph.Type> externalResult = new HashMap<>();
 
         final var internals = this.getInternalCHA();
         for (final var aClass : internals.keySet()) {
@@ -93,9 +93,9 @@ public class OPALClassHierarchy {
             externalResult.putAll(OPALType.getType(projectHierarchy, externals.get(aClass), aClass));
         }
 
-        return Map.of(ExtendedRevisionCallGraphV3.Scope.internalTypes, internalResult,
-                ExtendedRevisionCallGraphV3.Scope.externalTypes, externalResult,
-                ExtendedRevisionCallGraphV3.Scope.resolvedTypes, new HashMap<>());
+        return Map.of(ExtendedRevisionCallGraph.Scope.internalTypes, internalResult,
+                ExtendedRevisionCallGraph.Scope.externalTypes, externalResult,
+                ExtendedRevisionCallGraph.Scope.resolvedTypes, new HashMap<>());
     }
 
     /**
@@ -223,7 +223,7 @@ public class OPALClassHierarchy {
      */
     public void appendGraph(final Object source,
                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
-                            ExtendedRevisionCallGraphV3.Graph resultGraph) {
+                            ExtendedRevisionCallGraph.Graph resultGraph) {
         final var edges = this.getSubGraph(source, targets);
         resultGraph.append(edges);
     }
@@ -235,8 +235,8 @@ public class OPALClassHierarchy {
      * @param targets list of targets
      * @return ExtendedRevisionCallGraph sub-graph
      */
-    public ExtendedRevisionCallGraphV3.Graph getSubGraph(final Object source,
-                                                         final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets) {
+    public ExtendedRevisionCallGraph.Graph getSubGraph(final Object source,
+                                                       final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets) {
 
         final var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
         final var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
@@ -265,7 +265,7 @@ public class OPALClassHierarchy {
             }
         }
 
-        return new ExtendedRevisionCallGraphV3.Graph(internalCalls, externalCalls);
+        return new ExtendedRevisionCallGraph.Graph(internalCalls, externalCalls);
     }
 
     /**

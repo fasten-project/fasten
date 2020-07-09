@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.version3.data;
+package eu.fasten.analyzer.javacgopalv3.data;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -27,6 +27,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.opalj.br.analyses.Project;
+import org.opalj.log.ConsoleOPALLogger;
+import org.opalj.log.Fatal$;
+import org.opalj.log.GlobalLogContext$;
+import org.opalj.log.OPALLogger;
 import org.opalj.tac.cg.AllocationSiteBasedPointsToCallGraphKey$;
 import org.opalj.tac.cg.CHACallGraphKey$;
 import org.opalj.tac.cg.CallGraph;
@@ -46,8 +50,11 @@ public class CallGraphConstructor {
      * @param algorithm algorithm for generating call graph
      */
     public CallGraphConstructor(final File file, final String mainClass, final String algorithm) {
+        OPALLogger.updateLogger(GlobalLogContext$.MODULE$, new ConsoleOPALLogger(false, Fatal$.MODULE$));
         final var log = Project.apply(file);
+        OPALLogger.updateLogger(log.logContext(), new ConsoleOPALLogger(false, Fatal$.MODULE$));
         this.project = Project.apply(file, log.logContext(), createConfig(mainClass));
+        OPALLogger.updateLogger(project.logContext(), new ConsoleOPALLogger(false, Fatal$.MODULE$));
         this.callGraph = generateCallGraph(project, algorithm);
     }
 
