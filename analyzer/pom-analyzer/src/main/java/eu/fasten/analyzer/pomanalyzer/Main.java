@@ -18,11 +18,13 @@
 
 package eu.fasten.analyzer.pomanalyzer;
 
+import eu.fasten.server.connectors.PostgresConnector;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.sql.SQLException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import picocli.CommandLine;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 
 @CommandLine.Command(name = "POMAnalyzer")
 public class Main implements Runnable {
@@ -47,6 +49,18 @@ public class Main implements Runnable {
             description = "version of the Maven coordinate")
     String version;
 
+    @CommandLine.Option(names = {"-d", "--database"},
+            paramLabel = "dbURL",
+            description = "Database URL for connection",
+            defaultValue = "jdbc:postgresql:postgres")
+    String dbUrl;
+
+    @CommandLine.Option(names = {"-u", "--user"},
+            paramLabel = "dbUser",
+            description = "Database user name",
+            defaultValue = "postgres")
+    String dbUser;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -55,6 +69,13 @@ public class Main implements Runnable {
     @Override
     public void run() {
         var pomAnalyzer = new POMAnalyzerPlugin.POMAnalyzer();
+        try {
+            pomAnalyzer.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
+        } catch (SQLException e) {
+            System.err.println("Error connecting to the database:");
+            e.printStackTrace(System.err);
+            return;
+        }
         if (artifact != null && group != null && version != null) {
             var mvnCoordinate = new JSONObject();
             mvnCoordinate.put("artifactId", artifact);

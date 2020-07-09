@@ -18,11 +18,11 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom.data;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class Dependency {
 
@@ -38,7 +38,6 @@ public class Dependency {
 
     /**
      * Constructor for Dependency object.
-     * <p>
      * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
      *
      * @param artifactId artifactId of dependency Maven coordinate
@@ -100,6 +99,11 @@ public class Dependency {
         return Objects.equals(classifier, that.classifier);
     }
 
+    /**
+     * Converts Dependency object into JSON.
+     *
+     * @return JSONObject representation of dependency
+     */
     public JSONObject toJSON() {
         final var json = new JSONObject();
         json.put("artifactId", this.artifactId);
@@ -117,6 +121,12 @@ public class Dependency {
         return json;
     }
 
+    /**
+     * Creates a Dependency object from JSON.
+     *
+     * @param json JSONObject representation of dependency
+     * @return Dependency object
+     */
     public static Dependency fromJSON(JSONObject json) {
         var artifactId = json.getString("artifactId");
         var groupId = json.getString("groupId");
@@ -170,6 +180,11 @@ public class Dependency {
             return groupId.equals(exclusion.groupId);
         }
 
+        /**
+         * Converts Exclusion object into JSON.
+         *
+         * @return JSONObject representation of exclusion
+         */
         public JSONObject toJSON() {
             final var json = new JSONObject();
             json.put("artifactId", this.artifactId);
@@ -177,6 +192,12 @@ public class Dependency {
             return json;
         }
 
+        /**
+         * Creates a Exclusion object from JSON.
+         *
+         * @param json JSONObject representation of exclusion
+         * @return Exclusion object
+         */
         public static Exclusion fromJSON(JSONObject json) {
             var artifactId = json.getString("artifactId");
             var groupId = json.getString("groupId");

@@ -19,9 +19,11 @@
 package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import java.util.Collections;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,6 +78,44 @@ public class POMAnalyzerPluginTest {
         assertEquals("4.12", json.getString("version"));
         assertEquals(repoUrl, json.getString("repoUrl"));
         assertEquals(dependencyData, DependencyData.fromJSON(json.getJSONObject("dependencyData")));
+    }
+
+    @Test
+    public void saveToDatabaseTest() {
+        var metadataDao = Mockito.mock(MetadataDao.class);
+        var repoUrl = "http://github.com/junit-team/junit/tree/master";
+        var dependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
+                "   \"dependencyManagement\":{\n" +
+                "      \"dependencies\":[\n" +
+                "\n" +
+                "      ]\n" +
+                "   },\n" +
+                "   \"dependencies\":[\n" +
+                "      {\n" +
+                "         \"groupId\":\"org.hamcrest\",\n" +
+                "         \"scope\":\"\",\n" +
+                "         \"classifier\":\"\",\n" +
+                "         \"artifactId\":\"hamcrest-core\",\n" +
+                "         \"exclusions\":[\n" +
+                "\n" +
+                "         ],\n" +
+                "         \"optional\":false,\n" +
+                "         \"type\":\"\",\n" +
+                "         \"version\":\"1.3\"\n" +
+                "      }\n" +
+                "   ]\n" +
+                "}\n"));
+        final var packageId = 1L;
+        Mockito.when(metadataDao.insertPackage("junit.junit", "mvn", null, repoUrl, null))
+                .thenReturn(packageId);
+        final var packageVersionId = 0L;
+        Mockito.when(metadataDao.insertPackageVersion(packageId, "OPAL", "4.12", null, dependencyData.dependencyManagement.toJSON()))
+                .thenReturn(packageVersionId);
+        final var dependencyId = 16L;
+        Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", "mvn", null, null, null))
+                .thenReturn(dependencyId);
+        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, dependencyData, metadataDao);
+        assertEquals(packageVersionId, result);
     }
 
     @Test

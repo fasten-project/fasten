@@ -20,19 +20,22 @@ package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.jooq.DSLContext;
+import org.jooq.exception.DataAccessException;
+import org.jooq.impl.DSL;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
 public class POMAnalyzerPlugin extends Plugin {
 
@@ -52,6 +55,9 @@ public class POMAnalyzerPlugin extends Plugin {
         private String version = null;
         private String repoUrl = null;
         private DependencyData dependencyData = null;
+        private boolean restartTransaction = false;
+        private final int transactionRestartLimit = 3;
+        private boolean processedRecord = false;
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -76,16 +82,77 @@ public class POMAnalyzerPlugin extends Plugin {
             version = null;
             repoUrl = null;
             dependencyData = null;
+            this.processedRecord = false;
+            this.restartTransaction = false;
             logger.info("Consumed: " + record);
             var payload = new JSONObject(record).getJSONObject("payload");
             artifact = payload.getString("artifactId");
             group = payload.getString("groupId");
             version = payload.getString("version");
+            final var product = group + ":" + artifact + ":" + version;
             var dataExtractor = new DataExtractor();
             repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
+            logger.info("Extracted repository URL " + repoUrl + " from " + product);
             dependencyData = dataExtractor.extractDependencyData(group, artifact, version);
-            logger.info("Extracted repository URL " + repoUrl
-                    + " from " + group + ":" + artifact + ":" + version);
+            logger.info("Extracted dependency information from " + product);
+            int transactionRestartCount = 0;
+            do {
+                try {
+                    var metadataDao = new MetadataDao(dslContext);
+                    dslContext.transaction(transaction -> {
+                        metadataDao.setContext(DSL.using(transaction));
+                        long id;
+                        try {
+                            id = saveToDatabase(group + "." + artifact, version, repoUrl,
+                                    dependencyData, metadataDao);
+                        } catch (RuntimeException e) {
+                            logger.error("Error saving data to the database: '" + product + "'", e);
+                            processedRecord = false;
+                            this.pluginError = e;
+                            if (e instanceof DataAccessException) {
+                                logger.info("Restarting transaction for '" + product + "'");
+                                restartTransaction = true;
+                            } else {
+                                restartTransaction = false;
+                            }
+                            throw e;
+                        }
+                        if (getPluginError() == null) {
+                            processedRecord = true;
+                            restartTransaction = false;
+                            logger.info("Saved data for " + product
+                                    + " with package version ID = " + id);
+                        }
+                    });
+                } catch (Exception expected) {
+                }
+                transactionRestartCount++;
+            } while (restartTransaction && !processedRecord
+                    && transactionRestartCount < transactionRestartLimit);
+        }
+
+        /**
+         * Saves information extracted from POM into Metadata Database.
+         *
+         * @param product        groupId.artifactId
+         * @param version        Version of the artifact
+         * @param repoUrl        URL of the repository of the product
+         * @param dependencyData Dependency information from POM
+         * @param metadataDao    Metadata Database Access Object
+         * @return ID of the package version in the database
+         */
+        public long saveToDatabase(String product, String version, String repoUrl,
+                                   DependencyData dependencyData, MetadataDao metadataDao) {
+            final var packageId = metadataDao.insertPackage(product, "mvn", null, repoUrl, null);
+            final var packageVersionId = metadataDao.insertPackageVersion(packageId,
+                    "OPAL", version, null, dependencyData.dependencyManagement.toJSON());
+            for (var dependency : dependencyData.dependencies) {
+                var depProduct = dependency.groupId + "." + dependency.artifactId;
+                final var depId = metadataDao.insertPackage(depProduct, "mvn", null, null, null);
+                metadataDao.insertDependency(packageVersionId, depId,
+                        new String[]{dependency.version}, dependency.toJSON());
+            }
+            return packageVersionId;
         }
 
         @Override

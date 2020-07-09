@@ -21,11 +21,6 @@ package eu.fasten.analyzer.pomanalyzer.pom;
 import eu.fasten.analyzer.pomanalyzer.pom.data.Dependency;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyManagement;
-import org.dom4j.DocumentException;
-import org.dom4j.Node;
-import org.dom4j.io.SAXReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -42,6 +37,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.dom4j.DocumentException;
+import org.dom4j.Node;
+import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DataExtractor {
 

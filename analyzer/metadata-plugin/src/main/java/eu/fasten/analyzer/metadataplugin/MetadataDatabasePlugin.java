@@ -183,6 +183,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
             var depIds = new ArrayList<Long>();
             var depVersions = new ArrayList<String[]>();
+            var depMetadata = new ArrayList<JSONObject>();
             for (var depList : callGraph.depset) {
                 for (var dependency : depList) {
                     var constraints = dependency.constraints;
@@ -194,10 +195,11 @@ public class MetadataDatabasePlugin extends Plugin {
                     var depId = metadataDao.insertPackage(dependency.product, dependency.forge,
                             null, null, null);
                     depIds.add(depId);
+                    depMetadata.add(new JSONObject());
                 }
             }
             if (depIds.size() > 0) {
-                metadataDao.insertDependencies(packageVersionId, depIds, depVersions);
+                metadataDao.insertDependencies(packageVersionId, depIds, depVersions, depMetadata);
             }
 
             final var cha = callGraph.getClassHierarchy();

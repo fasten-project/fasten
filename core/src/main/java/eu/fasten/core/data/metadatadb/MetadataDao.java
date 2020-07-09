@@ -176,17 +176,22 @@ public class MetadataDao {
      * @param packageVersionId ID of the package version (references 'package_versions.id')
      * @param dependencyId     ID of the dependency package (references 'packages.id')
      * @param versionRanges    Ranges of valid versions
+     * @param metadata         Metadata of the dependency
      * @return ID of the package version (packageVersionId)
      */
-    public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges) {
+    public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges,
+                                 JSONObject metadata) {
         var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
                 Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID,
-                Dependencies.DEPENDENCIES.VERSION_RANGE)
-                .values(packageVersionId, dependencyId, versionRanges)
+                Dependencies.DEPENDENCIES.VERSION_RANGE,
+                Dependencies.DEPENDENCIES.METADATA)
+                .values(packageVersionId, dependencyId, versionRanges,
+                        JSONB.valueOf(metadata.toString()))
                 .onConflictOnConstraint(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE).doUpdate()
-                .set(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
-                        Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)
+                .set(Dependencies.DEPENDENCIES.METADATA,
+                        JsonbDSL.concat(Dependencies.DEPENDENCIES.METADATA,
+                                Dependencies.DEPENDENCIES.as("excluded").METADATA))
                 .returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID).fetchOne();
         return resultRecord.getValue(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID);
     }
@@ -197,18 +202,20 @@ public class MetadataDao {
      * @param packageVersionId ID of the package version
      * @param dependenciesIds  List of IDs of dependencies
      * @param versionRanges    List of version ranges
+     * @param metadata         List of metadata
      * @return ID of the package (packageId)
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public long insertDependencies(long packageVersionId, List<Long> dependenciesIds,
-                                   List<String[]> versionRanges)
+                                   List<String[]> versionRanges, List<JSONObject> metadata)
             throws IllegalArgumentException {
         if (dependenciesIds.size() != versionRanges.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = dependenciesIds.size();
         for (int i = 0; i < length; i++) {
-            insertDependency(packageVersionId, dependenciesIds.get(i), versionRanges.get(i));
+            insertDependency(packageVersionId, dependenciesIds.get(i), versionRanges.get(i),
+                    metadata.get(i));
         }
         return packageVersionId;
     }

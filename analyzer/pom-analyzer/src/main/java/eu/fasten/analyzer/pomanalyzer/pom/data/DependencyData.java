@@ -18,10 +18,10 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom.data;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class DependencyData {
 
@@ -56,6 +56,11 @@ public class DependencyData {
         return dependencies.equals(that.dependencies);
     }
 
+    /**
+     * Converts DependencyData object into JSON.
+     *
+     * @return JSONObject representation of dependency data
+     */
     public JSONObject toJSON() {
         final var json = new JSONObject();
         json.put("dependencyManagement", this.dependencyManagement.toJSON());
@@ -67,6 +72,12 @@ public class DependencyData {
         return json;
     }
 
+    /**
+     * Creates a DependencyData object from JSON.
+     *
+     * @param json JSONObject representation of dependency data
+     * @return DependencyData object
+     */
     public static DependencyData fromJSON(JSONObject json) {
         var dependencyManagement = DependencyManagement.fromJSON(
                 json.getJSONObject("dependencyManagement")
