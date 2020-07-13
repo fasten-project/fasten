@@ -25,9 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.kafka.common.protocol.types.Field;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,14 +62,10 @@ public class Evaluator {
 
     public static void main(String[] args) throws IOException {
 
-        final var testCaseDirectory =
-            new File(
-                "/Users/mehdi/Desktop/ThisPC/TUD/FASTEN/Repositories/OtherRepos/jcg/testcaseJars");
-
-        if (args.length != 0) {
-            generateSingleFeature(new File(args[0]));
+        if (args[0].equals("--single")) {
+            generateSingleFeature(new File(args[1]));
         } else {
-            generateAllFeatures(testCaseDirectory);
+            generateAllFeatures(new File(args[1]));
         }
     }
 
