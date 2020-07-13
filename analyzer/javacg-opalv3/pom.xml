@@ -174,21 +174,24 @@
     </build>
 
     <repositories>
-        <!--        <repository>-->
-        <!--            <id>oss.sonatype.org-snapshot</id>-->
-        <!--            <url>http://oss.sonatype.org/content/repositories/snapshots</url>-->
-        <!--            <releases>-->
-        <!--                <enabled>false</enabled>-->
-        <!--            </releases>-->
-        <!--            <snapshots>-->
-        <!--                <enabled>true</enabled>-->
-        <!--            </snapshots>-->
-        <!--        </repository>-->
         <repository>
             <id>lib</id>
             <url>file:${project.basedir}/lib</url>
         </repository>
-
     </repositories>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.2</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/Main.*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>
 

@@ -72,7 +72,7 @@ public class CallGraphConstructor {
      * @param mainClass main class in case the project is an application
      * @return configuration for running call graph generator
      */
-    private static Config createConfig(String mainClass) {
+    private Config createConfig(String mainClass) {
         Config baseConfig = ConfigFactory.load()
                 .withValue("org.opalj.br.reader.ClassFileReader.Invokedynamic.rewrite",
                         ConfigValueFactory.fromAnyRef(true));

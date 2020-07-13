@@ -292,7 +292,7 @@ public class Main implements Runnable {
             final var cg = new PartialCallGraph(
                     new CallGraphConstructor((File) artifact, mainClass, algorithm));
             revisionCallGraph =
-                    ExtendedRevisionCallGraph.extendedBuilderV3().graph(cg.getGraph())
+                    ExtendedRevisionCallGraph.extendedBuilder().graph(cg.getGraph())
                             .product(((File) artifact).getName().replace(".class", "").replace("$", ""))
                             .version("").timestamp(0).cgGenerator("").forge("")
                             .classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount()).build();

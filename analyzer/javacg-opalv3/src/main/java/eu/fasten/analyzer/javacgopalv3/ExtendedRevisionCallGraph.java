@@ -178,7 +178,7 @@ public class ExtendedRevisionCallGraph {
      *
      * @return created builder
      */
-    public static ExtendedBuilder extendedBuilderV3() {
+    public static ExtendedBuilder extendedBuilder() {
         return new ExtendedBuilder();
     }
 
@@ -269,13 +269,13 @@ public class ExtendedRevisionCallGraph {
      */
     public Map<Integer, Node> mapOfAllMethods() {
         Map<Integer, Node> result = new HashMap<>();
-        for (final var aClass : this.getClassHierarchyV3().get(Scope.internalTypes).entrySet()) {
+        for (final var aClass : this.getClassHierarchy().get(Scope.internalTypes).entrySet()) {
             result.putAll(aClass.getValue().getMethods());
         }
-        for (final var aClass : this.getClassHierarchyV3().get(Scope.externalTypes).entrySet()) {
+        for (final var aClass : this.getClassHierarchy().get(Scope.externalTypes).entrySet()) {
             result.putAll(aClass.getValue().getMethods());
         }
-        for (final var aClass : this.getClassHierarchyV3().get(Scope.resolvedTypes).entrySet()) {
+        for (final var aClass : this.getClassHierarchy().get(Scope.resolvedTypes).entrySet()) {
             result.putAll(aClass.getValue().getMethods());
         }
         return result;
@@ -289,11 +289,11 @@ public class ExtendedRevisionCallGraph {
         return cgGenerator;
     }
 
-    public Map<Scope, Map<FastenURI, Type>> getClassHierarchyV3() {
+    public Map<Scope, Map<FastenURI, Type>> getClassHierarchy() {
         return classHierarchy;
     }
 
-    public Graph getGraphV3() {
+    public Graph getGraph() {
         return graph;
     }
 

@@ -88,16 +88,16 @@ public class CallGraphMerger {
 
     private static ExtendedRevisionCallGraph mergeWithCHA(final ExtendedRevisionCallGraph artifact,
                                                           final List<ExtendedRevisionCallGraph> dependencies) {
-        final var result = new CGHA(artifact.getGraphV3().getResolvedCalls(),
-                artifact.getClassHierarchyV3().getOrDefault(ExtendedRevisionCallGraph.Scope.resolvedTypes, new HashMap<>()),
+        final var result = new CGHA(artifact.getGraph().getResolvedCalls(),
+                artifact.getClassHierarchy().getOrDefault(ExtendedRevisionCallGraph.Scope.resolvedTypes, new HashMap<>()),
                 artifact.getNodeCount());
         final var methods = artifact.mapOfAllMethods();
         final var universalCHA = createUniversalCHA(dependencies, artifact);
-        for (final var arc : artifact.getGraphV3().getExternalCalls().entrySet()) {
+        for (final var arc : artifact.getGraph().getExternalCalls().entrySet()) {
 
             for (final var dep : dependencies) {
                 final var product = dep.product + "$" + dep.version;
-                for (final var depTypeEntry : dep.getClassHierarchyV3().get(ExtendedRevisionCallGraph.Scope.internalTypes).entrySet()) {
+                for (final var depTypeEntry : dep.getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.internalTypes).entrySet()) {
                     final var depType = depTypeEntry.getValue();
                     final var depTypeUri = depTypeEntry.getKey();
                     final var call = new Call(arc.getKey(), arc.getValue(), methods.get(arc.getKey().get(1)));
@@ -151,7 +151,7 @@ public class CallGraphMerger {
 
         final var result = new DefaultDirectedGraph<FastenURI, DefaultEdge>(DefaultEdge.class);
         for (final var aPackage : allPackages) {
-            for (final var type : aPackage.getClassHierarchyV3().get(ExtendedRevisionCallGraph.Scope.internalTypes).entrySet()) {
+            for (final var type : aPackage.getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.internalTypes).entrySet()) {
                 if (!result.containsVertex(type.getKey())) {
                     result.addVertex(type.getKey());
                 }
@@ -219,17 +219,17 @@ public class CallGraphMerger {
                                                         final List<ExtendedRevisionCallGraph>
                                                                   dependencies) {
 
-        final var result = new CGHA(artifact.getGraphV3().getResolvedCalls(),
-                artifact.getClassHierarchyV3().getOrDefault(ExtendedRevisionCallGraph.Scope.resolvedTypes, new HashMap<>()),
+        final var result = new CGHA(artifact.getGraph().getResolvedCalls(),
+                artifact.getClassHierarchy().getOrDefault(ExtendedRevisionCallGraph.Scope.resolvedTypes, new HashMap<>()),
                 artifact.getNodeCount());
         final var methods = artifact.mapOfAllMethods();
 
-        for (final var arc : artifact.getGraphV3().getExternalCalls().entrySet()) {
+        for (final var arc : artifact.getGraph().getExternalCalls().entrySet()) {
             final var call = new Call(arc.getKey(), arc.getValue(), methods.get(arc.getKey().get(1)));
 
             for (final var dep : dependencies) {
                 final var product = dep.product + "$" + dep.version;
-                for (final var typeEntry : dep.getClassHierarchyV3().get(ExtendedRevisionCallGraph.Scope.internalTypes).entrySet()) {
+                for (final var typeEntry : dep.getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.internalTypes).entrySet()) {
                     resolveIfDefined(result, call, typeEntry.getValue(), product);
                 }
             }
@@ -239,15 +239,15 @@ public class CallGraphMerger {
 
     private static ExtendedRevisionCallGraph buildRCG(final ExtendedRevisionCallGraph artifact,
                                                       final CGHA result) {
-        final var cha = new HashMap<>(artifact.getClassHierarchyV3());
+        final var cha = new HashMap<>(artifact.getClassHierarchy());
         cha.put(ExtendedRevisionCallGraph.Scope.resolvedTypes, result.CHA);
-        return ExtendedRevisionCallGraph.extendedBuilderV3().forge(artifact.forge)
+        return ExtendedRevisionCallGraph.extendedBuilder().forge(artifact.forge)
                 .cgGenerator(artifact.getCgGenerator())
                 .classHierarchy(cha)
                 .product(artifact.product)
                 .timestamp(artifact.timestamp)
                 .version(artifact.version)
-                .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraphV3().getInternalCalls(), artifact.getGraphV3().getExternalCalls(),
+                .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraph().getInternalCalls(), artifact.getGraph().getExternalCalls(),
                         result.graph))
                 .nodeCount(result.nodeCount)
                 .build();

@@ -209,16 +209,16 @@ public class JCGFormat {
         final Map<FastenURI, List<Pair<FastenURI, Map<Object, Object>>>> result = new HashMap<>();
 
         final var methods = ercg.mapOfAllMethods();
-        for (final var internalCall : ercg.getGraphV3().getInternalCalls().entrySet()) {
+        for (final var internalCall : ercg.getGraph().getInternalCalls().entrySet()) {
             putCall(result, methods, internalCall);
         }
 
-        for (final var externalCall : ercg.getGraphV3()
+        for (final var externalCall : ercg.getGraph()
                 .getExternalCalls().entrySet()) {
             putCall(result, methods, externalCall);
         }
 
-        for (final var resolvedCall : ercg.getGraphV3()
+        for (final var resolvedCall : ercg.getGraph()
                 .getResolvedCalls().entrySet()) {
             putCall(result, methods, resolvedCall);
         }
