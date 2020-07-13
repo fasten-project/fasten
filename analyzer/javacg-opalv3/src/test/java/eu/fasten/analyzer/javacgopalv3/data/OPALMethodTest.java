@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import eu.fasten.analyzer.javacgopalv3.data.OPALMethod;
 import eu.fasten.core.data.FastenJavaURI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -139,15 +141,15 @@ class OPALMethodTest {
 
         var baseType = Mockito.mock(BaseType.class);
         Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeNameLambda%");
+        Mockito.when(baseType.toString()).thenReturn("%252528%25255DLjava$lang$String%25253A%252529V%25253A14$Lambda");
 
         var type = Mockito.mock(Type.class);
         Mockito.when(type.asBaseType()).thenReturn(baseType);
         Mockito.when(type.isBaseType()).thenReturn(true);
+        var decoded = URLDecoder.decode("%252528%25255DLjava$lang$String%25253A%252529V" +
+            "%25253A14$Lambda", StandardCharsets.UTF_8);
 
-        var encoded = FastenJavaURI.pctEncodeArg("typeNameLambda%");
-
-        assertEquals(FastenJavaURI.create("/some.package/" + encoded), OPALMethod.getTypeURI(type));
+        assertEquals(FastenJavaURI.create("/some.package/" + decoded), OPALMethod.getTypeURI(type));
     }
 
     @Test

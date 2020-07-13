@@ -123,8 +123,8 @@ public class OPALType {
         } else {
             superClassesURIs = new LinkedList<>();
         }
-
-        return Map.of(OPALMethod.getTypeURI(aClass),
+        final var typeUri = OPALMethod.getTypeURI(aClass);
+        return Map.of(typeUri,
                 new ExtendedRevisionCallGraph.Type(type.getSourceFileName(),
                         toURIMethods(type.getMethods()),
                         superClassesURIs,

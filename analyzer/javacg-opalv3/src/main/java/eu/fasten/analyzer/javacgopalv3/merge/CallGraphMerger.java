@@ -162,9 +162,9 @@ public class CallGraphMerger {
         return result;
     }
 
-    private static void addSuperTypes(DefaultDirectedGraph<FastenURI, DefaultEdge> result,
-                                      FastenURI sourceTypes,
-                                      List<FastenURI> targetTypes) {
+    private static void addSuperTypes(final DefaultDirectedGraph<FastenURI, DefaultEdge> result,
+                                      final FastenURI sourceTypes,
+                                      final List<FastenURI> targetTypes) {
         for (final var superClass : targetTypes) {
             if (!result.containsVertex(superClass)) {
                 result.addVertex(superClass);
@@ -238,7 +238,7 @@ public class CallGraphMerger {
     }
 
     private static ExtendedRevisionCallGraph buildRCG(final ExtendedRevisionCallGraph artifact,
-                                                      CGHA result) {
+                                                      final CGHA result) {
         final var cha = new HashMap<>(artifact.getClassHierarchyV3());
         cha.put(ExtendedRevisionCallGraph.Scope.resolvedTypes, result.CHA);
         return ExtendedRevisionCallGraph.extendedBuilderV3().forge(artifact.forge)
@@ -255,8 +255,8 @@ public class CallGraphMerger {
 
 
     private static FastenURI getTypeURI(final FastenURI callee) {
-        return new FastenJavaURI("/" + callee.getNamespace() + "/"
-                + callee.getEntity().substring(0, callee.getEntity().indexOf(".")));
+        return new FastenJavaURI("/" + callee.getRawNamespace() + "/"
+                + callee.getRawEntity().substring(0, callee.getRawEntity().indexOf(".")));
     }
 
 

@@ -308,7 +308,7 @@ public class Main implements Runnable {
 
         if (writeToFile) {
             CallGraphUtils
-                    .writeToFile(this.output, revisionCallGraph.toJSON(), "");
+                    .writeToFile(this.output, revisionCallGraph.toJSON(), "_" + revisionCallGraph.product);
         }
         return revisionCallGraph;
     }

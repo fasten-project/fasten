@@ -20,6 +20,8 @@ package eu.fasten.analyzer.javacgopalv3.data;
 
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -105,7 +107,7 @@ public class OPALMethod {
     public static FastenJavaURI getTypeURI(final Type returnType) {
         if (getClassName(returnType).contains("Lambda")) {
             return new FastenJavaURI("/" + getPackageName(returnType) + "/"
-                    + FastenJavaURI.pctEncodeArg(getClassName(returnType)));
+                    + URLDecoder.decode(getClassName(returnType), StandardCharsets.UTF_8));
         }
         return new FastenJavaURI("/" + getPackageName(returnType)
                 + "/" + getClassName(returnType));
