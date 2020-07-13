@@ -24,7 +24,6 @@ import com.typesafe.config.ConfigValueFactory;
 import java.io.File;
 import java.net.URL;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.opalj.br.analyses.Project;
@@ -74,14 +73,9 @@ public class CallGraphConstructor {
      * @return configuration for running call graph generator
      */
     private Config createConfig(String mainClass) {
-        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("reference.conf"))
-                .getFile());
-
-        Config baseConfig = ConfigFactory.load();
-        var base = baseConfig.root().unwrapped();
-        base.put("org", ConfigFactory.parseFile(file).root().unwrapped().get("org"));
-        baseConfig = ConfigFactory.parseMap(base);
+        Config baseConfig = ConfigFactory.load()
+                .withValue("org.opalj.br.reader.ClassFileReader.Invokedynamic.rewrite",
+                        ConfigValueFactory.fromAnyRef(true));
 
         Config config;
         if (mainClass == null || mainClass.isEmpty()) {
