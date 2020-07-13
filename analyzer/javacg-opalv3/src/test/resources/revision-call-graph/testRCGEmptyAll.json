@@ -1,0 +1,90 @@
+{
+    "product": "groupID:artifactID",
+    "nodes": 5,
+    "forge": "mvn",
+    "generator": "OPAL",
+    "version": "2.6",
+    "cha": {
+        "externalTypes": {
+            "/external.package/A": {
+                "methods": {
+                    "1": {
+                        "metadata": {},
+                        "uri": "/external.package/A.someMethod()%2Fjava.lang%2FObject"
+                    },
+                    "2": {
+                        "metadata": {},
+                        "uri": "/external.package/A.otherMethod()%2Fjava.lang%2FVoidType"
+                    }
+                },
+                "superInterfaces": [],
+                "sourceFile": "",
+                "superClasses": []
+            }
+        },
+        "internalTypes": {
+            "/internal.package/B": {
+                "methods": {
+                    "3": {
+                        "metadata": {
+                            "access": "public",
+                            "last": 14,
+                            "defined": true,
+                            "first": 25
+                        },
+                        "uri": "/internal.package/B.internalMethod(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType"
+                    },
+                    "4": {
+                        "metadata": {
+                            "access": "private",
+                            "last": 38,
+                            "defined": true,
+                            "first": 42
+                        },
+                        "uri": "/internal.package/B.newInstance()%2Fjava.lang%2FObject"
+                    }
+                },
+                "superInterfaces": ["/internal.package/BInterface"],
+                "sourceFile": "B.java",
+                "superClasses": ["/java.lang/Object"]
+            }
+        },
+        "resolvedTypes": {
+            "/resolved.package/C": {
+                "methods": {
+                    "5": {
+                        "metadata": {
+                            "access": "public",
+                            "last": 140,
+                            "defined": true,
+                            "first": 253
+                        },
+                        "uri": "/resolved.package/C.resolvedMethod(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType"
+                    },
+                    "6": {
+                        "metadata": {
+                            "access": "private",
+                            "last": 381,
+                            "defined": true,
+                            "first": 400
+                        },
+                        "uri": "/resolved.package/C.newInstance()%2Fjava.lang%2FObject"
+                    }
+                },
+                "superInterfaces": [
+                    "/resolved.package/CInterface"
+                ],
+                "sourceFile": "C.java",
+                "superClasses": [
+                    "/java.lang/Object"
+                ]
+            }
+        }
+    },
+    "graph": {
+        "internalCalls": [],
+        "externalCalls": [],
+        "resolvedCalls": []
+    },
+    "timestamp": 123
+}
