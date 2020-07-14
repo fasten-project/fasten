@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.commons.lang3.ArrayUtils;
+import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,9 +65,16 @@ public class Evaluator {
 
         if (args[0].equals("--single")) {
             generateSingleFeature(new File(args[1]));
-        } else {
+        } else if (args[0].equals("--all")){
             generateAllFeatures(new File(args[1]));
+        }else {
+            evaluatePerformance(args[1]);
         }
+    }
+
+    private static void evaluatePerformance(final String coord) {
+        final var files = Maven.resolver().resolve(coord).withoutTransitivity().asFile();
+
     }
 
     private static String extractMain(final File langFeature) throws IOException {
