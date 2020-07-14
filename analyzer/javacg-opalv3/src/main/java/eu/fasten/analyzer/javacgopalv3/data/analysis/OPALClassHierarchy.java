@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopalv3.data;
+package eu.fasten.analyzer.javacgopalv3.data.analysis;
 
 import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
@@ -74,9 +74,8 @@ public class OPALClassHierarchy {
     /**
      * Converts all of the members of the classHierarchy to {@link FastenURI}.
      *
-     * @param projectHierarchy OPAL class hierarachy
-     * @return A {@link Map} of {@link FastenURI} as key and {@link ExtendedRevisionCallGraph.Type}
-     * as value.
+     * @param projectHierarchy OPAL class hierarchy
+     * @return A {@link Map} of {@link FastenURI} and {@link ExtendedRevisionCallGraph.Type}
      */
     public Map<ExtendedRevisionCallGraph.Scope, Map<FastenURI, ExtendedRevisionCallGraph.Type>> asURIHierarchy(
             ClassHierarchy projectHierarchy) {
@@ -90,7 +89,8 @@ public class OPALClassHierarchy {
         }
         final var externals = this.getExternalCHA();
         for (final var aClass : externals.keySet()) {
-            externalResult.putAll(OPALType.getType(projectHierarchy, externals.get(aClass), aClass));
+            externalResult
+                    .putAll(OPALType.getType(projectHierarchy, externals.get(aClass), aClass));
         }
 
         return Map.of(ExtendedRevisionCallGraph.Scope.internalTypes, internalResult,
@@ -106,7 +106,8 @@ public class OPALClassHierarchy {
      * @return ID corresponding to the method
      */
     public int addMethodToExternals(DeclaredMethod method) {
-        final var typeMethods = this.externalCHA.getOrDefault(method.declaringClassType(), new HashMap<>());
+        final var typeMethods = this.externalCHA
+                .getOrDefault(method.declaringClassType(), new HashMap<>());
 
         if (typeMethods.containsKey(method)) {
             return typeMethods.get(method);
@@ -142,13 +143,16 @@ public class OPALClassHierarchy {
      */
     public List<Integer> getExternalCallKeys(final Object source, final Object target) {
         if (source instanceof Method && target instanceof DeclaredMethod) {
-            return Arrays.asList(this.internalCHA.get(((Method) source).declaringClassFile().thisType().asObjectType())
-                            .getMethods()
-                            .get(source),
+            return Arrays.asList(
+                    this.internalCHA
+                            .get(((Method) source).declaringClassFile().thisType().asObjectType())
+                            .getMethods().get(source),
                     this.addMethodToExternals((DeclaredMethod) target));
         } else if (source instanceof DeclaredMethod && target instanceof Method) {
-            return Arrays.asList(this.addMethodToExternals((DeclaredMethod) source),
-                    this.internalCHA.get(((Method) target).declaringClassFile().thisType().asObjectType())
+            return Arrays.asList(
+                    this.addMethodToExternals((DeclaredMethod) source),
+                    this.internalCHA
+                            .get(((Method) target).declaringClassFile().thisType().asObjectType())
                             .getMethods().get(target));
         } else if (source instanceof DeclaredMethod) {
             return Arrays.asList(this.addMethodToExternals((DeclaredMethod) source),
@@ -159,7 +163,7 @@ public class OPALClassHierarchy {
     }
 
     /**
-     * Put calls to either internal or external maps of calls
+     * Put calls to either internal or external maps of calls.
      *
      * @param source            source method
      * @param internalCalls     map of internal calls
@@ -168,9 +172,11 @@ public class OPALClassHierarchy {
      * @param metadata          metadata to put along the call
      * @param target            target method
      */
-    public void putCalls(final Object source, final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
+    public void putCalls(final Object source,
+                         final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
                          final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
-                         final DeclaredMethod targetDeclaration, Map<Object, Object> metadata, final Method target) {
+                         final DeclaredMethod targetDeclaration, Map<Object, Object> metadata,
+                         final Method target) {
         if (source instanceof Method) {
             final var call = this.getInternalCallKeys((Method) source, target);
             internalCalls.put(call, getInternalMetadata(internalCalls, metadata, call));
@@ -183,7 +189,7 @@ public class OPALClassHierarchy {
     }
 
     /**
-     * Put external call to the list of calls
+     * Put external call to the list of calls.
      *
      * @param source            source method
      * @param externalCalls     map of external calls
@@ -192,7 +198,8 @@ public class OPALClassHierarchy {
      */
     public void putExternalCall(final Object source,
                                 final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
-                                final DeclaredMethod targetDeclaration, final Map<Object, Object> metadata) {
+                                final DeclaredMethod targetDeclaration,
+                                final Map<Object, Object> metadata) {
         final var call = this.getExternalCallKeys(source, targetDeclaration);
         final var externalMetadata = externalCalls.getOrDefault(call, new HashMap<>());
         externalMetadata.putAll(metadata);
@@ -200,7 +207,7 @@ public class OPALClassHierarchy {
     }
 
     /**
-     * Get metadata of internal calls
+     * Get metadata of internal calls.
      *
      * @param internalCalls map of internal calls
      * @param metadata      new metadata to add
@@ -208,14 +215,15 @@ public class OPALClassHierarchy {
      * @return internal metadata
      */
     public Map<Object, Object> getInternalMetadata(final Map<List<Integer>, Map<Object, Object>> internalCalls,
-                                                   final Map<Object, Object> metadata, final List<Integer> call) {
+                                                   final Map<Object, Object> metadata,
+                                                   final List<Integer> call) {
         final var internalMetadata = internalCalls.getOrDefault(call, new HashMap<>());
         internalMetadata.putAll(metadata);
         return internalMetadata;
     }
 
     /**
-     * Append a sub-graph to already existing ExtendedRevisionCallGraph
+     * Append a sub-graph to already existing ExtendedRevisionCallGraph.
      *
      * @param source      source method
      * @param targets     list of targets
@@ -243,28 +251,30 @@ public class OPALClassHierarchy {
 
         if (targets != null) {
             for (final var opalCallSite : JavaConverters.asJavaIterable(targets.toIterable())) {
-
-                for (final var targetDeclaration : JavaConverters.asJavaIterable(opalCallSite._2().toIterable())) {
-
+                for (final var targetDeclaration : JavaConverters
+                        .asJavaIterable(opalCallSite._2().toIterable())) {
                     Map<Object, Object> metadata = new HashMap<>();
                     if (source instanceof Method) {
                         metadata = getCallSite((Method) source, (Integer) opalCallSite._1());
                     }
 
                     if (targetDeclaration.hasMultipleDefinedMethods()) {
-                        for (final var target : JavaConverters.asJavaIterable(targetDeclaration.definedMethods())) {
-                            this.putCalls(source, internalCalls, externalCalls, targetDeclaration, metadata, target);
+                        for (final var target : JavaConverters
+                                .asJavaIterable(targetDeclaration.definedMethods())) {
+                            this.putCalls(source, internalCalls, externalCalls, targetDeclaration,
+                                    metadata, target);
                         }
+
                     } else if (targetDeclaration.hasSingleDefinedMethod()) {
-                        this.putCalls(source, internalCalls, externalCalls, targetDeclaration, metadata,
-                                targetDeclaration.definedMethod());
+                        this.putCalls(source, internalCalls, externalCalls, targetDeclaration,
+                                metadata, targetDeclaration.definedMethod());
+
                     } else if (targetDeclaration.isVirtualOrHasSingleDefinedMethod()) {
                         this.putExternalCall(source, externalCalls, targetDeclaration, metadata);
                     }
                 }
             }
         }
-
         return new ExtendedRevisionCallGraph.Graph(internalCalls, externalCalls);
     }
 
@@ -277,10 +287,11 @@ public class OPALClassHierarchy {
      */
     public Map<Object, Object> getCallSite(final Method source, final Integer pc) {
         final var instruction = source.instructionsOption().get()[pc].mnemonic();
-        final var receiverType = OPALMethod
-                .getTypeURI(source.instructionsOption().get()[pc].asMethodInvocationInstruction().declaringClass());
+        final var receiverType = OPALMethod.getTypeURI(source.instructionsOption().get()[pc]
+                .asMethodInvocationInstruction().declaringClass());
+
         return Map.of(pc.toString(), new OPALCallSite(source.body().get().lineNumber(pc)
-                .getOrElse(JavaToScalaConverter.asScalaFunction0OptionInteger(404)), instruction,
-                receiverType.toString()));
+                .getOrElse(JavaToScalaConverter.asScalaFunction0OptionInteger(404)),
+                instruction, receiverType.toString()));
     }
 }

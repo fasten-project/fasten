@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopalv3.data;
+package eu.fasten.analyzer.javacgopalv3.data.analysis;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 
 public class OPALCallSite {
 
-    final private Integer line;
-    final private String type;
-    final private String receiver;
+    private final Integer line;
+    private final String type;
+    private final String receiver;
 
     /**
      * Constructs a Call Site from a line, type, and receiver parameters.
@@ -91,10 +91,6 @@ public class OPALCallSite {
 
     @Override
     public String toString() {
-        return "{" +
-                "line=" + line +
-                ", type='" + type +
-                "', receiver='" + receiver +
-                "'}";
+        return "{line=" + line + ", type='" + type + "', receiver='" + receiver + "'}";
     }
 }

@@ -50,11 +50,17 @@ public class CallGraphConstructor {
      * @param algorithm algorithm for generating call graph
      */
     public CallGraphConstructor(final File file, final String mainClass, final String algorithm) {
-        OPALLogger.updateLogger(GlobalLogContext$.MODULE$, new ConsoleOPALLogger(false, Fatal$.MODULE$));
+        OPALLogger.updateLogger(GlobalLogContext$.MODULE$,
+                new ConsoleOPALLogger(false, Fatal$.MODULE$));
+
         final var log = Project.apply(file);
-        OPALLogger.updateLogger(log.logContext(), new ConsoleOPALLogger(false, Fatal$.MODULE$));
+        OPALLogger.updateLogger(log.logContext(),
+                new ConsoleOPALLogger(false, Fatal$.MODULE$));
+
         this.project = Project.apply(file, log.logContext(), createConfig(mainClass));
-        OPALLogger.updateLogger(project.logContext(), new ConsoleOPALLogger(false, Fatal$.MODULE$));
+        OPALLogger.updateLogger(project.logContext(),
+                new ConsoleOPALLogger(false, Fatal$.MODULE$));
+
         this.callGraph = generateCallGraph(project, algorithm);
     }
 
