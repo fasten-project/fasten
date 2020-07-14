@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import eu.fasten.analyzer.javacgopalv3.data.OPALMethod;
+import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALMethod;
 import eu.fasten.core.data.FastenJavaURI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;

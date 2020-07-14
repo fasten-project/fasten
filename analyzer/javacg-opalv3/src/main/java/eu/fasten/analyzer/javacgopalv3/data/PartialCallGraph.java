@@ -20,6 +20,8 @@ package eu.fasten.analyzer.javacgopalv3.data;
 
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALType;
 import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
 import java.io.FileNotFoundException;
@@ -37,7 +39,7 @@ import scala.collection.JavaConverters;
 
 /**
  * Call graphs that are not still fully resolved. i.e. isolated call graphs which within-artifact
- * calls (edges) are known as internal calls and Cross-artifact calls are known as external. calls.
+ * calls (edges) are known as internal calls and Cross-artifact calls are known as external calls.
  */
 public class PartialCallGraph {
 
@@ -97,7 +99,8 @@ public class PartialCallGraph {
                         .orElseThrow(RuntimeException::new), mainClass, algorithm));
 
         return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
-                coordinate.getVersionConstraint(), timestamp, partialCallGraph.getNodeCount(), "OPAL",
+                coordinate.getVersionConstraint(), timestamp,
+                partialCallGraph.getNodeCount(), "OPAL",
                 partialCallGraph.getClassHierarchy(),
                 partialCallGraph.getGraph());
     }
@@ -109,7 +112,7 @@ public class PartialCallGraph {
      * @param project OPAL {@link Project}
      * @return class hierarchy for a given package
      * @implNote Inside {@link OPALType} all of the methods are indexed, it means one can use the
-     * ids assigned to each method instead of the method itself.
+     *      ids assigned to each method instead of the method itself.
      */
     private OPALClassHierarchy createInternalCHA(final Project<?> project) {
         final Map<ObjectType, OPALType> result = new HashMap<>();
@@ -120,16 +123,14 @@ public class PartialCallGraph {
 
         for (final var classFile : objs) {
             final var currentClass = classFile.thisType();
-            final var methods =
-                    getMethodsMap(methodNum.get(), JavaConverters.asJavaIterable(classFile.methods()));
-
-            final var superClasses = OPALType.extractSuperClasses(project.classHierarchy(), currentClass);
+            final var methods = getMethodsMap(methodNum.get(),
+                    JavaConverters.asJavaIterable(classFile.methods()));
 
             final var type = new OPALType(methods,
-                    superClasses,
+                    OPALType.extractSuperClasses(project.classHierarchy(), currentClass),
                     OPALType.extractSuperInterfaces(project.classHierarchy(), currentClass),
-                    classFile.sourceFile()
-                            .getOrElse(JavaToScalaConverter.asScalaFunction0OptionString("NotFound")));
+                    classFile.sourceFile().getOrElse(JavaToScalaConverter
+                            .asScalaFunction0OptionString("NotFound")));
 
             result.put(currentClass, type);
             methodNum.addAndGet(methods.size());

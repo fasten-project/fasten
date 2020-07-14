@@ -23,10 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopalv3.data.CallGraphConstructor;
-import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopalv3.data.OPALCallSite;
-import eu.fasten.analyzer.javacgopalv3.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALCallSite;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;

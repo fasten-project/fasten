@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopalv3.data;
+package eu.fasten.analyzer.javacgopalv3.data.analysis;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -85,13 +85,13 @@ public class OPALType {
      *
      * @param projectHierarchy class hierarchy of the project
      * @param methods          methods belonging to this type
-     * @param aClass           object type
+     * @param klass            object type
      * @return map of FastenURI and corresponding Types
      */
     public static Map<FastenURI, ExtendedRevisionCallGraph.Type> getType(ClassHierarchy projectHierarchy,
                                                                          final Map<DeclaredMethod, Integer> methods,
-                                                                         final ObjectType aClass) {
-        final var superTypes = extractSuperClasses(projectHierarchy, aClass);
+                                                                         final ObjectType klass) {
+        final var superTypes = extractSuperClasses(projectHierarchy, klass);
 
         final LinkedList<FastenURI> superClassesURIs;
         if (superTypes != null) {
@@ -100,31 +100,31 @@ public class OPALType {
             superClassesURIs = new LinkedList<>();
         }
 
-        return Map.of(OPALMethod.getTypeURI(aClass),
+        return Map.of(OPALMethod.getTypeURI(klass),
                 new ExtendedRevisionCallGraph.Type("",
                         toURIDeclaredMethods(methods),
                         superClassesURIs,
-                        toURIInterfaces(extractSuperInterfaces(projectHierarchy, aClass))));
+                        toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass))));
     }
 
     /**
      * Get a map of {@link FastenURI} of Type and
      * corresponding {@link ExtendedRevisionCallGraph.Type}.
      *
-     * @param type   OPAL type
-     * @param aClass object type
+     * @param type  OPAL type
+     * @param klass object type
      * @return map of FastenURI and corresponding Types
      */
     public static Map<FastenURI, ExtendedRevisionCallGraph.Type> getType(final OPALType type,
-                                                                         final ObjectType aClass) {
+                                                                         final ObjectType klass) {
         final LinkedList<FastenURI> superClassesURIs;
         if (type.getSuperClasses() != null) {
             superClassesURIs = toURIClasses(type.getSuperClasses());
         } else {
             superClassesURIs = new LinkedList<>();
         }
-        final var typeUri = OPALMethod.getTypeURI(aClass);
-        return Map.of(typeUri,
+
+        return Map.of(OPALMethod.getTypeURI(klass),
                 new ExtendedRevisionCallGraph.Type(type.getSourceFileName(),
                         toURIMethods(type.getMethods()),
                         superClassesURIs,
@@ -153,7 +153,7 @@ public class OPALType {
     }
 
     /**
-     * Converts a chain of interfaces to Fasten URIs
+     * Converts a chain of interfaces to Fasten URIs.
      *
      * @param types interfaces
      * @return list of URIs
@@ -167,7 +167,7 @@ public class OPALType {
     }
 
     /**
-     * Converts a chain of classes to Fasten URIs
+     * Converts a chain of classes to Fasten URIs.
      *
      * @param types chain of types
      * @return list of URIs
@@ -175,8 +175,8 @@ public class OPALType {
     public static LinkedList<FastenURI> toURIClasses(final Chain<ObjectType> types) {
         final LinkedList<FastenURI> result = new LinkedList<>();
 
-        types.foreach(JavaToScalaConverter.asScalaFunction1(
-                klass -> result.add(OPALMethod.getTypeURI((ObjectType) klass))));
+        types.foreach(JavaToScalaConverter.asScalaFunction1(klass -> result
+                .add(OPALMethod.getTypeURI((ObjectType) klass))));
 
         return result;
     }
@@ -212,8 +212,9 @@ public class OPALType {
      * @return method URI
      */
     private static FastenURI getUri(Method method) {
-        return OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
-                method.name(), method.descriptor());
+        return OPALMethod
+                .toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                        method.name(), method.descriptor());
     }
 
     /**
