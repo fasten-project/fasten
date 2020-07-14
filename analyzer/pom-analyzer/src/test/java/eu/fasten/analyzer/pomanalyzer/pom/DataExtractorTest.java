@@ -50,6 +50,14 @@ public class DataExtractorTest {
                 "   },\n" +
                 "   \"dependencies\":[\n" +
                 "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"1.3\",\n" +
+                "               \"lowerBound\":\"1.3\"\n" +
+                "            }\n" +
+                "         ],\n" +
                 "         \"groupId\":\"org.hamcrest\",\n" +
                 "         \"scope\":\"\",\n" +
                 "         \"classifier\":\"\",\n" +
@@ -58,18 +66,158 @@ public class DataExtractorTest {
                 "\n" +
                 "         ],\n" +
                 "         \"optional\":false,\n" +
-                "         \"type\":\"\",\n" +
-                "         \"version\":\"1.3\"\n" +
+                "         \"type\":\"\"\n" +
                 "      }\n" +
                 "   ]\n" +
-                "}\n"));
+                "}"));
         var actual = dataExtractor.extractDependencyData("junit", "junit", "4.12");
         assertEquals(expected, actual);
     }
 
     @Test
     public void extractDependencyDataWithParentPropertiesTest() {
-        var expected = DependencyData.fromJSON(new JSONObject("{\"dependencyManagement\":{\"dependencies\":[]},\"dependencies\":[{\"groupId\":\"javax.sip\",\"scope\":\"provided\",\"classifier\":\"\",\"artifactId\":\"jain-sip-ri\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"*\"},{\"groupId\":\"org.mobicents.ha.javax.sip\",\"scope\":\"\",\"classifier\":\"\",\"artifactId\":\"restcomm-jain-sip-ha-core\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"1.6.6\"},{\"groupId\":\"com.hazelcast\",\"scope\":\"\",\"classifier\":\"\",\"artifactId\":\"hazelcast\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"3.4.1\"},{\"groupId\":\"log4j\",\"scope\":\"\",\"classifier\":\"\",\"artifactId\":\"log4j\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"1.2.17\"},{\"groupId\":\"junit\",\"scope\":\"test\",\"classifier\":\"\",\"artifactId\":\"junit\",\"exclusions\":[],\"optional\":false,\"type\":\"\",\"version\":\"3.8.1\"},{\"groupId\":\"org.mobicents.tools\",\"scope\":\"test\",\"classifier\":\"\",\"artifactId\":\"sip-balancer-jar\",\"exclusions\":[{\"groupId\":\"org.jboss.netty\",\"artifactId\":\"netty\"},{\"groupId\":\"org.jboss.cache\",\"artifactId\":\"jbosscache-core\"},{\"groupId\":\"org.jboss.cache\",\"artifactId\":\"jbosscache-pojo\"},{\"groupId\":\"jgroups\",\"artifactId\":\"jgroups\"},{\"groupId\":\"com.sun.jdmk\",\"artifactId\":\"jmxtools\"}],\"optional\":false,\"type\":\"\",\"version\":\"8.1.147\"}]}"));
+        var expected = DependencyData.fromJSON(new JSONObject("{\n" +
+                "   \"dependencyManagement\":{\n" +
+                "      \"dependencies\":[\n" +
+                "\n" +
+                "      ]\n" +
+                "   },\n" +
+                "   \"dependencies\":[\n" +
+                "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"*\",\n" +
+                "               \"lowerBound\":\"*\"\n" +
+                "            }\n" +
+                "         ],\n" +
+                "         \"groupId\":\"javax.sip\",\n" +
+                "         \"scope\":\"provided\",\n" +
+                "         \"classifier\":\"\",\n" +
+                "         \"artifactId\":\"jain-sip-ri\",\n" +
+                "         \"exclusions\":[\n" +
+                "\n" +
+                "         ],\n" +
+                "         \"optional\":false,\n" +
+                "         \"type\":\"\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"1.6.6\",\n" +
+                "               \"lowerBound\":\"1.6.6\"\n" +
+                "            }\n" +
+                "         ],\n" +
+                "         \"groupId\":\"org.mobicents.ha.javax.sip\",\n" +
+                "         \"scope\":\"\",\n" +
+                "         \"classifier\":\"\",\n" +
+                "         \"artifactId\":\"restcomm-jain-sip-ha-core\",\n" +
+                "         \"exclusions\":[\n" +
+                "\n" +
+                "         ],\n" +
+                "         \"optional\":false,\n" +
+                "         \"type\":\"\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"3.4.1\",\n" +
+                "               \"lowerBound\":\"3.4.1\"\n" +
+                "            }\n" +
+                "         ],\n" +
+                "         \"groupId\":\"com.hazelcast\",\n" +
+                "         \"scope\":\"\",\n" +
+                "         \"classifier\":\"\",\n" +
+                "         \"artifactId\":\"hazelcast\",\n" +
+                "         \"exclusions\":[\n" +
+                "\n" +
+                "         ],\n" +
+                "         \"optional\":false,\n" +
+                "         \"type\":\"\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"1.2.17\",\n" +
+                "               \"lowerBound\":\"1.2.17\"\n" +
+                "            }\n" +
+                "         ],\n" +
+                "         \"groupId\":\"log4j\",\n" +
+                "         \"scope\":\"\",\n" +
+                "         \"classifier\":\"\",\n" +
+                "         \"artifactId\":\"log4j\",\n" +
+                "         \"exclusions\":[\n" +
+                "\n" +
+                "         ],\n" +
+                "         \"optional\":false,\n" +
+                "         \"type\":\"\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"3.8.1\",\n" +
+                "               \"lowerBound\":\"3.8.1\"\n" +
+                "            }\n" +
+                "         ],\n" +
+                "         \"groupId\":\"junit\",\n" +
+                "         \"scope\":\"test\",\n" +
+                "         \"classifier\":\"\",\n" +
+                "         \"artifactId\":\"junit\",\n" +
+                "         \"exclusions\":[\n" +
+                "\n" +
+                "         ],\n" +
+                "         \"optional\":false,\n" +
+                "         \"type\":\"\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"8.1.147\",\n" +
+                "               \"lowerBound\":\"8.1.147\"\n" +
+                "            }\n" +
+                "         ],\n" +
+                "         \"groupId\":\"org.mobicents.tools\",\n" +
+                "         \"scope\":\"test\",\n" +
+                "         \"classifier\":\"\",\n" +
+                "         \"artifactId\":\"sip-balancer-jar\",\n" +
+                "         \"exclusions\":[\n" +
+                "            {\n" +
+                "               \"groupId\":\"org.jboss.netty\",\n" +
+                "               \"artifactId\":\"netty\"\n" +
+                "            },\n" +
+                "            {\n" +
+                "               \"groupId\":\"org.jboss.cache\",\n" +
+                "               \"artifactId\":\"jbosscache-core\"\n" +
+                "            },\n" +
+                "            {\n" +
+                "               \"groupId\":\"org.jboss.cache\",\n" +
+                "               \"artifactId\":\"jbosscache-pojo\"\n" +
+                "            },\n" +
+                "            {\n" +
+                "               \"groupId\":\"jgroups\",\n" +
+                "               \"artifactId\":\"jgroups\"\n" +
+                "            },\n" +
+                "            {\n" +
+                "               \"groupId\":\"com.sun.jdmk\",\n" +
+                "               \"artifactId\":\"jmxtools\"\n" +
+                "            }\n" +
+                "         ],\n" +
+                "         \"optional\":false,\n" +
+                "         \"type\":\"\"\n" +
+                "      }\n" +
+                "   ]\n" +
+                "}"));
         var actual = dataExtractor.extractDependencyData("org.mobicents.ha.javax.sip", "restcomm-jain-sip-ha-hazelcast-backend", "1.6.6");
         assertEquals(expected, actual);
     }
@@ -84,6 +232,14 @@ public class DataExtractorTest {
                 "   },\n" +
                 "   \"dependencies\":[\n" +
                 "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"1.3\",\n" +
+                "               \"lowerBound\":\"1.3\"\n" +
+                "            }\n" +
+                "         ],\n" +
                 "         \"groupId\":\"org.hamcrest\",\n" +
                 "         \"scope\":\"\",\n" +
                 "         \"classifier\":\"\",\n" +
@@ -92,11 +248,10 @@ public class DataExtractorTest {
                 "\n" +
                 "         ],\n" +
                 "         \"optional\":false,\n" +
-                "         \"type\":\"\",\n" +
-                "         \"version\":\"1.3\"\n" +
+                "         \"type\":\"\"\n" +
                 "      }\n" +
                 "   ]\n" +
-                "}\n"));
+                "}"));
         var actualDependencyData = dataExtractor.extractDependencyData("junit", "junit", "4.12");
         var expectedRepoUrl = "http://github.com/junit-team/junit/tree/master";
         var actualRepoUrl = dataExtractor.extractRepoUrl("junit", "junit", "4.12");

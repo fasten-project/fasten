@@ -56,6 +56,14 @@ public class POMAnalyzerPluginTest {
                 "   },\n" +
                 "   \"dependencies\":[\n" +
                 "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"1.3\",\n" +
+                "               \"lowerBound\":\"1.3\"\n" +
+                "            }\n" +
+                "         ],\n" +
                 "         \"groupId\":\"org.hamcrest\",\n" +
                 "         \"scope\":\"\",\n" +
                 "         \"classifier\":\"\",\n" +
@@ -64,11 +72,10 @@ public class POMAnalyzerPluginTest {
                 "\n" +
                 "         ],\n" +
                 "         \"optional\":false,\n" +
-                "         \"type\":\"\",\n" +
-                "         \"version\":\"1.3\"\n" +
+                "         \"type\":\"\"\n" +
                 "      }\n" +
                 "   ]\n" +
-                "}\n"));
+                "}"));
         pomAnalyzer.consume(record);
         var output = pomAnalyzer.produce();
         assertTrue(output.isPresent());
@@ -92,6 +99,14 @@ public class POMAnalyzerPluginTest {
                 "   },\n" +
                 "   \"dependencies\":[\n" +
                 "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"1.3\",\n" +
+                "               \"lowerBound\":\"1.3\"\n" +
+                "            }\n" +
+                "         ],\n" +
                 "         \"groupId\":\"org.hamcrest\",\n" +
                 "         \"scope\":\"\",\n" +
                 "         \"classifier\":\"\",\n" +
@@ -100,11 +115,10 @@ public class POMAnalyzerPluginTest {
                 "\n" +
                 "         ],\n" +
                 "         \"optional\":false,\n" +
-                "         \"type\":\"\",\n" +
-                "         \"version\":\"1.3\"\n" +
+                "         \"type\":\"\"\n" +
                 "      }\n" +
                 "   ]\n" +
-                "}\n"));
+                "}"));
         final var packageId = 1L;
         Mockito.when(metadataDao.insertPackage("junit.junit", "mvn", null, repoUrl, null))
                 .thenReturn(packageId);
