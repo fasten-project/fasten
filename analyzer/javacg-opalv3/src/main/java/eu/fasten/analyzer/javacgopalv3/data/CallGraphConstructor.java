@@ -53,11 +53,16 @@ public class CallGraphConstructor {
         OPALLogger.updateLogger(GlobalLogContext$.MODULE$,
                 new ConsoleOPALLogger(false, Fatal$.MODULE$));
 
-        final var log = Project.apply(file);
-        OPALLogger.updateLogger(log.logContext(),
-                new ConsoleOPALLogger(false, Fatal$.MODULE$));
+        if (mainClass == null || mainClass.isEmpty()) {
+            this.project = Project.apply(file);
 
-        this.project = Project.apply(file, log.logContext(), createConfig(mainClass));
+        } else {
+            final var log = Project.apply(file);
+            OPALLogger.updateLogger(log.logContext(),
+                    new ConsoleOPALLogger(false, Fatal$.MODULE$));
+
+            this.project = Project.apply(file, log.logContext(), createConfig(mainClass));
+        }
         OPALLogger.updateLogger(project.logContext(),
                 new ConsoleOPALLogger(false, Fatal$.MODULE$));
 
@@ -79,37 +84,18 @@ public class CallGraphConstructor {
      * @return configuration for running call graph generator
      */
     private Config createConfig(String mainClass) {
-        Config baseConfig = ConfigFactory.load()
+        return ConfigFactory.load()
                 .withValue("org.opalj.br.reader.ClassFileReader.Invokedynamic.rewrite",
-                        ConfigValueFactory.fromAnyRef(true));
-
-        Config config;
-        if (mainClass == null || mainClass.isEmpty()) {
-            config = baseConfig
-                    .withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis",
-                            ConfigValueFactory
-                                    .fromAnyRef("org.opalj.br.analyses.cg.LibraryEntryPointsFinder"))
-
-                    .withValue("org.opalj.br.analyses.cg.InitialInstantiatedTypesKey.analysis",
-                            ConfigValueFactory
-                                    .fromAnyRef("org.opalj.br.analyses.cg.LibraryInstantiatedTypesFinder")
-                    );
-        } else {
-            config = baseConfig
-                    .withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis",
-                            ConfigValueFactory
-                                    .fromAnyRef("org.opalj.br.analyses.cg.ConfigurationEntryPointsFinder"))
-
-                    .withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.entryPoints",
-                            ConfigValueFactory.fromIterable(Stream.of(ConfigValueFactory.fromMap(
-                                    Map.of("declaringClass", mainClass.replace('.', '/'), "name", "main")))
-                                    .collect(Collectors.toList())))
-
-                    .withValue("org.opalj.br.analyses.cg.InitialInstantiatedTypesKey.analysis",
-                            ConfigValueFactory.fromAnyRef("org.opalj.br.analyses.cg.ApplicationInstantiatedTypesFinder"));
-        }
-
-        return config;
+                        ConfigValueFactory.fromAnyRef(true))
+                .withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis",
+                        ConfigValueFactory
+                                .fromAnyRef("org.opalj.br.analyses.cg.ConfigurationEntryPointsFinder"))
+                .withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.entryPoints",
+                        ConfigValueFactory.fromIterable(Stream.of(ConfigValueFactory.fromMap(
+                                Map.of("declaringClass", mainClass.replace('.', '/'), "name", "main")))
+                                .collect(Collectors.toList())))
+                .withValue("org.opalj.br.analyses.cg.InitialInstantiatedTypesKey.analysis",
+                        ConfigValueFactory.fromAnyRef("org.opalj.br.analyses.cg.ApplicationInstantiatedTypesFinder"));
     }
 
     /**
