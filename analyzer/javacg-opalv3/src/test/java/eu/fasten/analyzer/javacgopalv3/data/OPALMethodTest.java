@@ -146,10 +146,9 @@ class OPALMethodTest {
         var type = Mockito.mock(Type.class);
         Mockito.when(type.asBaseType()).thenReturn(baseType);
         Mockito.when(type.isBaseType()).thenReturn(true);
-        var decoded = URLDecoder.decode("%252528%25255DLjava$lang$String%25253A%252529V" +
-            "%25253A14$Lambda", StandardCharsets.UTF_8);
 
-        assertEquals(FastenJavaURI.create("/some.package/" + decoded), OPALMethod.getTypeURI(type));
+        assertEquals(FastenJavaURI.create("/some.package/%252528%25255DLjava$lang$String%25253A%252529V%25253A14$Lambda"),
+                OPALMethod.getTypeURI(type));
     }
 
     @Test
