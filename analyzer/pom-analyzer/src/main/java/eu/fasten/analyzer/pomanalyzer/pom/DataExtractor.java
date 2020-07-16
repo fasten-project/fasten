@@ -109,26 +109,122 @@ public class DataExtractor {
             }
             var pom = new SAXReader().read(pomByteStream);
             Map<String, String> properties = this.extractProperties(pom.getRootElement());
+            List<DependencyManagement> parentDependencyManagements = this
+                    .extractParentDependencyManagement(pom.getRootElement());
+            for (int i = 0; i < parentDependencyManagements.size(); i++) {
+                var depManagement = parentDependencyManagements.get(i);
+                var resolvedDependencies = resolveDependencyVersions(depManagement.dependencies,
+                        properties, new ArrayList<>());
+                parentDependencyManagements.set(i, new DependencyManagement(resolvedDependencies));
+            }
             var dependencyManagementNode = pom.getRootElement()
                     .selectSingleNode("./*[local-name()='dependencyManagement']");
             DependencyManagement dependencyManagement;
             if (dependencyManagementNode != null) {
                 var dependenciesNode = dependencyManagementNode
                         .selectSingleNode("./*[local-name()='dependencies']");
-                var dependencies = extractDependencies(dependenciesNode, properties);
+                var dependencies = extractDependencies(dependenciesNode);
+                dependencies = this.resolveDependencyVersions(dependencies, properties,
+                        parentDependencyManagements);
                 dependencyManagement = new DependencyManagement(dependencies);
             } else {
                 dependencyManagement = new DependencyManagement(new ArrayList<>());
             }
             var dependenciesNode = pom.getRootElement()
                     .selectSingleNode("./*[local-name()='dependencies']");
-            var dependencies = extractDependencies(dependenciesNode, properties);
+            var dependencies = extractDependencies(dependenciesNode);
+            dependencies = this.resolveDependencyVersions(dependencies, properties,
+                    parentDependencyManagements);
             dependencyData = new DependencyData(dependencyManagement, dependencies);
         } catch (FileNotFoundException | DocumentException e) {
             logger.error("Error parsing POM file for: "
                     + groupId + ":" + artifactId + ":" + version);
         }
         return dependencyData;
+    }
+
+    private List<Dependency> resolveDependencyVersions(List<Dependency> dependencies,
+                                                       Map<String, String> properties,
+                                                       List<DependencyManagement> depManagements) {
+        var resolvedDependencies = new ArrayList<Dependency>();
+        for (var dependency : dependencies) {
+            if (dependency.versionConstraints.get(0).lowerBound.equals("*")) {
+                for (var depManagement : depManagements) {
+                    for (var parentDep : depManagement.dependencies) {
+                        if (parentDep.artifactId.equals(dependency.artifactId)
+                                && parentDep.groupId.equals(dependency.groupId)) {
+                            resolvedDependencies.add(new Dependency(
+                                    dependency.artifactId,
+                                    dependency.groupId,
+                                    parentDep.versionConstraints,
+                                    dependency.exclusions,
+                                    dependency.scope,
+                                    dependency.optional,
+                                    dependency.type,
+                                    dependency.classifier
+                            ));
+                        }
+                    }
+                }
+            } else if (dependency.versionConstraints.get(0).lowerBound.startsWith("$")) {
+                var property = dependency.versionConstraints.get(0).lowerBound;
+                var version = "";
+                for (var entry : properties.entrySet()) {
+                    if (entry.getKey().equals(property.substring(2, property.length() - 1))) {
+                        version = entry.getValue();
+                    }
+                }
+                resolvedDependencies.add(new Dependency(
+                        dependency.artifactId,
+                        dependency.groupId,
+                        version,
+                        dependency.exclusions,
+                        dependency.scope,
+                        dependency.optional,
+                        dependency.type,
+                        dependency.classifier
+                ));
+            } else {
+                resolvedDependencies.add(dependency);
+            }
+        }
+        return resolvedDependencies;
+    }
+
+    private List<DependencyManagement> extractParentDependencyManagement(Node pomRoot) {
+        var dependencyManagements = new ArrayList<DependencyManagement>();
+        var parentNode = pomRoot.selectSingleNode("./*[local-name() ='parent']");
+        if (parentNode != null) {
+            var parentGroup = parentNode
+                    .selectSingleNode("./*[local-name() ='groupId']").getText();
+            var parentArtifact = parentNode
+                    .selectSingleNode("./*[local-name() ='artifactId']").getText();
+            var parentVersion = parentNode
+                    .selectSingleNode("./*[local-name() ='version']").getText();
+            try {
+                var parentPom = new SAXReader().read(new ByteArrayInputStream(
+                        this.downloadPom(parentArtifact, parentGroup, parentVersion)
+                                .orElseThrow(RuntimeException::new).getBytes())).getRootElement();
+                var dependencyManagementNode = parentPom
+                        .selectSingleNode("./*[local-name()='dependencyManagement']");
+                DependencyManagement dependencyManagement;
+                if (dependencyManagementNode != null) {
+                    var dependenciesNode = dependencyManagementNode
+                            .selectSingleNode("./*[local-name()='dependencies']");
+                    var dependencies = extractDependencies(dependenciesNode);
+                    dependencyManagement = new DependencyManagement(dependencies);
+                } else {
+                    dependencyManagement = new DependencyManagement(new ArrayList<>());
+                }
+                dependencyManagements.add(dependencyManagement);
+                dependencyManagements.addAll(
+                        this.extractParentDependencyManagement(parentPom));
+            } catch (DocumentException | FileNotFoundException e) {
+                logger.error("Error parsing POM file for: "
+                        + parentGroup + ":" + parentArtifact + ":" + parentVersion);
+            }
+        }
+        return dependencyManagements;
     }
 
     private Map<String, String> extractProperties(Node pomRoot) {
@@ -163,8 +259,7 @@ public class DataExtractor {
         return properties;
     }
 
-    private List<Dependency> extractDependencies(Node dependenciesNode,
-                                                 Map<String, String> properties) {
+    private List<Dependency> extractDependencies(Node dependenciesNode) {
         ArrayList<Dependency> dependencies = new ArrayList<>();
         if (dependenciesNode != null) {
             for (var dependencyNode : dependenciesNode
@@ -201,15 +296,9 @@ public class DataExtractor {
                         .selectSingleNode("./*[local-name()='classifier']");
                 String version;
                 if (versionNode != null) {
-                    version = versionNode.getStringValue().startsWith("$")
-                            ? properties.get(versionNode.getStringValue()
-                            .substring(2, versionNode.getStringValue().length() - 1)) :
-                            versionNode.getStringValue();
-                    if (version == null) {
-                        version = "*";
-                    }
+                    version = versionNode.getText();
                 } else {
-                    version = "*";
+                    version = null;
                 }
                 dependencies.add(new Dependency(
                         artifactNode.getText(),

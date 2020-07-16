@@ -88,8 +88,8 @@ public class DataExtractorTest {
                 "            {\n" +
                 "               \"isUpperHardRequirement\":false,\n" +
                 "               \"isLowerHardRequirement\":false,\n" +
-                "               \"upperBound\":\"*\",\n" +
-                "               \"lowerBound\":\"*\"\n" +
+                "               \"upperBound\":\"1.2.259\",\n" +
+                "               \"lowerBound\":\"1.2.259\"\n" +
                 "            }\n" +
                 "         ],\n" +
                 "         \"groupId\":\"javax.sip\",\n" +

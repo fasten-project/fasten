@@ -317,6 +317,12 @@ public class Dependency {
          * @return List of Version Constraints
          */
         public static List<VersionConstraint> resolveMultipleVersionConstraints(String spec) {
+            if (spec == null) {
+                return List.of(new VersionConstraint("*"));
+            }
+            if (spec.startsWith("$")) {
+                return List.of(new VersionConstraint(spec));
+            }
             final var versionRangesCount = (StringUtils.countMatches(spec, ",") + 1) / 2;
             var versionConstraints = new ArrayList<VersionConstraint>(versionRangesCount);
             int count = 0;
