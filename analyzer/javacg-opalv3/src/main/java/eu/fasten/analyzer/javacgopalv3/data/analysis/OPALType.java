@@ -147,7 +147,7 @@ public class OPALType {
             result.put(entry.getValue(), new ExtendedRevisionCallGraph.Node(
                     OPALMethod.toCanonicalSchemelessURI(null,
                             method.declaringClassType(), method.name(),
-                            method.descriptor()), new HashMap<>()));
+                            method.descriptor(), false), new HashMap<>()));
         }
         return result;
     }
@@ -214,7 +214,7 @@ public class OPALType {
     private static FastenURI getUri(Method method) {
         return OPALMethod
                 .toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
-                        method.name(), method.descriptor());
+                        method.name(), method.descriptor(), true);
     }
 
     /**

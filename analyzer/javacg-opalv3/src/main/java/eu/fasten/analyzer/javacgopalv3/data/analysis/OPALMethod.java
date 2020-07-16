@@ -48,11 +48,14 @@ public class OPALMethod {
     public static FastenURI toCanonicalSchemelessURI(final String product,
                                                      final ReferenceType klass,
                                                      final String method,
-                                                     final MethodDescriptor descriptor)
+                                                     final MethodDescriptor descriptor,
+                                                     final boolean additionalClassEncoding)
             throws IllegalArgumentException, NullPointerException {
         final var javaURI = FastenJavaURI.create(null, product, null,
                 getPackageName(klass),
-                getClassName(klass),
+                additionalClassEncoding
+                        ? FastenJavaURI.pctEncodeArg(getClassName(klass))
+                        : getClassName(klass),
                 getMethodName(getClassName(klass), method),
                 getParametersURI(JavaConverters.seqAsJavaList(descriptor.parameterTypes())),
                 getTypeURI(descriptor.returnType())
@@ -177,8 +180,7 @@ public class OPALMethod {
                         .concat(threeTimesPct("[]"));
 
             } else if (parameter.asObjectType().simpleName().contains("Lambda")) {
-                return FastenJavaURI.pctEncodeArg(
-                        threeTimesPct(parameter.asObjectType().simpleName()));
+                return threeTimesPct(parameter.asObjectType().simpleName());
             } else {
                 return parameter.asObjectType().simpleName();
             }

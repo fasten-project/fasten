@@ -83,7 +83,7 @@ class OPALMethodTest {
         Mockito.when(descriptor.returnType()).thenReturn(returnType);
 
         assertEquals(FastenJavaURI.create("//productName/some.package/typeName.methodName(%2Fparameter.package%2FparameterName)%2Freturn.package%2FtypeReturnName"),
-                OPALMethod.toCanonicalSchemelessURI("productName", type, "methodName", descriptor));
+                OPALMethod.toCanonicalSchemelessURI("productName", type, "methodName", descriptor, false));
     }
 
     @Test
@@ -328,8 +328,7 @@ class OPALMethodTest {
         Mockito.when(type.isArrayType()).thenReturn(false);
         Mockito.when(type.asObjectType()).thenReturn(objectType);
 
-        var encoded = FastenJavaURI.pctEncodeArg(
-                threeTimesPct("LambdaTestName%"));
+        var encoded = threeTimesPct("LambdaTestName%");
 
         assertEquals(encoded, OPALMethod.getClassName(type));
     }
