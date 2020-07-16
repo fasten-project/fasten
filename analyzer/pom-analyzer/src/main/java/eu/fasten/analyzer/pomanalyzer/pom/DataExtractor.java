@@ -37,6 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.dom4j.DocumentException;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
@@ -108,9 +110,9 @@ public class DataExtractor {
                                 .orElseThrow(RuntimeException::new).getBytes());
             }
             var pom = new SAXReader().read(pomByteStream);
-            Map<String, String> properties = this.extractProperties(pom.getRootElement());
-            List<DependencyManagement> parentDependencyManagements = this
-                    .extractParentDependencyManagement(pom.getRootElement());
+            var versionResolutionData = extractDependencyResolutionMetadata(pom.getRootElement());
+            var properties = versionResolutionData.getLeft();
+            var parentDependencyManagements = versionResolutionData.getRight();
             for (int i = 0; i < parentDependencyManagements.size(); i++) {
                 var depManagement = parentDependencyManagements.get(i);
                 var resolvedDependencies = resolveDependencyVersions(depManagement.dependencies,
@@ -191,44 +193,9 @@ public class DataExtractor {
         return resolvedDependencies;
     }
 
-    private List<DependencyManagement> extractParentDependencyManagement(Node pomRoot) {
-        var dependencyManagements = new ArrayList<DependencyManagement>();
-        var parentNode = pomRoot.selectSingleNode("./*[local-name() ='parent']");
-        if (parentNode != null) {
-            var parentGroup = parentNode
-                    .selectSingleNode("./*[local-name() ='groupId']").getText();
-            var parentArtifact = parentNode
-                    .selectSingleNode("./*[local-name() ='artifactId']").getText();
-            var parentVersion = parentNode
-                    .selectSingleNode("./*[local-name() ='version']").getText();
-            try {
-                var parentPom = new SAXReader().read(new ByteArrayInputStream(
-                        this.downloadPom(parentArtifact, parentGroup, parentVersion)
-                                .orElseThrow(RuntimeException::new).getBytes())).getRootElement();
-                var dependencyManagementNode = parentPom
-                        .selectSingleNode("./*[local-name()='dependencyManagement']");
-                DependencyManagement dependencyManagement;
-                if (dependencyManagementNode != null) {
-                    var dependenciesNode = dependencyManagementNode
-                            .selectSingleNode("./*[local-name()='dependencies']");
-                    var dependencies = extractDependencies(dependenciesNode);
-                    dependencyManagement = new DependencyManagement(dependencies);
-                } else {
-                    dependencyManagement = new DependencyManagement(new ArrayList<>());
-                }
-                dependencyManagements.add(dependencyManagement);
-                dependencyManagements.addAll(
-                        this.extractParentDependencyManagement(parentPom));
-            } catch (DocumentException | FileNotFoundException e) {
-                logger.error("Error parsing POM file for: "
-                        + parentGroup + ":" + parentArtifact + ":" + parentVersion);
-            }
-        }
-        return dependencyManagements;
-    }
-
-    private Map<String, String> extractProperties(Node pomRoot) {
+    private Pair<Map<String, String>, List<DependencyManagement>> extractDependencyResolutionMetadata(Node pomRoot) {
         Map<String, String> properties = new HashMap<>();
+        var dependencyManagements = new ArrayList<DependencyManagement>();
         var propertiesRoot = pomRoot.selectSingleNode("./*[local-name() ='properties']");
         if (propertiesRoot != null) {
             for (final var property : propertiesRoot.selectNodes("*")) {
@@ -247,16 +214,30 @@ public class DataExtractor {
                 var parentPom = new SAXReader().read(new ByteArrayInputStream(
                         this.downloadPom(parentArtifact, parentGroup, parentVersion)
                                 .orElseThrow(RuntimeException::new).getBytes())).getRootElement();
-                var parentProperties = this.extractProperties(parentPom);
+                var parentMetadata = this.extractDependencyResolutionMetadata(parentPom);
+                var parentProperties = parentMetadata.getLeft();
                 for (var entry : parentProperties.entrySet()) {
                     properties.put(entry.getKey(), entry.getValue());
                 }
+                var dependencyManagementNode = parentPom
+                        .selectSingleNode("./*[local-name()='dependencyManagement']");
+                DependencyManagement dependencyManagement;
+                if (dependencyManagementNode != null) {
+                    var dependenciesNode = dependencyManagementNode
+                            .selectSingleNode("./*[local-name()='dependencies']");
+                    var dependencies = extractDependencies(dependenciesNode);
+                    dependencyManagement = new DependencyManagement(dependencies);
+                } else {
+                    dependencyManagement = new DependencyManagement(new ArrayList<>());
+                }
+                dependencyManagements.add(dependencyManagement);
+                dependencyManagements.addAll(parentMetadata.getRight());
             } catch (DocumentException | FileNotFoundException e) {
                 logger.error("Error parsing POM file for: "
                         + parentGroup + ":" + parentArtifact + ":" + parentVersion);
             }
         }
-        return properties;
+        return new ImmutablePair<>(properties, dependencyManagements);
     }
 
     private List<Dependency> extractDependencies(Node dependenciesNode) {
