@@ -105,10 +105,6 @@ public class OPALMethod {
      * @return type in FastenJavaURI format.
      */
     public static FastenJavaURI getTypeURI(final Type returnType) {
-        if (getClassName(returnType).contains("Lambda")) {
-            return new FastenJavaURI("/" + getPackageName(returnType) + "/"
-                    + URLDecoder.decode(getClassName(returnType), StandardCharsets.UTF_8));
-        }
         return new FastenJavaURI("/" + getPackageName(returnType)
                 + "/" + getClassName(returnType));
     }

@@ -61,11 +61,12 @@ public class CallGraphConstructor {
             OPALLogger.updateLogger(log.logContext(),
                     new ConsoleOPALLogger(false, Fatal$.MODULE$));
 
-            this.project = Project.apply(file, log.logContext(), createConfig(mainClass));
+            this.project = Project
+                    .apply(file, log.logContext().successor(), createConfig(mainClass));
         }
+
         OPALLogger.updateLogger(project.logContext(),
                 new ConsoleOPALLogger(false, Fatal$.MODULE$));
-
         this.callGraph = generateCallGraph(project, algorithm);
     }
 
