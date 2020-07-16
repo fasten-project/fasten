@@ -55,6 +55,7 @@ public class POMAnalyzerPlugin extends Plugin {
         private String version = null;
         private String repoUrl = null;
         private DependencyData dependencyData = null;
+        private String commitTag = null;
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
         private boolean processedRecord = false;
@@ -82,6 +83,7 @@ public class POMAnalyzerPlugin extends Plugin {
             version = null;
             repoUrl = null;
             dependencyData = null;
+            commitTag = null;
             this.processedRecord = false;
             this.restartTransaction = false;
             logger.info("Consumed: " + record);
@@ -95,6 +97,8 @@ public class POMAnalyzerPlugin extends Plugin {
             logger.info("Extracted repository URL " + repoUrl + " from " + product);
             dependencyData = dataExtractor.extractDependencyData(group, artifact, version);
             logger.info("Extracted dependency information from " + product);
+            commitTag = dataExtractor.extractCommitTag(group, artifact, version);
+            logger.info("Extracted commit tag from " + product);
             int transactionRestartCount = 0;
             do {
                 try {
@@ -104,7 +108,7 @@ public class POMAnalyzerPlugin extends Plugin {
                         long id;
                         try {
                             id = saveToDatabase(group + "." + artifact, version, repoUrl,
-                                    dependencyData, metadataDao);
+                                    commitTag, dependencyData, metadataDao);
                         } catch (RuntimeException e) {
                             logger.error("Error saving data to the database: '" + product + "'", e);
                             processedRecord = false;
@@ -137,15 +141,20 @@ public class POMAnalyzerPlugin extends Plugin {
          * @param product        groupId.artifactId
          * @param version        Version of the artifact
          * @param repoUrl        URL of the repository of the product
+         * @param commitTag      Commit tag of the version of the artifact in the repository
          * @param dependencyData Dependency information from POM
          * @param metadataDao    Metadata Database Access Object
          * @return ID of the package version in the database
          */
-        public long saveToDatabase(String product, String version, String repoUrl,
+        public long saveToDatabase(String product, String version, String repoUrl, String commitTag,
                                    DependencyData dependencyData, MetadataDao metadataDao) {
             final var packageId = metadataDao.insertPackage(product, "mvn", null, repoUrl, null);
+            var packageVersionMetadata = new JSONObject();
+            packageVersionMetadata.put("dependencyManagement",
+                    dependencyData.dependencyManagement.toJSON());
+            packageVersionMetadata.put("commitTag", commitTag);
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    "OPAL", version, null, dependencyData.dependencyManagement.toJSON());
+                    "OPAL", version, null, packageVersionMetadata);
             for (var dependency : dependencyData.dependencies) {
                 var depProduct = dependency.groupId + "." + dependency.artifactId;
                 final var depId = metadataDao.insertPackage(depProduct, "mvn", null, null, null);

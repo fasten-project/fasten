@@ -80,6 +80,7 @@ public class POMAnalyzerPluginTest {
         var output = pomAnalyzer.produce();
         assertTrue(output.isPresent());
         var json = new JSONObject(output.get());
+        System.out.println(output.get());
         assertEquals("junit", json.getString("artifactId"));
         assertEquals("junit", json.getString("groupId"));
         assertEquals("4.12", json.getString("version"));
@@ -119,16 +120,21 @@ public class POMAnalyzerPluginTest {
                 "      }\n" +
                 "   ]\n" +
                 "}"));
+        var commitTag = "f8a34a";
         final var packageId = 1L;
         Mockito.when(metadataDao.insertPackage("junit.junit", "mvn", null, repoUrl, null))
                 .thenReturn(packageId);
         final var packageVersionId = 0L;
-        Mockito.when(metadataDao.insertPackageVersion(packageId, "OPAL", "4.12", null, dependencyData.dependencyManagement.toJSON()))
+        var packageVersionMetadata = new JSONObject();
+        packageVersionMetadata.put("dependencyManagement",
+                dependencyData.dependencyManagement.toJSON());
+        packageVersionMetadata.put("commitTag", commitTag);
+        Mockito.when(metadataDao.insertPackageVersion(packageId, "OPAL", "4.12", null, packageVersionMetadata))
                 .thenReturn(packageVersionId);
         final var dependencyId = 16L;
         Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", "mvn", null, null, null))
                 .thenReturn(dependencyId);
-        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, dependencyData, metadataDao);
+        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, dependencyData, metadataDao);
         assertEquals(packageVersionId, result);
     }
 

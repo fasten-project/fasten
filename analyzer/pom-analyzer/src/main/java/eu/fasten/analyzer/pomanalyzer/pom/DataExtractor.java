@@ -68,16 +68,7 @@ public class DataExtractor {
     public String extractRepoUrl(String groupId, String artifactId, String version) {
         String repoUrl = null;
         try {
-            ByteArrayInputStream pomByteStream;
-            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
-                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
-            } else {
-                pomByteStream = new ByteArrayInputStream(
-                        this.downloadPom(artifactId, groupId, version)
-                                .orElseThrow(RuntimeException::new).getBytes());
-            }
-            var pom = new SAXReader().read(pomByteStream);
-            var scm = pom.getRootElement().selectSingleNode("./*[local-name()='scm']");
+            var scm = extractScm(groupId, artifactId, version);
             if (scm != null) {
                 var url = scm.selectSingleNode("./*[local-name()='url']");
                 repoUrl = url.getText();
@@ -87,6 +78,42 @@ public class DataExtractor {
                     + groupId + ":" + artifactId + ":" + version);
         }
         return repoUrl;
+    }
+
+    /**
+     * Extracts commit tag from POM of certain Maven coordinate.
+     *
+     * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
+     * @param version    version of the coordinate
+     * @return Extracted commit tag representing certain version in repository
+     */
+    public String extractCommitTag(String groupId, String artifactId, String version) {
+        String commitTag = null;
+        try {
+            var scm = extractScm(groupId, artifactId, version);
+            if (scm != null) {
+                var tag = scm.selectSingleNode("./*[local-name()='tag']");
+                commitTag = tag.getText();
+            }
+        } catch (FileNotFoundException | DocumentException e) {
+            logger.error("Error parsing POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        }
+        return commitTag;
+    }
+
+    private Node extractScm(String groupId, String artifactId, String version) throws FileNotFoundException, DocumentException {
+        ByteArrayInputStream pomByteStream;
+        if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
+            pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
+        } else {
+            pomByteStream = new ByteArrayInputStream(
+                    this.downloadPom(artifactId, groupId, version)
+                            .orElseThrow(RuntimeException::new).getBytes());
+        }
+        var pom = new SAXReader().read(pomByteStream);
+        return pom.getRootElement().selectSingleNode("./*[local-name()='scm']");
     }
 
     /**

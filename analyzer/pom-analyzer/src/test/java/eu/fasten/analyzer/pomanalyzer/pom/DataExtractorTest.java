@@ -41,6 +41,13 @@ public class DataExtractorTest {
     }
 
     @Test
+    public void extractCommitTagTest() {
+        var expected = "r4.12";
+        var actual = dataExtractor.extractCommitTag("junit", "junit", "4.12");
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void extractDependencyDataTest() {
         var expected = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
@@ -255,7 +262,10 @@ public class DataExtractorTest {
         var actualDependencyData = dataExtractor.extractDependencyData("junit", "junit", "4.12");
         var expectedRepoUrl = "http://github.com/junit-team/junit/tree/master";
         var actualRepoUrl = dataExtractor.extractRepoUrl("junit", "junit", "4.12");
+        var expectedCommitTag = "r4.12";
+        var actualCommitTag = dataExtractor.extractCommitTag("junit", "junit", "4.12");
         assertEquals(expectedRepoUrl, actualRepoUrl);
         assertEquals(expectedDependencyData, actualDependencyData);
+        assertEquals(expectedCommitTag, actualCommitTag);
     }
 }
