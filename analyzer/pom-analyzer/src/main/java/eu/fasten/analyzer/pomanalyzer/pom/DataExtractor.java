@@ -54,7 +54,9 @@ public class DataExtractor {
     private String pomContents = null;
 
     public DataExtractor() {
-        this.mavenRepos = Collections.singletonList("https://repo.maven.apache.org/maven2/");
+        var repoHost = System.getenv("MVN_REPO") != null
+                ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
+        this.mavenRepos = Collections.singletonList(repoHost);
     }
 
     /**
@@ -259,8 +261,11 @@ public class DataExtractor {
                 }
                 dependencyManagements.add(dependencyManagement);
                 dependencyManagements.addAll(parentMetadata.getRight());
-            } catch (DocumentException | FileNotFoundException e) {
+            } catch (DocumentException e) {
                 logger.error("Error parsing POM file for: "
+                        + parentGroup + ":" + parentArtifact + ":" + parentVersion);
+            } catch (FileNotFoundException e) {
+                logger.error("Error downloading POM file for: "
                         + parentGroup + ":" + parentArtifact + ":" + parentVersion);
             }
         }
