@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Callables extends TableImpl<CallablesRecord> {
 
-    private static final long serialVersionUID = -1152847694;
+    private static final long serialVersionUID = 1871877023;
 
     /**
      * The reference instance of <code>public.callables</code>
@@ -67,7 +67,7 @@ public class Callables extends TableImpl<CallablesRecord> {
     /**
      * The column <code>public.callables.module_id</code>.
      */
-    public final TableField<CallablesRecord, Long> MODULE_ID = createField(DSL.name("module_id"), org.jooq.impl.SQLDataType.BIGINT, this, "");
+    public final TableField<CallablesRecord, Long> MODULE_ID = createField(DSL.name("module_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.callables.fasten_uri</code>.
@@ -129,7 +129,7 @@ public class Callables extends TableImpl<CallablesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.CALLABLES_MODULE_ID, Indexes.CALLABLES_PKEY, Indexes.UNIQUE_URI_CALL);
+        return Arrays.<Index>asList(Indexes.CALLABLES_PKEY, Indexes.UNIQUE_URI_CALL);
     }
 
     @Override

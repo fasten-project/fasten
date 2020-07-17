@@ -42,7 +42,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Edges extends TableImpl<EdgesRecord> {
 
-    private static final long serialVersionUID = -1042839435;
+    private static final long serialVersionUID = 906422015;
 
     /**
      * The reference instance of <code>public.edges</code>
@@ -112,7 +112,7 @@ public class Edges extends TableImpl<EdgesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.EDGES_SOURCE_ID, Indexes.EDGES_TARGET_ID, Indexes.UNIQUE_SOURCE_TARGET);
+        return Arrays.<Index>asList(Indexes.UNIQUE_SOURCE_TARGET);
     }
 
     @Override

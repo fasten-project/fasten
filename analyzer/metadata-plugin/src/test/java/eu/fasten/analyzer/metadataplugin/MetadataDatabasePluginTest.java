@@ -22,7 +22,7 @@ import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.RevisionCallGraph;
 import org.jooq.DSLContext;
 import org.json.JSONException;
@@ -36,19 +36,19 @@ public class MetadataDatabasePluginTest {
 
     private MetadataDatabasePlugin.MetadataDBExtension metadataDBExtension;
 
-   @BeforeEach
-   public void setUp() {
-       var dslContext = Mockito.mock(DSLContext.class);
-       metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
-       metadataDBExtension.setTopic("fasten.OPAL.out");
-       metadataDBExtension.setDBConnection(dslContext);
-   }
+    @BeforeEach
+    public void setUp() {
+        var dslContext = Mockito.mock(DSLContext.class);
+        metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
+        metadataDBExtension.setTopic("fasten.OPAL.out");
+        metadataDBExtension.setDBConnection(dslContext);
+    }
 
-   @Test
-   public void consumeJsonErrorTest() {
-       metadataDBExtension.consume("{\"payload\":{\"foo\":\"bar\"}}");
-       assertNotNull(metadataDBExtension.getPluginError());
-   }
+    @Test
+    public void consumeJsonErrorTest() {
+        metadataDBExtension.consume("{\"payload\":{\"foo\":\"bar\"}}");
+        assertNotNull(metadataDBExtension.getPluginError());
+    }
 
     @Test
     public void saveToDatabaseTest() {
@@ -280,42 +280,42 @@ public class MetadataDatabasePluginTest {
                 json.getString("version"), null, null);
     }
 
-   @Test
-   public void saveToDatabaseEmptyJsonTest() {
-       var metadataDao = Mockito.mock(MetadataDao.class);
-       var json = new JSONObject();
-       assertThrows(JSONException.class, () -> metadataDBExtension
-               .saveToDatabase(new RevisionCallGraph(json), metadataDao));
-   }
+    @Test
+    public void saveToDatabaseEmptyJsonTest() {
+        var metadataDao = Mockito.mock(MetadataDao.class);
+        var json = new JSONObject();
+        assertThrows(JSONException.class, () -> metadataDBExtension
+                .saveToDatabase(new RevisionCallGraph(json), metadataDao));
+    }
 
-   @Test
-   public void consumerTopicsTest() {
-       var topics = Optional.of(Collections.singletonList("fasten.OPAL.out"));
-       assertEquals(topics, metadataDBExtension.consumeTopic());
-   }
+    @Test
+    public void consumerTopicsTest() {
+        var topics = Optional.of(Collections.singletonList("fasten.OPAL.out"));
+        assertEquals(topics, metadataDBExtension.consumeTopic());
+    }
 
-   @Test
-   public void consumerTopicChangeTest() {
-       var topics1 = Optional.of(Collections.singletonList("fasten.OPAL.out"));
-       assertEquals(topics1, metadataDBExtension.consumeTopic());
-       var differentTopic = "DifferentKafkaTopic";
-       var topics2 = Optional.of(Collections.singletonList(differentTopic));
-       metadataDBExtension.setTopic(differentTopic);
-       assertEquals(topics2, metadataDBExtension.consumeTopic());
-   }
+    @Test
+    public void consumerTopicChangeTest() {
+        var topics1 = Optional.of(Collections.singletonList("fasten.OPAL.out"));
+        assertEquals(topics1, metadataDBExtension.consumeTopic());
+        var differentTopic = "DifferentKafkaTopic";
+        var topics2 = Optional.of(Collections.singletonList(differentTopic));
+        metadataDBExtension.setTopic(differentTopic);
+        assertEquals(topics2, metadataDBExtension.consumeTopic());
+    }
 
-   @Test
-   public void nameTest() {
-       var name = "Metadata plugin";
-       assertEquals(name, metadataDBExtension.name());
-   }
+    @Test
+    public void nameTest() {
+        var name = "Metadata plugin";
+        assertEquals(name, metadataDBExtension.name());
+    }
 
     @Test
     public void descriptionTest() {
-    var description = "Metadata plugin. "
-            + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
-            + " and populates metadata database with consumed data"
-            + " and writes graph of GIDs of callgraph to another Kafka topic.";
-    assertEquals(description, metadataDBExtension.description());
+        var description = "Metadata plugin. "
+                + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
+                + " and populates metadata database with consumed data"
+                + " and writes graph of GIDs of callgraph to another Kafka topic.";
+        assertEquals(description, metadataDBExtension.description());
     }
 }

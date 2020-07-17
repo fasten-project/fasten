@@ -10,18 +10,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.fasten.analyzer</groupId>
-    <artifactId>metadata-plugin</artifactId>
+    <artifactId>pom-analyzer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>metadata-plugin</name>
+    <name>pom-analyzer</name>
 
     <dependencies>
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
             <version>3.12.3</version>
-            <!-- The scope should be provided. Since JOOQ is provided in the JAR of the FASTEN server -->
+            <!-- To run Main class comment out the next line -->
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -33,7 +33,7 @@
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20180813</version>
-            <!--            <scope>provided</scope>-->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>eu.fasten</groupId>
@@ -44,24 +44,33 @@
             <groupId>eu.fasten</groupId>
             <artifactId>server</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <!--            <scope>provided</scope>-->
         </dependency>
-        <!--        NB! Uncomment the following 3 dependencies if you want to run Main class-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.slf4j</groupId>-->
-        <!--            <artifactId>slf4j-simple</artifactId>-->
-        <!--            <version>1.7.30</version>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.slf4j</groupId>-->
-        <!--            <artifactId>slf4j-api</artifactId>-->
-        <!--            <version>1.7.30</version>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.pf4j</groupId>-->
-        <!--            <artifactId>pf4j</artifactId>-->
-        <!--            <version>3.1.0</version>-->
-        <!--        </dependency>-->
+        <dependency>
+            <groupId>org.dom4j</groupId>
+            <artifactId>dom4j</artifactId>
+            <version>2.1.3</version>
+        </dependency>
+        <dependency>
+            <groupId>jaxen</groupId>
+            <artifactId>jaxen</artifactId>
+            <version>1.2.0</version>
+        </dependency>
+        <!-- NB! Uncomment the following 3 dependencies if you want to run Main class -->
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-simple</artifactId>-->
+<!--            <version>1.7.30</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-api</artifactId>-->
+<!--            <version>1.7.30</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.pf4j</groupId>-->
+<!--            <artifactId>pf4j</artifactId>-->
+<!--            <version>3.1.0</version>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -84,22 +93,19 @@
                                 </excludes>
                             </artifactSet>
                             <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>eu.fasten.analyzer.metadataplugin.Main</Main-Class>
+                                        <Main-Class>eu.fasten.analyzer.pomanalyzer.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.metadataplugin.MetadataDatabasePlugin
-                                        </Plugin-Class>
-                                        <Plugin-Id>metadata-plugin</Plugin-Id>
+                                        <Plugin-Class>eu.fasten.analyzer.pomanalyzer.POMAnalyzerPlugin</Plugin-Class>
+                                        <Plugin-Id>pom-analyzer</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
-                                        <Plugin-Description>Metadata Plugin</Plugin-Description>
+                                        <Plugin-Description>POM Analyzer Plugin</Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
-                            <!-- Note that this works when maven is ran in the root directory of the project  -->
                             <outputDirectory>${session.executionRootDirectory}/docker/plugins/</outputDirectory>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>with-dependencies</shadedClassifierName>
@@ -151,4 +157,5 @@
             </plugin>
         </plugins>
     </reporting>
+
 </project>
