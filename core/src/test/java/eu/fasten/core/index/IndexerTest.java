@@ -206,7 +206,7 @@ public class IndexerTest {
 			kb.close();
 			kb = KnowledgeBase.getInstance(kbDir.toString(), meta, false);
 		}
-
+		kb.close();
 		FileUtils.deleteDirectory(kbDir.toFile());
 		FileUtils.deleteQuietly(new File(meta));
 	}

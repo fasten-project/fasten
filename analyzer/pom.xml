@@ -24,13 +24,11 @@
         </dependency>
     </dependencies>
     <modules>
-        <module>javacg-wala</module>
         <module>javacg-opal</module>
         <module>javacg-opalv3</module>
         <module>dummy-analyzer</module>
         <module>metadata-plugin</module>
         <module>graph-plugin</module>
-        <module>base-analyzer</module>
         <module>repo-cloner-plugin</module>
     </modules>
 

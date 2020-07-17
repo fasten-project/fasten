@@ -18,25 +18,121 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import eu.fasten.analyzer.baseanalyzer.AnalyzerPlugin;
-import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
+import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
+import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class OPALPlugin extends AnalyzerPlugin {
+public class OPALPlugin extends Plugin {
 
     public OPALPlugin(PluginWrapper wrapper) {
         super(wrapper);
     }
 
     @Extension
-    public static class OPAL extends AnalyzerPlugin.ANALYZER {
+    public static class OPAL implements KafkaPlugin {
+
+        private final Logger logger = LoggerFactory.getLogger(getClass());
+
+        private String consumeTopic = "fasten.maven.pkg";
+        private Throwable pluginError;
+        private RevisionCallGraph graph;
+        private String outputPath;
 
         @Override
+        public Optional<List<String>> consumeTopic() {
+            return Optional.of(new ArrayList<>(Collections.singletonList(consumeTopic)));
+        }
+
+        @Override
+        public void consume(String kafkaRecord) {
+            pluginError = null;
+            try {
+                final var kafkaConsumedJson = new JSONObject(kafkaRecord);
+                final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
+
+                logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
+                this.graph = generateCallGraph(mavenCoordinate, kafkaConsumedJson);
+
+                if (graph == null || graph.isCallGraphEmpty()) {
+                    logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
+                    return;
+                }
+
+                var groupId = graph.product.split(":")[0];
+                var artifactId = graph.product.split(":")[1];
+                var version = graph.version;
+                var product = artifactId + "_" + groupId + "_" + version;
+
+                var firstLetter = artifactId.substring(0, 1);
+
+                outputPath = File.separator + "mvn" + File.separator
+                    + firstLetter + File.separator
+                    + artifactId + File.separator + product + ".json";
+
+                logger.info("Call graph successfully generated for {}!",
+                    mavenCoordinate.getCoordinate());
+
+            } catch (Exception e) {
+                setPluginError(e);
+                logger.error("", e);
+            }
+        }
+
+        @Override
+        public Optional<String> produce() {
+            if (this.graph != null) {
+                return Optional.of(graph.toJSON().toString());
+            } else {
+                return Optional.empty();
+            }
+        }
+
+        @Override
+        public String getOutputPath() {
+            return outputPath;
+        }
+
+        /**
+         * Convert consumed JSON from Kafka to {@link MavenCoordinate}.
+         *
+         * @param kafkaConsumedJson Coordinate JSON
+         * @return MavenCoordinate
+         */
+        public MavenCoordinate getMavenCoordinate(final JSONObject kafkaConsumedJson) {
+
+            try {
+                return new MavenCoordinate(
+                    kafkaConsumedJson.get("groupId").toString(),
+                    kafkaConsumedJson.get("artifactId").toString(),
+                    kafkaConsumedJson.get("version").toString());
+            } catch (JSONException e) {
+                setPluginError(e);
+                logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson, e);
+            }
+            return null;
+        }
+
+        /**
+         * Generate an ExtendedRevisionCallGraph.
+         *
+         * @param mavenCoordinate   Maven coordinate
+         * @param kafkaConsumedJson Consumed JSON
+         * @return Generated ExtendedRevisionCallGraph
+         */
         public RevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
                                                    final JSONObject kafkaConsumedJson) {
             try {
@@ -46,6 +142,42 @@ public class OPALPlugin extends AnalyzerPlugin {
                 setPluginError(e);
             }
             return null;
+        }
+
+        @Override
+        public void setTopic(String topicName) {
+            this.consumeTopic = topicName;
+        }
+
+        @Override
+        public String name() {
+            return this.getClass().getCanonicalName();
+        }
+
+        @Override
+        public String description() {
+            return "Generates call graphs for Java packages";
+        }
+
+        @Override
+        public void start() {
+        }
+
+        @Override
+        public void stop() {
+        }
+
+        @Override
+        public Throwable getPluginError() {
+            return this.pluginError;
+        }
+
+        public void setPluginError(Throwable throwable) {
+            this.pluginError = throwable;
+        }
+
+        @Override
+        public void freeResource() {
         }
 
         @Override
