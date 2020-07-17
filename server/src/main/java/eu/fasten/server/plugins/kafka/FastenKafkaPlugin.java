@@ -110,7 +110,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 }
             }
         } catch (Exception e) {
-            logger.error("Error occurred while processing call graphs");
+            logger.error("Error occurred while processing call graphs", e);
         } finally {
             connection.close();
             logger.info("Plugin {} stopped", plugin.name());

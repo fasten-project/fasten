@@ -24,7 +24,6 @@
         </dependency>
     </dependencies>
     <modules>
-        <module>javacg-wala</module>
         <module>javacg-opal</module>
         <module>dummy-analyzer</module>
         <module>metadata-plugin</module>

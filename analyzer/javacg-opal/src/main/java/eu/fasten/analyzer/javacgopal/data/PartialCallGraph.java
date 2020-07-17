@@ -19,10 +19,9 @@
 package eu.fasten.analyzer.javacgopal.data;
 
 import com.google.common.collect.Lists;
-import eu.fasten.analyzer.baseanalyzer.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.scalawrapper.JavaToScalaConverter;
-import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.RevisionCallGraph;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -71,11 +70,12 @@ public class PartialCallGraph {
      * Internal calls of the call graph, each element is a list of Integer that the first element is
      * the id of source method and the second one is the id of the target method. Ids are available
      * in the class hierarchy.
+     *
      * @implNote Since this part of the graphs are most of the times bottleneck it is important
-     *     to use a proper data structure. using int[] for each edge will make things a bit
-     *     difficult in future because of the array equal and toString methods. Pair is also a good
-     *     option since it's representative of the functionality but the equal function works too
-     *     slow to be in such a critical place. So Lists are good trade of in every aspect.
+     * to use a proper data structure. using int[] for each edge will make things a bit
+     * difficult in future because of the array equal and toString methods. Pair is also a good
+     * option since it's representative of the functionality but the equal function works too
+     * slow to be in such a critical place. So Lists are good trade of in every aspect.
      */
     private final List<List<Integer>> internalCalls;
 
@@ -89,6 +89,7 @@ public class PartialCallGraph {
 
     /**
      * Given a file it creates a {@link PartialCallGraph} for it using OPAL.
+     *
      * @param file class files to be process, it can be jar file or a folder containing class
      *             files.
      */
@@ -108,6 +109,7 @@ public class PartialCallGraph {
 
     /**
      * Given an external call it generates a FastenURI for the target method of the call.
+     *
      * @param externalCall {@link UnresolvedMethodCall}
      * @return {@link FastenURI} with empty product.
      */
@@ -130,6 +132,7 @@ public class PartialCallGraph {
     /**
      * Finds non abstract and non private methods of the artifact as entrypoints for call graph
      * generation.
+     *
      * @param methods are all of the {@link org.opalj.br.Method} in an OPAL-loaded project.
      * @return An {@link Iterable} of entrypoints to be consumed by scala-written OPAL.
      */
@@ -149,9 +152,10 @@ public class PartialCallGraph {
 
     /**
      * Converts all of the members of the classHierarchy to {@link FastenURI}.
+     *
      * @param classHierarchy Map<{@link ObjectType},{@link OPALType}>
      * @return A {@link Map} of {@link FastenURI} as key and {@link RevisionCallGraph.Type}
-     *     as value.
+     * as value.
      */
     public static Map<FastenURI, RevisionCallGraph.Type> asURIHierarchy(
         final Map<ObjectType, OPALType> classHierarchy) {
@@ -206,10 +210,11 @@ public class PartialCallGraph {
     /**
      * Converts a {@link Map} of {@link org.opalj.br.Method} to a Map of {@link FastenURI}. And also
      * shifts the keys and values.
+     *
      * @param methods {@link org.opalj.br.Method} are keys and their unique id in the artifact are
      *                values.
      * @return A Map in which the unique id of each method in the artifact is the key and the {@link
-     *     FastenURI} of the method is the value.
+     * FastenURI} of the method is the value.
      */
     public static Map<Integer, FastenURI> toURIMethods(
         final Map<org.opalj.br.Method, Integer> methods) {
@@ -232,6 +237,7 @@ public class PartialCallGraph {
 
     /**
      * Checks whether the environment is test.
+     *
      * @return true if tests are running, otherwise false.
      */
     public static boolean isJUnitTest() {
@@ -246,10 +252,11 @@ public class PartialCallGraph {
 
     /**
      * It creates a class hierarchy for the given call graph's artifact.
+     *
      * @param cg {@link ComputedCallGraph}
      * @return A Map of {@link ObjectType} and created {@link OPALType} for it.
      * @implNote Inside {@link OPALType} all of the methods are indexed, it means one can use
-     *     the ids assigned to each method instead of the method itself.
+     * the ids assigned to each method instead of the method itself.
      */
     public static Map<ObjectType, OPALType> createCHA(final ComputedCallGraph cg) {
 
@@ -275,6 +282,7 @@ public class PartialCallGraph {
 
     /**
      * Extract super classes of a given type from a given CHA.
+     *
      * @param classHierarchy {@link ClassHierarchy} of the artifact to be investigated for super
      *                       classes.
      * @param currentClass   {@link ObjectType} the type that we are looking for it's super
@@ -282,19 +290,20 @@ public class PartialCallGraph {
      * @return A {@link Chain} of {@link ObjectType} as super classes of the passed type.
      */
     public static Chain<ObjectType> extractSuperClasses(final ClassHierarchy classHierarchy,
-                                                        final ObjectType currentClass) throws NoSuchElementException  {
-            if (classHierarchy.supertypes().contains(currentClass)) {
-                final var superClasses =
-                    classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
-                if (superClasses != null) {
-                    return superClasses.reverse();
-                }
+                                                        final ObjectType currentClass) throws NoSuchElementException {
+        if (classHierarchy.supertypes().contains(currentClass)) {
+            final var superClasses =
+                classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
+            if (superClasses != null) {
+                return superClasses.reverse();
             }
+        }
         return null;
     }
 
     /**
      * Extract super Interfaces of a given type from a given CHA.
+     *
      * @param classHierarchy {@link ClassHierarchy} of the artifact to be investigated for super
      *                       Interfaces.
      * @param currentClass   {@link ObjectType} the type that we are looking for it's super
@@ -309,6 +318,7 @@ public class PartialCallGraph {
 
     /**
      * Sorts the given Iterable.
+     *
      * @param iterable Iterable to be sorted.
      * @return Sorted List.
      */
@@ -321,6 +331,7 @@ public class PartialCallGraph {
     /**
      * Assign each method an id. Ids start from the the first parameter and increase by one number
      * for every method.
+     *
      * @param keyStartsFrom Starting point of the Methods's ids.
      * @param methods       Iterable of {@link org.opalj.br.Method} to get mapped to ids.
      * @return A map of passed methods and their ids.
@@ -341,6 +352,7 @@ public class PartialCallGraph {
 
     /**
      * Generates a call graph for a given file using {@link CallGraphFactory}.
+     *
      * @param artifactFile {@link File} that can be jar or class files or a folder containing them.
      * @return {@link ComputedCallGraph}
      */
@@ -365,6 +377,7 @@ public class PartialCallGraph {
     /**
      * Creates {@link RevisionCallGraph} using OPAL call graph generator for a given maven
      * coordinate. It also sets the forge to "mvn".
+     *
      * @param coordinate maven coordinate of the revision to be processed.
      * @param timestamp  timestamp of the revision release.
      * @return {@link RevisionCallGraph} of the given coordinate.
@@ -389,10 +402,11 @@ public class PartialCallGraph {
     /**
      * Given a call graph and a CHA it creates a list of internal calls. This list indicates source
      * and target methods by their unique within artifact ids existing in the cha.
+     *
      * @param cg  {@link ComputedCallGraph}
      * @param cha A Map of {@link ObjectType} and {@link RevisionCallGraph.Type}
      * @return a list of List of Integers that the first element of each int[] is the source method
-     *     and the second one is the target method.
+     * and the second one is the target method.
      */
     private List<List<Integer>> getInternalCalls(final ComputedCallGraph cg,
                                                  final Map<ObjectType, OPALType> cha) {
@@ -424,12 +438,13 @@ public class PartialCallGraph {
      * Given a call graph and a CHA it creates a map of external calls and their call type. This map
      * indicates the source methods by their unique within artifact id existing in the cha, target
      * methods by their {@link FastenURI}, and a map that indicates the call type.
+     *
      * @param cg  {@link ComputedCallGraph}
      * @param cha A Map of {@link ObjectType} and {@link RevisionCallGraph.Type}
      * @return A map that each each entry of it is a {@link Pair} of source method's id, and target
-     *     method's {@link FastenURI} as key and a map that shows call types as value. call types
-     *     map's key is the name of JVM call type and the value is number of invocation by this call
-     *     type for this specific edge.
+     * method's {@link FastenURI} as key and a map that shows call types as value. call types
+     * map's key is the name of JVM call type and the value is number of invocation by this call
+     * type for this specific edge.
      */
     private Map<Pair<Integer, FastenURI>, Map<String, String>> getExternalCalls(
         final ComputedCallGraph cg,
@@ -460,6 +475,7 @@ public class PartialCallGraph {
     /**
      * It puts the given call to the given map if it doesn't exist and if call already exists in the
      * map it will be updated with the passed call extra information.
+     *
      * @param result     The result map that should be updated with the given call.
      * @param call       Internal or external call.
      * @param typeOfCall OPALType of JVM call: invodestatic, invokedynamic, invokevirtual,
@@ -496,6 +512,7 @@ public class PartialCallGraph {
 
     /**
      * Returns the map of all the methods in this partial call graph hierarchy.
+     *
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
     public Map<Integer, FastenURI> mapOfAllMethods() {
@@ -506,7 +523,8 @@ public class PartialCallGraph {
         return result;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
 
         return "PartialCallGraph{"
             + "classHierarchy=" + classHierarchy

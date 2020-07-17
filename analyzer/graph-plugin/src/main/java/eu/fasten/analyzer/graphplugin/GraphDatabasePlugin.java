@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -83,27 +84,38 @@ public class GraphDatabasePlugin extends Plugin {
         public void consume(String record) {
             this.pluginError = null;
             var json = new JSONObject(record).getJSONObject("payload");
-            final var path = json.getString("dir");
+            final var path = json.optString("dir");
 
             final GidGraph gidGraph;
-            try {
-                JSONTokener tokener = new JSONTokener(new FileReader(path));
-                gidGraph = GidGraph.getGraph(new JSONObject(tokener));
-            } catch (JSONException e) {
-                logger.error("Could not parse GID graph", e);
-                setPluginError(e);
-                return;
-            } catch (FileNotFoundException e) {
-                logger.error("Error parsing JSON callgraph for '"
-                        + Paths.get(path).getFileName() + "'", e);
-                setPluginError(e);
-                return;
+            if (!path.isEmpty()) {
+                try {
+                    JSONTokener tokener = new JSONTokener(new FileReader(path));
+                    gidGraph = GidGraph.getGraph(new JSONObject(tokener));
+                } catch (JSONException e) {
+                    logger.error("Could not parse GID graph", e);
+                    setPluginError(e);
+                    return;
+                } catch (FileNotFoundException e) {
+                    logger.error("Error parsing JSON callgraph for '"
+                            + Paths.get(path).getFileName() + "'", e);
+                    setPluginError(e);
+                    return;
+                }
+            } else {
+                try {
+                    gidGraph = GidGraph.getGraph(json);
+                } catch (JSONException e) {
+                    logger.error("Could not parse GID graph", e);
+                    setPluginError(e);
+                    return;
+                }
             }
 
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
 
-            var groupId = gidGraph.getProduct().split(":")[0];
-            var artifactId = gidGraph.getProduct().split(":")[1];
+            var productParts = gidGraph.getProduct().split("\\.");
+            var groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
+            var artifactId = productParts[productParts.length - 1];
             var version = gidGraph.getVersion();
             var product = artifactId + "_" + groupId + "_" + version;
 
