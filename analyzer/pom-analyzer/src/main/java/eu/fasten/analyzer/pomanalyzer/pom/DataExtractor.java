@@ -75,8 +75,11 @@ public class DataExtractor {
                 var url = scm.selectSingleNode("./*[local-name()='url']");
                 repoUrl = url.getText();
             }
-        } catch (FileNotFoundException | DocumentException e) {
+        } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        } catch (FileNotFoundException e) {
+            logger.error("Error downloading POM file for: "
                     + groupId + ":" + artifactId + ":" + version);
         }
         return repoUrl;
@@ -96,10 +99,13 @@ public class DataExtractor {
             var scm = extractScm(groupId, artifactId, version);
             if (scm != null) {
                 var tag = scm.selectSingleNode("./*[local-name()='tag']");
-                commitTag = tag.getText();
+                commitTag = (tag != null) ? tag.getText() : null;
             }
-        } catch (FileNotFoundException | DocumentException e) {
+        } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        } catch (FileNotFoundException e) {
+            logger.error("Error downloading POM file for: "
                     + groupId + ":" + artifactId + ":" + version);
         }
         return commitTag;
@@ -128,7 +134,7 @@ public class DataExtractor {
      * @return Extracted dependency information as DependencyData
      */
     public DependencyData extractDependencyData(String groupId, String artifactId, String version) {
-        DependencyData dependencyData = null;
+        DependencyData dependencyData = new DependencyData(null, new ArrayList<>());
         try {
             ByteArrayInputStream pomByteStream;
             if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
@@ -167,8 +173,11 @@ public class DataExtractor {
             dependencies = this.resolveDependencyVersions(dependencies, properties,
                     parentDependencyManagements);
             dependencyData = new DependencyData(dependencyManagement, dependencies);
-        } catch (FileNotFoundException | DocumentException e) {
+        } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        } catch (FileNotFoundException e) {
+            logger.error("Error downloading POM file for: "
                     + groupId + ":" + artifactId + ":" + version);
         }
         return dependencyData;

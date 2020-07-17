@@ -87,7 +87,13 @@ public class POMAnalyzerPlugin extends Plugin {
             this.processedRecord = false;
             this.restartTransaction = false;
             logger.info("Consumed: " + record);
-            var payload = new JSONObject(record).getJSONObject("payload");
+            var jsonRecord = new JSONObject(record);
+            var payload = new JSONObject();
+            if (jsonRecord.has("payload")) {
+                payload = jsonRecord.getJSONObject("payload");
+            } else {
+                payload = jsonRecord;
+            }
             artifact = payload.getString("artifactId");
             group = payload.getString("groupId");
             version = payload.getString("version");
@@ -151,7 +157,8 @@ public class POMAnalyzerPlugin extends Plugin {
             final var packageId = metadataDao.insertPackage(product, "mvn", null, repoUrl, null);
             var packageVersionMetadata = new JSONObject();
             packageVersionMetadata.put("dependencyManagement",
-                    dependencyData.dependencyManagement.toJSON());
+                    (dependencyData.dependencyManagement != null)
+                            ? dependencyData.dependencyManagement.toJSON() : null);
             packageVersionMetadata.put("commitTag", commitTag);
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
                     "OPAL", version, null, packageVersionMetadata);
