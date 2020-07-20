@@ -62,7 +62,7 @@ class OPALTypeTest {
         var superInterfaces = new ArrayList<ObjectType>();
         superInterfaces.add(superInterface);
 
-        var type = new OPALType(methods, superClasses, superInterfaces, "source.java");
+        var type = new OPALType(methods, superClasses, superInterfaces, "source.java", "", false);
 
         assertEquals("source.java", type.getSourceFileName());
         assertEquals(123, type.getMethods().get(method));
@@ -222,7 +222,7 @@ class OPALTypeTest {
         var methods = new HashMap<Method, Integer>();
         methods.put(method, 123);
 
-        var opalType = new OPALType(methods, null, new ArrayList<>(), "source.java");
+        var opalType = new OPALType(methods, null, new ArrayList<>(), "source.java", "", false);
 
         var resultType = OPALType.getType(opalType, type);
 
@@ -270,7 +270,7 @@ class OPALTypeTest {
         var interfaces = new ArrayList<ObjectType>();
         interfaces.add(type);
 
-        var opalType = new OPALType(methods, chain, interfaces, "source.java");
+        var opalType = new OPALType(methods, chain, interfaces, "source.java", "", false);
 
         var resultType = OPALType.getType(opalType, type);
 
