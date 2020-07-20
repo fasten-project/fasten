@@ -130,7 +130,7 @@ public class PartialCallGraph {
                     OPALType.extractSuperInterfaces(project.classHierarchy(), currentClass),
                     classFile.sourceFile().getOrElse(JavaToScalaConverter
                             .asScalaFunction0OptionString("NotFound")),
-                    classFile.isPublic() ? "public" : "package private", classFile.isFinal());
+                    classFile.isPublic() ? "public" : "packagePrivate", classFile.isFinal());
 
             result.put(currentClass, type);
             methodNum.addAndGet(methods.size());
