@@ -20,12 +20,18 @@ package eu.fasten.analyzer.javacgopalv3.evaluation;
 
 import eu.fasten.analyzer.javacgopalv3.Main;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
+import org.jooq.tools.csv.CSVReader;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,13 +74,27 @@ public class Evaluator {
         } else if (args[0].equals("--all")){
             generateAllFeatures(new File(args[1]));
         }else {
-            evaluatePerformance(args[1]);
+            final List<String> coordinates = extractCoordinates(args[1]);
+            evaluatePerformance(coordinates);
         }
     }
 
-    private static void evaluatePerformance(final String coord) {
-        final var files = Maven.resolver().resolve(coord).withoutTransitivity().asFile();
+    private static List<String> extractCoordinates(final String arg) throws IOException {
+        final List<String> coords = new ArrayList<>();
+        try (final CSVReader csvReader = new CSVReader(new FileReader("book.csv"));) {
+            String[] values;
+            while ((values = csvReader.readNext()) != null) {
+                coords.add(Arrays.asList(values).get(0));
+            }
+        }
+        return coords;
+    }
 
+    private static void evaluatePerformance(final List<String> coords) {
+        for (final String coord : coords) {
+            final var files = Maven.resolver().resolve(coord).withoutTransitivity().asFile();
+
+        }
     }
 
     private static String extractMain(final File langFeature) throws IOException {
