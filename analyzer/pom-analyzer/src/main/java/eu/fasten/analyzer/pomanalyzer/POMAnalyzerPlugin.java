@@ -94,9 +94,9 @@ public class POMAnalyzerPlugin extends Plugin {
             } else {
                 payload = jsonRecord;
             }
-            artifact = payload.getString("artifactId");
-            group = payload.getString("groupId");
-            version = payload.getString("version");
+            artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
+            group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
+            version = payload.getString("version").replaceAll("[\\n\\t ]", "");
             final var product = group + ":" + artifact + ":" + version;
             var dataExtractor = new DataExtractor();
             repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
