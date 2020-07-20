@@ -125,7 +125,6 @@ public class PartialCallGraph {
             final var currentClass = classFile.thisType();
             final var methods = getMethodsMap(methodNum.get(),
                     JavaConverters.asJavaIterable(classFile.methods()));
-
             final var type = new OPALType(methods,
                     OPALType.extractSuperClasses(project.classHierarchy(), currentClass),
                     OPALType.extractSuperInterfaces(project.classHierarchy(), currentClass),

@@ -55,6 +55,10 @@ public class Main implements Runnable {
             defaultValue = "")
     String output;
 
+    public void setOutput(String output) {
+        this.output = output;
+    }
+
     static class Commands {
 
         @CommandLine.ArgGroup(exclusive = false)
