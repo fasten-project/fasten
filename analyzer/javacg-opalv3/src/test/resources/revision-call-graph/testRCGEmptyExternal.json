@@ -8,6 +8,7 @@
         "externalTypes": {},
         "internalTypes": {
             "/internal.package/B": {
+                "access": "public",
                 "methods": {
                     "3": {
                         "metadata": {
@@ -28,6 +29,7 @@
                         "uri": "/internal.package/B.newInstance()%2Fjava.lang%2FObject"
                     }
                 },
+                "final": false,
                 "superInterfaces": ["/internal.package/BInterface"],
                 "sourceFile": "B.java",
                 "superClasses": ["/java.lang/Object"]
@@ -35,6 +37,7 @@
         },
         "resolvedTypes": {
             "/resolved.package/C": {
+                "access": "public",
                 "methods": {
                     "5": {
                         "metadata": {
@@ -55,6 +58,7 @@
                         "uri": "/resolved.package/C.newInstance()%2Fjava.lang%2FObject"
                     }
                 },
+                "final": false,
                 "superInterfaces": [
                     "/resolved.package/CInterface"
                 ],

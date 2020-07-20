@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import org.opalj.br.ClassFile;
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
@@ -46,6 +47,8 @@ public class OPALType {
     private final Map<Method, Integer> methods;
     private final Chain<ObjectType> superClasses;
     private final List<ObjectType> superInterfaces;
+    private final String access;
+    private final boolean isFinal;
 
     /**
      * Creates {@link OPALType} for the given data.
@@ -56,11 +59,14 @@ public class OPALType {
      * @param sourceFileName  name of the source file that this type belongs to.
      */
     public OPALType(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses,
-                    final List<ObjectType> superInterfaces, final String sourceFileName) {
+                    final List<ObjectType> superInterfaces, final String sourceFileName,
+                    final String access, final boolean isFinal) {
         this.methods = methods;
         this.superClasses = superClasses;
         this.superInterfaces = superInterfaces;
         this.sourceFileName = sourceFileName;
+        this.access = access;
+        this.isFinal = isFinal;
     }
 
     public Map<Method, Integer> getMethods() {
@@ -104,7 +110,8 @@ public class OPALType {
                 new ExtendedRevisionCallGraph.Type("",
                         toURIDeclaredMethods(methods),
                         superClassesURIs,
-                        toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass))));
+                        toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass)),
+                        "", false));
     }
 
     /**
@@ -128,7 +135,8 @@ public class OPALType {
                 new ExtendedRevisionCallGraph.Type(type.getSourceFileName(),
                         toURIMethods(type.getMethods()),
                         superClassesURIs,
-                        toURIInterfaces(type.getSuperInterfaces())));
+                        toURIInterfaces(type.getSuperInterfaces()),
+                        type.access, type.isFinal));
     }
 
     /**
