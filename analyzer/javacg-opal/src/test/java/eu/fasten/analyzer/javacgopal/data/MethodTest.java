@@ -255,8 +255,8 @@ public class MethodTest {
             //  [] is pctEncoded three times, It should stay encoded during creating  1- type's
             //  URI, 2- OPALMethod's URI and 3- Canonicalization.
             new FastenJavaURI(
-                "/name.space/ArrayExample.targetMethod(%2Fjava.lang%2FObject%25255B%25255D)"
-                    + "%2Fjava.lang%2FObject%25255B%25255D"),
+                "/name.space/ArrayExample.targetMethod(%2Fjava.lang%2FObject%2525255B%2525255D)"
+                    + "%2Fjava.lang%2FObject%2525255B%2525255D"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
@@ -265,7 +265,7 @@ public class MethodTest {
             classInitMethods.stream().filter(i -> i.name().equals("<clinit>")).findFirst()
                 .orElseThrow();
         assertEquals(
-            new FastenJavaURI("/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2FVoidType"),
+            new FastenJavaURI("/name.space/ClassInit.%2525253Cinit%2525253E()%2Fjava.lang%2FVoidType"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
@@ -274,7 +274,7 @@ public class MethodTest {
             lambdaMethods.stream().filter(i -> i.name().equals("apply")).findFirst().orElseThrow();
         assertEquals(
             new FastenJavaURI("/null/Lambda$" + lambdaNumber
-                + "%3A0.apply(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
+                + "%25253A0.apply(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
@@ -296,8 +296,8 @@ public class MethodTest {
 
         assertEquals(
             new FastenJavaURI(
-                "/null/Lambda$" + lambdaNumber + "%3A0.$newInstance()Lambda$" + lambdaNumber
-                    + "%25253A0"),
+                "/null/Lambda$" + lambdaNumber + "%25253A0.$newInstance()Lambda$" + lambdaNumber
+                    + "%2525253A0"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
@@ -307,8 +307,8 @@ public class MethodTest {
                 && i.declaringClassFile().thisType().simpleName().contains("Lambda$")).findFirst()
                 .orElseThrow();
         assertEquals(
-            new FastenJavaURI("/null/Lambda$" + lambdaNumber + "%3A0.Lambda$" + lambdaNumber
-                + "%3A0()%2Fjava.lang%2FVoidType"),
+            new FastenJavaURI("/null/Lambda$" + lambdaNumber + "%25253A0.Lambda$" + lambdaNumber
+                + "%2525253A0()%2Fjava.lang%2FVoidType"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );

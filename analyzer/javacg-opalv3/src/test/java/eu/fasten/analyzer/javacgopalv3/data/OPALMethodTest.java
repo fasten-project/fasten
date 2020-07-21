@@ -83,7 +83,7 @@ class OPALMethodTest {
         Mockito.when(descriptor.returnType()).thenReturn(returnType);
 
         assertEquals(FastenJavaURI.create("//productName/some.package/typeName.methodName(%2Fparameter.package%2FparameterName)%2Freturn.package%2FtypeReturnName"),
-                OPALMethod.toCanonicalSchemelessURI("productName", type, "methodName", descriptor, false));
+                OPALMethod.toCanonicalSchemelessURI("productName", type, "methodName", descriptor));
     }
 
     @Test
@@ -101,8 +101,7 @@ class OPALMethodTest {
     @Test
     void getMethodNameClinit() {
         var methodUri = OPALMethod.getMethodName("TestClass", "<clinit>");
-        var encoded = threeTimesPct("<init>");
-        assertEquals(encoded, methodUri);
+        assertEquals("<init>", methodUri);
     }
 
     @Test
@@ -141,13 +140,13 @@ class OPALMethodTest {
 
         var baseType = Mockito.mock(BaseType.class);
         Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("%252528%25255DLjava$lang$String%25253A%252529V%25253A14$Lambda");
+        Mockito.when(baseType.toString()).thenReturn("%28%5DLjava$lang$String%3A%29V%3A14$Lambda");
 
         var type = Mockito.mock(Type.class);
         Mockito.when(type.asBaseType()).thenReturn(baseType);
         Mockito.when(type.isBaseType()).thenReturn(true);
 
-        assertEquals(FastenJavaURI.create("/some.package/%252528%25255DLjava$lang$String%25253A%252529V%25253A14$Lambda"),
+        assertEquals(FastenJavaURI.create("/some.package/%2528%255DLjava$lang$String%253A%2529V%253A14$Lambda"),
                 OPALMethod.getTypeURI(type));
     }
 
@@ -302,7 +301,7 @@ class OPALMethodTest {
         Mockito.when(type.isArrayType()).thenReturn(true);
         Mockito.when(type.asArrayType()).thenReturn(arrayType);
 
-        assertEquals("Integer%25255B%25255D", OPALMethod.getClassName(type));
+        assertEquals("Integer[]", OPALMethod.getClassName(type));
     }
 
     @Test
@@ -328,19 +327,8 @@ class OPALMethodTest {
         Mockito.when(type.isArrayType()).thenReturn(false);
         Mockito.when(type.asObjectType()).thenReturn(objectType);
 
-        var encoded = threeTimesPct("LambdaTestName%");
+        var encoded = "LambdaTestName%25";
 
         assertEquals(encoded, OPALMethod.getClassName(type));
-    }
-
-    /**
-     * Pct encode given String three times.
-     *
-     * @param nonEncoded non encoded String
-     * @return encoded String
-     */
-    private static String threeTimesPct(final String nonEncoded) {
-        return FastenJavaURI
-                .pctEncodeArg(FastenJavaURI.pctEncodeArg(FastenJavaURI.pctEncodeArg(nonEncoded)));
     }
 }
