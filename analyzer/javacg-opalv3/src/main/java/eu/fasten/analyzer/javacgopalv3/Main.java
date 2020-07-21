@@ -299,7 +299,7 @@ public class Main implements Runnable {
                     new CallGraphConstructor((File) artifact, mainClass, algorithm));
             revisionCallGraph =
                     ExtendedRevisionCallGraph.extendedBuilder().graph(cg.getGraph())
-                            .product(((File) artifact).getName().replace(".class", "").replace("$", ""))
+                            .product(cleanUpFileName((File) artifact))
                             .version("").timestamp(0).cgGenerator("").forge("")
                             .classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount()).build();
         } else {
@@ -317,6 +317,10 @@ public class Main implements Runnable {
                     .writeToFile(this.output, revisionCallGraph.toJSON(), "_" + revisionCallGraph.product);
         }
         return revisionCallGraph;
+    }
+
+    private String cleanUpFileName(File artifact) {
+        return artifact.getName().replace(".class", "").replace("$", "").replace(".jar", "");
     }
 
     private List<File> getDependenciesFiles() {

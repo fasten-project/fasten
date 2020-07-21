@@ -19,18 +19,17 @@
 package eu.fasten.analyzer.javacgopalv3.evaluation;
 
 import eu.fasten.analyzer.javacgopalv3.Main;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
+import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
 import org.jooq.tools.csv.CSVReader;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -58,7 +57,7 @@ public class Evaluator {
             }
         }
         logger
-            .info("There was #{} single class language features we couldn't merge! ", singleClass);
+                .info("There was #{} single class language features we couldn't merge! ", singleClass);
     }
 
     public static void generateSingleFeature(final File testCaseDirectory) throws IOException {
@@ -71,10 +70,10 @@ public class Evaluator {
 
         if (args[0].equals("--RQ3single")) {
             generateSingleFeature(new File(args[1]));
-        } else if (args[0].equals("--RQ3All")){
+        } else if (args[0].equals("--RQ3All")) {
             generateAllFeatures(new File(args[1]));
-        }else if (args[0].equals("--RQ1")){
-            evaluatePerformance(dropTheHeader(readCSV(args[1])));
+        } else if (args[0].equals("--RQ1")) {
+            evaluatePerformance(dropTheHeader(readCSV(args[1])), args[2]);
         }
     }
 
@@ -94,24 +93,55 @@ public class Evaluator {
         return coords;
     }
 
-    private static void evaluatePerformance(final List<String> coords) throws IOException {
-        for (final String coord : coords) {
-            final var files = Maven.resolver().resolve(coord).withoutTransitivity().asFile();
-            final var mainClass = new Main();
-            new File("RCGs").mkdir();
-            for (final var file : files) {
-                final long startTime = System.currentTimeMillis();
-                mainClass.setOutput("RCGs/" + coord);
-                mainClass.generate(file,"", "RTA", true);
-                new DecimalFormat("#0.000").format((System.currentTimeMillis() - startTime) / 1000d);
-            }
+    private static void evaluatePerformance(final List<String> dataSet, String outPath) throws IOException {
+        final var timer = new Timer();
+        generateIsolatedGraphs(dataSet, outPath + "/RCGs", timer);
+        evaluateOPAL(dataSet, timer, outPath + "/OPAL");
+    }
 
+    private static void evaluateOPAL(final List<String> dataSet, final Timer timer, final String basePath) throws IOException {
+        new File(basePath).mkdir();
+        for (final var row : dataSet) {
+            final var revision = Maven.resolver().resolve(row).withoutTransitivity().asSingleFile();
+            final var runner = new Main();
+            final var revisionPath = basePath + "/" + revision;
+            runner.setOutput(revisionPath);
+            final long startTime = System.currentTimeMillis();
+            runner.generate(revision, "", "RTA", true);
+            timer.addOPAL(row,(System.currentTimeMillis() - startTime) / 1000d);
         }
+    }
+
+    private static void generateIsolatedGraphs(final List<String> dataSet, final String basePath, final Timer timer)
+            throws IOException {
+        for (final var row : dataSet) {
+            final var revisions = Maven.resolver().resolve(row).withoutTransitivity().as(MavenCoordinate.class);
+            final var runner = new Main();
+            new File(basePath).mkdir();
+            for (final var revision : revisions) {
+                final var revisionPath = basePath + "/" + revision;
+                final var coord = getMavenCoordinate(revision);
+                if (!new File(revisionPath).exists()) {
+                    runner.setOutput(revisionPath);
+                    final long startTime = System.currentTimeMillis();
+                    runner.generate(coord, "", "RTA", true);
+                    timer.addNewIsolatedRevision(coord.getCoordinate(),(System.currentTimeMillis() - startTime) / 1000d);
+                }else {
+                    timer.addExistingIsolatedRevision(coord.getCoordinate());
+                }
+            }
+        }
+    }
+
+    private static eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate getMavenCoordinate(
+            final MavenCoordinate revision) {
+        return new eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate(revision.getGroupId(),
+                revision.getArtifactId(), revision.getVersion());
     }
 
     private static String extractMain(final File langFeature) throws IOException {
         final var conf = new String(Files.readAllBytes(
-            (Paths.get(langFeature.getAbsolutePath().replace(".jar_split", "").concat(".conf")))));
+                (Paths.get(langFeature.getAbsolutePath().replace(".jar_split", "").concat(".conf")))));
         final var jsObject = new JSONObject(conf);
 
         String main = "";
@@ -131,12 +161,12 @@ public class Evaluator {
         final var fileName = langFeature.getName().replace(".class", "");
         final var resultGraphPath = langFeature.getAbsolutePath() + "/" + output;
         final var cgCommand =
-            new String[] {"-g", "-a", langFeature.getAbsolutePath(), "-n", mainClass, "-ga",
-                algorithm, "-m", "FILE", "-o", resultGraphPath};
-        final var convertCommand = new String[] {"-c", "-i", resultGraphPath + "_" + fileName, "-f",
-            "JCG",
-            "-o",
-            langFeature.getAbsolutePath() + "/" + output + "Jcg"};
+                new String[]{"-g", "-a", langFeature.getAbsolutePath(), "-n", mainClass, "-ga",
+                        algorithm, "-m", "FILE", "-o", resultGraphPath};
+        final var convertCommand = new String[]{"-c", "-i", resultGraphPath + "_" + fileName, "-f",
+                "JCG",
+                "-o",
+                langFeature.getAbsolutePath() + "/" + output + "Jcg"};
         logger.info("CG Command: {}", Arrays.toString(cgCommand).replace(",", " "));
         Main.main(cgCommand);
         logger.info("Convert Command: {}", Arrays.toString(convertCommand).replace(",", " "));
@@ -179,13 +209,14 @@ public class Evaluator {
             }
 
         }
-        return new String[]{"-a", art , "-d", deps.toString().replaceAll(".$", "")};
+        return new String[]{"-a", art, "-d", deps.toString().replaceAll(".$", "")};
     }
 
     private static void compute(final File langFeature, final String main, final String output,
                                 final String[] artDeps, final String genAlg,
                                 final String mergeAlg) {
-        var mergeCommand = new String[] {"-s", "-ma", mergeAlg, "-ga", genAlg, "-n", main, "-o", langFeature.getAbsolutePath() + "/" + output};
+        var mergeCommand = new String[]{"-s", "-ma", mergeAlg, "-ga", genAlg, "-n", main, "-o",
+                langFeature.getAbsolutePath() + "/" + output};
         mergeCommand = ArrayUtils.addAll(mergeCommand, artDeps);
 
         logger.info("Merge Command: {}", Arrays.toString(mergeCommand).replace(",", " "));
@@ -193,8 +224,8 @@ public class Evaluator {
 
         StringBuilder input = new StringBuilder();
         final var files = new File(langFeature.getAbsolutePath() + "/cg")
-            .listFiles(
-                file -> (file.getName().startsWith("mergeV3") && !file.getName().endsWith("Demo")));
+                .listFiles(
+                        file -> (file.getName().startsWith("mergeV3") && !file.getName().endsWith("Demo")));
 
         assert files != null;
         if (files.length > 1) {
@@ -206,8 +237,8 @@ public class Evaluator {
                 }
             }
         }
-        final var convertCommand = new String[] {"-c", "-i", input.toString(), "-f", "JCG", "-o",
-            langFeature.getAbsolutePath() + "/" + output + "Jcg"};
+        final var convertCommand = new String[]{"-c", "-i", input.toString(), "-f", "JCG", "-o",
+                langFeature.getAbsolutePath() + "/" + output + "Jcg"};
 
         logger.info("Merge Convert Command: {}", Arrays.toString(convertCommand).replace(",", " "));
         Main.main(convertCommand);
