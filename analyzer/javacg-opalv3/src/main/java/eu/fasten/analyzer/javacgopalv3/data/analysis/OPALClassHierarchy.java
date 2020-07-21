@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgopalv3.data.analysis;
 
-import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;

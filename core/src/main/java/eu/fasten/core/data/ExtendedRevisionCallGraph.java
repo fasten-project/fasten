@@ -16,13 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopalv3;
+package eu.fasten.core.data;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALCallSite;
-import eu.fasten.core.data.FastenURI;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -422,9 +419,8 @@ public class ExtendedRevisionCallGraph {
             final var callTypeJson = call.getJSONObject(2);
             final Map<Object, Object> callSite = new HashMap<>();
             for (String key : callTypeJson.keySet()) {
-                final var cs = new OPALCallSite(callTypeJson.getJSONObject(key));
                 final var pc = Integer.valueOf(key);
-                callSite.put(pc, cs);
+                callSite.put(pc, callTypeJson.getJSONObject(key).toMap());
             }
             return Map.of(new ArrayList<>(Arrays.asList(Integer.valueOf(call.getString(0)),
                     Integer.valueOf(call.getString(1)))), callSite);
@@ -503,9 +499,9 @@ public class ExtendedRevisionCallGraph {
     public static class Node {
 
         final private FastenURI uri;
-        final private Map<Object, Object> metadata;
+        final private Map<String, Object> metadata;
 
-        public Node(final FastenURI uri, final Map<Object, Object> metadata) {
+        public Node(final FastenURI uri, final Map<String, Object> metadata) {
             this.uri = uri;
             this.metadata = metadata;
         }
@@ -514,7 +510,7 @@ public class ExtendedRevisionCallGraph {
             return uri;
         }
 
-        public Map<Object, Object> getMetadata() {
+        public Map<String, Object> getMetadata() {
             return metadata;
         }
 
@@ -610,7 +606,7 @@ public class ExtendedRevisionCallGraph {
          * @param type JSONObject of a type including its source file name, map of methods, super
          *             classes and super interfaces.
          */
-        public Type(final JSONObject type) throws IOException {
+        public Type(final JSONObject type) {
 
             this.sourceFileName = type.getString("sourceFile");
 
@@ -619,8 +615,7 @@ public class ExtendedRevisionCallGraph {
             for (final var methodKey : methodsJson.keySet()) {
                 final var nodeJson = methodsJson.getJSONObject(methodKey);
                 this.methods.put(Integer.parseInt(methodKey),
-                        new Node(FastenURI.create(nodeJson.getString("uri")),
-                                new ObjectMapper().readValue(nodeJson.getJSONObject("metadata").toString(), Map.class)));
+                        new Node(FastenURI.create(nodeJson.getString("uri")), nodeJson.getJSONObject("metadata").toMap()));
             }
 
             final var superClassesJSON = type.getJSONArray("superClasses");
