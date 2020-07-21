@@ -46,7 +46,7 @@ public class MetadataDatabasePluginTest {
 
     @Test
     public void consumeJsonErrorTest() {
-        metadataDBExtension.consume("{\"payload\":{\"foo\":\"bar\"}}");
+        metadataDBExtension.consume("{\"payload\":{\"foo\":\"bar\",\"depset\":[]}}");
         assertNotNull(metadataDBExtension.getPluginError());
     }
 
@@ -107,7 +107,7 @@ public class MetadataDatabasePluginTest {
         long fileId = 3;
         Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
-        long id = metadataDBExtension.saveToDatabase(new RevisionCallGraph(json), metadataDao);
+        long id = metadataDBExtension.saveToDatabaseOldFormat(new RevisionCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
@@ -188,7 +188,7 @@ public class MetadataDatabasePluginTest {
         long fileId = 3;
         Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
-        long id = metadataDBExtension.saveToDatabase(new RevisionCallGraph(json), metadataDao);
+        long id = metadataDBExtension.saveToDatabaseOldFormat(new RevisionCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
@@ -271,7 +271,7 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertFile(packageVersionId, "file.java", null, null, null)).thenReturn(fileId);
         Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L, 100L));
         metadataDBExtension.setPluginError(new RuntimeException());
-        long id = metadataDBExtension.saveToDatabase(new RevisionCallGraph(json), metadataDao);
+        long id = metadataDBExtension.saveToDatabaseOldFormat(new RevisionCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
 
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null,
@@ -285,7 +285,7 @@ public class MetadataDatabasePluginTest {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject();
         assertThrows(JSONException.class, () -> metadataDBExtension
-                .saveToDatabase(new RevisionCallGraph(json), metadataDao));
+                .saveToDatabaseOldFormat(new RevisionCallGraph(json), metadataDao));
     }
 
     @Test

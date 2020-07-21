@@ -30,12 +30,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.exception.DataAccessException;
@@ -88,25 +83,55 @@ public class MetadataDatabasePlugin extends Plugin {
             this.processedRecord = false;
             this.restartTransaction = false;
             this.pluginError = null;
-            final var consumedJson = new JSONObject(record).getJSONObject("payload");
-            final var path = consumedJson.getString("dir");
+            var consumedJson = new JSONObject(record);
+            if (consumedJson.has("payload")) {
+                consumedJson = consumedJson.getJSONObject("payload");
+            }
+            final var path = consumedJson.optString("dir");
+            if (consumedJson.has("depset")) {
+                consumeOldFormat(consumedJson, path);
+            } else {
+                consumeNewFormat(consumedJson, path);
+            }
+        }
 
+        private void consumeOldFormat(JSONObject consumedJson, String path) {
             final RevisionCallGraph callgraph;
-            try {
-                JSONTokener tokener = new JSONTokener(new FileReader(path));
-                callgraph = new RevisionCallGraph(new JSONObject(tokener));
-            } catch (JSONException | FileNotFoundException e) {
-                logger.error("Error parsing JSON callgraph for '"
-                        + Paths.get(path).getFileName() + "'", e);
-                processedRecord = false;
-                setPluginError(e);
-                return;
+            if (!path.isEmpty()) {
+                try {
+                    JSONTokener tokener = new JSONTokener(new FileReader(path));
+                    callgraph = new RevisionCallGraph(new JSONObject(tokener));
+                } catch (JSONException | FileNotFoundException e) {
+                    logger.error("Error parsing JSON callgraph from path for '"
+                            + Paths.get(path).getFileName() + "'", e);
+                    processedRecord = false;
+                    setPluginError(e);
+                    return;
+                }
+            } else {
+                try {
+                    callgraph = new RevisionCallGraph(consumedJson);
+                } catch (JSONException e) {
+                    logger.error("Error parsing JSON callgraph for '"
+                            + Paths.get(path).getFileName() + "'", e);
+                    processedRecord = false;
+                    setPluginError(e);
+                    return;
+                }
             }
 
             final var artifact = callgraph.product + "@" + callgraph.version;
 
-            var groupId = callgraph.product.split(":")[0];
-            var artifactId = callgraph.product.split(":")[1];
+            final String groupId;
+            final String artifactId;
+            if (callgraph.product.contains(":")) {
+                groupId = callgraph.product.split(":")[0];
+                artifactId = callgraph.product.split(":")[1];
+            } else {
+                final var productParts = callgraph.product.split("\\.");
+                groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
+                artifactId = productParts[productParts.length - 1];
+            }
             var version = callgraph.version;
             var forge = callgraph.forge;
             var product = artifactId + "_" + groupId + "_" + version;
@@ -125,7 +150,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(callgraph, metadataDao);
+                            id = saveToDatabaseOldFormat(callgraph, metadataDao);
                         } catch (RuntimeException e) {
                             logger.error("Error saving to the database: '" + artifact + "'", e);
                             processedRecord = false;
@@ -152,6 +177,11 @@ public class MetadataDatabasePlugin extends Plugin {
                     && transactionRestartCount < transactionRestartLimit);
         }
 
+        private void consumeNewFormat(JSONObject consumedJson, String path) {
+            // Do the same as in consumeNewFormat
+            // but with ExtendedRevisionCallGraph and saveToDatabaseNewFormat()
+        }
+
         @Override
         public Optional<String> produce() {
             if (gidGraph == null) {
@@ -167,13 +197,13 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         /**
-         * Saves a callgraph to the database to appropriate tables.
+         * Saves a callgraph of olf format to the database to appropriate tables.
          *
          * @param callGraph   Call graph to save to the database.
          * @param metadataDao Data Access Object to insert records in the database
          * @return Package ID saved in the database
          */
-        public long saveToDatabase(RevisionCallGraph callGraph, MetadataDao metadataDao) {
+        public long saveToDatabaseOldFormat(RevisionCallGraph callGraph, MetadataDao metadataDao) {
             final var timestamp = this.getProperTimestamp(callGraph.timestamp);
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
                     null, null, null);
@@ -292,6 +322,11 @@ public class MetadataDatabasePlugin extends Plugin {
             this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
                     nodes, internalCallablesIds.size(), edges);
             return packageVersionId;
+        }
+
+        public long saveToDatabaseNewFormat(RevisionCallGraph callGraph, MetadataDao metadataDao) {
+            // TODO: Change callGraph type to ExtendedRevisionCallGraph as soon as it is in the core
+            return 0L;
         }
 
         private Timestamp getProperTimestamp(long timestamp) {
