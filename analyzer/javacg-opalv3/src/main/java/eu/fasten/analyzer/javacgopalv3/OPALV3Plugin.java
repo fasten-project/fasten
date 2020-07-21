@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopalv3;
 
 import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopalv3.data.PartialCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.io.FileNotFoundException;

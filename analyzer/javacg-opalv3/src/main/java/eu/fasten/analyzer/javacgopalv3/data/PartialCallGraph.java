@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.javacgopalv3.data;
 
 import com.google.common.collect.Lists;
-import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALType;
 import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;

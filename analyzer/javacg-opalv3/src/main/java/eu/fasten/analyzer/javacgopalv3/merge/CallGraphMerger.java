@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgopalv3.merge;
 
-import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALCallSite;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;

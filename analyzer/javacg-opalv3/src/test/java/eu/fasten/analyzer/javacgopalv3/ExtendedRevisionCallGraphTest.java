@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -65,8 +66,8 @@ class ExtendedRevisionCallGraphTest {
         assertEquals(jsonGraph.getJSONObject("cha").getJSONObject("externalTypes").toString(),
                 graph.toJSON().getJSONObject("cha").getJSONObject("externalTypes").toString());
 
-        assertEquals(jsonGraph.getJSONObject("graph").toString(),
-                graph.toJSON().getJSONObject("graph").toString());
+        assertEquals(jsonGraph.getJSONObject("graph").toMap(),
+                graph.toJSON().getJSONObject("graph").toMap());
 
         assertEquals(jsonGraph.getJSONObject("cha").getJSONObject("internalTypes")
                         .getJSONObject("/internal.package/B")

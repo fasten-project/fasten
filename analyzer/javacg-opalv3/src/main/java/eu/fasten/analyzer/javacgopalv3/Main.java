@@ -24,6 +24,7 @@ import eu.fasten.analyzer.javacgopalv3.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopalv3.evaluation.JCGFormat;
 import eu.fasten.analyzer.javacgopalv3.merge.CallGraphUtils;
 import eu.fasten.analyzer.javacgopalv3.merge.CallGraphMerger;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
