@@ -18,6 +18,8 @@
 
 package eu.fasten.analyzer.javacgopalv3.data.analysis;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 
@@ -87,6 +89,19 @@ public class OPALCallSite {
             }
         }
         return false;
+    }
+
+    /**
+     * Converts this call site to a map.
+     *
+     * @return a map representation of this call site
+     */
+    public Map<String, Object> toMap() {
+        var map = new HashMap<String, Object>();
+        map.put("line", this.line);
+        map.put("type", this.type);
+        map.put("receiver", this.receiver);
+        return map;
     }
 
     @Override

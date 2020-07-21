@@ -714,8 +714,8 @@ class OPALClassHierarchyTest {
 
         assertNotNull(callSite);
 
-        assertEquals(30, ((OPALCallSite) callSite.get("0")).getLine());
-        assertEquals("/some.package/typeName", ((OPALCallSite) callSite.get("0")).getReceiver());
-        assertEquals("testType", ((OPALCallSite) callSite.get("0")).getType());
+        assertEquals(30, ((HashMap<String, Object>) callSite.get("0")).get("line"));
+        assertEquals("/some.package/typeName", ((HashMap<String, Object>) callSite.get("0")).get("receiver"));
+        assertEquals("testType", ((HashMap<String, Object>) callSite.get("0")).get("type"));
     }
 }

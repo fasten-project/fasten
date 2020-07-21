@@ -292,6 +292,6 @@ public class OPALClassHierarchy {
 
         return Map.of(pc.toString(), new OPALCallSite(source.body().get().lineNumber(pc)
                 .getOrElse(JavaToScalaConverter.asScalaFunction0OptionInteger(404)),
-                instruction, receiverType.toString()));
+                instruction, receiverType.toString()).toMap());
     }
 }
