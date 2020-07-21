@@ -125,12 +125,12 @@ public class PartialCallGraph {
             final var currentClass = classFile.thisType();
             final var methods = getMethodsMap(methodNum.get(),
                     JavaConverters.asJavaIterable(classFile.methods()));
-
             final var type = new OPALType(methods,
                     OPALType.extractSuperClasses(project.classHierarchy(), currentClass),
                     OPALType.extractSuperInterfaces(project.classHierarchy(), currentClass),
                     classFile.sourceFile().getOrElse(JavaToScalaConverter
-                            .asScalaFunction0OptionString("NotFound")));
+                            .asScalaFunction0OptionString("NotFound")),
+                    classFile.isPublic() ? "public" : "packagePrivate", classFile.isFinal());
 
             result.put(currentClass, type);
             methodNum.addAndGet(methods.size());

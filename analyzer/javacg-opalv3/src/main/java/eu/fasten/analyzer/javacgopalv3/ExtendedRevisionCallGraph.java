@@ -547,6 +547,8 @@ public class ExtendedRevisionCallGraph {
             this.methods = HashBiMap.create();
             this.superClasses = new LinkedList<>();
             this.superInterfaces = new ArrayList<>();
+            this.access = "";
+            this.isFinal = false;
         }
 
         public int addMethod(final Node node, final int key) {
@@ -578,6 +580,10 @@ public class ExtendedRevisionCallGraph {
          */
         private final List<FastenURI> superInterfaces;
 
+        private final String access;
+
+        private final boolean isFinal;
+
         /**
          * Creates {@link Type} for the given data.
          *
@@ -588,11 +594,14 @@ public class ExtendedRevisionCallGraph {
          */
         public Type(final String sourceFile, final BiMap<Integer, Node> methods,
                     final LinkedList<FastenURI> superClasses,
-                    final List<FastenURI> superInterfaces) {
+                    final List<FastenURI> superInterfaces, final String access,
+                    final boolean isFinal) {
             this.sourceFileName = sourceFile;
             this.methods = methods;
             this.superClasses = superClasses;
             this.superInterfaces = superInterfaces;
+            this.access = access;
+            this.isFinal = isFinal;
         }
 
         /**
@@ -627,6 +636,8 @@ public class ExtendedRevisionCallGraph {
             for (int i = 0; i < numberOfSuperInterfaces; i++) {
                 this.superInterfaces.add(FastenURI.create(superInterfacesJSON.getString(i)));
             }
+            this.access = type.getString("access");
+            this.isFinal = type.getBoolean("final");
         }
 
         /**
@@ -667,6 +678,8 @@ public class ExtendedRevisionCallGraph {
             result.put("superClasses", toListOfString(type.superClasses));
             result.put("superInterfaces", toListOfString(type.superInterfaces));
             result.put("sourceFile", type.sourceFileName);
+            result.put("access", type.access);
+            result.put("final", type.isFinal);
 
             return result;
         }
@@ -691,6 +704,14 @@ public class ExtendedRevisionCallGraph {
             return superInterfaces;
         }
 
+        public String getAccess() {
+            return access;
+        }
+
+        public boolean isFinal() {
+            return isFinal;
+        }
+
         @Override
         public String toString() {
             return "Type{"
@@ -698,6 +719,8 @@ public class ExtendedRevisionCallGraph {
                     + ", methods=" + methods
                     + ", superClasses=" + superClasses
                     + ", superInterfaces=" + superInterfaces
+                    + ", access=" + access
+                    + ", final=" + isFinal
                     + '}';
         }
 

@@ -20,12 +20,18 @@ package eu.fasten.analyzer.javacgopalv3.evaluation;
 
 import eu.fasten.analyzer.javacgopalv3.Main;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
+import org.jooq.tools.csv.CSVReader;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,18 +69,44 @@ public class Evaluator {
 
     public static void main(String[] args) throws IOException {
 
-        if (args[0].equals("--single")) {
+        if (args[0].equals("--RQ3single")) {
             generateSingleFeature(new File(args[1]));
-        } else if (args[0].equals("--all")){
+        } else if (args[0].equals("--RQ3All")){
             generateAllFeatures(new File(args[1]));
-        }else {
-            evaluatePerformance(args[1]);
+        }else if (args[0].equals("--RQ1")){
+            evaluatePerformance(dropTheHeader(readCSV(args[1])));
         }
     }
 
-    private static void evaluatePerformance(final String coord) {
-        final var files = Maven.resolver().resolve(coord).withoutTransitivity().asFile();
+    private static List<String> dropTheHeader(final List<String> csv) {
+        csv.remove(0);
+        return csv;
+    }
 
+    private static List<String> readCSV(final String revisions) throws IOException {
+        List<String> coords = new ArrayList<>();
+        try (final var csvReader = new CSVReader(new FileReader(revisions))) {
+            String[] values;
+            while ((values = csvReader.readNext()) != null) {
+                coords.add(Arrays.asList(values).get(0));
+            }
+        }
+        return coords;
+    }
+
+    private static void evaluatePerformance(final List<String> coords) throws IOException {
+        for (final String coord : coords) {
+            final var files = Maven.resolver().resolve(coord).withoutTransitivity().asFile();
+            final var mainClass = new Main();
+            new File("RCGs").mkdir();
+            for (final var file : files) {
+                final long startTime = System.currentTimeMillis();
+                mainClass.setOutput("RCGs/" + coord);
+                mainClass.generate(file,"", "RTA", true);
+                new DecimalFormat("#0.000").format((System.currentTimeMillis() - startTime) / 1000d);
+            }
+
+        }
     }
 
     private static String extractMain(final File langFeature) throws IOException {

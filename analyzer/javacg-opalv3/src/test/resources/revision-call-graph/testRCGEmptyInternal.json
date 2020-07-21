@@ -7,6 +7,7 @@
     "cha": {
         "externalTypes": {
             "/external.package/A": {
+                "access": "",
                 "methods": {
                     "1": {
                         "metadata": {},
@@ -17,6 +18,7 @@
                         "uri": "/external.package/A.otherMethod()%2Fjava.lang%2FVoidType"
                     }
                 },
+                "final": false,
                 "superInterfaces": [],
                 "sourceFile": "",
                 "superClasses": []
@@ -25,6 +27,7 @@
         "internalTypes": {},
         "resolvedTypes": {
             "/resolved.package/C": {
+                "access": "public",
                 "methods": {
                     "5": {
                         "metadata": {
@@ -45,6 +48,7 @@
                         "uri": "/resolved.package/C.newInstance()%2Fjava.lang%2FObject"
                     }
                 },
+                "final": false,
                 "superInterfaces": [
                     "/resolved.package/CInterface"
                 ],

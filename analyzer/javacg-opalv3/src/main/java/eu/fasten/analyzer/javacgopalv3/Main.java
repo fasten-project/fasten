@@ -55,6 +55,10 @@ public class Main implements Runnable {
             defaultValue = "")
     String output;
 
+    public void setOutput(String output) {
+        this.output = output;
+    }
+
     static class Commands {
 
         @CommandLine.ArgGroup(exclusive = false)
@@ -90,6 +94,12 @@ public class Main implements Runnable {
 
         @CommandLine.ArgGroup(exclusive = true)
         Tools tools;
+
+        @CommandLine.Option(names = {"-t", "--timestamp"},
+                paramLabel = "TS",
+                description = "Release TS",
+                defaultValue = "0")
+        String timestamp;
     }
 
     static class Tools {
@@ -110,11 +120,7 @@ public class Main implements Runnable {
                 description = "Generate call graph for artifact")
         boolean doGenerate;
 
-        @CommandLine.Option(names = {"-t", "--timestamp"},
-                paramLabel = "TS",
-                description = "Release TS",
-                defaultValue = "0")
-        String timestamp;
+
 
     }
 
@@ -300,7 +306,7 @@ public class Main implements Runnable {
             revisionCallGraph =
                     PartialCallGraph.createExtendedRevisionCallGraph((MavenCoordinate) artifact, mainClass,
                             algorithm,
-                            Long.parseLong(this.commands.computations.tools.opal.timestamp));
+                            Long.parseLong(this.commands.computations.timestamp));
         }
 
         logger.info("Generated the call graph in {} seconds.",
