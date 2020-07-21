@@ -101,7 +101,7 @@ public class MetadataDatabasePlugin extends Plugin {
          * Consumes callgraph record of the old format.
          *
          * @param consumedJson JSON of the consumed record
-         * @param path Path where the record is stored
+         * @param path         Path where the record is stored
          */
         private void consumeOldFormat(JSONObject consumedJson, String path) {
             final RevisionCallGraph callgraph;
@@ -184,7 +184,7 @@ public class MetadataDatabasePlugin extends Plugin {
          * Consumes callgraph record of the new format.
          *
          * @param consumedJson JSON of the consumed record
-         * @param path Path where the record is stored
+         * @param path         Path where the record is stored
          */
         private void consumeNewFormat(JSONObject consumedJson, String path) {
             final ExtendedRevisionCallGraph callgraph;
@@ -419,9 +419,9 @@ public class MetadataDatabasePlugin extends Plugin {
                 var type = internalTypes.get(fastenUri);
                 var moduleMetadata = new JSONObject();
                 moduleMetadata.put("superInterfaces",
-                        RevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
+                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
                 moduleMetadata.put("superClasses",
-                        RevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
+                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
                 long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
                         null, moduleMetadata);
                 var fileName = type.getSourceFileName();
@@ -438,12 +438,13 @@ public class MetadataDatabasePlugin extends Plugin {
             final var numInternal = callables.size();
             var externalTypes = cha.get(ExtendedRevisionCallGraph.Scope.externalTypes);
             for (var fastenUri : externalTypes.keySet()) {
-                var type = internalTypes.get(fastenUri);
+                var type = externalTypes.get(fastenUri);
                 var moduleMetadata = new JSONObject();
                 moduleMetadata.put("superInterfaces",
-                        RevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
+                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
                 moduleMetadata.put("superClasses",
-                        RevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
+                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
+                // TODO: Add 'access' and 'final'
                 long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
                         null, moduleMetadata);
                 var fileName = type.getSourceFileName();
@@ -453,7 +454,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     var localId = (long) methodEntry.getKey();
                     var uri = methodEntry.getValue().toString();
                     var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
-                    callables.add(new CallablesRecord(localId, moduleId, uri, false,
+                    callables.add(new CallablesRecord(localId, -1L, uri, false,
                             null, JSONB.valueOf(callableMetadata.toString())));
                 }
             }
@@ -484,7 +485,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 var globalTarget = lidToGidMap.get(localTarget);
                 var pc = Integer.parseInt(
                         edgeEntry.getValue().keySet().iterator().next().toString());
-                var metadata = new JSONObject(edgeEntry.getValue().get(String.valueOf(pc)));
+                var metadata = new JSONObject(edgeEntry.getValue().get(pc));
                 metadata.put("pc", pc);
                 edges.add(new EdgesRecord(globalSource, globalTarget,
                         JSONB.valueOf(metadata.toString())));
