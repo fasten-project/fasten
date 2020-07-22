@@ -422,6 +422,8 @@ public class MetadataDatabasePlugin extends Plugin {
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
                 moduleMetadata.put("superClasses",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
+                moduleMetadata.put("access", type.getAccess());
+                moduleMetadata.put("final", type.isFinal());
                 long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
                         null, moduleMetadata);
                 var fileName = type.getSourceFileName();
@@ -429,7 +431,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 metadataDao.insertModuleContent(moduleId, fileId);
                 for (var methodEntry : type.getMethods().entrySet()) {
                     var localId = (long) methodEntry.getKey();
-                    var uri = methodEntry.getValue().toString();
+                    var uri = methodEntry.getValue().getUri().toString();
                     var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
                     callables.add(new CallablesRecord(localId, moduleId, uri, true,
                             null, JSONB.valueOf(callableMetadata.toString())));
@@ -444,7 +446,8 @@ public class MetadataDatabasePlugin extends Plugin {
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
                 moduleMetadata.put("superClasses",
                         ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
-                // TODO: Add 'access' and 'final'
+                moduleMetadata.put("access", type.getAccess());
+                moduleMetadata.put("final", type.isFinal());
                 long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
                         null, moduleMetadata);
                 var fileName = type.getSourceFileName();
@@ -452,7 +455,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 metadataDao.insertModuleContent(moduleId, fileId);
                 for (var methodEntry : type.getMethods().entrySet()) {
                     var localId = (long) methodEntry.getKey();
-                    var uri = methodEntry.getValue().toString();
+                    var uri = methodEntry.getValue().getUri().toString();
                     var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
                     callables.add(new CallablesRecord(localId, -1L, uri, false,
                             null, JSONB.valueOf(callableMetadata.toString())));
@@ -485,8 +488,12 @@ public class MetadataDatabasePlugin extends Plugin {
                 var globalTarget = lidToGidMap.get(localTarget);
                 var pc = Integer.parseInt(
                         edgeEntry.getValue().keySet().iterator().next().toString());
-                var metadata = new JSONObject(edgeEntry.getValue().get(pc));
+                var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(pc);
+                var metadata = new JSONObject();
                 metadata.put("pc", pc);
+                for (var key : metadataMap.keySet()) {
+                    metadata.put(key, metadataMap.get(key));
+                }
                 edges.add(new EdgesRecord(globalSource, globalTarget,
                         JSONB.valueOf(metadata.toString())));
             }
