@@ -34,7 +34,6 @@ import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
-import org.opalj.collection.immutable.Chain;
 import scala.collection.JavaConverters;
 
 /**
@@ -53,7 +52,7 @@ public class OPALType {
      * Creates {@link OPALType} for the given data.
      *
      * @param methods         a map of methods in this type together with their ids.
-     * @param superClasses    a {@link Chain} of classes that this type extends.
+     * @param superClasses    a {@link LinkedList} of classes that this type extends.
      * @param superInterfaces a list of interfaces that this type implements.
      * @param sourceFileName  name of the source file that this type belongs to.
      */
@@ -259,7 +258,7 @@ public class OPALType {
      *
      * @param classHierarchy class hierarchy of the artifact to be checked for super classes
      * @param currentClass   type that to be checked for super classes
-     * @return A {@link Chain} of {@link ObjectType} as super classes of the passed type.
+     * @return A {@link LinkedList} of {@link ObjectType} as super classes of the passed type.
      */
     public static LinkedList<ObjectType> extractSuperClasses(final ClassHierarchy classHierarchy,
                                                              final ObjectType currentClass)

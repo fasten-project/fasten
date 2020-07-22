@@ -86,7 +86,7 @@ class ExtendedRevisionCallGraphTest {
 
     @Test
     void toJSONFromCHA() {
-        assertEquals(graph.toJSON(graph.getClassHierarchy()).toString(),
+        assertEquals(graph.classHierarchyToJSON(graph.getClassHierarchy()).toString(),
                 graph.toJSON().getJSONObject("cha").toString());
     }
 
