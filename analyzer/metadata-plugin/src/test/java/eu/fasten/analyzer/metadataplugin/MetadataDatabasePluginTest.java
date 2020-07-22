@@ -18,10 +18,12 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.RevisionCallGraph;
 import org.jooq.DSLContext;
@@ -48,6 +50,110 @@ public class MetadataDatabasePluginTest {
     public void consumeJsonErrorTest() {
         metadataDBExtension.consume("{\"payload\":{\"foo\":\"bar\",\"depset\":[]}}");
         assertNotNull(metadataDBExtension.getPluginError());
+    }
+
+    @Test
+    public void saveToDatabaseNewFormatTest() throws IOException {
+        var metadataDao = Mockito.mock(MetadataDao.class);
+        var json = new JSONObject("{\n" +
+                "    \"product\": \"groupID:artifactID\",\n" +
+                "    \"nodes\": 2,\n" +
+                "    \"forge\": \"mvn\",\n" +
+                "    \"generator\": \"OPAL\",\n" +
+                "    \"version\": \"2.6\",\n" +
+                "    \"cha\": {\n" +
+                "        \"externalTypes\": {\n" +
+                "            \"/external.package/A\": {\n" +
+                "                \"access\": \"\",\n" +
+                "                \"methods\": {\n" +
+                "                    \"1\": {\n" +
+                "                        \"metadata\": {},\n" +
+                "                        \"uri\": \"/external.package/A.someMethod()%2Fjava.lang%2FObject\"\n" +
+                "                    }\n" +
+                "                },\n" +
+                "                \"final\": false,\n" +
+                "                \"superInterfaces\": [],\n" +
+                "                \"sourceFile\": \"\",\n" +
+                "                \"superClasses\": []\n" +
+                "            }\n" +
+                "        },\n" +
+                "        \"internalTypes\": {\n" +
+                "            \"/internal.package/B\": {\n" +
+                "                \"access\": \"public\",\n" +
+                "                \"methods\": {\n" +
+                "                    \"2\": {\n" +
+                "                        \"metadata\": {\n" +
+                "                            \"access\": \"public\",\n" +
+                "                            \"last\": 14,\n" +
+                "                            \"defined\": true,\n" +
+                "                            \"first\": 25\n" +
+                "                        },\n" +
+                "                        \"uri\": \"/internal.package/B.internalMethod(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType\"\n" +
+                "                    }\n" +
+                "                },\n" +
+                "                \"final\": false,\n" +
+                "                \"superInterfaces\": [\n" +
+                "                    \"/internal.package/BInterface\"\n" +
+                "                ],\n" +
+                "                \"sourceFile\": \"B.java\",\n" +
+                "                \"superClasses\": [\n" +
+                "                    \"/java.lang/Object\"\n" +
+                "                ]\n" +
+                "            }\n" +
+                "        },\n" +
+                "        \"resolvedTypes\": {}\n" +
+                "    },\n" +
+                "    \"graph\": {\n" +
+                "        \"internalCalls\": [],\n" +
+                "        \"externalCalls\": [\n" +
+                "            [\n" +
+                "                \"2\",\n" +
+                "                \"1\",\n" +
+                "                {\"1\": {\n" +
+                "                    \"receiver\": \"/java.lang/Object\",\n" +
+                "                    \"line\": 42,\n" +
+                "                    \"type\": \"invokespecial\"\n" +
+                "                }}\n" +
+                "            ]\n" +
+                "        ],\n" +
+                "        \"resolvedCalls\": []\n" +
+                "    },\n" +
+                "    \"timestamp\": 123\n" +
+                "}\n");
+        long packageId = 8;
+        Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
+                null)).thenReturn(packageId);
+        long packageVersionId = 42;
+        Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
+                json.getString("version"), new Timestamp(json.getLong("timestamp") * 1000), null)).thenReturn(packageVersionId);
+        long externalModuleId = 16;
+        var externalModuleMetadata = new JSONObject("{" +
+                "\"access\": \"\"," +
+                "\"final\": false," +
+                "\"superInterfaces\": []," +
+                "\"sourceFile\": \"\"," +
+                "\"superClasses\": []" +
+                "}");
+        Mockito.when(metadataDao.insertModule(packageVersionId, "/external.package/A", null,
+                externalModuleMetadata)).thenReturn(externalModuleId);
+        long fileId1 = 3;
+        Mockito.when(metadataDao.insertFile(packageVersionId, "", null, null, null)).thenReturn(fileId1);
+        Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L));
+        long internalModuleId = 17;
+        var internalModuleMetadata = new JSONObject("{" +
+                "\"access\": \"public\"," +
+                "\"final\": false," +
+                "\"superInterfaces\": [\"/internal.package/BInterface\"]," +
+                "\"sourceFile\": \"B.java\"," +
+                "\"superClasses\": [\"/java.lang/Object\"]" +
+                "}");
+        Mockito.when(metadataDao.insertModule(packageVersionId, "/internal.package/B", null,
+                internalModuleMetadata)).thenReturn(internalModuleId);
+        long id = metadataDBExtension.saveToDatabaseNewFormat(new ExtendedRevisionCallGraph(json), metadataDao);
+        assertEquals(packageVersionId, id);
+        Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
+        Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
+                json.getString("version"), new Timestamp(json.getLong("timestamp") * 1000), null);
     }
 
     @Test
