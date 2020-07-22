@@ -42,6 +42,7 @@
         <module>repo-analyzer</module>
         <module>vulnerability-cache-invalidation-plugin</module>
         <module>vulnerability-cache-processor-plugin</module>
+        <module>compliance-analyzer</module>
     </modules>
 
     <build>
