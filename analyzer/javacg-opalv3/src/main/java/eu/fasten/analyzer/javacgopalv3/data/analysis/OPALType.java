@@ -21,7 +21,6 @@ package eu.fasten.analyzer.javacgopalv3.data.analysis;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Node;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Type;
 import eu.fasten.core.data.FastenURI;
@@ -87,7 +86,7 @@ public class OPALType {
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link ExtendedRevisionCallGraph.Type}.
+     * corresponding {@link Type}.
      *
      * @param projectHierarchy class hierarchy of the project
      * @param methods          methods belonging to this type
@@ -114,7 +113,7 @@ public class OPALType {
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link ExtendedRevisionCallGraph.Type}.
+     * corresponding {@link Type}.
      *
      * @param type  OPAL type
      * @param klass object type
@@ -136,7 +135,7 @@ public class OPALType {
 
     /**
      * Convert a map of {@link DeclaredMethod} to a BiMap of
-     * {@link ExtendedRevisionCallGraph.Node}.
+     * {@link Node}.
      *
      * @param methods map of methods to convert
      * @return BiMap of Nodes

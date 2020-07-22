@@ -291,8 +291,12 @@ public class OPALClassHierarchy {
         final var receiverType = OPALMethod.getTypeURI(source.instructionsOption().get()[pc]
                 .asMethodInvocationInstruction().declaringClass());
 
-        return Map.of(pc.toString(), new OPALCallSite(source.body().get().lineNumber(pc)
-                .getOrElse(JavaToScalaConverter.asScalaFunction0OptionInteger(404)),
-                instruction, receiverType.toString()).toMap());
+        var callSite = new HashMap<>();
+        callSite.put("line", source.body().get().lineNumber(pc)
+                .getOrElse(JavaToScalaConverter.asScalaFunction0OptionInteger(404)));
+        callSite.put("type", instruction);
+        callSite.put("receiver", receiverType.toString());
+
+        return Map.of(pc.toString(), callSite);
     }
 }
