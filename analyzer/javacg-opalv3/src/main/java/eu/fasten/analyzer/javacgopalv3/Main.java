@@ -296,7 +296,8 @@ public class Main implements Runnable {
                 commands.computations.tools.merge.mergeAlgorithm);
 
         if (!this.output.isEmpty() && result != null) {
-            CallGraphUtils.writeToFile(this.output, result.toJSON(), "_" + result.product + "_merged");
+            CallGraphUtils.writeToFile(this.output, result.toJSON(),
+                    "_" + result.product + "_merged");
         }
 
         return result;

@@ -194,6 +194,7 @@
                 <configuration>
                     <excludes>
                         <exclude>**/Main.*</exclude>
+                        <exclude>**/evaluation/*</exclude>
                     </excludes>
                 </configuration>
             </plugin>

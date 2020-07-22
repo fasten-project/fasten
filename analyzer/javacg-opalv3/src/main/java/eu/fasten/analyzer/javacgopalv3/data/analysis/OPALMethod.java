@@ -51,11 +51,11 @@ public class OPALMethod {
         var packageName = getPackageName(klass);
         var className = getClassName(klass);
         var methodName = getMethodName(getClassName(klass), method);
-        var parameters = getParametersURI(JavaConverters.seqAsJavaList(descriptor.parameterTypes()));
+        var params = getParametersURI(JavaConverters.seqAsJavaList(descriptor.parameterTypes()));
         var returnType = getTypeURI(descriptor.returnType());
 
         final var javaURIRaw = FastenJavaURI.create(null, product, null,
-                packageName, className, methodName, parameters, returnType);
+                packageName, className, methodName, params, returnType);
         final var javaURI = javaURIRaw.canonicalize();
 
         return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
@@ -65,13 +65,14 @@ public class OPALMethod {
     }
 
     /**
-     * Find the String OPALMethod name that {@link FastenURI} supports.
+     * Find the String OPALMethod name that {@link FastenURI} supports. If the method
+     * is a constructor the output is the class name. For class initializer (static initialization
+     * blocks for the class, and static field initialization), it's pctEncoded "<"init">",
+     * otherwise the method name.
      *
      * @param className  Name of class that method belongs in String
      * @param methodName Name of method in String
-     * @return If the method is a constructor the output is the class name. For class initializer
-     * (static initialization blocks for the class, and static field initialization), it's
-     * pctEncoded "<"init">", otherwise the method name.
+     * @return method name
      */
     public static String getMethodName(final String className, final String methodName) {
         if (methodName.equals("<init>")) {

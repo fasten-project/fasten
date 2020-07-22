@@ -20,6 +20,9 @@ package eu.fasten.analyzer.javacgopalv3.data.analysis;
 
 import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph.Scope;
+import eu.fasten.core.data.ExtendedRevisionCallGraph.Type;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,11 +80,10 @@ public class OPALClassHierarchy {
      * @param projectHierarchy OPAL class hierarchy
      * @return A {@link Map} of {@link FastenURI} and {@link ExtendedRevisionCallGraph.Type}
      */
-    public Map<ExtendedRevisionCallGraph.Scope, Map<FastenURI, ExtendedRevisionCallGraph.Type>> asURIHierarchy(
-            ClassHierarchy projectHierarchy) {
+    public Map<Scope, Map<FastenURI, Type>> asURIHierarchy(ClassHierarchy projectHierarchy) {
 
-        final Map<FastenURI, ExtendedRevisionCallGraph.Type> internalResult = new HashMap<>();
-        final Map<FastenURI, ExtendedRevisionCallGraph.Type> externalResult = new HashMap<>();
+        final Map<FastenURI, Type> internalResult = new HashMap<>();
+        final Map<FastenURI, Type> externalResult = new HashMap<>();
 
         final var internals = this.getInternalCHA();
         for (final var aClass : internals.keySet()) {
@@ -93,9 +95,8 @@ public class OPALClassHierarchy {
                     .putAll(OPALType.getType(projectHierarchy, externals.get(aClass), aClass));
         }
 
-        return Map.of(ExtendedRevisionCallGraph.Scope.internalTypes, internalResult,
-                ExtendedRevisionCallGraph.Scope.externalTypes, externalResult,
-                ExtendedRevisionCallGraph.Scope.resolvedTypes, new HashMap<>());
+        return Map.of(Scope.internalTypes, internalResult, Scope.externalTypes, externalResult,
+                Scope.resolvedTypes, new HashMap<>());
     }
 
     /**
@@ -209,15 +210,15 @@ public class OPALClassHierarchy {
     /**
      * Get metadata of internal calls.
      *
-     * @param internalCalls map of internal calls
-     * @param metadata      new metadata to add
-     * @param call          call to add metadata to
+     * @param ic       map of internal calls
+     * @param metadata new metadata to add
+     * @param call     call to add metadata to
      * @return internal metadata
      */
-    public Map<Object, Object> getInternalMetadata(final Map<List<Integer>, Map<Object, Object>> internalCalls,
+    public Map<Object, Object> getInternalMetadata(final Map<List<Integer>, Map<Object, Object>> ic,
                                                    final Map<Object, Object> metadata,
                                                    final List<Integer> call) {
-        final var internalMetadata = internalCalls.getOrDefault(call, new HashMap<>());
+        final var internalMetadata = ic.getOrDefault(call, new HashMap<>());
         internalMetadata.putAll(metadata);
         return internalMetadata;
     }
@@ -243,8 +244,8 @@ public class OPALClassHierarchy {
      * @param targets list of targets
      * @return ExtendedRevisionCallGraph sub-graph
      */
-    public ExtendedRevisionCallGraph.Graph getSubGraph(final Object source,
-                                                       final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets) {
+    public Graph getSubGraph(final Object source,
+                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets) {
 
         final var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
         final var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();

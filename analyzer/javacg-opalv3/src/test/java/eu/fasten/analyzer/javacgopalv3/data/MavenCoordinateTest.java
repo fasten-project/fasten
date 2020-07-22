@@ -90,13 +90,6 @@ class MavenCoordinateTest {
                 coordinate.toJarUrl("repo/"));
     }
 
-    @Test
-    void toPomUrl() {
-        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
-        assertEquals("repo/GroupID/ArtifactID/Version/ArtifactID-Version.pom",
-                coordinate.toPomUrl("repo/"));
-    }
-
     // ------------------
     // Maven Resolver Tests
     // ------------------
