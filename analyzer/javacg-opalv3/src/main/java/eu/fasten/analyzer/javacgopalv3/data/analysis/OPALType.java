@@ -21,7 +21,6 @@ package eu.fasten.analyzer.javacgopalv3.data.analysis;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
-import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Node;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Type;
@@ -46,7 +45,7 @@ public class OPALType {
 
     private final String sourceFileName;
     private final Map<Method, Integer> methods;
-    private final Chain<ObjectType> superClasses;
+    private final LinkedList<ObjectType> superClasses;
     private final List<ObjectType> superInterfaces;
     private final String access;
     private final boolean isFinal;
@@ -59,7 +58,7 @@ public class OPALType {
      * @param superInterfaces a list of interfaces that this type implements.
      * @param sourceFileName  name of the source file that this type belongs to.
      */
-    public OPALType(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses,
+    public OPALType(final Map<Method, Integer> methods, final LinkedList<ObjectType> superClasses,
                     final List<ObjectType> superInterfaces, final String sourceFileName,
                     final String access, final boolean isFinal) {
         this.methods = methods;
@@ -74,7 +73,7 @@ public class OPALType {
         return methods;
     }
 
-    public Chain<ObjectType> getSuperClasses() {
+    public LinkedList<ObjectType> getSuperClasses() {
         return superClasses;
     }
 
@@ -163,9 +162,7 @@ public class OPALType {
      */
     public static List<FastenURI> toURIInterfaces(final List<ObjectType> types) {
         final List<FastenURI> result = new ArrayList<>();
-        for (final var aClass : types) {
-            result.add(OPALMethod.getTypeURI(aClass));
-        }
+        types.forEach(objectType -> result.add(OPALMethod.getTypeURI(objectType)));
         return result;
     }
 
@@ -175,12 +172,9 @@ public class OPALType {
      * @param types chain of types
      * @return list of URIs
      */
-    public static LinkedList<FastenURI> toURIClasses(final Chain<ObjectType> types) {
+    public static LinkedList<FastenURI> toURIClasses(final LinkedList<ObjectType> types) {
         final LinkedList<FastenURI> result = new LinkedList<>();
-
-        types.foreach(JavaToScalaConverter.asScalaFunction1(klass -> result
-                .add(OPALMethod.getTypeURI((ObjectType) klass))));
-
+        types.forEach(objectType -> result.add(OPALMethod.getTypeURI(objectType)));
         return result;
     }
 
@@ -268,14 +262,16 @@ public class OPALType {
      * @param currentClass   type that to be checked for super classes
      * @return A {@link Chain} of {@link ObjectType} as super classes of the passed type.
      */
-    public static Chain<ObjectType> extractSuperClasses(final ClassHierarchy classHierarchy,
-                                                        final ObjectType currentClass)
+    public static LinkedList<ObjectType> extractSuperClasses(final ClassHierarchy classHierarchy,
+                                                             final ObjectType currentClass)
             throws NoSuchElementException {
+        var superClassesList = new LinkedList<ObjectType>();
         if (classHierarchy.supertypes(currentClass).nonEmpty()) {
             final var superClasses =
                     classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
             if (superClasses != null) {
-                return superClasses.reverse();
+                superClasses.reverse().foreach(superClassesList::add);
+                return superClassesList;
             }
         }
         return null;
