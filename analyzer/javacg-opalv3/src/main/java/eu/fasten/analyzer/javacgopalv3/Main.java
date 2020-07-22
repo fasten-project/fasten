@@ -22,9 +22,9 @@ import eu.fasten.analyzer.javacgopalv3.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopalv3.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopalv3.evaluation.JCGFormat;
-import eu.fasten.core.merge.CallGraphUtils;
-import eu.fasten.core.merge.CallGraphMerger;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.merge.CallGraphMerger;
+import eu.fasten.core.merge.CallGraphUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -233,11 +233,10 @@ public class Main implements Runnable {
             var reachableMethods = new JSONArray();
             try {
                 for (final var input : this.commands.conversions.input) {
-                    final var cg = new String(Files.readAllBytes((Paths.get(input))));
+                    final var cg = new String(Files.readAllBytes(Paths.get(input)));
 
                     final var mergeJCG = JCGFormat
-                            .convertERCGTOJCG(new ExtendedRevisionCallGraph(new JSONObject(cg))
-                            );
+                            .convertERCGTOJCG(new ExtendedRevisionCallGraph(new JSONObject(cg)));
                     if (!mergeJCG.isEmpty() && !mergeJCG.isNull("reachableMethods")) {
                         reachableMethods = concatArray(reachableMethods,
                                 mergeJCG.getJSONArray("reachableMethods"));
@@ -296,10 +295,8 @@ public class Main implements Runnable {
         result = CallGraphMerger.mergeCallGraph(art, deps,
                 commands.computations.tools.merge.mergeAlgorithm);
 
-        if (!this.output.isEmpty()) {
-            if (result != null) {
-                CallGraphUtils.writeToFile(this.output, result.toJSON(), "_" + result.product + "_merged");
-            }
+        if (!this.output.isEmpty() && result != null) {
+            CallGraphUtils.writeToFile(this.output, result.toJSON(), "_" + result.product + "_merged");
         }
 
         return result;
@@ -340,8 +337,8 @@ public class Main implements Runnable {
                             algorithm, Long.parseLong(this.commands.computations.timestamp));
         }
 
-        logger.info("Generated the call graph in {} seconds.",
-                new DecimalFormat("#0.000").format((System.currentTimeMillis() - startTime) / 1000d));
+        logger.info("Generated the call graph in {} seconds.", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - startTime) / 1000d));
 
         if (writeToFile) {
             CallGraphUtils.writeToFile(this.output, revisionCallGraph.toJSON(), "");

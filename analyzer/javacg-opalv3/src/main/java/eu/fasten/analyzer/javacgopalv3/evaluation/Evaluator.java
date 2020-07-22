@@ -85,7 +85,7 @@ public class Evaluator {
 
     private static List<String> readCSV(final String revisions) throws IOException {
         List<String> coords = new ArrayList<>();
-        try (final var csvReader = new CSVReader(new FileReader(revisions))) {
+        try (var csvReader = new CSVReader(new FileReader(revisions))) {
             String[] values;
             while ((values = csvReader.readNext()) != null) {
                 coords.add(Arrays.asList(values).get(0));
@@ -111,7 +111,7 @@ public class Evaluator {
 
     private static String extractMain(final File langFeature) throws IOException {
         final var conf = new String(Files.readAllBytes(
-            (Paths.get(langFeature.getAbsolutePath().replace(".jar_split", "").concat(".conf")))));
+            Paths.get(langFeature.getAbsolutePath().replace(".jar_split", "").concat(".conf"))));
         final var jsObject = new JSONObject(conf);
 
         String main = "";
@@ -194,7 +194,7 @@ public class Evaluator {
         StringBuilder input = new StringBuilder();
         final var files = new File(langFeature.getAbsolutePath() + "/cg")
             .listFiles(
-                file -> (file.getName().startsWith("mergeV3") && !file.getName().endsWith("Demo")));
+                file -> file.getName().startsWith("mergeV3") && !file.getName().endsWith("Demo"));
 
         assert files != null;
         if (files.length > 1) {

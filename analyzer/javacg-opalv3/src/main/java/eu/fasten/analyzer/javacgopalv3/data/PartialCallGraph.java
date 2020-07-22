@@ -19,10 +19,10 @@
 package eu.fasten.analyzer.javacgopalv3.data;
 
 import com.google.common.collect.Lists;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALType;
 import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenURI;
 import java.io.FileNotFoundException;
 import java.util.Comparator;
@@ -112,7 +112,7 @@ public class PartialCallGraph {
      * @param project OPAL {@link Project}
      * @return class hierarchy for a given package
      * @implNote Inside {@link OPALType} all of the methods are indexed, it means one can use the
-     *      ids assigned to each method instead of the method itself.
+     * ids assigned to each method instead of the method itself.
      */
     private OPALClassHierarchy createInternalCHA(final Project<?> project) {
         final Map<ObjectType, OPALType> result = new HashMap<>();
