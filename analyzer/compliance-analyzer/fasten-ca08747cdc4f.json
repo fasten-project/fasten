@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "fasten-270711",
+  "private_key_id": "ca08747cdc4f32b25d34f98076961fdd2521e8f6",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDHIB+zg5z2Ise8\nMnV6WeIUZXCqfyA0q6y0hRgE2kF0Sx9jrAWqA7JEMhbdEM+c5NYZmZaFlE86Shx+\n/vNvTQFNUoZjBH+ujR4gPeqpVlGTGjxttbr6xkGrl/1RMqjRFfSVrQ1PsoUw0fr/\nPKF60pEXpDNOmoSeePQJYNnTdldEZn7lYbYLTPVfxb0RO2GqPpo314VEjZ0SO5qE\n5W937taS5x1IXyQgRUNxJe7u5XyQPAdaC74/qGm45huj3P9bqKQ83ekCRilp2mzZ\nyclxjv8/bUrKeIJnVdnBos5mWbC1mP9KXwfE2VmClec0blrWH1D5YZNO6D+kmJAL\nrV7VQH2XAgMBAAECggEAAOY8PmtRwirWDBuOPEc7pivvHlYEpzg/R3FyclMqCIRu\nV9znCaWKoJQ5VjZFOcguz17KN0A8O18qUciFAPOwFdFRmhDjIr6wbCTbcnhZVfjA\nXR59AbTzhvrgwgUgjhEzUZm+faWoxFeucoirkgpxbVHoiWpZPv383C37zeCy9DQg\nRHAPSD8rMkmJJsBd56Ste2Sl2IOQRQWRWX/ntuzq/jZ5Rg1oLwn7qt3wcMIWJ9oy\nTWycQawMvaQgOGdK78OtHdiJ4IDHf0QnGtNMoVd1NoFaH7f7+7BaevGI4HVV7DnJ\nV6e530rSTOwPEAyEhuiaKBShPDcInSFt2O3fsALzQQKBgQDky5bnwVpwSlUryev1\nYDD2TtxH672IRTeT9Qar48wSQ2nBFU07KF8niwhX9tHcB+VRhWuZ+OQM8z98oEu8\nxUVhmz4FO8Cfh8JibNfbKsy2X5gqnfQDZEmR095H7XzOmiDH6FmKsYVBEGrkKymj\nWSVTpnHS9t2WjcBr9739UzBEtQKBgQDezWa5RF4+oqTx5SHh5vRzaplNo7O6WUO0\nV28C3DzIhZKPounsCsgXtEspZJgGo7W2KJfE5aMj9VVxlUkupWzgczhYfwj/dydJ\nlGEase0MXZ067GyJrEU3PVKEv5kYG7iXADuE1+rvJ3qXsyUVY8iiyZuWGYnxmIl1\nELd/Az3UmwKBgEYCnlywZ9IwjLtngFKHarQUEYfYdRi7xXP66F20yP9VrYit0gIm\nKmfZPWZdWn4v1FYLs49b/7yOuoCSNFrBKqfhbyr+y8SFMFAZ6jtgb1/nBJMV3lMj\nXvfGkyADZct6kklZqfyssY/lTDAhnQ4k+y0Lo4zgiZHGMnlXR8W6rOx5AoGAE7tF\nGatAXXOx/+o28fauN3p9US7qP9qf8Fy97BbtGyUZMbdP2COsTM0eyu+ptwzQju1R\nY5KivBCCHKkH7iWgWtBZcRzvAxDeXdnSL7cKM0onHozJn/etuZKouDDvsf7ifhz7\nKGym1b89UCoBYr+PiTspmEVyvf6wTbnJRmpXE3kCgYBVnTElY2vQHsHuO3rPIufd\nrf6KHUzXdnu0+c6OeTlIQwSIn49ITm4+W133JLG4041EuJikPAullH7jQb0EtaJB\n92PJbKmTSdAQW+9JKI/euotTUW7wsXGRYJlUJkPZjwt51RTgrvMvaGKN1HLA0esa\nE3Mxgaw/zLZR5eXRDRh5Mg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "deploy-fasten-dev@fasten-270711.iam.gserviceaccount.com",
+  "client_id": "111353970233212889768",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/deploy-fasten-dev%40fasten-270711.iam.gserviceaccount.com"
+}

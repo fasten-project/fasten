@@ -1,0 +1,20 @@
+{
+  "input":{
+    "artifactId": "junit",
+    "groupId": "junit",
+    "version": "4.12",
+    "dependendencyData": {
+    },
+    "repoUrl": "http://github.com/junit-team/junit",
+    "commitTag": ""
+  },
+  "plugin_version":"0.0.1",
+  "payload":{
+    "artifactId": "junit",
+    "groupId": "junit",
+    "version": "4.12",
+    "repoPath": "/j/junit/junit"
+  },
+  "created_at": 1594820036478,
+  "plugin_name": "RepoCloner"
+}
