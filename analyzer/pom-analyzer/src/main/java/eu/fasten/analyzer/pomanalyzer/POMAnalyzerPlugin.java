@@ -46,7 +46,7 @@ public class POMAnalyzerPlugin extends Plugin {
     @Extension
     public static class POMAnalyzer implements KafkaPlugin, DBConnector {
 
-        private String consumerTopic = "fasten.maven.pkg";
+        private String consumerTopic = "fasten.mvn.pkg";
         private final Logger logger = LoggerFactory.getLogger(POMAnalyzer.class.getName());
         private Throwable pluginError = null;
         private static DSLContext dslContext;
@@ -173,17 +173,14 @@ public class POMAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            if (repoUrl != null) {
-                var json = new JSONObject();
-                json.put("artifactId", artifact);
-                json.put("groupId", group);
-                json.put("version", version);
-                json.put("repoUrl", repoUrl);
-                json.put("dependencyData", dependencyData.toJSON());
-                return Optional.of(json.toString());
-            } else {
-                return Optional.empty();
-            }
+            var json = new JSONObject();
+            json.put("artifactId", artifact);
+            json.put("groupId", group);
+            json.put("version", version);
+            json.put("repoUrl", (repoUrl != null) ? repoUrl : "");
+            json.put("commitTag", (commitTag != null) ? commitTag : "");
+            json.put("dependencyData", dependencyData.toJSON());
+            return Optional.of(json.toString());
         }
 
         @Override

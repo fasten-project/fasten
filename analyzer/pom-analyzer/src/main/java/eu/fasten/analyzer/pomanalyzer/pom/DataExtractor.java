@@ -134,7 +134,8 @@ public class DataExtractor {
      * @return Extracted dependency information as DependencyData
      */
     public DependencyData extractDependencyData(String groupId, String artifactId, String version) {
-        DependencyData dependencyData = new DependencyData(null, new ArrayList<>());
+        DependencyData dependencyData = new DependencyData(
+                new DependencyManagement(new ArrayList<>()), new ArrayList<>());
         try {
             ByteArrayInputStream pomByteStream;
             if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
