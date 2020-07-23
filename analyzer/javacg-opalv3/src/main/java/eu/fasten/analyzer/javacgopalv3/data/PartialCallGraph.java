@@ -19,10 +19,13 @@
 package eu.fasten.analyzer.javacgopalv3.data;
 
 import com.google.common.collect.Lists;
-import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
 import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALType;
 import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph.Scope;
+import eu.fasten.core.data.ExtendedRevisionCallGraph.Type;
 import eu.fasten.core.data.FastenURI;
 import java.io.FileNotFoundException;
 import java.util.Comparator;
@@ -45,8 +48,8 @@ public class PartialCallGraph {
 
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
-    private final Map<ExtendedRevisionCallGraph.Scope, Map<FastenURI, ExtendedRevisionCallGraph.Type>> classHierarchy;
-    private final ExtendedRevisionCallGraph.Graph graph;
+    private final Map<Scope, Map<FastenURI, Type>> classHierarchy;
+    private final Graph graph;
     private final int nodeCount;
 
     /**
@@ -56,7 +59,7 @@ public class PartialCallGraph {
      * @param constructor call graph constructor
      */
     public PartialCallGraph(CallGraphConstructor constructor) {
-        this.graph = new ExtendedRevisionCallGraph.Graph();
+        this.graph = new Graph();
 
         logger.info("Creating internal CHA");
         final var cha = createInternalCHA(constructor.getProject());
@@ -68,11 +71,11 @@ public class PartialCallGraph {
         this.classHierarchy = cha.asURIHierarchy(constructor.getProject().classHierarchy());
     }
 
-    public Map<ExtendedRevisionCallGraph.Scope, Map<FastenURI, ExtendedRevisionCallGraph.Type>> getClassHierarchy() {
+    public Map<Scope, Map<FastenURI, Type>> getClassHierarchy() {
         return classHierarchy;
     }
 
-    public ExtendedRevisionCallGraph.Graph getGraph() {
+    public Graph getGraph() {
         return graph;
     }
 
@@ -111,8 +114,7 @@ public class PartialCallGraph {
      *
      * @param project OPAL {@link Project}
      * @return class hierarchy for a given package
-     * @implNote Inside {@link OPALType} all of the methods are indexed, it means one can use the
-     *      ids assigned to each method instead of the method itself.
+     * @implNote Inside {@link OPALType} all of the methods are indexed.
      */
     private OPALClassHierarchy createInternalCHA(final Project<?> project) {
         final Map<ObjectType, OPALType> result = new HashMap<>();

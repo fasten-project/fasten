@@ -18,9 +18,8 @@
 
 package eu.fasten.analyzer.javacgopalv3.evaluation;
 
-import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALCallSite;
-import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph.Node;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph.Node;
 import eu.fasten.core.data.FastenURI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -61,10 +60,10 @@ public class JCGFormat {
             for (final var targetsOfACallSite : cgWithCallSites.get(source).entrySet()) {
                 for (final var callSite : targetsOfACallSite.getKey().entrySet()) {
                     final var callSiteJson = new JSONObject();
-                    final var cs = new OPALCallSite(callSite.getValue().toString());
+                    final var cs = (HashMap<String, Object>) callSite.getValue();
                     final var pc = (Integer) callSite.getKey();
-                    callSiteJson.put("declaredTarget", getMethodJSON(cs.getReceiver(), targetsOfACallSite.getValue().get(0)));
-                    callSiteJson.put("line", cs.getLine());
+                    callSiteJson.put("declaredTarget", getMethodJSON((String) cs.get("receiver"), targetsOfACallSite.getValue().get(0)));
+                    callSiteJson.put("line", cs.get("line"));
                     callSiteJson.put("pc", pc);
                     final var targets = new JSONArray();
                     for (final var target : targetsOfACallSite.getValue()) {

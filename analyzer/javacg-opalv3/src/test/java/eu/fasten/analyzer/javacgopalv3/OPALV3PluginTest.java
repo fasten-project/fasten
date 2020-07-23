@@ -22,17 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopalv3.data.PartialCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class OPALV3PluginTest {
 

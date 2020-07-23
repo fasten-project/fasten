@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Files extends TableImpl<FilesRecord> {
 
-    private static final long serialVersionUID = -1535895488;
+    private static final long serialVersionUID = 2017129051;
 
     /**
      * The reference instance of <code>public.files</code>
@@ -129,7 +129,7 @@ public class Files extends TableImpl<FilesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.FILES_PACKAGE_VERSION_ID, Indexes.FILES_PKEY, Indexes.UNIQUE_VERSION_PATH);
+        return Arrays.<Index>asList(Indexes.FILES_PKEY, Indexes.UNIQUE_VERSION_PATH);
     }
 
     @Override

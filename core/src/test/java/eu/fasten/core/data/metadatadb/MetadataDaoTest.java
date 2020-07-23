@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.metadataplugin.db;
+package eu.fasten.core.data.metadatadb;
 
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
@@ -355,9 +355,9 @@ public class MetadataDaoTest {
                 Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertOnDuplicateMore.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
-        var record = new DependenciesRecord(packageId, dependencyId, versionRange);
+        var record = new DependenciesRecord(packageId, dependencyId, versionRange, null);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
-        long result = metadataDao.insertDependency(packageId, dependencyId, versionRange);
+        long result = metadataDao.insertDependency(packageId, dependencyId, versionRange, new JSONObject());
         assertEquals(packageId, result);
     }
 
@@ -380,10 +380,10 @@ public class MetadataDaoTest {
                 Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertOnDuplicateMore.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
-        var record1 = new DependenciesRecord(packageId, dependencyIds.get(0), versionRanges.get(0));
-        var record2 = new DependenciesRecord(packageId, dependencyIds.get(1), versionRanges.get(1));
+        var record1 = new DependenciesRecord(packageId, dependencyIds.get(0), versionRanges.get(0), null);
+        var record2 = new DependenciesRecord(packageId, dependencyIds.get(1), versionRanges.get(1), null);
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
-        var result = metadataDao.insertDependencies(packageId, dependencyIds, versionRanges);
+        var result = metadataDao.insertDependencies(packageId, dependencyIds, versionRanges, null);
         assertEquals(packageId, result);
     }
 
@@ -393,7 +393,7 @@ public class MetadataDaoTest {
         var dependencyIds = Collections.singletonList(8L);
         var versionRanges = Arrays.asList(new String[]{"1.0.0-1.9.9"}, new String[]{"2.1.0-2.1.9"});
         assertThrows(IllegalArgumentException.class, () -> {
-            metadataDao.insertDependencies(packageId, dependencyIds, versionRanges);
+            metadataDao.insertDependencies(packageId, dependencyIds, versionRanges, List.of(new JSONObject()));
         });
     }
 

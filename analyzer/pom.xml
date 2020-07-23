@@ -29,6 +29,7 @@
         <module>dummy-analyzer</module>
         <module>metadata-plugin</module>
         <module>graph-plugin</module>
+        <module>pom-analyzer</module>
         <module>repo-cloner-plugin</module>
     </modules>
 

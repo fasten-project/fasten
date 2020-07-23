@@ -70,4 +70,13 @@ public class GitClonerTest {
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());
     }
+
+    @Test
+    public void cloneRepoWithBranchTest() throws GitAPIException, IOException {
+        var repo = Path.of(baseDir, "f/fasten-project/fasten").toFile();
+        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten/tree/master/");
+        Assertions.assertEquals(repo.getAbsolutePath(), path);
+        Assertions.assertTrue(repo.exists());
+        Assertions.assertTrue(repo.isDirectory());
+    }
 }

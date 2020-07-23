@@ -22,13 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.analyzer.javacgopalv3.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALCallSite;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Objects;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -135,11 +135,11 @@ class PartialCallGraphTest {
         call.add(2);
 
         assertNotNull(internalCalls.get(call).get("0"));
-        assertTrue(internalCalls.get(call).get("0") instanceof OPALCallSite);
-        assertEquals(6, ((OPALCallSite) internalCalls.get(call).get("0")).getLine());
-        assertEquals("invokestatic", ((OPALCallSite) internalCalls.get(call).get("0")).getType());
+        assertTrue(internalCalls.get(call).get("0") instanceof HashMap);
+        assertEquals(6, ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("line"));
+        assertEquals("invokestatic", ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("type"));
         assertEquals("/name.space/SingleSourceToTarget",
-                ((OPALCallSite) internalCalls.get(call).get("0")).getReceiver());
+                ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("receiver"));
     }
 
     @Test

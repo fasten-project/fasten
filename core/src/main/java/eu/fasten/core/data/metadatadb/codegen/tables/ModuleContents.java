@@ -41,7 +41,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class ModuleContents extends TableImpl<ModuleContentsRecord> {
 
-    private static final long serialVersionUID = -627977087;
+    private static final long serialVersionUID = -1221390543;
 
     /**
      * The reference instance of <code>public.module_contents</code>
@@ -106,7 +106,7 @@ public class ModuleContents extends TableImpl<ModuleContentsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.MODULE_CONTENTS_FILE_ID, Indexes.MODULE_CONTENTS_MODULE_ID, Indexes.UNIQUE_MODULE_FILE);
+        return Arrays.<Index>asList(Indexes.UNIQUE_MODULE_FILE);
     }
 
     @Override

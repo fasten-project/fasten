@@ -85,18 +85,21 @@ public class CallGraphConstructor {
      * @return configuration for running call graph generator
      */
     private Config createConfig(String mainClass) {
+        var entryPointFinder = "org.opalj.br.analyses.cg.ConfigurationEntryPointsFinder";
+        var instantiatedTypeFinder = "org.opalj.br.analyses.cg.ApplicationInstantiatedTypesFinder";
+        var initialEntryPoints = Stream.of(ConfigValueFactory.fromMap(
+                Map.of("declaringClass", mainClass.replace('.', '/'),
+                        "name", "main"))).collect(Collectors.toList());
+
         return ConfigFactory.load()
                 .withValue("org.opalj.br.reader.ClassFileReader.Invokedynamic.rewrite",
                         ConfigValueFactory.fromAnyRef(true))
                 .withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis",
-                        ConfigValueFactory
-                                .fromAnyRef("org.opalj.br.analyses.cg.ConfigurationEntryPointsFinder"))
+                        ConfigValueFactory.fromAnyRef(entryPointFinder))
                 .withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.entryPoints",
-                        ConfigValueFactory.fromIterable(Stream.of(ConfigValueFactory.fromMap(
-                                Map.of("declaringClass", mainClass.replace('.', '/'), "name", "main")))
-                                .collect(Collectors.toList())))
+                        ConfigValueFactory.fromIterable(initialEntryPoints))
                 .withValue("org.opalj.br.analyses.cg.InitialInstantiatedTypesKey.analysis",
-                        ConfigValueFactory.fromAnyRef("org.opalj.br.analyses.cg.ApplicationInstantiatedTypesFinder"));
+                        ConfigValueFactory.fromAnyRef(instantiatedTypeFinder));
     }
 
     /**
@@ -105,8 +108,7 @@ public class CallGraphConstructor {
      * @param project {@link Project} the project to generate call graph for
      * @return {@link CallGraph} resulting call graph
      */
-    private static CallGraph generateCallGraph(final Project<?> project,
-                                               final String algorithm) {
+    private static CallGraph generateCallGraph(final Project<?> project, final String algorithm) {
         final CallGraph result;
         switch (algorithm) {
             case "RTA":

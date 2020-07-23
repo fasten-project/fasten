@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.analyzer.metadataplugin.db.MetadataDao;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
@@ -28,8 +28,6 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -110,11 +108,12 @@ public class MetadataDatabasePlugin extends Plugin {
             var groupId = callgraph.product.split(":")[0];
             var artifactId = callgraph.product.split(":")[1];
             var version = callgraph.version;
+            var forge = callgraph.forge;
             var product = artifactId + "_" + groupId + "_" + version;
 
             var firstLetter = artifactId.substring(0, 1);
 
-            outputPath = File.separator + "mvn" + File.separator
+            outputPath = File.separator + forge + File.separator
                     + firstLetter + File.separator
                     + artifactId + File.separator + product + ".json";
 
@@ -184,6 +183,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
             var depIds = new ArrayList<Long>();
             var depVersions = new ArrayList<String[]>();
+            var depMetadata = new ArrayList<JSONObject>();
             for (var depList : callGraph.depset) {
                 for (var dependency : depList) {
                     var constraints = dependency.constraints;
@@ -195,10 +195,11 @@ public class MetadataDatabasePlugin extends Plugin {
                     var depId = metadataDao.insertPackage(dependency.product, dependency.forge,
                             null, null, null);
                     depIds.add(depId);
+                    depMetadata.add(new JSONObject());
                 }
             }
             if (depIds.size() > 0) {
-                metadataDao.insertDependencies(packageVersionId, depIds, depVersions);
+                metadataDao.insertDependencies(packageVersionId, depIds, depVersions, depMetadata);
             }
 
             final var cha = callGraph.getClassHierarchy();

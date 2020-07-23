@@ -25,13 +25,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <!-- This dependency can be removed once jOOQ v3.15 is out,
-                because the required functionality will be implemented there -->
-            <groupId>com.github.t9t.jooq</groupId>
-            <artifactId>jooq-postgresql-json</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.0.4</version>

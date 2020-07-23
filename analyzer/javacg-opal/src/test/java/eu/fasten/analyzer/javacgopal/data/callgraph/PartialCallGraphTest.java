@@ -238,16 +238,16 @@ public class PartialCallGraphTest {
         //Based on logs this arc of the internal calls was duplicated.
         //Before removing duplicates the size of this duplicate arcs was 32.
         assertEquals(1, numberOfThisInternalArc(cg,
-                "/HTTPClient/IdempotentSequence.main(%2Fjava.lang%2FString%25255B%25255D)%2Fjava"
+                "/HTTPClient/IdempotentSequence.main(%2Fjava.lang%2FString%2525255B%2525255D)%2Fjava"
                         + ".lang%2FVoidType",
                 "/HTTPClient/Request.Request(HTTPConnection,%2Fjava.lang%2FString,%2Fjava"
-                        + ".lang%2FString,NVPair%25255B%25255D,%2Fjava.lang%2FByteType%25255B%25255D,"
+                        + ".lang%2FString,NVPair%2525255B%2525255D,%2Fjava.lang%2FByteType%2525255B%2525255D,"
                         + "HttpOutputStream,%2Fjava.lang%2FBooleanType)%2Fjava.lang%2FVoidType"));
 
         //Based on logs this arc of the external calls was duplicated.
         //Before removing duplicates the size of this duplicate arcs was 3.
         assertEquals(1, numberOfThisExternalArc(cg,
-                "/HTTPClient/UncompressInputStream.read(%2Fjava.lang%2FByteType%25255B%25255D,%2Fjava"
+                "/HTTPClient/UncompressInputStream.read(%2Fjava.lang%2FByteType%2525255B%2525255D,%2Fjava"
                         + ".lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FIntegerType",
                 "///java.lang/System.arraycopy(Object,IntegerType,Object,IntegerType,IntegerType)"
                         + "VoidType"));
