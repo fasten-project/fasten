@@ -202,7 +202,7 @@ public class MetadataDatabasePlugin extends Plugin {
             } else {
                 try {
                     callgraph = new ExtendedRevisionCallGraph(consumedJson);
-                } catch (JSONException | IOException e) {
+                } catch (JSONException e) {
                     logger.error("Error parsing JSON callgraph for '"
                             + Paths.get(path).getFileName() + "'", e);
                     processedRecord = false;
