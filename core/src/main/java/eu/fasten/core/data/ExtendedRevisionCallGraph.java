@@ -20,7 +20,6 @@ package eu.fasten.core.data;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,6 +39,15 @@ public class ExtendedRevisionCallGraph {
     private static final Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
 
     /**
+     * Scope of types.
+     */
+    public enum Scope {
+        internalTypes,
+        externalTypes,
+        resolvedTypes
+    }
+
+    /**
      * For each class in the revision, class hierarchy keeps a {@link Type} that is accessible by
      * the {@link FastenURI} of the class as a key.
      *
@@ -48,23 +55,15 @@ public class ExtendedRevisionCallGraph {
      */
     private final Map<Scope, Map<FastenURI, Type>> classHierarchy;
 
+    /**
+     * The number of nodes in a revision call graph.
+     */
     private final int nodeCount;
-
-    public enum Scope {
-        internalTypes,
-        externalTypes,
-        resolvedTypes
-    }
-
-    public int getNodeCount() {
-        return nodeCount;
-    }
 
     /**
      * Includes all the edges of the revision call graph (internal & external).
      */
     private final Graph graph;
-
 
     /**
      * The forge.
@@ -113,26 +112,30 @@ public class ExtendedRevisionCallGraph {
                                      final long timestamp, int nodeCount, final String cgGenerator,
                                      final Map<Scope, Map<FastenURI, Type>> classHierarchy,
                                      final Graph graph) {
-
         this.forge = forge;
         this.product = product;
         this.version = version;
         this.timestamp = timestamp;
-        uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
-        forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
+        this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
+        this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = cgGenerator;
         this.classHierarchy = classHierarchy;
         this.nodeCount = nodeCount;
         this.graph = graph;
     }
 
+    /**
+     * Creates {@link ExtendedRevisionCallGraph} with the given builder.
+     *
+     * @param builder builder for {@link ExtendedRevisionCallGraph}
+     */
     private ExtendedRevisionCallGraph(final ExtendedBuilder builder) {
         this.forge = builder.forge;
         this.product = builder.product;
         this.version = builder.version;
         this.timestamp = builder.timestamp;
-        uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
-        forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
+        this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
+        this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = builder.cgGenerator;
         this.classHierarchy = builder.classHierarchy;
         this.graph = builder.graph;
@@ -144,18 +147,33 @@ public class ExtendedRevisionCallGraph {
      *
      * @param json JSONObject of a revision call graph.
      */
-    public ExtendedRevisionCallGraph(final JSONObject json) throws JSONException, IOException {
-
+    public ExtendedRevisionCallGraph(final JSONObject json) throws JSONException {
         this.forge = json.getString("forge");
         this.product = json.getString("product");
         this.version = json.getString("version");
         this.timestamp = getTimeStamp(json);
-        uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
-        forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
+        this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
+        this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = json.getString("generator");
         this.graph = new Graph(json.getJSONObject("graph"));
         this.classHierarchy = getCHAFromJSON(json.getJSONObject("cha"));
         this.nodeCount = json.getInt("nodes");
+    }
+
+    public String getCgGenerator() {
+        return cgGenerator;
+    }
+
+    public Map<Scope, Map<FastenURI, Type>> getClassHierarchy() {
+        return classHierarchy;
+    }
+
+    public Graph getGraph() {
+        return graph;
+    }
+
+    public int getNodeCount() {
+        return nodeCount;
     }
 
     /**
@@ -184,8 +202,7 @@ public class ExtendedRevisionCallGraph {
      *
      * @param cha JSONObject of a cha.
      */
-    public static Map<Scope, Map<FastenURI, Type>> getCHAFromJSON(final JSONObject cha) throws IOException {
-
+    public static Map<Scope, Map<FastenURI, Type>> getCHAFromJSON(final JSONObject cha) {
         final Map<FastenURI, Type> internals = new HashMap<>();
         final Map<FastenURI, Type> externals = new HashMap<>();
         final Map<FastenURI, Type> resolved = new HashMap<>();
@@ -209,34 +226,42 @@ public class ExtendedRevisionCallGraph {
     }
 
     /**
-     * Produces the JSON representation of this {@link ExtendedRevisionCallGraph}.
+     * Returns the map of all the methods of this object.
      *
-     * @return the JSON representation.
+     * @return a Map of method ids and their corresponding {@link FastenURI}
      */
-    public JSONObject toJSON() {
-
-        final var result = new JSONObject();
-        result.put("forge", forge);
-        result.put("product", product);
-        result.put("version", version);
-        result.put("generator", cgGenerator);
-        if (timestamp >= 0) {
-            result.put("timestamp", timestamp);
+    public Map<Integer, Node> mapOfAllMethods() {
+        Map<Integer, Node> result = new HashMap<>();
+        for (final var aClass : this.getClassHierarchy().get(Scope.internalTypes).entrySet()) {
+            result.putAll(aClass.getValue().getMethods());
         }
-        result.put("cha", toJSON(classHierarchy));
-        result.put("graph", graph.toJSON());
-        result.put("nodes", nodeCount);
-
+        for (final var aClass : this.getClassHierarchy().get(Scope.externalTypes).entrySet()) {
+            result.putAll(aClass.getValue().getMethods());
+        }
+        for (final var aClass : this.getClassHierarchy().get(Scope.resolvedTypes).entrySet()) {
+            result.putAll(aClass.getValue().getMethods());
+        }
         return result;
+    }
+
+    /**
+     * Checks whether this {@link ExtendedRevisionCallGraph} is empty, e.g. has no calls.
+     *
+     * @return true if this {@link ExtendedRevisionCallGraph} is empty
+     */
+    public boolean isCallGraphEmpty() {
+        return this.graph.internalCalls.isEmpty()
+                && this.graph.externalCalls.isEmpty()
+                && this.graph.resolvedCalls.isEmpty();
     }
 
     /**
      * Produces the JSON representation of class hierarchy.
      *
-     * @return the JSON representation.
+     * @param cha class hierarchy
+     * @return the JSON representation
      */
-    public JSONObject toJSON(final Map<Scope, Map<FastenURI, Type>> cha) {
-
+    public JSONObject classHierarchyToJSON(final Map<Scope, Map<FastenURI, Type>> cha) {
         final var result = new JSONObject();
         final var internalTypes = new JSONObject();
         final var externalTypes = new JSONObject();
@@ -256,48 +281,34 @@ public class ExtendedRevisionCallGraph {
         result.put("resolvedTypes", resolvedTypes);
 
         return result;
-
     }
 
     /**
-     * Returns the map of all the methods of this object.
+     * Produces the JSON representation of this {@link ExtendedRevisionCallGraph}.
      *
-     * @return a Map of method ids and their corresponding {@link FastenURI}
+     * @return the JSON representation.
      */
-    public Map<Integer, Node> mapOfAllMethods() {
-        Map<Integer, Node> result = new HashMap<>();
-        for (final var aClass : this.getClassHierarchy().get(Scope.internalTypes).entrySet()) {
-            result.putAll(aClass.getValue().getMethods());
+    public JSONObject toJSON() {
+        final var result = new JSONObject();
+        result.put("forge", forge);
+        result.put("product", product);
+        result.put("version", version);
+        result.put("generator", cgGenerator);
+        if (timestamp >= 0) {
+            result.put("timestamp", timestamp);
         }
-        for (final var aClass : this.getClassHierarchy().get(Scope.externalTypes).entrySet()) {
-            result.putAll(aClass.getValue().getMethods());
-        }
-        for (final var aClass : this.getClassHierarchy().get(Scope.resolvedTypes).entrySet()) {
-            result.putAll(aClass.getValue().getMethods());
-        }
+        result.put("cha", classHierarchyToJSON(classHierarchy));
+        result.put("graph", graph.toJSON());
+        result.put("nodes", nodeCount);
+
         return result;
     }
 
-    public boolean isCallGraphEmpty() {
-        return this.graph.internalCalls.isEmpty() && this.graph.externalCalls.isEmpty() && this.graph.resolvedCalls.isEmpty();
-    }
-
-    public String getCgGenerator() {
-        return cgGenerator;
-    }
-
-    public Map<Scope, Map<FastenURI, Type>> getClassHierarchy() {
-        return classHierarchy;
-    }
-
-    public Graph getGraph() {
-        return graph;
-    }
-
     /**
-     * Builder to build {@link ExtendedRevisionCallGraph}.
+     * Builder for {@link ExtendedRevisionCallGraph}.
      */
     public static final class ExtendedBuilder {
+
         private String forge;
         private String product;
         private String version;
@@ -358,27 +369,27 @@ public class ExtendedRevisionCallGraph {
     public static class Graph {
 
         /**
-         * It keeps all the internal calls of the call graph using the ids of source and target
-         * method. First element of the int[] is the id of the source method and the second one is
-         * the target's id. Ids are available in the class hierarchy.
+         * Keeps all the internal calls of the graph. The metadata per call is stored as a map.
          */
         private final Map<List<Integer>, Map<Object, Object>> internalCalls;
 
         /**
-         * External calls of the graph and key value metadata about each call. The {@link Pair}
-         * keeps the id of source method in the left element and the {@link FastenURI} of the target
-         * method in the right element. The meta data per call is stored as a map that keys and
-         * values are {@link String}. For example in case of java for each call it can keep
-         * (typeOfCall -> number_of_occurrence).
+         * Keeps all the external calls of the graph. The metadata per call is stored as a map.
          */
         private final Map<List<Integer>, Map<Object, Object>> externalCalls;
 
+        /**
+         * Keeps all the resolved calls of the graph. The metadata per call is stored as a map.
+         */
         private final Map<List<Integer>, Map<Object, Object>> resolvedCalls;
 
-        public Map<List<Integer>, Map<Object, Object>> getResolvedCalls() {
-            return resolvedCalls;
-        }
-
+        /**
+         * Creates {@link Graph} from given internal, external, and resolved calls.
+         *
+         * @param internalCalls internal calls map
+         * @param externalCalls external calls map
+         * @param resolvedCalls resolved calls map
+         */
         public Graph(final Map<List<Integer>, Map<Object, Object>> internalCalls,
                      final Map<List<Integer>, Map<Object, Object>> externalCalls,
                      final Map<List<Integer>, Map<Object, Object>> resolvedCalls) {
@@ -398,16 +409,12 @@ public class ExtendedRevisionCallGraph {
             this.resolvedCalls = extractCalls(graph, "resolvedCalls");
         }
 
-        private Map<List<Integer>, Map<Object, Object>> extractCalls(JSONObject graph, String key) {
-            final var internalCalls = graph.getJSONArray(key);
-            final Map<List<Integer>, Map<Object, Object>> result = new HashMap<>();
-            final int numberOfArcs = internalCalls.length();
-            for (int i = 0; i < numberOfArcs; i++) {
-                result.putAll(getCall(internalCalls.getJSONArray(i)));
-            }
-            return result;
-        }
-
+        /**
+         * Creates {@link Graph} from given internal and external calls. Resolved calls are empty.
+         *
+         * @param internalCalls internal calls map
+         * @param externalCalls external calls map
+         */
         public Graph(final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
                      final HashMap<List<Integer>, Map<Object, Object>> externalCalls) {
             this.internalCalls = internalCalls;
@@ -415,6 +422,42 @@ public class ExtendedRevisionCallGraph {
             this.resolvedCalls = new HashMap<>();
         }
 
+        /**
+         * Creates {@link Graph} with all fields empty.
+         */
+        public Graph() {
+            this.internalCalls = new HashMap<>();
+            this.externalCalls = new HashMap<>();
+            this.resolvedCalls = new HashMap<>();
+        }
+
+        public Map<List<Integer>, Map<Object, Object>> getInternalCalls() {
+            return internalCalls;
+        }
+
+        public Map<List<Integer>, Map<Object, Object>> getExternalCalls() {
+            return externalCalls;
+        }
+
+        public Map<List<Integer>, Map<Object, Object>> getResolvedCalls() {
+            return resolvedCalls;
+        }
+
+        /**
+         * Get the total number of internal and external calls.
+         *
+         * @return total number of calls
+         */
+        public int size() {
+            return internalCalls.size() + externalCalls.size();
+        }
+
+        /**
+         * Get a call map from a given JSON array.
+         *
+         * @param call JSON array
+         * @return call map
+         */
         public Map<List<Integer>, Map<Object, Object>> getCall(final JSONArray call) {
             final var callTypeJson = call.getJSONObject(2);
             final Map<Object, Object> callSite = new HashMap<>();
@@ -426,23 +469,42 @@ public class ExtendedRevisionCallGraph {
                     Integer.valueOf(call.getString(1)))), callSite);
         }
 
-        public Graph() {
-            this.internalCalls = new HashMap<>();
-            this.externalCalls = new HashMap<>();
-            this.resolvedCalls = new HashMap<>();
+        /**
+         * Extract calls from a provided JSON representation of a graph for a given key.
+         *
+         * @param graph graph of calls
+         * @param key   key for calls extraction
+         * @return extracted calls
+         */
+        private Map<List<Integer>, Map<Object, Object>> extractCalls(JSONObject graph, String key) {
+            final var internalCalls = graph.getJSONArray(key);
+            final Map<List<Integer>, Map<Object, Object>> result = new HashMap<>();
+            final int numberOfArcs = internalCalls.length();
+            for (int i = 0; i < numberOfArcs; i++) {
+                result.putAll(getCall(internalCalls.getJSONArray(i)));
+            }
+            return result;
         }
 
         /**
-         * Converts a {@link Graph} object to its JSON representation.
+         * Add calls from a given graph to this graph.
          *
-         * @param graph the {@link Graph} object to be converted.
+         * @param graph a {@link Graph} to take new calls from
+         */
+        public void append(Graph graph) {
+            this.internalCalls.putAll(graph.getInternalCalls());
+            this.externalCalls.putAll(graph.getExternalCalls());
+        }
+
+        /**
+         * Converts this {@link Graph} object to its JSON representation.
+         *
          * @return the corresponding JSON representation.
          */
-        public JSONObject toJSON(final Graph graph) {
-
+        public JSONObject toJSON() {
             final var result = new JSONObject();
             final var internalCallsJSON = new JSONArray();
-            for (final var entry : graph.internalCalls.entrySet()) {
+            for (final var entry : this.internalCalls.entrySet()) {
                 final var call = new JSONArray();
                 call.put(entry.getKey().get(0).toString());
                 call.put(entry.getKey().get(1).toString());
@@ -450,7 +512,7 @@ public class ExtendedRevisionCallGraph {
                 internalCallsJSON.put(call);
             }
             final var externalCallsJSON = new JSONArray();
-            for (final var entry : graph.externalCalls.entrySet()) {
+            for (final var entry : this.externalCalls.entrySet()) {
                 final var call = new JSONArray();
                 call.put(entry.getKey().get(0).toString());
                 call.put(entry.getKey().get(1).toString());
@@ -459,7 +521,7 @@ public class ExtendedRevisionCallGraph {
             }
 
             final var resolvedCallsJSON = new JSONArray();
-            for (final var entry : graph.resolvedCalls.entrySet()) {
+            for (final var entry : this.resolvedCalls.entrySet()) {
                 final var call = new JSONArray();
                 call.put(entry.getKey().get(0).toString());
                 call.put(entry.getKey().get(1).toString());
@@ -471,36 +533,26 @@ public class ExtendedRevisionCallGraph {
             result.put("resolvedCalls", resolvedCallsJSON);
             return result;
         }
-
-        public JSONObject toJSON() {
-            return toJSON(this);
-        }
-
-        public Map<List<Integer>, Map<Object, Object>> getInternalCalls() {
-            return internalCalls;
-        }
-
-        public Map<List<Integer>, Map<Object, Object>> getExternalCalls() {
-            return externalCalls;
-        }
-
-        public int size() {
-            return internalCalls.size() + externalCalls.size();
-        }
-
-        public void append(Graph graph) {
-            this.internalCalls.putAll(graph.getInternalCalls());
-            this.externalCalls.putAll(graph.getExternalCalls());
-        }
-
-
     }
 
     public static class Node {
 
+        /**
+         * FastenURI corresponding to this Node.
+         */
         final private FastenURI uri;
+
+        /**
+         * Metadata associated with this Node.
+         */
         final private Map<String, Object> metadata;
 
+        /**
+         * Creates {@link Node} from a FastenURI and metadata.
+         *
+         * @param uri      FastenURI corresponding to this Node
+         * @param metadata metadata associated with this Node
+         */
         public Node(final FastenURI uri, final Map<String, Object> metadata) {
             this.uri = uri;
             this.metadata = metadata;
@@ -514,18 +566,40 @@ public class ExtendedRevisionCallGraph {
             return metadata;
         }
 
+        /**
+         * Get entity from the FastenURI.
+         *
+         * @return entity
+         */
         public String getEntity() {
             return this.uri.getEntity();
         }
 
+        /**
+         * Extract a class name from the FastenURI.
+         *
+         * @return class name
+         */
         public String getClassName() {
             return getEntity().substring(0, getEntity().indexOf("."));
         }
 
+        /**
+         * Extract a method name from the FastenURI.
+         *
+         * @return method name
+         */
         public String getMethodName() {
             return StringUtils.substringBetween(getEntity(), getClassName() + ".", "(");
         }
 
+        /**
+         * Changes the class and method names in the FastenURI.
+         *
+         * @param className  new class name
+         * @param methodName new method name
+         * @return FastenURI with new class and method names
+         */
         public FastenURI changeName(final String className, final String methodName) {
             final var uri = this.getUri().toString().replace("/" + getClassName() + ".", "/" + className + ".");
             return FastenURI.create(uri.replace("." + getMethodName() + "(", "." + methodName + "("));
@@ -536,25 +610,6 @@ public class ExtendedRevisionCallGraph {
      * Each type is a class or an interface.
      */
     public static class Type {
-
-        public Type(String sourceFileName) {
-
-            this.sourceFileName = sourceFileName;
-            this.methods = HashBiMap.create();
-            this.superClasses = new LinkedList<>();
-            this.superInterfaces = new ArrayList<>();
-            this.access = "";
-            this.isFinal = false;
-        }
-
-        public int addMethod(final Node node, final int key) {
-            if (this.methods.containsValue(node)) {
-                return this.methods.inverse().get(node);
-            } else {
-                this.methods.put(key, node);
-                return key;
-            }
-        }
 
         /**
          * The source file name of this type.
@@ -576,8 +631,14 @@ public class ExtendedRevisionCallGraph {
          */
         private final List<FastenURI> superInterfaces;
 
+        /**
+         * Access modifier of this Type.
+         */
         private final String access;
 
+        /**
+         * Flag indicating if this Type is final.
+         */
         private final boolean isFinal;
 
         /**
@@ -587,6 +648,8 @@ public class ExtendedRevisionCallGraph {
          * @param methods         a map of methods in this type with their indexed by their ids.
          * @param superClasses    classes that this type extends.
          * @param superInterfaces interfaces that this type implements.
+         * @param access          access modifier
+         * @param isFinal         true if the Type is final
          */
         public Type(final String sourceFile, final BiMap<Integer, Node> methods,
                     final LinkedList<FastenURI> superClasses,
@@ -607,7 +670,6 @@ public class ExtendedRevisionCallGraph {
          *             classes and super interfaces.
          */
         public Type(final JSONObject type) {
-
             this.sourceFileName = type.getString("sourceFile");
 
             final var methodsJson = type.getJSONObject("methods");
@@ -636,51 +698,17 @@ public class ExtendedRevisionCallGraph {
         }
 
         /**
-         * Converts all the valuses of a given Map to String.
-         */
-        public static Map<Integer, JSONObject> toMapOfString(final Map<Integer, Node> map) {
-            final Map<Integer, JSONObject> methods = new HashMap<>();
-            for (final var entry : map.entrySet()) {
-                final JSONObject node = new JSONObject();
-                node.put("uri", entry.getValue().getUri());
-                node.put("metadata", new JSONObject(entry.getValue().getMetadata()));
-                methods.put(entry.getKey(), node);
-            }
-            return methods;
-        }
-
-        /**
-         * Converts elements of a given list to String.
-         */
-        public static List<String> toListOfString(final List<?> list) {
-            final List<String> result = new ArrayList<>();
-            for (final var fastenURI : list) {
-                result.add(fastenURI.toString());
-            }
-            return result;
-        }
-
-        /**
-         * Converts a {@link Type} object to its JSON representation.
+         * Creates an empty {@link Type} with a source file specified.
          *
-         * @param type the {@link Type} object to be converted.
-         * @return the corresponding JSON representation.
+         * @param sourceFileName source file name
          */
-        public JSONObject toJSON(final Type type) {
-            final var result = new JSONObject();
-
-            result.put("methods", toMapOfString(type.methods));
-            result.put("superClasses", toListOfString(type.superClasses));
-            result.put("superInterfaces", toListOfString(type.superInterfaces));
-            result.put("sourceFile", type.sourceFileName);
-            result.put("access", type.access);
-            result.put("final", type.isFinal);
-
-            return result;
-        }
-
-        public JSONObject toJSON() {
-            return toJSON(this);
+        public Type(final String sourceFileName) {
+            this.sourceFileName = sourceFileName;
+            this.methods = HashBiMap.create();
+            this.superClasses = new LinkedList<>();
+            this.superInterfaces = new ArrayList<>();
+            this.access = "";
+            this.isFinal = false;
         }
 
         public String getSourceFileName() {
@@ -707,6 +735,82 @@ public class ExtendedRevisionCallGraph {
             return isFinal;
         }
 
+        /**
+         * Add a Node to the list of methods of this {@link Type}.
+         *
+         * @param node new node to add
+         * @param key  the key corresponding to this Node
+         * @return newly added method id, or an old id, of method already exists
+         */
+        public int addMethod(final Node node, final int key) {
+            if (this.methods.containsValue(node)) {
+                return this.methods.inverse().get(node);
+            } else {
+                this.methods.put(key, node);
+                return key;
+            }
+        }
+
+        /**
+         * Converts all the values of a given Map to String.
+         *
+         * @param map map of id-s and corresponding Nodes
+         */
+        public static Map<Integer, JSONObject> toMapOfString(final Map<Integer, Node> map) {
+            final Map<Integer, JSONObject> methods = new HashMap<>();
+            for (final var entry : map.entrySet()) {
+                final JSONObject node = new JSONObject();
+                node.put("uri", entry.getValue().getUri());
+                node.put("metadata", new JSONObject(entry.getValue().getMetadata()));
+                methods.put(entry.getKey(), node);
+            }
+            return methods;
+        }
+
+        /**
+         * Converts elements of a given list to String.
+         *
+         * @param list a list of elements to be converted
+         */
+        public static List<String> toListOfString(final List<?> list) {
+            final List<String> result = new ArrayList<>();
+            for (final var fastenURI : list) {
+                result.add(fastenURI.toString());
+            }
+            return result;
+        }
+
+        /**
+         * Get all defined methods.
+         *
+         * @param signature method signature
+         * @return optional map of all defined methods
+         */
+        public Optional<Map.Entry<Integer, Node>> getDefined(String signature) {
+            return methods.entrySet()
+                    .stream()
+                    .filter(node -> node.getValue().uri.getEntity().contains(signature))
+                    .findAny();
+        }
+
+        /**
+         * Converts this {@link Type} object to its JSON representation.
+         *
+         * @return the corresponding JSON representation.
+         */
+        public JSONObject toJSON() {
+            final var result = new JSONObject();
+
+            result.put("methods", toMapOfString(this.methods));
+            result.put("superClasses", toListOfString(this.superClasses));
+            result.put("superInterfaces", toListOfString(this.superInterfaces));
+            result.put("sourceFile", this.sourceFileName);
+            result.put("access", this.access);
+            result.put("final", this.isFinal);
+
+            return result;
+        }
+
         @Override
         public String toString() {
             return "Type{"
@@ -717,10 +821,6 @@ public class ExtendedRevisionCallGraph {
                     + ", access=" + access
                     + ", final=" + isFinal
                     + '}';
-        }
-
-        public Optional<Map.Entry<Integer, Node>> getDefined(String signature) {
-            return methods.entrySet().stream().filter(node -> node.getValue().uri.getEntity().contains(signature)).findAny();
         }
     }
 }

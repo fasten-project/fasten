@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
  * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre".
  */
 public class MavenCoordinate {
+
     private List<String> mavenRepos;
 
     private final String groupID;
@@ -84,7 +85,8 @@ public class MavenCoordinate {
      * @param artifactID ArtifactID
      * @param version    Version
      */
-    public MavenCoordinate(final List<String> repos, final String groupID, final String artifactID, final String version) {
+    public MavenCoordinate(final List<String> repos, final String groupID,
+                           final String artifactID, final String version) {
         this.mavenRepos = repos;
         this.groupID = groupID;
         this.artifactID = artifactID;
@@ -98,8 +100,8 @@ public class MavenCoordinate {
      * @return MavenCoordinate
      */
     public static MavenCoordinate fromString(final String coords) {
-        var coord = coords.split(":");
-        return new MavenCoordinate(coord[0], coord[1], coord[2]);
+        var coordinate = coords.split(":");
+        return new MavenCoordinate(coordinate[0], coordinate[1], coordinate[2]);
     }
 
     public String getProduct() {
@@ -116,12 +118,8 @@ public class MavenCoordinate {
      * @return URL
      */
     public String toURL(String repo) {
-        return repo
-                + this.groupID.replace('.', '/')
-                + "/"
-                + this.artifactID
-                + "/"
-                + this.versionConstraint;
+        return repo + this.groupID.replace('.', '/') + "/" + this.artifactID
+                + "/" + this.versionConstraint;
     }
 
     /**
@@ -130,26 +128,7 @@ public class MavenCoordinate {
      * @return JAR URL
      */
     public String toJarUrl(String repo) {
-        return this.toURL(repo)
-                + "/"
-                + this.artifactID
-                + "-"
-                + this.versionConstraint
-                + ".jar";
-    }
-
-    /**
-     * Convert to POM URL.
-     *
-     * @return POM URL
-     */
-    public String toPomUrl(String repo) {
-        return this.toURL(repo)
-                + "/"
-                + this.artifactID
-                + "-"
-                + this.versionConstraint
-                + ".pom";
+        return this.toURL(repo) + "/" + this.artifactID + "-" + this.versionConstraint + ".jar";
     }
 
     /**
@@ -169,7 +148,7 @@ public class MavenCoordinate {
             logger.debug("Downloading JAR for " + mavenCoordinate);
 
             for (var repo : mavenCoordinate.getMavenRepos()) {
-                var jar = httpGetToFile(mavenCoordinate.toJarUrl(repo), ".jar");
+                var jar = httpGetFile(mavenCoordinate.toJarUrl(repo));
 
                 if (jar.isPresent()) {
                     return jar;
@@ -181,13 +160,11 @@ public class MavenCoordinate {
         /**
          * Utility function that stores the contents of GET request to a temporary file.
          */
-        private static Optional<File> httpGetToFile(final String url, final String suffix)
-                throws FileNotFoundException {
+        private static Optional<File> httpGetFile(final String url) throws FileNotFoundException {
             logger.debug("HTTP GET: " + url);
 
             try {
-                //TODO: Download artifacts in configurable shared location
-                final var tempFile = Files.createTempFile("fasten", suffix);
+                final var tempFile = Files.createTempFile("fasten", ".jar");
 
                 final InputStream in = new URL(url).openStream();
                 Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);

@@ -22,9 +22,9 @@ import eu.fasten.analyzer.javacgopalv3.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopalv3.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopalv3.evaluation.JCGFormat;
-import eu.fasten.analyzer.javacgopalv3.merge.CallGraphUtils;
-import eu.fasten.analyzer.javacgopalv3.merge.CallGraphMerger;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.merge.CallGraphMerger;
+import eu.fasten.core.merge.CallGraphUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -45,9 +45,9 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "JavaCGOpal")
 public class Main implements Runnable {
 
-    private static Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    @CommandLine.ArgGroup(multiplicity = "1")
     Commands commands;
 
     @CommandLine.Option(names = {"-o", "--output"},
@@ -56,12 +56,7 @@ public class Main implements Runnable {
             defaultValue = "")
     String output;
 
-    public void setOutput(String output) {
-        this.output = output;
-    }
-
     static class Commands {
-
         @CommandLine.ArgGroup(exclusive = false)
         Computations computations;
 
@@ -70,7 +65,6 @@ public class Main implements Runnable {
     }
 
     static class Computations {
-
         @CommandLine.Option(names = {"-a", "--artifact"},
                 paramLabel = "ARTIFACT",
                 description = "Artifact, maven coordinate or file path")
@@ -89,11 +83,11 @@ public class Main implements Runnable {
 
         @CommandLine.Option(names = {"-ga", "--genAlgorithm"},
                 paramLabel = "GenALG",
-                description = "gen{RTA,CHA,CTA,FTA,MTA,XTA,AllocationSiteBasedPointsTo,TypeBasedPointsTo}",
+                description = "gen{RTA,CHA,AllocationSiteBasedPointsTo,TypeBasedPointsTo}",
                 defaultValue = "CHA")
         String genAlgorithm;
 
-        @CommandLine.ArgGroup(exclusive = true)
+        @CommandLine.ArgGroup()
         Tools tools;
 
         @CommandLine.Option(names = {"-t", "--timestamp"},
@@ -104,29 +98,21 @@ public class Main implements Runnable {
     }
 
     static class Tools {
-
         @CommandLine.ArgGroup(exclusive = false)
         Opal opal;
 
         @CommandLine.ArgGroup(exclusive = false)
         Merge merge;
-
-
     }
 
     static class Opal {
-
         @CommandLine.Option(names = {"-g", "--generate"},
                 paramLabel = "GEN",
                 description = "Generate call graph for artifact")
         boolean doGenerate;
-
-
-
     }
 
     static class Merge {
-
         @CommandLine.Option(names = {"-ma", "--mergeAlgorithm"},
                 paramLabel = "MerALG",
                 description = "Algorhtm merge{RA, CHA}",
@@ -143,11 +129,9 @@ public class Main implements Runnable {
                 description = "Dependencies, coordinates or files",
                 split = ",")
         List<String> dependencies;
-
     }
 
     static class Conversions {
-
         @CommandLine.Option(names = {"-c", "--convert"},
                 paramLabel = "CON",
                 description = "Convert the call graph to the specified format")
@@ -165,7 +149,6 @@ public class Main implements Runnable {
                 description = "The desired format for conversion {JCG}",
                 defaultValue = "JCG")
         String format;
-
     }
 
     /**
@@ -176,81 +159,107 @@ public class Main implements Runnable {
         new CommandLine(new Main()).execute(args);
     }
 
+    /**
+     * Run the generator, merge algorithm or evaluator depending on parameters provided.
+     */
     public void run() {
         if (this.commands.computations != null && this.commands.computations.tools != null) {
             if (this.commands.computations.tools.opal != null
                     && this.commands.computations.tools.opal.doGenerate) {
-
-                if (commands.computations.mode.equals("COORD")) {
-                    final var artifact = getArtifactCoordinate();
-                    logger.info("Generating call graph for the Maven coordinate: {}",
-                            artifact.getCoordinate());
-                    try {
-                        generate(artifact, commands.computations.main, commands.computations.genAlgorithm,
-                                !this.output.isEmpty());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                } else if (commands.computations.mode.equals("FILE")) {
-                    try {
-                        generate(getArtifactFile(), commands.computations.main,
-                                commands.computations.genAlgorithm, !this.output.isEmpty());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                }
+                runGenerate();
             }
             if (this.commands.computations.tools.merge != null
                     && this.commands.computations.tools.merge.doMerge) {
-
-                if (commands.computations.mode.equals("COORD")) {
-                    try {
-                        merge(getArtifactCoordinate(), getDependenciesCoordinates());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                } else if (commands.computations.mode.equals("FILE")) {
-                    try {
-                        merge(getArtifactFile(), getDependenciesFiles()).toJSON();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-
+                runMerge();
             }
         }
-        if (this.commands.conversions != null
-                && this.commands.conversions.doConvert) {
-
-            if (this.commands.conversions.format.equals("JCG")) {
-                final var result = new JSONObject();
-                var reachableMethods = new JSONArray();
-                try {
-                    for (final var input : this.commands.conversions.input) {
-                        final var cg = new String(Files.readAllBytes((Paths.get(input))));
-
-                        final var mergeJCG = JCGFormat
-                                .convertERCGTOJCG(new ExtendedRevisionCallGraph(new JSONObject(cg))
-                                );
-                        if (!mergeJCG.isEmpty() && !mergeJCG.isNull("reachableMethods")) {
-                            reachableMethods = concatArray(reachableMethods, (mergeJCG.getJSONArray("reachableMethods")));
-                        }
-                    }
-                    result.put("reachableMethods", reachableMethods);
-                    if (!this.output.isEmpty()) {
-                        CallGraphUtils.writeToFile(this.output, result, "");
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+        if (this.commands.conversions != null && this.commands.conversions.doConvert) {
+            runConversion();
         }
 
     }
 
+    /**
+     * Run call graph generator.
+     */
+    private void runGenerate() {
+        if (commands.computations.mode.equals("COORD")) {
+            final var artifact = getArtifactCoordinate();
+            logger.info("Generating call graph for the Maven coordinate: {}",
+                    artifact.getCoordinate());
+            try {
+                generate(artifact, commands.computations.main, commands.computations.genAlgorithm,
+                        !this.output.isEmpty());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } else if (commands.computations.mode.equals("FILE")) {
+            try {
+                generate(getArtifactFile(), commands.computations.main,
+                        commands.computations.genAlgorithm, !this.output.isEmpty());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Run merge algorithm.
+     */
+    private void runMerge() {
+        if (commands.computations.mode.equals("COORD")) {
+            try {
+                merge(getArtifactCoordinate(), getDependenciesCoordinates());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } else if (commands.computations.mode.equals("FILE")) {
+            try {
+                merge(getArtifactFile(), getDependenciesFiles()).toJSON();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Run evaluator.
+     */
+    private void runConversion() {
+        if (this.commands.conversions.format.equals("JCG")) {
+            final var result = new JSONObject();
+            var reachableMethods = new JSONArray();
+            try {
+                for (final var input : this.commands.conversions.input) {
+                    final var cg = new String(Files.readAllBytes(Paths.get(input)));
+
+                    final var mergeJCG = JCGFormat
+                            .convertERCGTOJCG(new ExtendedRevisionCallGraph(new JSONObject(cg)));
+                    if (!mergeJCG.isEmpty() && !mergeJCG.isNull("reachableMethods")) {
+                        reachableMethods = concatArray(reachableMethods,
+                                mergeJCG.getJSONArray("reachableMethods"));
+                    }
+                }
+                result.put("reachableMethods", reachableMethods);
+                if (!this.output.isEmpty()) {
+                    CallGraphUtils.writeToFile(this.output, result, "");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Concatenate two JSON arrays.
+     *
+     * @param arr1 first array
+     * @param arr2 second array
+     * @return concatenated JSON array
+     * @throws JSONException thrown if JSON arrays are malformed
+     */
     private JSONArray concatArray(JSONArray arr1, JSONArray arr2)
             throws JSONException {
         JSONArray result = new JSONArray();
@@ -263,6 +272,15 @@ public class Main implements Runnable {
         return result;
     }
 
+    /**
+     * Merge an artifact with a list of it's dependencies using a specified algorithm.
+     *
+     * @param artifact     artifact to merge
+     * @param dependencies list of dependencies
+     * @param <T>          artifact can be either a file or coordinate
+     * @return a revision call graph with resolved class hierarchy and calls
+     * @throws IOException thrown in case file related exceptions occur, e.g FileNotFoundException
+     */
     public <T> ExtendedRevisionCallGraph merge(final T artifact,
                                                final List<T> dependencies) throws IOException {
 
@@ -277,15 +295,27 @@ public class Main implements Runnable {
         result = CallGraphMerger.mergeCallGraph(art, deps,
                 commands.computations.tools.merge.mergeAlgorithm);
 
-        if (!this.output.isEmpty()) {
-            if (result != null) {
-                CallGraphUtils.writeToFile(this.output, result.toJSON(), "_" + result.product + "_merged");
-            }
+        if (!this.output.isEmpty() && result != null) {
+            CallGraphUtils.writeToFile(this.output, result.toJSON(),
+                    "_" + result.product + "_merged");
         }
 
         return result;
     }
 
+    /**
+     * Generate a revision call graph for a given coordinate using a specified algorithm. In case
+     * the artifact is an application a main class can be specified. If left empty a library entry
+     * point finder algorithm will be used.
+     *
+     * @param artifact    artifact to generate a call graph for
+     * @param mainClass   main class in case the artifact is an application
+     * @param algorithm   algorithm for generating a call graph
+     * @param writeToFile will be written to a file if true
+     * @param <T>         artifact can be either a file or a coordinate
+     * @return generated revision call graph
+     * @throws IOException file related exceptions, e.g. FileNotFoundException
+     */
     public <T> ExtendedRevisionCallGraph generate(final T artifact,
                                                   final String mainClass,
                                                   final String algorithm, final boolean writeToFile)
@@ -300,26 +330,34 @@ public class Main implements Runnable {
                     new CallGraphConstructor((File) artifact, mainClass, algorithm));
             revisionCallGraph =
                     ExtendedRevisionCallGraph.extendedBuilder().graph(cg.getGraph())
-                            .product(((File) artifact).getName().replace(".class", "").replace("$", ""))
+                            .product(cleanUpFileName((File) artifact))
                             .version("").timestamp(0).cgGenerator("").forge("")
                             .classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount()).build();
+
         } else {
-            revisionCallGraph =
-                    PartialCallGraph.createExtendedRevisionCallGraph((MavenCoordinate) artifact, mainClass,
-                            algorithm,
-                            Long.parseLong(this.commands.computations.timestamp));
+            revisionCallGraph = PartialCallGraph
+                    .createExtendedRevisionCallGraph((MavenCoordinate) artifact, mainClass,
+                            algorithm, Long.parseLong(this.commands.computations.timestamp));
         }
 
-        logger.info("Generated the call graph in {} seconds.",
-                new DecimalFormat("#0.000").format((System.currentTimeMillis() - startTime) / 1000d));
+        logger.info("Generated the call graph in {} seconds.", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - startTime) / 1000d));
 
         if (writeToFile) {
-            CallGraphUtils
-                    .writeToFile(this.output, revisionCallGraph.toJSON(), "_" + revisionCallGraph.product);
+            CallGraphUtils.writeToFile(this.output, revisionCallGraph.toJSON(), "");
         }
         return revisionCallGraph;
     }
 
+    private String cleanUpFileName(File artifact) {
+        return artifact.getName().replace(".class", "").replace("$", "").replace(".jar", "");
+    }
+
+    /**
+     * Get a list of files of dependencies.
+     *
+     * @return a list of dependencies files
+     */
     private List<File> getDependenciesFiles() {
         final var result = new ArrayList<File>();
         if (this.commands.computations.tools.merge.dependencies != null) {
@@ -330,6 +368,11 @@ public class Main implements Runnable {
         return result;
     }
 
+    /**
+     * Get a list of coordinates of dependencies.
+     *
+     * @return a list of Maven coordinates
+     */
     private List<MavenCoordinate> getDependenciesCoordinates() {
         final var result = new ArrayList<MavenCoordinate>();
         if (this.commands.computations.tools.merge.dependencies != null) {
@@ -340,6 +383,11 @@ public class Main implements Runnable {
         return result;
     }
 
+    /**
+     * Get an artifact file from a provided path.
+     *
+     * @return artifact file
+     */
     private File getArtifactFile() {
         File result = null;
         if (this.commands.computations.artifact != null) {
@@ -348,6 +396,11 @@ public class Main implements Runnable {
         return result;
     }
 
+    /**
+     * Get an artifact coordinate for an artifact.
+     *
+     * @return artifact coordinate
+     */
     private MavenCoordinate getArtifactCoordinate() {
         MavenCoordinate result = null;
         if (this.commands.computations.artifact != null) {
@@ -356,4 +409,12 @@ public class Main implements Runnable {
         return result;
     }
 
+    /**
+     * Set out of the OPAL plugin.
+     *
+     * @param output new output path
+     */
+    public void setOutput(String output) {
+        this.output = output;
+    }
 }

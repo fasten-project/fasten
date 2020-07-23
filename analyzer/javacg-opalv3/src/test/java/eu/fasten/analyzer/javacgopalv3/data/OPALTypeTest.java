@@ -26,6 +26,7 @@ import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALType;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -56,7 +57,8 @@ class OPALTypeTest {
         methods.put(method, 123);
 
         var superClass = Mockito.mock(ObjectType.class);
-        var superClasses = new $colon$amp$colon<>(superClass, Chain.empty());
+        var superClasses = new LinkedList<ObjectType>();
+        superClasses.add(superClass);
 
         var superInterface = Mockito.mock(ObjectType.class);
         var superInterfaces = new ArrayList<ObjectType>();
@@ -66,7 +68,7 @@ class OPALTypeTest {
 
         assertEquals("source.java", type.getSourceFileName());
         assertEquals(123, type.getMethods().get(method));
-        assertEquals(superClass, type.getSuperClasses().head());
+        assertEquals(superClass, type.getSuperClasses().peek());
         assertEquals(superInterface, type.getSuperInterfaces().get(0));
     }
 
@@ -266,7 +268,8 @@ class OPALTypeTest {
         var methods = new HashMap<Method, Integer>();
         methods.put(method, 123);
 
-        var chain = new $colon$amp$colon<>(type, Chain.empty());
+        var chain = new LinkedList<ObjectType>();
+        chain.add(type);
         var interfaces = new ArrayList<ObjectType>();
         interfaces.add(type);
 
@@ -368,7 +371,8 @@ class OPALTypeTest {
         Mockito.when(type.asBaseType()).thenReturn(baseType);
         Mockito.when(type.isBaseType()).thenReturn(true);
 
-        var chain = new $colon$amp$colon<>(type, Chain.empty());
+        var chain = new LinkedList<ObjectType>();
+        chain.add(type);
 
         assertEquals(1, OPALType.toURIClasses(chain).size());
         assertEquals(FastenURI.create("/some.package/typeName"),
@@ -527,7 +531,7 @@ class OPALTypeTest {
         Mockito.when(classHierarchy.allSuperclassTypesInInitializationOrder(currentType))
                 .thenReturn(qualifiedCollection);
 
-        assertEquals(superClass, OPALType.extractSuperClasses(classHierarchy, currentType).head());
+        assertEquals(superClass, OPALType.extractSuperClasses(classHierarchy, currentType).peek());
     }
 
     @Test

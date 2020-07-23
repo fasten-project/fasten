@@ -16,15 +16,16 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopalv3.merge;
+package eu.fasten.core.merge;
 
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALCallSite;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
-
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -34,11 +35,11 @@ import org.slf4j.LoggerFactory;
 
 public class CallGraphMerger {
 
-    private static Logger logger = LoggerFactory.getLogger(CallGraphMerger.class);
+    private static final Logger logger = LoggerFactory.getLogger(CallGraphMerger.class);
 
     public static ExtendedRevisionCallGraph mergeCallGraph(final ExtendedRevisionCallGraph artifact,
                                                            final List<ExtendedRevisionCallGraph>
-                                                                     dependencies,
+                                                                   dependencies,
                                                            final String algorithm) {
         if (algorithm.equals("RA")) {
             return mergeWithRA(artifact, dependencies);
@@ -79,10 +80,7 @@ public class CallGraphMerger {
         }
 
         public boolean isConstructor() {
-            if (indices.get(0).equals(indices.get(1))) {
-                return true;
-            }
-            return false;
+            return indices.get(0).equals(indices.get(1));
         }
     }
 
@@ -106,13 +104,15 @@ public class CallGraphMerger {
                         resolveClassInits(result, call, depTypeEntry, product, universalCHA);
                     } else {
                         for (final var cs : arc.getValue().entrySet()) {
-                            final var callSite = (OPALCallSite) cs.getValue();
-                            final var receiverTypeUri = FastenURI.create(callSite.getReceiver());
+                            final var callSite = (HashMap<String, Object>) cs.getValue();
+                            final var receiverTypeUri = FastenURI.create((String) callSite.get("receiver"));
 
                             if (depTypeUri.equals(receiverTypeUri)) {
                                 resolveIfDefined(result, call, depType, product);
                             }
-                            if (callSite.is("invokevirtual", "invokeinterface", "invokedynamic")) {
+                            if (callSite.get("type").equals("invokevirtual")
+                                    || callSite.get("type").equals("invokeinterface")
+                                    || callSite.get("type").equals("invokedynamic")) {
 
                                 if (firstTypeExtendsSecond(depTypeUri, receiverTypeUri, universalCHA)) {
                                     resolveIfDefined(result, call, depType, product);
@@ -141,7 +141,7 @@ public class CallGraphMerger {
     }
 
     private static String getTypeName(final FastenURI type) {
-        return type.toString().substring(type.toString().lastIndexOf("/")+1);
+        return type.toString().substring(type.toString().lastIndexOf("/") + 1);
     }
 
     private static org.jgrapht.Graph<FastenURI, DefaultEdge> createUniversalCHA(
@@ -217,7 +217,7 @@ public class CallGraphMerger {
 
     public static ExtendedRevisionCallGraph mergeWithRA(final ExtendedRevisionCallGraph artifact,
                                                         final List<ExtendedRevisionCallGraph>
-                                                                  dependencies) {
+                                                                dependencies) {
 
         final var result = new CGHA(artifact.getGraph().getResolvedCalls(),
                 artifact.getClassHierarchy().getOrDefault(ExtendedRevisionCallGraph.Scope.resolvedTypes, new HashMap<>()),

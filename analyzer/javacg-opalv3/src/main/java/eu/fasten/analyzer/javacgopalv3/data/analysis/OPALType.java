@@ -21,8 +21,8 @@ package eu.fasten.analyzer.javacgopalv3.data.analysis;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
+import eu.fasten.core.data.ExtendedRevisionCallGraph.Node;
+import eu.fasten.core.data.ExtendedRevisionCallGraph.Type;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,7 +34,6 @@ import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
-import org.opalj.collection.immutable.Chain;
 import scala.collection.JavaConverters;
 
 /**
@@ -44,7 +43,7 @@ public class OPALType {
 
     private final String sourceFileName;
     private final Map<Method, Integer> methods;
-    private final Chain<ObjectType> superClasses;
+    private final LinkedList<ObjectType> superClasses;
     private final List<ObjectType> superInterfaces;
     private final String access;
     private final boolean isFinal;
@@ -53,11 +52,11 @@ public class OPALType {
      * Creates {@link OPALType} for the given data.
      *
      * @param methods         a map of methods in this type together with their ids.
-     * @param superClasses    a {@link Chain} of classes that this type extends.
+     * @param superClasses    a {@link LinkedList} of classes that this type extends.
      * @param superInterfaces a list of interfaces that this type implements.
      * @param sourceFileName  name of the source file that this type belongs to.
      */
-    public OPALType(final Map<Method, Integer> methods, final Chain<ObjectType> superClasses,
+    public OPALType(final Map<Method, Integer> methods, final LinkedList<ObjectType> superClasses,
                     final List<ObjectType> superInterfaces, final String sourceFileName,
                     final String access, final boolean isFinal) {
         this.methods = methods;
@@ -72,7 +71,7 @@ public class OPALType {
         return methods;
     }
 
-    public Chain<ObjectType> getSuperClasses() {
+    public LinkedList<ObjectType> getSuperClasses() {
         return superClasses;
     }
 
@@ -86,16 +85,16 @@ public class OPALType {
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link ExtendedRevisionCallGraph.Type}.
+     * corresponding {@link Type}.
      *
      * @param projectHierarchy class hierarchy of the project
      * @param methods          methods belonging to this type
      * @param klass            object type
      * @return map of FastenURI and corresponding Types
      */
-    public static Map<FastenURI, ExtendedRevisionCallGraph.Type> getType(ClassHierarchy projectHierarchy,
-                                                                         final Map<DeclaredMethod, Integer> methods,
-                                                                         final ObjectType klass) {
+    public static Map<FastenURI, Type> getType(ClassHierarchy projectHierarchy,
+                                               final Map<DeclaredMethod, Integer> methods,
+                                               final ObjectType klass) {
         final var superTypes = extractSuperClasses(projectHierarchy, klass);
 
         final LinkedList<FastenURI> superClassesURIs;
@@ -106,23 +105,20 @@ public class OPALType {
         }
 
         return Map.of(OPALMethod.getTypeURI(klass),
-                new ExtendedRevisionCallGraph.Type("",
-                        toURIDeclaredMethods(methods),
-                        superClassesURIs,
+                new Type("", toURIDeclaredMethods(methods), superClassesURIs,
                         toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass)),
                         "", false));
     }
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link ExtendedRevisionCallGraph.Type}.
+     * corresponding {@link Type}.
      *
      * @param type  OPAL type
      * @param klass object type
      * @return map of FastenURI and corresponding Types
      */
-    public static Map<FastenURI, ExtendedRevisionCallGraph.Type> getType(final OPALType type,
-                                                                         final ObjectType klass) {
+    public static Map<FastenURI, Type> getType(final OPALType type, final ObjectType klass) {
         final LinkedList<FastenURI> superClassesURIs;
         if (type.getSuperClasses() != null) {
             superClassesURIs = toURIClasses(type.getSuperClasses());
@@ -131,30 +127,27 @@ public class OPALType {
         }
 
         return Map.of(OPALMethod.getTypeURI(klass),
-                new ExtendedRevisionCallGraph.Type(type.getSourceFileName(),
-                        toURIMethods(type.getMethods()),
-                        superClassesURIs,
-                        toURIInterfaces(type.getSuperInterfaces()),
+                new Type(type.getSourceFileName(), toURIMethods(type.getMethods()),
+                        superClassesURIs, toURIInterfaces(type.getSuperInterfaces()),
                         type.access, type.isFinal));
     }
 
     /**
      * Convert a map of {@link DeclaredMethod} to a BiMap of
-     * {@link ExtendedRevisionCallGraph.Node}.
+     * {@link Node}.
      *
      * @param methods map of methods to convert
      * @return BiMap of Nodes
      */
-    public static BiMap<Integer, ExtendedRevisionCallGraph.Node> toURIDeclaredMethods(
+    public static BiMap<Integer, Node> toURIDeclaredMethods(
             final Map<DeclaredMethod, Integer> methods) {
-        final BiMap<Integer, ExtendedRevisionCallGraph.Node> result = HashBiMap.create();
+        final BiMap<Integer, Node> result = HashBiMap.create();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
-            result.put(entry.getValue(), new ExtendedRevisionCallGraph.Node(
-                    OPALMethod.toCanonicalSchemelessURI(null,
-                            method.declaringClassType(), method.name(),
-                            method.descriptor(), false), new HashMap<>()));
+            result.put(entry.getValue(), new Node(OPALMethod.toCanonicalSchemelessURI(null,
+                    method.declaringClassType(), method.name(),
+                    method.descriptor()), new HashMap<>()));
         }
         return result;
     }
@@ -167,9 +160,7 @@ public class OPALType {
      */
     public static List<FastenURI> toURIInterfaces(final List<ObjectType> types) {
         final List<FastenURI> result = new ArrayList<>();
-        for (final var aClass : types) {
-            result.add(OPALMethod.getTypeURI(aClass));
-        }
+        types.forEach(objectType -> result.add(OPALMethod.getTypeURI(objectType)));
         return result;
     }
 
@@ -179,12 +170,9 @@ public class OPALType {
      * @param types chain of types
      * @return list of URIs
      */
-    public static LinkedList<FastenURI> toURIClasses(final Chain<ObjectType> types) {
+    public static LinkedList<FastenURI> toURIClasses(final LinkedList<ObjectType> types) {
         final LinkedList<FastenURI> result = new LinkedList<>();
-
-        types.foreach(JavaToScalaConverter.asScalaFunction1(klass -> result
-                .add(OPALMethod.getTypeURI((ObjectType) klass))));
-
+        types.forEach(objectType -> result.add(OPALMethod.getTypeURI(objectType)));
         return result;
     }
 
@@ -197,13 +185,12 @@ public class OPALType {
      * @return A Map in which the unique id of each method in the artifact is the key and the
      * {@link FastenURI} of the method is the value.
      */
-    public static BiMap<Integer, ExtendedRevisionCallGraph.Node> toURIMethods(
-            final Map<Method, Integer> methods) {
-        final BiMap<Integer, ExtendedRevisionCallGraph.Node> result = HashBiMap.create();
+    public static BiMap<Integer, Node> toURIMethods(final Map<Method, Integer> methods) {
+        final BiMap<Integer, Node> result = HashBiMap.create();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
-            result.put(entry.getValue(), new ExtendedRevisionCallGraph.Node(getUri(method),
+            result.put(entry.getValue(), new Node(getUri(method),
                     Map.of("first", getFirstLine(method),
                             "last", getLastLine(method),
                             "defined", method.instructionsOption().isDefined(),
@@ -219,9 +206,8 @@ public class OPALType {
      * @return method URI
      */
     private static FastenURI getUri(Method method) {
-        return OPALMethod
-                .toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
-                        method.name(), method.descriptor(), true);
+        return OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+                method.name(), method.descriptor());
     }
 
     /**
@@ -232,7 +218,8 @@ public class OPALType {
      */
     private static Object getFirstLine(Method method) {
         return method.body().nonEmpty()
-                ? method.body().get().firstLineNumber().getOrElse(() -> "") : "notFound";
+                ? method.body().get().firstLineNumber().getOrElse(() -> "")
+                : "notFound";
     }
 
     /**
@@ -271,16 +258,18 @@ public class OPALType {
      *
      * @param classHierarchy class hierarchy of the artifact to be checked for super classes
      * @param currentClass   type that to be checked for super classes
-     * @return A {@link Chain} of {@link ObjectType} as super classes of the passed type.
+     * @return A {@link LinkedList} of {@link ObjectType} as super classes of the passed type.
      */
-    public static Chain<ObjectType> extractSuperClasses(final ClassHierarchy classHierarchy,
-                                                        final ObjectType currentClass)
+    public static LinkedList<ObjectType> extractSuperClasses(final ClassHierarchy classHierarchy,
+                                                             final ObjectType currentClass)
             throws NoSuchElementException {
+        var superClassesList = new LinkedList<ObjectType>();
         if (classHierarchy.supertypes(currentClass).nonEmpty()) {
             final var superClasses =
                     classHierarchy.allSuperclassTypesInInitializationOrder(currentClass).s();
             if (superClasses != null) {
-                return superClasses.reverse();
+                superClasses.reverse().foreach(superClassesList::add);
+                return superClassesList;
             }
         }
         return null;

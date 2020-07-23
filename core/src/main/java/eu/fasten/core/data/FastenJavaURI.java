@@ -70,12 +70,12 @@ public class FastenJavaURI extends FastenURI {
 		}
 		final String functionOrAttributeNameSpec = funcArgsType.substring(0, openParenPos);
 		checkForCommasParenthesesOrDots(functionOrAttributeNameSpec);
-		functionOrAttributeName = decode(functionOrAttributeNameSpec);
+		functionOrAttributeName = functionOrAttributeNameSpec;
 		final var closedParenPos = funcArgsType.indexOf(')');
 		if (closedParenPos == -1) throw new IllegalArgumentException("Missing close parenthesis");
 		final String returnTypeSpec = funcArgsType.substring(closedParenPos + 1);
 		checkForCommasAndParentheses(returnTypeSpec);
-		returnType = FastenJavaURI.create(decode(returnTypeSpec));
+		returnType = FastenJavaURI.create(returnTypeSpec);
 		final var argString = funcArgsType.substring(openParenPos + 1, closedParenPos);
 		if (argString.length() == 0) {
 			args = NO_ARGS_ARRAY;
@@ -86,7 +86,7 @@ public class FastenJavaURI extends FastenURI {
 		args = new FastenJavaURI[a.length];
 		for(int i = 0; i < a.length; i++) {
 			checkForCommasAndParentheses(a[i]);
-			args[i] = FastenJavaURI.create(decode(a[i]));
+			args[i] = FastenJavaURI.create(a[i]);
 		}
 	}
 
@@ -143,8 +143,8 @@ public class FastenJavaURI extends FastenURI {
 			final String typeName, final String functionOrAttributeName,
 			final FastenJavaURI[] argTypes, final FastenJavaURI returnType) {
 		final StringBuilder entitysb = new StringBuilder();
-		entitysb.append(typeName + '.');
-		entitysb.append(functionOrAttributeName);
+		entitysb.append(pctEncodeArg(typeName) + '.');
+		entitysb.append(pctEncodeArg(functionOrAttributeName));
 
 		if (returnType != null) {
 			entitysb.append('(');
@@ -160,6 +160,11 @@ public class FastenJavaURI extends FastenURI {
 		final FastenURI fastenURI = FastenURI.create(rawForge, rawProduct, rawVersion, rawNamespace, entitysb.toString());
 		return create(fastenURI.uri);
 	}
+
+    public static FastenJavaURI create(final String rawPackageName, final String rawClassName) {
+        var returnVal = create("/" + pctEncodeArg(rawPackageName) + "/" + pctEncodeArg(rawClassName));
+        return returnVal;
+    }
 
 	private final static CharOpenHashSet typeChar = new CharOpenHashSet(new char[] {
 			'-', '.', '_', '~', // unreserved

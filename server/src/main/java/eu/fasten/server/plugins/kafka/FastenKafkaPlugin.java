@@ -245,7 +245,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     private String getStdOutMsg(String input, String payload) {
         JSONObject stdoutMsg = new JSONObject();
-        stdoutMsg.put("created_at", System.currentTimeMillis());
+        stdoutMsg.put("created_at", System.currentTimeMillis() / 1000L);
         stdoutMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stdoutMsg.put("plugin_version", plugin.version());
 
