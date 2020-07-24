@@ -106,7 +106,7 @@ public class FastenJavaURITest {
 	@Test
 	public void testNamespace() {
 		final var uri = new FastenJavaURI("/my.package/A.f(A)B");
-		assertEquals(FastenJavaURI.create("/my.package/A.f(A)B"), uri.args[0].resolve(uri));
+		assertEquals(FastenJavaURI.create("/my.package/A.f(A)B"), uri.getArgs()[0].resolve(uri));
 	}
 
 	@Test
@@ -142,8 +142,6 @@ public class FastenJavaURITest {
 		u = FastenJavaURI.create("fasten://mvn$b/foo/Bar");
 		assertEquals(u, FastenJavaURI.create("fasten://mvn$a/foo/Bar").relativize(u));
 
-		final FastenURI w = FastenURI.create("fasten://mvn$b/foo/Bar");
-		assertEquals(FastenJavaURI.create(w.uri), FastenJavaURI.create("fasten://mvn$a/foo/Bar").relativize(w));
 
 		u = FastenJavaURI.create("//mvn$b/foo/Bar");
 		assertEquals(u, FastenJavaURI.create("fasten://mvn$a/foo/Bar").relativize(u));

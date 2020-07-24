@@ -113,8 +113,7 @@ class OPALMethodTest {
     @Test
     void getMethodNameLambda() {
         var methodUri = OPALMethod.getMethodName("LambdaTestClass%", "<init>");
-        var encoded = FastenJavaURI.pctEncodeArg("LambdaTestClass%");
-        assertEquals(encoded, methodUri);
+        assertEquals("LambdaTestClass%", methodUri);
     }
 
     @Test
@@ -146,7 +145,7 @@ class OPALMethodTest {
         Mockito.when(type.asBaseType()).thenReturn(baseType);
         Mockito.when(type.isBaseType()).thenReturn(true);
 
-        assertEquals(FastenJavaURI.create("/some.package/%2528%255DLjava$lang$String%253A%2529V%253A14$Lambda"),
+        assertEquals(FastenJavaURI.create("/some.package/%28%5DLjava$lang$String%3A%29V%3A14$Lambda"),
                 OPALMethod.getTypeURI(type));
     }
 
@@ -327,8 +326,6 @@ class OPALMethodTest {
         Mockito.when(type.isArrayType()).thenReturn(false);
         Mockito.when(type.asObjectType()).thenReturn(objectType);
 
-        var encoded = "LambdaTestName%25";
-
-        assertEquals(encoded, OPALMethod.getClassName(type));
+        assertEquals("LambdaTestName%", OPALMethod.getClassName(type));
     }
 }
