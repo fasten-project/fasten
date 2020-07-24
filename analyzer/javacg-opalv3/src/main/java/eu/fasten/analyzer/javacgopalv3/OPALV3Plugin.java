@@ -61,11 +61,14 @@ public class OPALV3Plugin extends Plugin {
         public void consume(String kafkaRecord) {
             pluginError = null;
             try {
-                final var kafkaConsumedJson = new JSONObject(kafkaRecord);
+                var kafkaConsumedJson = new JSONObject(kafkaRecord);
+                if (kafkaConsumedJson.has("payload")) {
+                    kafkaConsumedJson = kafkaConsumedJson.getJSONObject("payload");
+                }
                 final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
 
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
-                this.graph = generateCallGraph(mavenCoordinate, kafkaConsumedJson);
+                this.graph = generateCallGraph(mavenCoordinate, 0);
 
                 if (graph == null || graph.isCallGraphEmpty()) {
                     logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
@@ -95,16 +98,15 @@ public class OPALV3Plugin extends Plugin {
         /**
          * Generate an ExtendedRevisionCallGraph.
          *
-         * @param mavenCoordinate   Maven coordinate
-         * @param kafkaConsumedJson Consumed JSON
+         * @param mavenCoordinate Maven coordinate
+         * @param timestamp       timestamp
          * @return Generated ExtendedRevisionCallGraph
          */
         public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
-                                                           final JSONObject kafkaConsumedJson) {
+                                                           final long timestamp) {
             try {
                 return PartialCallGraph
-                        .createExtendedRevisionCallGraph(mavenCoordinate, "", "CHA",
-                                Long.parseLong(kafkaConsumedJson.get("date").toString()));
+                        .createExtendedRevisionCallGraph(mavenCoordinate, "", "CHA", timestamp);
             } catch (FileNotFoundException e) {
                 setPluginError(e);
             }
@@ -133,10 +135,18 @@ public class OPALV3Plugin extends Plugin {
          */
         public MavenCoordinate getMavenCoordinate(final JSONObject kafkaConsumedJson) {
             try {
-                return new MavenCoordinate(
-                        kafkaConsumedJson.get("groupId").toString(),
-                        kafkaConsumedJson.get("artifactId").toString(),
-                        kafkaConsumedJson.get("version").toString());
+                var groupId = kafkaConsumedJson.getString("groupId");
+                var artifactId = kafkaConsumedJson.getString("artifactId");
+                var version = kafkaConsumedJson.getString("version");
+
+                if (kafkaConsumedJson.has("sourceUrl")) {
+                    var sourceUrl = kafkaConsumedJson.getString("sourcesUrl");
+                    var source = sourceUrl.split(groupId)[0];
+                    return new MavenCoordinate(Collections.singletonList(source),
+                            groupId, artifactId, version);
+                } else {
+                    return new MavenCoordinate(groupId, artifactId, version);
+                }
             } catch (JSONException e) {
                 setPluginError(e);
                 logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson, e);
