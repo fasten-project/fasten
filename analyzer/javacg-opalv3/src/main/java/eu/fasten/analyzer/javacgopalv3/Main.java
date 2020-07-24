@@ -21,20 +21,14 @@ package eu.fasten.analyzer.javacgopalv3;
 import eu.fasten.analyzer.javacgopalv3.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopalv3.data.PartialCallGraph;
-import eu.fasten.analyzer.javacgopalv3.evaluation.JCGFormat;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.merge.CallGraphMerger;
 import eu.fasten.core.merge.CallGraphUtils;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -59,9 +53,6 @@ public class Main implements Runnable {
     static class Commands {
         @CommandLine.ArgGroup(exclusive = false)
         Computations computations;
-
-        @CommandLine.ArgGroup(exclusive = false)
-        Conversions conversions;
     }
 
     static class Computations {
@@ -131,26 +122,6 @@ public class Main implements Runnable {
         List<String> dependencies;
     }
 
-    static class Conversions {
-        @CommandLine.Option(names = {"-c", "--convert"},
-                paramLabel = "CON",
-                description = "Convert the call graph to the specified format")
-        boolean doConvert;
-
-        @CommandLine.Option(names = {"-i", "--input"},
-                paramLabel = "IN",
-                description = "Path to the input call graph for conversion",
-                required = true,
-                split = ",")
-        List<String> input;
-
-        @CommandLine.Option(names = {"-f", "--format"},
-                paramLabel = "FORMAT",
-                description = "The desired format for conversion {JCG}",
-                defaultValue = "JCG")
-        String format;
-    }
-
     /**
      * Generates RevisionCallGraphs using Opal for the specified artifact in the command line
      * parameters.
@@ -173,10 +144,6 @@ public class Main implements Runnable {
                 runMerge();
             }
         }
-        if (this.commands.conversions != null && this.commands.conversions.doConvert) {
-            runConversion();
-        }
-
     }
 
     /**
@@ -222,54 +189,6 @@ public class Main implements Runnable {
                 e.printStackTrace();
             }
         }
-    }
-
-    /**
-     * Run evaluator.
-     */
-    private void runConversion() {
-        if (this.commands.conversions.format.equals("JCG")) {
-            final var result = new JSONObject();
-            var reachableMethods = new JSONArray();
-            try {
-                for (final var input : this.commands.conversions.input) {
-                    final var cg = new String(Files.readAllBytes(Paths.get(input)));
-
-                    final var mergeJCG = JCGFormat
-                            .convertERCGTOJCG(new ExtendedRevisionCallGraph(new JSONObject(cg)));
-                    if (!mergeJCG.isEmpty() && !mergeJCG.isNull("reachableMethods")) {
-                        reachableMethods = concatArray(reachableMethods,
-                                mergeJCG.getJSONArray("reachableMethods"));
-                    }
-                }
-                result.put("reachableMethods", reachableMethods);
-                if (!this.output.isEmpty()) {
-                    CallGraphUtils.writeToFile(this.output, result, "");
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    /**
-     * Concatenate two JSON arrays.
-     *
-     * @param arr1 first array
-     * @param arr2 second array
-     * @return concatenated JSON array
-     * @throws JSONException thrown if JSON arrays are malformed
-     */
-    private JSONArray concatArray(JSONArray arr1, JSONArray arr2)
-            throws JSONException {
-        JSONArray result = new JSONArray();
-        for (int i = 0; i < arr1.length(); i++) {
-            result.put(arr1.get(i));
-        }
-        for (int i = 0; i < arr2.length(); i++) {
-            result.put(arr2.get(i));
-        }
-        return result;
     }
 
     /**
@@ -407,14 +326,5 @@ public class Main implements Runnable {
             result = MavenCoordinate.fromString(this.commands.computations.artifact);
         }
         return result;
-    }
-
-    /**
-     * Set out of the OPAL plugin.
-     *
-     * @param output new output path
-     */
-    public void setOutput(String output) {
-        this.output = output;
     }
 }
