@@ -1,6 +1,6 @@
 package eu.fasten.analyzer.restapiplugin.server;
 
-import eu.fasten.analyzer.restapiplugin.db.MetadataDao;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpHeaders;
