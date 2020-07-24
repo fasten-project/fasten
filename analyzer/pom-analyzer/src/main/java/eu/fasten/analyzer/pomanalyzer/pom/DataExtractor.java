@@ -60,6 +60,19 @@ public class DataExtractor {
     }
 
     /**
+     * Generates link to Maven sources jar file for certain Maven coordinate.
+     *
+     * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
+     * @param version    version of the coordinate
+     * @return Link to Maven sources jar file
+     */
+    public String generateMavenSourcesLink(String groupId, String artifactId, String version) {
+        return this.mavenRepos.get(0) + groupId.replace('.', '/') + "/" + artifactId + "/"
+                + version + "/" + artifactId + "-" + version + "-sources.jar";
+    }
+
+    /**
      * Extracts repository URL from POM of certain Maven coordinate.
      *
      * @param groupId    groupId of the coordinate

@@ -264,8 +264,11 @@ public class DataExtractorTest {
         var actualRepoUrl = dataExtractor.extractRepoUrl("junit", "junit", "4.12");
         var expectedCommitTag = "r4.12";
         var actualCommitTag = dataExtractor.extractCommitTag("junit", "junit", "4.12");
+        var expectedSourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
+        var actualSourcesUrl = dataExtractor.generateMavenSourcesLink("junit", "junit", "4.12");
         assertEquals(expectedRepoUrl, actualRepoUrl);
         assertEquals(expectedDependencyData, actualDependencyData);
         assertEquals(expectedCommitTag, actualCommitTag);
+        assertEquals(expectedSourcesUrl, actualSourcesUrl);
     }
 }
