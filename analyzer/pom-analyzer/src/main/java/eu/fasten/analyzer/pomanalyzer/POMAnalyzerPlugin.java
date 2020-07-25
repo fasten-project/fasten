@@ -182,20 +182,16 @@ public class POMAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            if (repoUrl != null) {
-                var json = new JSONObject();
-                json.put("artifactId", artifact);
-                json.put("groupId", group);
-                json.put("version", version);
-                json.put("date", date);
-                json.put("repoUrl", repoUrl);
-                json.put("commitTag", commitTag);
-                json.put("sourcesUrl", sourcesUrl);
-                json.put("dependencyData", dependencyData.toJSON());
-                return Optional.of(json.toString());
-            } else {
-                return Optional.empty();
-            }
+            var json = new JSONObject();
+            json.put("artifactId", artifact);
+            json.put("groupId", group);
+            json.put("version", version);
+            json.put("date", date);
+            json.put("repoUrl", (repoUrl != null) ? repoUrl : "");
+            json.put("commitTag", (commitTag != null) ? commitTag : "");
+            json.put("sourcesUrl", sourcesUrl);
+            json.put("dependencyData", dependencyData.toJSON());
+            return Optional.of(json.toString());
         }
 
         @Override
