@@ -53,6 +53,7 @@ public class POMAnalyzerPlugin extends Plugin {
         private String artifact = null;
         private String group = null;
         private String version = null;
+        private long date = -1L;
         private String repoUrl = null;
         private DependencyData dependencyData = null;
         private String commitTag = null;
@@ -82,6 +83,7 @@ public class POMAnalyzerPlugin extends Plugin {
             artifact = null;
             group = null;
             version = null;
+            date = -1L;
             repoUrl = null;
             dependencyData = null;
             commitTag = null;
@@ -99,6 +101,7 @@ public class POMAnalyzerPlugin extends Plugin {
             artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
             group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
             version = payload.getString("version").replaceAll("[\\n\\t ]", "");
+            date = payload.optLong("date", -1L);
             final var product = group + ":" + artifact + ":" + version;
             var dataExtractor = new DataExtractor();
             repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
@@ -184,6 +187,7 @@ public class POMAnalyzerPlugin extends Plugin {
                 json.put("artifactId", artifact);
                 json.put("groupId", group);
                 json.put("version", version);
+                json.put("date", date);
                 json.put("repoUrl", repoUrl);
                 json.put("commitTag", commitTag);
                 json.put("sourcesUrl", sourcesUrl);

@@ -86,7 +86,9 @@ public class DataExtractor {
             var scm = extractScm(groupId, artifactId, version);
             if (scm != null) {
                 var url = scm.selectSingleNode("./*[local-name()='url']");
-                repoUrl = url.getText();
+                if (url != null) {
+                    repoUrl = url.getText();
+                }
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
