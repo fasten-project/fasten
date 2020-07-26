@@ -70,8 +70,9 @@ public class MavenCoordinate {
      * @param version    Version
      */
     public MavenCoordinate(final String groupID, final String artifactID, final String version) {
-        this.mavenRepos = new ArrayList<>(Collections
-                .singletonList("https://repo.maven.apache.org/maven2/"));
+        var repoHost = System.getenv("MVN_REPO") != null
+            ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
+        this.mavenRepos = new ArrayList<>(Collections.singletonList(repoHost));
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
