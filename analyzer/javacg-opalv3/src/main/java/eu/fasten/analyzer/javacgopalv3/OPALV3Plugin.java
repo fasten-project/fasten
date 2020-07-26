@@ -68,7 +68,7 @@ public class OPALV3Plugin extends Plugin {
                 final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
 
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
-                this.graph = generateCallGraph(mavenCoordinate, 0);
+                this.graph = generateCallGraph(mavenCoordinate, kafkaConsumedJson.optLong("date", -1));
 
                 if (graph == null || graph.isCallGraphEmpty()) {
                     logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
@@ -139,14 +139,8 @@ public class OPALV3Plugin extends Plugin {
                 var artifactId = kafkaConsumedJson.getString("artifactId");
                 var version = kafkaConsumedJson.getString("version");
 
-                if (kafkaConsumedJson.has("sourceUrl")) {
-                    var sourceUrl = kafkaConsumedJson.getString("sourcesUrl");
-                    var source = sourceUrl.split(groupId)[0];
-                    return new MavenCoordinate(Collections.singletonList(source),
-                            groupId, artifactId, version);
-                } else {
-                    return new MavenCoordinate(groupId, artifactId, version);
-                }
+                return new MavenCoordinate(groupId, artifactId, version);
+
             } catch (JSONException e) {
                 setPluginError(e);
                 logger.error("Could not parse input coordinates: {}\n{}", kafkaConsumedJson, e);
