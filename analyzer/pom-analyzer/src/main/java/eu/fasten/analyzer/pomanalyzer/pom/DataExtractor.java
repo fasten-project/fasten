@@ -92,9 +92,14 @@ public class DataExtractor {
                                 .orElseThrow(RuntimeException::new).getBytes());
             }
             var pom = new SAXReader().read(pomByteStream).getRootElement();
+            var properties = this.extractDependencyResolutionMetadata(pom).getLeft();
             var packagingNode = pom.selectSingleNode("./*[local-name()='packaging']");
             if (packagingNode != null) {
                 packaging = packagingNode.getText();
+                if (packaging.startsWith("$")
+                        && properties.containsKey(packaging.substring(2, packaging.length() - 1))) {
+                    packaging = properties.get(packaging.substring(2, packaging.length() - 1));
+                }
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
