@@ -108,12 +108,12 @@ class MavenCoordinateTest {
     }
 
     @Test
-    void downloadJarPomPackaging() {
+    void downloadJarPomPackaging() throws FileNotFoundException {
         MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
                 .singletonList("repo")), "group", "artifact", "version", "pom");
 
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
+        assertTrue(resolver.downloadJar(coordinate).isEmpty());
     }
 }

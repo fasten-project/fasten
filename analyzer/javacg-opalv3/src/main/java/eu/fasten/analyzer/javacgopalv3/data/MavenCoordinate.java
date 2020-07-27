@@ -25,6 +25,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -147,6 +148,7 @@ public class MavenCoordinate {
      */
     public static class MavenResolver {
         private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
+        private static final String[] packaging = {"jar", "war", "zip", "ear", "rar", "ejb"};
 
         /**
          * Download a JAR file indicated by the provided Maven coordinate.
@@ -159,13 +161,13 @@ public class MavenCoordinate {
             logger.debug("Downloading JAR for " + mavenCoordinate);
 
             for (var repo : mavenCoordinate.getMavenRepos()) {
-                if (mavenCoordinate.getPackaging().equals("pom")) {
-                    throw new FileNotFoundException("only pom file available:"
-                            + mavenCoordinate.toProductUrl(repo, mavenCoordinate.getPackaging()));
+                Optional<File> jar;
+                if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
+                    jar = httpGetFile(mavenCoordinate
+                            .toProductUrl(repo, mavenCoordinate.getPackaging()));
+                } else {
+                    jar = httpGetFile(mavenCoordinate.toProductUrl(repo, "jar"));
                 }
-                var jar = httpGetFile(mavenCoordinate
-                        .toProductUrl(repo, mavenCoordinate.getPackaging()));
-
                 if (jar.isPresent()) {
                     return jar;
                 }
