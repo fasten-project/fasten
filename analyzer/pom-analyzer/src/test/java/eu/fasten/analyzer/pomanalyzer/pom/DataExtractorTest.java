@@ -230,6 +230,13 @@ public class DataExtractorTest {
     }
 
     @Test
+    public void extractPackagingTypeTest() {
+        var expected = "pom";
+        var actual = dataExtractor.extractPackagingType("org.wso2.carbon.identity.inbound.auth.sts", "org.wso2.carbon.identity.sts.passive.server.feature", "5.2.9");
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void extractAllDataTest() {
         var expectedDependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
@@ -266,9 +273,12 @@ public class DataExtractorTest {
         var actualCommitTag = dataExtractor.extractCommitTag("junit", "junit", "4.12");
         var expectedSourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
         var actualSourcesUrl = dataExtractor.generateMavenSourcesLink("junit", "junit", "4.12");
+        var expectedPackagingType = "jar";
+        var actualPackagingType = dataExtractor.extractPackagingType("junit", "junit", "4.12");
         assertEquals(expectedRepoUrl, actualRepoUrl);
         assertEquals(expectedDependencyData, actualDependencyData);
         assertEquals(expectedCommitTag, actualCommitTag);
         assertEquals(expectedSourcesUrl, actualSourcesUrl);
+        assertEquals(expectedPackagingType, actualPackagingType);
     }
 }

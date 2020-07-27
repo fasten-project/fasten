@@ -73,6 +73,40 @@ public class DataExtractor {
     }
 
     /**
+     * Extracts packaging type from POM of certain Maven coordinate.
+     *
+     * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
+     * @param version    version of the coordinate
+     * @return Extracted packaging as String (default is "jar")
+     */
+    public String extractPackagingType(String groupId, String artifactId, String version) {
+        String packaging = "jar";
+        try {
+            ByteArrayInputStream pomByteStream;
+            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
+                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
+            } else {
+                pomByteStream = new ByteArrayInputStream(
+                        this.downloadPom(artifactId, groupId, version)
+                                .orElseThrow(RuntimeException::new).getBytes());
+            }
+            var pom = new SAXReader().read(pomByteStream).getRootElement();
+            var packagingNode = pom.selectSingleNode("./*[local-name()='packaging']");
+            if (packagingNode != null) {
+                packaging = packagingNode.getText();
+            }
+        } catch (DocumentException e) {
+            logger.error("Error parsing POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        } catch (FileNotFoundException e) {
+            logger.error("Error downloading POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        }
+        return packaging;
+    }
+
+    /**
      * Extracts repository URL from POM of certain Maven coordinate.
      *
      * @param groupId    groupId of the coordinate
