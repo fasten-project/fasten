@@ -71,7 +71,7 @@ public class MavenCoordinate {
      */
     public MavenCoordinate(final String groupID, final String artifactID, final String version) {
         var repoHost = System.getenv("MVN_REPO") != null
-            ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
+                ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
         this.mavenRepos = new ArrayList<>(Collections.singletonList(repoHost));
         this.groupID = groupID;
         this.artifactID = artifactID;
@@ -129,7 +129,8 @@ public class MavenCoordinate {
      */
     public static class MavenResolver {
         private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
-        private static final String[] EXTENSIONS = {"jar", "zip", "war"};
+        private static final String[] EXTENSIONS = {"jar", "war", "ear", "ejb", "rar", // core
+                "zip", "tar", "tar.gz"};
 
         /**
          * Download a JAR file indicated by the provided Maven coordinate.
