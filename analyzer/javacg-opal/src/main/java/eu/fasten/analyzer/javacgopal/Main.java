@@ -50,6 +50,12 @@ public class Main implements Runnable {
             defaultValue = "")
     String output;
 
+    @CommandLine.Option(names = {"-r"},
+            paramLabel = "REPOS",
+            description = "Maven repositories",
+            split = ",")
+    List<String> repos;
+
     static class Commands {
         @CommandLine.ArgGroup(exclusive = false)
         Computations computations;
@@ -297,7 +303,11 @@ public class Main implements Runnable {
         final var result = new ArrayList<MavenCoordinate>();
         if (this.commands.computations.tools.merge.dependencies != null) {
             for (String currentCoordinate : this.commands.computations.tools.merge.dependencies) {
-                result.add(MavenCoordinate.fromString(currentCoordinate, "jar"));
+                var coordinate = MavenCoordinate.fromString(currentCoordinate, "jar");
+                if (this.repos != null && !this.repos.isEmpty()) {
+                    coordinate.setMavenRepos(this.repos);
+                }
+                result.add(coordinate);
             }
         }
         return result;
@@ -325,6 +335,9 @@ public class Main implements Runnable {
         MavenCoordinate result = null;
         if (this.commands.computations.artifact != null) {
             result = MavenCoordinate.fromString(this.commands.computations.artifact, "jar");
+            if (this.repos != null && !this.repos.isEmpty()) {
+                result.setMavenRepos(this.repos);
+            }
         }
         return result;
     }
