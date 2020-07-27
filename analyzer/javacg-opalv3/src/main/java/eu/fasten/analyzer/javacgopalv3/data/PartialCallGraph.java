@@ -21,7 +21,6 @@ package eu.fasten.analyzer.javacgopalv3.data;
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopalv3.data.analysis.OPALType;
-import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Scope;
@@ -130,8 +129,7 @@ public class PartialCallGraph {
             final var type = new OPALType(methods,
                     OPALType.extractSuperClasses(project.classHierarchy(), currentClass),
                     OPALType.extractSuperInterfaces(project.classHierarchy(), currentClass),
-                    classFile.sourceFile().getOrElse(JavaToScalaConverter
-                            .asScalaFunction0OptionString("NotFound")),
+                    classFile.sourceFile().getOrElse(() -> "NotFound"),
                     classFile.isPublic() ? "public" : "packagePrivate", classFile.isFinal());
 
             result.put(currentClass, type);
