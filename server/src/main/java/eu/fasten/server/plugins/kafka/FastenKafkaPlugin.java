@@ -19,7 +19,6 @@
 package eu.fasten.server.plugins.kafka;
 
 import com.google.common.base.Strings;
-import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import java.io.File;
@@ -207,10 +206,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     /**
-     * Writes {@link RevisionCallGraph} to JSON file and return JSON object containing
+     * Writes output or error message to JSON file and return JSON object containing
      * a link to to written file.
      *
-     * @param result String of JSON representation of {@link RevisionCallGraph}
+     * @param result message to write
      * @return Path to a newly written JSON file
      */
     private String writeToFile(String result)
