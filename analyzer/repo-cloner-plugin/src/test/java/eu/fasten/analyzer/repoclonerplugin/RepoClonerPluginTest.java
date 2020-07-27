@@ -22,6 +22,7 @@ import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,7 @@ public class RepoClonerPluginTest {
         FileUtils.deleteDirectory(Path.of(baseDir).toFile());
     }
 
+    @Ignore
     @Test
     public void consumeTest() {
         var json = new JSONObject("{\n" +
@@ -77,6 +79,7 @@ public class RepoClonerPluginTest {
         assertTrue(new File(repoPath).isDirectory());
     }
 
+    @Ignore
     @Test
     public void consumeWithoutVersionTest() {
         var json = new JSONObject("{\n" +
@@ -99,6 +102,7 @@ public class RepoClonerPluginTest {
         assertTrue(new File(repoPath).isDirectory());
     }
 
+    @Ignore
     @Test
     public void consumeOnlyCoordinateTest() {
         var json = new JSONObject("{\n" +
@@ -118,6 +122,7 @@ public class RepoClonerPluginTest {
         assertEquals(expected, actual);
     }
 
+    @Ignore
     @Test
     public void consumeOnlyCoordinateWithoutVersionTest() {
         var json = new JSONObject("{\n" +

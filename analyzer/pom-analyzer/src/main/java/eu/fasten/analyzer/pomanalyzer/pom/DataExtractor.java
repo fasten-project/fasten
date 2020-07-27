@@ -60,6 +60,53 @@ public class DataExtractor {
     }
 
     /**
+     * Generates link to Maven sources jar file for certain Maven coordinate.
+     *
+     * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
+     * @param version    version of the coordinate
+     * @return Link to Maven sources jar file
+     */
+    public String generateMavenSourcesLink(String groupId, String artifactId, String version) {
+        return this.mavenRepos.get(0) + groupId.replace('.', '/') + "/" + artifactId + "/"
+                + version + "/" + artifactId + "-" + version + "-sources.jar";
+    }
+
+    /**
+     * Extracts packaging type from POM of certain Maven coordinate.
+     *
+     * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
+     * @param version    version of the coordinate
+     * @return Extracted packaging as String (default is "jar")
+     */
+    public String extractPackagingType(String groupId, String artifactId, String version) {
+        String packaging = "jar";
+        try {
+            ByteArrayInputStream pomByteStream;
+            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
+                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
+            } else {
+                pomByteStream = new ByteArrayInputStream(
+                        this.downloadPom(artifactId, groupId, version)
+                                .orElseThrow(RuntimeException::new).getBytes());
+            }
+            var pom = new SAXReader().read(pomByteStream).getRootElement();
+            var packagingNode = pom.selectSingleNode("./*[local-name()='packaging']");
+            if (packagingNode != null) {
+                packaging = packagingNode.getText();
+            }
+        } catch (DocumentException e) {
+            logger.error("Error parsing POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        } catch (FileNotFoundException e) {
+            logger.error("Error downloading POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        }
+        return packaging;
+    }
+
+    /**
      * Extracts repository URL from POM of certain Maven coordinate.
      *
      * @param groupId    groupId of the coordinate
@@ -73,7 +120,9 @@ public class DataExtractor {
             var scm = extractScm(groupId, artifactId, version);
             if (scm != null) {
                 var url = scm.selectSingleNode("./*[local-name()='url']");
-                repoUrl = url.getText();
+                if (url != null) {
+                    repoUrl = url.getText();
+                }
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -134,7 +183,7 @@ public class DataExtractor {
      * @return Extracted dependency information as DependencyData
      */
     public DependencyData extractDependencyData(String groupId, String artifactId, String version) {
-        DependencyData dependencyData = new DependencyData(null, new ArrayList<>());
+        DependencyData dependencyData = new DependencyData(new DependencyManagement(new ArrayList<>()), new ArrayList<>());
         try {
             ByteArrayInputStream pomByteStream;
             if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {

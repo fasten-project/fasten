@@ -25,6 +25,8 @@ import eu.fasten.server.plugins.FastenServerPlugin;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -248,7 +250,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         stdoutMsg.put("created_at", System.currentTimeMillis() / 1000L);
         stdoutMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stdoutMsg.put("plugin_version", plugin.version());
-
+        try {
+            stdoutMsg.put("host", InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException e) {
+            stdoutMsg.put("host", "unknown");
+        }
         stdoutMsg.put("input", StringUtils.isNotEmpty(input) ? new JSONObject(input) : "");
         stdoutMsg.put("payload", StringUtils.isNotEmpty(payload) ? new JSONObject(payload) : "");
 
@@ -266,7 +272,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         stderrMsg.put("created_at", System.currentTimeMillis() / 1000L);
         stderrMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stderrMsg.put("plugin_version", plugin.version());
-
+        try {
+            stderrMsg.put("host", InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException e) {
+            stderrMsg.put("host", "unknown");
+        }
         stderrMsg.put("input", !Strings.isNullOrEmpty(input) ? new JSONObject(input) : "");
 
         JSONObject error = new JSONObject();
