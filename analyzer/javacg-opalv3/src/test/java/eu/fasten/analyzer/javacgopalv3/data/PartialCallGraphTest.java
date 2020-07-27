@@ -149,7 +149,7 @@ class PartialCallGraphTest {
 
     @Test
     void createExtendedRevisionCallGraph() throws FileNotFoundException {
-        var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29");
+        var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
         var cg = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
                 "", "CHA", 1574072773);
         assertNotNull(cg);

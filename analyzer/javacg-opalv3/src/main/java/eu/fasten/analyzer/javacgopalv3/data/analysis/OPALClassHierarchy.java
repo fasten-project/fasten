@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.javacgopalv3.data.analysis;
 
-import eu.fasten.analyzer.javacgopalv3.scalawrapper.JavaToScalaConverter;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Scope;
@@ -292,8 +291,7 @@ public class OPALClassHierarchy {
                 .asMethodInvocationInstruction().declaringClass());
 
         var callSite = new HashMap<>();
-        callSite.put("line", source.body().get().lineNumber(pc)
-                .getOrElse(JavaToScalaConverter.asScalaFunction0OptionInteger(404)));
+        callSite.put("line", source.body().get().lineNumber(pc).getOrElse(() -> 404));
         callSite.put("type", instruction);
         callSite.put("receiver", receiverType.toString());
 

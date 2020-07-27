@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opalj.br.BaseType;
@@ -42,7 +43,6 @@ import org.opalj.br.FieldType;
 import org.opalj.br.Method;
 import org.opalj.br.MethodDescriptor;
 import org.opalj.br.ObjectType;
-import org.opalj.br.ReferenceType;
 import org.opalj.br.instructions.Instruction;
 import org.opalj.br.instructions.MethodInvocationInstruction;
 import org.opalj.collection.QualifiedCollection;
@@ -57,19 +57,24 @@ import scala.collection.mutable.HashSet;
 
 class OPALClassHierarchyTest {
 
-    @Test
-    void asURIHierarchy() {
-        var wrapperType = Mockito.mock(ObjectType.class);
+    private static ObjectType type;
+
+    @BeforeAll
+    static void setUp() {
+        ObjectType wrapperType = Mockito.mock(ObjectType.class);
         Mockito.when(wrapperType.packageName()).thenReturn("some/package");
 
-        var baseType = Mockito.mock(BaseType.class);
+        BaseType baseType = Mockito.mock(BaseType.class);
         Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
         Mockito.when(baseType.toString()).thenReturn("typeName");
 
-        var type = Mockito.mock(ObjectType.class);
+        type = Mockito.mock(ObjectType.class);
         Mockito.when(type.asBaseType()).thenReturn(baseType);
         Mockito.when(type.isBaseType()).thenReturn(true);
+    }
 
+    @Test
+    void asURIHierarchy() {
         var qualifiedCollection = Mockito.mock(QualifiedCollection.class);
         Mockito.when(qualifiedCollection.s()).thenReturn(null);
 
@@ -138,17 +143,6 @@ class OPALClassHierarchyTest {
     }
 
     private Method createMethod() {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
-
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
-
-        var type = Mockito.mock(ObjectType.class);
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
-
         var arrayOfParameters = new RefArray<FieldType>(new FieldType[]{type});
 
         var descriptor = Mockito.mock(MethodDescriptor.class);
@@ -191,10 +185,8 @@ class OPALClassHierarchyTest {
 
     @Test
     void addMethodToExternalsNoMethod() {
-        var objectType = Mockito.mock(ObjectType.class);
-
         var method = Mockito.mock(DeclaredMethod.class);
-        Mockito.when(method.declaringClassType()).thenReturn(objectType);
+        Mockito.when(method.declaringClassType()).thenReturn(type);
 
         var classHierarchy = new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5);
 
@@ -702,17 +694,6 @@ class OPALClassHierarchyTest {
 
     @Test
     void getCallSite() {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
-
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
-
-        var type = Mockito.mock(ReferenceType.class);
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
-
         var methodInvocationInstruction = Mockito.mock(MethodInvocationInstruction.class);
         Mockito.when(methodInvocationInstruction.declaringClass()).thenReturn(type);
 

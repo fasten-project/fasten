@@ -20,9 +20,9 @@ package eu.fasten.analyzer.javacgopalv3.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,9 +32,9 @@ class MavenCoordinateTest {
 
     @Test
     void constructorTest() {
-        MavenCoordinate coordinate1 = new MavenCoordinate("group", "artifact", "version");
+        MavenCoordinate coordinate1 = new MavenCoordinate("group", "artifact", "version", "jar");
         MavenCoordinate coordinate2 = new MavenCoordinate(new ArrayList<>(Collections
-                .singletonList("repo")), "group", "artifact", "version");
+                .singletonList("repo")), "group", "artifact", "version", "jar");
 
         assertEquals("group", coordinate1.getGroupID());
         assertEquals(coordinate1.getGroupID(), coordinate2.getGroupID());
@@ -58,7 +58,7 @@ class MavenCoordinateTest {
 
     @Test
     void fromString() {
-        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
+        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version", "jar");
 
         assertEquals("GroupID", coordinate.getGroupID());
         assertEquals("ArtifactID", coordinate.getArtifactID());
@@ -67,27 +67,20 @@ class MavenCoordinateTest {
 
     @Test
     void getProduct() {
-        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
+        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version", "jar");
         assertEquals("GroupID:ArtifactID", coordinate.getProduct());
     }
 
     @Test
     void getCoordinate() {
-        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
+        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version", "jar");
         assertEquals("GroupID:ArtifactID:Version", coordinate.getCoordinate());
     }
 
     @Test
     void toURL() {
-        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
-        assertEquals("repo/GroupID/ArtifactID/Version", coordinate.toURL("repo/"));
-    }
-
-    @Test
-    void toJarUrl() {
-        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
-        assertEquals("repo/GroupID/ArtifactID/Version/ArtifactID-Version.jar",
-                coordinate.toJarUrl("repo/"));
+        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version", "jar");
+        assertEquals("repo/GroupID/ArtifactID/Version/ArtifactID-Version.jar", coordinate.toProductUrl("repo/", "jar"));
     }
 
     // ------------------
@@ -97,22 +90,30 @@ class MavenCoordinateTest {
     @Test
     void downloadJarEmptyRepos() throws FileNotFoundException {
         MavenCoordinate coordinate =
-                new MavenCoordinate(new ArrayList<>(), "group", "artifact", "version");
+                new MavenCoordinate(new ArrayList<>(), "group", "artifact", "version", "jar");
 
         var resolver = new MavenCoordinate.MavenResolver();
-        var jar = resolver.downloadJar(coordinate);
 
-        assertTrue(jar.isEmpty());
+        assertTrue(resolver.downloadJar(coordinate).isEmpty());
     }
 
     @Test
     void downloadJarWrongRepos() throws FileNotFoundException {
         MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
-                .singletonList("repo")), "group", "artifact", "version");
+                .singletonList("repo")), "group", "artifact", "version", "jar");
 
         var resolver = new MavenCoordinate.MavenResolver();
-        var jar = resolver.downloadJar(coordinate);
 
-        assertTrue(jar.isEmpty());
+        assertTrue(resolver.downloadJar(coordinate).isEmpty());
+    }
+
+    @Test
+    void downloadJarPomPackaging() throws FileNotFoundException {
+        MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
+                .singletonList("repo")), "group", "artifact", "version", "pom");
+
+        var resolver = new MavenCoordinate.MavenResolver();
+
+        assertTrue(resolver.downloadJar(coordinate).isEmpty());
     }
 }

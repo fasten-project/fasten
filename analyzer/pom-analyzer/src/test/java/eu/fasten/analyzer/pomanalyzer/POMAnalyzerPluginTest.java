@@ -49,6 +49,7 @@ public class POMAnalyzerPluginTest {
                 "}}").toString();
         var repoUrl = "http://github.com/junit-team/junit/tree/master";
         var sourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
+        var packagingType = "jar";
         var dependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
@@ -86,6 +87,7 @@ public class POMAnalyzerPluginTest {
         assertEquals("4.12", json.getString("version"));
         assertEquals(repoUrl, json.getString("repoUrl"));
         assertEquals(sourcesUrl, json.getString("sourcesUrl"));
+        assertEquals(packagingType, json.getString("packagingType"));
         assertEquals(dependencyData, DependencyData.fromJSON(json.getJSONObject("dependencyData")));
     }
 
@@ -94,6 +96,7 @@ public class POMAnalyzerPluginTest {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var repoUrl = "http://github.com/junit-team/junit/tree/master";
         var sourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
+        var packagingType = "jar";
         var dependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
@@ -132,12 +135,13 @@ public class POMAnalyzerPluginTest {
                 dependencyData.dependencyManagement.toJSON());
         packageVersionMetadata.put("commitTag", commitTag);
         packageVersionMetadata.put("sourcesUrl", sourcesUrl);
+        packageVersionMetadata.put("packagingType", packagingType);
         Mockito.when(metadataDao.insertPackageVersion(packageId, "OPAL", "4.12", null, packageVersionMetadata))
                 .thenReturn(packageVersionId);
         final var dependencyId = 16L;
         Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", "mvn", null, null, null))
                 .thenReturn(dependencyId);
-        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, sourcesUrl, dependencyData, metadataDao);
+        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, dependencyData, metadataDao);
         assertEquals(packageVersionId, result);
     }
 

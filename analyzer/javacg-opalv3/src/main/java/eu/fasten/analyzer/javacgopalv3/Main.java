@@ -251,7 +251,8 @@ public class Main implements Runnable {
                     ExtendedRevisionCallGraph.extendedBuilder().graph(cg.getGraph())
                             .product(cleanUpFileName((File) artifact))
                             .version("").timestamp(0).cgGenerator("").forge("")
-                            .classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount()).build();
+                            .classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount())
+                            .build();
 
         } else {
             revisionCallGraph = PartialCallGraph
@@ -296,7 +297,7 @@ public class Main implements Runnable {
         final var result = new ArrayList<MavenCoordinate>();
         if (this.commands.computations.tools.merge.dependencies != null) {
             for (String currentCoordinate : this.commands.computations.tools.merge.dependencies) {
-                result.add(MavenCoordinate.fromString(currentCoordinate));
+                result.add(MavenCoordinate.fromString(currentCoordinate, "jar"));
             }
         }
         return result;
@@ -323,7 +324,7 @@ public class Main implements Runnable {
     private MavenCoordinate getArtifactCoordinate() {
         MavenCoordinate result = null;
         if (this.commands.computations.artifact != null) {
-            result = MavenCoordinate.fromString(this.commands.computations.artifact);
+            result = MavenCoordinate.fromString(this.commands.computations.artifact, "jar");
         }
         return result;
     }

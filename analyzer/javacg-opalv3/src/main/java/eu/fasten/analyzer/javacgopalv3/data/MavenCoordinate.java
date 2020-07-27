@@ -25,6 +25,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +42,8 @@ public class MavenCoordinate {
     private final String groupID;
     private final String artifactID;
     private final String versionConstraint;
+
+    private final String packaging;
 
     public List<String> getMavenRepos() {
         return mavenRepos;
@@ -62,6 +65,10 @@ public class MavenCoordinate {
         return versionConstraint;
     }
 
+    public String getPackaging() {
+        return packaging;
+    }
+
     /**
      * Construct MavenCoordinate form groupID, artifactID, and version.
      *
@@ -69,12 +76,15 @@ public class MavenCoordinate {
      * @param artifactID ArtifactID
      * @param version    Version
      */
-    public MavenCoordinate(final String groupID, final String artifactID, final String version) {
-        this.mavenRepos = new ArrayList<>(Collections
-                .singletonList("https://repo.maven.apache.org/maven2/"));
+    public MavenCoordinate(final String groupID, final String artifactID, final String version,
+                           final String packaging) {
+        var repoHost = System.getenv("MVN_REPO") != null
+                ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
+        this.mavenRepos = new ArrayList<>(Collections.singletonList(repoHost));
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
+        this.packaging = packaging;
     }
 
     /**
@@ -86,11 +96,12 @@ public class MavenCoordinate {
      * @param version    Version
      */
     public MavenCoordinate(final List<String> repos, final String groupID,
-                           final String artifactID, final String version) {
+                           final String artifactID, final String version, final String packaging) {
         this.mavenRepos = repos;
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
+        this.packaging = packaging;
     }
 
     /**
@@ -99,9 +110,9 @@ public class MavenCoordinate {
      * @param coords String representation of a coordinate
      * @return MavenCoordinate
      */
-    public static MavenCoordinate fromString(final String coords) {
+    public static MavenCoordinate fromString(final String coords, final String packaging) {
         var coordinate = coords.split(":");
-        return new MavenCoordinate(coordinate[0], coordinate[1], coordinate[2]);
+        return new MavenCoordinate(coordinate[0], coordinate[1], coordinate[2], packaging);
     }
 
     public String getProduct() {
@@ -123,12 +134,13 @@ public class MavenCoordinate {
     }
 
     /**
-     * Convert to JAR URL.
+     * Convert to product URL.
      *
-     * @return JAR URL
+     * @return product URL
      */
-    public String toJarUrl(String repo) {
-        return this.toURL(repo) + "/" + this.artifactID + "-" + this.versionConstraint + ".jar";
+    public String toProductUrl(String repo, String extension) {
+        return this.toURL(repo) + "/" + this.artifactID + "-" + this.versionConstraint
+                + "." + extension;
     }
 
     /**
@@ -136,6 +148,7 @@ public class MavenCoordinate {
      */
     public static class MavenResolver {
         private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
+        private static final String[] packaging = {"jar", "war", "zip", "ear", "rar", "ejb"};
 
         /**
          * Download a JAR file indicated by the provided Maven coordinate.
@@ -148,8 +161,13 @@ public class MavenCoordinate {
             logger.debug("Downloading JAR for " + mavenCoordinate);
 
             for (var repo : mavenCoordinate.getMavenRepos()) {
-                var jar = httpGetFile(mavenCoordinate.toJarUrl(repo));
-
+                Optional<File> jar;
+                if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
+                    jar = httpGetFile(mavenCoordinate
+                            .toProductUrl(repo, mavenCoordinate.getPackaging()));
+                } else {
+                    jar = httpGetFile(mavenCoordinate.toProductUrl(repo, "jar"));
+                }
                 if (jar.isPresent()) {
                     return jar;
                 }
@@ -164,7 +182,8 @@ public class MavenCoordinate {
             logger.debug("HTTP GET: " + url);
 
             try {
-                final var tempFile = Files.createTempFile("fasten", ".jar");
+                final var packaging = url.substring(url.lastIndexOf("."));
+                final var tempFile = Files.createTempFile("fasten", packaging);
 
                 final InputStream in = new URL(url).openStream();
                 Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);

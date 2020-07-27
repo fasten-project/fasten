@@ -61,13 +61,12 @@ public class OPALMethod {
         return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
                 javaURI.getRawVersion(),
                 javaURI.getRawNamespace(), javaURI.getRawEntity());
-
     }
 
     /**
      * Find the String OPALMethod name that {@link FastenURI} supports. If the method
      * is a constructor the output is the class name. For class initializer (static initialization
-     * blocks for the class, and static field initialization), it's pctEncoded "<"init">",
+     * blocks for the class, and static field initialization), it's "<"init">",
      * otherwise the method name.
      *
      * @param className  Name of class that method belongs in String
@@ -76,11 +75,7 @@ public class OPALMethod {
      */
     public static String getMethodName(final String className, final String methodName) {
         if (methodName.equals("<init>")) {
-            if (className.contains("Lambda")) {
-                return FastenJavaURI.pctEncodeArg(className);
-            } else {
-                return className;
-            }
+            return className;
         } else if (methodName.equals("<clinit>")) {
             return "<init>";
         } else {
@@ -95,7 +90,8 @@ public class OPALMethod {
      * @return type in FastenJavaURI format.
      */
     public static FastenJavaURI getTypeURI(final Type returnType) {
-        return FastenJavaURI.create(getPackageName(returnType), getClassName(returnType));
+        return FastenJavaURI.createWithoutFunction("/" + getPackageName(returnType)
+                + "/" + getClassName(returnType));
     }
 
     /**
@@ -162,11 +158,7 @@ public class OPALMethod {
 
         } else if (parameter.isReferenceType()) {
             if (parameter.isArrayType()) {
-                return getClassName(parameter.asArrayType().componentType())
-                        .concat("[]");
-
-            } else if (parameter.asObjectType().simpleName().contains("Lambda")) {
-                return FastenJavaURI.pctEncodeArg(parameter.asObjectType().simpleName());
+                return getClassName(parameter.asArrayType().componentType()).concat("[]");
             } else {
                 return parameter.asObjectType().simpleName();
             }
