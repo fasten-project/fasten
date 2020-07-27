@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fasten-metadata-plugin
+  namespace: fasten
+spec:
+  selector:
+    matchLabels:
+      app: fasten-metadata-plugin
+  replicas: 20
+  template:
+    metadata:
+      labels:
+        app: fasten-metadata-plugin
+    spec:
+      containers:
+        - name: fasten-metadata-plugin
+          image: docker.pkg.github.com/fasten-project/fasten/fasten.server:latest
+          args: ["-k", "$(KAFKA_ADDR)", "-pl", "MetadataDBExtension", "-kt", "MetadataDBExtension=fasten.OPALV3.out", "-d", "$(PSQL_DB)", "-du", "$(PSQL_USER)"]
+          ports:
+            - containerPort: 3010
+          env:
+            - name: FASTEN_DBPASS
+              valueFrom:
+                secretKeyRef:
+                  key: psql.pwd
+                  name: psql-pwd
+            - name: PSQL_DB
+              valueFrom:
+                configMapKeyRef:
+                  key: psql.db.url
+                  name: psql.db
+            - name: PSQL_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: psql.db.username
+                  name: psql.db.user
+            - name: KAFKA_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  key: kafka.addr
+                  name: kafka
+      nodeSelector:
+        monster.node: "true"
+      imagePullSecrets:
+        - name: fasten.docker.registry

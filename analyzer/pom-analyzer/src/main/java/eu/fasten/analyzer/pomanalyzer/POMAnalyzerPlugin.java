@@ -46,7 +46,7 @@ public class POMAnalyzerPlugin extends Plugin {
     @Extension
     public static class POMAnalyzer implements KafkaPlugin, DBConnector {
 
-        private String consumerTopic = "fasten.maven.pkg";
+        private String consumerTopic = "fasten.mvn.pkg";
         private final Logger logger = LoggerFactory.getLogger(POMAnalyzer.class.getName());
         private Throwable pluginError = null;
         private static DSLContext dslContext;

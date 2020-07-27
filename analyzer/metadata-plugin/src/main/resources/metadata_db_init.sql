@@ -22,7 +22,8 @@ CREATE TABLE dependencies
 (
     package_version_id BIGINT NOT NULL REFERENCES package_versions (id),
     dependency_id      BIGINT NOT NULL REFERENCES packages (id),
-    version_range      TEXT[] NOT NULL
+    version_range      TEXT[] NOT NULL,
+    metadata           JSONB
 );
 
 CREATE TABLE modules

@@ -36,7 +36,7 @@ public class POMAnalyzerPluginTest {
     @BeforeEach
     public void setup() {
         pomAnalyzer = new POMAnalyzerPlugin.POMAnalyzer();
-        pomAnalyzer.setTopic("fasten.maven.pkg");
+        pomAnalyzer.setTopic("fasten.mvn.pkg");
     }
 
     @Test
@@ -147,13 +147,13 @@ public class POMAnalyzerPluginTest {
 
     @Test
     public void consumerTopicsTest() {
-        var topics = Optional.of(Collections.singletonList("fasten.maven.pkg"));
+        var topics = Optional.of(Collections.singletonList("fasten.mvn.pkg"));
         assertEquals(topics, pomAnalyzer.consumeTopic());
     }
 
     @Test
     public void consumerTopicChangeTest() {
-        var topics1 = Optional.of(Collections.singletonList("fasten.maven.pkg"));
+        var topics1 = Optional.of(Collections.singletonList("fasten.mvn.pkg"));
         assertEquals(topics1, pomAnalyzer.consumeTopic());
         var differentTopic = "DifferentKafkaTopic";
         var topics2 = Optional.of(Collections.singletonList(differentTopic));
