@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopalv3.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.fasten.analyzer.javacgopalv3.data.MavenCoordinate;
@@ -80,14 +81,7 @@ class MavenCoordinateTest {
     @Test
     void toURL() {
         var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
-        assertEquals("repo/GroupID/ArtifactID/Version", coordinate.toURL("repo/"));
-    }
-
-    @Test
-    void toJarUrl() {
-        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version");
-        assertEquals("repo/GroupID/ArtifactID/Version/ArtifactID-Version.jar",
-                coordinate.toJarUrl("repo/"));
+        assertEquals("repo/GroupID/ArtifactID/Version/ArtifactID-Version.jar", coordinate.toURL("repo/", "jar"));
     }
 
     // ------------------
@@ -95,24 +89,22 @@ class MavenCoordinateTest {
     // ------------------
 
     @Test
-    void downloadJarEmptyRepos() throws FileNotFoundException {
+    void downloadJarEmptyRepos() {
         MavenCoordinate coordinate =
                 new MavenCoordinate(new ArrayList<>(), "group", "artifact", "version");
 
         var resolver = new MavenCoordinate.MavenResolver();
-        var jar = resolver.downloadJar(coordinate);
 
-        assertTrue(jar.isEmpty());
+        assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
     }
 
     @Test
-    void downloadJarWrongRepos() throws FileNotFoundException {
+    void downloadJarWrongRepos() {
         MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
                 .singletonList("repo")), "group", "artifact", "version");
 
         var resolver = new MavenCoordinate.MavenResolver();
-        var jar = resolver.downloadJar(coordinate);
 
-        assertTrue(jar.isEmpty());
+        assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
     }
 }
