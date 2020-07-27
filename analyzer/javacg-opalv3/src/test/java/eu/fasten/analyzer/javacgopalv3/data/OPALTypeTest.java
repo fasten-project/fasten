@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opalj.br.BaseType;
@@ -49,6 +50,22 @@ import org.opalj.collection.immutable.UIDSet1;
 import scala.Option;
 
 class OPALTypeTest {
+
+    private static ObjectType type;
+
+    @BeforeAll
+    static void setUp() {
+        var wrapperType = Mockito.mock(ObjectType.class);
+        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
+
+        var baseType = Mockito.mock(BaseType.class);
+        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
+        Mockito.when(baseType.toString()).thenReturn("typeName");
+
+        type = Mockito.mock(ObjectType.class);
+        Mockito.when(type.asBaseType()).thenReturn(baseType);
+        Mockito.when(type.isBaseType()).thenReturn(true);
+    }
 
     @Test
     void constructorTest() {
@@ -74,17 +91,6 @@ class OPALTypeTest {
 
     @Test
     void getTypeWithSuperClassesWithSuperInterface() {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
-
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
-
-        var type = Mockito.mock(ObjectType.class);
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
-
         var chain = new $colon$amp$colon<>(type, Chain.empty());
         var qualifiedCollection = Mockito.mock(QualifiedCollection.class);
         Mockito.when(qualifiedCollection.s()).thenReturn(chain);
@@ -143,17 +149,6 @@ class OPALTypeTest {
 
     @Test
     void getTypeNoSuperClassesWithSuperInterface() {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
-
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
-
-        var type = Mockito.mock(ObjectType.class);
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
-
         var qualifiedCollection = Mockito.mock(QualifiedCollection.class);
         Mockito.when(qualifiedCollection.s()).thenReturn(null);
 
@@ -207,17 +202,6 @@ class OPALTypeTest {
 
     @Test
     void getTypeNoSuperClassesNoSuperInterfacesAlternative() {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
-
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
-
-        var type = Mockito.mock(ObjectType.class);
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
-
         var method = createMethod();
         Mockito.when(method.isPrivate()).thenReturn(true);
 
@@ -251,17 +235,6 @@ class OPALTypeTest {
 
     @Test
     void getTypeWithSuperClassesWithSuperInterfacesAlternative() {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
-
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
-
-        var type = Mockito.mock(ObjectType.class);
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
-
         var method = createMethod();
         Mockito.when(method.isPrivate()).thenReturn(true);
 
@@ -305,17 +278,6 @@ class OPALTypeTest {
 
     @Test
     void toURIDeclaredMethods() {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
-
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
-
-        var type = Mockito.mock(ObjectType.class);
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
-
         var arrayOfParameters = new RefArray<FieldType>(new FieldType[]{type});
 
         var descriptor = Mockito.mock(MethodDescriptor.class);
@@ -339,17 +301,6 @@ class OPALTypeTest {
 
     @Test
     void toURIInterfaces() {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
-
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
-
-        var type = Mockito.mock(ObjectType.class);
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
-
         var list = new ArrayList<ObjectType>();
         list.add(type);
 
@@ -360,17 +311,6 @@ class OPALTypeTest {
 
     @Test
     void toURIClasses() {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
-
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
-
-        var type = Mockito.mock(ObjectType.class);
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
-
         var chain = new LinkedList<ObjectType>();
         chain.add(type);
 
@@ -479,17 +419,6 @@ class OPALTypeTest {
     }
 
     private Method createMethod() {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
-
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
-
-        var type = Mockito.mock(ObjectType.class);
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
-
         var arrayOfParameters = new RefArray<FieldType>(new FieldType[]{type});
 
         var descriptor = Mockito.mock(MethodDescriptor.class);

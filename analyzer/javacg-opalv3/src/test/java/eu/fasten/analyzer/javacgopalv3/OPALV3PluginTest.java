@@ -54,7 +54,7 @@ class OPALV3PluginTest {
     }
 
     @Test
-    public void testConsume() throws JSONException, IOException {
+    public void testConsume() throws JSONException {
 
         JSONObject coordinateJSON = new JSONObject("{\n" +
                 "    \"groupId\": \"org.slf4j\",\n" +
@@ -62,6 +62,24 @@ class OPALV3PluginTest {
                 "    \"version\": \"1.7.29\",\n" +
                 "    \"date\":\"1574072773\"\n" +
                 "}");
+
+        plugin.consume(coordinateJSON.toString());
+
+        assertTrue(plugin.produce().isPresent());
+        assertFalse(new ExtendedRevisionCallGraph(new JSONObject(plugin.produce().get()))
+                .isCallGraphEmpty());
+    }
+
+    @Test
+    public void testConsumeWithPayload() throws JSONException {
+
+        JSONObject coordinateJSON = new JSONObject("{\"payload\":" +
+                "{\n" +
+                "    \"groupId\": \"org.slf4j\",\n" +
+                "    \"artifactId\": \"slf4j-api\",\n" +
+                "    \"version\": \"1.7.29\",\n" +
+                "    \"date\":\"1574072773\"\n" +
+                "}}");
 
         plugin.consume(coordinateJSON.toString());
 
@@ -84,6 +102,22 @@ class OPALV3PluginTest {
 
         assertFalse(plugin.produce().isPresent());
         assertEquals(FileNotFoundException.class.getSimpleName(), error.getClass().getSimpleName());
+    }
+
+    @Test
+    public void testEmptyCallGraph() throws JSONException {
+        JSONObject emptyCGCoordinate = new JSONObject("{\n"
+                + "    \"groupId\": \"activemq\",\n"
+                + "    \"artifactId\": \"activemq\",\n"
+                + "    \"version\": \"release-1.5\",\n"
+                + "    \"date\":\"1574072773\"\n"
+                + "}");
+
+        plugin.consume(emptyCGCoordinate.toString());
+        assertTrue(plugin.produce().isPresent());
+        var graph = plugin.produce().get();
+        var cg = new ExtendedRevisionCallGraph(new JSONObject(graph));
+        assertTrue(cg.isCallGraphEmpty());
     }
 
     @Test
