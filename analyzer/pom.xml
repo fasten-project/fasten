@@ -25,6 +25,7 @@
     </dependencies>
     <modules>
         <module>javacg-opal</module>
+        <module>javacg-opalv3</module>
         <module>dummy-analyzer</module>
         <module>metadata-plugin</module>
         <module>graph-plugin</module>

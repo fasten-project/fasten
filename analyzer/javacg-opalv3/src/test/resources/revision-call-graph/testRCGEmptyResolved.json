@@ -1,0 +1,88 @@
+{
+    "product": "groupID:artifactID",
+    "nodes": 5,
+    "forge": "mvn",
+    "generator": "OPAL",
+    "version": "2.6",
+    "cha": {
+        "externalTypes": {
+            "/external.package/A": {
+                "access": "",
+                "methods": {
+                    "1": {
+                        "metadata": {},
+                        "uri": "/external.package/A.someMethod()%2Fjava.lang%2FObject"
+                    },
+                    "2": {
+                        "metadata": {},
+                        "uri": "/external.package/A.otherMethod()%2Fjava.lang%2FVoidType"
+                    }
+                },
+                "final": false,
+                "superInterfaces": [],
+                "sourceFile": "",
+                "superClasses": []
+            }
+        },
+        "internalTypes": {
+            "/internal.package/B": {
+                "access": "public",
+                "methods": {
+                    "3": {
+                        "metadata": {
+                            "access": "public",
+                            "last": 14,
+                            "defined": true,
+                            "first": 25
+                        },
+                        "uri": "/internal.package/B.internalMethod(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType"
+                    },
+                    "4": {
+                        "metadata": {
+                            "access": "private",
+                            "last": 38,
+                            "defined": true,
+                            "first": 42
+                        },
+                        "uri": "/internal.package/B.newInstance()%2Fjava.lang%2FObject"
+                    }
+                },
+                "final": false,
+                "superInterfaces": [
+                    "/internal.package/BInterface"
+                ],
+                "sourceFile": "B.java",
+                "superClasses": [
+                    "/java.lang/Object"
+                ]
+            }
+        },
+        "resolvedTypes": {}
+    },
+    "graph": {
+        "internalCalls": [
+            [
+                "4",
+                "3",
+                {"3": {
+                    "receiver": "/internal.package/B",
+                    "line": 25,
+                    "type": "invokespecial"
+                }}
+            ]
+        ],
+        "externalCalls": [
+            [
+                "3",
+                "1",
+                {"1": {
+                    "receiver": "/java.lang/Object",
+                    "line": 42,
+                    "type": "invokespecial"
+                }}
+            ]
+        ],
+        "resolvedCalls": []
+    },
+    "timestamp": 123
+}

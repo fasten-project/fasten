@@ -265,7 +265,7 @@ public class MethodTest {
             classInitMethods.stream().filter(i -> i.name().equals("<clinit>")).findFirst()
                 .orElseThrow();
         assertEquals(
-            new FastenJavaURI("/name.space/ClassInit.%3Cinit%3E()%2Fjava.lang%2FVoidType"),
+            new FastenJavaURI("/name.space/ClassInit.%25253Cinit%25253E()%2Fjava.lang%2FVoidType"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
@@ -274,7 +274,7 @@ public class MethodTest {
             lambdaMethods.stream().filter(i -> i.name().equals("apply")).findFirst().orElseThrow();
         assertEquals(
             new FastenJavaURI("/null/Lambda$" + lambdaNumber
-                + "%3A0.apply(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
+                + "%253A0.apply(%2Fjava.lang%2FObject)%2Fjava.lang%2FObject"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
@@ -296,7 +296,7 @@ public class MethodTest {
 
         assertEquals(
             new FastenJavaURI(
-                "/null/Lambda$" + lambdaNumber + "%3A0.$newInstance()Lambda$" + lambdaNumber
+                "/null/Lambda$" + lambdaNumber + "%253A0.$newInstance()Lambda$" + lambdaNumber
                     + "%25253A0"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
@@ -307,8 +307,8 @@ public class MethodTest {
                 && i.declaringClassFile().thisType().simpleName().contains("Lambda$")).findFirst()
                 .orElseThrow();
         assertEquals(
-            new FastenJavaURI("/null/Lambda$" + lambdaNumber + "%3A0.Lambda$" + lambdaNumber
-                + "%3A0()%2Fjava.lang%2FVoidType"),
+            new FastenJavaURI("/null/Lambda$" + lambdaNumber + "%253A0.Lambda$" + lambdaNumber
+                + "%25253A0()%2Fjava.lang%2FVoidType"),
             OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor())
         );
