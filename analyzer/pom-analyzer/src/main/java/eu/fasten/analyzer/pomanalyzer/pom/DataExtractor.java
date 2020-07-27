@@ -92,9 +92,14 @@ public class DataExtractor {
                                 .orElseThrow(RuntimeException::new).getBytes());
             }
             var pom = new SAXReader().read(pomByteStream).getRootElement();
+            var properties = this.extractDependencyResolutionMetadata(pom).getLeft();
             var packagingNode = pom.selectSingleNode("./*[local-name()='packaging']");
             if (packagingNode != null) {
                 packaging = packagingNode.getText();
+                if (packaging.startsWith("$")
+                        && properties.containsKey(packaging.substring(2, packaging.length() - 1))) {
+                    packaging = properties.get(packaging.substring(2, packaging.length() - 1));
+                }
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -284,6 +289,25 @@ public class DataExtractor {
     private Pair<Map<String, String>, List<DependencyManagement>> extractDependencyResolutionMetadata(Node pomRoot) {
         Map<String, String> properties = new HashMap<>();
         var dependencyManagements = new ArrayList<DependencyManagement>();
+        var profilesRoot = pomRoot.selectSingleNode("./*[local-name() ='profiles']");
+        if (profilesRoot != null) {
+            for (final var profile : profilesRoot.selectNodes("*")) {
+                var activationNode = profile.selectSingleNode("./*[local-name() ='activation']");
+                if (activationNode != null) {
+                    var activeByDefault = activationNode
+                            .selectSingleNode("./*[local-name() ='activeByDefault']");
+                    if (activeByDefault != null && activeByDefault.getText().equals("true")) {
+                        var propertiesRoot = profile
+                                .selectSingleNode("./*[local-name() ='properties']");
+                        if (propertiesRoot != null) {
+                            for (final var property : propertiesRoot.selectNodes("*")) {
+                                properties.put(property.getName(), property.getStringValue());
+                            }
+                        }
+                    }
+                }
+            }
+        }
         var propertiesRoot = pomRoot.selectSingleNode("./*[local-name() ='properties']");
         if (propertiesRoot != null) {
             for (final var property : propertiesRoot.selectNodes("*")) {

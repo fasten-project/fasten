@@ -237,6 +237,13 @@ public class DataExtractorTest {
     }
 
     @Test
+    public void extractPackagingTypeFromPropertiesTest() {
+        var expected = "war";
+        var actual = dataExtractor.extractPackagingType("org.graphity", "client", "1.1.3");
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void extractAllDataTest() {
         var expectedDependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
