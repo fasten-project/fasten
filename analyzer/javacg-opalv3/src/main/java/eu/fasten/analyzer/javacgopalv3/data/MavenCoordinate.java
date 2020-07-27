@@ -159,6 +159,10 @@ public class MavenCoordinate {
             logger.debug("Downloading JAR for " + mavenCoordinate);
 
             for (var repo : mavenCoordinate.getMavenRepos()) {
+                if (mavenCoordinate.getPackaging().equals("pom")) {
+                    throw new FileNotFoundException("only pom file available:"
+                            + mavenCoordinate.toProductUrl(repo, mavenCoordinate.getPackaging()));
+                }
                 var jar = httpGetFile(mavenCoordinate
                         .toProductUrl(repo, mavenCoordinate.getPackaging()));
 

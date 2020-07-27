@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopalv3.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.FileNotFoundException;
@@ -104,5 +105,15 @@ class MavenCoordinateTest {
         var resolver = new MavenCoordinate.MavenResolver();
 
         assertTrue(resolver.downloadJar(coordinate).isEmpty());
+    }
+
+    @Test
+    void downloadJarPomPackaging() {
+        MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
+                .singletonList("repo")), "group", "artifact", "version", "pom");
+
+        var resolver = new MavenCoordinate.MavenResolver();
+
+        assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
     }
 }
