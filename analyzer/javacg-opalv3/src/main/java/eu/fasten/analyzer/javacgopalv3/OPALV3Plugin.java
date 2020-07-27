@@ -68,7 +68,8 @@ public class OPALV3Plugin extends Plugin {
                 final var mavenCoordinate = getMavenCoordinate(kafkaConsumedJson);
 
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
-                this.graph = generateCallGraph(mavenCoordinate, kafkaConsumedJson.optLong("date", -1));
+                this.graph = generateCallGraph(mavenCoordinate,
+                        kafkaConsumedJson.optLong("date", -1));
 
                 if (graph == null || graph.isCallGraphEmpty()) {
                     logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
@@ -138,8 +139,9 @@ public class OPALV3Plugin extends Plugin {
                 var groupId = kafkaConsumedJson.getString("groupId");
                 var artifactId = kafkaConsumedJson.getString("artifactId");
                 var version = kafkaConsumedJson.getString("version");
+                var packaging = kafkaConsumedJson.optString("packagingType", "jar");
 
-                return new MavenCoordinate(groupId, artifactId, version);
+                return new MavenCoordinate(groupId, artifactId, version, packaging);
 
             } catch (JSONException e) {
                 setPluginError(e);
