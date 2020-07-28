@@ -486,13 +486,16 @@ public class MetadataDatabasePlugin extends Plugin {
                 var localTarget = (long) edgeEntry.getKey().get(1);
                 var globalSource = lidToGidMap.get(localSource);
                 var globalTarget = lidToGidMap.get(localTarget);
-                var pc = Integer.parseInt(
-                        edgeEntry.getValue().keySet().iterator().next().toString());
-                var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(pc);
                 var metadata = new JSONObject();
-                metadata.put("pc", pc);
-                for (var key : metadataMap.keySet()) {
-                    metadata.put(key, metadataMap.get(key));
+                for (var obj : edgeEntry.getValue().keySet()) {
+                    var pc = obj.toString();
+                    var metadataMap = (Map<String, Object>) edgeEntry.getValue()
+                            .get(Integer.parseInt(pc));
+                    var callMetadata = new JSONObject();
+                    for (var key : metadataMap.keySet()) {
+                        callMetadata.put(key, metadataMap.get(key));
+                    }
+                    metadata.put(pc, callMetadata);
                 }
                 edges.add(new EdgesRecord(globalSource, globalTarget,
                         JSONB.valueOf(metadata.toString())));
