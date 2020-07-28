@@ -23,44 +23,7 @@
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.0.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.26</version>
-        </dependency>
-        <dependency>
-            <groupId>org.pf4j</groupId>
-            <artifactId>pf4j</artifactId>
-            <version>3.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>9.4.1208</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
-            <version>3.12.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.rocksdb</groupId>
-            <artifactId>rocksdbjni</artifactId>
-            <version>6.2.4</version>
-        </dependency>
-
     </dependencies>
 
     <build>
@@ -77,8 +40,8 @@
                         </goals>
                         <configuration>
                             <minimizeJar>false</minimizeJar>
-                            <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
-<!--                            <createDependencyReducedPom>false</createDependencyReducedPom>-->
+                            <keepDependenciesWithProvidedScope>false
+                            </keepDependenciesWithProvidedScope>
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
@@ -89,13 +52,9 @@
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
-<!--                            <artifactSet>-->
-<!--                                <includes>-->
-<!--                                    <include>*:*</include>-->
-<!--                                </includes>-->
-<!--                            </artifactSet>-->
                             <!-- Note that this works when maven is ran in the root directory of the project  -->
-                            <outputDirectory>${session.executionRootDirectory}/docker/server/</outputDirectory>
+                            <outputDirectory>${session.executionRootDirectory}/docker/server/
+                            </outputDirectory>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>with-dependencies</shadedClassifierName>
                         </configuration>
@@ -106,6 +65,7 @@
                         <filter>
                             <artifact>*:*</artifact>
                             <excludes>
+                                <exclude>module-info.class</exclude>
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>

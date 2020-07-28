@@ -18,18 +18,19 @@
 
 package eu.fasten.core.data.graphdb;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
 
 public class RocksDaoTest {
 

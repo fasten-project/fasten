@@ -18,22 +18,54 @@
 
 package eu.fasten.core.data.metadatadb;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
-import eu.fasten.core.data.metadatadb.codegen.tables.*;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.*;
-import org.jooq.*;
-import org.json.JSONObject;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mockito;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
+import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.BinaryModuleContentsRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.BinaryModulesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.DependenciesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.FilesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.ModuleContentsRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.ModulesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.jooq.BatchBindStep;
+import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.InsertOnConflictDoUpdateStep;
+import org.jooq.InsertOnDuplicateSetMoreStep;
+import org.jooq.InsertOnDuplicateSetStep;
+import org.jooq.InsertResultStep;
+import org.jooq.InsertValuesStep2;
+import org.jooq.InsertValuesStep3;
+import org.jooq.InsertValuesStep4;
+import org.jooq.InsertValuesStep5;
+import org.jooq.JSONB;
+import org.jooq.Result;
+import org.jooq.SelectWhereStep;
+import org.json.JSONObject;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 public class MetadataDaoTest {
 

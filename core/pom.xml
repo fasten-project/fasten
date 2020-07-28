@@ -10,16 +10,25 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <groupId>eu.fasten</groupId>
     <artifactId>core</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <description>
-        Manages the FASTEN graph and metadata storage.
-    </description>
+    <name>core</name>
+
+    <description>Manages the FASTEN graph and metadata storage.</description>
 
     <dependencies>
+        <dependency>
+            <groupId>org.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
+            <version>3.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.4.0</version>
+        </dependency>
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>dsiutils</artifactId>
@@ -42,14 +51,19 @@
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
-           <artifactId>kafka-clients</artifactId>
-           <version>2.3.0</version>
+            <artifactId>kafka-clients</artifactId>
+            <version>2.3.0</version>
         </dependency>
-		  <dependency>
-			  <groupId>com.esotericsoftware</groupId>
-			  <artifactId>kryo</artifactId>
-			  <version>5.0.0-RC4</version>
-		</dependency>
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo</artifactId>
+            <version>5.0.0-RC4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>9.4.1208</version>
+        </dependency>
         <dependency>
             <groupId>org.rocksdb</groupId>
             <artifactId>rocksdbjni</artifactId>
@@ -73,49 +87,55 @@
             <version>1.3.0</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.json-unit</groupId>
+            <artifactId>json-unit</artifactId>
+            <version>2.17.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-<!--            jOOQ code generation plugin-->
-<!--            <plugin>-->
-<!--                <groupId>org.jooq</groupId>-->
-<!--                <artifactId>jooq-codegen-maven</artifactId>-->
-<!--                <version>3.12.3</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <goals>-->
-<!--                            <goal>generate</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--                <dependencies>-->
-<!--                    <dependency>-->
-<!--                        <groupId>org.postgresql</groupId>-->
-<!--                        <artifactId>postgresql</artifactId>-->
-<!--                        <version>9.4.1208</version>-->
-<!--                    </dependency>-->
-<!--                </dependencies>-->
-<!--                <configuration>-->
-<!--                    <jdbc>-->
-<!--                        <driver>org.postgresql.Driver</driver>-->
-<!--                        <url>jdbc:postgresql:postgres</url>-->
-<!--                        <user>postgres</user>-->
-<!--                        <password>pass123</password>-->
-<!--                    </jdbc>-->
-<!--                    <generator>-->
-<!--                        <database>-->
-<!--                            <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
-<!--                            <includes>.*</includes>-->
-<!--                            <inputSchema>public</inputSchema>-->
-<!--                        </database>-->
-<!--                        <target>-->
-<!--                            <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>-->
-<!--                            <directory>src/main/java</directory>-->
-<!--                        </target>-->
-<!--                    </generator>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
+            <!--            jOOQ code generation plugin-->
+            <!--            <plugin>-->
+            <!--                <groupId>org.jooq</groupId>-->
+            <!--                <artifactId>jooq-codegen-maven</artifactId>-->
+            <!--                <version>3.12.3</version>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <goals>-->
+            <!--                            <goal>generate</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--                <dependencies>-->
+            <!--                    <dependency>-->
+            <!--                        <groupId>org.postgresql</groupId>-->
+            <!--                        <artifactId>postgresql</artifactId>-->
+            <!--                        <version>9.4.1208</version>-->
+            <!--                    </dependency>-->
+            <!--                </dependencies>-->
+            <!--                <configuration>-->
+            <!--                    <jdbc>-->
+            <!--                        <driver>org.postgresql.Driver</driver>-->
+            <!--                        <url>jdbc:postgresql:postgres</url>-->
+            <!--                        <user>postgres</user>-->
+            <!--                        <password>pass123</password>-->
+            <!--                    </jdbc>-->
+            <!--                    <generator>-->
+            <!--                        <database>-->
+            <!--                            <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
+            <!--                            <includes>.*</includes>-->
+            <!--                            <inputSchema>public</inputSchema>-->
+            <!--                        </database>-->
+            <!--                        <target>-->
+            <!--                            <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>-->
+            <!--                            <directory>src/main/java</directory>-->
+            <!--                        </target>-->
+            <!--                    </generator>-->
+            <!--                </configuration>-->
+            <!--            </plugin>-->
         </plugins>
     </build>
 
