@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopalv3.data.analysis;
+package eu.fasten.analyzer.javacgopal.data.analysis;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;

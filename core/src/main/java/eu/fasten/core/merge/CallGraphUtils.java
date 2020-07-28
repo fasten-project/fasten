@@ -18,7 +18,7 @@
 
 package eu.fasten.core.merge;
 
-import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,12 +28,13 @@ import org.slf4j.LoggerFactory;
 
 
 public class CallGraphUtils {
-    private static Logger logger = LoggerFactory.getLogger(CallGraphUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(CallGraphUtils.class);
 
 
     /**
      * It writes two ProposalRevisionCallGraphs together with their differences in the provided.
      * path
+     *
      * @param resultPath  the path for the result diff
      * @param graphNumber the number of the graph this number will be written as a prefix to the
      *                    result files
@@ -42,34 +43,32 @@ public class CallGraphUtils {
      * @throws IOException throws IOException.
      */
     public static void diffInFile(final String resultPath, final int graphNumber,
-                                  final RevisionCallGraph firstGraph,
-                                  final RevisionCallGraph secondGraph) throws IOException {
+                                  final ExtendedRevisionCallGraph firstGraph,
+                                  final ExtendedRevisionCallGraph secondGraph) throws IOException {
 
         final String graphPath =
-            resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
+                resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
 
-        firstGraph.sortInternalCalls();
-        secondGraph.sortInternalCalls();
+        writeToFile(graphPath, firstGraph.toJSON(), "_1.txt");
+        writeToFile(graphPath, secondGraph.toJSON(), "_2.txt");
 
-        writeToFile(graphPath, firstGraph.toJSON(),"_1.txt");
-        writeToFile(graphPath, secondGraph.toJSON(),"_2.txt");
-
-        Runtime.getRuntime().exec(new String[] {"sh", "-c",
-            "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath
-                + "_Diff.txt"});
+        Runtime.getRuntime().exec(new String[]{"sh", "-c",
+                "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath
+                        + "_Diff.txt"});
     }
 
     /**
      * Writes Strings to files, can be used to output the graphs.
-     * @param path the path to write
-     * @param graph the String representation of graph or any other String to be written to a file
+     *
+     * @param path   the path to write
+     * @param graph  the String representation of graph or any other String to be written to a file
      * @param suffix the suffix to put at the end of the path, most of the time file name
      * @throws IOException throws if IO problems occur during writing in a file
      */
     public static void writeToFile(final String path, final JSONObject graph, final String suffix)
-        throws IOException {
+            throws IOException {
         if (!graph.isEmpty()) {
-            logger.info("Writing graph to {}", path+suffix);
+            logger.info("Writing graph to {}", path + suffix);
         }
         final BufferedWriter writer;
         writer = new BufferedWriter(new FileWriter(path + suffix));
