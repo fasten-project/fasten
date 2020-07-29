@@ -89,7 +89,7 @@ public class DataExtractor {
             } else {
                 pomByteStream = new ByteArrayInputStream(
                         this.downloadPom(artifactId, groupId, version)
-                                .orElseThrow(RuntimeException::new).getBytes());
+                                .orElseThrow(FileNotFoundException::new).getBytes());
             }
             var pom = new SAXReader().read(pomByteStream).getRootElement();
             var properties = this.extractDependencyResolutionMetadata(pom).getLeft();
@@ -172,7 +172,7 @@ public class DataExtractor {
         } else {
             pomByteStream = new ByteArrayInputStream(
                     this.downloadPom(artifactId, groupId, version)
-                            .orElseThrow(RuntimeException::new).getBytes());
+                            .orElseThrow(FileNotFoundException::new).getBytes());
         }
         var pom = new SAXReader().read(pomByteStream);
         return pom.getRootElement().selectSingleNode("./*[local-name()='scm']");
@@ -197,7 +197,7 @@ public class DataExtractor {
             } else {
                 pomByteStream = new ByteArrayInputStream(
                         this.downloadPom(artifactId, groupId, version)
-                                .orElseThrow(RuntimeException::new).getBytes());
+                                .orElseThrow(FileNotFoundException::new).getBytes());
             }
             var pom = new SAXReader().read(pomByteStream);
             var versionResolutionData = extractDependencyResolutionMetadata(pom.getRootElement());
@@ -325,7 +325,7 @@ public class DataExtractor {
             try {
                 var parentPom = new SAXReader().read(new ByteArrayInputStream(
                         this.downloadPom(parentArtifact, parentGroup, parentVersion)
-                                .orElseThrow(RuntimeException::new).getBytes())).getRootElement();
+                                .orElseThrow(FileNotFoundException::new).getBytes())).getRootElement();
                 var parentMetadata = this.extractDependencyResolutionMetadata(parentPom);
                 var parentProperties = parentMetadata.getLeft();
                 for (var entry : parentProperties.entrySet()) {
