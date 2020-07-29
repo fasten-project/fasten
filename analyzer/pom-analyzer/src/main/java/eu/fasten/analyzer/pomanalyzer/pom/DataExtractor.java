@@ -52,6 +52,7 @@ public class DataExtractor {
 
     private String mavenCoordinate = null;
     private String pomContents = null;
+    private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
 
     public DataExtractor() {
         var repoHost = System.getenv("MVN_REPO") != null
@@ -92,7 +93,11 @@ public class DataExtractor {
                                 .orElseThrow(FileNotFoundException::new).getBytes());
             }
             var pom = new SAXReader().read(pomByteStream).getRootElement();
-            var properties = this.extractDependencyResolutionMetadata(pom).getLeft();
+            if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
+                var metadata = this.extractDependencyResolutionMetadata(pom);
+                this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
+            }
+            var properties = this.resolutionMetadata.getRight().getLeft();
             var packagingNode = pom.selectSingleNode("./*[local-name()='packaging']");
             if (packagingNode != null) {
                 packaging = packagingNode.getText();
@@ -129,6 +134,13 @@ public class DataExtractor {
                     repoUrl = url.getText();
                 }
             }
+            if (repoUrl != null) {
+                var properties = this.resolutionMetadata.getRight().getLeft();
+                if (repoUrl.startsWith("$")
+                        && properties.containsKey(repoUrl.substring(2, repoUrl.length() - 1))) {
+                    repoUrl = properties.get(repoUrl.substring(2, repoUrl.length() - 1));
+                }
+            }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
                     + groupId + ":" + artifactId + ":" + version);
@@ -155,6 +167,13 @@ public class DataExtractor {
                 var tag = scm.selectSingleNode("./*[local-name()='tag']");
                 commitTag = (tag != null) ? tag.getText() : null;
             }
+            if (commitTag != null) {
+                var properties = this.resolutionMetadata.getRight().getLeft();
+                if (commitTag.startsWith("$")
+                        && properties.containsKey(commitTag.substring(2, commitTag.length() - 1))) {
+                    commitTag = properties.get(commitTag.substring(2, commitTag.length() - 1));
+                }
+            }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
                     + groupId + ":" + artifactId + ":" + version);
@@ -174,8 +193,12 @@ public class DataExtractor {
                     this.downloadPom(artifactId, groupId, version)
                             .orElseThrow(FileNotFoundException::new).getBytes());
         }
-        var pom = new SAXReader().read(pomByteStream);
-        return pom.getRootElement().selectSingleNode("./*[local-name()='scm']");
+        var pom = new SAXReader().read(pomByteStream).getRootElement();
+        if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
+            var metadata = this.extractDependencyResolutionMetadata(pom);
+            this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
+        }
+        return pom.selectSingleNode("./*[local-name()='scm']");
     }
 
     /**
@@ -199,8 +222,12 @@ public class DataExtractor {
                         this.downloadPom(artifactId, groupId, version)
                                 .orElseThrow(FileNotFoundException::new).getBytes());
             }
-            var pom = new SAXReader().read(pomByteStream);
-            var versionResolutionData = extractDependencyResolutionMetadata(pom.getRootElement());
+            var pom = new SAXReader().read(pomByteStream).getRootElement();
+            if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
+                var metadata = this.extractDependencyResolutionMetadata(pom);
+                this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
+            }
+            var versionResolutionData = this.resolutionMetadata.getRight();
             var properties = versionResolutionData.getLeft();
             var parentDependencyManagements = versionResolutionData.getRight();
             for (int i = 0; i < parentDependencyManagements.size(); i++) {
@@ -209,8 +236,7 @@ public class DataExtractor {
                         properties, new ArrayList<>());
                 parentDependencyManagements.set(i, new DependencyManagement(resolvedDependencies));
             }
-            var dependencyManagementNode = pom.getRootElement()
-                    .selectSingleNode("./*[local-name()='dependencyManagement']");
+            var dependencyManagementNode = pom.selectSingleNode("./*[local-name()='dependencyManagement']");
             DependencyManagement dependencyManagement;
             if (dependencyManagementNode != null) {
                 var dependenciesNode = dependencyManagementNode
@@ -222,8 +248,7 @@ public class DataExtractor {
             } else {
                 dependencyManagement = new DependencyManagement(new ArrayList<>());
             }
-            var dependenciesNode = pom.getRootElement()
-                    .selectSingleNode("./*[local-name()='dependencies']");
+            var dependenciesNode = pom.selectSingleNode("./*[local-name()='dependencies']");
             var dependencies = extractDependencies(dependenciesNode);
             dependencies = this.resolveDependencyVersions(dependencies, properties,
                     parentDependencyManagements);

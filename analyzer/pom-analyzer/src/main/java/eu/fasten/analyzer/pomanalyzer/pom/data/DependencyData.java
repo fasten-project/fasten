@@ -89,4 +89,9 @@ public class DependencyData {
         }
         return new DependencyData(dependencyManagement, dependencies);
     }
+
+    @Override
+    public String toString() {
+        return this.toJSON().toString();
+    }
 }
