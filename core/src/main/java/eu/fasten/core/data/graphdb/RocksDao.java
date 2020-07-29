@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import it.unimi.dsi.fastutil.longs.*;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
@@ -50,10 +51,6 @@ import eu.fasten.core.index.BVGraphSerializer;
 import eu.fasten.core.index.LayeredLabelPropagation;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongIterators;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.io.InputBitStream;
 import it.unimi.dsi.io.NullInputStream;
 import it.unimi.dsi.lang.MutableString;
@@ -117,7 +114,7 @@ public class RocksDao implements Closeable {
      */
     public void saveToRocksDb(final long index, List<Long> nodes, final int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
-        final var nodesSet = new LongOpenHashSet(nodes);
+        final var nodesSet = new LongLinkedOpenHashSet(nodes);
         nodes = nodesSet.parallelStream().collect(Collectors.toList());
         final var edgeNodesSet = new LongOpenHashSet();
         for (final var edge : edges) {
