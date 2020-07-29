@@ -115,7 +115,6 @@ public class RocksDao implements Closeable {
     public void saveToRocksDb(final long index, List<Long> nodes, final int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
         final var nodesSet = new LongLinkedOpenHashSet(nodes);
-        // Remove duplicate nodes
         nodes = nodesSet.parallelStream().collect(Collectors.toList());
         final var edgeNodesSet = new LongOpenHashSet();
         for (final var edge : edges) {
