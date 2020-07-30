@@ -16,13 +16,12 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.core.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -40,7 +39,7 @@ class ExtendedRevisionCallGraphTest {
     @BeforeAll
     static void setUp() throws IOException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("revision-call-graph/testRCG.json"))
+                .getResource("extended-revision-call-graph/testRCG.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
@@ -56,7 +55,7 @@ class ExtendedRevisionCallGraphTest {
     @Test
     void toJSON() throws FileNotFoundException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("revision-call-graph/testRCG.json"))
+                .getResource("extended-revision-call-graph/testRCG.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
@@ -109,7 +108,7 @@ class ExtendedRevisionCallGraphTest {
     @Test
     void isCallGraphEmptyEmptyInternal() throws IOException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("revision-call-graph/testRCGEmptyInternal.json"))
+                .getResource("extended-revision-call-graph/testRCGEmptyInternal.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
@@ -122,7 +121,7 @@ class ExtendedRevisionCallGraphTest {
     @Test
     void isCallGraphEmptyEmptyExternal() throws IOException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("revision-call-graph/testRCGEmptyExternal.json"))
+                .getResource("extended-revision-call-graph/testRCGEmptyExternal.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
@@ -135,7 +134,7 @@ class ExtendedRevisionCallGraphTest {
     @Test
     void isCallGraphEmptyEmptyResolved() throws IOException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("revision-call-graph/testRCGEmptyResolved.json"))
+                .getResource("extended-revision-call-graph/testRCGEmptyResolved.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
@@ -148,7 +147,7 @@ class ExtendedRevisionCallGraphTest {
     @Test
     void isCallGraphEmptyEmptyAll() throws IOException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("revision-call-graph/testRCGEmptyAll.json"))
+                .getResource("extended-revision-call-graph/testRCGEmptyAll.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));

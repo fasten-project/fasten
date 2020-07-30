@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -15,12 +16,13 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
+    <name>javacg-opal</name>
+
     <dependencies>
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <!--<scope>provided</scope>-->
         </dependency>
         <dependency>
             <groupId>de.opal-project</groupId>
@@ -38,47 +40,6 @@
             <version>3.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>26.0-jre</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.30</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.30</version>
-        </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.0.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jgrapht</groupId>
-            <artifactId>jgrapht-core</artifactId>
-            <version>1.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.4.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.dom4j</groupId>
-            <artifactId>dom4j</artifactId>
-            <version>2.1.3</version>
-        </dependency>
-        <dependency>
-            <groupId>jaxen</groupId>
-            <artifactId>jaxen</artifactId>
-            <version>1.2.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.jboss.shrinkwrap.resolver</groupId>
             <artifactId>shrinkwrap-resolver-depchain</artifactId>
             <version>3.1.4</version>
@@ -86,14 +47,16 @@
         </dependency>
     </dependencies>
 
+    <repositories>
+        <repository>
+            <id>lib</id>
+            <url>file:${project.basedir}/lib</url>
+        </repository>
+    </repositories>
+
     <build>
         <testSourceDirectory>${project.basedir}/src/test/java/</testSourceDirectory>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -106,38 +69,32 @@
                         </goals>
                         <configuration>
                             <minimizeJar>false</minimizeJar>
-                            <keepDependenciesWithProvidedScope>false
-                            </keepDependenciesWithProvidedScope>
-                            <!--                            <createDependencyReducedPom>false</createDependencyReducedPom>-->
+                            <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
                             <artifactSet>
                                 <excludes>
-                                    <!--                                    <exclude>com.typesafe.play:play-json_2.11:*</exclude>-->
-                                    <!--                                    <exclude>com.typesafe.play:play-functional_2.11:*</exclude>-->
                                     <exclude>org.slf4j:slf4j-simple:*</exclude>
                                     <exclude>org.slf4j:slf4j-api:*</exclude>
                                 </excludes>
                             </artifactSet>
                             <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
                                         <Main-Class>eu.fasten.analyzer.javacgopal.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.javacgopal.OPALPlugin
-                                        </Plugin-Class>
+                                        <Plugin-Class>eu.fasten.analyzer.javacgopal.OPALPlugin</Plugin-Class>
                                         <Plugin-Id>opal-plugin</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
-                                        <Plugin-Description>Given a Maven coordinate, generates call
-                                            graphs and puts them into a Kafka topic
+                                        <Plugin-Description>
+                                            Given a Maven coordinate or a file,
+                                            generates call graphs and puts them into a Kafka topic
                                         </Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
                             <!-- Note that this works when maven is ran in the root directory of the project  -->
-                            <outputDirectory>${session.executionRootDirectory}/docker/plugins/
-                            </outputDirectory>
+                            <outputDirectory>${session.executionRootDirectory}/docker/plugins/</outputDirectory>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>with-dependencies</shadedClassifierName>
                         </configuration>
@@ -148,6 +105,7 @@
                         <filter>
                             <artifact>*:*</artifact>
                             <excludes>
+                                <exclude>module-info.class</exclude>
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
@@ -163,14 +121,14 @@
                     </filters>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
                     <annotationProcessors>
-                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor
-                        </annotationProcessor>
+                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
                     </annotationProcessors>
                     <source>1.11</source>
                     <target>1.11</target>
@@ -179,12 +137,6 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <id>lib</id>
-            <url>file:${project.basedir}/lib</url>
-        </repository>
-    </repositories>
     <reporting>
         <plugins>
             <plugin>

@@ -18,22 +18,54 @@
 
 package eu.fasten.core.data.metadatadb;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
-import eu.fasten.core.data.metadatadb.codegen.tables.*;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.*;
-import org.jooq.*;
-import org.json.JSONObject;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mockito;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
+import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.BinaryModuleContentsRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.BinaryModulesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.DependenciesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.FilesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.ModuleContentsRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.ModulesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.jooq.BatchBindStep;
+import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.InsertOnConflictDoUpdateStep;
+import org.jooq.InsertOnDuplicateSetMoreStep;
+import org.jooq.InsertOnDuplicateSetStep;
+import org.jooq.InsertResultStep;
+import org.jooq.InsertValuesStep2;
+import org.jooq.InsertValuesStep3;
+import org.jooq.InsertValuesStep4;
+import org.jooq.InsertValuesStep5;
+import org.jooq.JSONB;
+import org.jooq.Result;
+import org.jooq.SelectWhereStep;
+import org.json.JSONObject;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 public class MetadataDaoTest {
 
@@ -342,21 +374,23 @@ public class MetadataDaoTest {
         long packageId = 8;
         long dependencyId = 42;
         var versionRange = new String[]{"1.0.0-1.9.9"};
-        var insertValues = Mockito.mock(InsertValuesStep3.class);
+        var insertValues = Mockito.mock(InsertValuesStep4.class);
         Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
-                Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(packageId, dependencyId, versionRange)).thenReturn(insertValues);
+                Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE, Dependencies.DEPENDENCIES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, dependencyId, versionRange, JSONB.valueOf("{}"))).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
         Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE)).thenReturn(insertOnConflict);
         var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
         Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
         var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
-        Mockito.when(insertOnDuplicate.set(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
-                Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertOnDuplicateMore);
+        Mockito.when(insertOnDuplicate.set(Dependencies.DEPENDENCIES.METADATA,
+                JsonbDSL.concat(Dependencies.DEPENDENCIES.METADATA,
+                        Dependencies.DEPENDENCIES.as("excluded").METADATA))).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertOnDuplicateMore.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
         var record = new DependenciesRecord(packageId, dependencyId, versionRange, null);
         Mockito.when(insertResult.fetchOne()).thenReturn(record);
+        metadataDao.setContext(context);
         long result = metadataDao.insertDependency(packageId, dependencyId, versionRange, new JSONObject());
         assertEquals(packageId, result);
     }
@@ -366,24 +400,26 @@ public class MetadataDaoTest {
         var packageId = 1L;
         var dependencyIds = Arrays.asList(8L, 42L);
         var versionRanges = Arrays.asList(new String[]{"1.0.0-1.9.9"}, new String[]{"2.1.0-2.1.9"});
-        var insertValues = Mockito.mock(InsertValuesStep3.class);
+        var metadata = Arrays.asList(new JSONObject(), new JSONObject());
+        var insertValues = Mockito.mock(InsertValuesStep4.class);
         Mockito.when(context.insertInto(Dependencies.DEPENDENCIES, Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
-                Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE)).thenReturn(insertValues);
-        Mockito.when(insertValues.values(packageId, dependencyIds.get(0), versionRanges.get(0))).thenReturn(insertValues);
-        Mockito.when(insertValues.values(packageId, dependencyIds.get(1), versionRanges.get(1))).thenReturn(insertValues);
+                Dependencies.DEPENDENCIES.DEPENDENCY_ID, Dependencies.DEPENDENCIES.VERSION_RANGE, Dependencies.DEPENDENCIES.METADATA)).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, dependencyIds.get(0), versionRanges.get(0), JSONB.valueOf("{}"))).thenReturn(insertValues);
+        Mockito.when(insertValues.values(packageId, dependencyIds.get(1), versionRanges.get(1), JSONB.valueOf("{}"))).thenReturn(insertValues);
         var insertOnConflict = Mockito.mock(InsertOnConflictDoUpdateStep.class);
         Mockito.when(insertValues.onConflictOnConstraint(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE)).thenReturn(insertOnConflict);
         var insertOnDuplicate = Mockito.mock(InsertOnDuplicateSetStep.class);
         Mockito.when(insertOnConflict.doUpdate()).thenReturn(insertOnDuplicate);
         var insertOnDuplicateMore = Mockito.mock(InsertOnDuplicateSetMoreStep.class);
-        Mockito.when(insertOnDuplicate.set(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
-                Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertOnDuplicateMore);
+        Mockito.when(insertOnDuplicate.set(Dependencies.DEPENDENCIES.METADATA,
+                JsonbDSL.concat(Dependencies.DEPENDENCIES.METADATA,
+                        Dependencies.DEPENDENCIES.as("excluded").METADATA))).thenReturn(insertOnDuplicateMore);
         var insertResult = Mockito.mock(InsertResultStep.class);
         Mockito.when(insertOnDuplicateMore.returning(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID)).thenReturn(insertResult);
-        var record1 = new DependenciesRecord(packageId, dependencyIds.get(0), versionRanges.get(0), null);
-        var record2 = new DependenciesRecord(packageId, dependencyIds.get(1), versionRanges.get(1), null);
+        var record1 = new DependenciesRecord(packageId, dependencyIds.get(0), versionRanges.get(0), JSONB.valueOf("{}"));
+        var record2 = new DependenciesRecord(packageId, dependencyIds.get(1), versionRanges.get(1), JSONB.valueOf("{}"));
         Mockito.when(insertResult.fetchOne()).thenReturn(record1, record2);
-        var result = metadataDao.insertDependencies(packageId, dependencyIds, versionRanges, null);
+        var result = metadataDao.insertDependencies(packageId, dependencyIds, versionRanges, metadata);
         assertEquals(packageId, result);
     }
 
