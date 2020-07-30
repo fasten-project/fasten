@@ -47,15 +47,18 @@ public class ComplianceAnalyzerPlugin extends Plugin {
 
          @Override
          public String name() {
-             return "License compliance Plugin";
+             return "License Compliance Plugin";
          }
 
           @Override
          public String description() {
-             // TODO: Update the description
-             return "License Compliance Plugin";
-         }
-
+             return "License Compliance Plugin."
+             + "Consumes Repository Urls from Kafka topic,"
+             + " connects to cluster and starts a Kubernetes Job."
+             + " The Job spins a qmstr process which detects the project's"
+             + " license compliance and compatibility."
+             + " Once the Job is done the output is written to another Kafka topic.";
+ }
           @Override
          public String version() {
              return "0.0.1";
