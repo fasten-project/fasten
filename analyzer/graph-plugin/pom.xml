@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.fasten.analyzer</groupId>
     <artifactId>graph-plugin</artifactId>
@@ -42,49 +44,23 @@
                         </goals>
                         <configuration>
                             <minimizeJar>false</minimizeJar>
-                            <keepDependenciesWithProvidedScope>false
-                            </keepDependenciesWithProvidedScope>
+                            <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
                             <artifactSet>
                                 <excludes>
                                     <exclude>org.slf4j:slf4j-simple:*</exclude>
                                     <exclude>org.slf4j:slf4j-api:*</exclude>
                                     <exclude>org.apache.kafka:kafka-clients:*</exclude>
-                                    <!--<exclude>com.martiansoftware:jsap:*</exclude>-->
-                                    <!--<exclude>it.unimi.dsi:dsiutils:*</exclude>-->
-                                    <!--<exclude>it.unimi.dsi:fastutil:*</exclude>-->
-                                    <!--<exclude>org.codehaus.mojo:animal-sniffer-annotations:*</exclude>-->
-                                    <!--<exclude>it.unimi.dsi:webgraph:*</exclude>-->
-                                    <!--<exclude>it.unimi.dsi:sux4j:*</exclude>-->
                                     <exclude>org.rocksdb:rocksdbjni:*</exclude>
                                     <exclude>org.jooq:jooq:*</exclude>
-                                    <!--<exclude>com.googlecode.javaewah:*</exclude>-->
-                                    <!--<exclude>org.checkerframework:checker-qual:*</exclude>-->
-                                    <!--<exclude>org.objenesis:objenesis:*</exclude>-->
-                                    <!--<exclude>com.esotericsoftware:minlog:*</exclude>-->
-                                    <!--<exclude>com.esotericsoftware:reflectasm:*</exclude>-->
-                                    <!--<exclude>com.esotericsoftware:kryo:*</exclude>-->
-                                    <!--<exclude>org.reactivestreams:reactive-streams:*</exclude>-->
-                                    <!--<exclude>com.google.code.findbugs:jsr305:*</exclude>-->
-                                    <!--<exclude>com.google.j2objc:j2objc-annotations:*</exclude>-->
-                                    <!--<exclude>com.google.errorprone:error_prone_annotations:*</exclude>-->
-                                    <!--<exclude>com.github.luben:zstd-jni:*</exclude>-->
-                                    <!--<exclude>net.sf.jung:jung-api:*</exclude>-->
-                                    <!--<exclude>net.sf.jung:jung-io:*</exclude>-->
-                                    <!--<exclude>net.sf.jung:jung-algorithms:*</exclude>-->
-                                    <!--<exclude>com.jcraft:jsch:*</exclude>-->
-                                    <!--<exclude>com.jcraft:jzlib:*</exclude>-->
                                 </excludes>
                             </artifactSet>
                             <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
                                         <Main-Class>eu.fasten.analyzer.graphplugin.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>
-                                            eu.fasten.analyzer.graphplugin.GraphDatabasePlugin
-                                        </Plugin-Class>
+                                        <Plugin-Class>eu.fasten.analyzer.graphplugin.GraphDatabasePlugin</Plugin-Class>
                                         <Plugin-Id>graph-plugin</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
                                         <Plugin-Description>Graph Plugin</Plugin-Description>
@@ -93,8 +69,7 @@
                                 </transformer>
                             </transformers>
                             <!-- Note that this works when maven is ran in the root directory of the project  -->
-                            <outputDirectory>${session.executionRootDirectory}/docker/plugins/
-                            </outputDirectory>
+                            <outputDirectory>${session.executionRootDirectory}/docker/plugins/</outputDirectory>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>with-dependencies</shadedClassifierName>
                         </configuration>
@@ -123,8 +98,7 @@
                 <version>3.8.1</version>
                 <configuration>
                     <annotationProcessors>
-                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor
-                        </annotationProcessor>
+                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
                     </annotationProcessors>
                     <source>1.11</source>
                     <target>1.11</target>

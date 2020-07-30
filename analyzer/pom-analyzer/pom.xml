@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.fasten.analyzer</groupId>
     <artifactId>pom-analyzer</artifactId>
@@ -17,19 +19,6 @@
     <name>pom-analyzer</name>
 
     <dependencies>
-        <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
-            <version>3.12.3</version>
-            <!-- To run Main class comment out the next line -->
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20180813</version>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
@@ -65,8 +54,7 @@
                         </goals>
                         <configuration>
                             <minimizeJar>false</minimizeJar>
-                            <keepDependenciesWithProvidedScope>false
-                            </keepDependenciesWithProvidedScope>
+                            <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
                             <artifactSet>
                                 <excludes>
                                     <exclude>org.slf4j:slf4j-simple:*</exclude>
@@ -75,15 +63,12 @@
                                 </excludes>
                             </artifactSet>
                             <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
                                         <Main-Class>eu.fasten.analyzer.pomanalyzer.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>
-                                            eu.fasten.analyzer.pomanalyzer.POMAnalyzerPlugin
-                                        </Plugin-Class>
+                                        <Plugin-Class>eu.fasten.analyzer.pomanalyzer.POMAnalyzerPlugin</Plugin-Class>
                                         <Plugin-Id>pom-analyzer</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
                                         <Plugin-Description>POM Analyzer Plugin</Plugin-Description>
@@ -91,8 +76,7 @@
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
-                            <outputDirectory>${session.executionRootDirectory}/docker/plugins/
-                            </outputDirectory>
+                            <outputDirectory>${session.executionRootDirectory}/docker/plugins/</outputDirectory>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>with-dependencies</shadedClassifierName>
                         </configuration>
@@ -120,8 +104,7 @@
                 <version>3.8.1</version>
                 <configuration>
                     <annotationProcessors>
-                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor
-                        </annotationProcessor>
+                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
                     </annotationProcessors>
                     <source>1.11</source>
                     <target>1.11</target>
