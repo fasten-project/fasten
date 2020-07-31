@@ -96,9 +96,13 @@ public class PartialCallGraph {
             final MavenCoordinate coordinate, final String mainClass,
             final String algorithm, final long timestamp)
             throws FileNotFoundException {
-        final var partialCallGraph = new PartialCallGraph(new CallGraphConstructor(
-                new MavenCoordinate.MavenResolver().downloadJar(coordinate)
-                        .orElseThrow(RuntimeException::new), mainClass, algorithm));
+        final var file = new MavenCoordinate.MavenResolver().downloadJar(coordinate)
+            .orElseThrow(RuntimeException::new);
+
+        logger.info("OPAL is analysing the artifact");
+        final var opalCG = new CallGraphConstructor(file, mainClass, algorithm);
+
+        final var partialCallGraph = new PartialCallGraph(opalCG);
 
         return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
                 coordinate.getVersionConstraint(), timestamp,
