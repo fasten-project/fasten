@@ -16,6 +16,61 @@
 
     <name>quality-analyzer</name>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>3.12.3</version>
+            <!-- The scope should be provided. Since JOOQ is provided in the JAR of the FASTEN server -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <!-- This dependency can be removed once jOOQ v3.15 is out,
+                because the required functionality will be implemented there -->
+            <groupId>com.github.t9t.jooq</groupId>
+            <artifactId>jooq-postgresql-json</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.0.4</version>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.json</groupId>-->
+<!--            <artifactId>json</artifactId>-->
+<!--            <version>20180813</version>-->
+<!--            &lt;!&ndash;            <scope>provided</scope>&ndash;&gt;-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>eu.fasten</groupId>-->
+<!--            <artifactId>core</artifactId>-->
+<!--            <version>0.0.1-SNAPSHOT</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>eu.fasten</groupId>-->
+<!--            <artifactId>server</artifactId>-->
+<!--            <version>0.0.1-SNAPSHOT</version>-->
+<!--            &lt;!&ndash;            <scope>provided</scope>&ndash;&gt;-->
+<!--        </dependency>-->
+        <!--        NB! Uncomment the following 3 dependencies if you want to run Main class-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.slf4j</groupId>-->
+        <!--            <artifactId>slf4j-simple</artifactId>-->
+        <!--            <version>1.7.30</version>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.slf4j</groupId>-->
+        <!--            <artifactId>slf4j-api</artifactId>-->
+        <!--            <version>1.7.30</version>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.pf4j</groupId>-->
+        <!--            <artifactId>pf4j</artifactId>-->
+        <!--            <version>3.1.0</version>-->
+        <!--        </dependency>-->
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -28,11 +83,18 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <minimizeJar>false</minimizeJar>
+                            <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>org.apache.kafka:kafka-clients:*</exclude>
+                                </excludes>
+                            </artifactSet>
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>eu.fasten.analyzer.javacgopal.Main</Main-Class>
+                                        <Main-Class>eu.fasten.analyzer.qualityanalyzer.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
                                         <Plugin-Class>eu.fasten.analyzer.qualityanalyzer.QualityAnalyzerPlugin</Plugin-Class>
@@ -55,9 +117,11 @@
                         <filter>
                             <artifact>*:*</artifact>
                             <excludes>
+                                <exclude>module-info.class</exclude>
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
+                                <exclude>eu/fasten/core/plugins/*</exclude>
                             </excludes>
                         </filter>
                     </filters>
@@ -80,4 +144,18 @@
         </plugins>
     </build>
 
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.2</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/Main.*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>

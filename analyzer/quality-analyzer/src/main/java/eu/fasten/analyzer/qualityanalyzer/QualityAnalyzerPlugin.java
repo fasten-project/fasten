@@ -1,14 +1,21 @@
 package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.core.plugins.KafkaPlugin;
-import java.util.Optional;
+import eu.fasten.core.plugins.DBConnector;
+
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
+
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
+import java.util.Collections;
+import java.util.Optional;
 import java.util.List;
+
+import org.jooq.DSLContext;
+
 
 public class QualityAnalyzerPlugin extends Plugin {
 
@@ -17,24 +24,29 @@ public class QualityAnalyzerPlugin extends Plugin {
     }
 
     @Extension
-    public static class QualityAnalyzer implements KafkaPlugin {
+    public static class QualityAnalyzer implements KafkaPlugin, DBConnector {
 
-        private String consumeTopic = "fasten.mvn.pkg";
+        private String consumerTopic = "fasten.RapidPlugin.out";
+        private static DSLContext dslContext;
         private final Logger logger = LoggerFactory.getLogger(QualityAnalyzer.class.getName());
 
         @Override
+        public void setDBConnection(DSLContext dslContext) {
+            QualityAnalyzer.dslContext = dslContext;
+        }
+
+        @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.empty();
+            return Optional.of(Collections.singletonList(consumerTopic));
         }
 
         @Override
         public void setTopic(String topicName) {
-
+            this.consumerTopic = topicName;
         }
 
         @Override
         public void consume(String record) {
-
         }
 
         @Override
@@ -54,12 +66,14 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public String name() {
-            return "QualityAnalyzer";
+            return "Quality Analyzer Plugin";
         }
 
         @Override
         public String description() {
-            return "SomeDescription";
+            return "Quality Analyzer Plugin. "
+                    + "Consumes JSON objects (code metrics by lizard) from Kafka topic"
+                    + " and populates metadata database with consumed data.";
         }
 
         @Override
@@ -69,12 +83,10 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public void start() {
-
         }
 
         @Override
         public void stop() {
-
         }
 
         @Override
@@ -84,7 +96,6 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public void freeResource() {
-
         }
 
     }
