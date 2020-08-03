@@ -3,7 +3,6 @@
         height="130">
 </p>
 
-## Status 
 <p align="center">
     <a href="https://github.com/fasten-project/fasten/actions" alt="GitHub Workflow Status">
         <img src="https://img.shields.io/github/workflow/status/fasten-project/fasten/Java%20CI?logo=GitHub%20Actions&logoColor=white&style=for-the-badge" /></a>
