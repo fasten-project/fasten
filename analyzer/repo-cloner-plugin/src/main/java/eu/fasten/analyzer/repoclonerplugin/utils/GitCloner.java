@@ -18,9 +18,9 @@
 
 package eu.fasten.analyzer.repoclonerplugin.utils;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
@@ -41,11 +41,11 @@ public class GitCloner {
      * @throws IOException     if could not create a directory for repository
      */
     public String cloneRepo(String repoUrl) throws GitAPIException, IOException {
-        if (repoUrl.contains("github.com/")) {
+        if (repoUrl.contains("github.com")) {
             return this.cloneGithubRepo(repoUrl);
         } else {
             var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
-            var urlParts = repoUrl.split("/");
+            var urlParts = Arrays.stream(repoUrl.split("/")).filter(x -> !StringUtils.isBlank(x)).toArray(String[]::new);
             var repoOwner = urlParts[1];
             StringBuilder repoName = new StringBuilder();
             for (var i = 2; i < urlParts.length; i++) {
@@ -76,6 +76,11 @@ public class GitCloner {
         }
         var repoName = urlParts[urlParts.length - 1].split(".git")[0];
         var repoOwner = urlParts[urlParts.length - 2];
+        if (repoUrl.contains("git@github")) {
+            var parts = repoOwner.split(":");
+            repoOwner = parts[parts.length - 1];
+        }
+        repoUrl = "https://github.com/" + repoOwner + "/" + repoName;
         var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
         var dir = dirHierarchy.getDirectoryFromHierarchy(repoOwner, repoName);
         if (dir.exists()) {

@@ -116,7 +116,7 @@ public class RepoClonerPlugin extends Plugin {
             String product = null;
             if (artifact != null && !artifact.isEmpty()
                     && group != null && !group.isEmpty()) {
-                product = group + ":" + artifact + ((version == null) ? "" : ":" + version);
+                product = group + ":" + artifact + (version.isEmpty() ? "" : ":" + version);
             }
             outputPath = File.separator
                     + (artifact == null ? "" : artifact.charAt(0) + File.separator)
@@ -136,7 +136,7 @@ public class RepoClonerPlugin extends Plugin {
                 }
                 if (getPluginError() == null) {
                     logger.info("Cloned repository"
-                            + (product == null ? "" : "of '" + product + "'")
+                            + (product == null ? "" : " of '" + product + "'")
                             + " from " + repoUrl + " to " + repoPath);
                 }
             } else {
