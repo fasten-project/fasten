@@ -11,16 +11,24 @@
 </p>
 <br/>
 
-A collection of FASTEN-specific plugins with an ability to be loaded by and run on the [FASTEN server](https://github.com/fasten-project/fasten/tree/master/server). 
+A collection of FASTEN-specific plugins with an ability to be loaded by and run on the [FASTEN server](https://github.com/fasten-project/fasten/tree/master/server). Most of the plugins are also capable of running as standalone applications. Take a look at README of respective plugins to learn more.
 
-## Modules
-The following plugins are currently available: 
+## Plugins
 
 #### Graph plugin
+Description goes here
+
 #### OPAL plugin
+Description goes here
+
 #### Metadata plugin
+Description goes here
+
 #### POM analyzer
+Description goes here
+
 #### Repo Cloner
+Description goes here
 
 ## Join the community
 
