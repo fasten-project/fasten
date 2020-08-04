@@ -16,19 +16,19 @@ A collection of FASTEN-specific plugins with an ability to be loaded by and run 
 ## Plugins
 
 #### Graph plugin
-Description goes here
+The FASTEN Graph Plugin is a tool for inserting [GID Graphs](https://github.com/fasten-project/fasten/wiki/GID-Graph-format) into Graph database ([RocksDB](https://rocksdb.org/)) and retrieving them from it.
 
 #### OPAL plugin
-Description goes here
+The FASTEN OPAL is a tool for generating call graphs in FASTEN format using [OPAL](https://www.opal-project.de/) call graph generator version '3.0.0'. This tool can also merge the resulted call graphs with their dependencies.
 
 #### Metadata plugin
-Description goes here
+The FASTEN Metadata Plugin is used for inserting [Revision Call Graphs and their metadata](https://github.com/fasten-project/fasten/wiki/Revision-Call-Graph-format) into [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema).
 
 #### POM analyzer
-Description goes here
+The FASTEN POM Analyzer plugin is a tool that analyzes Maven coordinate's [POM](https://maven.apache.org/ref/3.6.3/maven-model/maven.html) file and extracts relevant information from it while also inserting this information into the [metadata database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema).
 
 #### Repo Cloner
-Description goes here
+The FASTEN RepoCloner plugin is a tool for cloning repositories into the file system.
 
 ## Join the community
 

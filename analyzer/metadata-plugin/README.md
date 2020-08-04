@@ -11,7 +11,7 @@
 </p>
 <br/>
 
-The FASTEN Metadata Plugin is used for inserting [Revision Call Graphs and their metadata](https://github.com/fasten-project/fasten/wiki/Revision-Call-Graph-format) into [Metadata Database] (https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema). It can be used both as a standalone tool and as a part of FASTEN server.
+The FASTEN Metadata Plugin is used for inserting [Revision Call Graphs and their metadata](https://github.com/fasten-project/fasten/wiki/Revision-Call-Graph-format) into [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema). It can be used both as a standalone tool and as a part of FASTEN server.
 
 ## Arguments
 - `-h` `--help` Show this help message and exit.

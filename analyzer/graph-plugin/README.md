@@ -11,7 +11,7 @@
 </p>
 <br/>
 
-The FASTEN Graph Plugin is a tool for inserting [GID Graphs](https://github.com/fasten-project/fasten/wiki/GID-Graph-format) into Graph database ([RocksDB](https://rocksdb.org/)) and retrieveing them from it. The graph plugin can be used as a standalone tool and as a part of FASTEN server.
+The FASTEN Graph Plugin is a tool for inserting [GID Graphs](https://github.com/fasten-project/fasten/wiki/GID-Graph-format) into Graph database ([RocksDB](https://rocksdb.org/)) and retrieving them from it. The graph plugin can be used as a standalone tool and as a part of FASTEN server.
 
 ## Arguments
 - `-h` `--help` Show this help message and exit.
