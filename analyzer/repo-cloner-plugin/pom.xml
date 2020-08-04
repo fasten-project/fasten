@@ -18,11 +18,30 @@
 
     <name>repo-cloner-plugin</name>
 
+    <repositories>
+        <repository>
+            <id>tmatesoft-repo</id>
+            <name>TmateSoft Repository (for hg4j)</name>
+            <url>https://maven.tmatesoft.com/content/repositories/releases/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.tmatesoft.hg4j</groupId>
+            <artifactId>hg4j</artifactId>
+            <version>1.1.0-RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>5.2.1.201812262042-r</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
