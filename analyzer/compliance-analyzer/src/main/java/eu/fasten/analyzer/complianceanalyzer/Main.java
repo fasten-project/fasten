@@ -42,12 +42,12 @@ public class Main implements Runnable{
     @Override
     public void run() {
       var compliancePlugin = new ComplianceAnalyzerPlugin.CompliancePluginExtension();
-      try {
+      /*try {
         compliancePlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
       } catch (IllegalArgumentException | SQLException e) {
         logger.error("Could not connect to the database", e);
         return;
-      }
+      }*/
       final FileReader reader;
       try {
         reader = new FileReader(jsonFile);
