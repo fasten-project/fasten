@@ -1,17 +1,17 @@
-**Describe changes**
+## Description
 A clear and concise description of what changes you've made.
 
-**Motivation and context**
+## Motivation and context
 Why is this change required? What problem does it solve?
 If it fixes an open issue, please link to the issue here.
 
-**How has this been tested?**
+## Testing
 Please describe in detail how you tested your changes.
 
-**Task list**  
+## Task list  
 - [ ] Task 1
 - [ ] Task 2
 - [ ] Task 3
 
-**Additional context**
+## Additional context
 Add any other context about the pull request here.
