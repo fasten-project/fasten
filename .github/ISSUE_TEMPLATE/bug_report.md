@@ -21,11 +21,11 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 ## Logs
-If applicable, add logs to help explain your problem.
+If applicable, add logs to help explain your problem (e.g. the error message and/or exception traceback).
 
 ## Environment (please complete the following information):
  - OS:
- - Version:
+ - Java version:
 
 ## Additional context
 Add any other context about the problem here.
