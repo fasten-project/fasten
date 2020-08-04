@@ -11,16 +11,27 @@
 </p>
 <br/>
 
-Description goes here
+The FASTEN POM Analyzer plugin is a tool that analyzes Maven coordinate's [POM](https://maven.apache.org/ref/3.6.3/maven-model/maven.html) file and extracts relevant information from it while also inserting this information into the [metadata database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema).
 
 ## Arguments
-CLI arguments go here
+- `-h` `--help` Show this help message and exit.
+- `-f` `--file` Path to JSON file which contains Revision Call Graph
+- `-d` `--database` Database URL for connection
+- `-u` `--user` Database user name
+- `-a` `--artifactId` Artifact ID of the Maven coordinate
+- `-g` `--groupId` Group ID of the Maven coordinate
+- `-v` `--version` Version of the Maven coordinate
 
 ## Usage 
 
-#### Some example
+#### Inserting POM information from JSON file into the metadata database
 ```shell script
-man example
+FASTEN_DBPASS=pass ... -f mvn_coordinates/coordinate.json -d jdbc:postgresql:postgres -u postgres
+```
+
+#### Inserting POM information from JSON file into the metadata database
+```shell script
+FASTEN_DBPASS=pass ... -a junit -g junit -v 4.12 -d jdbc:postgresql:postgres -u postgres
 ```
 
 

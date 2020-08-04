@@ -11,16 +11,19 @@
 </p>
 <br/>
 
-Description goes here
+The FASTEN Metadata Plugin is used for inserting [Revision Call Graphs and their metadata](https://github.com/fasten-project/fasten/wiki/Revision-Call-Graph-format) into [Metadata Database] (https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema). It can be used both as a standalone tool and as a part of FASTEN server.
 
 ## Arguments
-CLI arguments go here
+- `-h` `--help` Show this help message and exit.
+- `-f` `--file` Path to JSON file which contains Revision Call Graph
+- `-d` `--database` Database URL for connection
+- `-u` `--user` Database user name
 
 ## Usage 
 
-#### Some example
+#### Inserting Revision Call Graph in the metadata database
 ```shell script
-man example
+FASTEN_DBPASS=pass ... -f revision_cgs/callgraph.json -d jdbc:postgresql:postgres -u postgres
 ```
 
 

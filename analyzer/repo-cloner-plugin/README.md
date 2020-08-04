@@ -11,16 +11,18 @@
 </p>
 <br/>
 
-Description goes here
+The FASTEN RepoCloner plugin is a tool for cloning repositories into the file system. It can be used both as a standalone plugin and as a part of the FASTEN Server.
 
 ## Arguments
-CLI arguments go here
+- `-h` `--help` Show this help message and exit.
+- `-f` `--file` Path to JSON file which contains groupId (repository owner), artifactId (repository name) and repository URL.
+- `-d` `--base-dir` Path to base directory where repository hierarchy will be created
 
 ## Usage 
 
 #### Some example
 ```shell script
-man example
+-f repo_urls/url.json -d data/repositories
 ```
 
 
