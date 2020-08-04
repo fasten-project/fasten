@@ -122,8 +122,8 @@ public class RepoClonerPlugin extends Plugin {
                     + (artifact == null ? "" : artifact.charAt(0) + File.separator)
                     + artifact + File.separator
                     + (product == null ? "unknown" : product.replace(":", "_")) + ".json";
-            var repoUrl = json.optString("repoUrl");
-            if (repoUrl != null && !repoUrl.isEmpty()) {
+            var repoUrl = json.optString("repoUrl").replaceAll("[\\n\\t ]", "");;
+            if (!repoUrl.isEmpty()) {
                 try {
                     var gitCloner = new GitCloner(baseDir);
                     cloneRepo(repoUrl, gitCloner);
