@@ -8,5 +8,10 @@ If it fixes an open issue, please link to the issue here.
 **How has this been tested?**
 Please describe in detail how you tested your changes.
 
+**Task list**  
+- [ ] Task 1
+- [ ] Task 2
+- [ ] Task 3
+
 **Additional context**
 Add any other context about the pull request here.
