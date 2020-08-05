@@ -45,6 +45,8 @@ Everything should work. Let us know if it doesn't.
 - If you encounter "PF4J annotation processor" error when building the project, follow the below steps:
     - Go to Preferences -> Build, Execution, Deployment -> Compiler -> Annotation Processors .
     - For the annotation profile of the module you are trying to build/run, select "Obtain processors from classpath".
+    
+You now can start contributing to the FASTEN project. We'll be happy to review any code you have submitted. Also feel free to check out a more [detailed guide](https://github.com/fasten-project/fasten/wiki/Development-Environment) on how to set up a development environment.
 
 ## Join the community
 
