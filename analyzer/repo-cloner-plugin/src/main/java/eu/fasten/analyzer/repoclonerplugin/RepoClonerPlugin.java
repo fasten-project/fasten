@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.repoclonerplugin;
 
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
+import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
 import eu.fasten.core.plugins.DataWriter;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
@@ -126,7 +127,8 @@ public class RepoClonerPlugin extends Plugin {
             if (!repoUrl.isEmpty()) {
                 try {
                     var gitCloner = new GitCloner(baseDir);
-                    cloneRepo(repoUrl, gitCloner);
+                    var hgCloner = new HgCloner(baseDir);
+                    cloneRepo(repoUrl, gitCloner, hgCloner);
                 } catch (GitAPIException | IOException e) {
                     logger.error("Error cloning repository"
                             + (product == null ? "" : "for '" + product + "'")
@@ -144,9 +146,24 @@ public class RepoClonerPlugin extends Plugin {
             }
         }
 
-        public void cloneRepo(String repoUrl, GitCloner gitCloner)
+        public void cloneRepo(String repoUrl, GitCloner gitCloner, HgCloner hgCloner)
                 throws GitAPIException, IOException {
-            repoPath = gitCloner.cloneRepo(repoUrl);
+            if (repoUrl.startsWith("scm:git:") || repoUrl.startsWith("scm:svn:")) {
+                repoUrl = repoUrl.substring(8);
+            } else if (repoUrl.startsWith("scm:")) {
+                repoUrl = repoUrl.substring(4);
+            }
+            if (repoUrl.startsWith("git") || repoUrl.endsWith(".git")) {
+                repoPath = gitCloner.cloneRepo(repoUrl);
+            } else {
+                try {
+                    repoPath = hgCloner.cloneRepo(repoUrl);
+                } catch (Exception e) {
+                    logger.error("Error cloning Hg repository, " +
+                            "will try to clone as a Git repository now", e);
+                    repoPath = gitCloner.cloneRepo(repoUrl);
+                }
+            }
         }
 
         @Override

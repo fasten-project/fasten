@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.repoclonerplugin;
 
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
+import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.tmatesoft.hg.core.HgException;
+import org.tmatesoft.hg.util.CancelledException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -142,10 +145,20 @@ public class RepoClonerPluginTest {
     }
 
     @Test
-    public void cloneRepoTest() throws GitAPIException, IOException {
+    public void cloneRepoTest() throws GitAPIException, IOException, CancelledException, HgException {
         var gitCloner = Mockito.mock(GitCloner.class);
+        var hgCloner = Mockito.mock(HgCloner.class);
+        Mockito.when(hgCloner.cloneRepo(Mockito.anyString())).thenReturn("test/path");
+        repoCloner.cloneRepo("https://testurl.com", gitCloner, hgCloner);
+        assertEquals("test/path", repoCloner.getRepoPath());
+    }
+
+    @Test
+    public void cloneGitRepoTest() throws GitAPIException, IOException {
+        var gitCloner = Mockito.mock(GitCloner.class);
+        var hgCloner = Mockito.mock(HgCloner.class);
         Mockito.when(gitCloner.cloneRepo(Mockito.anyString())).thenReturn("test/path");
-        repoCloner.cloneRepo("https://testurl.com", gitCloner);
+        repoCloner.cloneRepo("https://testurl.com/repo.git", gitCloner, hgCloner);
         assertEquals("test/path", repoCloner.getRepoPath());
     }
 
