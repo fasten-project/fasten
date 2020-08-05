@@ -79,4 +79,13 @@ public class GitClonerTest {
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());
     }
+
+    @Test
+    public void cloneRepoWithSshTest() throws GitAPIException, IOException {
+        var repo = Path.of(baseDir, "d/delors/opal").toFile();
+        var path = gitCloner.cloneRepo("git@bitbucket.org:delors/opal.git");
+        Assertions.assertEquals(repo.getAbsolutePath(), path);
+        Assertions.assertTrue(repo.exists());
+        Assertions.assertTrue(repo.isDirectory());
+    }
 }

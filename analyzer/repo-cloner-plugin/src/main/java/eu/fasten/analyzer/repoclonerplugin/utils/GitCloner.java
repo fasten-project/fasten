@@ -44,8 +44,12 @@ public class GitCloner {
         if (repoUrl.contains("github.com")) {
             return this.cloneGithubRepo(repoUrl);
         } else {
+            if (repoUrl.contains("bitbucket.org")) {
+                return this.cloneBitbucketRepo(repoUrl);
+            }
             var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
-            var urlParts = Arrays.stream(repoUrl.split("/")).filter(x -> !StringUtils.isBlank(x)).toArray(String[]::new);
+            var urlParts = Arrays.stream(repoUrl.split("/"))
+                    .filter(x -> !StringUtils.isBlank(x)).toArray(String[]::new);
             var repoOwner = urlParts[1];
             StringBuilder repoName = new StringBuilder();
             for (var i = 2; i < urlParts.length; i++) {
@@ -58,6 +62,33 @@ public class GitCloner {
             Git.cloneRepository().setURI(repoUrl).setDirectory(dir).call();
             return dir.getAbsolutePath();
         }
+    }
+
+    private String cloneBitbucketRepo(String repoUrl) throws GitAPIException, IOException {
+        if (repoUrl.endsWith("/")) {
+            repoUrl = repoUrl.substring(0, repoUrl.length() - 1);
+        }
+        if (repoUrl.endsWith("/src")) {
+            repoUrl = repoUrl.substring(0, repoUrl.length() - 4);
+        }
+        if (repoUrl.contains("git@bitbucket")) {
+            var parts = repoUrl.split(":");
+            repoUrl = "https://bitbucket.org/" + parts[parts.length - 1];
+        }
+        if (!repoUrl.endsWith(".git")) {
+            repoUrl += ".git";
+        }
+        var urlParts = repoUrl.split("/");
+        var repoName = urlParts[urlParts.length - 1].split(".git")[0];
+        var repoOwner = urlParts[urlParts.length - 2];
+        var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
+        var dir = dirHierarchy.getDirectoryFromHierarchy(repoOwner, repoName);
+        if (dir.exists()) {
+            Git.open(dir).pull().call();
+        } else {
+            Git.cloneRepository().setURI(repoUrl).setDirectory(dir).call();
+        }
+        return dir.getAbsolutePath();
     }
 
     private String cloneGithubRepo(String repoUrl) throws GitAPIException, IOException {
