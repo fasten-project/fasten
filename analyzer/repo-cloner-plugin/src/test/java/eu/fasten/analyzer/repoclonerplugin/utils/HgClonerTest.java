@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HgClonerTest {
 
@@ -28,11 +30,20 @@ public class HgClonerTest {
     }
 
     @Test
-    public void cloneRepoTest() {
-        try {
-            this.hgCloner.cloneRepo("https://bitbucket.org/bluefen/html5app");
-        } catch (MalformedURLException | HgException | CancelledException e) {
-            e.printStackTrace();
-        }
+    public void cloneRepoTest() throws CancelledException, HgException, MalformedURLException {
+        var repo = Path.of(baseDir, "b", "bluefen", "html5app").toFile();
+        var result = this.hgCloner.cloneRepo("https://bitbucket.org/bluefen/html5app");
+        assertTrue(repo.exists());
+        assertTrue(repo.isDirectory());
+        assertEquals(repo.getAbsolutePath(), result);
+    }
+
+    @Test
+    public void cloneRepoWithVersionTest() throws CancelledException, HgException, MalformedURLException {
+        var repo = Path.of(baseDir, "r", "redberry", "redberry-physics").toFile();
+        var result = this.hgCloner.cloneRepo("https://bitbucket.org/redberry/redberry-physics/src/?at=v1.1");
+        assertTrue(repo.exists());
+        assertTrue(repo.isDirectory());
+        assertEquals(repo.getAbsolutePath(), result);
     }
 }
