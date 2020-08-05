@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal.data;
 
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALException;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;
@@ -95,7 +96,7 @@ public class PartialCallGraph {
     public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(
             final MavenCoordinate coordinate, final String mainClass,
             final String algorithm, final long timestamp)
-            throws FileNotFoundException {
+            throws FileNotFoundException, OPALException {
         final var file = new MavenCoordinate.MavenResolver().downloadJar(coordinate)
             .orElseThrow(RuntimeException::new);
 

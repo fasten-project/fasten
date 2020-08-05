@@ -28,14 +28,15 @@ import java.io.IOException;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class OPALPluginTest {
 
-    static OPALPlugin.OPAL plugin;
+    private OPALPlugin.OPAL plugin;
 
-    @BeforeAll
-    public static void setUp() {
+    @BeforeEach
+    public void setUp() {
         plugin = new OPALPlugin.OPAL();
     }
 
@@ -99,7 +100,6 @@ class OPALPluginTest {
 
         plugin.consume(noJARFile.toString());
         var error = plugin.getPluginError();
-
         assertFalse(plugin.produce().isPresent());
         assertEquals(FileNotFoundException.class.getSimpleName(), error.getClass().getSimpleName());
     }

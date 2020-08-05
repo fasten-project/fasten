@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALException;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
@@ -60,7 +61,7 @@ class PartialCallGraphTest {
     private static PartialCallGraph singleCallCG;
 
     @BeforeAll
-    static void setUp() {
+    static void setUp() throws OPALException {
         singleCallCG = new PartialCallGraph(new CallGraphConstructor(
                 new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                         .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA"));
@@ -148,7 +149,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void createExtendedRevisionCallGraph() throws FileNotFoundException {
+    void createExtendedRevisionCallGraph() throws FileNotFoundException, OPALException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
         var cg = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
                 "", "CHA", 1574072773);
