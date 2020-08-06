@@ -61,6 +61,8 @@ public class OPALPlugin extends Plugin {
         @Override
         public void consume(String kafkaRecord) {
             pluginError = null;
+            outputPath = null;
+            graph = null;
             try {
                 var kafkaConsumedJson = new JSONObject(kafkaRecord);
                 if (kafkaConsumedJson.has("payload")) {
@@ -74,7 +76,6 @@ public class OPALPlugin extends Plugin {
 
                 if (graph == null || graph.isCallGraphEmpty()) {
                     logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
-                    return;
                 }
 
                 var groupId = graph.product.split(":")[0];
