@@ -36,7 +36,7 @@ import picocli.CommandLine;
 /**
  * Makes javacg-opal module runnable from command line.
  */
-@CommandLine.Command(name = "JavaCGOpal")
+@CommandLine.Command(name = "JavaCGOpal", mixinStandardHelpOptions = true)
 public class Main implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(Main.class);

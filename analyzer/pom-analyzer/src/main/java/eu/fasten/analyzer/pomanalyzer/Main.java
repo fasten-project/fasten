@@ -30,7 +30,7 @@ import picocli.CommandLine;
 public class Main implements Runnable {
 
     @CommandLine.Option(names = {"-f", "--file"},
-            paramLabel = "JSON",
+            paramLabel = "JSON_FILE",
             description = "Path to JSON file which contains the Maven coordinate")
     String jsonFile;
 
@@ -50,13 +50,13 @@ public class Main implements Runnable {
     String version;
 
     @CommandLine.Option(names = {"-d", "--database"},
-            paramLabel = "dbURL",
+            paramLabel = "DB_URL",
             description = "Database URL for connection",
             defaultValue = "jdbc:postgresql:postgres")
     String dbUrl;
 
     @CommandLine.Option(names = {"-u", "--user"},
-            paramLabel = "dbUser",
+            paramLabel = "DB_USER",
             description = "Database user name",
             defaultValue = "postgres")
     String dbUser;
