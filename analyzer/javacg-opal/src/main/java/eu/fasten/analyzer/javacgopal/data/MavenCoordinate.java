@@ -148,7 +148,7 @@ public class MavenCoordinate {
      */
     public static class MavenResolver {
         private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
-        private static final String[] packaging = {"jar", "war", "zip", "ear", "rar", "ejb"};
+        private static final String[] packaging = {"jar", "war", "zip", "ear", "rar", "ejb", "par"};
 
         /**
          * Download a JAR file indicated by the provided Maven coordinate.
