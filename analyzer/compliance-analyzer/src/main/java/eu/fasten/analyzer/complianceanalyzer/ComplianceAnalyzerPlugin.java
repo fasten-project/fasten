@@ -11,7 +11,6 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.data.graphdb.RocksDao;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.Collections;
@@ -23,8 +22,6 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
-import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.util.Yaml;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -52,6 +49,10 @@ public class ComplianceAnalyzerPlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(CompliancePluginExtension.class.getName());
         private static RocksDao rocksDao;
         private String outputPath;
+
+        private String artifactID;
+        private String repoUrl;
+        private String repoPath;
 
 
         public void setRocksDao(RocksDao rocksDao) {
@@ -82,13 +83,13 @@ public class ComplianceAnalyzerPlugin extends Plugin {
             if (consumedJson.has("input")) {
                 consumedJson = consumedJson.getJSONObject("input");
             }
-            final var repoUrl = consumedJson.getString("repoUrl");
+            this.repoUrl = consumedJson.getString("repoUrl");
             var consumedJsonPayload = new JSONObject(record);
             if (consumedJsonPayload.has("payload")) {
                 consumedJsonPayload = consumedJsonPayload.getJSONObject("payload");
             }
-            final var repoPath = consumedJsonPayload.getString("repoPath");
-            final var artifactID = consumedJsonPayload.getString("artifactId");
+            this.repoPath = consumedJsonPayload.getString("repoPath");
+            this.artifactID = consumedJsonPayload.getString("artifactId");
 
             logger.info("Repo url: " + repoUrl);
             logger.info("Path to the cloned repo: " + repoPath);
@@ -105,11 +106,18 @@ public class ComplianceAnalyzerPlugin extends Plugin {
              * start a Kubernetes Job
              */
 
+            ConnectToCluster();
+            CreateJobConfig();
+            ApplyK8sJob();
+
+            processedRecord = true;
+        }
+
+        public void ConnectToCluster() {
             // Google Cloud credentials
             String jsonPath = "./fasten-ca08747cdc4f.json";
 
             try {
-
                 // If we don't specify credentials when constructing the client, the client library will
                 // look for credentials via the environment variable GOOGLE_APPLICATION_CREDENTIALS.
                 GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(jsonPath))
@@ -123,7 +131,9 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 logger.info(ex.toString());
                 logger.info("Could not find file " + jsonPath);
             }
+        }
 
+        public void CreateJobConfig(){
             try {
                 // Modify default job config to include the
                 // project's info
@@ -155,7 +165,14 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 while ((s = stdError.readLine()) != null) {
                     System.out.println(s);
                 }
+            }  catch (IOException ex) {
+                logger.info(ex.toString());
+                ex.printStackTrace();
+            }
+        }
 
+        public void ApplyK8sJob() {
+            try {
                 // Define and apply a qmstr kubernetes job
                 Yaml.addModelMap("v1", "Job", V1Job.class);
 
@@ -175,13 +192,11 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 s*/
             } catch (IOException ex) {
                 logger.info(ex.toString());
-                logger.info("Could not find file " + "docker/newjob.yaml");
+                logger.info("Could not find file: newjob.yaml");
             } catch (ApiException ex) {
                 logger.error("Status code: " + ex.getCode());
                 logger.error("Reason: " + ex.getResponseBody());
                 logger.error("Response headers: " + ex.getResponseHeaders());
-                ex.printStackTrace();
-            } catch (Exception ex) {
                 ex.printStackTrace();
             }
         }
