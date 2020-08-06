@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.repoclonerplugin.utils;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import org.eclipse.jgit.api.Git;

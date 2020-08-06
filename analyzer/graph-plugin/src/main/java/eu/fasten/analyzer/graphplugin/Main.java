@@ -34,8 +34,8 @@ public class Main implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     @CommandLine.Option(names = {"-f", "--file"},
-            paramLabel = "JSON",
-            description = "Path to JSON file which contains GID Graph as payload")
+            paramLabel = "JSON_FILE",
+            description = "Path to JSON file which contains GID Graph")
     String jsonFile;
 
     @CommandLine.Option(names = {"-d", "--directory"},

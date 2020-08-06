@@ -83,7 +83,10 @@ public class GraphDatabasePlugin extends Plugin {
         @Override
         public void consume(String record) {
             this.pluginError = null;
-            var json = new JSONObject(record).getJSONObject("payload");
+            var json = new JSONObject(record);
+            if (json.has("payload")) {
+                json = json.getJSONObject("payload");
+            }
             final var path = json.optString("dir");
 
             final GidGraph gidGraph;

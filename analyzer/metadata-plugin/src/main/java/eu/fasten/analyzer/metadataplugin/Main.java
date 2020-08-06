@@ -34,18 +34,18 @@ public class Main implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     @CommandLine.Option(names = {"-f", "--file"},
-            paramLabel = "JSON",
+            paramLabel = "JSON_FILE",
             description = "Path to JSON file which contains the callgraph")
     String jsonFile;
 
     @CommandLine.Option(names = {"-d", "--database"},
-            paramLabel = "dbURL",
+            paramLabel = "DB_URL",
             description = "Database URL for connection",
             defaultValue = "jdbc:postgresql:postgres")
     String dbUrl;
 
     @CommandLine.Option(names = {"-u", "--user"},
-            paramLabel = "dbUser",
+            paramLabel = "DB_USER",
             description = "Database user name",
             defaultValue = "postgres")
     String dbUser;
