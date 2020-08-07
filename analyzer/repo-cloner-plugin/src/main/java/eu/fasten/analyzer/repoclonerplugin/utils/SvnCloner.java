@@ -6,7 +6,6 @@ import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNRevision;
-import java.io.File;
 
 public class SvnCloner {
 
@@ -16,13 +15,25 @@ public class SvnCloner {
         this.baseDir = baseDir;
     }
 
-    public String cloneRepo(String repoUrl) throws SVNException {
+    /**
+     * Clones SVN Repository from repository URL.
+     *
+     * @param repoUrl   URL where repository is located
+     * @param repoName  Name of the repository
+     * @param repoOwner Owner of the repository
+     * @return Path to where repository has been cloned
+     * @throws SVNException if there was an error cloning the repository
+     */
+    public String cloneRepo(String repoUrl, String repoName, String repoOwner) throws SVNException {
         var repository = SVNRepositoryFactory.create(SVNURL.parseURIEncoded(repoUrl));
-        var latestRevision = repository.getLatestRevision();
         var updateClient = SVNClientManager.newInstance().getUpdateClient();
         updateClient.setIgnoreExternals(false);
-        updateClient.doCheckout(SVNURL.parseURIEncoded(repoUrl), new File(baseDir), SVNRevision.create(latestRevision) , SVNRevision.create(latestRevision), SVNDepth.fromRecurse(true), true);
-        // TODO: Fix SVN Repositories cloning. Currently it gives warnings and doesn't halt
-        return baseDir;
+        var url = SVNURL.parseURIEncoded(repoUrl);
+        var revision = SVNRevision.create(repository.getLatestRevision());
+        var depth = SVNDepth.fromRecurse(true);
+        var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
+        var dir = dirHierarchy.getDirectoryFromHierarchy(repoOwner, repoName);
+        updateClient.doCheckout(url, dir, revision, revision, depth, true);
+        return dir.getAbsolutePath();
     }
 }

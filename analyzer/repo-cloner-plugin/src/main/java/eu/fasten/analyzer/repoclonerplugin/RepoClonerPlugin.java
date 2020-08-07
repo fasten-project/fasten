@@ -20,6 +20,7 @@ package eu.fasten.analyzer.repoclonerplugin;
 
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
+import eu.fasten.analyzer.repoclonerplugin.utils.SvnCloner;
 import eu.fasten.core.plugins.DataWriter;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
@@ -34,6 +35,7 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tmatesoft.svn.core.SVNException;
 
 public class RepoClonerPlugin extends Plugin {
 
@@ -125,16 +127,14 @@ public class RepoClonerPlugin extends Plugin {
                     + (product == null ? "unknown" : product.replace(":", "_")) + ".json";
             var repoUrl = json.optString("repoUrl").replaceAll("[\\n\\t ]", "");;
             if (!repoUrl.isEmpty()) {
-                try {
-                    var gitCloner = new GitCloner(baseDir);
-                    var hgCloner = new HgCloner(baseDir);
-                    cloneRepo(repoUrl, gitCloner, hgCloner);
-                } catch (GitAPIException | IOException e) {
-                    logger.error("Error cloning repository"
-                            + (product == null ? "" : "for '" + product + "'")
-                            + " from " + repoUrl, e);
-                    this.pluginError = e;
-                    return;
+                var gitCloner = new GitCloner(baseDir);
+                var hgCloner = new HgCloner(baseDir);
+                var svnCloner = new SvnCloner(baseDir);
+                var cloned = cloneRepo(repoUrl, artifact, group, gitCloner, hgCloner, svnCloner);
+                if (!cloned) {
+                    logger.info("Could not clone repository of " + product + " from " + repoUrl);
+                    pluginError = new RuntimeException("Failed to clone repository of "
+                            + product + " from " + repoUrl);
                 }
                 if (getPluginError() == null) {
                     logger.info("Cloned repository"
@@ -146,24 +146,66 @@ public class RepoClonerPlugin extends Plugin {
             }
         }
 
-        public void cloneRepo(String repoUrl, GitCloner gitCloner, HgCloner hgCloner)
-                throws GitAPIException, IOException {
+        public boolean cloneRepo(String repoUrl, String artifact, String group,
+                              GitCloner gitCloner, HgCloner hgCloner, SvnCloner svnCloner) {
+            var cloned = false;
             if (repoUrl.startsWith("scm:git:") || repoUrl.startsWith("scm:svn:")) {
                 repoUrl = repoUrl.substring(8);
             } else if (repoUrl.startsWith("scm:")) {
                 repoUrl = repoUrl.substring(4);
             }
+            var triedGit = false;
             if (repoUrl.startsWith("git") || repoUrl.endsWith(".git")) {
-                repoPath = gitCloner.cloneRepo(repoUrl);
-            } else {
+                // Most likely Git repo, try to clone
+                triedGit = true;
                 try {
-                    repoPath = hgCloner.cloneRepo(repoUrl);
+                    repoPath = gitCloner.cloneRepo(repoUrl, artifact, group);
+                    cloned = true;
                 } catch (Exception e) {
-                    logger.error("Error cloning Hg repository, " +
-                            "will try to clone as a Git repository now", e);
-                    repoPath = gitCloner.cloneRepo(repoUrl);
+                    logger.error("Error cloning Git repository from " + repoUrl, e);
+                    cloned = false;
                 }
             }
+            var triedSvn = false;
+            if (repoUrl.contains("svn") && !cloned) {
+                // Most likely a SVN repo, try to clone
+                triedSvn = true;
+                try {
+                    repoPath = svnCloner.cloneRepo(repoUrl, artifact, group);
+                    cloned = true;
+                } catch (Exception e) {
+                    logger.error("Error cloning SVN repository from " + repoUrl, e);
+                    cloned = false;
+                }
+            }
+            // If previous failed, try all types of repo cloners
+            if (!cloned) {
+                try {
+                    repoPath = hgCloner.cloneRepo(repoUrl, artifact, group);
+                } catch (Exception e) {
+                    logger.error("Error cloning Hg repository from " + repoUrl, e);
+                    cloned = false;
+                }
+            }
+            if (!cloned && !triedGit) {
+                try {
+                    repoPath = gitCloner.cloneRepo(repoUrl, artifact, group);
+                    cloned = true;
+                } catch (Exception e) {
+                    logger.error("Error cloning Git repository from " + repoUrl, e);
+                    cloned = false;
+                }
+            }
+            if (!cloned && !triedSvn) {
+                try {
+                    repoPath = svnCloner.cloneRepo(repoUrl, artifact, group);
+                    cloned = true;
+                } catch (Exception e) {
+                    logger.error("Error cloning SVN repository from " + repoUrl, e);
+                    cloned = false;
+                }
+            }
+            return cloned;
         }
 
         @Override

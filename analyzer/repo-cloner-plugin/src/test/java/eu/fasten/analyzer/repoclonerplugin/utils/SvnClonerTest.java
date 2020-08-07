@@ -8,6 +8,8 @@ import org.tmatesoft.svn.core.SVNException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SvnClonerTest {
 
@@ -27,11 +29,10 @@ public class SvnClonerTest {
 
     @Test
     public void cloneRepoTest() throws SVNException {
-//        var repo = Path.of(baseDir, "a", "asf", "excalibur").toFile();
-        var result = this.svnCloner.cloneRepo("https://svn.apache.org/repos/asf/excalibur");
-        System.out.println(result);
-//        assertTrue(repo.exists());
-//        assertTrue(repo.isDirectory());
-//        assertEquals(repo.getAbsolutePath(), result);
+        var repo = Path.of(baseDir, "n", "net.sf.sparta-spring-web-utils.spring-web-utils", "spring-web-utils").toFile();
+        var result = this.svnCloner.cloneRepo("svn://svn.code.sf.net/p/sparta-spring-web-utils/code/", "spring-web-utils", "net.sf.sparta-spring-web-utils.spring-web-utils");
+        assertTrue(repo.exists());
+        assertTrue(repo.isDirectory());
+        assertEquals(repo.getAbsolutePath(), result);
     }
 }

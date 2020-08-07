@@ -40,31 +40,24 @@ public class GitCloner {
      * @throws GitAPIException if there was an error when cloning repository
      * @throws IOException     if could not create a directory for repository
      */
-    public String cloneRepo(String repoUrl) throws GitAPIException, IOException {
+    public String cloneRepo(String repoUrl, String repoName, String repoOwner) throws GitAPIException, IOException {
         if (repoUrl.contains("github.com")) {
-            return this.cloneGithubRepo(repoUrl);
+            return this.cloneGithubRepo(repoUrl, repoName, repoOwner);
+        } else if (repoUrl.contains("bitbucket.org")) {
+            return this.cloneBitbucketRepo(repoUrl, repoName, repoOwner);
         } else {
-            if (repoUrl.contains("bitbucket.org")) {
-                return this.cloneBitbucketRepo(repoUrl);
-            }
             var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
-            var urlParts = Arrays.stream(repoUrl.split("/"))
-                    .filter(x -> !StringUtils.isBlank(x)).toArray(String[]::new);
-            var repoOwner = urlParts[1];
-            StringBuilder repoName = new StringBuilder();
-            for (var i = 2; i < urlParts.length; i++) {
-                repoName.append(urlParts[i]);
-                if (i < urlParts.length - 1) {
-                    repoName.append("/");
-                }
+            var dir = dirHierarchy.getDirectoryFromHierarchy(repoOwner, repoName);
+            if (dir.exists()) {
+                Git.open(dir).pull().call();
+            } else {
+                Git.cloneRepository().setURI(repoUrl).setDirectory(dir).call();
             }
-            var dir = dirHierarchy.getDirectoryFromHierarchy(repoOwner, repoName.toString());
-            Git.cloneRepository().setURI(repoUrl).setDirectory(dir).call();
             return dir.getAbsolutePath();
         }
     }
 
-    private String cloneBitbucketRepo(String repoUrl) throws GitAPIException, IOException {
+    private String cloneBitbucketRepo(String repoUrl, String repoName, String repoOwner) throws GitAPIException, IOException {
         if (repoUrl.endsWith("/")) {
             repoUrl = repoUrl.substring(0, repoUrl.length() - 1);
         }
@@ -78,9 +71,6 @@ public class GitCloner {
         if (!repoUrl.endsWith(".git")) {
             repoUrl += ".git";
         }
-        var urlParts = repoUrl.split("/");
-        var repoName = urlParts[urlParts.length - 1].split(".git")[0];
-        var repoOwner = urlParts[urlParts.length - 2];
         var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
         var dir = dirHierarchy.getDirectoryFromHierarchy(repoOwner, repoName);
         if (dir.exists()) {
@@ -91,7 +81,7 @@ public class GitCloner {
         return dir.getAbsolutePath();
     }
 
-    private String cloneGithubRepo(String repoUrl) throws GitAPIException, IOException {
+    private String cloneGithubRepo(String repoUrl, String name, String owner) throws GitAPIException, IOException {
         if (repoUrl.endsWith("/")) {
             repoUrl = repoUrl.substring(0, repoUrl.length() - 1);
         }
@@ -113,7 +103,7 @@ public class GitCloner {
         }
         repoUrl = "https://github.com/" + repoOwner + "/" + repoName;
         var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
-        var dir = dirHierarchy.getDirectoryFromHierarchy(repoOwner, repoName);
+        var dir = dirHierarchy.getDirectoryFromHierarchy(owner, name);
         if (dir.exists()) {
             var pull = Git.open(dir).pull();
             if (branch != null) {

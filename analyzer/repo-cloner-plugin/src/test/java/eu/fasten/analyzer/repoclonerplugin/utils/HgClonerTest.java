@@ -32,7 +32,7 @@ public class HgClonerTest {
     @Test
     public void cloneRepoTest() throws CancelledException, HgException, MalformedURLException {
         var repo = Path.of(baseDir, "b", "bluefen", "html5app").toFile();
-        var result = this.hgCloner.cloneRepo("https://bitbucket.org/bluefen/html5app");
+        var result = this.hgCloner.cloneRepo("https://bitbucket.org/bluefen/html5app", "html5app", "bluefen");
         assertTrue(repo.exists());
         assertTrue(repo.isDirectory());
         assertEquals(repo.getAbsolutePath(), result);
@@ -41,7 +41,7 @@ public class HgClonerTest {
     @Test
     public void cloneRepoWithVersionTest() throws CancelledException, HgException, MalformedURLException {
         var repo = Path.of(baseDir, "r", "redberry", "redberry-physics").toFile();
-        var result = this.hgCloner.cloneRepo("https://bitbucket.org/redberry/redberry-physics/src/?at=v1.1");
+        var result = this.hgCloner.cloneRepo("https://bitbucket.org/redberry/redberry-physics/src/?at=v1.1", "redberry-physics", "redberry");
         assertTrue(repo.exists());
         assertTrue(repo.isDirectory());
         assertEquals(repo.getAbsolutePath(), result);
