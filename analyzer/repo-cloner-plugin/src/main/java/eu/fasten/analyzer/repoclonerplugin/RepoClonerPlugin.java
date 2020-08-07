@@ -182,6 +182,7 @@ public class RepoClonerPlugin extends Plugin {
             if (!cloned) {
                 try {
                     repoPath = hgCloner.cloneRepo(repoUrl, artifact, group);
+                    cloned = true;
                 } catch (Exception e) {
                     logger.error("Error cloning Hg repository from " + repoUrl, e);
                     cloned = false;
