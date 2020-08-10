@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -14,53 +14,14 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <description>
-        Implements a publicly accessible knowledge base for FASTEN.
-    </description>
+    <description>Implements a publicly accessible knowledge base for FASTEN.</description>
 
     <dependencies>
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.0.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.26</version>
-        </dependency>
-        <dependency>
-            <groupId>org.pf4j</groupId>
-            <artifactId>pf4j</artifactId>
-            <version>3.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>9.4.1208</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
-            <version>3.12.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.rocksdb</groupId>
-            <artifactId>rocksdbjni</artifactId>
-            <version>6.2.4</version>
-        </dependency>
-
     </dependencies>
 
     <build>
@@ -78,10 +39,8 @@
                         <configuration>
                             <minimizeJar>false</minimizeJar>
                             <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
-<!--                            <createDependencyReducedPom>false</createDependencyReducedPom>-->
                             <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
                                         <Main-Class>eu.fasten.server.FastenServer</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
@@ -89,11 +48,6 @@
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
-<!--                            <artifactSet>-->
-<!--                                <includes>-->
-<!--                                    <include>*:*</include>-->
-<!--                                </includes>-->
-<!--                            </artifactSet>-->
                             <!-- Note that this works when maven is ran in the root directory of the project  -->
                             <outputDirectory>${session.executionRootDirectory}/docker/server/</outputDirectory>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
@@ -106,6 +60,7 @@
                         <filter>
                             <artifact>*:*</artifact>
                             <excludes>
+                                <exclude>module-info.class</exclude>
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>

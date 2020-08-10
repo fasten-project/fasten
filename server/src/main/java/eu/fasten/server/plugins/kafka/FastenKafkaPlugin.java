@@ -19,12 +19,13 @@
 package eu.fasten.server.plugins.kafka;
 
 import com.google.common.base.Strings;
-import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -205,10 +206,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     /**
-     * Writes {@link RevisionCallGraph} to JSON file and return JSON object containing
+     * Writes output or error message to JSON file and return JSON object containing
      * a link to to written file.
      *
-     * @param result String of JSON representation of {@link RevisionCallGraph}
+     * @param result message to write
      * @return Path to a newly written JSON file
      */
     private String writeToFile(String result)
@@ -245,10 +246,14 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     private String getStdOutMsg(String input, String payload) {
         JSONObject stdoutMsg = new JSONObject();
-        stdoutMsg.put("created_at", System.currentTimeMillis());
+        stdoutMsg.put("created_at", System.currentTimeMillis() / 1000L);
         stdoutMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stdoutMsg.put("plugin_version", plugin.version());
-
+        try {
+            stdoutMsg.put("host", InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException e) {
+            stdoutMsg.put("host", "unknown");
+        }
         stdoutMsg.put("input", StringUtils.isNotEmpty(input) ? new JSONObject(input) : "");
         stdoutMsg.put("payload", StringUtils.isNotEmpty(payload) ? new JSONObject(payload) : "");
 
@@ -266,7 +271,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         stderrMsg.put("created_at", System.currentTimeMillis() / 1000L);
         stderrMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stderrMsg.put("plugin_version", plugin.version());
-
+        try {
+            stderrMsg.put("host", InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException e) {
+            stderrMsg.put("host", "unknown");
+        }
         stderrMsg.put("input", !Strings.isNullOrEmpty(input) ? new JSONObject(input) : "");
 
         JSONObject error = new JSONObject();

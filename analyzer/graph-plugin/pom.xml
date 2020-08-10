@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.fasten.analyzer</groupId>
     <artifactId>graph-plugin</artifactId>
@@ -18,43 +20,21 @@
 
     <dependencies>
         <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.0.4</version>
+            <groupId>eu.fasten</groupId>
+            <artifactId>core</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.fasten</groupId>
+            <artifactId>server</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20180813</version>
             <scope>provided</scope>
-    </dependency>
-    <dependency>
-        <groupId>eu.fasten</groupId>
-        <artifactId>core</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-        <dependency>
-            <groupId>eu.fasten</groupId>
-            <artifactId>server</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-<!--            <scope>provided</scope>-->
         </dependency>
-<!--        NB! Uncomment the following 3 dependencies if you want to run Main class-->
-<!--        <dependency>-->
-<!--            <groupId>org.slf4j</groupId>-->
-<!--            <artifactId>slf4j-simple</artifactId>-->
-<!--            <version>1.7.30</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.slf4j</groupId>-->
-<!--            <artifactId>slf4j-api</artifactId>-->
-<!--            <version>1.7.30</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.pf4j</groupId>-->
-<!--            <artifactId>pf4j</artifactId>-->
-<!--            <version>3.1.0</version>-->
-<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -73,31 +53,11 @@
                             <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
                             <artifactSet>
                                 <excludes>
+                                    <exclude>org.slf4j:slf4j-simple:*</exclude>
+                                    <exclude>org.slf4j:slf4j-api:*</exclude>
                                     <exclude>org.apache.kafka:kafka-clients:*</exclude>
-<!--                                    <exclude>com.martiansoftware:jsap:*</exclude>-->
-<!--                                    <exclude>it.unimi.dsi:dsiutils:*</exclude>-->
-<!--                                    <exclude>it.unimi.dsi:fastutil:*</exclude>-->
-<!--                                    <exclude>org.codehaus.mojo:animal-sniffer-annotations:*</exclude>-->
-<!--                                    <exclude>it.unimi.dsi:webgraph:*</exclude>-->
-<!--                                    <exclude>it.unimi.dsi:sux4j:*</exclude>-->
-                                        <exclude>org.rocksdb:rocksdbjni:*</exclude>
-                                        <exclude>org.jooq:jooq:*</exclude>
-<!--                                    <exclude>com.googlecode.javaewah:*</exclude>-->
-<!--                                    <exclude>org.checkerframework:checker-qual:*</exclude>-->
-<!--                                    <exclude>org.objenesis:objenesis:*</exclude>-->
-<!--                                    <exclude>com.esotericsoftware:minlog:*</exclude>-->
-<!--                                    <exclude>com.esotericsoftware:reflectasm:*</exclude>-->
-<!--                                    <exclude>com.esotericsoftware:kryo:*</exclude>-->
-<!--                                    <exclude>org.reactivestreams:reactive-streams:*</exclude>-->
-<!--                                    <exclude>com.google.code.findbugs:jsr305:*</exclude>-->
-<!--                                    <exclude>com.google.j2objc:j2objc-annotations:*</exclude>-->
-<!--                                    <exclude>com.google.errorprone:error_prone_annotations:*</exclude>-->
-<!--                                    <exclude>com.github.luben:zstd-jni:*</exclude>-->
-<!--                                    <exclude>net.sf.jung:jung-api:*</exclude>-->
-<!--                                    <exclude>net.sf.jung:jung-io:*</exclude>-->
-<!--                                    <exclude>net.sf.jung:jung-algorithms:*</exclude>-->
-<!--                                    <exclude>com.jcraft:jsch:*</exclude>-->
-<!--                                    <exclude>com.jcraft:jzlib:*</exclude>-->
+                                    <exclude>org.rocksdb:rocksdbjni:*</exclude>
+                                    <exclude>org.jooq:jooq:*</exclude>
                                 </excludes>
                             </artifactSet>
                             <transformers>
@@ -137,24 +97,6 @@
                     </filters>
                 </configuration>
             </plugin>
-
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-surefire-plugin</artifactId>-->
-<!--                <version>2.19.1</version>-->
-<!--                <dependencies>-->
-<!--                    <dependency>-->
-<!--                        <groupId>org.junit.platform</groupId>-->
-<!--                        <artifactId>junit-platform-surefire-provider</artifactId>-->
-<!--                        <version>1.1.0</version>-->
-<!--                    </dependency>-->
-<!--                    <dependency>-->
-<!--                        <groupId>org.junit.jupiter</groupId>-->
-<!--                        <artifactId>junit-jupiter-engine</artifactId>-->
-<!--                        <version>5.1.0</version>-->
-<!--                    </dependency>-->
-<!--                </dependencies>-->
-<!--            </plugin>-->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
