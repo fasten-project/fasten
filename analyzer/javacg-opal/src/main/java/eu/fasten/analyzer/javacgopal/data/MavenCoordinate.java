@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,20 +90,18 @@ public class MavenCoordinate {
     }
 
     /**
-     * Construct MavenCoordinate form groupID, artifactID, and version.
+     * Construct MavenCoordinate form json.
      *
-     * @param repos      Maven repositories
-     * @param groupID    GroupID
-     * @param artifactID ArtifactID
-     * @param version    Version
+     * @param kafkaConsumedJson json representation of Meven coordinate
      */
-    public MavenCoordinate(final List<String> repos, final String groupID,
-                           final String artifactID, final String version, final String packaging) {
-        this.mavenRepos = repos;
-        this.groupID = groupID;
-        this.artifactID = artifactID;
-        this.versionConstraint = version;
-        this.packaging = packaging;
+    public MavenCoordinate(final JSONObject kafkaConsumedJson) throws JSONException {
+        var repoHost = System.getenv("MVN_REPO") != null
+                ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
+        this.mavenRepos = new ArrayList<>(Collections.singletonList(repoHost));
+        this.groupID = kafkaConsumedJson.getString("groupId");
+        this.artifactID = kafkaConsumedJson.getString("artifactId");
+        this.versionConstraint = kafkaConsumedJson.getString("version");
+        this.packaging = kafkaConsumedJson.optString("packagingType", "jar");
     }
 
     /**

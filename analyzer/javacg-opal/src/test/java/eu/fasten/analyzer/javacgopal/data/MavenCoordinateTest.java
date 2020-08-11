@@ -19,9 +19,7 @@
 package eu.fasten.analyzer.javacgopal.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -33,27 +31,16 @@ class MavenCoordinateTest {
     @Test
     void constructorTest() {
         MavenCoordinate coordinate1 = new MavenCoordinate("group", "artifact", "version", "jar");
-        MavenCoordinate coordinate2 = new MavenCoordinate(new ArrayList<>(Collections
-                .singletonList("repo")), "group", "artifact", "version", "jar");
 
         assertEquals("group", coordinate1.getGroupID());
-        assertEquals(coordinate1.getGroupID(), coordinate2.getGroupID());
 
         assertEquals("artifact", coordinate1.getArtifactID());
-        assertEquals(coordinate1.getArtifactID(), coordinate2.getArtifactID());
 
         assertEquals("version", coordinate1.getVersionConstraint());
-        assertEquals(coordinate1.getVersionConstraint(), coordinate2.getVersionConstraint());
 
         assertEquals(new ArrayList<>(Collections
                         .singletonList("https://repo.maven.apache.org/maven2/")),
                 coordinate1.getMavenRepos());
-        assertNotEquals(coordinate1.getMavenRepos(), coordinate2.getMavenRepos());
-
-        var repos = new ArrayList<>(Collections.singletonList("repo"));
-        coordinate1.setMavenRepos(repos);
-
-        assertEquals(coordinate1.getMavenRepos(), coordinate2.getMavenRepos());
     }
 
     @Test
@@ -89,9 +76,8 @@ class MavenCoordinateTest {
 
     @Test
     void downloadJarEmptyRepos() {
-        MavenCoordinate coordinate =
-                new MavenCoordinate(new ArrayList<>(), "group", "artifact", "version", "jar");
-
+        var coordinate = new MavenCoordinate("group", "artifact", "version", "jar");
+        coordinate.setMavenRepos(new ArrayList<>());
         var resolver = new MavenCoordinate.MavenResolver();
 
         assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
@@ -99,9 +85,8 @@ class MavenCoordinateTest {
 
     @Test
     void downloadJarWrongRepos() {
-        MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
-                .singletonList("repo")), "group", "artifact", "version", "jar");
-
+        var coordinate = new MavenCoordinate("group", "artifact", "version", "jar");
+        coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
         var resolver = new MavenCoordinate.MavenResolver();
 
         assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
@@ -109,9 +94,8 @@ class MavenCoordinateTest {
 
     @Test
     void downloadJarPomPackaging() {
-        MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
-                .singletonList("repo")), "group", "artifact", "version", "pom");
-
+        var coordinate = new MavenCoordinate("group", "artifact", "version", "pom");
+        coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
         var resolver = new MavenCoordinate.MavenResolver();
 
         assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
