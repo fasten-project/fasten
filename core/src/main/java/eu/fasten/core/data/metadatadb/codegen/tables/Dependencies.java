@@ -17,9 +17,10 @@ import javax.annotation.processing.Generated;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Index;
+import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row3;
+import org.jooq.Row4;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -41,7 +42,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dependencies extends TableImpl<DependenciesRecord> {
 
-    private static final long serialVersionUID = 935003509;
+    private static final long serialVersionUID = -1731959661;
 
     /**
      * The reference instance of <code>public.dependencies</code>
@@ -70,6 +71,11 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
      * The column <code>public.dependencies.version_range</code>.
      */
     public final TableField<DependenciesRecord, String[]> VERSION_RANGE = createField(DSL.name("version_range"), org.jooq.impl.SQLDataType.CLOB.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>public.dependencies.metadata</code>.
+     */
+    public final TableField<DependenciesRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB, this, "");
 
     /**
      * Create a <code>public.dependencies</code> table reference
@@ -111,7 +117,7 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.DEPENDENCIES_DEPENDENCY_ID, Indexes.DEPENDENCIES_PACKAGE_VERSION_ID, Indexes.UNIQUE_VERSION_DEPENDENCY_RANGE);
+        return Arrays.<Index>asList(Indexes.UNIQUE_VERSION_DEPENDENCY_RANGE);
     }
 
     @Override
@@ -159,11 +165,11 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row3 type methods
+    // Row4 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<Long, Long, String[]> fieldsRow() {
-        return (Row3) super.fieldsRow();
+    public Row4<Long, Long, String[], JSONB> fieldsRow() {
+        return (Row4) super.fieldsRow();
     }
 }

@@ -2,6 +2,7 @@ package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -49,7 +50,7 @@ public class QualityAnalyzerPlugin extends Plugin {
         public void consume(String record) {
         }
 
-        public long saveToDatabase(String product, String version) {
+        public long saveToDatabase(String product, String version, MetadataDao metadataDao) {
             return 0;
         }
 

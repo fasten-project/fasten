@@ -32,14 +32,14 @@ public class Main implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     @CommandLine.Option(names = {"-f", "--file"},
-            paramLabel = "JSON File",
-            description = "Path to JSON file which contains repoUrl and optional artifactId, "
-                    + "groupId and version")
+            paramLabel = "JSON_FILE",
+            description = "Path to JSON file which contains repoUrl and artifactId, "
+                    + "groupId and optional version")
     String jsonFile;
 
     @CommandLine.Option(names = {"-d", "--base-dir"},
             paramLabel = "Directory",
-            description = "Path to base directory where repo hierarchy will be crated")
+            description = "Path to base directory where repository hierarchy will be created")
     String baseDir;
 
     public static void main(String[] args) {

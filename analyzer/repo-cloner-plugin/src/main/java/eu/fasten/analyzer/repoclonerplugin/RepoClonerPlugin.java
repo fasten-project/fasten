@@ -106,7 +106,10 @@ public class RepoClonerPlugin extends Plugin {
             this.group = null;
             this.version = null;
             this.repoPath = null;
-            var json = new JSONObject(record).getJSONObject("payload");
+            var json = new JSONObject(record);
+            if (json.has("payload")) {
+                json = json.getJSONObject("payload");
+            }
             artifact = json.optString("artifactId");
             group = json.optString("groupId");
             version = json.optString("version");

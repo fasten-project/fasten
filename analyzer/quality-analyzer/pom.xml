@@ -36,23 +36,23 @@
             <artifactId>picocli</artifactId>
             <version>4.0.4</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.json</groupId>-->
-<!--            <artifactId>json</artifactId>-->
-<!--            <version>20180813</version>-->
-<!--            &lt;!&ndash;            <scope>provided</scope>&ndash;&gt;-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>eu.fasten</groupId>-->
-<!--            <artifactId>core</artifactId>-->
-<!--            <version>0.0.1-SNAPSHOT</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>eu.fasten</groupId>-->
-<!--            <artifactId>server</artifactId>-->
-<!--            <version>0.0.1-SNAPSHOT</version>-->
-<!--            &lt;!&ndash;            <scope>provided</scope>&ndash;&gt;-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20180813</version>
+            <!--            <scope>provided</scope>-->
+        </dependency>
+        <dependency>
+            <groupId>eu.fasten</groupId>
+            <artifactId>core</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.fasten</groupId>
+            <artifactId>server</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <!--            <scope>provided</scope>-->
+        </dependency>
         <!--        NB! Uncomment the following 3 dependencies if you want to run Main class-->
         <!--        <dependency>-->
         <!--            <groupId>org.slf4j</groupId>-->

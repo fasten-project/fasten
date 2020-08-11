@@ -83,7 +83,10 @@ public class GraphDatabasePlugin extends Plugin {
         @Override
         public void consume(String record) {
             this.pluginError = null;
-            var json = new JSONObject(record).getJSONObject("payload");
+            var json = new JSONObject(record);
+            if (json.has("payload")) {
+                json = json.getJSONObject("payload");
+            }
             final var path = json.optString("dir");
 
             final GidGraph gidGraph;
@@ -113,9 +116,16 @@ public class GraphDatabasePlugin extends Plugin {
 
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
 
-            var productParts = gidGraph.getProduct().split("\\.");
-            var groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
-            var artifactId = productParts[productParts.length - 1];
+            final String groupId;
+            final String artifactId;
+            if (gidGraph.getProduct().contains(":")) {
+                groupId = gidGraph.getProduct().split(":")[0];
+                artifactId = gidGraph.getProduct().split(":")[1];
+            } else {
+                final var productParts = gidGraph.getProduct().split("\\.");
+                groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
+                artifactId = productParts[productParts.length - 1];
+            }
             var version = gidGraph.getVersion();
             var product = artifactId + "_" + groupId + "_" + version;
 

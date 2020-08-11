@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
@@ -19,64 +23,40 @@
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <!--<scope>provided</scope>-->
-        </dependency>
-        <dependency>
-            <groupId>eu.fasten.analyzer</groupId>
-            <artifactId>base-analyzer</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-<!--            <scope>provided</scope>-->
         </dependency>
         <dependency>
             <groupId>de.opal-project</groupId>
             <artifactId>bytecode-representation_2.12</artifactId>
-            <version>1.0.0</version>
+            <version>3.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.opal-project</groupId>
+            <artifactId>three-address-code_2.12</artifactId>
+            <version>3.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>de.opal-project</groupId>
             <artifactId>abstract-interpretation-framework_2.12</artifactId>
-            <version>1.0.0</version>
+            <version>3.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.skyscreamer</groupId>
-            <artifactId>jsonassert</artifactId>
-            <version>1.5.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.0.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.30</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.30</version>
+            <groupId>org.jboss.shrinkwrap.resolver</groupId>
+            <artifactId>shrinkwrap-resolver-depchain</artifactId>
+            <version>3.1.4</version>
+            <type>pom</type>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>lib</id>
+            <url>file:${project.basedir}/lib</url>
+        </repository>
+    </repositories>
 
     <build>
         <testSourceDirectory>${project.basedir}/src/test/java/</testSourceDirectory>
         <plugins>
-<!--            <plugin>-->
-<!--                <artifactId>maven-jar-plugin</artifactId>-->
-<!--                <configuration>-->
-<!--                    <archive>-->
-<!--                        <manifest>-->
-<!--                            <addClasspath>true</addClasspath>-->
-<!--                            <classpathPrefix>${user.home}/.m2/repository/</classpathPrefix>-->
-<!--                            <classpathLayoutType>repository</classpathLayoutType>-->
-<!--                            <mainClass>eu.fasten.analyzer.javacgopal.Main</mainClass>-->
-<!--                        </manifest>-->
-<!--                    </archive>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -90,13 +70,8 @@
                         <configuration>
                             <minimizeJar>false</minimizeJar>
                             <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
-<!--                            <createDependencyReducedPom>false</createDependencyReducedPom>-->
                             <artifactSet>
                                 <excludes>
-                                    <!--                                    <exclude>com.typesafe.play:play-json_2.11:*</exclude>-->
-                                    <!--                                    <exclude>com.typesafe.play:play-functional_2.11:*</exclude>-->
-
-                                    <!-- Comment the following two lines if you want to build the stand-alone JAR file of the OPAL plug-in  -->
                                     <exclude>org.slf4j:slf4j-simple:*</exclude>
                                     <exclude>org.slf4j:slf4j-api:*</exclude>
                                 </excludes>
@@ -110,7 +85,10 @@
                                         <Plugin-Class>eu.fasten.analyzer.javacgopal.OPALPlugin</Plugin-Class>
                                         <Plugin-Id>opal-plugin</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
-                                        <Plugin-Description>Given a Maven coordinate, generates call graphs and puts them into a Kafka topic</Plugin-Description>
+                                        <Plugin-Description>
+                                            Given a Maven coordinate or a file,
+                                            generates call graphs and puts them into a Kafka topic
+                                        </Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
                                 </transformer>
@@ -127,6 +105,7 @@
                         <filter>
                             <artifact>*:*</artifact>
                             <excludes>
+                                <exclude>module-info.class</exclude>
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
@@ -142,6 +121,7 @@
                     </filters>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -157,4 +137,20 @@
         </plugins>
     </build>
 
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.2</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/Main.*</exclude>
+                        <exclude>**/evaluation/*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>
+
