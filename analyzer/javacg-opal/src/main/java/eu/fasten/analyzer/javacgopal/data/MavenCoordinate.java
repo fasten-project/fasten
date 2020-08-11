@@ -148,7 +148,9 @@ public class MavenCoordinate {
      */
     public static class MavenResolver {
         private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
-        private static final String[] packaging = {"jar", "war", "zip", "ear", "rar", "ejb", "par"};
+        private static final String[] packaging = {"jar", "war", "zip", "ear", "rar", "ejb", "par",
+                "aar", "car", "nar", "kar"};
+        private static final String[] defaultPackaging = {"zip", "aar", "tar.gz", "jar"};
 
         /**
          * Download a JAR file indicated by the provided Maven coordinate.
@@ -156,29 +158,26 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return A temporary file on the filesystem
          */
-        public Optional<File> downloadJar(final MavenCoordinate mavenCoordinate)
+        public File downloadJar(final MavenCoordinate mavenCoordinate)
                 throws FileNotFoundException {
             logger.debug("Downloading JAR for " + mavenCoordinate);
-
+            Optional<File> jar = Optional.empty();
             for (var repo : mavenCoordinate.getMavenRepos()) {
-                Optional<File> jar;
                 if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
                     jar = httpGetFile(mavenCoordinate
                             .toProductUrl(repo, mavenCoordinate.getPackaging()));
-                } else {
-                    jar = httpGetFile(mavenCoordinate.toProductUrl(repo, "jar"));
                 }
-                if (jar.isPresent()) {
-                    return jar;
+                for (int i = 0; jar.isEmpty() && i < defaultPackaging.length; i++) {
+                    jar = httpGetFile(mavenCoordinate.toProductUrl(repo, defaultPackaging[i]));
                 }
             }
-            return Optional.empty();
+            return jar.orElseThrow(() -> new FileNotFoundException(mavenCoordinate.getPackaging()));
         }
 
         /**
          * Utility function that stores the contents of GET request to a temporary file.
          */
-        private static Optional<File> httpGetFile(final String url) throws FileNotFoundException {
+        private static Optional<File> httpGetFile(final String url) {
             logger.debug("HTTP GET: " + url);
 
             try {
@@ -190,9 +189,6 @@ public class MavenCoordinate {
                 in.close();
 
                 return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-            } catch (FileNotFoundException e) {
-                logger.error("Could not find URL: " + url);
-                throw e;
             } catch (Exception e) {
                 logger.error("Error retrieving URL: " + url);
                 return Optional.empty();

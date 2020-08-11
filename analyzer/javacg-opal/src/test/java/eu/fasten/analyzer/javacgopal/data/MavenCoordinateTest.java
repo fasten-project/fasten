@@ -88,32 +88,32 @@ class MavenCoordinateTest {
     // ------------------
 
     @Test
-    void downloadJarEmptyRepos() throws FileNotFoundException {
+    void downloadJarEmptyRepos() {
         MavenCoordinate coordinate =
                 new MavenCoordinate(new ArrayList<>(), "group", "artifact", "version", "jar");
 
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertTrue(resolver.downloadJar(coordinate).isEmpty());
+        assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
     }
 
     @Test
-    void downloadJarWrongRepos() throws FileNotFoundException {
+    void downloadJarWrongRepos() {
         MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
                 .singletonList("repo")), "group", "artifact", "version", "jar");
 
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertTrue(resolver.downloadJar(coordinate).isEmpty());
+        assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
     }
 
     @Test
-    void downloadJarPomPackaging() throws FileNotFoundException {
+    void downloadJarPomPackaging() {
         MavenCoordinate coordinate = new MavenCoordinate(new ArrayList<>(Collections
                 .singletonList("repo")), "group", "artifact", "version", "pom");
 
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertTrue(resolver.downloadJar(coordinate).isEmpty());
+        assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
     }
 }
