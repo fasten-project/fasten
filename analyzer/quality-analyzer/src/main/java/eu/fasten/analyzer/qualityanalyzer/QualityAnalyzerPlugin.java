@@ -49,6 +49,10 @@ public class QualityAnalyzerPlugin extends Plugin {
         public void consume(String record) {
         }
 
+        public long saveToDatabase(String product, String version) {
+            return 0;
+        }
+
         @Override
         public Optional<String> produce() {
             try {
