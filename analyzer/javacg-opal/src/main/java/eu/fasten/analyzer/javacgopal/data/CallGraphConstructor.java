@@ -21,7 +21,7 @@ package eu.fasten.analyzer.javacgopal.data;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALException;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import java.io.File;
 import java.net.URL;
 import java.util.Map;

@@ -20,7 +20,7 @@ package eu.fasten.analyzer.javacgopal.data;
 
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALException;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;

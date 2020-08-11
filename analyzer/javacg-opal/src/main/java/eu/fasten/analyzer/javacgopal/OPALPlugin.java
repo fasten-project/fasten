@@ -20,7 +20,8 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALException;
+import eu.fasten.analyzer.javacgopal.data.exceptions.EmptyCallGraphException;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
@@ -74,10 +75,6 @@ public class OPALPlugin extends Plugin {
                 this.graph = generateCallGraph(mavenCoordinate,
                         kafkaConsumedJson.optLong("date", -1));
 
-                if (graph == null || graph.isCallGraphEmpty()) {
-                    logger.warn("Empty call graph for {}", mavenCoordinate.getCoordinate());
-                }
-
                 var groupId = graph.product.split(":")[0];
                 var artifactId = graph.product.split(":")[1];
                 var version = graph.version;
@@ -107,9 +104,14 @@ public class OPALPlugin extends Plugin {
          */
         public ExtendedRevisionCallGraph generateCallGraph(final MavenCoordinate mavenCoordinate,
                                                            final long timestamp)
-                throws FileNotFoundException, OPALException {
-            return PartialCallGraph
+                throws FileNotFoundException, OPALException, EmptyCallGraphException {
+            var callGraph = PartialCallGraph
                     .createExtendedRevisionCallGraph(mavenCoordinate, "", "CHA", timestamp);
+
+            if (callGraph.isCallGraphEmpty()) {
+                throw new EmptyCallGraphException();
+            }
+            return callGraph;
         }
 
         @Override

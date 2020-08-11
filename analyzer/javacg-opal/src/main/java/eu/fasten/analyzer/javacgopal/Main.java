@@ -21,7 +21,7 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALException;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.merge.CallGraphMerger;
 import eu.fasten.core.merge.CallGraphUtils;
