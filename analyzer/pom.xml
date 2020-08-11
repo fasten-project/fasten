@@ -1,37 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>eu.fasten</groupId>
         <artifactId>parent</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-    <groupId>eu.fasten</groupId>
+
     <artifactId>analyzer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <description>
-        Collection of FASTEN-specific graph analyses.
-    </description>
+    <description>Collection of FASTEN-specific graph analyses.</description>
 
-    <dependencies>
-        <dependency>
-            <groupId>eu.fasten</groupId>
-            <artifactId>core</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
     <modules>
-        <module>javacg-wala</module>
         <module>javacg-opal</module>
-        <module>dummy-analyzer</module>
         <module>metadata-plugin</module>
         <module>graph-plugin</module>
-        <module>base-analyzer</module>
-        <module>quality-analyzer</module>
+        <module>pom-analyzer</module>
         <module>repo-cloner-plugin</module>
+        <module>quality-analyzer</module>
     </modules>
 
     <build>
