@@ -163,7 +163,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHAMultipleDeclarations() {
+    void internalExternalCHAMultipleDeclarations() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 
@@ -202,7 +202,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHASingleDeclaration() {
+    void internalExternalCHASingleDeclaration() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 
@@ -242,7 +242,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHAVirtual() {
+    void internalExternalCHAVirtual() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 
@@ -281,7 +281,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHANoDefinition() {
+    void internalExternalCHANoDefinition() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 

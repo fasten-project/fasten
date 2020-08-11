@@ -58,17 +58,31 @@ public class PartialCallGraph {
      *
      * @param constructor call graph constructor
      */
-    public PartialCallGraph(CallGraphConstructor constructor) {
+    public PartialCallGraph(CallGraphConstructor constructor) throws OPALException {
         this.graph = new Graph();
 
-        logger.info("Creating internal CHA");
-        final var cha = createInternalCHA(constructor.getProject());
+        try {
+            logger.info("Creating internal CHA");
+            final var cha = createInternalCHA(constructor.getProject());
 
-        logger.info("Creating graph with external CHA");
-        createGraphWithExternalCHA(constructor.getCallGraph(), cha);
+            logger.info("Creating graph with external CHA");
+            createGraphWithExternalCHA(constructor.getCallGraph(), cha);
 
-        this.nodeCount = cha.getNodeCount();
-        this.classHierarchy = cha.asURIHierarchy(constructor.getProject().classHierarchy());
+            this.nodeCount = cha.getNodeCount();
+            this.classHierarchy = cha.asURIHierarchy(constructor.getProject().classHierarchy());
+        } catch (Exception e) {
+            if (e.getStackTrace().length > 0) {
+                var stackTrace = e.getStackTrace()[0];
+                if (stackTrace.toString().startsWith("org.opalj")) {
+                    var opalException = new OPALException(
+                            "Original error type: " + e.getClass().getSimpleName()
+                                    + "; Original message: " + e.getMessage());
+                    opalException.setStackTrace(e.getStackTrace());
+                    throw opalException;
+                }
+            }
+            throw e;
+        }
     }
 
     public Map<Scope, Map<FastenURI, Type>> getClassHierarchy() {
