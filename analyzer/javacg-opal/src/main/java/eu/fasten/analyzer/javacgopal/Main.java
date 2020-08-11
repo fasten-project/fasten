@@ -208,7 +208,8 @@ public class Main implements Runnable {
      * @throws IOException thrown in case file related exceptions occur, e.g FileNotFoundException
      */
     public <T> ExtendedRevisionCallGraph merge(final T artifact,
-                                               final List<T> dependencies) throws IOException, OPALException {
+                                               final List<T> dependencies)
+            throws IOException, OPALException {
 
         final ExtendedRevisionCallGraph result;
         final var deps = new ArrayList<ExtendedRevisionCallGraph>();
