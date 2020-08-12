@@ -124,7 +124,7 @@ public class POMAnalyzerPlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(group + "." + artifact, version, repoUrl,
+                            id = saveToDatabase(group + ":" + artifact, version, repoUrl,
                                     commitTag, sourcesUrl, packagingType, dependencyData,
                                     metadataDao);
                         } catch (RuntimeException e) {
