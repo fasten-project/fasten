@@ -138,8 +138,15 @@ public class DataExtractor {
                 refValue = properties.get(refValue);
                 found = true;
             } else {
-                var nodePath = "/" + refValue.replace(".", "/");
-                var node = pom.selectSingleNode(nodePath);
+                var path = refValue.replaceFirst("project\\.", "");
+                var pathParts = path.split("\\.");
+                Node node = pom;
+                for (var nodeName : pathParts) {
+                    if (node == null) {
+                        break;
+                    }
+                    node = node.selectSingleNode("./*[local-name()='" + nodeName + "']");
+                }
                 if (node != null) {
                     refValue = node.getText();
                     found = true;

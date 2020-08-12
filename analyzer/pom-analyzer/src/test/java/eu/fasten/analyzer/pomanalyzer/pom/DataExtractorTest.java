@@ -293,15 +293,15 @@ public class DataExtractorTest {
         assertEquals(expectedPackagingType, actualPackagingType);
     }
 
-//    @Test
-//    public void replaceDomTreeReferenceTest() throws DocumentException {
-//        var name = "fasten";
-//        var xml = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">" +
-//                    "<name>" + name + "</name>" +
-//                "</project>";
-//        var value = dataExtractor.replacePropertyReferences("${project.name}", new HashMap<>(), new SAXReader().read(new ByteArrayInputStream(xml.getBytes())).getRootElement());
-//        assertEquals(name, value);
-//    }
+    @Test
+    public void replaceDomTreeReferenceTest() throws DocumentException {
+        var name = "fasten";
+        var xml = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">" +
+                    "<name>" + name + "</name>" +
+                "</project>";
+        var value = dataExtractor.replacePropertyReferences("${project.name}", new HashMap<>(), new SAXReader().read(new ByteArrayInputStream(xml.getBytes())).getRootElement());
+        assertEquals(name, value);
+    }
 
     @Test
     public void replaceSubStringReferenceTest() throws DocumentException {
