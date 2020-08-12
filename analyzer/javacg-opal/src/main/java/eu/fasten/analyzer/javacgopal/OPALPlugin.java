@@ -90,7 +90,7 @@ public class OPALPlugin extends Plugin {
                 logger.info("Call graph successfully generated for {}!",
                         mavenCoordinate.getCoordinate());
 
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 setPluginError(e);
                 logger.error("", e);
             }
