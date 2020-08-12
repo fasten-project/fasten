@@ -22,7 +22,6 @@
         <module>graph-plugin</module>
         <module>pom-analyzer</module>
         <module>vulnerability-plugin</module>
-        <module>base-analyzer</module>
         <module>repo-cloner-plugin</module>
     </modules>
 
