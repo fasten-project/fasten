@@ -107,7 +107,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 } else {
                     doCommitSync();
 
-                    handleProducing(null);
+                    handleProducing(null, System.currentTimeMillis() / 1000L);
                 }
             }
         } catch (Exception e) {
@@ -151,8 +151,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
         for (var r : records) {
             doCommitSync();
+            var consumeTimestamp = System.currentTimeMillis() / 1000L;
             plugin.consume(r.value());
-            handleProducing(r.value());
+            handleProducing(r.value(), consumeTimestamp);
         }
     }
 
@@ -161,7 +162,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      *
      * @param input input message [can be null]
      */
-    private void handleProducing(String input) {
+    private void handleProducing(String input, long consumeTimestamp) {
         try {
             if (plugin.getPluginError() != null) {
                 throw plugin.getPluginError();
@@ -175,12 +176,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
             emitMessage(this.producer, String.format("fasten.%s.out",
                     plugin.getClass().getSimpleName()),
-                    getStdOutMsg(input, payload));
+                    getStdOutMsg(input, payload, consumeTimestamp));
 
         } catch (Throwable e) {
             emitMessage(this.producer, String.format("fasten.%s.err",
                     plugin.getClass().getSimpleName()),
-                    getStdErrMsg(input, e));
+                    getStdErrMsg(input, e, consumeTimestamp));
         }
     }
 
@@ -244,9 +245,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param payload output of the plugin
      * @return stdout message
      */
-    private String getStdOutMsg(String input, String payload) {
+    private String getStdOutMsg(String input, String payload, long consumeTimestamp) {
         JSONObject stdoutMsg = new JSONObject();
         stdoutMsg.put("created_at", System.currentTimeMillis() / 1000L);
+        stdoutMsg.put("consumed_at", consumeTimestamp);
         stdoutMsg.put("plugin_name", plugin.getClass().getSimpleName());
         stdoutMsg.put("plugin_version", plugin.version());
         try {
@@ -266,10 +268,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param input consumed record
      * @return stderr message
      */
-    private String getStdErrMsg(String input, Throwable pluginError) {
+    private String getStdErrMsg(String input, Throwable pluginError, long consumeTimestamp) {
         JSONObject stderrMsg = new JSONObject();
         stderrMsg.put("created_at", System.currentTimeMillis() / 1000L);
         stderrMsg.put("plugin_name", plugin.getClass().getSimpleName());
+        stderrMsg.put("consumed_at", consumeTimestamp);
         stderrMsg.put("plugin_version", plugin.version());
         try {
             stderrMsg.put("host", InetAddress.getLocalHost().getHostName());
