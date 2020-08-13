@@ -37,9 +37,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.dom4j.DocumentException;
+import org.dom4j.Element;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
@@ -84,27 +86,12 @@ public class DataExtractor {
     public String extractPackagingType(String groupId, String artifactId, String version) {
         String packaging = "jar";
         try {
-            ByteArrayInputStream pomByteStream;
-            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
-                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
-            } else {
-                pomByteStream = new ByteArrayInputStream(
-                        this.downloadPom(artifactId, groupId, version)
-                                .orElseThrow(FileNotFoundException::new).getBytes());
-            }
-            var pom = new SAXReader().read(pomByteStream).getRootElement();
-            if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
-                var metadata = this.extractDependencyResolutionMetadata(pom);
-                this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
-            }
+            var pom = getPomRootElement(groupId, artifactId, version);
+            updateResolutionMetadata(groupId, artifactId, version, pom);
             var properties = this.resolutionMetadata.getRight().getLeft();
             var packagingNode = pom.selectSingleNode("./*[local-name()='packaging']");
             if (packagingNode != null) {
-                packaging = packagingNode.getText();
-                if (packaging.startsWith("$")
-                        && properties.containsKey(packaging.substring(2, packaging.length() - 1))) {
-                    packaging = properties.get(packaging.substring(2, packaging.length() - 1));
-                }
+                packaging = replacePropertyReferences(packagingNode.getText(), properties, pom);
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -114,6 +101,103 @@ public class DataExtractor {
                     + groupId + ":" + artifactId + ":" + version);
         }
         return packaging;
+    }
+
+    /**
+     * Extracts project name from POM of certain Maven coordinate.
+     *
+     * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
+     * @param version    version of the coordinate
+     * @return Extracted project name as String
+     */
+    public String extractProjectName(String groupId, String artifactId, String version) {
+        String name = null;
+        try {
+            var pom = getPomRootElement(groupId, artifactId, version);
+            updateResolutionMetadata(groupId, artifactId, version, pom);
+            var properties = this.resolutionMetadata.getRight().getLeft();
+            var nameNode = pom.selectSingleNode("./*[local-name()='name']");
+            if (nameNode != null) {
+                name = replacePropertyReferences(nameNode.getText(), properties, pom);
+            }
+        } catch (DocumentException e) {
+            logger.error("Error parsing POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        } catch (FileNotFoundException e) {
+            logger.error("Error downloading POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        }
+        return name;
+    }
+
+    /**
+     * Replaces all property references with their actual values.
+     *
+     * @param ref        String that can contain property references
+     * @param properties Properties extracted from the artifact
+     * @param pom        POM root element for accessing DOM tree
+     * @return String that has all property references substituted with their values
+     */
+    public String replacePropertyReferences(String ref, Map<String, String> properties, Element pom) {
+        var propertyIndexes = getPropertyReferencesIndexes(ref);
+        if (propertyIndexes == null) {
+            return ref;
+        }
+        var refBuilder = new StringBuilder();
+        var i = 0;
+        for (var property : propertyIndexes) {
+            var found = false;
+            refBuilder.append(ref, i, property[0]);
+            var refValue = ref.substring(property[0] + 2, property[1]);
+            if (properties.containsKey(refValue)) {
+                refValue = properties.get(refValue);
+                found = true;
+            } else {
+                var path = refValue.replaceFirst("project\\.", "");
+                var pathParts = path.split("\\.");
+                Node node = pom;
+                for (var nodeName : pathParts) {
+                    if (node == null) {
+                        break;
+                    }
+                    node = node.selectSingleNode("./*[local-name()='" + nodeName + "']");
+                }
+                if (node != null) {
+                    refValue = node.getText();
+                    found = true;
+                }
+            }
+            if (!found) {
+                refValue = "${" + refValue + "}";
+            }
+            refBuilder.append(refValue);
+            i = property[1] + 1;
+        }
+        refBuilder.append(ref, i, ref.length());
+        return refBuilder.toString();
+    }
+
+    private int[][] getPropertyReferencesIndexes(String ref) {
+        if (!ref.contains("${")) {
+            return null;
+        }
+        var numProperties = StringUtils.countMatches(ref, "${");
+        var indexes = new int[numProperties][2];
+        int count = 0;
+        int i = 0;
+        while (count < numProperties && i < ref.length()) {
+            while (!ref.startsWith("${", i) && i < ref.length()) {
+                i++;
+            }
+            indexes[count][0] = i;
+            while (!ref.startsWith("}", i) && i < ref.length()) {
+                i++;
+            }
+            indexes[count][1] = i;
+            count++;
+        }
+        return indexes;
     }
 
     /**
@@ -127,7 +211,8 @@ public class DataExtractor {
     public String extractRepoUrl(String groupId, String artifactId, String version) {
         String repoUrl = null;
         try {
-            var scm = extractScm(groupId, artifactId, version);
+            var pom = getPomRootElement(groupId, artifactId, version);
+            var scm = pom.selectSingleNode("./*[local-name()='scm']");
             if (scm != null) {
                 var url = scm.selectSingleNode("./*[local-name()='url']");
                 if (url != null) {
@@ -135,11 +220,9 @@ public class DataExtractor {
                 }
             }
             if (repoUrl != null) {
+                updateResolutionMetadata(groupId, artifactId, version, pom);
                 var properties = this.resolutionMetadata.getRight().getLeft();
-                if (repoUrl.startsWith("$")
-                        && properties.containsKey(repoUrl.substring(2, repoUrl.length() - 1))) {
-                    repoUrl = properties.get(repoUrl.substring(2, repoUrl.length() - 1));
-                }
+                repoUrl = replacePropertyReferences(repoUrl, properties, pom);
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -149,6 +232,23 @@ public class DataExtractor {
                     + groupId + ":" + artifactId + ":" + version);
         }
         return repoUrl;
+    }
+
+    private Element getPomRootElement(String groupId, String artifactId, String version)
+            throws FileNotFoundException, DocumentException {
+        var pomByteStream =
+                (groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)
+                        ? new ByteArrayInputStream(this.pomContents.getBytes())
+                        : new ByteArrayInputStream(this.downloadPom(artifactId, groupId, version)
+                        .orElseThrow(FileNotFoundException::new).getBytes());
+        return new SAXReader().read(pomByteStream).getRootElement();
+    }
+
+    private void updateResolutionMetadata(String groupId, String artifactId, String version, Element pom) {
+        if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
+            var metadata = this.extractDependencyResolutionMetadata(pom);
+            this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
+        }
     }
 
     /**
@@ -162,17 +262,16 @@ public class DataExtractor {
     public String extractCommitTag(String groupId, String artifactId, String version) {
         String commitTag = null;
         try {
-            var scm = extractScm(groupId, artifactId, version);
+            var pom = getPomRootElement(groupId, artifactId, version);
+            var scm = pom.selectSingleNode("./*[local-name()='scm']");
             if (scm != null) {
                 var tag = scm.selectSingleNode("./*[local-name()='tag']");
                 commitTag = (tag != null) ? tag.getText() : null;
             }
             if (commitTag != null) {
+                updateResolutionMetadata(groupId, artifactId, version, pom);
                 var properties = this.resolutionMetadata.getRight().getLeft();
-                if (commitTag.startsWith("$")
-                        && properties.containsKey(commitTag.substring(2, commitTag.length() - 1))) {
-                    commitTag = properties.get(commitTag.substring(2, commitTag.length() - 1));
-                }
+                commitTag = replacePropertyReferences(commitTag, properties, pom);
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -182,23 +281,6 @@ public class DataExtractor {
                     + groupId + ":" + artifactId + ":" + version);
         }
         return commitTag;
-    }
-
-    private Node extractScm(String groupId, String artifactId, String version) throws FileNotFoundException, DocumentException {
-        ByteArrayInputStream pomByteStream;
-        if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
-            pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
-        } else {
-            pomByteStream = new ByteArrayInputStream(
-                    this.downloadPom(artifactId, groupId, version)
-                            .orElseThrow(FileNotFoundException::new).getBytes());
-        }
-        var pom = new SAXReader().read(pomByteStream).getRootElement();
-        if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
-            var metadata = this.extractDependencyResolutionMetadata(pom);
-            this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
-        }
-        return pom.selectSingleNode("./*[local-name()='scm']");
     }
 
     /**
@@ -214,26 +296,15 @@ public class DataExtractor {
         DependencyData dependencyData = new DependencyData(
                 new DependencyManagement(new ArrayList<>()), new ArrayList<>());
         try {
-            ByteArrayInputStream pomByteStream;
-            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
-                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
-            } else {
-                pomByteStream = new ByteArrayInputStream(
-                        this.downloadPom(artifactId, groupId, version)
-                                .orElseThrow(FileNotFoundException::new).getBytes());
-            }
-            var pom = new SAXReader().read(pomByteStream).getRootElement();
-            if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
-                var metadata = this.extractDependencyResolutionMetadata(pom);
-                this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
-            }
+            var pom = getPomRootElement(groupId, artifactId, version);
+            updateResolutionMetadata(groupId, artifactId, version, pom);
             var versionResolutionData = this.resolutionMetadata.getRight();
             var properties = versionResolutionData.getLeft();
             var parentDependencyManagements = versionResolutionData.getRight();
             for (int i = 0; i < parentDependencyManagements.size(); i++) {
                 var depManagement = parentDependencyManagements.get(i);
                 var resolvedDependencies = resolveDependencyVersions(depManagement.dependencies,
-                        properties, new ArrayList<>());
+                        properties, new ArrayList<>(), pom);
                 parentDependencyManagements.set(i, new DependencyManagement(resolvedDependencies));
             }
             var dependencyManagementNode = pom.selectSingleNode("./*[local-name()='dependencyManagement']");
@@ -243,7 +314,7 @@ public class DataExtractor {
                         .selectSingleNode("./*[local-name()='dependencies']");
                 var dependencies = extractDependencies(dependenciesNode);
                 dependencies = this.resolveDependencyVersions(dependencies, properties,
-                        parentDependencyManagements);
+                        parentDependencyManagements, pom);
                 dependencyManagement = new DependencyManagement(dependencies);
             } else {
                 dependencyManagement = new DependencyManagement(new ArrayList<>());
@@ -251,7 +322,7 @@ public class DataExtractor {
             var dependenciesNode = pom.selectSingleNode("./*[local-name()='dependencies']");
             var dependencies = extractDependencies(dependenciesNode);
             dependencies = this.resolveDependencyVersions(dependencies, properties,
-                    parentDependencyManagements);
+                    parentDependencyManagements, pom);
             dependencyData = new DependencyData(dependencyManagement, dependencies);
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -265,7 +336,8 @@ public class DataExtractor {
 
     private List<Dependency> resolveDependencyVersions(List<Dependency> dependencies,
                                                        Map<String, String> properties,
-                                                       List<DependencyManagement> depManagements) {
+                                                       List<DependencyManagement> depManagements,
+                                                       Element pom) {
         var resolvedDependencies = new ArrayList<Dependency>();
         for (var dependency : dependencies) {
             if (dependency.versionConstraints.get(0).lowerBound.equals("*")) {
@@ -289,10 +361,9 @@ public class DataExtractor {
             } else if (dependency.versionConstraints.get(0).lowerBound.startsWith("$")) {
                 var property = dependency.versionConstraints.get(0).lowerBound;
                 var version = "";
-                for (var entry : properties.entrySet()) {
-                    if (entry.getKey().equals(property.substring(2, property.length() - 1))) {
-                        version = entry.getValue();
-                    }
+                var value = replacePropertyReferences(property, properties, pom);
+                if (!value.equals(property)) {
+                    version = value;
                 }
                 resolvedDependencies.add(new Dependency(
                         dependency.artifactId,
