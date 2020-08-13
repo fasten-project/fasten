@@ -19,6 +19,8 @@
 package eu.fasten.analyzer.repoclonerplugin;
 
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
+import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
+import eu.fasten.analyzer.repoclonerplugin.utils.SvnCloner;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
@@ -26,6 +28,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.tmatesoft.hg.core.HgException;
+import org.tmatesoft.hg.util.CancelledException;
+import org.tmatesoft.svn.core.SVNException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -142,10 +147,32 @@ public class RepoClonerPluginTest {
     }
 
     @Test
-    public void cloneRepoTest() throws GitAPIException, IOException {
+    public void cloneHgRepoTest() throws IOException, CancelledException, HgException {
         var gitCloner = Mockito.mock(GitCloner.class);
-        Mockito.when(gitCloner.cloneRepo(Mockito.anyString())).thenReturn("test/path");
-        repoCloner.cloneRepo("https://testurl.com", gitCloner);
+        var hgCloner = Mockito.mock(HgCloner.class);
+        var svnCloner = Mockito.mock(SvnCloner.class);
+        Mockito.when(hgCloner.cloneRepo("https://testurl.com", "name", "owner")).thenReturn("test/path");
+        repoCloner.cloneRepo("https://testurl.com", "name", "owner", gitCloner, hgCloner, svnCloner);
+        assertEquals("test/path", repoCloner.getRepoPath());
+    }
+
+    @Test
+    public void cloneGitRepoTest() throws GitAPIException, IOException {
+        var gitCloner = Mockito.mock(GitCloner.class);
+        var hgCloner = Mockito.mock(HgCloner.class);
+        var svnCloner = Mockito.mock(SvnCloner.class);
+        Mockito.when(gitCloner.cloneRepo(Mockito.anyString(), Mockito.eq("name"), Mockito.eq("owner"))).thenReturn("test/path");
+        repoCloner.cloneRepo("https://testurl.com/repo.git", "name", "owner", gitCloner, hgCloner, svnCloner);
+        assertEquals("test/path", repoCloner.getRepoPath());
+    }
+
+    @Test
+    public void cloneSvnRepoTest() throws SVNException {
+        var gitCloner = Mockito.mock(GitCloner.class);
+        var hgCloner = Mockito.mock(HgCloner.class);
+        var svnCloner = Mockito.mock(SvnCloner.class);
+        Mockito.when(svnCloner.cloneRepo(Mockito.anyString(), Mockito.eq("name"), Mockito.eq("owner"))).thenReturn("test/path");
+        repoCloner.cloneRepo("svn://testurl.com/repo", "name", "owner", gitCloner, hgCloner, svnCloner);
         assertEquals("test/path", repoCloner.getRepoPath());
     }
 
@@ -182,7 +209,7 @@ public class RepoClonerPluginTest {
 
     @Test
     public void versionTest() {
-        var version = "0.0.1";
+        var version = "0.1.0";
         assertEquals(version, repoCloner.version());
     }
 }
