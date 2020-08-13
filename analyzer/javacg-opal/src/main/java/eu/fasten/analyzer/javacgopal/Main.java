@@ -21,6 +21,7 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.merge.CallGraphMerger;
 import eu.fasten.core.merge.CallGraphUtils;
@@ -163,7 +164,7 @@ public class Main implements Runnable {
             try {
                 generate(artifact, commands.computations.main, commands.computations.genAlgorithm,
                         !this.output.isEmpty());
-            } catch (IOException e) {
+            } catch (IOException | OPALException e) {
                 e.printStackTrace();
             }
 
@@ -171,7 +172,7 @@ public class Main implements Runnable {
             try {
                 generate(getArtifactFile(), commands.computations.main,
                         commands.computations.genAlgorithm, !this.output.isEmpty());
-            } catch (IOException e) {
+            } catch (IOException | OPALException e) {
                 e.printStackTrace();
             }
         }
@@ -184,14 +185,14 @@ public class Main implements Runnable {
         if (commands.computations.mode.equals("COORD")) {
             try {
                 merge(getArtifactCoordinate(), getDependenciesCoordinates());
-            } catch (IOException e) {
+            } catch (IOException | OPALException e) {
                 e.printStackTrace();
             }
 
         } else if (commands.computations.mode.equals("FILE")) {
             try {
                 merge(getArtifactFile(), getDependenciesFiles()).toJSON();
-            } catch (IOException e) {
+            } catch (IOException | OPALException e) {
                 e.printStackTrace();
             }
         }
@@ -207,7 +208,8 @@ public class Main implements Runnable {
      * @throws IOException thrown in case file related exceptions occur, e.g FileNotFoundException
      */
     public <T> ExtendedRevisionCallGraph merge(final T artifact,
-                                               final List<T> dependencies) throws IOException {
+                                               final List<T> dependencies)
+            throws IOException, OPALException {
 
         final ExtendedRevisionCallGraph result;
         final var deps = new ArrayList<ExtendedRevisionCallGraph>();
@@ -244,7 +246,7 @@ public class Main implements Runnable {
     public <T> ExtendedRevisionCallGraph generate(final T artifact,
                                                   final String mainClass,
                                                   final String algorithm, final boolean writeToFile)
-            throws IOException {
+            throws IOException, OPALException {
         final ExtendedRevisionCallGraph revisionCallGraph;
 
         final long startTime = System.currentTimeMillis();

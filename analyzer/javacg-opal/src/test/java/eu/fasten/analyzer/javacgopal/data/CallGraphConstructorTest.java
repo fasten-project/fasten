@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import java.io.File;
 import java.util.Objects;
 import org.apache.commons.lang.StringUtils;
@@ -31,7 +32,7 @@ import org.junit.jupiter.api.Test;
 class CallGraphConstructorTest {
 
     @Test
-    void constructCHAEmptyMainClass() {
+    void constructCHAEmptyMainClass() throws OPALException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
@@ -48,7 +49,7 @@ class CallGraphConstructorTest {
     }
 
     @Test
-    void constructCHANullMainClass() {
+    void constructCHANullMainClass() throws OPALException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
@@ -65,7 +66,7 @@ class CallGraphConstructorTest {
     }
 
     @Test
-    void constructCHAWithMainClass() {
+    void constructCHAWithMainClass() throws OPALException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
@@ -86,7 +87,7 @@ class CallGraphConstructorTest {
     }
 
     @Test
-    void constructRTA() {
+    void constructRTA() throws OPALException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
@@ -99,7 +100,7 @@ class CallGraphConstructorTest {
     }
 
     @Test
-    void constructCHA() {
+    void constructCHA() throws OPALException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
@@ -112,7 +113,7 @@ class CallGraphConstructorTest {
     }
 
     @Test
-    void constructAllocationSiteBasedPointsTo() {
+    void constructAllocationSiteBasedPointsTo() throws OPALException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
@@ -125,7 +126,7 @@ class CallGraphConstructorTest {
     }
 
     @Test
-    void constructTypeBasedPointsTo() {
+    void constructTypeBasedPointsTo() throws OPALException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
@@ -143,9 +144,10 @@ class CallGraphConstructorTest {
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
 
-        Exception exception = assertThrows(IllegalStateException.class, () ->
+        Exception exception = assertThrows(OPALException.class, () ->
                 new CallGraphConstructor(file, "", "WrongAlgorithm"));
 
-        assertEquals("Unexpected value: WrongAlgorithm", exception.getMessage());
+        assertEquals("Original error type: IllegalStateException; "
+                + "Original message: Unexpected value: WrongAlgorithm", exception.getMessage());
     }
 }
