@@ -116,6 +116,45 @@ public class DataExtractor {
     }
 
     /**
+     * Extracts project name from POM of certain Maven coordinate.
+     *
+     * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
+     * @param version    version of the coordinate
+     * @return Extracted project name as String
+     */
+    public String extractProjectName(String groupId, String artifactId, String version) {
+        String name = null;
+        try {
+            ByteArrayInputStream pomByteStream;
+            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
+                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
+            } else {
+                pomByteStream = new ByteArrayInputStream(
+                        this.downloadPom(artifactId, groupId, version)
+                                .orElseThrow(FileNotFoundException::new).getBytes());
+            }
+            var pom = new SAXReader().read(pomByteStream).getRootElement();
+            if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
+                var metadata = this.extractDependencyResolutionMetadata(pom);
+                this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
+            }
+            var properties = this.resolutionMetadata.getRight().getLeft();
+            var nameNode = pom.selectSingleNode("./*[local-name()='name']");
+            if (nameNode != null) {
+                name = replacePropertyReferences(nameNode.getText(), properties, pom);
+            }
+        } catch (DocumentException e) {
+            logger.error("Error parsing POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        } catch (FileNotFoundException e) {
+            logger.error("Error downloading POM file for: "
+                    + groupId + ":" + artifactId + ":" + version);
+        }
+        return name;
+    }
+
+    /**
      * Replaces all property references with their actual values.
      *
      * @param ref        String that can contain property references

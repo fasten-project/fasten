@@ -50,6 +50,7 @@ public class POMAnalyzerPluginTest {
         var repoUrl = "http://github.com/junit-team/junit/tree/master";
         var sourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
         var packagingType = "jar";
+        var projectName = "JUnit";
         var dependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
@@ -88,6 +89,7 @@ public class POMAnalyzerPluginTest {
         assertEquals(repoUrl, json.getString("repoUrl"));
         assertEquals(sourcesUrl, json.getString("sourcesUrl"));
         assertEquals(packagingType, json.getString("packagingType"));
+        assertEquals(projectName, json.getString("projectName"));
         assertEquals(dependencyData, DependencyData.fromJSON(json.getJSONObject("dependencyData")));
     }
 
@@ -97,6 +99,7 @@ public class POMAnalyzerPluginTest {
         var repoUrl = "http://github.com/junit-team/junit/tree/master";
         var sourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
         var packagingType = "jar";
+        var projectName = "JUnit";
         var dependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
@@ -141,7 +144,7 @@ public class POMAnalyzerPluginTest {
         final var dependencyId = 16L;
         Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", "mvn", null, null, null))
                 .thenReturn(dependencyId);
-        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, dependencyData, metadataDao);
+        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, projectName, dependencyData, metadataDao);
         assertEquals(packageVersionId, result);
     }
 
@@ -179,7 +182,7 @@ public class POMAnalyzerPluginTest {
 
     @Test
     public void versionTest() {
-        var version = "0.0.1";
+        var version = "0.1.0";
         assertEquals(version, pomAnalyzer.version());
     }
 }

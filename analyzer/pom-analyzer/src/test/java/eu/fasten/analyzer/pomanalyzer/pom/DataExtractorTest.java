@@ -286,11 +286,14 @@ public class DataExtractorTest {
         var actualSourcesUrl = dataExtractor.generateMavenSourcesLink("junit", "junit", "4.12");
         var expectedPackagingType = "jar";
         var actualPackagingType = dataExtractor.extractPackagingType("junit", "junit", "4.12");
+        var expectedProjectName = "JUnit";
+        var actualProjectName = dataExtractor.extractProjectName("junit", "junit", "4.12");
         assertEquals(expectedRepoUrl, actualRepoUrl);
         assertEquals(expectedDependencyData, actualDependencyData);
         assertEquals(expectedCommitTag, actualCommitTag);
         assertEquals(expectedSourcesUrl, actualSourcesUrl);
         assertEquals(expectedPackagingType, actualPackagingType);
+        assertEquals(expectedProjectName, actualProjectName);
     }
 
     @Test
