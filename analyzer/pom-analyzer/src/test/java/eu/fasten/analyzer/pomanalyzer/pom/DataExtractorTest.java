@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class DataExtractorTest {
 
@@ -294,6 +295,12 @@ public class DataExtractorTest {
         assertEquals(expectedSourcesUrl, actualSourcesUrl);
         assertEquals(expectedPackagingType, actualPackagingType);
         assertEquals(expectedProjectName, actualProjectName);
+    }
+
+    @Test
+    public void noProjectNameTest() {
+        var result = dataExtractor.extractProjectName("com.alicp.jetcache", "jetcache-redis-lettuce", "2.5.13");
+        assertNull(result);
     }
 
     @Test

@@ -42,7 +42,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
-import org.dom4j.InvalidXPathException;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
@@ -87,19 +86,8 @@ public class DataExtractor {
     public String extractPackagingType(String groupId, String artifactId, String version) {
         String packaging = "jar";
         try {
-            ByteArrayInputStream pomByteStream;
-            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
-                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
-            } else {
-                pomByteStream = new ByteArrayInputStream(
-                        this.downloadPom(artifactId, groupId, version)
-                                .orElseThrow(FileNotFoundException::new).getBytes());
-            }
-            var pom = new SAXReader().read(pomByteStream).getRootElement();
-            if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
-                var metadata = this.extractDependencyResolutionMetadata(pom);
-                this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
-            }
+            var pom = getPomRootElement(groupId, artifactId, version);
+            updateResolutionMetadata(groupId, artifactId, version, pom);
             var properties = this.resolutionMetadata.getRight().getLeft();
             var packagingNode = pom.selectSingleNode("./*[local-name()='packaging']");
             if (packagingNode != null) {
@@ -126,19 +114,8 @@ public class DataExtractor {
     public String extractProjectName(String groupId, String artifactId, String version) {
         String name = null;
         try {
-            ByteArrayInputStream pomByteStream;
-            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
-                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
-            } else {
-                pomByteStream = new ByteArrayInputStream(
-                        this.downloadPom(artifactId, groupId, version)
-                                .orElseThrow(FileNotFoundException::new).getBytes());
-            }
-            var pom = new SAXReader().read(pomByteStream).getRootElement();
-            if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
-                var metadata = this.extractDependencyResolutionMetadata(pom);
-                this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
-            }
+            var pom = getPomRootElement(groupId, artifactId, version);
+            updateResolutionMetadata(groupId, artifactId, version, pom);
             var properties = this.resolutionMetadata.getRight().getLeft();
             var nameNode = pom.selectSingleNode("./*[local-name()='name']");
             if (nameNode != null) {
@@ -234,16 +211,8 @@ public class DataExtractor {
     public String extractRepoUrl(String groupId, String artifactId, String version) {
         String repoUrl = null;
         try {
-            ByteArrayInputStream pomByteStream;
-            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
-                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
-            } else {
-                pomByteStream = new ByteArrayInputStream(
-                        this.downloadPom(artifactId, groupId, version)
-                                .orElseThrow(FileNotFoundException::new).getBytes());
-            }
-            var pom = new SAXReader().read(pomByteStream).getRootElement();
-            var scm = extractScm(groupId, artifactId, version, pom);
+            var pom = getPomRootElement(groupId, artifactId, version);
+            var scm = pom.selectSingleNode("./*[local-name()='scm']");
             if (scm != null) {
                 var url = scm.selectSingleNode("./*[local-name()='url']");
                 if (url != null) {
@@ -251,6 +220,7 @@ public class DataExtractor {
                 }
             }
             if (repoUrl != null) {
+                updateResolutionMetadata(groupId, artifactId, version, pom);
                 var properties = this.resolutionMetadata.getRight().getLeft();
                 repoUrl = replacePropertyReferences(repoUrl, properties, pom);
             }
@@ -264,6 +234,23 @@ public class DataExtractor {
         return repoUrl;
     }
 
+    private Element getPomRootElement(String groupId, String artifactId, String version)
+            throws FileNotFoundException, DocumentException {
+        var pomByteStream =
+                (groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)
+                        ? new ByteArrayInputStream(this.pomContents.getBytes())
+                        : new ByteArrayInputStream(this.downloadPom(artifactId, groupId, version)
+                        .orElseThrow(FileNotFoundException::new).getBytes());
+        return new SAXReader().read(pomByteStream).getRootElement();
+    }
+
+    private void updateResolutionMetadata(String groupId, String artifactId, String version, Element pom) {
+        if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
+            var metadata = this.extractDependencyResolutionMetadata(pom);
+            this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
+        }
+    }
+
     /**
      * Extracts commit tag from POM of certain Maven coordinate.
      *
@@ -275,21 +262,14 @@ public class DataExtractor {
     public String extractCommitTag(String groupId, String artifactId, String version) {
         String commitTag = null;
         try {
-            ByteArrayInputStream pomByteStream;
-            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
-                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
-            } else {
-                pomByteStream = new ByteArrayInputStream(
-                        this.downloadPom(artifactId, groupId, version)
-                                .orElseThrow(FileNotFoundException::new).getBytes());
-            }
-            var pom = new SAXReader().read(pomByteStream).getRootElement();
-            var scm = extractScm(groupId, artifactId, version, pom);
+            var pom = getPomRootElement(groupId, artifactId, version);
+            var scm = pom.selectSingleNode("./*[local-name()='scm']");
             if (scm != null) {
                 var tag = scm.selectSingleNode("./*[local-name()='tag']");
                 commitTag = (tag != null) ? tag.getText() : null;
             }
             if (commitTag != null) {
+                updateResolutionMetadata(groupId, artifactId, version, pom);
                 var properties = this.resolutionMetadata.getRight().getLeft();
                 commitTag = replacePropertyReferences(commitTag, properties, pom);
             }
@@ -301,14 +281,6 @@ public class DataExtractor {
                     + groupId + ":" + artifactId + ":" + version);
         }
         return commitTag;
-    }
-
-    private Node extractScm(String groupId, String artifactId, String version, Element pom) {
-        if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
-            var metadata = this.extractDependencyResolutionMetadata(pom);
-            this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
-        }
-        return pom.selectSingleNode("./*[local-name()='scm']");
     }
 
     /**
@@ -324,19 +296,8 @@ public class DataExtractor {
         DependencyData dependencyData = new DependencyData(
                 new DependencyManagement(new ArrayList<>()), new ArrayList<>());
         try {
-            ByteArrayInputStream pomByteStream;
-            if ((groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)) {
-                pomByteStream = new ByteArrayInputStream(this.pomContents.getBytes());
-            } else {
-                pomByteStream = new ByteArrayInputStream(
-                        this.downloadPom(artifactId, groupId, version)
-                                .orElseThrow(FileNotFoundException::new).getBytes());
-            }
-            var pom = new SAXReader().read(pomByteStream).getRootElement();
-            if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
-                var metadata = this.extractDependencyResolutionMetadata(pom);
-                this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
-            }
+            var pom = getPomRootElement(groupId, artifactId, version);
+            updateResolutionMetadata(groupId, artifactId, version, pom);
             var versionResolutionData = this.resolutionMetadata.getRight();
             var properties = versionResolutionData.getLeft();
             var parentDependencyManagements = versionResolutionData.getRight();
