@@ -23,16 +23,16 @@ import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.SvnCloner;
 import eu.fasten.core.plugins.DataWriter;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
 public class RepoClonerPlugin extends Plugin {
 
@@ -122,7 +122,8 @@ public class RepoClonerPlugin extends Plugin {
                     + (artifact == null ? "" : artifact.charAt(0) + File.separator)
                     + artifact + File.separator
                     + (product == null ? "unknown" : product.replace(":", "_")) + ".json";
-            var repoUrl = json.optString("repoUrl").replaceAll("[\\n\\t ]", "");;
+            var repoUrl = json.optString("repoUrl").replaceAll("[\\n\\t ]", "");
+            ;
             if (!repoUrl.isEmpty()) {
                 var gitCloner = new GitCloner(baseDir);
                 var hgCloner = new HgCloner(baseDir);
@@ -144,7 +145,7 @@ public class RepoClonerPlugin extends Plugin {
         }
 
         public boolean cloneRepo(String repoUrl, String artifact, String group,
-                              GitCloner gitCloner, HgCloner hgCloner, SvnCloner svnCloner) {
+                                 GitCloner gitCloner, HgCloner hgCloner, SvnCloner svnCloner) {
             var cloned = false;
             if (repoUrl.startsWith("scm:git:") || repoUrl.startsWith("scm:svn:")) {
                 repoUrl = repoUrl.substring(8);
