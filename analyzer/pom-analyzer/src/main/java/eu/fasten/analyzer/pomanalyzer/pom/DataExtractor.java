@@ -174,7 +174,9 @@ public class DataExtractor {
             refBuilder.append(refValue);
             i = property[1] + 1;
         }
-        refBuilder.append(ref, i, ref.length());
+        if (i < ref.length()) {
+            refBuilder.append(ref, i, ref.length());
+        }
         return refBuilder.toString();
     }
 
