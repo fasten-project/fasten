@@ -50,6 +50,8 @@ public class RepoClonerPlugin extends Plugin {
         private String artifact = null;
         private String group = null;
         private String version = null;
+        private String commitTag = null;
+        private String sourcesUrl = null;
         private static String baseDir = "";
         private String outputPath = null;
 
@@ -75,23 +77,13 @@ public class RepoClonerPlugin extends Plugin {
         @Override
         public Optional<String> produce() {
             var json = new JSONObject();
-            if (artifact != null && !artifact.isEmpty()) {
-                json.put("artifactId", artifact);
-            }
-            if (group != null && !group.isEmpty()) {
-                json.put("groupId", group);
-            }
-            if (version != null && !version.isEmpty()) {
-                json.put("version", version);
-            }
-            if (repoPath != null && !repoPath.isEmpty()) {
-                json.put("repoPath", repoPath);
-            }
-            if (json.isEmpty()) {
-                return Optional.empty();
-            } else {
-                return Optional.of(json.toString());
-            }
+            json.put("artifactId", artifact);
+            json.put("groupId", group);
+            json.put("version", version);
+            json.put("repoPath", (repoPath != null) ? repoPath : "");
+            json.put("commitTag", (commitTag != null) ? commitTag : "");
+            json.put("sourcesUrl", (sourcesUrl != null) ? sourcesUrl : "");
+            return Optional.of(json.toString());
         }
 
         @Override
@@ -106,24 +98,20 @@ public class RepoClonerPlugin extends Plugin {
             this.group = null;
             this.version = null;
             this.repoPath = null;
+            this.commitTag = null;
+            this.sourcesUrl = null;
             var json = new JSONObject(record);
             if (json.has("payload")) {
                 json = json.getJSONObject("payload");
             }
-            artifact = json.optString("artifactId");
-            group = json.optString("groupId");
-            version = json.optString("version");
-            String product = null;
-            if (artifact != null && !artifact.isEmpty()
-                    && group != null && !group.isEmpty()) {
-                product = group + ":" + artifact + (version.isEmpty() ? "" : ":" + version);
-            }
-            outputPath = File.separator
-                    + (artifact == null ? "" : artifact.charAt(0) + File.separator)
-                    + artifact + File.separator
-                    + (product == null ? "unknown" : product.replace(":", "_")) + ".json";
+            artifact = json.getString("artifactId").replaceAll("[\\n\\t ]", "");
+            group = json.getString("groupId").replaceAll("[\\n\\t ]", "");
+            version = json.getString("version").replaceAll("[\\n\\t ]", "");
+            commitTag = json.optString("commitTag").replaceAll("[\\n\\t ]", "");
+            sourcesUrl = json.optString("sourcesUrl").replaceAll("[\\n\\t ]", "");
+            String product = group + ":" + artifact + ":" + version;
+            outputPath = File.separator + artifact.charAt(0) + File.separator + artifact + File.separator + product.replace(":", "_") + ".json";
             var repoUrl = json.optString("repoUrl").replaceAll("[\\n\\t ]", "");
-            ;
             if (!repoUrl.isEmpty()) {
                 var gitCloner = new GitCloner(baseDir);
                 var hgCloner = new HgCloner(baseDir);
@@ -135,8 +123,7 @@ public class RepoClonerPlugin extends Plugin {
                             + product + " from " + repoUrl);
                 }
                 if (getPluginError() == null) {
-                    logger.info("Cloned repository"
-                            + (product == null ? "" : " of '" + product + "'")
+                    logger.info("Cloned repository" + " of '" + product + "'"
                             + " from " + repoUrl + " to " + repoPath);
                 }
             } else {
