@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal.data;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
@@ -161,14 +162,34 @@ public class MavenCoordinate {
         public File downloadJar(final MavenCoordinate mavenCoordinate)
                 throws FileNotFoundException {
             logger.debug("Downloading JAR for " + mavenCoordinate);
+            var found = false;
             Optional<File> jar = Optional.empty();
             for (var repo : mavenCoordinate.getMavenRepos()) {
-                if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
-                    jar = httpGetFile(mavenCoordinate
-                            .toProductUrl(repo, mavenCoordinate.getPackaging()));
+                try {
+                    if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
+                        found = true;
+                        jar = httpGetFile(mavenCoordinate
+                                .toProductUrl(repo, mavenCoordinate.getPackaging()));
+                    }
+                } catch (IOException e) {
+                    found = false;
+                    logger.error("Could not find URL: {}", e.getMessage());
                 }
-                for (int i = 0; jar.isEmpty() && i < defaultPackaging.length; i++) {
-                    jar = httpGetFile(mavenCoordinate.toProductUrl(repo, defaultPackaging[i]));
+                if (found) {
+                    return jar.orElseThrow(RuntimeException::new);
+                }
+
+                for (var s : defaultPackaging) {
+                    try {
+                        found = true;
+                        jar = httpGetFile(mavenCoordinate.toProductUrl(repo, s));
+                    } catch (IOException e) {
+                        found = false;
+                        logger.error("Could not find URL: {}", e.getMessage());
+                    }
+                    if (found) {
+                        return jar.orElseThrow(RuntimeException::new);
+                    }
                 }
             }
             return jar.orElseThrow(() -> new FileNotFoundException(mavenCoordinate.getPackaging()));
@@ -177,22 +198,17 @@ public class MavenCoordinate {
         /**
          * Utility function that stores the contents of GET request to a temporary file.
          */
-        private static Optional<File> httpGetFile(final String url) {
+        private static Optional<File> httpGetFile(final String url) throws IOException {
             logger.debug("HTTP GET: " + url);
 
-            try {
-                final var packaging = url.substring(url.lastIndexOf("."));
-                final var tempFile = Files.createTempFile("fasten", packaging);
+            final var packaging = url.substring(url.lastIndexOf("."));
+            final var tempFile = Files.createTempFile("fasten", packaging);
 
-                final InputStream in = new URL(url).openStream();
-                Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-                in.close();
+            final InputStream in = new URL(url).openStream();
+            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+            in.close();
 
-                return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-            } catch (Exception e) {
-                logger.error("Error retrieving URL: " + url);
-                return Optional.empty();
-            }
+            return Optional.of(new File(tempFile.toAbsolutePath().toString()));
         }
     }
 }
