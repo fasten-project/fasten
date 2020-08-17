@@ -4,6 +4,8 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 
+import org.jooq.exception.DataAccessException;
+import org.jooq.impl.DSL;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -32,10 +34,12 @@ public class QualityAnalyzerPlugin extends Plugin {
         private static DSLContext dslContext;
         private final Logger logger = LoggerFactory.getLogger(QualityAnalyzer.class.getName());
         private Throwable pluginError = null;
+        private String product = null;
         private String artifact = null;
         private String group = null;
         private String version = null;
         private long date = -1L;
+        private JSONObject metrics = null;
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
         private boolean processedRecord = false;
@@ -58,10 +62,12 @@ public class QualityAnalyzerPlugin extends Plugin {
         @Override
         public void consume(String record) {
             pluginError = null;
+            product = null;
+            group  =null;
             artifact = null;
-            group = null;
             version = null;
             date = -1L;
+            metrics = null;
             this.processedRecord = false;
             this.restartTransaction = false;
             logger.info("Consumed: " + record);
@@ -70,6 +76,46 @@ public class QualityAnalyzerPlugin extends Plugin {
             if (jsonRecord.has("payload")) {
                 payload = jsonRecord.getJSONObject("payload");
             }
+            product = payload.getString("product").replaceAll("[\\n\\t ]", "");
+            version = payload.getString("version").replaceAll("[\\n\\t ]", "");
+            metrics = payload.getJSONObject("metrics");
+            int transactionRestartCount = 0;
+            do {
+                try {
+                    var metadataDao = new MetadataDao(dslContext);
+                    dslContext.transaction(transaction -> {
+                        metadataDao.setContext(DSL.using(transaction));
+                        long id;
+                        try {
+                            id = saveToDatabase(product,
+                                    version,
+                                    null,
+                                    metrics,
+                                    metadataDao);
+                        } catch (RuntimeException e) {
+                            logger.error("Error saving data to the database: '" + product + ":" + version + "'", e);
+                            processedRecord = false;
+                            this.pluginError = e;
+                            if (e instanceof DataAccessException) {
+                                logger.info("Restarting transaction for '" + product + ":" + version + "'");
+                                restartTransaction = true;
+                            } else {
+                                restartTransaction = false;
+                            }
+                            throw e;
+                        }
+                        if (getPluginError() == null) {
+                            processedRecord = true;
+                            restartTransaction = false;
+                            logger.info("Saved data for " + product + ":" + version
+                                    + " with package version ID = " + id);
+                        }
+                    });
+                } catch (Exception expected) {
+                }
+                transactionRestartCount++;
+            } while (restartTransaction && !processedRecord
+                    && transactionRestartCount < transactionRestartLimit);
         }
 
         public long saveToDatabase(String product, String version, String repoUrl, JSONObject metrics, MetadataDao metadataDao) {
@@ -123,7 +169,7 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public Throwable getPluginError() {
-            return null;
+            return this.pluginError;
         }
 
         @Override
