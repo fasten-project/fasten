@@ -114,8 +114,8 @@ public class RepoClonerPluginTest {
         var hgCloner = Mockito.mock(HgCloner.class);
         var svnCloner = Mockito.mock(SvnCloner.class);
         Mockito.when(hgCloner.cloneRepo("https://testurl.com", "name", "owner")).thenReturn("test/path");
-        repoCloner.cloneRepo("https://testurl.com", "name", "owner", gitCloner, hgCloner, svnCloner);
-        assertEquals("test/path", repoCloner.getRepoPath());
+        var path = repoCloner.cloneRepo("https://testurl.com", "name", "owner", gitCloner, hgCloner, svnCloner);
+        assertEquals("test/path", path);
     }
 
     @Test
@@ -124,8 +124,8 @@ public class RepoClonerPluginTest {
         var hgCloner = Mockito.mock(HgCloner.class);
         var svnCloner = Mockito.mock(SvnCloner.class);
         Mockito.when(gitCloner.cloneRepo(Mockito.anyString(), Mockito.eq("name"), Mockito.eq("owner"))).thenReturn("test/path");
-        repoCloner.cloneRepo("https://testurl.com/repo.git", "name", "owner", gitCloner, hgCloner, svnCloner);
-        assertEquals("test/path", repoCloner.getRepoPath());
+        var path = repoCloner.cloneRepo("https://testurl.com/repo.git", "name", "owner", gitCloner, hgCloner, svnCloner);
+        assertEquals("test/path", path);
     }
 
     @Test
@@ -134,8 +134,8 @@ public class RepoClonerPluginTest {
         var hgCloner = Mockito.mock(HgCloner.class);
         var svnCloner = Mockito.mock(SvnCloner.class);
         Mockito.when(svnCloner.cloneRepo(Mockito.anyString(), Mockito.eq("name"), Mockito.eq("owner"))).thenReturn("test/path");
-        repoCloner.cloneRepo("svn://testurl.com/repo", "name", "owner", gitCloner, hgCloner, svnCloner);
-        assertEquals("test/path", repoCloner.getRepoPath());
+        var path = repoCloner.cloneRepo("svn://testurl.com/repo", "name", "owner", gitCloner, hgCloner, svnCloner);
+        assertEquals("test/path", path);
     }
 
     @Test
