@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qmstr-config
+  namespace: default
+data:
+  qmstrConfig: |-
+    project:
+      name: "CI"
+      metadata:
+        message: "Hello World!"
+      server:
+        dbAddress: "dgraph:9000"
+      analysis:

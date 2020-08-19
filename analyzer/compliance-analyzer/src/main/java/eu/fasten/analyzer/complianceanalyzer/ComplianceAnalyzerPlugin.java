@@ -1,5 +1,8 @@
 package eu.fasten.analyzer.complianceanalyzer;
 
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1ConfigMap;
+import io.kubernetes.client.proto.V1;
 import org.pf4j.PluginWrapper;
 import org.pf4j.Plugin;
 import org.slf4j.Logger;
@@ -139,8 +142,7 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 // project's info
                 String input1 = " -e s#java-plugin#java-plugin-" + artifactID + "#";
                 String input2 = " -e s#url#" + repoUrl + "#";
-                String input3 = " -e s#project#" + artifactID + "#";
-                String command = "sed" + input1 + input2 + input3 + " docker/job.yaml";
+                String command = "sed" + input1 + input2 + " docker/job.yaml";
 
                 Process p = Runtime.getRuntime().exec(command);
 
@@ -173,6 +175,11 @@ public class ComplianceAnalyzerPlugin extends Plugin {
 
         public void ApplyK8sJob() {
             try {
+                // Deploy ConfigMap
+                V1ConfigMap configMap = Yaml.loadAs(new File("docker/master-config.yaml"), V1ConfigMap.class);
+                V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap("default", configMap, null, null, null);
+                System.out.println("Deployed ConfigMap: " + deployedConfigMap);
+
                 // Define and apply a qmstr kubernetes job
                 Yaml.addModelMap("v1", "Job", V1Job.class);
 
