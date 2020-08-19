@@ -193,9 +193,11 @@ public class MavenCoordinate {
                     }
                 }
             }
-            return jar.orElseThrow(() -> new FileNotFoundException(
-                    mavenCoordinate.toURL(mavenCoordinate.getMavenRepos().get(0)) + " | "
-                            + mavenCoordinate.getPackaging()));
+            throw new FileNotFoundException(
+                    mavenCoordinate.toURL(mavenCoordinate.getMavenRepos().size() > 0
+                            ? mavenCoordinate.getMavenRepos().get(0)
+                            : "no repos specified") + " | "
+                            + mavenCoordinate.getPackaging());
         }
 
         /**
