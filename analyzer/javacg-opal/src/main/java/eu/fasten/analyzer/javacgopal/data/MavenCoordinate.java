@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -171,7 +172,7 @@ public class MavenCoordinate {
                         jar = httpGetFile(mavenCoordinate
                                 .toProductUrl(repo, mavenCoordinate.getPackaging()));
                     }
-                } catch (IOException e) {
+                } catch (FileNotFoundException | MalformedURLException e) {
                     found = false;
                     logger.error("Could not find URL: {}", e.getMessage());
                 }
@@ -183,7 +184,7 @@ public class MavenCoordinate {
                     try {
                         found = true;
                         jar = httpGetFile(mavenCoordinate.toProductUrl(repo, s));
-                    } catch (IOException e) {
+                    } catch (FileNotFoundException | MalformedURLException e) {
                         found = false;
                         logger.error("Could not find URL: {}", e.getMessage());
                     }
@@ -192,23 +193,34 @@ public class MavenCoordinate {
                     }
                 }
             }
-            return jar.orElseThrow(() -> new FileNotFoundException(mavenCoordinate.getPackaging()));
+            return jar.orElseThrow(() -> new FileNotFoundException(
+                    mavenCoordinate.toURL(mavenCoordinate.getMavenRepos().get(0)) + " | "
+                            + mavenCoordinate.getPackaging()));
         }
 
         /**
          * Utility function that stores the contents of GET request to a temporary file.
          */
-        private static Optional<File> httpGetFile(final String url) throws IOException {
-            logger.debug("HTTP GET: " + url);
+        private static Optional<File> httpGetFile(final String url) throws FileNotFoundException,
+                MalformedURLException {
+            try {
+                logger.debug("HTTP GET: " + url);
 
-            final var packaging = url.substring(url.lastIndexOf("."));
-            final var tempFile = Files.createTempFile("fasten", packaging);
+                final var packaging = url.substring(url.lastIndexOf("."));
+                final var tempFile = Files.createTempFile("fasten", packaging);
 
-            final InputStream in = new URL(url).openStream();
-            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            in.close();
+                final InputStream in = new URL(url).openStream();
+                Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                in.close();
 
-            return Optional.of(new File(tempFile.toAbsolutePath().toString()));
+                return Optional.of(new File(tempFile.toAbsolutePath().toString()));
+            } catch (FileNotFoundException | MalformedURLException e) {
+                logger.error("Couldn't find an artifact: {}", url);
+                throw e;
+            } catch (IOException e) {
+                logger.error("IO exception occurred while retrieving URL: {}", url);
+                return Optional.empty();
+            }
         }
     }
 }
