@@ -2,6 +2,7 @@ package eu.fasten.analyzer.complianceanalyzer;
 
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
+import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.proto.V1;
 import org.pf4j.PluginWrapper;
 import org.pf4j.Plugin;
@@ -179,6 +180,11 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 V1ConfigMap configMap = Yaml.loadAs(new File("docker/master-config.yaml"), V1ConfigMap.class);
                 V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap("default", configMap, null, null, null);
                 System.out.println("Deployed ConfigMap: " + deployedConfigMap);
+
+                // Deploy Service
+                V1Service service = Yaml.loadAs(new File("docker/service.yaml"), V1Service.class);
+                V1Service deployedService = new CoreV1Api().createNamespacedService("default", service, null, null, null);
+                System.out.println("Deployed Service: " + deployedService);
 
                 // Define and apply a qmstr kubernetes job
                 Yaml.addModelMap("v1", "Job", V1Job.class);
