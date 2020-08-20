@@ -5,6 +5,9 @@ metadata:
 spec:
   backoffLimit: 1
   template:
+    metadata:
+      labels:
+        app: qmstr
     spec:
       restartPolicy: Never
       containers:
@@ -27,6 +30,11 @@ spec:
       - name: qmstr-client
         image: endocodeci/qmstr-client-mvn:sha-6d95b9e # generic "project" directory
         command: [ "sh", "./entrypoint.sh" ]
+        ports:
+          - containerPort: 8000
+            name: http-ratel
+          - containerPort: 8080
+            name: http-alpha
         env:
         - name: QMSTRADDRENV
           value: "localhost:50051"
