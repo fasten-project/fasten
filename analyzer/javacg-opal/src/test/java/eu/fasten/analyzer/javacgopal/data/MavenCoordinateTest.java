@@ -80,7 +80,7 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>());
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
+        assertThrows(FileNotFoundException.class, () -> resolver.downloadArtifact(coordinate));
     }
 
     @Test
@@ -89,7 +89,7 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
+        assertThrows(FileNotFoundException.class, () -> resolver.downloadArtifact(coordinate));
     }
 
     @Test
@@ -98,6 +98,6 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(FileNotFoundException.class, () -> resolver.downloadJar(coordinate));
+        assertThrows(FileNotFoundException.class, () -> resolver.downloadArtifact(coordinate));
     }
 }

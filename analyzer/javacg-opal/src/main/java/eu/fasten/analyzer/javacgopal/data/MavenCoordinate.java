@@ -160,36 +160,45 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return A temporary file on the filesystem
          */
-        public File downloadJar(final MavenCoordinate mavenCoordinate)
+        public File downloadArtifact(final MavenCoordinate mavenCoordinate)
                 throws FileNotFoundException {
             logger.debug("Downloading JAR for " + mavenCoordinate);
             var found = false;
             Optional<File> jar = Optional.empty();
-            for (var repo : mavenCoordinate.getMavenRepos()) {
+            var repos = mavenCoordinate.getMavenRepos();
+            for (int i = 0; i < repos.size(); i++) {
                 try {
                     if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
                         found = true;
                         jar = httpGetFile(mavenCoordinate
-                                .toProductUrl(repo, mavenCoordinate.getPackaging()));
+                                .toProductUrl(repos.get(i), mavenCoordinate.getPackaging()));
                     }
                 } catch (FileNotFoundException | MalformedURLException e) {
                     found = false;
                     logger.error("Could not find URL: {}", e.getMessage());
                 }
-                if (found) {
-                    return jar.orElseThrow(RuntimeException::new);
+                if (jar.isPresent()) {
+                    return jar.get();
+                } else if (found && i == repos.size() - 1) {
+                    throw new RuntimeException();
+                } else if (found) {
+                    continue;
                 }
 
                 for (var s : defaultPackaging) {
                     try {
                         found = true;
-                        jar = httpGetFile(mavenCoordinate.toProductUrl(repo, s));
+                        jar = httpGetFile(mavenCoordinate.toProductUrl(repos.get(i), s));
                     } catch (FileNotFoundException | MalformedURLException e) {
                         found = false;
                         logger.error("Could not find URL: {}", e.getMessage());
                     }
-                    if (found) {
-                        return jar.orElseThrow(RuntimeException::new);
+                    if (jar.isPresent()) {
+                        return jar.get();
+                    } else if (found && i == repos.size() - 1) {
+                        throw new RuntimeException();
+                    } else if (found) {
+                        break;
                     }
                 }
             }
