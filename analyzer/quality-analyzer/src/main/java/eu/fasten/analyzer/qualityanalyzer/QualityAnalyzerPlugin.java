@@ -76,7 +76,8 @@ public class QualityAnalyzerPlugin extends Plugin {
             if (jsonRecord.has("payload")) {
                 payload = jsonRecord.getJSONObject("payload");
             }
-            product = payload.getString("product").replaceAll("[\\n\\t ]", "");
+            group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
+            artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
             version = payload.getString("version").replaceAll("[\\n\\t ]", "");
             metrics = payload.getJSONObject("metrics");
             int transactionRestartCount = 0;
@@ -87,7 +88,7 @@ public class QualityAnalyzerPlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(product,
+                            id = saveToDatabase(group + "." + artifact,
                                     version,
                                     null,
                                     metrics,
