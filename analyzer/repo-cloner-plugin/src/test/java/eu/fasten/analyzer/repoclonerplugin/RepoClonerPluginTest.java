@@ -65,6 +65,8 @@ public class RepoClonerPluginTest {
                 "\t\t\"artifactId\": \"fasten\",\n" +
                 "\t\t\"groupId\": \"fasten-project\",\n" +
                 "\t\t\"version\": \"1\",\n" +
+                "\t\t\"commitTag\": \"123\",\n" +
+                "\t\t\"sourcesUrl\": \"someURL\",\n" +
                 "\t\t\"repoUrl\": \"https://github.com/fasten-project/fasten.git\"\n" +
                 "\t}\n" +
                 "}");
@@ -74,29 +76,9 @@ public class RepoClonerPluginTest {
                 "\t\"artifactId\": \"fasten\",\n" +
                 "\t\"groupId\": \"fasten-project\",\n" +
                 "\t\"version\": \"1\",\n" +
-                "\t\"repoPath\": \"" + repoPath + "\"\n" +
-                "}").toString();
-        var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
-        assertEquals(expected, actual);
-        assertTrue(new File(repoPath).exists());
-        assertTrue(new File(repoPath).isDirectory());
-    }
-
-    @Test
-    public void consumeWithoutVersionTest() {
-        var json = new JSONObject("{\n" +
-                "\t\"payload\": {\n" +
-                "\t\t\"artifactId\": \"fasten\",\n" +
-                "\t\t\"groupId\": \"fasten-project\",\n" +
-                "\t\t\"repoUrl\": \"https://github.com/fasten-project/fasten.git\"\n" +
-                "\t}\n" +
-                "}");
-        repoCloner.consume(json.toString());
-        var repoPath = Paths.get(baseDir, "f", "fasten-project", "fasten").toAbsolutePath().toString();
-        var expected = new JSONObject("{\n" +
-                "\t\"artifactId\": \"fasten\",\n" +
-                "\t\"groupId\": \"fasten-project\",\n" +
-                "\t\"repoPath\": \"" + repoPath + "\"\n" +
+                "\t\"repoPath\": \"" + repoPath + "\",\n" +
+                "\t\"commitTag\": \"123\",\n" +
+                "\t\"sourcesUrl\": \"someURL\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
         assertEquals(expected, actual);
@@ -117,33 +99,13 @@ public class RepoClonerPluginTest {
         var expected = new JSONObject("{\n" +
                 "\t\"artifactId\": \"fasten\",\n" +
                 "\t\"groupId\": \"fasten-project\",\n" +
-                "\t\"version\": \"1\"\n" +
+                "\t\"version\": \"1\",\n" +
+                "\t\"repoPath\": \"\",\n" +
+                "\t\"commitTag\": \"\",\n" +
+                "\t\"sourcesUrl\": \"\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
         assertEquals(expected, actual);
-    }
-
-    @Test
-    public void consumeOnlyCoordinateWithoutVersionTest() {
-        var json = new JSONObject("{\n" +
-                "\t\"payload\": {\n" +
-                "\t\t\"artifactId\": \"fasten\",\n" +
-                "\t\t\"groupId\": \"fasten-project\",\n" +
-                "\t}\n" +
-                "}");
-        repoCloner.consume(json.toString());
-        var expected = new JSONObject("{\n" +
-                "\t\"artifactId\": \"fasten\",\n" +
-                "\t\"groupId\": \"fasten-project\",\n" +
-                "}").toString();
-        var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    public void produceWithoutConsumeTest() {
-        var optionalResult = repoCloner.produce();
-        assertTrue(optionalResult.isEmpty());
     }
 
     @Test
@@ -152,8 +114,8 @@ public class RepoClonerPluginTest {
         var hgCloner = Mockito.mock(HgCloner.class);
         var svnCloner = Mockito.mock(SvnCloner.class);
         Mockito.when(hgCloner.cloneRepo("https://testurl.com", "name", "owner")).thenReturn("test/path");
-        repoCloner.cloneRepo("https://testurl.com", "name", "owner", gitCloner, hgCloner, svnCloner);
-        assertEquals("test/path", repoCloner.getRepoPath());
+        var path = repoCloner.cloneRepo("https://testurl.com", "name", "owner", gitCloner, hgCloner, svnCloner);
+        assertEquals("test/path", path);
     }
 
     @Test
@@ -162,8 +124,8 @@ public class RepoClonerPluginTest {
         var hgCloner = Mockito.mock(HgCloner.class);
         var svnCloner = Mockito.mock(SvnCloner.class);
         Mockito.when(gitCloner.cloneRepo(Mockito.anyString(), Mockito.eq("name"), Mockito.eq("owner"))).thenReturn("test/path");
-        repoCloner.cloneRepo("https://testurl.com/repo.git", "name", "owner", gitCloner, hgCloner, svnCloner);
-        assertEquals("test/path", repoCloner.getRepoPath());
+        var path = repoCloner.cloneRepo("https://testurl.com/repo.git", "name", "owner", gitCloner, hgCloner, svnCloner);
+        assertEquals("test/path", path);
     }
 
     @Test
@@ -172,8 +134,8 @@ public class RepoClonerPluginTest {
         var hgCloner = Mockito.mock(HgCloner.class);
         var svnCloner = Mockito.mock(SvnCloner.class);
         Mockito.when(svnCloner.cloneRepo(Mockito.anyString(), Mockito.eq("name"), Mockito.eq("owner"))).thenReturn("test/path");
-        repoCloner.cloneRepo("svn://testurl.com/repo", "name", "owner", gitCloner, hgCloner, svnCloner);
-        assertEquals("test/path", repoCloner.getRepoPath());
+        var path = repoCloner.cloneRepo("svn://testurl.com/repo", "name", "owner", gitCloner, hgCloner, svnCloner);
+        assertEquals("test/path", path);
     }
 
     @Test

@@ -21,18 +21,6 @@ public class HgCloner {
 
     public String cloneRepo(String repoUrl, String repoName, String repoOwner)
             throws MalformedURLException, HgException, CancelledException {
-//        var urlParts = repoUrl.split("/");
-//        if (urlParts[urlParts.length - 1].contains("?at=")) {
-//            urlParts = Arrays.stream(urlParts)
-//                    .filter(x -> !x.contains("?at=")).toArray(String[]::new);
-//            repoUrl = String.join("/", urlParts);
-//        }
-//        if (repoUrl.endsWith("/")) {
-//            repoUrl = repoUrl.substring(0, repoUrl.length() - 1);
-//        }
-//        if (repoUrl.endsWith("/src")) {
-//            repoUrl = repoUrl.substring(0, repoUrl.length() - 4);
-//        }
         var dirHierarchy = new DirectoryHierarchyBuilder(baseDir);
         var dir = dirHierarchy.getDirectoryFromHierarchy(repoOwner, repoName);
         var hgRepo = new HgRepoFacade();
