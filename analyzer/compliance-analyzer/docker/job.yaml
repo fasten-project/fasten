@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: job-qmstr-java-plugin
+  name: qmstr
 spec:
   backoffLimit: 1
   template:
