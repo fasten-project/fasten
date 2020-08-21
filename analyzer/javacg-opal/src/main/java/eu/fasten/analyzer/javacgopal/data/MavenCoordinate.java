@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -82,9 +83,9 @@ public class MavenCoordinate {
      */
     public MavenCoordinate(final String groupID, final String artifactID, final String version,
                            final String packaging) {
-        var repoHost = System.getenv("MVN_REPO") != null
-                ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
-        this.mavenRepos = new ArrayList<>(Collections.singletonList(repoHost));
+        this.mavenRepos = System.getenv("MVN_REPO") != null
+                ? Arrays.asList(System.getenv("MVN_REPO").split(";"))
+                : Collections.singletonList("https://repo.maven.apache.org/maven2/");
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
@@ -97,9 +98,9 @@ public class MavenCoordinate {
      * @param kafkaConsumedJson json representation of Meven coordinate
      */
     public MavenCoordinate(final JSONObject kafkaConsumedJson) throws JSONException {
-        var repoHost = System.getenv("MVN_REPO") != null
-                ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
-        this.mavenRepos = new ArrayList<>(Collections.singletonList(repoHost));
+        this.mavenRepos = System.getenv("MVN_REPO") != null
+                ? Arrays.asList(System.getenv("MVN_REPO").split(";"))
+                : Collections.singletonList("https://repo.maven.apache.org/maven2/");
         this.groupID = kafkaConsumedJson.getString("groupId");
         this.artifactID = kafkaConsumedJson.getString("artifactId");
         this.versionConstraint = kafkaConsumedJson.getString("version");
@@ -173,7 +174,7 @@ public class MavenCoordinate {
                         jar = httpGetFile(mavenCoordinate
                                 .toProductUrl(repos.get(i), mavenCoordinate.getPackaging()));
                     }
-                } catch (FileNotFoundException | MalformedURLException e) {
+                } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
                     found = false;
                     logger.error("Could not find URL: {}", e.getMessage());
                 }
@@ -189,7 +190,7 @@ public class MavenCoordinate {
                     try {
                         found = true;
                         jar = httpGetFile(mavenCoordinate.toProductUrl(repos.get(i), s));
-                    } catch (FileNotFoundException | MalformedURLException e) {
+                    } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
                         found = false;
                         logger.error("Could not find URL: {}", e.getMessage());
                     }
@@ -213,7 +214,7 @@ public class MavenCoordinate {
          * Utility function that stores the contents of GET request to a temporary file.
          */
         private static Optional<File> httpGetFile(final String url) throws FileNotFoundException,
-                MalformedURLException {
+                MalformedURLException, UnknownHostException {
             try {
                 logger.debug("HTTP GET: " + url);
 
@@ -225,7 +226,7 @@ public class MavenCoordinate {
                 in.close();
 
                 return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-            } catch (FileNotFoundException | MalformedURLException e) {
+            } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
                 logger.error("Couldn't find an artifact: {}", url);
                 throw e;
             } catch (IOException e) {
