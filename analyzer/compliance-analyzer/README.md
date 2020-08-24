@@ -11,7 +11,7 @@
 </p>
 <br/>
 
-<!-- TODO Introduction: The FASTEN TODO Plugin is a ... -->
+The FASTEN QMSTR plugin is a tool to integrate the [QMSTR](https://github.com/qmstr/qmstr) license and compliance analysis process into FASTEN.
 
 ## Arguments
 <!-- TODO - `-h` `--help` Show this help message and exit. -->
