@@ -31,12 +31,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -49,7 +44,7 @@ import org.slf4j.LoggerFactory;
 
 public class DataExtractor {
 
-    private List<String> mavenRepos;
+    private final List<String> mavenRepos;
     private static final Logger logger = LoggerFactory.getLogger(DataExtractor.class);
 
     private String mavenCoordinate = null;
@@ -57,9 +52,13 @@ public class DataExtractor {
     private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
 
     public DataExtractor() {
-        var repoHost = System.getenv("MVN_REPO") != null
-                ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
-        this.mavenRepos = Collections.singletonList(repoHost);
+        this.mavenRepos = System.getenv("MVN_REPO") != null
+                ? Arrays.asList(System.getenv("MVN_REPO").split(";"))
+                : Collections.singletonList("https://repo.maven.apache.org/maven2/");
+    }
+
+    public DataExtractor(List<String> mavenRepos) {
+        this.mavenRepos = mavenRepos;
     }
 
     /**
@@ -71,8 +70,17 @@ public class DataExtractor {
      * @return Link to Maven sources jar file
      */
     public String generateMavenSourcesLink(String groupId, String artifactId, String version) {
-        return this.mavenRepos.get(0) + groupId.replace('.', '/') + "/" + artifactId + "/"
-                + version + "/" + artifactId + "-" + version + "-sources.jar";
+        for (var repo : this.mavenRepos) {
+            var url = repo + groupId.replace('.', '/') + "/" + artifactId + "/"
+                    + version + "/" + artifactId + "-" + version + "-sources.jar";
+            var file = httpGetToFile(url);
+            if (file.isPresent()) {
+                if (file.get().exists()) {
+                    return url;
+                }
+            }
+        }
+        return "";
     }
 
     /**
@@ -511,9 +519,8 @@ public class DataExtractor {
         return dependencies;
     }
 
-    private Optional<String> downloadPom(String artifactId, String groupId, String version)
-            throws FileNotFoundException {
-        for (var repo : this.getMavenRepos()) {
+    private Optional<String> downloadPom(String artifactId, String groupId, String version) {
+        for (var repo : this.mavenRepos) {
             var pomUrl = this.getPomUrl(artifactId, groupId, version, repo);
             var pom = httpGetToFile(pomUrl).flatMap(DataExtractor::fileToString);
             if (pom.isPresent()) {
@@ -525,14 +532,6 @@ public class DataExtractor {
         return Optional.empty();
     }
 
-    public List<String> getMavenRepos() {
-        return mavenRepos;
-    }
-
-    public void setMavenRepos(List<String> mavenRepos) {
-        this.mavenRepos = mavenRepos;
-    }
-
     private String getPomUrl(String artifactId, String groupId, String version, String repo) {
         return repo + groupId.replace('.', '/') + "/" + artifactId + "/" + version
                 + "/" + artifactId + "-" + version + ".pom";
@@ -541,7 +540,7 @@ public class DataExtractor {
     /**
      * Utility function that stores the contents of GET request to a temporary file.
      */
-    private static Optional<File> httpGetToFile(String url) throws FileNotFoundException {
+    private static Optional<File> httpGetToFile(String url) {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
@@ -549,11 +548,8 @@ public class DataExtractor {
             Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
             in.close();
             return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-        } catch (FileNotFoundException e) {
-            logger.error("Could not find URL: " + url);
-            throw e;
         } catch (Exception e) {
-            logger.error("Error retrieving URL: " + url);
+            logger.error("Error getting file from URL: " + url);
             return Optional.empty();
         }
     }

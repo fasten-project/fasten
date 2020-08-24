@@ -18,16 +18,19 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom;
 
+import eu.fasten.analyzer.pomanalyzer.pom.data.Dependency;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
+import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyManagement;
 import org.dom4j.DocumentException;
 import org.dom4j.io.SAXReader;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DataExtractorTest {
 
@@ -295,6 +298,24 @@ public class DataExtractorTest {
         assertEquals(expectedSourcesUrl, actualSourcesUrl);
         assertEquals(expectedPackagingType, actualPackagingType);
         assertEquals(expectedProjectName, actualProjectName);
+    }
+
+    @Test
+    public void sourcesJarTest() {
+        this.dataExtractor = new DataExtractor(List.of("google.com/", "https://repo.maven.apache.org/maven2/"));
+        var expectedSourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
+        var actualSourcesUrl = dataExtractor.generateMavenSourcesLink("junit", "junit", "4.12");
+        assertEquals(expectedSourcesUrl, actualSourcesUrl);
+    }
+
+    @Test
+    public void multipleReposTest() {
+        this.dataExtractor = new DataExtractor(List.of("https://repo.maven.apache.org/maven2/"));
+        var result = this.dataExtractor.extractDependencyData("org.tmatesoft.hg4j", "hg4j", "1.1.0-RELEASE");
+        assertEquals(new DependencyData(new DependencyManagement(new ArrayList<>()), new ArrayList<>()), result);
+        this.dataExtractor = new DataExtractor(List.of("https://repo.maven.apache.org/maven2/", "https://maven.tmatesoft.com/content/repositories/releases/"));
+        result = this.dataExtractor.extractDependencyData("org.tmatesoft.hg4j", "hg4j", "1.1.0-RELEASE");
+        assertEquals(new DependencyData(new DependencyManagement(new ArrayList<>()), List.of(new Dependency("junit", "junit", "4.8.2", new ArrayList<>(), "test", false, "", ""))), result);
     }
 
     @Test
