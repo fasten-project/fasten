@@ -56,12 +56,52 @@
     </p> -->
 
 1. You should now be able to query the database
-    <!-- TODO -->
-    <!-- ```graphql
+    ```graphql
     {
-        ...
+        # *.class files
+        PackageNode(func: has(packageNodeType)) {
+            uid 
+            name
+            version
+            buildConfig
+            timestamp
+            packageNodeType
+            targets { # a.k.a. "target FileNodes"
+                uid
+                path
+                name
+                timestamp
+                fileNodeType
+            }
+        }
+
+        # FileNodes of compiled outer and inner [anonymous] classes
+        FileNode(func: has(fileNodeType)) {
+            uid
+            fileNodeType
+            path
+            name
+            timestamp
+            fileData { # points to "target FileNodes"
+                uid
+                fileDataNodeType
+                hash
+            }
+            derivedFrom { # *.java files
+                uid
+                fileNodeType
+                path
+                name
+                timestamp
+                fileData { # outer FileData nodes
+                    uid
+                    fileDataNodeType
+                    hash
+                }
+            }
+        }
     }
-    ``` -->
+    ```
 
 ## Join the community
 
