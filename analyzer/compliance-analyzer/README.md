@@ -50,10 +50,6 @@
     </p>
 
 1. Navigate to the "Console" page
-    <!-- TODO -->
-    <!-- <p align="center">
-        <img src="doc/img/dgraph_console.png" alt="DGraph console page"/>
-    </p> -->
 
 1. You should now be able to query the database
     ```graphql
