@@ -37,12 +37,8 @@ import org.opalj.tac.cg.CHACallGraphKey$;
 import org.opalj.tac.cg.CallGraph;
 import org.opalj.tac.cg.RTACallGraphKey$;
 import org.opalj.tac.cg.TypeBasedPointsToCallGraphKey$;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CallGraphConstructor {
-
-    private static final Logger logger = LoggerFactory.getLogger(CallGraphConstructor.class);
 
     private final Project<URL> project;
     private final CallGraph callGraph;
@@ -57,8 +53,6 @@ public class CallGraphConstructor {
     public CallGraphConstructor(final File file, final String mainClass, final String algorithm)
             throws OPALException {
         try {
-
-            logger.debug("Free heap before generating a call graph with Opal: {}", Runtime.getRuntime().freeMemory());
             OPALLogger.updateLogger(GlobalLogContext$.MODULE$,
                     new ConsoleOPALLogger(false, Fatal$.MODULE$));
 

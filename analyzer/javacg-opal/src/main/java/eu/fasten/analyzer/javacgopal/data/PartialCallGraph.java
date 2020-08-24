@@ -63,13 +63,10 @@ public class PartialCallGraph {
 
         try {
             logger.info("Creating internal CHA");
-            logger.debug("Free heap before creating internal CHA: {}", Runtime.getRuntime().freeMemory());
             final var cha = createInternalCHA(constructor.getProject());
 
             logger.info("Creating graph with external CHA");
-            logger.debug("Free heap before creating external CHA: {}", Runtime.getRuntime().freeMemory());
             createGraphWithExternalCHA(constructor.getCallGraph(), cha);
-            logger.debug("Free heap after coordinate processing: {}", Runtime.getRuntime().freeMemory());
 
             this.nodeCount = cha.getNodeCount();
             this.classHierarchy = cha.asURIHierarchy(constructor.getProject().classHierarchy());
@@ -114,7 +111,7 @@ public class PartialCallGraph {
             final MavenCoordinate coordinate, final String mainClass,
             final String algorithm, final long timestamp)
             throws FileNotFoundException, OPALException {
-        final var file = new MavenCoordinate.MavenResolver().downloadJar(coordinate);
+        final var file = new MavenCoordinate.MavenResolver().downloadArtifact(coordinate);
 
         logger.info("OPAL is analysing the artifact");
         final var opalCG = new CallGraphConstructor(file, mainClass, algorithm);
