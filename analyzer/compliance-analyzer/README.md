@@ -11,7 +11,8 @@
 </p>
 <br/>
 
-The FASTEN QMSTR plugin is a tool to integrate the [QMSTR](https://github.com/qmstr/qmstr) license and compliance analysis process into FASTEN.
+The FASTEN QMSTR plugin is a tool to integrate the [QMSTR](https://github.com/qmstr/qmstr) license and compliance analysis process into FASTEN.\
+This integration is part of the WP4 and it's being developed by [Endocode AG](https://endocode.com).
 
 ## Arguments
 <!-- TODO - `-h` `--help` Show this help message and exit. -->
