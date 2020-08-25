@@ -551,8 +551,6 @@ public class DataExtractor {
                 pom = httpGetToFile(pomUrl).flatMap(DataExtractor::fileToString);
             } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
                 continue;
-            } catch (IOException e) {
-                throw new RuntimeException("Error downloading file: " + e.getMessage());
             }
             if (pom.isPresent()) {
                 this.mavenCoordinate = groupId + ":" + artifactId + ":" + version;
@@ -571,7 +569,8 @@ public class DataExtractor {
     /**
      * Utility function that stores the contents of GET request to a temporary file.
      */
-    private static Optional<File> httpGetToFile(String url) throws IOException {
+    private static Optional<File> httpGetToFile(String url)
+            throws FileNotFoundException, UnknownHostException, MalformedURLException {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
@@ -584,7 +583,7 @@ public class DataExtractor {
             throw e;
         } catch (IOException e) {
             logger.error("Error getting file from URL: " + url, e);
-            throw e;
+            return Optional.empty();
         }
     }
 
