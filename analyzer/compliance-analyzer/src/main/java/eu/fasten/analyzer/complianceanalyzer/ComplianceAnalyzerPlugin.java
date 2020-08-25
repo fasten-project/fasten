@@ -1,5 +1,8 @@
 package eu.fasten.analyzer.complianceanalyzer;
 
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1ConfigMap;
+import io.kubernetes.client.openapi.models.V1Service;
 import org.pf4j.PluginWrapper;
 import org.pf4j.Plugin;
 import org.slf4j.Logger;
@@ -35,6 +38,16 @@ import io.kubernetes.client.util.Config;
  *   license compatibility and compliance.
  */
 public class ComplianceAnalyzerPlugin extends Plugin {
+
+    /**
+     * Kubernetes namespace where our demo objects are going to be deployed in.
+     */
+    protected static final String K8S_NAMESPACE = "default";
+
+    /**
+     * How will the patched Job file be called.
+     */
+    private static final String PATCHED_JOB_FILE_NAME = "patchedJob.yaml";
 
     public ComplianceAnalyzerPlugin(PluginWrapper wrapper) {
         super(wrapper);
@@ -139,8 +152,7 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 // project's info
                 String input1 = " -e s#java-plugin#java-plugin-" + artifactID + "#";
                 String input2 = " -e s#url#" + repoUrl + "#";
-                String input3 = " -e s#project#" + artifactID + "#";
-                String command = "sed" + input1 + input2 + input3 + " docker/job.yaml";
+                String command = "sed" + input1 + input2 + " docker/job.yaml";
 
                 Process p = Runtime.getRuntime().exec(command);
 
@@ -148,11 +160,11 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
                 String s = null;
 
-                File f = new File("newjob.yaml");
+                File f = new File(PATCHED_JOB_FILE_NAME);
                 FileWriter fr = new FileWriter(f);
                 BufferedWriter br  = new BufferedWriter(fr);
 
-                // write the sed ouput in newjob.yaml
+                // write the sed ouput
                 while ((s = stdInput.readLine()) != null) {
                     br.write(s);
                     br.newLine();
@@ -173,26 +185,36 @@ public class ComplianceAnalyzerPlugin extends Plugin {
 
         public void ApplyK8sJob() {
             try {
+                // Deploy ConfigMap
+                V1ConfigMap configMap = Yaml.loadAs(new File("docker/master-config.yaml"), V1ConfigMap.class);
+                V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap(K8S_NAMESPACE, configMap, null, null, null);
+                System.out.println("Deployed ConfigMap: " + deployedConfigMap);
+
+                // Deploy Service
+                V1Service service = Yaml.loadAs(new File("docker/service.yaml"), V1Service.class);
+                V1Service deployedService = new CoreV1Api().createNamespacedService(K8S_NAMESPACE, service, null, null, null);
+                System.out.println("Deployed Service: " + deployedService);
+
                 // Define and apply a qmstr kubernetes job
                 Yaml.addModelMap("v1", "Job", V1Job.class);
 
-                File file = new File("./newjob.yaml");
+                File file = new File(PATCHED_JOB_FILE_NAME);
                 V1Job yamlJob = (V1Job) Yaml.load(file);
                 logger.info("Job definition: " + yamlJob);
                 BatchV1Api api = new BatchV1Api();
 
-                V1Job result = api.createNamespacedJob("default", yamlJob, null, null, null);
+                V1Job result = api.createNamespacedJob(K8S_NAMESPACE, yamlJob, null, null, null);
                 System.out.println(result);
 
                 // delete job
                 /*
                 V1Status deleteResult = api.deleteNamespacedJob(yamlJob.getMetadata().getName(),
-                "default", null, null, null, null, null, new V1DeleteOptions());
+                KUBERNETES_NAMESPACE, null, null, null, null, null, new V1DeleteOptions());
                 logger.info(deleteResult);
                 s*/
             } catch (IOException ex) {
                 logger.info(ex.toString());
-                logger.info("Could not find file: newjob.yaml");
+                logger.info("Could not find file: " + PATCHED_JOB_FILE_NAME);
             } catch (ApiException ex) {
                 logger.error("Status code: " + ex.getCode());
                 logger.error("Reason: " + ex.getResponseBody());
