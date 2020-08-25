@@ -28,10 +28,17 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.net.UnknownHostException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -49,7 +56,7 @@ import org.slf4j.LoggerFactory;
 
 public class DataExtractor {
 
-    private List<String> mavenRepos;
+    private final List<String> mavenRepos;
     private static final Logger logger = LoggerFactory.getLogger(DataExtractor.class);
 
     private String mavenCoordinate = null;
@@ -57,9 +64,13 @@ public class DataExtractor {
     private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
 
     public DataExtractor() {
-        var repoHost = System.getenv("MVN_REPO") != null
-                ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
-        this.mavenRepos = Collections.singletonList(repoHost);
+        this.mavenRepos = System.getenv("MVN_REPO") != null
+                ? Arrays.asList(System.getenv("MVN_REPO").split(";"))
+                : Collections.singletonList("https://repo.maven.apache.org/maven2/");
+    }
+
+    public DataExtractor(List<String> mavenRepos) {
+        this.mavenRepos = mavenRepos;
     }
 
     /**
@@ -71,8 +82,29 @@ public class DataExtractor {
      * @return Link to Maven sources jar file
      */
     public String generateMavenSourcesLink(String groupId, String artifactId, String version) {
-        return this.mavenRepos.get(0) + groupId.replace('.', '/') + "/" + artifactId + "/"
-                + version + "/" + artifactId + "-" + version + "-sources.jar";
+        for (var repo : this.mavenRepos) {
+            var url = repo + groupId.replace('.', '/') + "/" + artifactId + "/"
+                    + version + "/" + artifactId + "-" + version + "-sources.jar";
+            try {
+                int status = sendGetRequest(url);
+                if (status == 200) {
+                    return url;
+                } else if (status != 404) {
+                    break;
+                }
+            } catch (IOException | InterruptedException e) {
+                logger.error("Error sending GET request to " + url, e);
+                break;
+            }
+        }
+        return "";
+    }
+
+    private int sendGetRequest(String url) throws IOException, InterruptedException {
+        var httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
+        var request = HttpRequest.newBuilder().GET().uri(URI.create(url)).build();
+        var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.statusCode();
     }
 
     /**
@@ -511,11 +543,15 @@ public class DataExtractor {
         return dependencies;
     }
 
-    private Optional<String> downloadPom(String artifactId, String groupId, String version)
-            throws FileNotFoundException {
-        for (var repo : this.getMavenRepos()) {
+    private Optional<String> downloadPom(String artifactId, String groupId, String version) {
+        for (var repo : this.mavenRepos) {
             var pomUrl = this.getPomUrl(artifactId, groupId, version, repo);
-            var pom = httpGetToFile(pomUrl).flatMap(DataExtractor::fileToString);
+            Optional<String> pom;
+            try {
+                pom = httpGetToFile(pomUrl).flatMap(DataExtractor::fileToString);
+            } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+                continue;
+            }
             if (pom.isPresent()) {
                 this.mavenCoordinate = groupId + ":" + artifactId + ":" + version;
                 this.pomContents = pom.get();
@@ -523,14 +559,6 @@ public class DataExtractor {
             }
         }
         return Optional.empty();
-    }
-
-    public List<String> getMavenRepos() {
-        return mavenRepos;
-    }
-
-    public void setMavenRepos(List<String> mavenRepos) {
-        this.mavenRepos = mavenRepos;
     }
 
     private String getPomUrl(String artifactId, String groupId, String version, String repo) {
@@ -541,7 +569,8 @@ public class DataExtractor {
     /**
      * Utility function that stores the contents of GET request to a temporary file.
      */
-    private static Optional<File> httpGetToFile(String url) throws FileNotFoundException {
+    private static Optional<File> httpGetToFile(String url)
+            throws FileNotFoundException, UnknownHostException, MalformedURLException {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
@@ -549,11 +578,11 @@ public class DataExtractor {
             Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
             in.close();
             return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-        } catch (FileNotFoundException e) {
-            logger.error("Could not find URL: " + url);
+        } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
+            logger.error("Could not find URL: {}", e.getMessage(), e);
             throw e;
-        } catch (Exception e) {
-            logger.error("Error retrieving URL: " + url);
+        } catch (IOException e) {
+            logger.error("Error getting file from URL: " + url, e);
             return Optional.empty();
         }
     }
@@ -572,7 +601,6 @@ public class DataExtractor {
             }
             fr.close();
             return Optional.of(result.toString());
-
         } catch (IOException e) {
             logger.error("Cannot read from file: " + f.toString(), e);
             return Optional.empty();

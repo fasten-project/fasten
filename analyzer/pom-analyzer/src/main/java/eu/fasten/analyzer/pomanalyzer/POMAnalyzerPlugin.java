@@ -108,18 +108,24 @@ public class POMAnalyzerPlugin extends Plugin {
             date = payload.optLong("date", -1L);
             final var product = group + ":" + artifact + ":" + version;
             var dataExtractor = new DataExtractor();
-            repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
-            logger.info("Extracted repository URL " + repoUrl + " from " + product);
-            dependencyData = dataExtractor.extractDependencyData(group, artifact, version);
-            logger.info("Extracted dependency information from " + product);
-            commitTag = dataExtractor.extractCommitTag(group, artifact, version);
-            logger.info("Extracted commit tag from " + product);
-            sourcesUrl = dataExtractor.generateMavenSourcesLink(group, artifact, version);
-            logger.info("Generated link to Maven sources for " + product);
-            packagingType = dataExtractor.extractPackagingType(group, artifact, version);
-            logger.info("Extracted packaging type from " + product);
-            projectName = dataExtractor.extractProjectName(group, artifact, version);
-            logger.info("Extracted project name from " + product);
+            try {
+                repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
+                logger.info("Extracted repository URL " + repoUrl + " from " + product);
+                dependencyData = dataExtractor.extractDependencyData(group, artifact, version);
+                logger.info("Extracted dependency information from " + product);
+                commitTag = dataExtractor.extractCommitTag(group, artifact, version);
+                logger.info("Extracted commit tag from " + product);
+                sourcesUrl = dataExtractor.generateMavenSourcesLink(group, artifact, version);
+                logger.info("Generated link to Maven sources for " + product);
+                packagingType = dataExtractor.extractPackagingType(group, artifact, version);
+                logger.info("Extracted packaging type from " + product);
+                projectName = dataExtractor.extractProjectName(group, artifact, version);
+                logger.info("Extracted project name from " + product);
+            } catch (RuntimeException e) {
+                logger.error("Error extracting data for " + product, e);
+                this.pluginError = e;
+                return;
+            }
             int transactionRestartCount = 0;
             do {
                 try {
@@ -231,7 +237,7 @@ public class POMAnalyzerPlugin extends Plugin {
 
         @Override
         public String version() {
-            return "0.1.0";
+            return "0.1.1";
         }
 
         @Override
