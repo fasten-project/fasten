@@ -147,6 +147,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     + artifactId + File.separator + product + ".json";
             int transactionRestartCount = 0;
             do {
+                setPluginError(null);
                 try {
                     var metadataDao = new MetadataDao(dslContext);
                     dslContext.transaction(transaction -> {
@@ -233,6 +234,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
             int transactionRestartCount = 0;
             do {
+                setPluginError(null);
                 try {
                     var metadataDao = new MetadataDao(dslContext);
                     dslContext.transaction(transaction -> {
@@ -540,7 +542,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public String version() {
-            return "0.0.1";
+            return "0.1.0";
         }
 
         @Override
