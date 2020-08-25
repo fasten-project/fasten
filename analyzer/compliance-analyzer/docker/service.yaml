@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dgraph
+  labels:
+    app: qmstr
+spec:
+  type: ClusterIP
+  selector:
+    app: qmstr
+  ports:
+    - name: http-alpha
+      port: 8080
+      targetPort: 8080
+    - name: http-ratel
+      port: 8000
+      targetPort: 8000
