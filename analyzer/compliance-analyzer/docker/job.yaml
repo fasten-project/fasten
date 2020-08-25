@@ -1,35 +1,48 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: job-qmstr-java-plugin
+  name: qmstr
 spec:
   backoffLimit: 1
   template:
+    metadata:
+      labels:
+        app: qmstr
     spec:
       restartPolicy: Never
       containers:
       - name: qmstr-master
-        image: endocodeci/qmstr-master:sha-222c219
-        command: [ "sh", "-c", "/usr/local/bin/qmstr-master" ]
+        image: endocodeci/qmstr-master:sha-4678e1d
+        command: [ "/usr/local/bin/qmstr-master" ]
         args: [ "--config", "/home/qmstr/config/qmstr.yaml"]
         ports:
         - containerPort: 50051
+        env:
+        - name: SERVER_BUILDPATH
+          value: "/var/qmstr/buildroot"
         volumeMounts:
         - name: config-volume
           mountPath: /home/qmstr/config/
         - name: buildroot-volume
-          mountPath: /home/qmstr/buildroot/
+          mountPath: /var/qmstr/buildroot/
       - name: dgraph
         image: dgraph/standalone:latest
       - name: qmstr-client
-        image: endocodeci/qmstr-client-mvn:sha-be8272a
+        image: endocodeci/qmstr-client-mvn:sha-6d95b9e # generic "project" directory
         command: [ "sh", "./entrypoint.sh" ]
+        ports:
+          - containerPort: 8000
+            name: http-ratel
+          - containerPort: 8080
+            name: http-alpha
         env:
         - name: QMSTRADDRENV
           value: "localhost:50051"
+        - name: BUILDROOT
+          value: /var/qmstr/buildroot
         volumeMounts:
-        - name: buildroot-volume
-          mountPath: /home/qmstrclient/buildroot
+          - name: buildroot-volume
+            mountPath: /var/qmstr/buildroot
       initContainers:
       - name: volume-mount-hack
         image: busybox
@@ -38,7 +51,7 @@ spec:
         - name: buildroot-volume
           mountPath: /buildroot
       - name: repo-clone
-        image: endocodeci/git:sha-222c219
+        image: endocodeci/git:sha-4678e1d
         command:
         - "git"
         - "clone"
@@ -49,7 +62,7 @@ spec:
         - name: buildroot-volume
           mountPath: /home/git/buildroot
       - name: pom-patch
-        image: endocodeci/pom-patch:sha-222c219
+        image: endocodeci/pom-patch:sha-4678e1d
         command: ["python", "insert-build-plugin.py", "qmstr-maven-plugin.xml"]
         volumeMounts:
         - name: buildroot-volume
