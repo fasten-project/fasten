@@ -703,9 +703,6 @@ public class MetadataDao {
      */
     public String getAllMetadataForPkg(String forge, String packageName, String version) {
 
-        // TODO: update this to logger.debug
-        System.out.println("DEBUG: forge: "+forge+" / pkg name: "+packageName+" / version:"+version);
-
         Packages p = Packages.PACKAGES.as("p");
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS.as("pv");
         Modules m = Modules.MODULES.as("m");
@@ -744,4 +741,112 @@ public class MetadataDao {
         String result = queryResult.formatJSON();
         return result;
     }
+
+    /**
+     * Reconstructs the dependency network given a product and a timestamp.
+     *
+     * @param forge             Forge of the package
+     * @param packageName       Name of the package
+     * @param timestamp         Timestamp of the package
+     * @return dependencyNet    A set of revisions, along with an adjacency matrix
+     */
+    public String rebuildDependencyNet(String forge, String packageName, int timestamp, boolean transitive) {
+        Result<Record2<Long, String>> result = context
+                .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
+                .from(Packages.PACKAGES).fetch();
+
+        for (Record r : result) {
+            Long id = r.getValue(Packages.PACKAGES.ID);
+            String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
+            System.out.println("id: "+id+"name: "+pkgName);
+        }
+        return ("dummy rebuildDependencyNet query OK!"+result);
+    }
+
+    /**
+     *  Retrieve a call graph for a given a package name and a timestamp.
+     *
+     * @param forge         Forge of the package
+     * @param packageName   Name of the package
+     * @param timestamp     Timestamp of the package
+     * @param transitive    Boolean option to query transitive relationships
+     * @return callGraph    A JSON-serialized RevisionCallGraph
+     */
+    public String getCallGraph(String forge, String packageName, int timestamp, boolean transitive) {
+        Result<Record2<Long, String>> result = context
+                .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
+                .from(Packages.PACKAGES).fetch();
+
+        for (Record r : result) {
+            Long id = r.getValue(Packages.PACKAGES.ID);
+            String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
+            System.out.println("id: "+id+"name: "+pkgName);
+        }
+        return ("dummy getCallGraph query OK!"+result);
+    }
+
+    /**
+     * Gets the vulnerabilities in the transitive closure of a package version
+     *
+     * @param forge             Forge of the package
+     * @param packageName       Name of the package
+     * @param version           Version of the package
+     * @return vulnerabilities  Paths of revisions, paths of files/compilation units, paths of functions
+     */
+    public String getVulnerabilities(String forge, String packageName, String version) {
+        Result<Record2<Long, String>> result = context
+                .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
+                .from(Packages.PACKAGES).fetch();
+
+        for (Record r : result) {
+            Long id = r.getValue(Packages.PACKAGES.ID);
+            String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
+            System.out.println("id: "+id+"name: "+pkgName);
+        }
+        return ("dummy getVulnerabilities query OK!"+result);
+    }
+
+    /**
+     * Impact analysis: the user asks the KB to compute the impact of a semantic change to a function
+     *
+     * @param forge         Forge of the package
+     * @param packageName   Name of the package
+     * @param version       Version of the package
+     * @param transitive    Boolean option to query transitive relationships
+     * @return impact       The full set of functions reachable from the provided function
+     */
+    public String updateImpact(String forge, String packageName, String version, boolean transitive) {
+        Result<Record2<Long, String>> result = context
+                .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
+                .from(Packages.PACKAGES).fetch();
+
+        for (Record r : result) {
+            Long id = r.getValue(Packages.PACKAGES.ID);
+            String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
+            System.out.println("id: "+id+"name: "+pkgName);
+        }
+        return ("dummy updateImpact query OK!"+result);
+    }
+
+    /**
+     * Update the static CG of a package version with new edges
+     *
+     * @param forge         Forge of the package
+     * @param packageName   Name of the package
+     * @param version       Version of the package
+     * @return cgEdges       A list of edges that where added
+     */
+    public String updateCg(String forge, String packageName, String version) {
+        Result<Record2<Long, String>> result = context
+                .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
+                .from(Packages.PACKAGES).fetch();
+
+        for (Record r : result) {
+            Long id = r.getValue(Packages.PACKAGES.ID);
+            String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
+            System.out.println("id: "+id+"name: "+pkgName);
+        }
+        return ("dummy updateCg query OK!"+result);
+    }
+
 }
