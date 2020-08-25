@@ -1,6 +1,6 @@
-<!-- TODO Plugin logo <p align="center">
-    <img src="https://user-images.githubusercontent.com/45048351/89289346-c4c98600-d65f-11ea-8ce6-47267af3ce4b.jpg">
-</p> -->
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/45048351/91091340-1c578200-e65f-11ea-9c5d-597fbbe4ba41.jpg">
+</p>
 <br/>
 <p align="center">
     <a href="https://github.com/fasten-project/fasten/actions" alt="GitHub Workflow Status">
