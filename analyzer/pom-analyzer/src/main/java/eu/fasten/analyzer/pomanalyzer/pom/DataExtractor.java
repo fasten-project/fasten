@@ -28,7 +28,13 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.net.UnknownHostException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -79,14 +85,26 @@ public class DataExtractor {
         for (var repo : this.mavenRepos) {
             var url = repo + groupId.replace('.', '/') + "/" + artifactId + "/"
                     + version + "/" + artifactId + "-" + version + "-sources.jar";
-            var file = httpGetToFile(url);
-            if (file.isPresent()) {
-                if (file.get().exists()) {
+            try {
+                int status = sendGetRequest(url);
+                if (status == 200) {
                     return url;
+                } else if (status != 404) {
+                    break;
                 }
+            } catch (IOException | InterruptedException e) {
+                logger.error("Error sending GET request to " + url, e);
+                break;
             }
         }
         return "";
+    }
+
+    private int sendGetRequest(String url) throws IOException, InterruptedException {
+        var httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
+        var request = HttpRequest.newBuilder().GET().uri(URI.create(url)).build();
+        var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.statusCode();
     }
 
     /**
@@ -528,7 +546,14 @@ public class DataExtractor {
     private Optional<String> downloadPom(String artifactId, String groupId, String version) {
         for (var repo : this.mavenRepos) {
             var pomUrl = this.getPomUrl(artifactId, groupId, version, repo);
-            var pom = httpGetToFile(pomUrl).flatMap(DataExtractor::fileToString);
+            Optional<String> pom;
+            try {
+                pom = httpGetToFile(pomUrl).flatMap(DataExtractor::fileToString);
+            } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+                continue;
+            } catch (IOException e) {
+                throw new RuntimeException("Error downloading file: " + e.getMessage());
+            }
             if (pom.isPresent()) {
                 this.mavenCoordinate = groupId + ":" + artifactId + ":" + version;
                 this.pomContents = pom.get();
@@ -546,7 +571,7 @@ public class DataExtractor {
     /**
      * Utility function that stores the contents of GET request to a temporary file.
      */
-    private static Optional<File> httpGetToFile(String url) {
+    private static Optional<File> httpGetToFile(String url) throws IOException {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
@@ -554,9 +579,12 @@ public class DataExtractor {
             Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
             in.close();
             return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-        } catch (Exception e) {
-            logger.error("Error getting file from URL: " + url);
-            return Optional.empty();
+        } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
+            logger.error("Could not find URL: {}", e.getMessage(), e);
+            throw e;
+        } catch (IOException e) {
+            logger.error("Error getting file from URL: " + url, e);
+            throw e;
         }
     }
 
@@ -574,7 +602,6 @@ public class DataExtractor {
             }
             fr.close();
             return Optional.of(result.toString());
-
         } catch (IOException e) {
             logger.error("Cannot read from file: " + f.toString(), e);
             return Optional.empty();

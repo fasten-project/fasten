@@ -302,7 +302,7 @@ public class DataExtractorTest {
 
     @Test
     public void sourcesJarTest() {
-        this.dataExtractor = new DataExtractor(List.of("google.com/", "https://repo.maven.apache.org/maven2/"));
+        this.dataExtractor = new DataExtractor(List.of("https://google.com/", "https://repo.maven.apache.org/maven2/"));
         var expectedSourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
         var actualSourcesUrl = dataExtractor.generateMavenSourcesLink("junit", "junit", "4.12");
         assertEquals(expectedSourcesUrl, actualSourcesUrl);
