@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
@@ -146,6 +147,36 @@ class PartialCallGraphTest {
     @Test
     void getNodeCount() {
         assertEquals(4, singleCallCG.getNodeCount());
+    }
+
+    @Test
+    void OPALExceptionInConstructorNotFromOpalTest() {
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        var exception = new RuntimeException("some message");
+        exception.setStackTrace(new StackTraceElement[]{new StackTraceElement("some.class", "some method", "some file", 10)});
+        Mockito.when(constructor.getProject()).thenThrow(exception);
+
+        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor));
+    }
+
+    @Test
+    void OPALExceptionInConstructorFromOpalTest() {
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        var exception = Mockito.mock(RuntimeException.class);
+        Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{new StackTraceElement("org.opalj", "some method", "some file", 10)});
+        Mockito.when(constructor.getProject()).thenThrow(exception);
+
+        assertThrows(OPALException.class, () -> new PartialCallGraph(constructor));
+    }
+
+    @Test
+    void OPALExceptionInConstructorEmptyStacktraceTest() {
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        var exception = Mockito.mock(RuntimeException.class);
+        Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{});
+        Mockito.when(constructor.getProject()).thenThrow(exception);
+
+        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor));
     }
 
     @Test
