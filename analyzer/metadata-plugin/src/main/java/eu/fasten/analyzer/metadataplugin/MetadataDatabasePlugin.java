@@ -470,12 +470,13 @@ public class MetadataDatabasePlugin extends Plugin {
                             null, JSONB.valueOf(callableMetadata.toString())));
                 }
             }
-            final int batchSize = 4096;
+            final int edgesBatchSize = 4096;
+            final int callablesBatchSize = 512;
             var callablesIds = new LongArrayList(callables.size());
             final var callablesIterator = callables.iterator();
             while (callablesIterator.hasNext()) {
-                var callablesBatch = new ArrayList<CallablesRecord>(batchSize);
-                while (callablesIterator.hasNext() && callablesBatch.size() < batchSize) {
+                var callablesBatch = new ArrayList<CallablesRecord>(callablesBatchSize);
+                while (callablesIterator.hasNext() && callablesBatch.size() < callablesBatchSize) {
                     callablesBatch.add(callablesIterator.next());
                 }
                 var ids = metadataDao.batchInsertCallables(callablesBatch);
@@ -511,8 +512,8 @@ public class MetadataDatabasePlugin extends Plugin {
             }
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(batchSize);
-                while (edgesIterator.hasNext() && edgesBatch.size() < batchSize) {
+                var edgesBatch = new ArrayList<EdgesRecord>(edgesBatchSize);
+                while (edgesIterator.hasNext() && edgesBatch.size() < edgesBatchSize) {
                     edgesBatch.add(edgesIterator.next());
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
