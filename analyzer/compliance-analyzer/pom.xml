@@ -1,54 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
- <project xmlns="http://maven.apache.org/POM/4.0.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-     <parent>
-         <artifactId>analyzer</artifactId>
-         <groupId>eu.fasten</groupId>
-         <version>0.0.1-SNAPSHOT</version>
-     </parent>
-     <modelVersion>4.0.0</modelVersion>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>analyzer</artifactId>
+        <groupId>eu.fasten</groupId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-      <groupId>eu.fasten.analyzer</groupId>
-     <artifactId>compliance-analyzer-plugin</artifactId>
-     <version>0.0.1-SNAPSHOT</version>
-     <packaging>jar</packaging>
+    <groupId>eu.fasten.analyzer</groupId>
+    <artifactId>compliance-analyzer-plugin</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
-      <name>compliance-analyzer-plugin</name>
+    <name>compliance-analyzer-plugin</name>
 
-      <dependencies>
-         <dependency>
+    <dependencies>
+        <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.0.4</version>
-         </dependency>
-         <dependency>
+        </dependency>
+        <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-         </dependency>
-         <dependency>
+        </dependency>
+        <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>server</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <!--<scope>provided</scope>-->
-         </dependency>
-         <!--NB! Uncomment the following 3 dependencies if you want to run Main class-->
+        </dependency>
+    </dependencies>
 
-         <!-- . -->
-     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.5.0</version>
+                <configuration>
+                    <mainClass>eu.fasten.analyzer.complianceanalyzer.Main</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
- <build>
-         <plugins>
-             <plugin>
-                 <groupId>org.codehaus.mojo</groupId>
-                 <artifactId>exec-maven-plugin</artifactId>
-                 <version>1.5.0</version>
-                 <configuration>
-                     <mainClass>eu.fasten.analyzer.complianceanalyzer.Main</mainClass>
-                 </configuration>
-             </plugin>
-         </plugins>
-     </build>
-
-  </project>
+</project>

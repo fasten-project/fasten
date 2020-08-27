@@ -1,5 +1,5 @@
 {
-  "input":{
+  "input": {
     "artifactId": "junit",
     "groupId": "junit",
     "version": "4.12",
@@ -8,8 +8,8 @@
     "repoUrl": "http://github.com/junit-team/junit",
     "commitTag": ""
   },
-  "plugin_version":"0.0.1",
-  "payload":{
+  "plugin_version": "0.0.1",
+  "payload": {
     "artifactId": "junit",
     "groupId": "junit",
     "version": "4.12",
