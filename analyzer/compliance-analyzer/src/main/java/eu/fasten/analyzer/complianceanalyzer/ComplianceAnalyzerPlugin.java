@@ -109,6 +109,7 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 connectToCluster();
             } catch (IOException e) {
                 logger.info("Couldn't find cluster credentials at: " + clusterCredentialsFilePath);
+                setPluginError(e);
             }
 
             // Starting the QMSTR Job
@@ -116,8 +117,10 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 applyK8sJob();
             } catch (IOException ex) {
                 logger.error("Exception while patching the QMSTR Job: " + ex.getMessage());
+                setPluginError(ex);
             } catch (ApiException ex) {
                 logger.error("Exception while deploying a Kubernetes object: " + ex.getMessage());
+                setPluginError(ex);
             }
         }
 
@@ -211,6 +214,10 @@ public class ComplianceAnalyzerPlugin extends Plugin {
         @Override
         public Throwable getPluginError() {
             return this.pluginError;
+        }
+
+        public void setPluginError(Throwable throwable) {
+            this.pluginError = throwable;
         }
 
         @Override
