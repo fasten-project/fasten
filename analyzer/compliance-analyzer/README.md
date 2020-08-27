@@ -15,17 +15,18 @@ The FASTEN QMSTR plugin is a tool to integrate the [QMSTR](https://github.com/qm
 This integration is part of the WP4 and it's being developed by [Endocode AG](https://endocode.com).
 
 ## Arguments
-<!-- TODO - `-h` `--help` Show this help message and exit. -->
-- `-f` `--file` Path to the dummy JSON Kafka topic file containing the repo URL
-<!-- FIXME - `-d` `--database` Database URL -->
-<!-- FIXME - `-u` `--user` Database username -->
+- `-r` `--repo` `--repository`                Path to JSON file containing repository information
+- `-c` `--credentials` `--cluster-credentials`  Path to the Kubernetes cluster credentials file
 
 ## Usage 
 
 #### <!-- TODO ultimate goal -->
 1. Start the plugin:
     ```bash
-    mvn clean install exec:java -Dexec.args="--file dummyKafkaTopic.json"
+    # Example: from the FASTEN root folder
+    mvn clean install exec:java \
+      -f analyzer/compliance-analyzer/pom.xml \
+      -Dexec.args="--repository analyzer/compliance-analyzer/dummyKafkaTopic.json --cluster-credentials path/to/cluster/credentials.json"
     ```
    This demo simulates a Kafka topic consumption by reading the [`dummyKafkaTopic.json` file](dummyKafkaTopic.json).\
    Upon topic consumption, the `compliance-analyzer` launches Quartermaster that will build the specified repository. 
