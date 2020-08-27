@@ -52,7 +52,7 @@ public class Main implements Runnable {
     public void run() {
         var graphPlugin = new GraphDatabasePlugin.GraphDBExtension();
         try {
-            graphPlugin.setRocksDao(new RocksDao(dir));
+            graphPlugin.setRocksDao(new RocksDao(dir, false));
         } catch (RocksDBException e) {
             System.err.println("Could not set RocksDB location");
             return;
