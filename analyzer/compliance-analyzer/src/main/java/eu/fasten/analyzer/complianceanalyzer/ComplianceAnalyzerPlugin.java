@@ -133,14 +133,14 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 File configMapFile = new File(ComplianceAnalyzerPlugin.class.getResource(configMapFilePath).getPath());
                 V1ConfigMap configMap = Yaml.loadAs(configMapFile, V1ConfigMap.class);
                 V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap(K8S_NAMESPACE, configMap, null, null, null);
-                System.out.println("Deployed ConfigMap: " + deployedConfigMap);
+                logger.info("Deployed ConfigMap: " + deployedConfigMap);
 
                 // Deploying the QMSTR Service
                 String serviceFilePath = "/docker/service.yaml";
                 File serviceFile = new File(ComplianceAnalyzerPlugin.class.getResource(serviceFilePath).getPath());
                 V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
                 V1Service deployedService = new CoreV1Api().createNamespacedService(K8S_NAMESPACE, service, null, null, null);
-                System.out.println("Deployed Service: " + deployedService);
+                logger.info("Deployed Service: " + deployedService);
 
                 // Patching the QMSTR Job
                 String jobFilePath = "/docker/job.yaml";
@@ -156,7 +156,7 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 File jobFile = new File(jobFileFullPath);
                 V1Job yamlJob = Yaml.loadAs(jobFile, V1Job.class);
                 V1Job deployedJob = new BatchV1Api().createNamespacedJob(K8S_NAMESPACE, yamlJob, null, null, null);
-                System.out.println("Deployed Job: " + deployedJob);
+                logger.info("Deployed Job: " + deployedJob);
             } catch (IOException ex) {
                 logger.error("Exception while patching the QMSTR Job: " + ex.getMessage());
             } catch (ApiException ex) {
