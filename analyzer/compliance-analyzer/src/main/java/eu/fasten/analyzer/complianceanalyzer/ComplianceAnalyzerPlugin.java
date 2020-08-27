@@ -104,64 +104,66 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 return;
             }
 
-            // Connecting to the Kubernetes cluster to start the Qmstr Job
-            connectToCluster();
-            applyK8sJob();
-        }
-
-        protected void connectToCluster() {
+            // Connecting to the Kubernetes cluster
             try {
-                // If we don't specify credentials when constructing the client, the client library will
-                // look for credentials via the environment variable GOOGLE_APPLICATION_CREDENTIALS.
-                GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(clusterCredentialsFilePath))
-                        .createScoped(Lists.newArrayList("https://www.googleapis.com/auth/cloud-platform"));
-
-                KubeConfig.registerAuthenticator(new ReplacedGCPAuthenticator(credentials));
-
-                ApiClient client = Config.defaultClient();
-                Configuration.setDefaultApiClient(client);
-            } catch (IOException ex) {
-                logger.info(ex.toString());
+                connectToCluster();
+            } catch (IOException e) {
                 logger.info("Couldn't find cluster credentials at: " + clusterCredentialsFilePath);
             }
-        }
 
-        protected void applyK8sJob() {
+            // Starting the QMSTR Job
             try {
-                // Deploying the QMSTR ConfigMap
-                String configMapFilePath = "/docker/master-config.yaml";
-                File configMapFile = new File(ComplianceAnalyzerPlugin.class.getResource(configMapFilePath).getPath());
-                V1ConfigMap configMap = Yaml.loadAs(configMapFile, V1ConfigMap.class);
-                V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap(K8S_NAMESPACE, configMap, null, null, null);
-                logger.info("Deployed ConfigMap: " + deployedConfigMap);
-
-                // Deploying the QMSTR Service
-                String serviceFilePath = "/docker/service.yaml";
-                File serviceFile = new File(ComplianceAnalyzerPlugin.class.getResource(serviceFilePath).getPath());
-                V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
-                V1Service deployedService = new CoreV1Api().createNamespacedService(K8S_NAMESPACE, service, null, null, null);
-                logger.info("Deployed Service: " + deployedService);
-
-                // Patching the QMSTR Job
-                String jobFilePath = "/docker/job.yaml";
-                String jobFileFullPath = ComplianceAnalyzerPlugin.class.getResource(jobFilePath).getPath();
-                Path jobFileSystemPath = Paths.get(jobFileFullPath);
-                Charset jobFileCharset = StandardCharsets.UTF_8;
-                String jobFileContent = Files.readString(jobFileSystemPath, jobFileCharset);
-                jobFileContent = jobFileContent.replaceAll("url", repoUrl);
-                Files.write(jobFileSystemPath, jobFileContent.getBytes(jobFileCharset));
-
-                // Deploying the QMSTR Job
-                Yaml.addModelMap("v1", "Job", V1Job.class);
-                File jobFile = new File(jobFileFullPath);
-                V1Job yamlJob = Yaml.loadAs(jobFile, V1Job.class);
-                V1Job deployedJob = new BatchV1Api().createNamespacedJob(K8S_NAMESPACE, yamlJob, null, null, null);
-                logger.info("Deployed Job: " + deployedJob);
+                applyK8sJob();
             } catch (IOException ex) {
                 logger.error("Exception while patching the QMSTR Job: " + ex.getMessage());
             } catch (ApiException ex) {
                 logger.error("Exception while deploying a Kubernetes object: " + ex.getMessage());
             }
+        }
+
+        protected void connectToCluster() throws IOException {
+            // If we don't specify credentials when constructing the client, the client library will
+            // look for credentials via the environment variable GOOGLE_APPLICATION_CREDENTIALS.
+            GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(clusterCredentialsFilePath))
+                    .createScoped(Lists.newArrayList("https://www.googleapis.com/auth/cloud-platform"));
+
+            KubeConfig.registerAuthenticator(new ReplacedGCPAuthenticator(credentials));
+
+            ApiClient client = Config.defaultClient();
+            Configuration.setDefaultApiClient(client);
+        }
+
+        protected void applyK8sJob() throws ApiException, IOException {
+
+            // Deploying the QMSTR ConfigMap
+            String configMapFilePath = "/docker/master-config.yaml";
+            File configMapFile = new File(ComplianceAnalyzerPlugin.class.getResource(configMapFilePath).getPath());
+            V1ConfigMap configMap = Yaml.loadAs(configMapFile, V1ConfigMap.class);
+            V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap(K8S_NAMESPACE, configMap, null, null, null);
+            logger.info("Deployed ConfigMap: " + deployedConfigMap);
+
+            // Deploying the QMSTR Service
+            String serviceFilePath = "/docker/service.yaml";
+            File serviceFile = new File(ComplianceAnalyzerPlugin.class.getResource(serviceFilePath).getPath());
+            V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
+            V1Service deployedService = new CoreV1Api().createNamespacedService(K8S_NAMESPACE, service, null, null, null);
+            logger.info("Deployed Service: " + deployedService);
+
+            // Patching the QMSTR Job
+            String jobFilePath = "/docker/job.yaml";
+            String jobFileFullPath = ComplianceAnalyzerPlugin.class.getResource(jobFilePath).getPath();
+            Path jobFileSystemPath = Paths.get(jobFileFullPath);
+            Charset jobFileCharset = StandardCharsets.UTF_8;
+            String jobFileContent = Files.readString(jobFileSystemPath, jobFileCharset);
+            jobFileContent = jobFileContent.replaceAll("url", repoUrl);
+            Files.write(jobFileSystemPath, jobFileContent.getBytes(jobFileCharset));
+
+            // Deploying the QMSTR Job
+            Yaml.addModelMap("v1", "Job", V1Job.class);
+            File jobFile = new File(jobFileFullPath);
+            V1Job yamlJob = Yaml.loadAs(jobFile, V1Job.class);
+            V1Job deployedJob = new BatchV1Api().createNamespacedJob(K8S_NAMESPACE, yamlJob, null, null, null);
+            logger.info("Deployed Job: " + deployedJob);
         }
 
         @Override
