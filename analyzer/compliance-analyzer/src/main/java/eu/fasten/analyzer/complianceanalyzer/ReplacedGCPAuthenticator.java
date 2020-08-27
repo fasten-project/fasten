@@ -2,7 +2,6 @@ package eu.fasten.analyzer.complianceanalyzer;
 
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
-import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.authenticators.Authenticator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +12,9 @@ import java.util.Date;
 import java.util.Map;
 
 public class ReplacedGCPAuthenticator implements Authenticator {
+
     private static final Logger log;
+
     private static final String ACCESS_TOKEN = "access-token";
     private static final String EXPIRY = "expiry";
 
