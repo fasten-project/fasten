@@ -172,8 +172,7 @@ public class ComplianceAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            // dump output for now
-            return Optional.of("License Compliance Plugin finished successfully");
+            return Optional.empty();
         }
 
         @Override
