@@ -99,9 +99,10 @@ public class ComplianceAnalyzerPlugin extends Plugin {
             logger.info("Artifact id: " + artifactID);
 
             if (repoUrl == null) {
-                logger.info("No available URL for the specified project.\n");
-                logger.info("Skipping analysis....");
-                return;
+                IllegalArgumentException missingRepoUrlException =
+                        new IllegalArgumentException("Invalid repository information: missing repository URL.");
+                setPluginError(missingRepoUrlException);
+                throw missingRepoUrlException;
             }
 
             // Connecting to the Kubernetes cluster
