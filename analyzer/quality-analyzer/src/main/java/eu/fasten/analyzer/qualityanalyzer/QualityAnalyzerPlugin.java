@@ -38,7 +38,6 @@ public class QualityAnalyzerPlugin extends Plugin {
         private String artifact = null;
         private String group = null;
         private String version = null;
-        private long date = -1L;
         private JSONObject metrics = null;
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
@@ -66,7 +65,6 @@ public class QualityAnalyzerPlugin extends Plugin {
             group  =null;
             artifact = null;
             version = null;
-            date = -1L;
             metrics = null;
             this.processedRecord = false;
             this.restartTransaction = false;
@@ -90,7 +88,6 @@ public class QualityAnalyzerPlugin extends Plugin {
                         try {
                             id = saveToDatabase(group + "." + artifact,
                                     version,
-                                    null,
                                     metrics,
                                     metadataDao);
                         } catch (RuntimeException e) {
@@ -119,12 +116,12 @@ public class QualityAnalyzerPlugin extends Plugin {
                     && transactionRestartCount < transactionRestartLimit);
         }
 
-        public long saveToDatabase(String product, String version, String repoUrl, JSONObject metrics, MetadataDao metadataDao) {
-            final var packageId = metadataDao.insertPackage(product, "mvn", null, repoUrl, null);
+        public long saveToDatabase(String product, String version, JSONObject metrics, MetadataDao metadataDao) {
+            final var packageId = metadataDao.insertPackage(product, "mvn", null, null, null);
             var packageVersionMetadata = new JSONObject();
-            packageVersionMetadata.put("metrics", metrics != null ? metrics : null);
+            packageVersionMetadata.put("metrics", metrics);
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    null, version, null, packageVersionMetadata);
+                    "OPAL", version, null, packageVersionMetadata);
             return packageVersionId;
         }
 
