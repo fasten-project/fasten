@@ -138,7 +138,7 @@ public class MetadataDatabasePluginTest {
                 externalModuleMetadata)).thenReturn(externalModuleId);
         long fileId1 = 3;
         Mockito.when(metadataDao.insertFile(packageVersionId, "", null, null, null)).thenReturn(fileId1);
-        Mockito.when(metadataDao.batchInsertCallables(Mockito.anyList())).thenReturn(List.of(64L, 65L));
+        Mockito.when(metadataDao.insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt())).thenReturn(List.of(64L, 65L));
         long internalModuleId = 17;
         var internalModuleMetadata = new JSONObject("{" +
                 "\"access\": \"public\"," +
