@@ -286,13 +286,15 @@ public class OPALClassHierarchy {
      * @return call site
      */
     public Map<Object, Object> getCallSite(final Method source, final Integer pc) {
-        final var instruction = source.instructionsOption().get()[pc].mnemonic();
-        final var receiverType = OPALMethod.getTypeURI(source.instructionsOption().get()[pc]
+        final var instruction = source.instructionsOption().get()[pc];
+        final var receiverType = instruction == null
+                ? "notFound"
+                : OPALMethod.getTypeURI(source.instructionsOption().get()[pc]
                 .asMethodInvocationInstruction().declaringClass());
 
         var callSite = new HashMap<>();
         callSite.put("line", source.body().get().lineNumber(pc).getOrElse(() -> 404));
-        callSite.put("type", instruction);
+        callSite.put("type", instruction == null ? "notFound" : instruction.mnemonic());
         callSite.put("receiver", receiverType.toString());
 
         return Map.of(pc.toString(), callSite);

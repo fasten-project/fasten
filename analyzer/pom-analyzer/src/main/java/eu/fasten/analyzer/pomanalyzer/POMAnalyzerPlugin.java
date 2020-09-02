@@ -59,6 +59,7 @@ public class POMAnalyzerPlugin extends Plugin {
         private String commitTag = null;
         private String sourcesUrl = null;
         private String packagingType = null;
+        private String projectName = null;
         private boolean restartTransaction = false;
         private final int transactionRestartLimit = 3;
         private boolean processedRecord = false;
@@ -90,6 +91,7 @@ public class POMAnalyzerPlugin extends Plugin {
             commitTag = null;
             sourcesUrl = null;
             packagingType = null;
+            projectName = null;
             this.processedRecord = false;
             this.restartTransaction = false;
             logger.info("Consumed: " + record);
@@ -106,16 +108,24 @@ public class POMAnalyzerPlugin extends Plugin {
             date = payload.optLong("date", -1L);
             final var product = group + ":" + artifact + ":" + version;
             var dataExtractor = new DataExtractor();
-            repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
-            logger.info("Extracted repository URL " + repoUrl + " from " + product);
-            dependencyData = dataExtractor.extractDependencyData(group, artifact, version);
-            logger.info("Extracted dependency information from " + product);
-            commitTag = dataExtractor.extractCommitTag(group, artifact, version);
-            logger.info("Extracted commit tag from " + product);
-            sourcesUrl = dataExtractor.generateMavenSourcesLink(group, artifact, version);
-            logger.info("Generated link to Maven sources for " + product);
-            packagingType = dataExtractor.extractPackagingType(group, artifact, version);
-            logger.info("Extracted packaging type from " + product);
+            try {
+                repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
+                logger.info("Extracted repository URL " + repoUrl + " from " + product);
+                dependencyData = dataExtractor.extractDependencyData(group, artifact, version);
+                logger.info("Extracted dependency information from " + product);
+                commitTag = dataExtractor.extractCommitTag(group, artifact, version);
+                logger.info("Extracted commit tag from " + product);
+                sourcesUrl = dataExtractor.generateMavenSourcesLink(group, artifact, version);
+                logger.info("Generated link to Maven sources for " + product);
+                packagingType = dataExtractor.extractPackagingType(group, artifact, version);
+                logger.info("Extracted packaging type from " + product);
+                projectName = dataExtractor.extractProjectName(group, artifact, version);
+                logger.info("Extracted project name from " + product);
+            } catch (RuntimeException e) {
+                logger.error("Error extracting data for " + product, e);
+                this.pluginError = e;
+                return;
+            }
             int transactionRestartCount = 0;
             do {
                 try {
@@ -124,9 +134,9 @@ public class POMAnalyzerPlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(group + "." + artifact, version, repoUrl,
-                                    commitTag, sourcesUrl, packagingType, dependencyData,
-                                    metadataDao);
+                            id = saveToDatabase(group + ":" + artifact, version, repoUrl,
+                                    commitTag, sourcesUrl, packagingType, projectName,
+                                    dependencyData, metadataDao);
                         } catch (RuntimeException e) {
                             logger.error("Error saving data to the database: '" + product + "'", e);
                             processedRecord = false;
@@ -162,14 +172,15 @@ public class POMAnalyzerPlugin extends Plugin {
          * @param commitTag      Commit tag of the version of the artifact in the repository
          * @param sourcesUrl     Link to Maven sources Jar file
          * @param packagingType  Packaging type of the artifact
+         * @param projectName    Project name to which artifact belongs
          * @param dependencyData Dependency information from POM
          * @param metadataDao    Metadata Database Access Object
          * @return ID of the package version in the database
          */
         public long saveToDatabase(String product, String version, String repoUrl, String commitTag,
-                                   String sourcesUrl, String packagingType,
+                                   String sourcesUrl, String packagingType, String projectName,
                                    DependencyData dependencyData, MetadataDao metadataDao) {
-            final var packageId = metadataDao.insertPackage(product, "mvn", null, repoUrl, null);
+            final var packageId = metadataDao.insertPackage(product, "mvn", projectName, repoUrl, null);
             var packageVersionMetadata = new JSONObject();
             packageVersionMetadata.put("dependencyManagement",
                     (dependencyData.dependencyManagement != null)
@@ -199,6 +210,7 @@ public class POMAnalyzerPlugin extends Plugin {
             json.put("commitTag", (commitTag != null) ? commitTag : "");
             json.put("sourcesUrl", sourcesUrl);
             json.put("packagingType", packagingType);
+            json.put("projectName", (projectName != null) ? projectName : "");
             json.put("dependencyData", dependencyData.toJSON());
             return Optional.of(json.toString());
         }
@@ -225,7 +237,7 @@ public class POMAnalyzerPlugin extends Plugin {
 
         @Override
         public String version() {
-            return "0.0.1";
+            return "0.1.1";
         }
 
         @Override

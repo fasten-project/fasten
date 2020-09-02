@@ -32,7 +32,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.exception.DataAccessException;
@@ -147,6 +154,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     + artifactId + File.separator + product + ".json";
             int transactionRestartCount = 0;
             do {
+                setPluginError(null);
                 try {
                     var metadataDao = new MetadataDao(dslContext);
                     dslContext.transaction(transaction -> {
@@ -233,6 +241,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
             int transactionRestartCount = 0;
             do {
+                setPluginError(null);
                 try {
                     var metadataDao = new MetadataDao(dslContext);
                     dslContext.transaction(transaction -> {
@@ -293,7 +302,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     null, null, null);
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
                     callGraph.getCgGenerator(), callGraph.version, timestamp, null);
-            var depIds = new ArrayList<Long>();
+            var depIds = new LongArrayList();
             var depVersions = new ArrayList<String[]>();
             var depMetadata = new ArrayList<JSONObject>();
             for (var depList : callGraph.depset) {
@@ -343,7 +352,8 @@ public class MetadataDatabasePlugin extends Plugin {
                 internalEdges.add(
                         new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
             }
-            var nodes = new LinkedList<Long>();
+            var nodes = new LongArrayList();
+            var externalNodes = new LongArrayList();
             final var externalCalls = graph.getExternalCalls();
             var externalEdges = new ArrayList<EdgesRecord>(graph.getExternalCalls().size());
             for (var callEntry : externalCalls.entrySet()) {
@@ -351,13 +361,13 @@ public class MetadataDatabasePlugin extends Plugin {
                 var sourceLocalId = (long) call.getKey();
                 var uri = call.getValue().toString();
                 var targetId = metadataDao.insertCallable(-1L, uri, false, null, null);
-                nodes.add(targetId);
+                externalNodes.add(targetId);
                 var edgeMetadata = new JSONObject(callEntry.getValue());
                 externalEdges.add(new EdgesRecord(sourceLocalId, targetId,
                         JSONB.valueOf(edgeMetadata.toString())));
             }
             final int batchSize = 4096;
-            var internalCallablesIds = new ArrayList<Long>(internalCallables.size());
+            var internalCallablesIds = new LongArrayList(internalCallables.size());
             final var internalCallablesIterator = internalCallables.iterator();
             while (internalCallablesIterator.hasNext()) {
                 var callablesBatch = new ArrayList<CallablesRecord>(batchSize);
@@ -367,20 +377,19 @@ public class MetadataDatabasePlugin extends Plugin {
                 var ids = metadataDao.batchInsertCallables(callablesBatch);
                 internalCallablesIds.addAll(ids);
             }
-            for (var internalId : internalCallablesIds) {
-                nodes.addFirst(internalId);
-            }
-            var internalLidToGidMap = new HashMap<Long, Long>();
+            nodes.addAll(internalCallablesIds);
+            nodes.addAll(externalNodes);
+            var internalLidToGidMap = new Long2LongOpenHashMap();
             for (int i = 0; i < internalCallables.size(); i++) {
-                internalLidToGidMap.put(internalCallables.get(i).getId(),
-                        internalCallablesIds.get(i));
+                internalLidToGidMap.put(internalCallables.get(i).getId().longValue(),
+                        internalCallablesIds.getLong(i));
             }
             for (var edge : internalEdges) {
-                edge.setSourceId(internalLidToGidMap.get(edge.getSourceId()));
-                edge.setTargetId(internalLidToGidMap.get(edge.getTargetId()));
+                edge.setSourceId(internalLidToGidMap.get(edge.getSourceId().longValue()));
+                edge.setTargetId(internalLidToGidMap.get(edge.getTargetId().longValue()));
             }
             for (var edge : externalEdges) {
-                edge.setSourceId(internalLidToGidMap.get(edge.getSourceId()));
+                edge.setSourceId(internalLidToGidMap.get(edge.getSourceId().longValue()));
             }
             var edges = new ArrayList<EdgesRecord>(graph.size());
             edges.addAll(internalEdges);
@@ -461,20 +470,11 @@ public class MetadataDatabasePlugin extends Plugin {
                             null, JSONB.valueOf(callableMetadata.toString())));
                 }
             }
-            final int batchSize = 4096;
-            var callablesIds = new ArrayList<Long>(callables.size());
-            final var callablesIterator = callables.iterator();
-            while (callablesIterator.hasNext()) {
-                var callablesBatch = new ArrayList<CallablesRecord>(batchSize);
-                while (callablesIterator.hasNext() && callablesBatch.size() < batchSize) {
-                    callablesBatch.add(callablesIterator.next());
-                }
-                var ids = metadataDao.batchInsertCallables(callablesBatch);
-                callablesIds.addAll(ids);
-            }
-            var lidToGidMap = new HashMap<Long, Long>();
+            var callablesIds = new LongArrayList(callables.size());
+            callablesIds.addAll(metadataDao.insertCallablesSeparately(callables, numInternal));
+            var lidToGidMap = new Long2LongOpenHashMap();
             for (int i = 0; i < callables.size(); i++) {
-                lidToGidMap.put(callables.get(i).getId(), callablesIds.get(i));
+                lidToGidMap.put(callables.get(i).getId().longValue(), callablesIds.getLong(i));
             }
             final var graph = callGraph.getGraph();
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
@@ -500,10 +500,11 @@ public class MetadataDatabasePlugin extends Plugin {
                 edges.add(new EdgesRecord(globalSource, globalTarget,
                         JSONB.valueOf(metadata.toString())));
             }
+            final int edgesBatchSize = 4096;
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(batchSize);
-                while (edgesIterator.hasNext() && edgesBatch.size() < batchSize) {
+                var edgesBatch = new ArrayList<EdgesRecord>(edgesBatchSize);
+                while (edgesIterator.hasNext() && edgesBatch.size() < edgesBatchSize) {
                     edgesBatch.add(edgesIterator.next());
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
@@ -540,7 +541,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
         @Override
         public String version() {
-            return "0.0.1";
+            return "0.1.1";
         }
 
         @Override
