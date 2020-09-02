@@ -144,7 +144,7 @@ public class POMAnalyzerPluginTest {
         final var dependencyId = 16L;
         Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", "mvn", null, null, null))
                 .thenReturn(dependencyId);
-        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, projectName, dependencyData, metadataDao);
+        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, -1, projectName, dependencyData, metadataDao);
         assertEquals(packageVersionId, result);
     }
 

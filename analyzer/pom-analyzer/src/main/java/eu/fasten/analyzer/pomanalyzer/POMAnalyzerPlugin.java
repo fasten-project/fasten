@@ -24,6 +24,7 @@ import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -135,7 +136,7 @@ public class POMAnalyzerPlugin extends Plugin {
                         long id;
                         try {
                             id = saveToDatabase(group + ":" + artifact, version, repoUrl,
-                                    commitTag, sourcesUrl, packagingType, projectName,
+                                    commitTag, sourcesUrl, packagingType, date, projectName,
                                     dependencyData, metadataDao);
                         } catch (RuntimeException e) {
                             logger.error("Error saving data to the database: '" + product + "'", e);
@@ -172,15 +173,18 @@ public class POMAnalyzerPlugin extends Plugin {
          * @param commitTag      Commit tag of the version of the artifact in the repository
          * @param sourcesUrl     Link to Maven sources Jar file
          * @param packagingType  Packaging type of the artifact
+         * @param timestamp      Timestamp of the package
          * @param projectName    Project name to which artifact belongs
          * @param dependencyData Dependency information from POM
          * @param metadataDao    Metadata Database Access Object
          * @return ID of the package version in the database
          */
         public long saveToDatabase(String product, String version, String repoUrl, String commitTag,
-                                   String sourcesUrl, String packagingType, String projectName,
-                                   DependencyData dependencyData, MetadataDao metadataDao) {
-            final var packageId = metadataDao.insertPackage(product, "mvn", projectName, repoUrl, null);
+                                   String sourcesUrl, String packagingType, long timestamp,
+                                   String projectName, DependencyData dependencyData,
+                                   MetadataDao metadataDao) {
+            final var packageId = metadataDao.insertPackage(product, "mvn", projectName, repoUrl,
+                    new Timestamp(timestamp));
             var packageVersionMetadata = new JSONObject();
             packageVersionMetadata.put("dependencyManagement",
                     (dependencyData.dependencyManagement != null)
