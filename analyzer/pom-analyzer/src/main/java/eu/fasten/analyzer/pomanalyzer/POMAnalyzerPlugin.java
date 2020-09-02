@@ -191,7 +191,7 @@ public class POMAnalyzerPlugin extends Plugin {
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
                     "OPAL", version, null, packageVersionMetadata);
             for (var dependency : dependencyData.dependencies) {
-                var depProduct = dependency.groupId + "." + dependency.artifactId;
+                var depProduct = dependency.groupId + ":" + dependency.artifactId;
                 final var depId = metadataDao.insertPackage(depProduct, "mvn", null, null, null);
                 metadataDao.insertDependency(packageVersionId, depId,
                         dependency.getVersionConstraints(), dependency.toJSON());
