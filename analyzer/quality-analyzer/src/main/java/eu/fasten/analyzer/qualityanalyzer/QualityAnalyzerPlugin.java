@@ -127,11 +127,6 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            try {
-                Thread.sleep(100000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             return Optional.empty();
         }
 
