@@ -32,17 +32,20 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import org.jooq.*;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import org.jooq.*;
-import org.json.JSONObject;
-
 public class MetadataDao {
 
+    private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
     private DSLContext context;
 
     public MetadataDao(DSLContext context) {
@@ -705,29 +708,13 @@ public class MetadataDao {
 
         Packages p = Packages.PACKAGES.as("p");
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS.as("pv");
-        Modules m = Modules.MODULES.as("m");
-        BinaryModules bm = BinaryModules.BINARY_MODULES.as("bm");
-        Files f = Files.FILES.as("f");
-        Callables c = Callables.CALLABLES.as("c");
-        Edges e = Edges.EDGES.as("e");
 
-        // TODO: the binary_modules wasn't added to the query because the table is empty
-        // TODO: add error handlers for empty tables?
         Result<Record> queryResult =
                 context
                         .select(p.FORGE, p.PACKAGE_NAME)
-                        .select(pv.VERSION, pv.METADATA.as("pkg_version_metadata"))
-                        .select(f.METADATA.as("file_metadata"))
-                        .select(m.METADATA.as("module_metadata"))
-                        .select(c.METADATA.as("callable_metadata"))
-                        .select(e.METADATA.as("edge_metadata"))
+                        .select(pv.VERSION, pv.METADATA.as("metadata"))
                         .from(p)
                         .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                        .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
-                        .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
-                        .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
-                        .innerJoin(e).on(c.ID.eq(e.TARGET_ID))
-                        .or(c.ID.eq(e.SOURCE_ID))
                         .where(p.FORGE.equalIgnoreCase(forge)
                                 .and(p.PACKAGE_NAME.equalIgnoreCase(packageName)
                                         .and(pv.VERSION.equalIgnoreCase(version))
@@ -735,8 +722,7 @@ public class MetadataDao {
                         )
                         .fetch();
 
-        // TODO: update this to logger.debug
-        System.out.println("DEBUG: Total rows: "+queryResult.size());
+        logger.debug("Total rows: " + queryResult.size());
 
         String result = queryResult.formatJSON();
         return result;
@@ -745,108 +731,145 @@ public class MetadataDao {
     /**
      * Reconstructs the dependency network given a product and a timestamp.
      *
-     * @param forge             Forge of the package
-     * @param packageName       Name of the package
-     * @param timestamp         Timestamp of the package
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param timestamp   Timestamp of the package
      * @return dependencyNet    A set of revisions, along with an adjacency matrix
      */
-    public String rebuildDependencyNet(String forge, String packageName, int timestamp, boolean transitive) {
-        Result<Record2<Long, String>> result = context
-                .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
-                .from(Packages.PACKAGES).fetch();
+    public String rebuildDependencyNet(String forge, String packageName, Timestamp timestamp, boolean transitive) {
 
-        for (Record r : result) {
-            Long id = r.getValue(Packages.PACKAGES.ID);
-            String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
-            System.out.println("id: "+id+"name: "+pkgName);
-        }
-        return ("dummy rebuildDependencyNet query OK!"+result);
+        Packages p = Packages.PACKAGES.as("p");
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS.as("pv");
+        Dependencies d = Dependencies.DEPENDENCIES.as("d");
+
+        Result<Record> queryResult =
+                context
+                        .select(p.FORGE, p.PACKAGE_NAME)
+                        .select(pv.VERSION, pv.CREATED_AT, pv.METADATA.as("package_metadata"))
+                        .select(d.METADATA.as("dependencies_metadata"))
+                        .from(p)
+                        .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                        .innerJoin(d).on(pv.ID.equal(d.PACKAGE_VERSION_ID))
+                        .where(p.FORGE.equalIgnoreCase(forge)
+                                .and(p.PACKAGE_NAME.equalIgnoreCase(packageName)
+                                        .and(pv.CREATED_AT.equal(timestamp))
+                                )
+                        )
+                        .fetch();
+
+        logger.debug("Total rows: " + queryResult.size());
+
+        String result = queryResult.formatJSON();
+        return result;
     }
 
     /**
-     *  Retrieve a call graph for a given a package name and a timestamp.
+     * Retrieve a call graph for a given a package name and a timestamp.
      *
-     * @param forge         Forge of the package
-     * @param packageName   Name of the package
-     * @param timestamp     Timestamp of the package
-     * @param transitive    Boolean option to query transitive relationships
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param timestamp   Timestamp when package was created
+     * @param transitive  Boolean option to query transitive relationships
      * @return callGraph    A JSON-serialized RevisionCallGraph
      */
-    public String getCallGraph(String forge, String packageName, int timestamp, boolean transitive) {
-        Result<Record2<Long, String>> result = context
-                .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
-                .from(Packages.PACKAGES).fetch();
+    public String getCallGraph(String forge, String packageName, Timestamp timestamp, boolean transitive) {
 
-        for (Record r : result) {
-            Long id = r.getValue(Packages.PACKAGES.ID);
-            String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
-            System.out.println("id: "+id+"name: "+pkgName);
-        }
-        return ("dummy getCallGraph query OK!"+result);
+        Packages p = Packages.PACKAGES.as("p");
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS.as("pv");
+        Modules m = Modules.MODULES.as("m");
+
+        Result<Record> queryResult =
+                context
+                        .select(p.ID, p.FORGE, p.PACKAGE_NAME)
+                        .select(pv.VERSION, pv.CREATED_AT)
+                        .select(m.METADATA.as("module_metadata"))
+                        .from(p)
+                        .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                        .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                        .where(p.FORGE.equalIgnoreCase(forge)
+                                .and(p.PACKAGE_NAME.equalIgnoreCase(packageName)
+                                        .and(pv.CREATED_AT.equal(timestamp))
+                                )
+                        )
+                        .fetch();
+
+        logger.debug("Total rows: " + queryResult.size());
+
+        String result = queryResult.formatJSON();
+        return result;
     }
 
     /**
      * Gets the vulnerabilities in the transitive closure of a package version
      *
-     * @param forge             Forge of the package
-     * @param packageName       Name of the package
-     * @param version           Version of the package
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param version     Version of the package
      * @return vulnerabilities  Paths of revisions, paths of files/compilation units, paths of functions
      */
     public String getVulnerabilities(String forge, String packageName, String version) {
-        Result<Record2<Long, String>> result = context
+        // FIXME: Query should be implemented as soon as the data become available
+        Result<Record2<Long, String>> queryResult = context
                 .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
                 .from(Packages.PACKAGES).fetch();
 
-        for (Record r : result) {
+        for (Record r : queryResult) {
             Long id = r.getValue(Packages.PACKAGES.ID);
             String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
-            System.out.println("id: "+id+"name: "+pkgName);
+            logger.debug("id: " + id + "  / name: " + pkgName);
         }
-        return ("dummy getVulnerabilities query OK!"+result);
+        String result = queryResult.formatJSON();
+        logger.debug("Query dummy result: " + result);
+        return ("dummy getVulnerabilities query OK!");
     }
 
     /**
      * Impact analysis: the user asks the KB to compute the impact of a semantic change to a function
      *
-     * @param forge         Forge of the package
-     * @param packageName   Name of the package
-     * @param version       Version of the package
-     * @param transitive    Boolean option to query transitive relationships
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param version     Version of the package
+     * @param transitive  Boolean option to query transitive relationships
      * @return impact       The full set of functions reachable from the provided function
      */
     public String updateImpact(String forge, String packageName, String version, boolean transitive) {
-        Result<Record2<Long, String>> result = context
+        // FIXME: Query should be implemented as soon as the data become available
+        Result<Record2<Long, String>> queryResult = context
                 .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
                 .from(Packages.PACKAGES).fetch();
 
-        for (Record r : result) {
+        for (Record r : queryResult) {
             Long id = r.getValue(Packages.PACKAGES.ID);
             String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
-            System.out.println("id: "+id+"name: "+pkgName);
+            logger.debug("id: " + id + "  / name: " + pkgName);
         }
-        return ("dummy updateImpact query OK!"+result);
+        String result = queryResult.formatJSON();
+        logger.debug("Query dummy result: " + result);
+        return ("dummy updateImpact query OK!");
     }
 
     /**
      * Update the static CG of a package version with new edges
      *
-     * @param forge         Forge of the package
-     * @param packageName   Name of the package
-     * @param version       Version of the package
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param version     Version of the package
      * @return cgEdges       A list of edges that where added
      */
     public String updateCg(String forge, String packageName, String version) {
-        Result<Record2<Long, String>> result = context
+        // FIXME: Query should be implemented as soon as the data become available
+        Result<Record2<Long, String>> queryResult = context
                 .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
                 .from(Packages.PACKAGES).fetch();
 
-        for (Record r : result) {
+        for (Record r : queryResult) {
             Long id = r.getValue(Packages.PACKAGES.ID);
             String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
-            System.out.println("id: "+id+"name: "+pkgName);
+            logger.debug("id: " + id + "  / name: " + pkgName);
         }
-        return ("dummy updateCg query OK!"+result);
+        String result = queryResult.formatJSON();
+        logger.debug("Query dummy result: " + result);
+        return ("dummy updateCg query OK!");
     }
 
 }
