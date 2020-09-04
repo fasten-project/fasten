@@ -63,7 +63,7 @@ public class OpenAPIServer extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId("root_api__get",
                         routingContext -> routingContext.response().setStatusCode(200)
                                 .putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Welcome to FASTEN api")
-                // TODO: Do we need a html page for this endpoint? Or just some answer!?
+                        // TODO: Do we need a html page for this endpoint? Or just some answer!?
                 );
 
                 /**
@@ -76,7 +76,7 @@ public class OpenAPIServer extends AbstractVerticle {
                  * REST examples:
                  *  GET /api/mvn/org.slf4j:slf4j-api/deps/1233323123
                  *  GET /api/pypi/numpy/deps/1233323123?transitive=true
-                 *
+                 *  GET /api/mvn/au.org.consumerdatastandards:reflection/deps/1568262660
                  */
                 routerFactory.addHandlerByOperationId
                         ("rebuild_dependency_net_api__forge___pkg_name__deps__timestamp__get",
@@ -84,20 +84,19 @@ public class OpenAPIServer extends AbstractVerticle {
                                     RequestParameters params = routingContext.get("parsedParameters");
                                     String forge = params.pathParameter("forge").getString();
                                     String pkgName = params.pathParameter("pkg_name").getString();
-                                    int timestamp = params.pathParameter("timestamp").getInteger();
+                                    long ts = params.pathParameter("timestamp").getInteger();
                                     boolean transitive = params.queryParameter("transitive").getBoolean();
                                     // TODO: check the transitive value and define it as false by default.
-                                    logger.debug("DEBUG: Parsed parameters converted to string (" + forge + ", "
-                                            + pkgName + ", " + timestamp + ").");
+                                    final var timestamp = this.getProperTimestamp(ts);
 
-                                    dslContext.transaction(transaction -> {
-                                        metadataDao.setContext(DSL.using(transaction));
+                                    logger.debug("Parsed parameters converted to string (" + forge + ", "
+                                            + pkgName + ", " + ts + ").");
+
+                                    dslContext.connection(connection -> {
+                                        metadataDao.setContext(DSL.using(connection));
                                         try {
-                                            logger.debug("DEBUG: Got the DSL context to metadataDao" + metadataDao);
-
                                             String queryResult = metadataDao.rebuildDependencyNet(forge, pkgName, timestamp, transitive);
-
-                                            logger.debug("DEBUG: Got the reply: " + queryResult.substring(0, 300) + "...");
+                                            logger.debug("Got the reply: " + queryResult.substring(0, 50) + "...");
 
                                             if (!queryResult.isEmpty())
                                                 routingContext.response().setStatusCode(200)
@@ -107,7 +106,7 @@ public class OpenAPIServer extends AbstractVerticle {
                                                 routingContext.fail(404, new Exception("Query not found!"));
                                             // TODO: nice to have more specific exceptions ex: pkg not found, pkgName not found etc.
                                         } catch (RuntimeException e) {
-                                            routingContext.fail(404, new Exception("Error querying the database!"));
+                                            routingContext.fail(404, new Exception("No results found for this query!"));
                                             logger.error("Error querying the database: ", e);
                                             throw e;
                                         }
@@ -125,6 +124,7 @@ public class OpenAPIServer extends AbstractVerticle {
                  * REST examples:
                  *  GET /api/mvn/org.slf4j:slf4j-api/cg/1233323123
                  *  GET /api/pypi/numpy/cg/1233323123?transitive=true
+                 *  GET /api/mvn/au.org.consumerdatastandards:reflection/cg/1580706000
                  */
                 routerFactory.addHandlerByOperationId
                         ("get_call_graph_api__forge___pkg_name__cg__timestamp__get",
@@ -132,20 +132,20 @@ public class OpenAPIServer extends AbstractVerticle {
                                     RequestParameters params = routingContext.get("parsedParameters");
                                     String forge = params.pathParameter("forge").getString();
                                     String pkgName = params.pathParameter("pkg_name").getString();
-                                    int timestamp = params.pathParameter("timestamp").getInteger();
+                                    long ts = params.pathParameter("timestamp").getInteger();
                                     boolean transitive = params.queryParameter("transitive").getBoolean();
                                     // TODO: check the transitive value and define it as false by default.
-                                    logger.debug("DEBUG: Parsed parameters converted to string (" + forge + ", "
+
+                                    final var timestamp = this.getProperTimestamp(ts);
+
+                                    logger.debug("Parsed parameters converted to string (" + forge + ", "
                                             + pkgName + ", " + timestamp + ").");
 
-                                    dslContext.transaction(transaction -> {
-                                        metadataDao.setContext(DSL.using(transaction));
+                                    dslContext.connection(connection -> {
+                                        metadataDao.setContext(DSL.using(connection));
                                         try {
-                                            logger.debug("DEBUG: Got the DSL context to metadataDao" + metadataDao);
-
                                             String queryResult = metadataDao.getCallGraph(forge, pkgName, timestamp, transitive);
-
-                                            logger.debug("DEBUG: Got the reply: " + queryResult.substring(0, 300) + "...");
+                                            logger.debug("Got the reply: " + queryResult.substring(0, 50) + "...");
 
                                             if (!queryResult.isEmpty())
                                                 routingContext.response().setStatusCode(200)
@@ -155,7 +155,7 @@ public class OpenAPIServer extends AbstractVerticle {
                                                 routingContext.fail(404, new Exception("Query not found!"));
                                             // TODO: nice to have more specific exceptions ex: pkg not found, pkgName not found etc.
                                         } catch (RuntimeException e) {
-                                            routingContext.fail(404, new Exception("Error querying the database!"));
+                                            routingContext.fail(404, new Exception("No results found for this query!"));
                                             logger.error("Error querying the database: ", e);
                                             throw e;
                                         }
@@ -171,6 +171,7 @@ public class OpenAPIServer extends AbstractVerticle {
                  * REST examples:
                  *  GET /api/mvn/org.slf4j:slf4j-api/1.7.29
                  *  GET /api/pypi/numpy/1.15.2
+                 *  GET /api/mvn/au.org.consumerdatastandards:reflection/1.0.0
                  */
                 routerFactory.addHandlerByOperationId("get_metadata_api__forge___pkg_name___version__get",
                         routingContext -> {
@@ -179,27 +180,24 @@ public class OpenAPIServer extends AbstractVerticle {
                             String pkgName = params.pathParameter("pkg_name").getString();
                             String version = params.pathParameter("version").getString();
 
-                            logger.debug("DEBUG: Parsed parameters converted to string (" + forge + ", "
+                            logger.debug("Parsed parameters converted to string (" + forge + ", "
                                     + pkgName + ", " + version + ").");
 
-                            dslContext.transaction(transaction -> {
-                                metadataDao.setContext(DSL.using(transaction));
+                            dslContext.connection(connection -> {
+                                metadataDao.setContext(DSL.using(connection));
                                 try {
-                                    logger.debug("DEBUG: Got the DSL context");
-
                                     String allMetadata = metadataDao.getAllMetadataForPkg(forge, pkgName, version);
+                                    logger.debug("Got the reply: " + allMetadata.substring(0, 300) + "...");
 
-                                    logger.debug("DEBUG: Got the reply: "+allMetadata.substring(0,300)+"...");
-
-                                    if (!allMetadata.isEmpty())
+                                    if (!allMetadata.isEmpty()) // FIXME: adapt it to a real condition
                                         routingContext.response().setStatusCode(200)
-                                            .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-                                            .end(allMetadata);
+                                                .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                                                .end(allMetadata);
                                     else
                                         routingContext.fail(404, new Exception("Query not found!"));
-                                        // TODO: nice to have more specific exceptions ex: pkg not found, pkgName not found etc.
+                                    // TODO: nice to have more specific exceptions ex: pkg not found, pkgName not found etc.
                                 } catch (RuntimeException e) {
-                                    routingContext.fail(404, new Exception("Error querying the database!"));
+                                    routingContext.fail(404, new Exception("No results found for this query!"));
                                     logger.error("Error querying the database: ", e);
                                     throw e;
                                 }
@@ -227,18 +225,14 @@ public class OpenAPIServer extends AbstractVerticle {
                                     String pkgName = params.pathParameter("pkg_name").getString();
                                     String version = params.pathParameter("version").getString();
 
-                                    logger.debug("DEBUG: Parsed parameters converted to string (" + forge + ", "
+                                    logger.debug("Parsed parameters converted to string (" + forge + ", "
                                             + pkgName + ", " + version + ").");
 
-                                    dslContext.transaction(transaction -> {
-                                        metadataDao.setContext(DSL.using(transaction));
+                                    dslContext.connection(connection -> {
+                                        metadataDao.setContext(DSL.using(connection));
                                         try {
-                                            logger.debug("DEBUG: Got the DSL context to metadataDao" + metadataDao);
-
-                                            // FIXME: update function ref
                                             String queryResult = metadataDao.getVulnerabilities(forge, pkgName, version);
-
-                                            logger.debug("DEBUG: Got the reply: " + queryResult.substring(0, 300) + "...");
+                                            logger.debug("Got the reply: " + queryResult.substring(0, 50) + "...");
 
                                             if (!queryResult.isEmpty())
                                                 routingContext.response().setStatusCode(200)
@@ -248,7 +242,7 @@ public class OpenAPIServer extends AbstractVerticle {
                                                 routingContext.fail(404, new Exception("Query not found!"));
                                             // TODO: nice to have more specific exceptions ex: pkg not found, pkgName not found etc.
                                         } catch (RuntimeException e) {
-                                            routingContext.fail(404, new Exception("Error querying the database!"));
+                                            routingContext.fail(404, new Exception("No results found for this query!"));
                                             logger.error("Error querying the database: ", e);
                                             throw e;
                                         }
@@ -279,17 +273,14 @@ public class OpenAPIServer extends AbstractVerticle {
                                     String version = params.pathParameter("version").getString();
                                     boolean transitive = params.queryParameter("transitive").getBoolean();
                                     // TODO: check the transitive value and define it as false by default.
-                                    logger.debug("DEBUG: Parsed parameters converted to string (" + forge + ", "
+                                    logger.debug("Parsed parameters converted to string (" + forge + ", "
                                             + pkgName + ", " + version + ").");
 
-                                    dslContext.transaction(transaction -> {
-                                        metadataDao.setContext(DSL.using(transaction));
+                                    dslContext.connection(connection -> {
+                                        metadataDao.setContext(DSL.using(connection));
                                         try {
-                                            logger.debug("DEBUG: Got the DSL context to metadataDao" + metadataDao);
-
                                             String queryResult = metadataDao.updateImpact(forge, pkgName, version, transitive);
-
-                                            logger.debug("DEBUG: Got the reply: " + queryResult.substring(0, 300) + "...");
+                                            logger.debug("Got the reply: " + queryResult.substring(0, 50) + "...");
 
                                             if (!queryResult.isEmpty())
                                                 routingContext.response().setStatusCode(200)
@@ -299,7 +290,7 @@ public class OpenAPIServer extends AbstractVerticle {
                                                 routingContext.fail(404, new Exception("Query not found!"));
                                             // TODO: nice to have more specific exceptions ex: pkg not found, pkgName not found etc.
                                         } catch (RuntimeException e) {
-                                            routingContext.fail(404, new Exception("Error querying the database!"));
+                                            routingContext.fail(404, new Exception("No results found for this query!"));
                                             logger.error("Error querying the database: ", e);
                                             throw e;
                                         }
@@ -328,17 +319,14 @@ public class OpenAPIServer extends AbstractVerticle {
                                     String pkgName = params.pathParameter("pkg_name").getString();
                                     String version = params.pathParameter("version").getString();
 
-                                    logger.debug("DEBUG: Parsed parameters converted to string (" + forge + ", "
+                                    logger.debug("Parsed parameters converted to string (" + forge + ", "
                                             + pkgName + ", " + version + ").");
 
-                                    dslContext.transaction(transaction -> {
-                                        metadataDao.setContext(DSL.using(transaction));
+                                    dslContext.connection(connection -> {
+                                        metadataDao.setContext(DSL.using(connection));
                                         try {
-                                            logger.debug("DEBUG: Got the DSL context to metadataDao" + metadataDao);
-
                                             String queryResult = metadataDao.updateCg(forge, pkgName, version);
-
-                                            logger.debug("DEBUG: Got the reply: " + queryResult.substring(0, 300) + "...");
+                                            logger.debug("Got the reply: " + queryResult.substring(0, 50) + "...");
 
                                             if (!queryResult.isEmpty())
                                                 routingContext.response().setStatusCode(200)
@@ -348,7 +336,7 @@ public class OpenAPIServer extends AbstractVerticle {
                                                 routingContext.fail(404, new Exception("Query not found!"));
                                             // TODO: nice to have more specific exceptions ex: pkg not found, pkgName not found etc.
                                         } catch (RuntimeException e) {
-                                            routingContext.fail(404, new Exception("Error querying the database!"));
+                                            routingContext.fail(404, new Exception("No results found for this query!"));
                                             logger.error("Error querying the database: ", e);
                                             throw e;
                                         }
@@ -377,7 +365,7 @@ public class OpenAPIServer extends AbstractVerticle {
                             .put("code", 400)
                             .put("message",
                                     (routingContext.failure() != null) ?
-                                            routingContext.failure().getMessage():
+                                            routingContext.failure().getMessage() :
                                             "Validation Exception");
                     routingContext
                             .response()
@@ -407,6 +395,18 @@ public class OpenAPIServer extends AbstractVerticle {
                 logger.info("Verticle failed");
             }
         });
+    }
+
+    private Timestamp getProperTimestamp(long timestamp) {
+        if (timestamp == -1) {
+            return null;
+        } else {
+            if (timestamp / (1000L * 60 * 60 * 24 * 365) < 1L) {
+                return new Timestamp(timestamp * 1000);
+            } else {
+                return new Timestamp(timestamp);
+            }
+        }
     }
 
     @Override
