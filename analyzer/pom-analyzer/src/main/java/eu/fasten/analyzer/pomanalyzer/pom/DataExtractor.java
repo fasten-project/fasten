@@ -389,6 +389,7 @@ public class DataExtractor {
         var resolvedDependencies = new ArrayList<Dependency>();
         for (var dependency : dependencies) {
             if (dependency.versionConstraints.get(0).lowerBound.equals("*")) {
+                var resolved = false;
                 for (var depManagement : depManagements) {
                     for (var parentDep : depManagement.dependencies) {
                         if (parentDep.artifactId.equals(dependency.artifactId)
@@ -403,10 +404,11 @@ public class DataExtractor {
                                     dependency.type,
                                     dependency.classifier
                             ));
+                            resolved = true;
                         }
                     }
                 }
-                if (dependency.versionConstraints.get(0).lowerBound.equals("*")) {
+                if (!resolved) {
                     resolvedDependencies.add(new Dependency(
                             dependency.artifactId,
                             dependency.groupId,
