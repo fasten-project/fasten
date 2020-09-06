@@ -53,7 +53,7 @@ public class MetadataDatabasePluginTest {
     }
 
     @Test
-    public void saveToDatabaseNewFormatTest() throws IOException {
+    public void saveToDatabaseNewFormatTest() {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject("{\n" +
                 "    \"product\": \"groupID:artifactID\",\n" +
@@ -124,8 +124,8 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertPackage(json.getString("product"), "mvn", null, null,
                 null)).thenReturn(packageId);
         long packageVersionId = 42;
-        Mockito.when(metadataDao.insertPackageVersion(packageId, json.getString("generator"),
-                json.getString("version"), new Timestamp(json.getLong("timestamp") * 1000), null)).thenReturn(packageVersionId);
+        Mockito.when(metadataDao.insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),
+                Mockito.eq(json.getString("version")), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class))).thenReturn(packageVersionId);
         long externalModuleId = 16;
         var externalModuleMetadata = new JSONObject("{" +
                 "\"access\": \"\"," +
@@ -152,8 +152,6 @@ public class MetadataDatabasePluginTest {
         long id = metadataDBExtension.saveToDatabaseNewFormat(new ExtendedRevisionCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), "mvn", null, null, null);
-        Mockito.verify(metadataDao).insertPackageVersion(packageId, json.getString("generator"),
-                json.getString("version"), new Timestamp(json.getLong("timestamp") * 1000), null);
     }
 
     @Test

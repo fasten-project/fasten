@@ -420,7 +420,7 @@ public class MetadataDatabasePlugin extends Plugin {
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
                     null, null, null);
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    callGraph.getCgGenerator(), callGraph.version, timestamp, null);
+                    callGraph.getCgGenerator(), callGraph.version, timestamp, new JSONObject());
             var cha = callGraph.getClassHierarchy();
             var internalTypes = cha.get(ExtendedRevisionCallGraph.Scope.internalTypes);
             var callables = new ArrayList<CallablesRecord>();
