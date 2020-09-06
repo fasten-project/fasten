@@ -198,6 +198,20 @@ public class DataExtractor {
                 if (node != null) {
                     refValue = node.getText();
                     found = true;
+                } else if (path.equals("groupId") || path.equals("version")) {
+                    path = "parent." + path;
+                    pathParts = path.split("\\.");
+                    node = pom;
+                    for (var nodeName : pathParts) {
+                        if (node == null) {
+                            break;
+                        }
+                        node = node.selectSingleNode("./*[local-name()='" + nodeName + "']");
+                    }
+                    if (node != null) {
+                        refValue = node.getText();
+                        found = true;
+                    }
                 }
             }
             if (!found) {
@@ -337,7 +351,7 @@ public class DataExtractor {
             var parentDependencyManagements = versionResolutionData.getRight();
             for (int i = 0; i < parentDependencyManagements.size(); i++) {
                 var depManagement = parentDependencyManagements.get(i);
-                var resolvedDependencies = resolveDependencyVersions(depManagement.dependencies,
+                var resolvedDependencies = resolveDependencies(depManagement.dependencies,
                         properties, new ArrayList<>(), pom);
                 parentDependencyManagements.set(i, new DependencyManagement(resolvedDependencies));
             }
@@ -347,7 +361,7 @@ public class DataExtractor {
                 var dependenciesNode = dependencyManagementNode
                         .selectSingleNode("./*[local-name()='dependencies']");
                 var dependencies = extractDependencies(dependenciesNode);
-                dependencies = this.resolveDependencyVersions(dependencies, properties,
+                dependencies = this.resolveDependencies(dependencies, properties,
                         parentDependencyManagements, pom);
                 dependencyManagement = new DependencyManagement(dependencies);
             } else {
@@ -355,7 +369,7 @@ public class DataExtractor {
             }
             var dependenciesNode = pom.selectSingleNode("./*[local-name()='dependencies']");
             var dependencies = extractDependencies(dependenciesNode);
-            dependencies = this.resolveDependencyVersions(dependencies, properties,
+            dependencies = this.resolveDependencies(dependencies, properties,
                     parentDependencyManagements, pom);
             dependencyData = new DependencyData(dependencyManagement, dependencies);
         } catch (DocumentException e) {
@@ -368,10 +382,10 @@ public class DataExtractor {
         return dependencyData;
     }
 
-    private List<Dependency> resolveDependencyVersions(List<Dependency> dependencies,
-                                                       Map<String, String> properties,
-                                                       List<DependencyManagement> depManagements,
-                                                       Element pom) {
+    private List<Dependency> resolveDependencies(List<Dependency> dependencies,
+                                                 Map<String, String> properties,
+                                                 List<DependencyManagement> depManagements,
+                                                 Element pom) {
         var resolvedDependencies = new ArrayList<Dependency>();
         for (var dependency : dependencies) {
             if (dependency.versionConstraints.get(0).lowerBound.equals("*")) {
@@ -391,6 +405,18 @@ public class DataExtractor {
                             ));
                         }
                     }
+                }
+                if (dependency.versionConstraints.get(0).lowerBound.equals("*")) {
+                    resolvedDependencies.add(new Dependency(
+                            dependency.artifactId,
+                            dependency.groupId,
+                            replacePropertyReferences("${project.version}", properties, pom),
+                            dependency.exclusions,
+                            dependency.scope,
+                            dependency.optional,
+                            dependency.type,
+                            dependency.classifier
+                    ));
                 }
             } else if (dependency.versionConstraints.get(0).lowerBound.startsWith("$")) {
                 var property = dependency.versionConstraints.get(0).lowerBound;
@@ -412,6 +438,56 @@ public class DataExtractor {
             } else {
                 resolvedDependencies.add(dependency);
             }
+        }
+        for (int i = 0; i < resolvedDependencies.size(); i++) {
+            var dep = resolvedDependencies.get(i);
+            var resolvedArtifact = dep.artifactId;
+            if (dep.artifactId.contains("$")) {
+                resolvedArtifact = replacePropertyReferences(dep.artifactId, properties, pom);
+            }
+            var resolvedGroup = dep.groupId;
+            if (dep.groupId.contains("$")) {
+                resolvedGroup = replacePropertyReferences(dep.groupId, properties, pom);
+            }
+            var resolvedExclusions = dep.exclusions;
+            for (int j = 0; j < resolvedExclusions.size(); j++) {
+                var exclusion = dep.exclusions.get(j);
+                var resolvedExclusionGroup = exclusion.groupId;
+                if (exclusion.groupId.contains("$")) {
+                    resolvedExclusionGroup = replacePropertyReferences(
+                            exclusion.groupId, properties, pom);
+                }
+                var resolvedExclusionArtifact = exclusion.artifactId;
+                if (exclusion.artifactId.contains("$")) {
+                    resolvedExclusionArtifact = replacePropertyReferences(
+                            exclusion.artifactId, properties, pom);
+                }
+                resolvedExclusions.set(j, new Dependency.Exclusion(
+                        resolvedExclusionArtifact, resolvedExclusionGroup
+                ));
+            }
+            var resolvedScope = dep.scope;
+            if (dep.scope.contains("$")) {
+                resolvedScope = replacePropertyReferences(dep.scope, properties, pom);
+            }
+            var resolvedType = dep.type;
+            if (dep.type.contains("$")) {
+                resolvedType = replacePropertyReferences(dep.type, properties, pom);
+            }
+            var resolvedClassifier = dep.classifier;
+            if (dep.classifier.contains("$")) {
+                resolvedClassifier = replacePropertyReferences(dep.classifier, properties, pom);
+            }
+            resolvedDependencies.set(i, new Dependency(
+                    resolvedArtifact,
+                    resolvedGroup,
+                    dep.versionConstraints,
+                    resolvedExclusions,
+                    resolvedScope,
+                    dep.optional,
+                    resolvedType,
+                    resolvedClassifier
+            ));
         }
         return resolvedDependencies;
     }

@@ -94,7 +94,7 @@ public class DataExtractorTest {
         var expected = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
-                "\n" +
+                "         \n" +
                 "      ]\n" +
                 "   },\n" +
                 "   \"dependencies\":[\n" +
@@ -112,7 +112,26 @@ public class DataExtractorTest {
                 "         \"classifier\":\"\",\n" +
                 "         \"artifactId\":\"jain-sip-ri\",\n" +
                 "         \"exclusions\":[\n" +
-                "\n" +
+                "            \n" +
+                "         ],\n" +
+                "         \"optional\":false,\n" +
+                "         \"type\":\"\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "         \"versionConstraints\":[\n" +
+                "            {\n" +
+                "               \"isUpperHardRequirement\":false,\n" +
+                "               \"isLowerHardRequirement\":false,\n" +
+                "               \"upperBound\":\"1.6.6\",\n" +
+                "               \"lowerBound\":\"1.6.6\"\n" +
+                "            }\n" +
+                "         ],\n" +
+                "         \"groupId\":\"javax.sip\",\n" +
+                "         \"scope\":\"provided\",\n" +
+                "         \"classifier\":\"\",\n" +
+                "         \"artifactId\":\"jain-sip-ri\",\n" +
+                "         \"exclusions\":[\n" +
+                "            \n" +
                 "         ],\n" +
                 "         \"optional\":false,\n" +
                 "         \"type\":\"\"\n" +
@@ -131,7 +150,7 @@ public class DataExtractorTest {
                 "         \"classifier\":\"\",\n" +
                 "         \"artifactId\":\"restcomm-jain-sip-ha-core\",\n" +
                 "         \"exclusions\":[\n" +
-                "\n" +
+                "            \n" +
                 "         ],\n" +
                 "         \"optional\":false,\n" +
                 "         \"type\":\"\"\n" +
@@ -150,7 +169,7 @@ public class DataExtractorTest {
                 "         \"classifier\":\"\",\n" +
                 "         \"artifactId\":\"hazelcast\",\n" +
                 "         \"exclusions\":[\n" +
-                "\n" +
+                "            \n" +
                 "         ],\n" +
                 "         \"optional\":false,\n" +
                 "         \"type\":\"\"\n" +
@@ -169,7 +188,7 @@ public class DataExtractorTest {
                 "         \"classifier\":\"\",\n" +
                 "         \"artifactId\":\"log4j\",\n" +
                 "         \"exclusions\":[\n" +
-                "\n" +
+                "            \n" +
                 "         ],\n" +
                 "         \"optional\":false,\n" +
                 "         \"type\":\"\"\n" +
@@ -188,7 +207,7 @@ public class DataExtractorTest {
                 "         \"classifier\":\"\",\n" +
                 "         \"artifactId\":\"junit\",\n" +
                 "         \"exclusions\":[\n" +
-                "\n" +
+                "            \n" +
                 "         ],\n" +
                 "         \"optional\":false,\n" +
                 "         \"type\":\"\"\n" +
