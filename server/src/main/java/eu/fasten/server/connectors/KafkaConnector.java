@@ -52,7 +52,7 @@ public class KafkaConnector {
         // that the broker will NOT kill the consumer.
         properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "3000");
         properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "10000");
-        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "700000");
+        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "3600000");
 
         return properties;
     }
