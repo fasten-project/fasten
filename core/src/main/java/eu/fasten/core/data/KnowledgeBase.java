@@ -584,12 +584,13 @@ public class KnowledgeBase implements Serializable, Closeable {
 			try {
 				final byte[] buffer = callGraphDB.get(Longs.toByteArray(index));
 				final Input input = new Input(buffer);
+				int size = input.available();
 				assert kryo != null;
 				final var graphs = new ImmutableGraph[] { kryo.readObject(input, BVGraph.class), kryo.readObject(input, BVGraph.class) };
 				final Properties[] properties = new Properties[] { kryo.readObject(input, Properties.class), kryo.readObject(input, Properties.class) };
 				final long[] LID2GID = kryo.readObject(input, long[].class);
 				final Long2IntOpenHashMap GID2LID = kryo.readObject(input, Long2IntOpenHashMap.class);
-
+				size -= input.available();
 				/* This might be reinstated if incoming data is correct. See assert above.
 				// Rebuild GID2LID from LID2GID
 				final int n = LID2GID.length;
@@ -598,10 +599,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 				for (int i = 0; i < n; i++) GID2LID.put(LID2GID[i], i);
 				*/
 
-				final CallGraphData callGraphData = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, nInternal, buffer.length);
+				final CallGraphData callGraphData = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1], LID2GID, GID2LID, nInternal, size);
 				this.callGraphData = new SoftReference<>(callGraphData);
 				return callGraphData;
-			} catch (final RocksDBException e) {
+			} catch (final RocksDBException | IOException e) {
 				throw new RuntimeException(e);
 			}
 		}
