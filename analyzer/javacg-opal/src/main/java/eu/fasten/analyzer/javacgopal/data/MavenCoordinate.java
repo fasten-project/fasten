@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import eu.fasten.core.data.Constants;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -113,16 +114,17 @@ public class MavenCoordinate {
      * @return MavenCoordinate
      */
     public static MavenCoordinate fromString(final String coords, final String packaging) {
-        var coordinate = coords.split(":");
+        var coordinate = coords.split(Constants.coordinatePartsJoin);
         return new MavenCoordinate(coordinate[0], coordinate[1], coordinate[2], packaging);
     }
 
     public String getProduct() {
-        return groupID + ":" + artifactID;
+        return groupID + Constants.coordinatePartsJoin + artifactID;
     }
 
     public String getCoordinate() {
-        return groupID + ":" + artifactID + ":" + versionConstraint;
+        return groupID + Constants.coordinatePartsJoin + artifactID
+                + Constants.coordinatePartsJoin + versionConstraint;
     }
 
     /**

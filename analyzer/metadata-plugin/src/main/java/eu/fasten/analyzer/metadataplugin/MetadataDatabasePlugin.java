@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.RevisionCallGraph;
@@ -137,9 +138,9 @@ public class MetadataDatabasePlugin extends Plugin {
             final var artifact = callgraph.product + "@" + callgraph.version;
             final String groupId;
             final String artifactId;
-            if (callgraph.product.contains(":")) {
-                groupId = callgraph.product.split(":")[0];
-                artifactId = callgraph.product.split(":")[1];
+            if (callgraph.product.contains(Constants.coordinatePartsJoin)) {
+                groupId = callgraph.product.split(Constants.coordinatePartsJoin)[0];
+                artifactId = callgraph.product.split(Constants.coordinatePartsJoin)[1];
             } else {
                 final var productParts = callgraph.product.split("\\.");
                 groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
@@ -221,9 +222,9 @@ public class MetadataDatabasePlugin extends Plugin {
             final var artifact = callgraph.product + "@" + callgraph.version;
             final String groupId;
             final String artifactId;
-            if (callgraph.product.contains(":")) {
-                groupId = callgraph.product.split(":")[0];
-                artifactId = callgraph.product.split(":")[1];
+            if (callgraph.product.contains(Constants.coordinatePartsJoin)) {
+                groupId = callgraph.product.split(Constants.coordinatePartsJoin)[0];
+                artifactId = callgraph.product.split(Constants.coordinatePartsJoin)[1];
             } else {
                 final var productParts = callgraph.product.split("\\.");
                 groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));

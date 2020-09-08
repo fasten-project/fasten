@@ -20,6 +20,7 @@ package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -107,7 +108,8 @@ public class POMAnalyzerPlugin extends Plugin {
             group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
             version = payload.getString("version").replaceAll("[\\n\\t ]", "");
             date = payload.optLong("date", -1L);
-            final var product = group + ":" + artifact + ":" + version;
+            final var product = group + Constants.coordinatePartsJoin + artifact
+                    + Constants.coordinatePartsJoin + version;
             var dataExtractor = new DataExtractor();
             try {
                 repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
@@ -135,9 +137,9 @@ public class POMAnalyzerPlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(group + ":" + artifact, version, repoUrl,
-                                    commitTag, sourcesUrl, packagingType, date, projectName,
-                                    dependencyData, metadataDao);
+                            id = saveToDatabase(group + Constants.coordinatePartsJoin + artifact,
+                                    version, repoUrl, commitTag, sourcesUrl, packagingType, date,
+                                    projectName, dependencyData, metadataDao);
                         } catch (RuntimeException e) {
                             logger.error("Error saving data to the database: '" + product + "'", e);
                             processedRecord = false;
@@ -194,11 +196,11 @@ public class POMAnalyzerPlugin extends Plugin {
             packageVersionMetadata.put("packagingType", packagingType);
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
                     "OPAL", version, null, packageVersionMetadata);
-            for (var dependency : dependencyData.dependencies) {
-                var depProduct = dependency.groupId + ":" + dependency.artifactId;
+            for (var dep : dependencyData.dependencies) {
+                var depProduct = dep.groupId + Constants.coordinatePartsJoin + dep.artifactId;
                 final var depId = metadataDao.insertPackage(depProduct, "mvn", null, null, null);
                 metadataDao.insertDependency(packageVersionId, depId,
-                        dependency.getVersionConstraints(), dependency.toJSON());
+                        dep.getVersionConstraints(), dep.toJSON());
             }
             return packageVersionId;
         }
