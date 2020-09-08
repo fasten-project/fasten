@@ -138,9 +138,9 @@ public class MetadataDatabasePlugin extends Plugin {
             final var artifact = callgraph.product + "@" + callgraph.version;
             final String groupId;
             final String artifactId;
-            if (callgraph.product.contains(Constants.mvnCoordinatePartsJoin)) {
-                groupId = callgraph.product.split(Constants.mvnCoordinatePartsJoin)[0];
-                artifactId = callgraph.product.split(Constants.mvnCoordinatePartsJoin)[1];
+            if (callgraph.product.contains(Constants.mvnCoordinateSeparator)) {
+                groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
+                artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
             } else {
                 final var productParts = callgraph.product.split("\\.");
                 groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
@@ -222,9 +222,9 @@ public class MetadataDatabasePlugin extends Plugin {
             final var artifact = callgraph.product + "@" + callgraph.version;
             final String groupId;
             final String artifactId;
-            if (callgraph.product.contains(Constants.mvnCoordinatePartsJoin)) {
-                groupId = callgraph.product.split(Constants.mvnCoordinatePartsJoin)[0];
-                artifactId = callgraph.product.split(Constants.mvnCoordinatePartsJoin)[1];
+            if (callgraph.product.contains(Constants.mvnCoordinateSeparator)) {
+                groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
+                artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
             } else {
                 final var productParts = callgraph.product.split("\\.");
                 groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));

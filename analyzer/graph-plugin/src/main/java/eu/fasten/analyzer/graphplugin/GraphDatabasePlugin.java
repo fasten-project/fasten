@@ -119,9 +119,9 @@ public class GraphDatabasePlugin extends Plugin {
 
             final String groupId;
             final String artifactId;
-            if (gidGraph.getProduct().contains(Constants.mvnCoordinatePartsJoin)) {
-                groupId = gidGraph.getProduct().split(Constants.mvnCoordinatePartsJoin)[0];
-                artifactId = gidGraph.getProduct().split(Constants.mvnCoordinatePartsJoin)[1];
+            if (gidGraph.getProduct().contains(Constants.mvnCoordinateSeparator)) {
+                groupId = gidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[0];
+                artifactId = gidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[1];
             } else {
                 final var productParts = gidGraph.getProduct().split("\\.");
                 groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));

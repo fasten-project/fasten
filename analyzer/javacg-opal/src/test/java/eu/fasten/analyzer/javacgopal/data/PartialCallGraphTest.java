@@ -186,7 +186,7 @@ class PartialCallGraphTest {
         var cg = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
                 "", "CHA", 1574072773);
         assertNotNull(cg);
-        Assertions.assertEquals(Constants.mavenForge, cg.forge);
+        Assertions.assertEquals(Constants.mvnForge, cg.forge);
         Assertions.assertEquals("1.7.29", cg.version);
         Assertions.assertEquals(1574072773, cg.timestamp);
         Assertions.assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);

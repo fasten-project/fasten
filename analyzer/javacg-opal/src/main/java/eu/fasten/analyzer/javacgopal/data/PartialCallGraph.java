@@ -119,7 +119,7 @@ public class PartialCallGraph {
 
         final var partialCallGraph = new PartialCallGraph(opalCG);
 
-        return new ExtendedRevisionCallGraph(Constants.mavenForge, coordinate.getProduct(),
+        return new ExtendedRevisionCallGraph(Constants.mvnForge, coordinate.getProduct(),
                 coordinate.getVersionConstraint(), timestamp,
                 partialCallGraph.getNodeCount(), Constants.opalGenerator,
                 partialCallGraph.getClassHierarchy(),

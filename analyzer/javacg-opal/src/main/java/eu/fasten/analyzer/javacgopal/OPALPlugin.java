@@ -77,14 +77,14 @@ public class OPALPlugin extends Plugin {
                     throw new EmptyCallGraphException();
                 }
 
-                var groupId = graph.product.split(Constants.mvnCoordinatePartsJoin)[0];
-                var artifactId = graph.product.split(Constants.mvnCoordinatePartsJoin)[1];
+                var groupId = graph.product.split(Constants.mvnCoordinateSeparator)[0];
+                var artifactId = graph.product.split(Constants.mvnCoordinateSeparator)[1];
                 var version = graph.version;
                 var product = artifactId + "_" + groupId + "_" + version;
 
                 var firstLetter = artifactId.substring(0, 1);
 
-                outputPath = File.separator + Constants.mavenForge + File.separator
+                outputPath = File.separator + Constants.mvnForge + File.separator
                         + firstLetter + File.separator
                         + artifactId + File.separator + product + ".json";
 

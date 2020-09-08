@@ -107,8 +107,8 @@ public class POMAnalyzerPlugin extends Plugin {
             group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
             version = payload.getString("version").replaceAll("[\\n\\t ]", "");
             date = payload.optLong("date", -1L);
-            final var product = group + Constants.mvnCoordinatePartsJoin + artifact
-                    + Constants.mvnCoordinatePartsJoin + version;
+            final var product = group + Constants.mvnCoordinateSeparator + artifact
+                    + Constants.mvnCoordinateSeparator + version;
             var dataExtractor = new DataExtractor();
             try {
                 repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
@@ -136,7 +136,7 @@ public class POMAnalyzerPlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(group + Constants.mvnCoordinatePartsJoin + artifact,
+                            id = saveToDatabase(group + Constants.mvnCoordinateSeparator + artifact,
                                     version, repoUrl, commitTag, sourcesUrl, packagingType, date,
                                     projectName, dependencyData, metadataDao);
                         } catch (RuntimeException e) {
@@ -184,7 +184,7 @@ public class POMAnalyzerPlugin extends Plugin {
                                    String sourcesUrl, String packagingType, long timestamp,
                                    String projectName, DependencyData dependencyData,
                                    MetadataDao metadataDao) {
-            final var packageId = metadataDao.insertPackage(product, Constants.mavenForge,
+            final var packageId = metadataDao.insertPackage(product, Constants.mvnForge,
                     projectName, repoUrl, new Timestamp(timestamp));
             var packageVersionMetadata = new JSONObject();
             packageVersionMetadata.put("dependencyManagement",
@@ -196,8 +196,8 @@ public class POMAnalyzerPlugin extends Plugin {
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
                     Constants.opalGenerator, version, null, packageVersionMetadata);
             for (var dep : dependencyData.dependencies) {
-                var depProduct = dep.groupId + Constants.mvnCoordinatePartsJoin + dep.artifactId;
-                final var depId = metadataDao.insertPackage(depProduct, Constants.mavenForge,
+                var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
+                final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge,
                         null, null, null);
                 metadataDao.insertDependency(packageVersionId, depId,
                         dep.getVersionConstraints(), dep.toJSON());

@@ -114,17 +114,17 @@ public class MavenCoordinate {
      * @return MavenCoordinate
      */
     public static MavenCoordinate fromString(final String coords, final String packaging) {
-        var coordinate = coords.split(Constants.mvnCoordinatePartsJoin);
+        var coordinate = coords.split(Constants.mvnCoordinateSeparator);
         return new MavenCoordinate(coordinate[0], coordinate[1], coordinate[2], packaging);
     }
 
     public String getProduct() {
-        return groupID + Constants.mvnCoordinatePartsJoin + artifactID;
+        return groupID + Constants.mvnCoordinateSeparator + artifactID;
     }
 
     public String getCoordinate() {
-        return groupID + Constants.mvnCoordinatePartsJoin + artifactID
-                + Constants.mvnCoordinatePartsJoin + versionConstraint;
+        return groupID + Constants.mvnCoordinateSeparator + artifactID
+                + Constants.mvnCoordinateSeparator + versionConstraint;
     }
 
     /**
