@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import eu.fasten.core.data.Constants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -64,8 +65,8 @@ public class DataExtractor {
     private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
 
     public DataExtractor() {
-        this.mavenRepos = System.getenv("MVN_REPO") != null
-                ? Arrays.asList(System.getenv("MVN_REPO").split(";"))
+        this.mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
+                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
                 : Collections.singletonList("https://repo.maven.apache.org/maven2/");
     }
 
@@ -127,10 +128,12 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + ":" + artifactId + ":" + version);
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
         } catch (FileNotFoundException e) {
             logger.error("Error downloading POM file for: "
-                    + groupId + ":" + artifactId + ":" + version);
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
         }
         return packaging;
     }
@@ -155,10 +158,12 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + ":" + artifactId + ":" + version);
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
         } catch (FileNotFoundException e) {
             logger.error("Error downloading POM file for: "
-                    + groupId + ":" + artifactId + ":" + version);
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
         }
         return name;
     }
@@ -274,10 +279,12 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + ":" + artifactId + ":" + version);
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
         } catch (FileNotFoundException e) {
             logger.error("Error downloading POM file for: "
-                    + groupId + ":" + artifactId + ":" + version);
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
         }
         return repoUrl;
     }
@@ -285,7 +292,8 @@ public class DataExtractor {
     private Element getPomRootElement(String groupId, String artifactId, String version)
             throws FileNotFoundException, DocumentException {
         var pomByteStream =
-                (groupId + ":" + artifactId + ":" + version).equals(this.mavenCoordinate)
+                (groupId + Constants.mvnCoordinateSeparator + artifactId
+                        + Constants.mvnCoordinateSeparator + version).equals(this.mavenCoordinate)
                         ? new ByteArrayInputStream(this.pomContents.getBytes())
                         : new ByteArrayInputStream(this.downloadPom(artifactId, groupId, version)
                         .orElseThrow(FileNotFoundException::new).getBytes());
@@ -293,9 +301,13 @@ public class DataExtractor {
     }
 
     private void updateResolutionMetadata(String groupId, String artifactId, String version, Element pom) {
-        if (this.resolutionMetadata == null || !this.resolutionMetadata.getLeft().equals(groupId + ":" + artifactId + ":" + version)) {
+        if (this.resolutionMetadata == null
+                || !this.resolutionMetadata.getLeft()
+                .equals(groupId + Constants.mvnCoordinateSeparator + artifactId
+                        + Constants.mvnCoordinateSeparator + version)) {
             var metadata = this.extractDependencyResolutionMetadata(pom);
-            this.resolutionMetadata = new ImmutablePair<>(groupId + ":" + artifactId + ":" + version, metadata);
+            this.resolutionMetadata = new ImmutablePair<>(groupId + Constants.mvnCoordinateSeparator
+                    + artifactId + Constants.mvnCoordinateSeparator + version, metadata);
         }
     }
 
@@ -323,10 +335,12 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + ":" + artifactId + ":" + version);
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
         } catch (FileNotFoundException e) {
             logger.error("Error downloading POM file for: "
-                    + groupId + ":" + artifactId + ":" + version);
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
         }
         return commitTag;
     }
@@ -374,10 +388,12 @@ public class DataExtractor {
             dependencyData = new DependencyData(dependencyManagement, dependencies);
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + ":" + artifactId + ":" + version);
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
         } catch (FileNotFoundException e) {
             logger.error("Error downloading POM file for: "
-                    + groupId + ":" + artifactId + ":" + version);
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
         }
         return dependencyData;
     }
@@ -554,10 +570,12 @@ public class DataExtractor {
                 dependencyManagements.addAll(parentMetadata.getRight());
             } catch (DocumentException e) {
                 logger.error("Error parsing POM file for: "
-                        + parentGroup + ":" + parentArtifact + ":" + parentVersion);
+                        + parentGroup + Constants.mvnCoordinateSeparator + parentArtifact
+                        + Constants.mvnCoordinateSeparator + parentVersion);
             } catch (FileNotFoundException e) {
                 logger.error("Error downloading POM file for: "
-                        + parentGroup + ":" + parentArtifact + ":" + parentVersion);
+                        + parentGroup + Constants.mvnCoordinateSeparator + parentArtifact
+                        + Constants.mvnCoordinateSeparator + parentVersion);
             }
         }
         return new ImmutablePair<>(properties, dependencyManagements);
@@ -631,7 +649,8 @@ public class DataExtractor {
                 continue;
             }
             if (pom.isPresent()) {
-                this.mavenCoordinate = groupId + ":" + artifactId + ":" + version;
+                this.mavenCoordinate = groupId + Constants.mvnCoordinateSeparator + artifactId
+                        + Constants.mvnCoordinateSeparator + version;
                 this.pomContents = pom.get();
                 return pom;
             }
