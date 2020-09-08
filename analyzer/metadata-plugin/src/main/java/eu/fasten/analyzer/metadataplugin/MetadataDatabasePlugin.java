@@ -367,12 +367,12 @@ public class MetadataDatabasePlugin extends Plugin {
                 externalEdges.add(new EdgesRecord(sourceLocalId, targetId,
                         JSONB.valueOf(edgeMetadata.toString())));
             }
-            final int batchSize = 4096;
             var internalCallablesIds = new LongArrayList(internalCallables.size());
             final var internalCallablesIterator = internalCallables.iterator();
             while (internalCallablesIterator.hasNext()) {
-                var callablesBatch = new ArrayList<CallablesRecord>(batchSize);
-                while (internalCallablesIterator.hasNext() && callablesBatch.size() < batchSize) {
+                var callablesBatch = new ArrayList<CallablesRecord>(Constants.insertionBatchSize);
+                while (internalCallablesIterator.hasNext()
+                        && callablesBatch.size() < Constants.insertionBatchSize) {
                     callablesBatch.add(internalCallablesIterator.next());
                 }
                 var ids = metadataDao.batchInsertCallables(callablesBatch);
@@ -397,8 +397,9 @@ public class MetadataDatabasePlugin extends Plugin {
             edges.addAll(externalEdges);
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(batchSize);
-                while (edgesIterator.hasNext() && edgesBatch.size() < batchSize) {
+                var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
+                while (edgesIterator.hasNext()
+                        && edgesBatch.size() < Constants.insertionBatchSize) {
                     edgesBatch.add(edgesIterator.next());
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
@@ -501,11 +502,11 @@ public class MetadataDatabasePlugin extends Plugin {
                 edges.add(new EdgesRecord(globalSource, globalTarget,
                         JSONB.valueOf(metadata.toString())));
             }
-            final int edgesBatchSize = 4096;
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(edgesBatchSize);
-                while (edgesIterator.hasNext() && edgesBatch.size() < edgesBatchSize) {
+                var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
+                while (edgesIterator.hasNext()
+                        && edgesBatch.size() < Constants.insertionBatchSize) {
                     edgesBatch.add(edgesIterator.next());
                 }
                 metadataDao.batchInsertEdges(edgesBatch);

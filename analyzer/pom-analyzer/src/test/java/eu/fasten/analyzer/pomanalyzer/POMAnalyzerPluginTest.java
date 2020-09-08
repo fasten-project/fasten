@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -139,7 +140,7 @@ public class POMAnalyzerPluginTest {
         packageVersionMetadata.put("commitTag", commitTag);
         packageVersionMetadata.put("sourcesUrl", sourcesUrl);
         packageVersionMetadata.put("packagingType", packagingType);
-        Mockito.when(metadataDao.insertPackageVersion(packageId, "OPAL", "4.12", null, packageVersionMetadata))
+        Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", null, packageVersionMetadata))
                 .thenReturn(packageVersionId);
         final var dependencyId = 16L;
         Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", "mvn", null, null, null))

@@ -21,6 +21,7 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.data.exceptions.EmptyCallGraphException;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
@@ -76,14 +77,14 @@ public class OPALPlugin extends Plugin {
                     throw new EmptyCallGraphException();
                 }
 
-                var groupId = graph.product.split(":")[0];
-                var artifactId = graph.product.split(":")[1];
+                var groupId = graph.product.split(Constants.coordinatePartsJoin)[0];
+                var artifactId = graph.product.split(Constants.coordinatePartsJoin)[1];
                 var version = graph.version;
                 var product = artifactId + "_" + groupId + "_" + version;
 
                 var firstLetter = artifactId.substring(0, 1);
 
-                outputPath = File.separator + "mvn" + File.separator
+                outputPath = File.separator + Constants.mavenForge + File.separator
                         + firstLetter + File.separator
                         + artifactId + File.separator + product + ".json";
 

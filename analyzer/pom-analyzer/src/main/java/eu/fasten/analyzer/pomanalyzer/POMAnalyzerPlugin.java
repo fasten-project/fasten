@@ -63,7 +63,6 @@ public class POMAnalyzerPlugin extends Plugin {
         private String packagingType = null;
         private String projectName = null;
         private boolean restartTransaction = false;
-        private final int transactionRestartLimit = 3;
         private boolean processedRecord = false;
 
         @Override
@@ -163,7 +162,7 @@ public class POMAnalyzerPlugin extends Plugin {
                 }
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
-                    && transactionRestartCount < transactionRestartLimit);
+                    && transactionRestartCount < Constants.transactionRestartLimit);
         }
 
         /**
@@ -185,8 +184,8 @@ public class POMAnalyzerPlugin extends Plugin {
                                    String sourcesUrl, String packagingType, long timestamp,
                                    String projectName, DependencyData dependencyData,
                                    MetadataDao metadataDao) {
-            final var packageId = metadataDao.insertPackage(product, "mvn", projectName, repoUrl,
-                    new Timestamp(timestamp));
+            final var packageId = metadataDao.insertPackage(product, Constants.mavenForge,
+                    projectName, repoUrl, new Timestamp(timestamp));
             var packageVersionMetadata = new JSONObject();
             packageVersionMetadata.put("dependencyManagement",
                     (dependencyData.dependencyManagement != null)
@@ -195,10 +194,11 @@ public class POMAnalyzerPlugin extends Plugin {
             packageVersionMetadata.put("sourcesUrl", sourcesUrl);
             packageVersionMetadata.put("packagingType", packagingType);
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    "OPAL", version, null, packageVersionMetadata);
+                    Constants.opalGenerator, version, null, packageVersionMetadata);
             for (var dep : dependencyData.dependencies) {
                 var depProduct = dep.groupId + Constants.coordinatePartsJoin + dep.artifactId;
-                final var depId = metadataDao.insertPackage(depProduct, "mvn", null, null, null);
+                final var depId = metadataDao.insertPackage(depProduct, Constants.mavenForge,
+                        null, null, null);
                 metadataDao.insertDependency(packageVersionId, depId,
                         dep.getVersionConstraints(), dep.toJSON());
             }

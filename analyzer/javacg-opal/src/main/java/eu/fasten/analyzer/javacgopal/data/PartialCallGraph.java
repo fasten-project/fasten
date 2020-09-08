@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Scope;
@@ -118,9 +119,9 @@ public class PartialCallGraph {
 
         final var partialCallGraph = new PartialCallGraph(opalCG);
 
-        return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
+        return new ExtendedRevisionCallGraph(Constants.mavenForge, coordinate.getProduct(),
                 coordinate.getVersionConstraint(), timestamp,
-                partialCallGraph.getNodeCount(), "OPAL",
+                partialCallGraph.getNodeCount(), Constants.opalGenerator,
                 partialCallGraph.getClassHierarchy(),
                 partialCallGraph.getGraph());
     }
