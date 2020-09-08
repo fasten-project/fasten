@@ -30,17 +30,20 @@ import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.*;
+
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.jooq.Query;
+
+import org.jooq.*;
+import org.jooq.impl.TableImpl;
+import org.json.JSONArray;
 import org.json.JSONObject;
+
+import static org.jooq.impl.DSL.field;
 
 public class MetadataDao {
 
@@ -685,5 +688,206 @@ public class MetadataDao {
         }
 
         return ids;
+    }
+
+
+    //////////////////////////
+    // VULNERABILITY PLUGIN //
+    //////////////////////////
+
+    /**
+     * Injects in the metadata of the callable vulnerability information.
+     * @param vulnJSON - JSON of the vulnerability to inject
+     * @param callId - Long ID of the callable interested
+     */
+    public void injectCallableVulnerability(String vulnJSON, Long callId) {
+        JSONObject vulnData = new JSONObject(vulnJSON);
+        JSONArray vulns = new JSONArray();
+        vulns.put(vulnData);
+
+        var callableVulns = context.select(field("{0}->'vulnerabilities'",
+                String.class, Callables.CALLABLES.METADATA))
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.equal(callId))
+                .fetchOne();
+
+        // Check if the JSON contains vulnerabilities already
+        boolean checkExistence = callableVulns.get(0) != null;
+
+        if (checkExistence) {
+            // There is already a vulnerability object --> append a new one
+            context
+                    .update(Callables.CALLABLES)
+                    .set(Callables.CALLABLES.METADATA,
+                            field("jsonb_set(\n" +
+                                    "  metadata,\n" +
+                                    "  '{\"vulnerabilities\"}',\n" +
+                                    "   (metadata -> 'vulnerabilities')::jsonb || '" + vulns.toString() + "'::jsonb," +
+                                    "  true)", JSONB.class))
+                    .where(Callables.CALLABLES.ID.equal(callId))
+                    .execute();
+        } else {
+            // There is no vulnerability object --> add a new one
+            context
+                    .update(Callables.CALLABLES)
+                    .set(Callables.CALLABLES.METADATA,
+                            field("jsonb_set(\n" +
+                                    "  metadata,\n" +
+                                    "  '{\"vulnerabilities\"}',\n" +
+                                    "   '" + vulns.toString() + "'::jsonb," +
+                                    "  true)", JSONB.class))
+                    .where(Callables.CALLABLES.ID.equal(callId))
+                    .execute();
+        }
+    }
+
+    /**
+     * Injects in the metadata of the callable vulnerability information.
+     * @param vulnJSON - JSON of the vulnerability to inject
+     * @param pkgVersionId - Long ID of the packge_version interested
+     */
+    public void injectPackageVersionVulnerability(String vulnJSON, Long pkgVersionId) {
+        JSONObject vulnData = new JSONObject(vulnJSON);
+        JSONArray vulns = new JSONArray();
+        vulns.put(vulnData);
+
+        var packageVersionVuln = context.select(field("{0}->'vulnerabilities'",
+                String.class, PackageVersions.PACKAGE_VERSIONS.METADATA))
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.equal(pkgVersionId))
+                .fetchOne();
+
+        // Check if the JSON contains vulnerabilities already
+        boolean checkExistence = packageVersionVuln.get(0) != null;
+
+        if (checkExistence) {
+            // There is already a vulnerability object --> append a new one
+            context
+                .update(PackageVersions.PACKAGE_VERSIONS)
+                .set(PackageVersions.PACKAGE_VERSIONS.METADATA,
+                        field("jsonb_set(\n" +
+                                "  metadata,\n" +
+                                "  '{\"vulnerabilities\"}',\n" +
+                                "   (metadata -> 'vulnerabilities')::jsonb || '" + vulns.toString() + "'::jsonb," +
+                                "  true)", JSONB.class))
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.equal(pkgVersionId))
+                .execute();
+        } else {
+            // There is no vulnerability object --> add a new one
+            context
+                .update(PackageVersions.PACKAGE_VERSIONS)
+                .set(PackageVersions.PACKAGE_VERSIONS.METADATA,
+                        field("jsonb_set(\n" +
+                                "  metadata,\n" +
+                                "  '{\"vulnerabilities\"}',\n" +
+                                "   '" + vulns.toString() + "'::jsonb," +
+                                "  true)", JSONB.class))
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.equal(pkgVersionId))
+                .execute();
+        }
+    }
+
+    /**
+     * Finds all the callable ids with the given fasten_uri
+     * @param fastenUri - String
+     * @return - List of ids of the callables
+     */
+    public List<Long> getCallableIdsForFastenUri(String fastenUri) {
+        List<Long> ids = new ArrayList<>();
+
+        Result<Record> crs = context.select()
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.FASTEN_URI.equal(fastenUri))
+                .fetch();
+
+        for (Record cr : crs) {
+            ids.add((Long) cr.get(0));
+        }
+
+        return ids;
+    }
+
+    /**
+     * Finds all callables that belong to a module.
+     * @param moduleId - Long ID of the module
+     * @return - List of records
+     */
+    public Result<Record> getCallablesInModule(Long moduleId) {
+        return context.select()
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.MODULE_ID.equal(moduleId))
+                .fetch();
+    }
+
+    /**
+     * Retrieve the fileId of the file that was patched.
+     * @param packageVersionId - Long pkg version ID
+     * @param filepath - path to the file
+     * @return -1 if the file cannot be found
+     */
+    public Long getFileId(Long packageVersionId, String filepath) {
+        // For the demo, just cut out the filename, without the path
+        var splits = filepath.split("/");
+        var filename = splits[splits.length - 1];
+
+        FilesRecord fr = (FilesRecord) context.select()
+                .from(Files.FILES)
+                .where(Files.FILES.PACKAGE_VERSION_ID.equal(packageVersionId))
+                .and(Files.FILES.PATH.equal(filename))
+                .fetchOne();
+
+        if (fr != null) {
+            return fr.getId();
+        } else {
+            return -1L;
+        }
+    }
+
+    /**
+     * Gets the moduleId that corresponds to the file.
+     * @param fileId - Long fileId
+     * @return list of module Ids
+     */
+    public List<Long> getModuleIds(Long fileId) {
+        List<Long> moduleIds = new ArrayList<>();
+        Result<Record> mcr = context.select()
+                .from(ModuleContents.MODULE_CONTENTS)
+                .where(ModuleContents.MODULE_CONTENTS.FILE_ID.equal(fileId))
+                .fetch();
+
+        for (Record record : mcr) {
+            moduleIds.add((Long) record.get(0));
+        }
+
+        return moduleIds;
+    }
+
+    /**
+     * Finds the ID of the package given the package given coordinate and forge.
+     * Note, this is ecosystem agnostic
+     * @param coordinate - includes information about the package
+     * @param forge - ['mvn', 'PyPI', 'Debian']
+     * @return - Record of the package if found
+     */
+    public PackagesRecord getPackageIdFromCoordinate(String coordinate, String forge) {
+        return (PackagesRecord) context.select()
+                .from(Packages.PACKAGES)
+                .where(Packages.PACKAGES.PACKAGE_NAME.equal(coordinate))
+                .and(Packages.PACKAGES.FORGE.equal(forge))
+                .fetchOne();
+    }
+
+    /**
+     * Finds the ID of the package_version in all the version of the package.
+     * @param pkgId - ID of the package
+     * @param version - String of the version of the package_version
+     * @return - Record of the package_version if found
+     */
+    public PackageVersionsRecord getPackageVersionIdFromVersion(Long pkgId, String version) {
+        return (PackageVersionsRecord) context.select()
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .where(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.equal(pkgId))
+                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equal(version))
+                .fetchOne();
     }
 }
