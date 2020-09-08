@@ -131,7 +131,7 @@ public class POMAnalyzerPluginTest {
                 "}"));
         var commitTag = "f8a34a";
         final var packageId = 1L;
-        Mockito.when(metadataDao.insertPackage("junit.junit", "mvn", null, repoUrl, null))
+        Mockito.when(metadataDao.insertPackage("junit.junit", Constants.mavenForge, null, repoUrl, null))
                 .thenReturn(packageId);
         final var packageVersionId = 0L;
         var packageVersionMetadata = new JSONObject();
@@ -143,7 +143,7 @@ public class POMAnalyzerPluginTest {
         Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", null, packageVersionMetadata))
                 .thenReturn(packageVersionId);
         final var dependencyId = 16L;
-        Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", "mvn", null, null, null))
+        Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", Constants.mavenForge, null, null, null))
                 .thenReturn(dependencyId);
         var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, -1, projectName, dependencyData, metadataDao);
         assertEquals(packageVersionId, result);

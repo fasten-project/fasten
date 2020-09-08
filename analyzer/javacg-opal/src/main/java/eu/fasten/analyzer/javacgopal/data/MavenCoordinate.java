@@ -83,8 +83,8 @@ public class MavenCoordinate {
      */
     public MavenCoordinate(final String groupID, final String artifactID, final String version,
                            final String packaging) {
-        this.mavenRepos = System.getenv("MVN_REPO") != null
-                ? Arrays.asList(System.getenv("MVN_REPO").split(";"))
+        this.mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
+                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
                 : Collections.singletonList("https://repo.maven.apache.org/maven2/");
         this.groupID = groupID;
         this.artifactID = artifactID;
@@ -98,8 +98,8 @@ public class MavenCoordinate {
      * @param kafkaConsumedJson json representation of Meven coordinate
      */
     public MavenCoordinate(final JSONObject kafkaConsumedJson) throws JSONException {
-        this.mavenRepos = System.getenv("MVN_REPO") != null
-                ? Arrays.asList(System.getenv("MVN_REPO").split(";"))
+        this.mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
+                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
                 : Collections.singletonList("https://repo.maven.apache.org/maven2/");
         this.groupID = kafkaConsumedJson.getString("groupId");
         this.artifactID = kafkaConsumedJson.getString("artifactId");
@@ -114,17 +114,17 @@ public class MavenCoordinate {
      * @return MavenCoordinate
      */
     public static MavenCoordinate fromString(final String coords, final String packaging) {
-        var coordinate = coords.split(Constants.coordinatePartsJoin);
+        var coordinate = coords.split(Constants.mvnCoordinatePartsJoin);
         return new MavenCoordinate(coordinate[0], coordinate[1], coordinate[2], packaging);
     }
 
     public String getProduct() {
-        return groupID + Constants.coordinatePartsJoin + artifactID;
+        return groupID + Constants.mvnCoordinatePartsJoin + artifactID;
     }
 
     public String getCoordinate() {
-        return groupID + Constants.coordinatePartsJoin + artifactID
-                + Constants.coordinatePartsJoin + versionConstraint;
+        return groupID + Constants.mvnCoordinatePartsJoin + artifactID
+                + Constants.mvnCoordinatePartsJoin + versionConstraint;
     }
 
     /**

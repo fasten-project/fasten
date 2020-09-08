@@ -107,8 +107,8 @@ public class POMAnalyzerPlugin extends Plugin {
             group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
             version = payload.getString("version").replaceAll("[\\n\\t ]", "");
             date = payload.optLong("date", -1L);
-            final var product = group + Constants.coordinatePartsJoin + artifact
-                    + Constants.coordinatePartsJoin + version;
+            final var product = group + Constants.mvnCoordinatePartsJoin + artifact
+                    + Constants.mvnCoordinatePartsJoin + version;
             var dataExtractor = new DataExtractor();
             try {
                 repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
@@ -136,7 +136,7 @@ public class POMAnalyzerPlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(group + Constants.coordinatePartsJoin + artifact,
+                            id = saveToDatabase(group + Constants.mvnCoordinatePartsJoin + artifact,
                                     version, repoUrl, commitTag, sourcesUrl, packagingType, date,
                                     projectName, dependencyData, metadataDao);
                         } catch (RuntimeException e) {
@@ -196,7 +196,7 @@ public class POMAnalyzerPlugin extends Plugin {
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
                     Constants.opalGenerator, version, null, packageVersionMetadata);
             for (var dep : dependencyData.dependencies) {
-                var depProduct = dep.groupId + Constants.coordinatePartsJoin + dep.artifactId;
+                var depProduct = dep.groupId + Constants.mvnCoordinatePartsJoin + dep.artifactId;
                 final var depId = metadataDao.insertPackage(depProduct, Constants.mavenForge,
                         null, null, null);
                 metadataDao.insertDependency(packageVersionId, depId,

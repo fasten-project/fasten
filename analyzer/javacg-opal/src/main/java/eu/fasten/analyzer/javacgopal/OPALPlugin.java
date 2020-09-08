@@ -77,8 +77,8 @@ public class OPALPlugin extends Plugin {
                     throw new EmptyCallGraphException();
                 }
 
-                var groupId = graph.product.split(Constants.coordinatePartsJoin)[0];
-                var artifactId = graph.product.split(Constants.coordinatePartsJoin)[1];
+                var groupId = graph.product.split(Constants.mvnCoordinatePartsJoin)[0];
+                var artifactId = graph.product.split(Constants.mvnCoordinatePartsJoin)[1];
                 var version = graph.version;
                 var product = artifactId + "_" + groupId + "_" + version;
 

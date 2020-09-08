@@ -110,10 +110,10 @@ public class RepoClonerPlugin extends Plugin {
             version = json.getString("version").replaceAll("[\\n\\t ]", "");
             commitTag = json.optString("commitTag").replaceAll("[\\n\\t ]", "");
             sourcesUrl = json.optString("sourcesUrl").replaceAll("[\\n\\t ]", "");
-            String product = group + Constants.coordinatePartsJoin + artifact
-                    + Constants.coordinatePartsJoin + version;
+            String product = group + Constants.mvnCoordinatePartsJoin + artifact
+                    + Constants.mvnCoordinatePartsJoin + version;
             outputPath = File.separator + artifact.charAt(0) + File.separator + artifact
-                    + File.separator + product.replace(Constants.coordinatePartsJoin, "_")
+                    + File.separator + product.replace(Constants.mvnCoordinatePartsJoin, "_")
                     + ".json";
             var repoUrl = json.optString("repoUrl").replaceAll("[\\n\\t ]", "");
             if (!repoUrl.isEmpty()) {
