@@ -20,14 +20,17 @@ public class ReplacedGCPAuthenticator implements Authenticator {
         this.credentials = credentials;
     }
 
+    @Override
     public String getName() {
-        return "gcp";
+        return this.getClass().getSimpleName();
     }
 
+    @Override
     public String getToken(Map<String, Object> config) {
         return (String) config.get("access-token");
     }
 
+    @Override
     public boolean isExpired(Map<String, Object> config) {
         Object expiryObj = config.get("expiry");
         Instant expiry = null;
@@ -46,6 +49,7 @@ public class ReplacedGCPAuthenticator implements Authenticator {
         return expiry != null && expiry.compareTo(Instant.now()) <= 0;
     }
 
+    @Override
     public Map<String, Object> refresh(Map<String, Object> config) {
         try {
             AccessToken accessToken = this.credentials.refreshAccessToken();
