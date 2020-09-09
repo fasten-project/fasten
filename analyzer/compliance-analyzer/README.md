@@ -52,7 +52,7 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
 
 1. Click on "Continue":
     <p align="center">
-        <img src="img/dgraph_login.png" alt="DGraph login page" width="75%"/>
+        <img src="https://user-images.githubusercontent.com/45048351/92643192-0649f280-f2ea-11ea-842d-ee9612f54f7c.png" alt="DGraph login page" width="75%"/>
     </p>
 
 1. Navigate to the "Console" page
@@ -107,7 +107,7 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
 
 1. The generated Build Graph should look something like this:
     <p align="center">
-        <img src="img/build_graph.png" alt="Generated Build Graph example"/>
+        <img src="https://user-images.githubusercontent.com/45048351/92642755-5d02fc80-f2e9-11ea-87e4-c0e013ff25d4.png" alt="Generated Build Graph example"/>
     </p>
 
 ## Join the community
