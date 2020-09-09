@@ -135,7 +135,8 @@ public class MetadataDatabasePlugin extends Plugin {
                     return;
                 }
             }
-            final var artifact = callgraph.product + "@" + callgraph.version;
+            final var artifact = callgraph.product + Constants.mvnCoordinateSeparator
+                    + callgraph.version;
             final String groupId;
             final String artifactId;
             if (callgraph.product.contains(Constants.mvnCoordinateSeparator)) {
@@ -219,7 +220,8 @@ public class MetadataDatabasePlugin extends Plugin {
                     return;
                 }
             }
-            final var artifact = callgraph.product + "@" + callgraph.version;
+            final var artifact = callgraph.product + Constants.mvnCoordinateSeparator
+                    + callgraph.version;
             final String groupId;
             final String artifactId;
             if (callgraph.product.contains(Constants.mvnCoordinateSeparator)) {
