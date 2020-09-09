@@ -73,7 +73,7 @@ public class RocksDao implements Closeable {
      * @param dbDir Directory where RocksDB data will be stored
      * @throws RocksDBException if there is an error loading or opening RocksDB instance
      */
-    public RocksDao(final String dbDir) throws RocksDBException {
+    public RocksDao(final String dbDir, final boolean readOnly) throws RocksDBException {
         RocksDB.loadLibrary();
         final ColumnFamilyOptions cfOptions = new ColumnFamilyOptions();
         final DBOptions dbOptions = new DBOptions()
@@ -82,7 +82,9 @@ public class RocksDao implements Closeable {
         final List<ColumnFamilyDescriptor> cfDescriptors = Collections.singletonList(
                 new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, cfOptions));
         final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
-        this.rocksDb = RocksDB.open(dbOptions, dbDir, cfDescriptors, columnFamilyHandles);
+        this.rocksDb = readOnly
+                ? RocksDB.openReadOnly(dbOptions, dbDir, cfDescriptors, columnFamilyHandles)
+                : RocksDB.open(dbOptions, dbDir, cfDescriptors, columnFamilyHandles);
         this.defaultHandle = columnFamilyHandles.get(0);
         initKryo();
     }

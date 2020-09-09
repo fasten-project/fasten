@@ -20,8 +20,11 @@ package eu.fasten.analyzer.javacgopal.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
@@ -60,7 +63,7 @@ class PartialCallGraphTest {
     private static PartialCallGraph singleCallCG;
 
     @BeforeAll
-    static void setUp() {
+    static void setUp() throws OPALException {
         singleCallCG = new PartialCallGraph(new CallGraphConstructor(
                 new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                         .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA"));
@@ -148,12 +151,42 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void createExtendedRevisionCallGraph() throws FileNotFoundException {
+    void OPALExceptionInConstructorNotFromOpalTest() {
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        var exception = new RuntimeException("some message");
+        exception.setStackTrace(new StackTraceElement[]{new StackTraceElement("some.class", "some method", "some file", 10)});
+        Mockito.when(constructor.getProject()).thenThrow(exception);
+
+        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor));
+    }
+
+    @Test
+    void OPALExceptionInConstructorFromOpalTest() {
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        var exception = Mockito.mock(RuntimeException.class);
+        Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{new StackTraceElement("org.opalj", "some method", "some file", 10)});
+        Mockito.when(constructor.getProject()).thenThrow(exception);
+
+        assertThrows(OPALException.class, () -> new PartialCallGraph(constructor));
+    }
+
+    @Test
+    void OPALExceptionInConstructorEmptyStacktraceTest() {
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        var exception = Mockito.mock(RuntimeException.class);
+        Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{});
+        Mockito.when(constructor.getProject()).thenThrow(exception);
+
+        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor));
+    }
+
+    @Test
+    void createExtendedRevisionCallGraph() throws FileNotFoundException, OPALException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
         var cg = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
                 "", "CHA", 1574072773);
         assertNotNull(cg);
-        Assertions.assertEquals("mvn", cg.forge);
+        Assertions.assertEquals(Constants.mvnForge, cg.forge);
         Assertions.assertEquals("1.7.29", cg.version);
         Assertions.assertEquals(1574072773, cg.timestamp);
         Assertions.assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
@@ -162,7 +195,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHAMultipleDeclarations() {
+    void internalExternalCHAMultipleDeclarations() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 
@@ -201,7 +234,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHASingleDeclaration() {
+    void internalExternalCHASingleDeclaration() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 
@@ -241,7 +274,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHAVirtual() {
+    void internalExternalCHAVirtual() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 
@@ -280,7 +313,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHANoDefinition() {
+    void internalExternalCHANoDefinition() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 

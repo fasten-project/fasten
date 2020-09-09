@@ -32,7 +32,22 @@ public class RocksDBConnector {
      */
     public static RocksDao createRocksDBAccessObject(String dbDir) throws RuntimeException {
         try {
-            return new RocksDao(dbDir);
+            return new RocksDao(dbDir, false);
+        } catch (RocksDBException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Creates Database Access Object for RocksDB in Read-Only mode.
+     *
+     * @param dbDir Directory where the database is stored
+     * @return RocksDao instance
+     * @throws RuntimeException if there was a problem opening connection to RocksDB
+     */
+    public static RocksDao createReadOnlyRocksDBAccessObject(String dbDir) throws RuntimeException {
+        try {
+            return new RocksDao(dbDir, true);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }

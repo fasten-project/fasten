@@ -37,7 +37,7 @@ public class RocksDaoTest {
 
     @BeforeEach
     public void setUp() throws RocksDBException {
-        rocksDao = new RocksDao("graphDB");
+        rocksDao = new RocksDao("graphDB", false);
     }
 
     @AfterEach

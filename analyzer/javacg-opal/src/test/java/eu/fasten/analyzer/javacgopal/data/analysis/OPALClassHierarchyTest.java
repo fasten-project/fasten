@@ -716,4 +716,27 @@ class OPALClassHierarchyTest {
         assertEquals("/some.package/typeName", ((HashMap<String, Object>) callSite.get("0")).get("receiver"));
         assertEquals("testType", ((HashMap<String, Object>) callSite.get("0")).get("type"));
     }
+
+    @Test
+    void getCallSiteNotFoundInstruction() {
+        var methodInvocationInstruction = Mockito.mock(MethodInvocationInstruction.class);
+        Mockito.when(methodInvocationInstruction.declaringClass()).thenReturn(type);
+
+        var code = Mockito.mock(Code.class);
+        Mockito.when(code.lineNumber(0)).thenReturn(Option.apply(30));
+
+        var source = Mockito.mock(Method.class);
+        Mockito.when(source.instructionsOption())
+                .thenReturn(Option.apply(new Instruction[]{null}));
+        Mockito.when(source.body()).thenReturn(Option.apply(code));
+
+        var classHierarchy = new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5);
+        var callSite = classHierarchy.getCallSite(source, 0);
+
+        assertNotNull(callSite);
+
+        assertEquals(30, ((HashMap<String, Object>) callSite.get("0")).get("line"));
+        assertEquals("notFound", ((HashMap<String, Object>) callSite.get("0")).get("receiver"));
+        assertEquals("notFound", ((HashMap<String, Object>) callSite.get("0")).get("type"));
+    }
 }

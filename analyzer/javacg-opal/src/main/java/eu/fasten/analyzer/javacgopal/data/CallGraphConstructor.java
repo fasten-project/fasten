@@ -21,6 +21,7 @@ package eu.fasten.analyzer.javacgopal.data;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import java.io.File;
 import java.net.URL;
 import java.util.Map;
@@ -49,25 +50,34 @@ public class CallGraphConstructor {
      * @param mainClass main class of the package in case of application
      * @param algorithm algorithm for generating call graph
      */
-    public CallGraphConstructor(final File file, final String mainClass, final String algorithm) {
-        OPALLogger.updateLogger(GlobalLogContext$.MODULE$,
-                new ConsoleOPALLogger(false, Fatal$.MODULE$));
-
-        if (mainClass == null || mainClass.isEmpty()) {
-            this.project = Project.apply(file);
-
-        } else {
-            final var log = Project.apply(file);
-            OPALLogger.updateLogger(log.logContext(),
+    public CallGraphConstructor(final File file, final String mainClass, final String algorithm)
+            throws OPALException {
+        try {
+            OPALLogger.updateLogger(GlobalLogContext$.MODULE$,
                     new ConsoleOPALLogger(false, Fatal$.MODULE$));
 
-            this.project = Project
-                    .apply(file, log.logContext().successor(), createConfig(mainClass));
-        }
+            if (mainClass == null || mainClass.isEmpty()) {
+                this.project = Project.apply(file);
 
-        OPALLogger.updateLogger(project.logContext(),
-                new ConsoleOPALLogger(false, Fatal$.MODULE$));
-        this.callGraph = generateCallGraph(project, algorithm);
+            } else {
+                final var log = Project.apply(file);
+                OPALLogger.updateLogger(log.logContext(),
+                        new ConsoleOPALLogger(false, Fatal$.MODULE$));
+
+                this.project = Project
+                        .apply(file, log.logContext().successor(), createConfig(mainClass));
+            }
+
+            OPALLogger.updateLogger(project.logContext(),
+                    new ConsoleOPALLogger(false, Fatal$.MODULE$));
+            this.callGraph = generateCallGraph(project, algorithm);
+        } catch (Exception e) {
+            var opalException = new OPALException(
+                    "Original error type: " + e.getClass().getSimpleName()
+                            + "; Original message: " + e.getMessage());
+            opalException.setStackTrace(e.getStackTrace());
+            throw opalException;
+        }
     }
 
     public Project<URL> getProject() {

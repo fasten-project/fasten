@@ -20,6 +20,7 @@ package eu.fasten.server.connectors;
 
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import eu.fasten.core.data.Constants;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -41,8 +42,9 @@ public class PostgresConnector {
         if (!new Driver().acceptsURL(dbUrl)) {
             throw new IllegalArgumentException("Could not parse database URI: " + dbUrl);
         }
-        var pass = System.getenv("FASTEN_DBPASS") != null ?  System.getenv("FASTEN_DBPASS")
-                : System.getenv("PGPASSWORD");
+        var pass = System.getenv(Constants.fastenDbPassEnvVariable) != null
+                ?  System.getenv(Constants.fastenDbPassEnvVariable)
+                : System.getenv(Constants.pgPasswordEnvVariable);
 
         if (pass == null) {
             throw new IllegalArgumentException("No password for DB is provided");

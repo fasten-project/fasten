@@ -34,6 +34,8 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -136,7 +138,7 @@ public class MetadataDao {
                         PackageVersions.PACKAGE_VERSIONS.as("excluded").CREATED_AT)
                 .set(PackageVersions.PACKAGE_VERSIONS.METADATA,
                         JsonbDSL.concat(PackageVersions.PACKAGE_VERSIONS.METADATA,
-                        PackageVersions.PACKAGE_VERSIONS.as("excluded").METADATA))
+                                PackageVersions.PACKAGE_VERSIONS.as("excluded").METADATA))
                 .returning(PackageVersions.PACKAGE_VERSIONS.ID).fetchOne();
         return resultRecord.getValue(PackageVersions.PACKAGE_VERSIONS.ID);
     }
@@ -293,7 +295,7 @@ public class MetadataDao {
                         BinaryModules.BINARY_MODULES.as("excluded").CREATED_AT)
                 .set(BinaryModules.BINARY_MODULES.METADATA,
                         JsonbDSL.concat(BinaryModules.BINARY_MODULES.METADATA,
-                        BinaryModules.BINARY_MODULES.as("excluded").METADATA))
+                                BinaryModules.BINARY_MODULES.as("excluded").METADATA))
                 .returning(BinaryModules.BINARY_MODULES.ID).fetchOne();
         return resultRecord.getValue(BinaryModules.BINARY_MODULES.ID);
     }
@@ -602,5 +604,93 @@ public class MetadataDao {
                         Callables.CALLABLES.as("excluded").METADATA))
                 .returning(Callables.CALLABLES.ID).fetch();
         return result.getValues(Callables.CALLABLES.ID);
+    }
+
+    /**
+     * Inserts all the callables from the CG.
+     * First batch inserts all internal callables,
+     * then retrieves IDs of all external callables that are already in the database,
+     * and then batch inserts all new external callables.
+     *
+     * @param callables   List of callables. NB! First all internal callables and then all external.
+     * @param numInternal Number of internal callables in the callables list
+     * @return List of IDs of inserted callables from the database.
+     */
+    public List<Long> insertCallablesSeparately(List<CallablesRecord> callables, int numInternal) {
+        var ids = new ArrayList<Long>(callables.size());
+        var internalCallables = new ArrayList<CallablesRecord>(numInternal);
+        var externalCallables = new ArrayList<CallablesRecord>(callables.size() - numInternal);
+        for (int i = 0; i < callables.size(); i++) {
+            if (i < numInternal) {
+                internalCallables.add(callables.get(i));
+            } else {
+                externalCallables.add(callables.get(i));
+            }
+        }
+        // Batch insert internal callables
+        final var batchSize = 4096;
+        final var callablesIterator = internalCallables.iterator();
+        while (callablesIterator.hasNext()) {
+            var callablesBatch = new ArrayList<CallablesRecord>(batchSize);
+            while (callablesIterator.hasNext() && callablesBatch.size() < batchSize) {
+                callablesBatch.add(callablesIterator.next());
+            }
+            var callablesIds = this.batchInsertCallables(callablesBatch);
+            ids.addAll(callablesIds);
+        }
+
+        // Get IDs of external callables that are already in the database
+        HashMap<String, Long> uriMap = null;
+        if (externalCallables.size() > 0) {
+            var urisCondition = Callables.CALLABLES.FASTEN_URI
+                    .eq(externalCallables.get(0).getFastenUri());
+            for (int i = 1; i < externalCallables.size(); i++) {
+                urisCondition = urisCondition
+                        .or(Callables.CALLABLES.FASTEN_URI.eq(externalCallables.get(i).getFastenUri()));
+            }
+            var result = context
+                    .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
+                    .from(Callables.CALLABLES)
+                    .where(Callables.CALLABLES.MODULE_ID.eq(-1L))
+                    .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(false))
+                    .and(urisCondition)
+                    .fetch();
+            uriMap = new HashMap<String, Long>(result.size());
+            for (var tuple : result) {
+                uriMap.put(tuple.value2(), tuple.value1());
+            }
+
+        }
+
+        if (uriMap == null) {
+            uriMap = new HashMap<>();
+        }
+        // Batch insert external callables which are not in the database yet
+        var newExternalCallables = new ArrayList<CallablesRecord>(
+                externalCallables.size() - uriMap.size()
+        );
+        for (var callable : externalCallables) {
+            if (!uriMap.containsKey(callable.getFastenUri())) {
+                newExternalCallables.add(callable);
+            }
+        }
+        final var newExternalCallablesIterator = newExternalCallables.iterator();
+        while (newExternalCallablesIterator.hasNext()) {
+            var callablesBatch = new ArrayList<CallablesRecord>(batchSize);
+            while (newExternalCallablesIterator.hasNext() && callablesBatch.size() < batchSize) {
+                callablesBatch.add(newExternalCallablesIterator.next());
+            }
+            var callablesIds = this.batchInsertCallables(callablesBatch);
+            for (int i = 0; i < callablesBatch.size(); i++) {
+                uriMap.put(callablesBatch.get(i).getFastenUri(), callablesIds.get(i));
+            }
+        }
+
+        // Add external IDs to the result in the correct order
+        for (var externalCallable : externalCallables) {
+            ids.add(uriMap.get(externalCallable.getFastenUri()));
+        }
+
+        return ids;
     }
 }

@@ -21,6 +21,8 @@ package eu.fasten.analyzer.javacgopal.data;
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph.Scope;
@@ -57,17 +59,31 @@ public class PartialCallGraph {
      *
      * @param constructor call graph constructor
      */
-    public PartialCallGraph(CallGraphConstructor constructor) {
+    public PartialCallGraph(CallGraphConstructor constructor) throws OPALException {
         this.graph = new Graph();
 
-        logger.info("Creating internal CHA");
-        final var cha = createInternalCHA(constructor.getProject());
+        try {
+            logger.info("Creating internal CHA");
+            final var cha = createInternalCHA(constructor.getProject());
 
-        logger.info("Creating graph with external CHA");
-        createGraphWithExternalCHA(constructor.getCallGraph(), cha);
+            logger.info("Creating graph with external CHA");
+            createGraphWithExternalCHA(constructor.getCallGraph(), cha);
 
-        this.nodeCount = cha.getNodeCount();
-        this.classHierarchy = cha.asURIHierarchy(constructor.getProject().classHierarchy());
+            this.nodeCount = cha.getNodeCount();
+            this.classHierarchy = cha.asURIHierarchy(constructor.getProject().classHierarchy());
+        } catch (Exception e) {
+            if (e.getStackTrace().length > 0) {
+                var stackTrace = e.getStackTrace()[0];
+                if (stackTrace.toString().startsWith("org.opalj")) {
+                    var opalException = new OPALException(
+                            "Original error type: " + e.getClass().getSimpleName()
+                                    + "; Original message: " + e.getMessage());
+                    opalException.setStackTrace(e.getStackTrace());
+                    throw opalException;
+                }
+            }
+            throw e;
+        }
     }
 
     public Map<Scope, Map<FastenURI, Type>> getClassHierarchy() {
@@ -95,18 +111,17 @@ public class PartialCallGraph {
     public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(
             final MavenCoordinate coordinate, final String mainClass,
             final String algorithm, final long timestamp)
-            throws FileNotFoundException {
-        final var file = new MavenCoordinate.MavenResolver().downloadJar(coordinate)
-            .orElseThrow(RuntimeException::new);
+            throws FileNotFoundException, OPALException {
+        final var file = new MavenCoordinate.MavenResolver().downloadArtifact(coordinate);
 
         logger.info("OPAL is analysing the artifact");
         final var opalCG = new CallGraphConstructor(file, mainClass, algorithm);
 
         final var partialCallGraph = new PartialCallGraph(opalCG);
 
-        return new ExtendedRevisionCallGraph("mvn", coordinate.getProduct(),
+        return new ExtendedRevisionCallGraph(Constants.mvnForge, coordinate.getProduct(),
                 coordinate.getVersionConstraint(), timestamp,
-                partialCallGraph.getNodeCount(), "OPAL",
+                partialCallGraph.getNodeCount(), Constants.opalGenerator,
                 partialCallGraph.getClassHierarchy(),
                 partialCallGraph.getGraph());
     }
