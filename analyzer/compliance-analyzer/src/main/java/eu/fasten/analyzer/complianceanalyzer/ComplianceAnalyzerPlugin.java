@@ -84,15 +84,11 @@ public class ComplianceAnalyzerPlugin extends Plugin {
             try { // Fasten error-handling guidelines
 
                 this.pluginError = null;
-                var consumedJson = new JSONObject(record);
-                if (consumedJson.has("input")) {
-                    consumedJson = consumedJson.getJSONObject("input");
-                }
-                this.repoUrl = consumedJson.getString("repoUrl");
                 var consumedJsonPayload = new JSONObject(record);
                 if (consumedJsonPayload.has("payload")) {
                     consumedJsonPayload = consumedJsonPayload.getJSONObject("payload");
                 }
+                this.repoUrl = consumedJsonPayload.getString("repoUrl");
                 String repoPath = consumedJsonPayload.getString("repoPath");
                 String artifactID = consumedJsonPayload.getString("artifactId");
 
