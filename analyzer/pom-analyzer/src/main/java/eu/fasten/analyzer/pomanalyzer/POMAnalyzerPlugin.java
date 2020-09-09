@@ -185,16 +185,18 @@ public class POMAnalyzerPlugin extends Plugin {
                                    String projectName, DependencyData dependencyData,
                                    MetadataDao metadataDao) {
             final var packageId = metadataDao.insertPackage(product, Constants.mvnForge,
-                    projectName, repoUrl, new Timestamp(timestamp));
+                    projectName, repoUrl, null);
             var packageVersionMetadata = new JSONObject();
             packageVersionMetadata.put("dependencyManagement",
                     (dependencyData.dependencyManagement != null)
                             ? dependencyData.dependencyManagement.toJSON() : null);
-            packageVersionMetadata.put("commitTag", commitTag);
-            packageVersionMetadata.put("sourcesUrl", sourcesUrl);
-            packageVersionMetadata.put("packagingType", packagingType);
+            packageVersionMetadata.put("commitTag", (commitTag != null) ? commitTag : "");
+            packageVersionMetadata.put("sourcesUrl", (sourcesUrl != null) ? sourcesUrl : "");
+            packageVersionMetadata.put("packagingType", (packagingType != null)
+                    ? packagingType : "");
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    Constants.opalGenerator, version, null, packageVersionMetadata);
+                    Constants.opalGenerator, version, new Timestamp(timestamp),
+                    packageVersionMetadata);
             for (var dep : dependencyData.dependencies) {
                 var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
                 final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge,
