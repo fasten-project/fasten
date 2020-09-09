@@ -20,6 +20,10 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
 
 ## Usage 
 
+<p align="center">
+    <img src="https://raw.githubusercontent.com/fullsushidev/qmstr/master/doc/static/img/qmstr-plugin.gif">
+</p>
+
 #### <!-- TODO ultimate goal -->
 1. Start the plugin:
     ```bash
