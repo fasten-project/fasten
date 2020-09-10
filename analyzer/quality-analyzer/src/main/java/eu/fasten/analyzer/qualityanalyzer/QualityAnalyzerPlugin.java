@@ -3,6 +3,7 @@ package eu.fasten.analyzer.qualityanalyzer;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.data.Constants;
 
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -14,6 +15,7 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.List;
@@ -40,7 +42,6 @@ public class QualityAnalyzerPlugin extends Plugin {
         private String version = null;
         private JSONObject metrics = null;
         private boolean restartTransaction = false;
-        private final int transactionRestartLimit = 3;
         private boolean processedRecord = false;
 
         @Override
@@ -86,16 +87,16 @@ public class QualityAnalyzerPlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(group + "." + artifact,
+                            id = saveToDatabase(group + Constants.mvnCoordinateSeparator + artifact,
                                     version,
                                     metrics,
                                     metadataDao);
                         } catch (RuntimeException e) {
-                            logger.error("Error saving data to the database: '" + product + ":" + version + "'", e);
+                            logger.error("Error saving data to the database: '" + product + Constants.mvnCoordinateSeparator + version + "'", e);
                             processedRecord = false;
                             this.pluginError = e;
                             if (e instanceof DataAccessException) {
-                                logger.info("Restarting transaction for '" + product + ":" + version + "'");
+                                logger.info("Restarting transaction for '" + product + Constants.mvnCoordinateSeparator + version + "'");
                                 restartTransaction = true;
                             } else {
                                 restartTransaction = false;
@@ -105,7 +106,7 @@ public class QualityAnalyzerPlugin extends Plugin {
                         if (getPluginError() == null) {
                             processedRecord = true;
                             restartTransaction = false;
-                            logger.info("Saved data for " + product + ":" + version
+                            logger.info("Saved data for " + product + Constants.mvnCoordinateSeparator + version
                                     + " with package version ID = " + id);
                         }
                     });
@@ -113,15 +114,15 @@ public class QualityAnalyzerPlugin extends Plugin {
                 }
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
-                    && transactionRestartCount < transactionRestartLimit);
+                    && transactionRestartCount < Constants.transactionRestartLimit);
         }
 
         public long saveToDatabase(String product, String version, JSONObject metrics, MetadataDao metadataDao) {
-            final var packageId = metadataDao.insertPackage(product, "mvn", null, null, null);
+            final var packageId = metadataDao.insertPackage(product, Constants.mvnForge, null, null, null);
             var packageVersionMetadata = new JSONObject();
             packageVersionMetadata.put("metrics", metrics);
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    "OPAL", version, null, packageVersionMetadata);
+                    Constants.opalGenerator, version, null, packageVersionMetadata);
             return packageVersionId;
         }
 
@@ -132,7 +133,8 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public String getOutputPath() {
-            return ".";
+            return File.separator + artifact.charAt(0) + File.separator
+                    + artifact + File.separator + artifact + "_" + group + "_" + version + ".json";
         }
 
         @Override
