@@ -31,7 +31,7 @@ public class QualityAnalyzerPluginTest {
                 "      \"method_count\": 123,\n" +
                 "      \"complexity\": 12,\n" +
                 "      \"token_count\": 98765,\n" +
-                "      \"file_list\": []" +
+                "      \"file_list\": []\n" +
                 "}}}").toString();
         qualityAnalyzer.consume(record);
         var output = qualityAnalyzer.produce();

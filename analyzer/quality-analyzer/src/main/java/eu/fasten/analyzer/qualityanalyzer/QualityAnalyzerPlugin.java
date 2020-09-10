@@ -128,7 +128,11 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            return Optional.empty();
+            var json = new JSONObject();
+            json.put("artifactId", artifact);
+            json.put("groupId", group);
+            json.put("version", version);
+            return Optional.of(json.toString());
         }
 
         @Override
