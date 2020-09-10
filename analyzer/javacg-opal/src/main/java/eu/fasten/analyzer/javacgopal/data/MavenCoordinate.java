@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import eu.fasten.core.data.Constants;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -82,8 +83,8 @@ public class MavenCoordinate {
      */
     public MavenCoordinate(final String groupID, final String artifactID, final String version,
                            final String packaging) {
-        this.mavenRepos = System.getenv("MVN_REPO") != null
-                ? Arrays.asList(System.getenv("MVN_REPO").split(";"))
+        this.mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
+                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
                 : Collections.singletonList("https://repo.maven.apache.org/maven2/");
         this.groupID = groupID;
         this.artifactID = artifactID;
@@ -97,8 +98,8 @@ public class MavenCoordinate {
      * @param kafkaConsumedJson json representation of Meven coordinate
      */
     public MavenCoordinate(final JSONObject kafkaConsumedJson) throws JSONException {
-        this.mavenRepos = System.getenv("MVN_REPO") != null
-                ? Arrays.asList(System.getenv("MVN_REPO").split(";"))
+        this.mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
+                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
                 : Collections.singletonList("https://repo.maven.apache.org/maven2/");
         this.groupID = kafkaConsumedJson.getString("groupId");
         this.artifactID = kafkaConsumedJson.getString("artifactId");
@@ -113,16 +114,17 @@ public class MavenCoordinate {
      * @return MavenCoordinate
      */
     public static MavenCoordinate fromString(final String coords, final String packaging) {
-        var coordinate = coords.split(":");
+        var coordinate = coords.split(Constants.mvnCoordinateSeparator);
         return new MavenCoordinate(coordinate[0], coordinate[1], coordinate[2], packaging);
     }
 
     public String getProduct() {
-        return groupID + ":" + artifactID;
+        return groupID + Constants.mvnCoordinateSeparator + artifactID;
     }
 
     public String getCoordinate() {
-        return groupID + ":" + artifactID + ":" + versionConstraint;
+        return groupID + Constants.mvnCoordinateSeparator + artifactID
+                + Constants.mvnCoordinateSeparator + versionConstraint;
     }
 
     /**

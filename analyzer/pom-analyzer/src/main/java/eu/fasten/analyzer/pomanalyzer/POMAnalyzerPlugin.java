@@ -20,10 +20,12 @@ package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -61,7 +63,6 @@ public class POMAnalyzerPlugin extends Plugin {
         private String packagingType = null;
         private String projectName = null;
         private boolean restartTransaction = false;
-        private final int transactionRestartLimit = 3;
         private boolean processedRecord = false;
 
         @Override
@@ -106,7 +107,8 @@ public class POMAnalyzerPlugin extends Plugin {
             group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
             version = payload.getString("version").replaceAll("[\\n\\t ]", "");
             date = payload.optLong("date", -1L);
-            final var product = group + ":" + artifact + ":" + version;
+            final var product = group + Constants.mvnCoordinateSeparator + artifact
+                    + Constants.mvnCoordinateSeparator + version;
             var dataExtractor = new DataExtractor();
             try {
                 repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
@@ -134,9 +136,9 @@ public class POMAnalyzerPlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(group + ":" + artifact, version, repoUrl,
-                                    commitTag, sourcesUrl, packagingType, projectName,
-                                    dependencyData, metadataDao);
+                            id = saveToDatabase(group + Constants.mvnCoordinateSeparator + artifact,
+                                    version, repoUrl, commitTag, sourcesUrl, packagingType, date,
+                                    projectName, dependencyData, metadataDao);
                         } catch (RuntimeException e) {
                             logger.error("Error saving data to the database: '" + product + "'", e);
                             processedRecord = false;
@@ -160,7 +162,7 @@ public class POMAnalyzerPlugin extends Plugin {
                 }
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
-                    && transactionRestartCount < transactionRestartLimit);
+                    && transactionRestartCount < Constants.transactionRestartLimit);
         }
 
         /**
@@ -172,29 +174,35 @@ public class POMAnalyzerPlugin extends Plugin {
          * @param commitTag      Commit tag of the version of the artifact in the repository
          * @param sourcesUrl     Link to Maven sources Jar file
          * @param packagingType  Packaging type of the artifact
+         * @param timestamp      Timestamp of the package
          * @param projectName    Project name to which artifact belongs
          * @param dependencyData Dependency information from POM
          * @param metadataDao    Metadata Database Access Object
          * @return ID of the package version in the database
          */
         public long saveToDatabase(String product, String version, String repoUrl, String commitTag,
-                                   String sourcesUrl, String packagingType, String projectName,
-                                   DependencyData dependencyData, MetadataDao metadataDao) {
-            final var packageId = metadataDao.insertPackage(product, "mvn", projectName, repoUrl, null);
+                                   String sourcesUrl, String packagingType, long timestamp,
+                                   String projectName, DependencyData dependencyData,
+                                   MetadataDao metadataDao) {
+            final var packageId = metadataDao.insertPackage(product, Constants.mvnForge,
+                    projectName, repoUrl, null);
             var packageVersionMetadata = new JSONObject();
             packageVersionMetadata.put("dependencyManagement",
                     (dependencyData.dependencyManagement != null)
                             ? dependencyData.dependencyManagement.toJSON() : null);
-            packageVersionMetadata.put("commitTag", commitTag);
-            packageVersionMetadata.put("sourcesUrl", sourcesUrl);
-            packageVersionMetadata.put("packagingType", packagingType);
+            packageVersionMetadata.put("commitTag", (commitTag != null) ? commitTag : "");
+            packageVersionMetadata.put("sourcesUrl", (sourcesUrl != null) ? sourcesUrl : "");
+            packageVersionMetadata.put("packagingType", (packagingType != null)
+                    ? packagingType : "");
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    "OPAL", version, null, packageVersionMetadata);
-            for (var dependency : dependencyData.dependencies) {
-                var depProduct = dependency.groupId + "." + dependency.artifactId;
-                final var depId = metadataDao.insertPackage(depProduct, "mvn", null, null, null);
+                    Constants.opalGenerator, version, new Timestamp(timestamp),
+                    packageVersionMetadata);
+            for (var dep : dependencyData.dependencies) {
+                var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
+                final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge,
+                        null, null, null);
                 metadataDao.insertDependency(packageVersionId, depId,
-                        dependency.getVersionConstraints(), dependency.toJSON());
+                        dep.getVersionConstraints(), dep.toJSON());
             }
             return packageVersionId;
         }

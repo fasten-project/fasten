@@ -640,24 +640,31 @@ public class MetadataDao {
         }
 
         // Get IDs of external callables that are already in the database
-        var urisCondition = Callables.CALLABLES.FASTEN_URI
-                .eq(externalCallables.get(0).getFastenUri());
-        for (int i = 1; i < externalCallables.size(); i++) {
-            urisCondition = urisCondition
-                    .or(Callables.CALLABLES.FASTEN_URI.eq(externalCallables.get(i).getFastenUri()));
-        }
-        var result = context
-                .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.MODULE_ID.eq(-1L))
-                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(false))
-                .and(urisCondition)
-                .fetch();
-        var uriMap = new HashMap<String, Long>(result.size());
-        for (var tuple : result) {
-            uriMap.put(tuple.value2(), tuple.value1());
+        HashMap<String, Long> uriMap = null;
+        if (externalCallables.size() > 0) {
+            var urisCondition = Callables.CALLABLES.FASTEN_URI
+                    .eq(externalCallables.get(0).getFastenUri());
+            for (int i = 1; i < externalCallables.size(); i++) {
+                urisCondition = urisCondition
+                        .or(Callables.CALLABLES.FASTEN_URI.eq(externalCallables.get(i).getFastenUri()));
+            }
+            var result = context
+                    .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
+                    .from(Callables.CALLABLES)
+                    .where(Callables.CALLABLES.MODULE_ID.eq(-1L))
+                    .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(false))
+                    .and(urisCondition)
+                    .fetch();
+            uriMap = new HashMap<String, Long>(result.size());
+            for (var tuple : result) {
+                uriMap.put(tuple.value2(), tuple.value1());
+            }
+
         }
 
+        if (uriMap == null) {
+            uriMap = new HashMap<>();
+        }
         // Batch insert external callables which are not in the database yet
         var newExternalCallables = new ArrayList<CallablesRecord>(
                 externalCallables.size() - uriMap.size()

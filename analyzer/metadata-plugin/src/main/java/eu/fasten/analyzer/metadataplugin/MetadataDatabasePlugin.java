@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.RevisionCallGraph;
@@ -134,12 +135,13 @@ public class MetadataDatabasePlugin extends Plugin {
                     return;
                 }
             }
-            final var artifact = callgraph.product + "@" + callgraph.version;
+            final var artifact = callgraph.product + Constants.mvnCoordinateSeparator
+                    + callgraph.version;
             final String groupId;
             final String artifactId;
-            if (callgraph.product.contains(":")) {
-                groupId = callgraph.product.split(":")[0];
-                artifactId = callgraph.product.split(":")[1];
+            if (callgraph.product.contains(Constants.mvnCoordinateSeparator)) {
+                groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
+                artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
             } else {
                 final var productParts = callgraph.product.split("\\.");
                 groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
@@ -218,12 +220,13 @@ public class MetadataDatabasePlugin extends Plugin {
                     return;
                 }
             }
-            final var artifact = callgraph.product + "@" + callgraph.version;
+            final var artifact = callgraph.product + Constants.mvnCoordinateSeparator
+                    + callgraph.version;
             final String groupId;
             final String artifactId;
-            if (callgraph.product.contains(":")) {
-                groupId = callgraph.product.split(":")[0];
-                artifactId = callgraph.product.split(":")[1];
+            if (callgraph.product.contains(Constants.mvnCoordinateSeparator)) {
+                groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
+                artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
             } else {
                 final var productParts = callgraph.product.split("\\.");
                 groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
@@ -366,12 +369,12 @@ public class MetadataDatabasePlugin extends Plugin {
                 externalEdges.add(new EdgesRecord(sourceLocalId, targetId,
                         JSONB.valueOf(edgeMetadata.toString())));
             }
-            final int batchSize = 4096;
             var internalCallablesIds = new LongArrayList(internalCallables.size());
             final var internalCallablesIterator = internalCallables.iterator();
             while (internalCallablesIterator.hasNext()) {
-                var callablesBatch = new ArrayList<CallablesRecord>(batchSize);
-                while (internalCallablesIterator.hasNext() && callablesBatch.size() < batchSize) {
+                var callablesBatch = new ArrayList<CallablesRecord>(Constants.insertionBatchSize);
+                while (internalCallablesIterator.hasNext()
+                        && callablesBatch.size() < Constants.insertionBatchSize) {
                     callablesBatch.add(internalCallablesIterator.next());
                 }
                 var ids = metadataDao.batchInsertCallables(callablesBatch);
@@ -396,8 +399,9 @@ public class MetadataDatabasePlugin extends Plugin {
             edges.addAll(externalEdges);
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(batchSize);
-                while (edgesIterator.hasNext() && edgesBatch.size() < batchSize) {
+                var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
+                while (edgesIterator.hasNext()
+                        && edgesBatch.size() < Constants.insertionBatchSize) {
                     edgesBatch.add(edgesIterator.next());
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
@@ -420,7 +424,7 @@ public class MetadataDatabasePlugin extends Plugin {
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
                     null, null, null);
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    callGraph.getCgGenerator(), callGraph.version, timestamp, null);
+                    callGraph.getCgGenerator(), callGraph.version, timestamp, new JSONObject());
             var cha = callGraph.getClassHierarchy();
             var internalTypes = cha.get(ExtendedRevisionCallGraph.Scope.internalTypes);
             var callables = new ArrayList<CallablesRecord>();
@@ -500,11 +504,11 @@ public class MetadataDatabasePlugin extends Plugin {
                 edges.add(new EdgesRecord(globalSource, globalTarget,
                         JSONB.valueOf(metadata.toString())));
             }
-            final int edgesBatchSize = 4096;
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(edgesBatchSize);
-                while (edgesIterator.hasNext() && edgesBatch.size() < edgesBatchSize) {
+                var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
+                while (edgesIterator.hasNext()
+                        && edgesBatch.size() < Constants.insertionBatchSize) {
                     edgesBatch.add(edgesIterator.next());
                 }
                 metadataDao.batchInsertEdges(edgesBatch);

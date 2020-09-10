@@ -21,6 +21,7 @@ package eu.fasten.analyzer.repoclonerplugin;
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.SvnCloner;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.plugins.DataWriter;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
@@ -52,16 +53,13 @@ public class RepoClonerPlugin extends Plugin {
         private String version = null;
         private String commitTag = null;
         private String sourcesUrl = null;
+        private String repoUrl = null;
         private static String baseDir = "";
         private String outputPath = null;
 
         @Override
         public void setBaseDir(String baseDir) {
             RepoCloner.baseDir = baseDir;
-        }
-
-        String getRepoPath() {
-            return repoPath;
         }
 
         @Override
@@ -83,6 +81,7 @@ public class RepoClonerPlugin extends Plugin {
             json.put("repoPath", (repoPath != null) ? repoPath : "");
             json.put("commitTag", (commitTag != null) ? commitTag : "");
             json.put("sourcesUrl", (sourcesUrl != null) ? sourcesUrl : "");
+            json.put("repoUrl", (repoUrl != null) ? repoUrl : "");
             return Optional.of(json.toString());
         }
 
@@ -109,9 +108,12 @@ public class RepoClonerPlugin extends Plugin {
             version = json.getString("version").replaceAll("[\\n\\t ]", "");
             commitTag = json.optString("commitTag").replaceAll("[\\n\\t ]", "");
             sourcesUrl = json.optString("sourcesUrl").replaceAll("[\\n\\t ]", "");
-            String product = group + ":" + artifact + ":" + version;
-            outputPath = File.separator + artifact.charAt(0) + File.separator + artifact + File.separator + product.replace(":", "_") + ".json";
-            var repoUrl = json.optString("repoUrl").replaceAll("[\\n\\t ]", "");
+            String product = group + Constants.mvnCoordinateSeparator + artifact
+                    + Constants.mvnCoordinateSeparator + version;
+            outputPath = File.separator + artifact.charAt(0) + File.separator + artifact
+                    + File.separator + product.replace(Constants.mvnCoordinateSeparator, "_")
+                    + ".json";
+            repoUrl = json.optString("repoUrl").replaceAll("[\\n\\t ]", "");
             if (!repoUrl.isEmpty()) {
                 var gitCloner = new GitCloner(baseDir);
                 var hgCloner = new HgCloner(baseDir);
@@ -200,7 +202,7 @@ public class RepoClonerPlugin extends Plugin {
 
         @Override
         public String version() {
-            return "0.1.0";
+            return "0.1.1";
         }
 
         @Override
