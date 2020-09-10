@@ -19,12 +19,10 @@
 package eu.fasten.server;
 
 import ch.qos.logback.classic.Level;
-import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.plugins.DataWriter;
-import eu.fasten.core.plugins.FastenPlugin;
-import eu.fasten.core.plugins.GraphDBConnector;
-import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.plugins.*;
 import eu.fasten.server.connectors.KafkaConnector;
+import eu.fasten.server.connectors.MongoConnector;
 import eu.fasten.server.connectors.PostgresConnector;
 import eu.fasten.server.connectors.RocksDBConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
@@ -114,6 +112,30 @@ public class FastenServer implements Runnable {
             description = "Path to base directory to which data will be written")
     String baseDir;
 
+    @CommandLine.Option(names = {"-mu", "--mongo_user"},
+            paramLabel = "mongoUser",
+            description = "Mongo Database user name",
+            defaultValue = "user")
+    String mongoUser;
+
+    @CommandLine.Option(names = {"-dam", "--db_auth_mongo"},
+            paramLabel = "dbAuthMongo",
+            description = "Database where the user is identified",
+            defaultValue = "admin")
+    String dbAuthMongo;
+
+    @CommandLine.Option(names = {"-mdb", "--mongo_db"},
+            paramLabel = "mongoDatabase",
+            description = "Mongo Database to connect to",
+            defaultValue = "github")
+    String dbMongo;
+
+    @CommandLine.Option(names = {"-mh", "--mongo_host"},
+            paramLabel = "mongoHost",
+            description = "Host where GHTorrent is located",
+            defaultValue = "127.0.0.1")
+    String mongoHost;
+
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     @Override
@@ -147,6 +169,7 @@ public class FastenServer implements Runnable {
         var kafkaPlugins = jarPluginManager.getExtensions(KafkaPlugin.class);
         var graphDbPlugins = jarPluginManager.getExtensions(GraphDBConnector.class);
         var dataWriterPlugins = jarPluginManager.getExtensions(DataWriter.class);
+        var mongoDbPlugins = jarPluginManager.getExtensions(MongoDBConnector.class);
 
         logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:"
                         + " {} total plugins",
@@ -155,6 +178,7 @@ public class FastenServer implements Runnable {
                 x.version(), x.description()));
 
         makeDBConnection(dbPlugins);
+        makeMongoDBConnection(mongoDbPlugins);
         makeGraphDBConnection(graphDbPlugins);
         setBaseDirectory(dataWriterPlugins);
 
@@ -235,6 +259,27 @@ public class FastenServer implements Runnable {
                     logger.error("Couldn't set DB connection for plug-in {}\n{}",
                             p.getClass().getSimpleName(), e.getStackTrace());
                 }
+            } else {
+                logger.error("Couldn't make a DB connection. Make sure that you have "
+                        + "provided a valid DB URL, username and password.");
+            }
+        });
+    }
+
+    /**
+     * Setup Mongo connection for Mongo plugins.
+     *
+     * @param mongoDbPlugins list of mongoDB plugins
+     */
+    private void makeMongoDBConnection(List<MongoDBConnector> mongoDbPlugins) {
+        mongoDbPlugins.forEach((p) -> {
+            if (ObjectUtils.allNotNull(mongoHost, mongoUser, dbAuthMongo, dbMongo)) {
+                p.setMongoDatabase(MongoConnector.getMongoCollection(mongoHost,
+                        mongoUser,
+                        dbAuthMongo,
+                        dbMongo));
+                logger.debug("Set DB connection successfully for plug-in {}",
+                        p.getClass().getSimpleName());
             } else {
                 logger.error("Couldn't make a DB connection. Make sure that you have "
                         + "provided a valid DB URL, username and password.");
