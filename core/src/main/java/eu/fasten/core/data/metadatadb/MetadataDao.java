@@ -30,20 +30,17 @@ import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.*;
-
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-
-import org.jooq.*;
-import org.jooq.impl.TableImpl;
-import org.json.JSONArray;
+import org.jooq.DSLContext;
+import org.jooq.JSONB;
+import org.jooq.Query;
 import org.json.JSONObject;
-
-import static org.jooq.impl.DSL.field;
 
 public class MetadataDao {
 
