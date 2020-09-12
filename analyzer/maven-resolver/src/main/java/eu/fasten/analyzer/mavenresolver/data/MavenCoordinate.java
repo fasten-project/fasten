@@ -1,0 +1,53 @@
+package eu.fasten.analyzer.mavenresolver.data;
+
+import eu.fasten.core.data.Constants;
+import org.jboss.shrinkwrap.resolver.api.maven.PackagingType;
+
+public class MavenCoordinate implements org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate {
+
+    private String artifactId;
+    private String groupId;
+    private String version;
+
+    public MavenCoordinate(String groupId, String artifactId, String version) {
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.version = version;
+    }
+
+    @Override
+    public PackagingType getPackaging() {
+        return null;
+    }
+
+    @Override
+    public PackagingType getType() {
+        return null;
+    }
+
+    @Override
+    public String getClassifier() {
+        return null;
+    }
+
+    @Override
+    public String getVersion() {
+        return this.version;
+    }
+
+    @Override
+    public String getGroupId() {
+        return this.groupId;
+    }
+
+    @Override
+    public String getArtifactId() {
+        return this.artifactId;
+    }
+
+    @Override
+    public String toCanonicalForm() {
+        return this.groupId + Constants.mvnCoordinateSeparator + this.artifactId
+                + Constants.mvnCoordinateSeparator + this.version;
+    }
+}
