@@ -55,6 +55,71 @@
                     <mainClass>eu.fasten.analyzer.complianceanalyzer.Main</mainClass>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <minimizeJar>false</minimizeJar>
+                            <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>org.slf4j:slf4j-simple:*</exclude>
+                                    <exclude>org.slf4j:slf4j-api:*</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>eu.fasten.analyzer.complianceanalyzer.Main</Main-Class>
+                                        <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
+                                        <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
+                                        <Plugin-Class>eu.fasten.analyzer.complianceanalyzer.ComplianceAnalyzerPlugin</Plugin-Class>
+                                        <Plugin-Id>license-compliance-plugin</Plugin-Id>
+                                        <Plugin-Version>0.0.1</Plugin-Version>
+                                        <Plugin-Description>
+                                            Given a repository URL, detects project's
+                                            license compliance and compatibility.
+                                        </Plugin-Description>
+                                        <Plugin-License>Apache License 2.0</Plugin-License>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                            <!-- Note that this works when maven is ran in the root directory of the project  -->
+                            <outputDirectory>${session.executionRootDirectory}/docker/plugins/</outputDirectory>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>with-dependencies</shadedClassifierName>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>module-info.class</exclude>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                                <exclude>eu/fasten/core/plugins/*</exclude>
+                            </excludes>
+                        </filter>
+                        <filter>
+                            <artifact>org.apache.kafka:*</artifact>
+                            <excludes>
+                                <exclude>org/apache/kafka/**</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
