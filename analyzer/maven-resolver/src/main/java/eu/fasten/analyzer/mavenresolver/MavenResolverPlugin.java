@@ -16,8 +16,13 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class MavenResolverPlugin extends Plugin {
@@ -78,7 +83,8 @@ public class MavenResolverPlugin extends Plugin {
                     + Constants.mvnCoordinateSeparator + version;
             logger.info("Resolving " + coordinate);
             try {
-                resolvedDependencies = resolveArtifactDependencies(coordinate, timestamp);
+                resolvedDependencies = resolveArtifactDependencies(coordinate, timestamp,
+                        dslContext);
             } catch (Exception e) {
                 logger.error("Error resolving " + coordinate, e);
                 pluginError = e;
@@ -89,7 +95,8 @@ public class MavenResolverPlugin extends Plugin {
         }
 
         public List<MavenCoordinate> resolveArtifactDependencies(String mavenCoordinate,
-                                                                 long timestamp) {
+                                                                 long timestamp,
+                                                                 DSLContext dbContext) {
             var artifacts = Arrays.stream(
                     Maven.resolver()
                             .resolve(mavenCoordinate)
@@ -108,20 +115,20 @@ public class MavenResolverPlugin extends Plugin {
                     )
             ).collect(Collectors.toList());
             if (timestamp != -1) {
-                return filterByTimestamp(dependencies, timestamp);
+                return filterByTimestamp(dependencies, timestamp, dbContext);
             } else {
                 return dependencies;
             }
         }
 
         private List<MavenCoordinate> filterByTimestamp(List<MavenCoordinate> artifacts,
-                                                        long timestamp) {
+                                                        long timestamp, DSLContext dbContext) {
             var filteredArtifacts = new ArrayList<MavenCoordinate>();
             for (var artifact : artifacts) {
                 var filtered = false;
                 var packageName = artifact.getGroupId() + Constants.mvnCoordinateSeparator
                         + artifact.getArtifactId();
-                var timestampedVersions = getTimestampedVersionsFromDB(packageName);
+                var timestampedVersions = getTimestampedVersionsFromDB(packageName, dbContext);
                 for (var versionEntry : timestampedVersions.entrySet()) {
                     if (versionEntry.getValue().equals(artifact.getVersion())
                             && versionEntry.getKey() <= timestamp) {
@@ -151,8 +158,9 @@ public class MavenResolverPlugin extends Plugin {
             return filteredArtifacts;
         }
 
-        private Map<Long, String> getTimestampedVersionsFromDB(String packageName) {
-            var versions = dslContext.select(
+        private Map<Long, String> getTimestampedVersionsFromDB(String packageName,
+                                                               DSLContext dbContext) {
+            var versions = dbContext.select(
                     PackageVersions.PACKAGE_VERSIONS.VERSION,
                     PackageVersions.PACKAGE_VERSIONS.CREATED_AT
             ).from(PackageVersions.PACKAGE_VERSIONS)
