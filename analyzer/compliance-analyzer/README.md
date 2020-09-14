@@ -25,12 +25,14 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
 </p>
 
 #### <!-- TODO ultimate goal -->
-1. Start the plugin:
+1. Start the plugin specifying the path to the cluster credentials file as an environment variable:
     ```bash
     # Example: from the FASTEN root folder
-    mvn clean install exec:java \
+    mvn \
+      -DclusterCredentials=path/to/cluster/credentials.json \
+      clean install exec:java \
       -f analyzer/compliance-analyzer/pom.xml \
-      -Dexec.args="--repository analyzer/compliance-analyzer/dummyKafkaTopic.json --cluster-credentials path/to/cluster/credentials.json"
+      -Dexec.args="--repository analyzer/compliance-analyzer/dummyKafkaTopic.json"
     ```
    This demo simulates a Kafka topic consumption by reading the [`dummyKafkaTopic.json` file](dummyKafkaTopic.json).\
    Upon topic consumption, the `compliance-analyzer` launches Quartermaster that will build the specified repository. 

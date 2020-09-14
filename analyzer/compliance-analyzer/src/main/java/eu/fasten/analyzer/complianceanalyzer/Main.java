@@ -15,11 +15,6 @@ public class Main implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    @CommandLine.Option(names = {"-c", "--credentials", "--cluster-credentials"},
-            paramLabel = "credentials",
-            description = "Path to the Kubernetes cluster credentials file")
-    String clusterCredentialsFilePath;
-
     @CommandLine.Option(names = {"-r", "--repo", "--repository"},
             paramLabel = "repo",
             description = "Path to JSON file containing repository information")
@@ -32,7 +27,7 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var compliancePlugin = new ComplianceAnalyzerPlugin.CompliancePluginExtension(clusterCredentialsFilePath);
+        var compliancePlugin = new ComplianceAnalyzerPlugin.CompliancePluginExtension();
 
         // Retrieving repository information
         var repoInfo = retrieveRepositoryInformation();

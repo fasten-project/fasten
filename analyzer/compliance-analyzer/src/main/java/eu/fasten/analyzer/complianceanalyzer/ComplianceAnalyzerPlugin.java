@@ -45,6 +45,11 @@ public class ComplianceAnalyzerPlugin extends Plugin {
      */
     protected static final String K8S_NAMESPACE = "default";
 
+    /**
+     * Name of the environment variable containing the cluster credentials file path.
+     */
+    protected static final String CLUSTER_CREDENTIALS_ENV = "clusterCredentials";
+
     public ComplianceAnalyzerPlugin(PluginWrapper wrapper) {
         super(wrapper);
     }
@@ -63,8 +68,8 @@ public class ComplianceAnalyzerPlugin extends Plugin {
          */
         protected final String clusterCredentialsFilePath;
 
-        public CompliancePluginExtension(String clusterCredentialsFilePath) {
-            this.clusterCredentialsFilePath = clusterCredentialsFilePath;
+        public CompliancePluginExtension() {
+            this.clusterCredentialsFilePath = System.getProperty(CLUSTER_CREDENTIALS_ENV);
         }
 
         @Override
