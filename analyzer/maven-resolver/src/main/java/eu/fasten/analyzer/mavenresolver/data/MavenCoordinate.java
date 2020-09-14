@@ -10,6 +10,15 @@ public class MavenCoordinate implements org.jboss.shrinkwrap.resolver.api.maven.
     private String version;
 
     public MavenCoordinate(String groupId, String artifactId, String version) {
+        if (groupId == null) {
+            throw new IllegalArgumentException("groupId cannot be null");
+        }
+        if (artifactId == null) {
+            throw new IllegalArgumentException("artifactId cannot be null");
+        }
+        if (version == null) {
+            throw new IllegalArgumentException("version cannot be null");
+        }
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;

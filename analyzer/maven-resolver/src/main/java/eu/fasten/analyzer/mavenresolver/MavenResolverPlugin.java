@@ -129,6 +129,10 @@ public class MavenResolverPlugin extends Plugin {
                 var packageName = artifact.getGroupId() + Constants.mvnCoordinateSeparator
                         + artifact.getArtifactId();
                 var timestampedVersions = getTimestampedVersionsFromDB(packageName, dbContext);
+                if (timestampedVersions.isEmpty()) {
+                    filteredArtifacts.add(artifact);
+                    continue;
+                }
                 for (var versionEntry : timestampedVersions.entrySet()) {
                     if (versionEntry.getValue().equals(artifact.getVersion())
                             && versionEntry.getKey() <= timestamp) {
