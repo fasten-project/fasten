@@ -16,6 +16,7 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -36,7 +37,7 @@ public class MavenResolverPlugin extends Plugin {
         private String group = null;
         private String version = null;
         private long timestamp = -1;
-        private List<MavenCoordinate> resolvedArtifacts = null;
+        private List<MavenCoordinate> resolvedDependencies = null;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -60,7 +61,7 @@ public class MavenResolverPlugin extends Plugin {
             group = null;
             version = null;
             timestamp = -1;
-            resolvedArtifacts = null;
+            resolvedDependencies = null;
             logger.info("Consumed: " + record);
             var jsonRecord = new JSONObject(record);
             var payload = new JSONObject();
@@ -77,7 +78,7 @@ public class MavenResolverPlugin extends Plugin {
                     + Constants.mvnCoordinateSeparator + version;
             logger.info("Resolving " + coordinate);
             try {
-                resolvedArtifacts = resolveArtifactDependencies(coordinate, timestamp);
+                resolvedDependencies = resolveArtifactDependencies(coordinate, timestamp);
             } catch (Exception e) {
                 logger.error("Error resolving " + coordinate, e);
                 pluginError = e;
@@ -91,15 +92,25 @@ public class MavenResolverPlugin extends Plugin {
                                                                  long timestamp) {
             var artifacts = Arrays.stream(
                     Maven.resolver()
-                    .resolve(mavenCoordinate)
-                    .withTransitivity()
-                    .as(MavenCoordinate.class)
+                            .resolve(mavenCoordinate)
+                            .withTransitivity()
+                            .asResolvedArtifact()
             ).collect(Collectors.toList());
-            // TODO: Fix missing dependencies
+            if (artifacts.size() < 1) {
+                throw new RuntimeException("Could not resolve artifact " + mavenCoordinate);
+            }
+            var dependencies = Arrays.stream(
+                    artifacts.get(0).getDependencies()
+            ).map(d -> new MavenCoordinate(
+                            d.getCoordinate().getGroupId(),
+                            d.getCoordinate().getArtifactId(),
+                            d.getResolvedVersion()
+                    )
+            ).collect(Collectors.toList());
             if (timestamp != -1) {
-                return filterByTimestamp(artifacts, timestamp);
+                return filterByTimestamp(dependencies, timestamp);
             } else {
-                return artifacts;
+                return dependencies;
             }
         }
 
@@ -167,8 +178,8 @@ public class MavenResolverPlugin extends Plugin {
         public Optional<String> produce() {
             var json = new JSONObject();
             var jsonArr = new JSONArray();
-            if (resolvedArtifacts != null) {
-                for (var artifact : resolvedArtifacts) {
+            if (resolvedDependencies != null) {
+                for (var artifact : resolvedDependencies) {
                     var artifactJson = new JSONObject();
                     artifactJson.put("artifactId", artifact.getArtifactId());
                     artifactJson.put("groupId", artifact.getGroupId());
@@ -180,7 +191,7 @@ public class MavenResolverPlugin extends Plugin {
             json.put("groupId", group);
             json.put("version", version);
             json.put("timestamp", timestamp);
-            json.put("resolvedArtifacts", jsonArr);
+            json.put("resolvedDependencies", jsonArr);
             return Optional.of(json.toString());
         }
 

@@ -50,4 +50,9 @@ public class MavenCoordinate implements org.jboss.shrinkwrap.resolver.api.maven.
         return this.groupId + Constants.mvnCoordinateSeparator + this.artifactId
                 + Constants.mvnCoordinateSeparator + this.version;
     }
+
+    @Override
+    public String toString() {
+        return toCanonicalForm();
+    }
 }
