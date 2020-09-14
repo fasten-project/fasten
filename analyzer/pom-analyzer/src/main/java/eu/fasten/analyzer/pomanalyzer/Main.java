@@ -49,6 +49,11 @@ public class Main implements Runnable {
             description = "version of the Maven coordinate")
     String version;
 
+    @CommandLine.Option(names = {"-t", "--timestamp"},
+            paramLabel = "TS",
+            description = "Timestamp when the artifact was released")
+    String timestamp;
+
     @CommandLine.Option(names = {"-d", "--database"},
             paramLabel = "DB_URL",
             description = "Database URL for connection",
@@ -81,6 +86,7 @@ public class Main implements Runnable {
             mvnCoordinate.put("artifactId", artifact);
             mvnCoordinate.put("groupId", group);
             mvnCoordinate.put("version", version);
+            mvnCoordinate.put("date", timestamp);
             var record = new JSONObject();
             record.put("payload", mvnCoordinate);
             pomAnalyzer.consume(record.toString());
