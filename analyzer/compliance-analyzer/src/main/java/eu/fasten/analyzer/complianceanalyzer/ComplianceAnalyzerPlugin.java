@@ -2,7 +2,6 @@ package eu.fasten.analyzer.complianceanalyzer;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.collect.Lists;
-import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
@@ -15,7 +14,6 @@ import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
-import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
