@@ -61,6 +61,16 @@ public class MavenCoordinate implements org.jboss.shrinkwrap.resolver.api.maven.
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (o instanceof MavenCoordinate) {
+            var other = (MavenCoordinate) o;
+            return this.toCanonicalForm().equals(other.toCanonicalForm());
+        } else {
+            return false;
+        }
+    }
+
+    @Override
     public String toString() {
         return toCanonicalForm();
     }
