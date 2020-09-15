@@ -16,13 +16,7 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MavenResolverPlugin extends Plugin {
@@ -42,7 +36,7 @@ public class MavenResolverPlugin extends Plugin {
         private String group = null;
         private String version = null;
         private long timestamp = -1;
-        private List<MavenCoordinate> resolvedDependencies = null;
+        private Set<MavenCoordinate> resolvedDependencies = null;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -94,9 +88,9 @@ public class MavenResolverPlugin extends Plugin {
             }
         }
 
-        public List<MavenCoordinate> resolveArtifactDependencies(String mavenCoordinate,
-                                                                 long timestamp,
-                                                                 DSLContext dbContext) {
+        public Set<MavenCoordinate> resolveArtifactDependencies(String mavenCoordinate,
+                                                                long timestamp,
+                                                                DSLContext dbContext) {
             var artifacts = Arrays.stream(
                     Maven.resolver()
                             .resolve(mavenCoordinate)
@@ -113,7 +107,12 @@ public class MavenResolverPlugin extends Plugin {
                             d.getCoordinate().getArtifactId(),
                             d.getResolvedVersion()
                     )
-            ).collect(Collectors.toList());
+            ).collect(Collectors.toSet());
+            for (var dependency : dependencies) {
+                dependencies.addAll(this.resolveArtifactDependencies(
+                        dependency.toCanonicalForm(), timestamp, dbContext
+                ));
+            }
             if (timestamp != -1) {
                 return filterByTimestamp(dependencies, timestamp, dbContext);
             } else {
@@ -121,9 +120,9 @@ public class MavenResolverPlugin extends Plugin {
             }
         }
 
-        private List<MavenCoordinate> filterByTimestamp(List<MavenCoordinate> artifacts,
-                                                        long timestamp, DSLContext dbContext) {
-            var filteredArtifacts = new ArrayList<MavenCoordinate>();
+        private Set<MavenCoordinate> filterByTimestamp(Set<MavenCoordinate> artifacts,
+                                                       long timestamp, DSLContext dbContext) {
+            var filteredArtifacts = new HashSet<MavenCoordinate>();
             for (var artifact : artifacts) {
                 var filtered = false;
                 var packageName = artifact.getGroupId() + Constants.mvnCoordinateSeparator
