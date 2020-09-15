@@ -32,18 +32,20 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import org.jooq.*;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.jooq.Query;
-import org.json.JSONObject;
 
 public class MetadataDao {
 
+    private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
     private DSLContext context;
 
     public MetadataDao(DSLContext context) {
@@ -693,4 +695,181 @@ public class MetadataDao {
 
         return ids;
     }
+    
+    /**
+     * Gets all known metadata given a forge, package name and its version
+     *
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param version     Version of the package
+     * @return metadata   All known metadata
+     */
+    public String getAllMetadataForPkg(String forge, String packageName, String version) {
+
+        Packages p = Packages.PACKAGES.as("p");
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS.as("pv");
+
+        Result<Record> queryResult =
+                context
+                        .select(p.FORGE, p.PACKAGE_NAME)
+                        .select(pv.VERSION, pv.METADATA.as("metadata"))
+                        .from(p)
+                        .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                        .where(p.FORGE.equalIgnoreCase(forge)
+                                .and(p.PACKAGE_NAME.equalIgnoreCase(packageName)
+                                        .and(pv.VERSION.equalIgnoreCase(version))
+                                )
+                        )
+                        .fetch();
+
+        logger.debug("Total rows: " + queryResult.size());
+
+        String result = queryResult.formatJSON();
+        return result;
+    }
+
+    /**
+     * Reconstructs the dependency network given a product and a timestamp.
+     *
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param timestamp   Timestamp of the package
+     * @return dependencyNet    A set of revisions, along with an adjacency matrix
+     */
+    public String rebuildDependencyNet(String forge, String packageName, Timestamp timestamp, boolean transitive) {
+
+        Packages p = Packages.PACKAGES.as("p");
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS.as("pv");
+        Dependencies d = Dependencies.DEPENDENCIES.as("d");
+
+        Result<Record> queryResult =
+                context
+                        .select(p.FORGE, p.PACKAGE_NAME)
+                        .select(pv.VERSION, pv.CREATED_AT, pv.METADATA.as("package_metadata"))
+                        .select(d.METADATA.as("dependencies_metadata"))
+                        .from(p)
+                        .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                        .innerJoin(d).on(pv.ID.equal(d.PACKAGE_VERSION_ID))
+                        .where(p.FORGE.equalIgnoreCase(forge)
+                                .and(p.PACKAGE_NAME.equalIgnoreCase(packageName)
+                                        .and(pv.CREATED_AT.equal(timestamp))
+                                )
+                        )
+                        .fetch();
+
+        logger.debug("Total rows: " + queryResult.size());
+
+        String result = queryResult.formatJSON();
+        return result;
+    }
+
+    /**
+     * Retrieve a call graph for a given a package name and a timestamp.
+     *
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param timestamp   Timestamp when package was created
+     * @param transitive  Boolean option to query transitive relationships
+     * @return callGraph    A JSON-serialized RevisionCallGraph
+     */
+    public String getCallGraph(String forge, String packageName, Timestamp timestamp, boolean transitive) {
+
+        Packages p = Packages.PACKAGES.as("p");
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS.as("pv");
+        Modules m = Modules.MODULES.as("m");
+
+        Result<Record> queryResult =
+                context
+                        .select(p.ID, p.FORGE, p.PACKAGE_NAME)
+                        .select(pv.VERSION, pv.CREATED_AT)
+                        .select(m.METADATA.as("module_metadata"))
+                        .from(p)
+                        .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                        .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                        .where(p.FORGE.equalIgnoreCase(forge)
+                                .and(p.PACKAGE_NAME.equalIgnoreCase(packageName)
+                                        .and(pv.CREATED_AT.equal(timestamp))
+                                )
+                        )
+                        .fetch();
+
+        logger.debug("Total rows: " + queryResult.size());
+
+        String result = queryResult.formatJSON();
+        return result;
+    }
+
+    /**
+     * Gets the vulnerabilities in the transitive closure of a package version
+     *
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param version     Version of the package
+     * @return vulnerabilities  Paths of revisions, paths of files/compilation units, paths of functions
+     */
+    public String getVulnerabilities(String forge, String packageName, String version) {
+        // FIXME: Query should be implemented as soon as the data become available
+        Result<Record2<Long, String>> queryResult = context
+                .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
+                .from(Packages.PACKAGES).fetch();
+
+        for (Record r : queryResult) {
+            Long id = r.getValue(Packages.PACKAGES.ID);
+            String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
+            logger.debug("id: " + id + "  / name: " + pkgName);
+        }
+        String result = queryResult.formatJSON();
+        logger.debug("Query dummy result: " + result);
+        return ("dummy getVulnerabilities query OK!");
+    }
+
+    /**
+     * Impact analysis: the user asks the KB to compute the impact of a semantic change to a function
+     *
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param version     Version of the package
+     * @param transitive  Boolean option to query transitive relationships
+     * @return impact       The full set of functions reachable from the provided function
+     */
+    public String updateImpact(String forge, String packageName, String version, boolean transitive) {
+        // FIXME: Query should be implemented as soon as the data become available
+        Result<Record2<Long, String>> queryResult = context
+                .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
+                .from(Packages.PACKAGES).fetch();
+
+        for (Record r : queryResult) {
+            Long id = r.getValue(Packages.PACKAGES.ID);
+            String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
+            logger.debug("id: " + id + "  / name: " + pkgName);
+        }
+        String result = queryResult.formatJSON();
+        logger.debug("Query dummy result: " + result);
+        return ("dummy updateImpact query OK!");
+    }
+
+    /**
+     * Update the static CG of a package version with new edges
+     *
+     * @param forge       Forge of the package
+     * @param packageName Name of the package
+     * @param version     Version of the package
+     * @return cgEdges       A list of edges that where added
+     */
+    public String updateCg(String forge, String packageName, String version) {
+        // FIXME: Query should be implemented as soon as the data become available
+        Result<Record2<Long, String>> queryResult = context
+                .select(Packages.PACKAGES.ID, Packages.PACKAGES.PACKAGE_NAME)
+                .from(Packages.PACKAGES).fetch();
+
+        for (Record r : queryResult) {
+            Long id = r.getValue(Packages.PACKAGES.ID);
+            String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
+            logger.debug("id: " + id + "  / name: " + pkgName);
+        }
+        String result = queryResult.formatJSON();
+        logger.debug("Query dummy result: " + result);
+        return ("dummy updateCg query OK!");
+    }
+
 }

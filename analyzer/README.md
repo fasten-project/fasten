@@ -30,6 +30,9 @@ The FASTEN POM Analyzer plugin is a tool that analyzes Maven coordinate's [POM](
 #### Repo Cloner
 The FASTEN RepoCloner plugin is a tool for cloning repositories into the file system.
 
+#### Rest API
+The FASTEN Rest API Plugin is a tool to expose canned queries from the  [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema). It can be used both as a standalone tool and as a part of FASTEN server.
+
 ## Join the community
 
 The FASTEN software package management efficiency relies on an open community contributing to open technologies. Related research projects, R&D engineers, early users and open source contributors are welcome to join the [FASTEN community](https://www.fasten-project.eu/view/Main/Community), to try the tools, to participate in physical and remote worshops and to share our efforts using the project [community page](https://www.fasten-project.eu/view/Main/Community) and the social media buttons below.  
