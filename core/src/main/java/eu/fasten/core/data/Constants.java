@@ -16,10 +16,6 @@ public class Constants {
 
     public static final String fastenDbPassEnvVariable = "FASTEN_DBPASS";
 
-    public static final String fastenMongoDbPassEnvVariable = "FASTEN_MONGOPASS";
-
-    public static final String fastenGHToken = "FASTEN_GHTOKEN";
-
     public static final String pgPasswordEnvVariable = "PGPASSWORD";
 
 }
