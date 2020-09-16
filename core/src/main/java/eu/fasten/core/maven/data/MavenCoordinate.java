@@ -1,9 +1,10 @@
-package eu.fasten.analyzer.mavenresolver.data;
+package eu.fasten.core.maven.data;
 
 import eu.fasten.core.data.Constants;
 import org.jboss.shrinkwrap.resolver.api.maven.PackagingType;
 
-public class MavenCoordinate implements org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate {
+public class MavenCoordinate
+        implements org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate {
 
     private String artifactId;
     private String groupId;
