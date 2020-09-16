@@ -91,6 +91,17 @@ public class MavenResolver implements Runnable {
         }
     }
 
+    /**
+     * Resolves full dependency set of certain Maven artifact.
+     *
+     * @param mavenCoordinate Maven coordinate in the form of "groupId:artifactId:version"
+     * @param timestamp       Optional timestamp. Use -1 in order not to provide the timstamp.
+     *                        If provided then any dependency version with release timestamp
+     *                        later than the provided timestamp will not be included
+     *                        in the dependency set (they will downgraded to the suitable version).
+     * @param dbContext       Database connection context
+     * @return Full dependency set (including transitive dependencies) of the maven coordinate
+     */
     public Set<MavenCoordinate> resolveArtifactDependencies(String mavenCoordinate,
                                                             long timestamp,
                                                             DSLContext dbContext) {
