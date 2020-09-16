@@ -95,7 +95,7 @@ public class MavenResolver implements Runnable {
      * Resolves full dependency set of certain Maven artifact.
      *
      * @param mavenCoordinate Maven coordinate in the form of "groupId:artifactId:version"
-     * @param timestamp       Optional timestamp. Use -1 in order not to provide the timstamp.
+     * @param timestamp       Optional timestamp. Use -1 in order not to provide the timestamp.
      *                        If provided then any dependency version with release timestamp
      *                        later than the provided timestamp will not be included
      *                        in the dependency set (they will downgraded to the suitable version).
