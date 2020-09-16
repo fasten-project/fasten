@@ -38,8 +38,9 @@ public class MavenResolver implements Runnable {
 
     @CommandLine.Option(names = {"-t", "--timestamp"},
             paramLabel = "TS",
-            description = "Timestamp for resolution")
-    protected Long timestamp;
+            description = "Timestamp for resolution",
+            defaultValue = "-1")
+    protected long timestamp;
 
     @CommandLine.Option(names = {"-d", "--database"},
             paramLabel = "DB_URL",
@@ -64,21 +65,21 @@ public class MavenResolver implements Runnable {
         if (artifact != null && group != null && version != null) {
             DSLContext dbContext;
             try {
-                dbContext = PostgresConnector.getDSLContext(dbUser, dbUrl);
+                dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
             } catch (SQLException e) {
                 System.err.println("Could not connect to the database: " + e.getMessage());
                 return;
             }
             var mavenCoordinate = group + Constants.mvnCoordinateSeparator
-                    + artifact + Constants.mvnCoordinateSeparator
-                    + version + Constants.mvnCoordinateSeparator;
+                    + artifact + Constants.mvnCoordinateSeparator + version;
             var dependencySet = mavenResolver.resolveArtifactDependencies(
                     mavenCoordinate,
                     timestamp,
                     dbContext
             );
-            System.out.println("----------------------------------------");
+            System.out.println("--------------------------------------------------");
             System.out.println("Maven coordinate: " + mavenCoordinate);
+            System.out.println("--------------------------------------------------");
             System.out.println("Full dependency set:");
             for (var dependency : dependencySet) {
                 System.out.println(dependency.toCanonicalForm());
