@@ -23,6 +23,7 @@
         <module>pom-analyzer</module>
         <module>vulnerability-plugin</module>
         <module>repo-cloner-plugin</module>
+        <module>restapi-plugin</module>
         <module>vulnerability-consumer</module>
     </modules>
 
