@@ -25,6 +25,19 @@ public class MavenCoordinate
         this.version = version;
     }
 
+    public MavenCoordinate(String mavenCoordinate) {
+        if (!mavenCoordinate.matches(".+" + Constants.mvnCoordinateSeparator
+                + ".+" + Constants.mvnCoordinateSeparator + ".+")) {
+            throw new IllegalArgumentException("Maven coordinate must be in form of 'groupId"
+                    + Constants.mvnCoordinateSeparator + "artifactId"
+                    + Constants.mvnCoordinateSeparator + "version'");
+        }
+        var coordinates = mavenCoordinate.split(Constants.mvnCoordinateSeparator);
+        this.groupId = coordinates[0];
+        this.artifactId = coordinates[1];
+        this.version = coordinates[2];
+    }
+
     @Override
     public PackagingType getPackaging() {
         return null;

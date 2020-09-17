@@ -94,25 +94,27 @@ public class MavenResolver implements Runnable {
     /**
      * Resolves full dependency set of certain Maven artifact.
      *
-     * @param mavenCoordinate Maven coordinate in the form of "groupId:artifactId:version"
-     * @param timestamp       Optional timestamp. Use -1 in order not to provide the timestamp.
-     *                        If provided then any dependency version with release timestamp
-     *                        later than the provided timestamp will not be included
-     *                        in the dependency set (they will downgraded to the suitable version).
-     * @param dbContext       Database connection context
+     * @param coordinate Maven coordinate in the form of "groupId:artifactId:version"
+     * @param timestamp  Optional timestamp. Use -1 in order not to provide the timestamp.
+     *                   If provided then any dependency version with release timestamp
+     *                   later than the provided timestamp will not be included
+     *                   in the dependency set (they will downgraded to the suitable version).
+     * @param dbContext  Database connection context
      * @return Full dependency set (including transitive dependencies) of the maven coordinate
      */
-    public Set<MavenCoordinate> resolveArtifactDependencies(String mavenCoordinate,
+    public Set<MavenCoordinate> resolveArtifactDependencies(String coordinate,
                                                             long timestamp,
                                                             DSLContext dbContext) {
+        var mavenCoordinate = new MavenCoordinate(coordinate);
         var artifacts = Arrays.stream(
                 Maven.resolver()
-                        .resolve(mavenCoordinate)
+                        .resolve(mavenCoordinate.toCanonicalForm())
                         .withTransitivity()
                         .asResolvedArtifact()
         ).collect(Collectors.toList());
         if (artifacts.size() < 1) {
-            throw new RuntimeException("Could not resolve artifact " + mavenCoordinate);
+            throw new RuntimeException("Could not resolve artifact "
+                    + mavenCoordinate.toCanonicalForm());
         }
         var dependencies = Arrays.stream(
                 artifacts.get(0).getDependencies()
@@ -122,15 +124,16 @@ public class MavenResolver implements Runnable {
                         d.getResolvedVersion()
                 )
         ).collect(Collectors.toSet());
+        var fullDependencySet = new HashSet<>(dependencies);
         for (var dependency : dependencies) {
-            dependencies.addAll(this.resolveArtifactDependencies(
+            fullDependencySet.addAll(this.resolveArtifactDependencies(
                     dependency.toCanonicalForm(), timestamp, dbContext
             ));
         }
         if (timestamp != -1) {
-            return filterByTimestamp(dependencies, timestamp, dbContext);
+            return filterByTimestamp(fullDependencySet, timestamp, dbContext);
         } else {
-            return dependencies;
+            return fullDependencySet;
         }
     }
 
