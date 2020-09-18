@@ -18,9 +18,9 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom;
 
-import eu.fasten.analyzer.pomanalyzer.pom.data.Dependency;
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyManagement;
+import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.DependencyData;
+import eu.fasten.core.maven.data.DependencyManagement;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -411,8 +411,8 @@ public class DataExtractor {
                         if (parentDep.artifactId.equals(dependency.artifactId)
                                 && parentDep.groupId.equals(dependency.groupId)) {
                             resolvedDependencies.add(new Dependency(
-                                    dependency.artifactId,
                                     dependency.groupId,
+                                    dependency.artifactId,
                                     parentDep.versionConstraints,
                                     dependency.exclusions,
                                     dependency.scope,
@@ -426,8 +426,8 @@ public class DataExtractor {
                 }
                 if (!resolved) {
                     resolvedDependencies.add(new Dependency(
-                            dependency.artifactId,
                             dependency.groupId,
+                            dependency.artifactId,
                             replacePropertyReferences("${project.version}", properties, pom),
                             dependency.exclusions,
                             dependency.scope,
@@ -444,8 +444,8 @@ public class DataExtractor {
                     version = value;
                 }
                 resolvedDependencies.add(new Dependency(
-                        dependency.artifactId,
                         dependency.groupId,
+                        dependency.artifactId,
                         version,
                         dependency.exclusions,
                         dependency.scope,
@@ -497,8 +497,8 @@ public class DataExtractor {
                 resolvedClassifier = replacePropertyReferences(dep.classifier, properties, pom);
             }
             resolvedDependencies.set(i, new Dependency(
-                    resolvedArtifact,
                     resolvedGroup,
+                    resolvedArtifact,
                     dep.versionConstraints,
                     resolvedExclusions,
                     resolvedScope,
@@ -623,8 +623,8 @@ public class DataExtractor {
                     version = null;
                 }
                 dependencies.add(new Dependency(
-                        artifactNode.getText(),
                         groupNode.getText(),
+                        artifactNode.getText(),
                         version,
                         exclusions,
                         (scopeNode != null) ? scopeNode.getText() : "",

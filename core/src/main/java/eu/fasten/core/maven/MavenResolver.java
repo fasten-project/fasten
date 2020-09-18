@@ -1,21 +1,19 @@
 package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.MavenCoordinate;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jooq.DSLContext;
+import org.json.JSONObject;
 import picocli.CommandLine;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.sql.Timestamp;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "MavenResolver")
@@ -72,11 +70,7 @@ public class MavenResolver implements Runnable {
             }
             var mavenCoordinate = group + Constants.mvnCoordinateSeparator
                     + artifact + Constants.mvnCoordinateSeparator + version;
-            var dependencySet = mavenResolver.resolveArtifactDependencies(
-                    mavenCoordinate,
-                    timestamp,
-                    dbContext
-            );
+            var dependencySet = mavenResolver.resolveDependencies(group, artifact, version, timestamp, dbContext);
             System.out.println("--------------------------------------------------");
             System.out.println("Maven coordinate: " + mavenCoordinate);
             System.out.println("--------------------------------------------------");
@@ -135,6 +129,67 @@ public class MavenResolver implements Runnable {
         } else {
             return fullDependencySet;
         }
+    }
+
+    public Set<Dependency> resolveDependencies(String groupId, String artifactId, String version,
+                                               long timestamp, DSLContext dbContext) {
+        var directDependencies = getArtifactDependencies(groupId, artifactId, version, dbContext);
+        var fullDependencySet = new HashSet<>(directDependencies);
+        for (var dependency : directDependencies) {
+            var depVersion = String.join(",", dependency.getVersionConstraints());
+            fullDependencySet.addAll(getArtifactDependencies(dependency.groupId, dependency.artifactId, depVersion, dbContext));
+        }
+        if (timestamp == -1) {
+            return fullDependencySet;
+        } else {
+            return filterDependenciesByTimestamp(fullDependencySet, new Timestamp(timestamp), dbContext);
+        }
+    }
+
+    public List<Dependency> getArtifactDependencies(String groupId, String artifactId,
+                                                    String version, DSLContext context) {
+        var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
+        var result = context.select(Dependencies.DEPENDENCIES.METADATA)
+                .from(Dependencies.DEPENDENCIES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID
+                        .eq(PackageVersions.PACKAGE_VERSIONS.ID))
+                .join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
+                .fetch();
+        return result.map(r -> Dependency.fromJSON(new JSONObject(r.component1().data())));
+    }
+
+    private Set<Dependency> filterDependenciesByTimestamp(Set<Dependency> dependencies,
+                                                          Timestamp timestamp, DSLContext context) {
+        var filteredDependencies = new HashSet<Dependency>(dependencies.size());
+        for (var dependency : dependencies) {
+            var packageName = dependency.groupId + Constants.mvnCoordinateSeparator + dependency.artifactId;
+            var result = context.select(PackageVersions.PACKAGE_VERSIONS.VERSION)
+                    .from(PackageVersions.PACKAGE_VERSIONS)
+                    .join(Packages.PACKAGES)
+                    .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                    .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+                    .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                    .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.lessOrEqual(timestamp))
+                    .orderBy(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.desc())
+                    .limit(1)
+                    .fetchOne();
+            String suitableVersion = null;
+            if (result != null) {
+                suitableVersion = result.value1();
+            }
+            if (suitableVersion == null) {
+                filteredDependencies.add(dependency);
+            } else {
+                filteredDependencies.add(
+                        new Dependency(dependency.groupId, dependency.artifactId, suitableVersion)
+                );
+            }
+        }
+        return filteredDependencies;
     }
 
     private Set<MavenCoordinate> filterByTimestamp(Set<MavenCoordinate> artifacts,

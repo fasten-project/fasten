@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.pomanalyzer.pom.data;
+package eu.fasten.core.maven.data;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import eu.fasten.core.data.Constants;
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -40,8 +41,8 @@ public class Dependency {
      * Constructor for Dependency object.
      * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
      *
-     * @param artifactId         artifactId of dependency Maven coordinate
      * @param groupId            groupId of dependency Maven coordinate
+     * @param artifactId         artifactId of dependency Maven coordinate
      * @param versionConstraints List of version constraints of the dependency
      * @param exclusions         List of exclusions
      * @param scope              Scope of the dependency
@@ -49,12 +50,12 @@ public class Dependency {
      * @param type               Type of the dependency
      * @param classifier         Classifier for dependency
      */
-    public Dependency(final String artifactId, final String groupId,
+    public Dependency(final String groupId, final String artifactId,
                       final List<VersionConstraint> versionConstraints,
                       final List<Exclusion> exclusions, final String scope, final boolean optional,
                       final String type, final String classifier) {
-        this.artifactId = artifactId;
         this.groupId = groupId;
+        this.artifactId = artifactId;
         this.versionConstraints = versionConstraints;
         this.exclusions = exclusions;
         this.scope = scope;
@@ -63,15 +64,15 @@ public class Dependency {
         this.classifier = classifier;
     }
 
-    public Dependency(final String artifactId, final String groupId, final String version,
+    public Dependency(final String groupId, final String artifactId, final String version,
                       final List<Exclusion> exclusions, final String scope, final boolean optional,
                       final String type, final String classifier) {
-        this(artifactId, groupId, VersionConstraint.resolveMultipleVersionConstraints(version),
+        this(groupId, artifactId, VersionConstraint.resolveMultipleVersionConstraints(version),
                 exclusions, scope, optional, type, classifier);
     }
 
-    public Dependency(final String artifactId, final String groupId, final String version) {
-        this(artifactId, groupId, version, new ArrayList<>(), "", false, "", "");
+    public Dependency(final String groupId, final String artifactId, final String version) {
+        this(groupId, artifactId, version, new ArrayList<>(), "", false, "", "");
     }
 
     /**
@@ -96,28 +97,12 @@ public class Dependency {
             return false;
         }
         Dependency that = (Dependency) o;
-        if (optional != that.optional) {
-            return false;
-        }
-        if (!artifactId.equals(that.artifactId)) {
-            return false;
-        }
-        if (!groupId.equals(that.groupId)) {
-            return false;
-        }
-        if (!Objects.equals(versionConstraints, that.versionConstraints)) {
-            return false;
-        }
-        if (!Objects.equals(exclusions, that.exclusions)) {
-            return false;
-        }
-        if (!Objects.equals(scope, that.scope)) {
-            return false;
-        }
-        if (!Objects.equals(type, that.type)) {
-            return false;
-        }
-        return Objects.equals(classifier, that.classifier);
+        return this.toCanonicalForm().equals(that.toCanonicalForm());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.toCanonicalForm().hashCode();
     }
 
     /**
@@ -144,6 +129,29 @@ public class Dependency {
         json.put("type", this.type);
         json.put("classifier", this.classifier);
         return json;
+    }
+
+    public String toCanonicalForm() {
+        var builder = new StringBuilder();
+        builder.append(this.groupId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        builder.append(this.artifactId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        if (!this.type.isEmpty()) {
+            builder.append(this.type);
+            builder.append(Constants.mvnCoordinateSeparator);
+        }
+        if (!this.classifier.isEmpty()) {
+            builder.append(this.classifier);
+            builder.append(Constants.mvnCoordinateSeparator);
+        }
+        builder.append(String.join(",", this.getVersionConstraints()));
+        return builder.toString();
+    }
+
+    @Override
+    public String toString() {
+        return toCanonicalForm();
     }
 
     /**
@@ -173,7 +181,7 @@ public class Dependency {
         var optional = json.optBoolean("optional", false);
         var type = json.optString("type");
         var classifier = json.optString("classifier");
-        return new Dependency(artifactId, groupId, versionConstraints, exclusions, scope,
+        return new Dependency(groupId, artifactId, versionConstraints, exclusions, scope,
                 optional, type, classifier);
     }
 

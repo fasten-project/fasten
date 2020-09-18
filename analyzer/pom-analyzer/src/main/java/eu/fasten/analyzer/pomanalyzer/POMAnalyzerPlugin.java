@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
+import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.plugins.DBConnector;

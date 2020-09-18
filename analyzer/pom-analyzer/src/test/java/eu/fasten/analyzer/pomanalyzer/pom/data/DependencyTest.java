@@ -18,11 +18,10 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom.data;
 
+import eu.fasten.core.maven.data.Dependency;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DependencyTest {
 
