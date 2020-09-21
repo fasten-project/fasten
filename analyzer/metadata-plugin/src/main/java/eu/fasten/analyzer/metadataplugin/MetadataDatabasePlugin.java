@@ -23,8 +23,10 @@ import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.graphdb.GidGraph;
+import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
@@ -32,10 +34,12 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.sql.BatchUpdateException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -165,10 +169,18 @@ public class MetadataDatabasePlugin extends Plugin {
                         try {
                             id = saveToDatabaseOldFormat(callgraph, metadataDao);
                         } catch (RuntimeException e) {
-                            logger.error("Error saving to the database: '" + artifact + "'", e);
                             processedRecord = false;
-                            setPluginError(e);
                             if (e instanceof DataAccessException) {
+                                if (e.getCause() instanceof BatchUpdateException) {
+                                    var exception = ((BatchUpdateException) e.getCause())
+                                            .getNextException();
+                                    logger.error("Error saving to the database: '" + artifact + "'",
+                                            exception);
+                                    setPluginError(exception);
+                                } else {
+                                    logger.error("Error saving to the database: '" + artifact + "'", e);
+                                    setPluginError(e);
+                                }
                                 logger.info("Restarting transaction for '" + artifact + "'");
                                 restartTransaction = true;
                             } else {
@@ -253,10 +265,18 @@ public class MetadataDatabasePlugin extends Plugin {
                         try {
                             id = saveToDatabaseNewFormat(callgraph, metadataDao);
                         } catch (RuntimeException e) {
-                            logger.error("Error saving to the database: '" + artifact + "'", e);
                             processedRecord = false;
-                            setPluginError(e);
                             if (e instanceof DataAccessException) {
+                                if (e.getCause() instanceof BatchUpdateException) {
+                                    var exception = ((BatchUpdateException) e.getCause())
+                                            .getNextException();
+                                    logger.error("Error saving to the database: '" + artifact + "'",
+                                            exception);
+                                    setPluginError(exception);
+                                } else {
+                                    logger.error("Error saving to the database: '" + artifact + "'", e);
+                                    setPluginError(e);
+                                }
                                 logger.info("Restarting transaction for '" + artifact + "'");
                                 restartTransaction = true;
                             } else {
@@ -343,7 +363,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     var localId = (long) methodEntry.getKey();
                     var uri = methodEntry.getValue().toString();
                     internalCallables.add(new CallablesRecord(localId, moduleId, uri, true,
-                            null, null));
+                            null, null, null, null));
                 }
             }
             final var graph = callGraph.getGraph();
@@ -353,7 +373,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 var sourceLocalId = (long) call.get(0);
                 var targetLocalId = (long) call.get(1);
                 internalEdges.add(
-                        new EdgesRecord(sourceLocalId, targetLocalId, JSONB.valueOf("{}")));
+                        new EdgesRecord(sourceLocalId, targetLocalId, new ReceiverRecord[]{}, JSONB.valueOf("{}")));
             }
             var nodes = new LongArrayList();
             var externalNodes = new LongArrayList();
@@ -363,11 +383,44 @@ public class MetadataDatabasePlugin extends Plugin {
                 var call = callEntry.getKey();
                 var sourceLocalId = (long) call.getKey();
                 var uri = call.getValue().toString();
-                var targetId = metadataDao.insertCallable(-1L, uri, false, null, null);
+                var targetId = metadataDao.insertCallable(-1L, uri, false, null, null, null, null);
                 externalNodes.add(targetId);
                 var edgeMetadata = new JSONObject(callEntry.getValue());
-                externalEdges.add(new EdgesRecord(sourceLocalId, targetId,
-                        JSONB.valueOf(edgeMetadata.toString())));
+                var metadataMap = new HashMap<String, Integer>(edgeMetadata.toMap().size());
+                for (var key : edgeMetadata.keySet()) {
+                   metadataMap.put(key, Integer.parseInt(edgeMetadata.getString(key)));
+                }
+                var callsNumber = metadataMap.values().stream().mapToInt(v -> v).sum();
+                var receivers = new ReceiverRecord[callsNumber];
+                var count = 0;
+                for (var entry : metadataMap.entrySet()) {
+                    for (var i = 0; i < entry.getValue(); i++) {
+                        ReceiverType type;
+                        switch (entry.getKey()) {
+                            case "invokestatic":
+                                type = ReceiverType.static_;
+                                break;
+                            case "invokespecial":
+                                type = ReceiverType.special;
+                                break;
+                            case "invokevirtual":
+                                type = ReceiverType.virtual;
+                                break;
+                            case "invokedynamic":
+                                type = ReceiverType.dynamic;
+                                break;
+                            case "invokeinterface":
+                                type = ReceiverType.interface_;
+                                break;
+                            default:
+                                type = null;
+                                break;
+                        }
+                        receivers[count++] = new ReceiverRecord(null, type, null);
+                    }
+                }
+                externalEdges.add(new EdgesRecord(sourceLocalId, targetId, receivers,
+                        JSONB.valueOf("{}")));
             }
             var internalCallablesIds = new LongArrayList(internalCallables.size());
             final var internalCallablesIterator = internalCallables.iterator();
@@ -446,8 +499,19 @@ public class MetadataDatabasePlugin extends Plugin {
                     var localId = (long) methodEntry.getKey();
                     var uri = methodEntry.getValue().getUri().toString();
                     var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
+                    Integer firstLine = null;
+                    if (callableMetadata.has("first")) {
+                        firstLine = callableMetadata.getInt("first");
+                        callableMetadata.remove("first");
+                    }
+                    Integer lastLine = null;
+                    if (callableMetadata.has("last")) {
+                        lastLine = callableMetadata.getInt("last");
+                        callableMetadata.remove("last");
+                    }
                     callables.add(new CallablesRecord(localId, moduleId, uri, true,
-                            null, JSONB.valueOf(callableMetadata.toString())));
+                            null, firstLine, lastLine,
+                            JSONB.valueOf(callableMetadata.toString())));
                 }
             }
             final var numInternal = callables.size();
@@ -471,7 +535,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     var uri = methodEntry.getValue().getUri().toString();
                     var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
                     callables.add(new CallablesRecord(localId, -1L, uri, false,
-                            null, JSONB.valueOf(callableMetadata.toString())));
+                            null, null, null, JSONB.valueOf(callableMetadata.toString())));
                 }
             }
             var callablesIds = new LongArrayList(callables.size());
@@ -490,7 +554,8 @@ public class MetadataDatabasePlugin extends Plugin {
                 var localTarget = (long) edgeEntry.getKey().get(1);
                 var globalSource = lidToGidMap.get(localSource);
                 var globalTarget = lidToGidMap.get(localTarget);
-                var metadata = new JSONObject();
+                var receivers = new ReceiverRecord[edgeEntry.getValue().size()];
+                var counter = 0;
                 for (var obj : edgeEntry.getValue().keySet()) {
                     var pc = obj.toString();
                     var metadataMap = (Map<String, Object>) edgeEntry.getValue()
@@ -499,10 +564,33 @@ public class MetadataDatabasePlugin extends Plugin {
                     for (var key : metadataMap.keySet()) {
                         callMetadata.put(key, metadataMap.get(key));
                     }
-                    metadata.put(pc, callMetadata);
+                    int line = callMetadata.optInt("line", -1);
+                    ReceiverType type;
+                    switch (callMetadata.optString("type")) {
+                        case "invokestatic":
+                            type = ReceiverType.static_;
+                            break;
+                        case "invokespecial":
+                            type = ReceiverType.special;
+                            break;
+                        case "invokevirtual":
+                            type = ReceiverType.virtual;
+                            break;
+                        case "invokedynamic":
+                            type = ReceiverType.dynamic;
+                            break;
+                        case "invokeinterface":
+                            type = ReceiverType.interface_;
+                            break;
+                        default:
+                            type = null;
+                            break;
+                    }
+                    String receiverUri = callMetadata.optString("receiver");
+                    receivers[counter++] = new ReceiverRecord(line, type, receiverUri);
                 }
-                edges.add(new EdgesRecord(globalSource, globalTarget,
-                        JSONB.valueOf(metadata.toString())));
+                edges.add(new EdgesRecord(globalSource, globalTarget, receivers,
+                        JSONB.valueOf("{}")));
             }
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
