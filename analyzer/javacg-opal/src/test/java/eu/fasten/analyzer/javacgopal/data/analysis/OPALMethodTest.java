@@ -90,30 +90,6 @@ class OPALMethodTest {
     }
 
     @Test
-    void getMethodNameInit() {
-        var methodUri = OPALMethod.getMethodName("TestClass", "<init>");
-        assertEquals("TestClass", methodUri);
-    }
-
-    @Test
-    void getMethodNameClinit() {
-        var methodUri = OPALMethod.getMethodName("TestClass", "<clinit>");
-        assertEquals("<init>", methodUri);
-    }
-
-    @Test
-    void getMethodNameWithMethodName() {
-        var methodUri = OPALMethod.getMethodName("TestClass", "TestMethod");
-        assertEquals("TestMethod", methodUri);
-    }
-
-    @Test
-    void getMethodNameLambda() {
-        var methodUri = OPALMethod.getMethodName("LambdaTestClass%", "<init>");
-        assertEquals("LambdaTestClass%", methodUri);
-    }
-
-    @Test
     void getTypeURIWithoutLambda() {
         var wrapperType = Mockito.mock(ObjectType.class);
         Mockito.when(wrapperType.packageName()).thenReturn("some/package");
