@@ -86,7 +86,7 @@ class PartialCallGraphTest {
                 .get(FastenURI.create("/name.space/SingleSourceToTarget"));
 
         // Check filename
-        Assertions.assertEquals("SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
+        Assertions.assertEquals("name/space/SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
 
         // Check super interfaces and classes
         Assertions.assertEquals(0, SSTTInternalType.getSuperInterfaces().size());
