@@ -20,29 +20,14 @@ package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.data.graphdb.GidGraph;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.sql.BatchUpdateException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jooq.DSLContext;
@@ -57,6 +42,18 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.sql.BatchUpdateException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class MetadataDatabasePlugin extends Plugin {
 
@@ -102,113 +99,6 @@ public class MetadataDatabasePlugin extends Plugin {
                 consumedJson = consumedJson.getJSONObject("payload");
             }
             final var path = consumedJson.optString("dir");
-            if (consumedJson.has("depset")) {
-                consumeOldFormat(consumedJson, path);
-            } else {
-                consumeNewFormat(consumedJson, path);
-            }
-        }
-
-        /**
-         * Consumes callgraph record of the old format.
-         *
-         * @param consumedJson JSON of the consumed record
-         * @param path         Path where the record is stored
-         */
-        private void consumeOldFormat(JSONObject consumedJson, String path) {
-            final RevisionCallGraph callgraph;
-            if (!path.isEmpty()) {
-                try {
-                    JSONTokener tokener = new JSONTokener(new FileReader(path));
-                    callgraph = new RevisionCallGraph(new JSONObject(tokener));
-                } catch (JSONException | FileNotFoundException e) {
-                    logger.error("Error parsing JSON callgraph from path for '"
-                            + Paths.get(path).getFileName() + "'", e);
-                    processedRecord = false;
-                    setPluginError(e);
-                    return;
-                }
-            } else {
-                try {
-                    callgraph = new RevisionCallGraph(consumedJson);
-                } catch (JSONException e) {
-                    logger.error("Error parsing JSON callgraph for '"
-                            + Paths.get(path).getFileName() + "'", e);
-                    processedRecord = false;
-                    setPluginError(e);
-                    return;
-                }
-            }
-            final var artifact = callgraph.product + Constants.mvnCoordinateSeparator
-                    + callgraph.version;
-            final String groupId;
-            final String artifactId;
-            if (callgraph.product.contains(Constants.mvnCoordinateSeparator)) {
-                groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
-                artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
-            } else {
-                final var productParts = callgraph.product.split("\\.");
-                groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
-                artifactId = productParts[productParts.length - 1];
-            }
-            var version = callgraph.version;
-            var forge = callgraph.forge;
-            var product = artifactId + "_" + groupId + "_" + version;
-            var firstLetter = artifactId.substring(0, 1);
-            outputPath = File.separator + forge + File.separator
-                    + firstLetter + File.separator
-                    + artifactId + File.separator + product + ".json";
-            int transactionRestartCount = 0;
-            do {
-                setPluginError(null);
-                try {
-                    var metadataDao = new MetadataDao(dslContext);
-                    dslContext.transaction(transaction -> {
-                        metadataDao.setContext(DSL.using(transaction));
-                        long id;
-                        try {
-                            id = saveToDatabaseOldFormat(callgraph, metadataDao);
-                        } catch (RuntimeException e) {
-                            processedRecord = false;
-                            if (e instanceof DataAccessException) {
-                                if (e.getCause() instanceof BatchUpdateException) {
-                                    var exception = ((BatchUpdateException) e.getCause())
-                                            .getNextException();
-                                    logger.error("Error saving to the database: '" + artifact + "'",
-                                            exception);
-                                    setPluginError(exception);
-                                } else {
-                                    logger.error("Error saving to the database: '" + artifact + "'", e);
-                                    setPluginError(e);
-                                }
-                                logger.info("Restarting transaction for '" + artifact + "'");
-                                restartTransaction = true;
-                            } else {
-                                restartTransaction = false;
-                            }
-                            throw e;
-                        }
-                        if (getPluginError() == null) {
-                            processedRecord = true;
-                            restartTransaction = false;
-                            logger.info("Saved the '" + artifact + "' callgraph metadata "
-                                    + "to the database with package version ID = " + id);
-                        }
-                    });
-                } catch (Exception expected) {
-                }
-                transactionRestartCount++;
-            } while (restartTransaction && !processedRecord
-                    && transactionRestartCount < transactionRestartLimit);
-        }
-
-        /**
-         * Consumes callgraph record of the new format.
-         *
-         * @param consumedJson JSON of the consumed record
-         * @param path         Path where the record is stored
-         */
-        private void consumeNewFormat(JSONObject consumedJson, String path) {
             final ExtendedRevisionCallGraph callgraph;
             if (!path.isEmpty()) {
                 try {
@@ -263,7 +153,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabaseNewFormat(callgraph, metadataDao);
+                            id = saveToDatabase(callgraph, metadataDao);
                         } catch (RuntimeException e) {
                             processedRecord = false;
                             if (e instanceof DataAccessException) {
@@ -313,166 +203,13 @@ public class MetadataDatabasePlugin extends Plugin {
         }
 
         /**
-         * Saves a callgraph of olf format to the database to appropriate tables.
-         *
-         * @param callGraph   Call graph to save to the database.
-         * @param metadataDao Data Access Object to insert records in the database
-         * @return Package ID saved in the database
-         */
-        public long saveToDatabaseOldFormat(RevisionCallGraph callGraph, MetadataDao metadataDao) {
-            final var timestamp = this.getProperTimestamp(callGraph.timestamp);
-            final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
-                    null, null, null);
-            final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    callGraph.getCgGenerator(), callGraph.version, timestamp, null);
-            var depIds = new LongArrayList();
-            var depVersions = new ArrayList<String[]>();
-            var depMetadata = new ArrayList<JSONObject>();
-            for (var depList : callGraph.depset) {
-                for (var dependency : depList) {
-                    var constraints = dependency.constraints;
-                    var versions = new String[constraints.size()];
-                    for (int i = 0; i < constraints.size(); i++) {
-                        versions[i] = constraints.get(i).toString();
-                    }
-                    depVersions.add(versions);
-                    var depId = metadataDao.insertPackage(dependency.product, dependency.forge,
-                            null, null, null);
-                    depIds.add(depId);
-                    depMetadata.add(new JSONObject());
-                }
-            }
-            if (depIds.size() > 0) {
-                metadataDao.insertDependencies(packageVersionId, depIds, depVersions, depMetadata);
-            }
-            final var cha = callGraph.getClassHierarchy();
-            var internalCallables = new ArrayList<CallablesRecord>();
-            for (var fastenUri : cha.keySet()) {
-                var type = cha.get(fastenUri);
-                var moduleMetadata = new JSONObject();
-                moduleMetadata.put("superInterfaces",
-                        RevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
-                moduleMetadata.put("superClasses",
-                        RevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
-                long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
-                        null, moduleMetadata);
-                var fileName = type.getSourceFileName();
-                var fileId = metadataDao.insertFile(packageVersionId, fileName, null, null, null);
-                metadataDao.insertModuleContent(moduleId, fileId);
-                for (var methodEntry : type.getMethods().entrySet()) {
-                    var localId = (long) methodEntry.getKey();
-                    var uri = methodEntry.getValue().toString();
-                    internalCallables.add(new CallablesRecord(localId, moduleId, uri, true,
-                            null, null, null, null));
-                }
-            }
-            final var graph = callGraph.getGraph();
-            var internalEdges = new ArrayList<EdgesRecord>(graph.getInternalCalls().size());
-            final var internalCalls = graph.getInternalCalls();
-            for (var call : internalCalls) {
-                var sourceLocalId = (long) call.get(0);
-                var targetLocalId = (long) call.get(1);
-                internalEdges.add(
-                        new EdgesRecord(sourceLocalId, targetLocalId, new ReceiverRecord[]{}, JSONB.valueOf("{}")));
-            }
-            var nodes = new LongArrayList();
-            var externalNodes = new LongArrayList();
-            final var externalCalls = graph.getExternalCalls();
-            var externalEdges = new ArrayList<EdgesRecord>(graph.getExternalCalls().size());
-            for (var callEntry : externalCalls.entrySet()) {
-                var call = callEntry.getKey();
-                var sourceLocalId = (long) call.getKey();
-                var uri = call.getValue().toString();
-                var targetId = metadataDao.insertCallable(-1L, uri, false, null, null, null, null);
-                externalNodes.add(targetId);
-                var edgeMetadata = new JSONObject(callEntry.getValue());
-                var metadataMap = new HashMap<String, Integer>(edgeMetadata.toMap().size());
-                for (var key : edgeMetadata.keySet()) {
-                   metadataMap.put(key, Integer.parseInt(edgeMetadata.getString(key)));
-                }
-                var callsNumber = metadataMap.values().stream().mapToInt(v -> v).sum();
-                var receivers = new ReceiverRecord[callsNumber];
-                var count = 0;
-                for (var entry : metadataMap.entrySet()) {
-                    for (var i = 0; i < entry.getValue(); i++) {
-                        ReceiverType type;
-                        switch (entry.getKey()) {
-                            case "invokestatic":
-                                type = ReceiverType.static_;
-                                break;
-                            case "invokespecial":
-                                type = ReceiverType.special;
-                                break;
-                            case "invokevirtual":
-                                type = ReceiverType.virtual;
-                                break;
-                            case "invokedynamic":
-                                type = ReceiverType.dynamic;
-                                break;
-                            case "invokeinterface":
-                                type = ReceiverType.interface_;
-                                break;
-                            default:
-                                type = null;
-                                break;
-                        }
-                        receivers[count++] = new ReceiverRecord(null, type, null);
-                    }
-                }
-                externalEdges.add(new EdgesRecord(sourceLocalId, targetId, receivers,
-                        JSONB.valueOf("{}")));
-            }
-            var internalCallablesIds = new LongArrayList(internalCallables.size());
-            final var internalCallablesIterator = internalCallables.iterator();
-            while (internalCallablesIterator.hasNext()) {
-                var callablesBatch = new ArrayList<CallablesRecord>(Constants.insertionBatchSize);
-                while (internalCallablesIterator.hasNext()
-                        && callablesBatch.size() < Constants.insertionBatchSize) {
-                    callablesBatch.add(internalCallablesIterator.next());
-                }
-                var ids = metadataDao.batchInsertCallables(callablesBatch);
-                internalCallablesIds.addAll(ids);
-            }
-            nodes.addAll(internalCallablesIds);
-            nodes.addAll(externalNodes);
-            var internalLidToGidMap = new Long2LongOpenHashMap();
-            for (int i = 0; i < internalCallables.size(); i++) {
-                internalLidToGidMap.put(internalCallables.get(i).getId().longValue(),
-                        internalCallablesIds.getLong(i));
-            }
-            for (var edge : internalEdges) {
-                edge.setSourceId(internalLidToGidMap.get(edge.getSourceId().longValue()));
-                edge.setTargetId(internalLidToGidMap.get(edge.getTargetId().longValue()));
-            }
-            for (var edge : externalEdges) {
-                edge.setSourceId(internalLidToGidMap.get(edge.getSourceId().longValue()));
-            }
-            var edges = new ArrayList<EdgesRecord>(graph.size());
-            edges.addAll(internalEdges);
-            edges.addAll(externalEdges);
-            final var edgesIterator = edges.iterator();
-            while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
-                while (edgesIterator.hasNext()
-                        && edgesBatch.size() < Constants.insertionBatchSize) {
-                    edgesBatch.add(edgesIterator.next());
-                }
-                metadataDao.batchInsertEdges(edgesBatch);
-            }
-            this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
-                    nodes, internalCallablesIds.size(), edges);
-            return packageVersionId;
-        }
-
-        /**
          * Saves a callgraph of new format to the database to appropriate tables.
          *
          * @param callGraph   Call graph to save to the database.
          * @param metadataDao Data Access Object to insert records in the database
          * @return Package ID saved in the database
          */
-        public long saveToDatabaseNewFormat(ExtendedRevisionCallGraph callGraph,
-                                            MetadataDao metadataDao) {
+        public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
             final var timestamp = this.getProperTimestamp(callGraph.timestamp);
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
                     null, null, null);
@@ -565,27 +302,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         callMetadata.put(key, metadataMap.get(key));
                     }
                     int line = callMetadata.optInt("line", -1);
-                    ReceiverType type;
-                    switch (callMetadata.optString("type")) {
-                        case "invokestatic":
-                            type = ReceiverType.static_;
-                            break;
-                        case "invokespecial":
-                            type = ReceiverType.special;
-                            break;
-                        case "invokevirtual":
-                            type = ReceiverType.virtual;
-                            break;
-                        case "invokedynamic":
-                            type = ReceiverType.dynamic;
-                            break;
-                        case "invokeinterface":
-                            type = ReceiverType.interface_;
-                            break;
-                        default:
-                            type = null;
-                            break;
-                    }
+                    var type = this.getReceiverType(callMetadata.optString("type"));
                     String receiverUri = callMetadata.optString("receiver");
                     receivers[counter++] = new ReceiverRecord(line, type, receiverUri);
                 }
@@ -604,6 +321,23 @@ public class MetadataDatabasePlugin extends Plugin {
             this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
                     callablesIds, numInternal, edges);
             return packageVersionId;
+        }
+
+        private ReceiverType getReceiverType(String type) {
+            switch (type) {
+                case "invokestatic":
+                    return ReceiverType.static_;
+                case "invokespecial":
+                    return ReceiverType.special;
+                case "invokevirtual":
+                    return ReceiverType.virtual;
+                case "invokedynamic":
+                    return ReceiverType.dynamic;
+                case "invokeinterface":
+                    return ReceiverType.interface_;
+                default:
+                    return null;
+            }
         }
 
         private Timestamp getProperTimestamp(long timestamp) {
