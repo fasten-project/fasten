@@ -265,7 +265,7 @@ public class POMAnalyzerPlugin extends Plugin {
 
         @Override
         public String version() {
-            return "0.1.1";
+            return "0.1.2";
         }
 
         @Override

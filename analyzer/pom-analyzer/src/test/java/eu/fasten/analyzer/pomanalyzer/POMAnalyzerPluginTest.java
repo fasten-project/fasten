@@ -184,7 +184,7 @@ public class POMAnalyzerPluginTest {
 
     @Test
     public void versionTest() {
-        var version = "0.1.1";
+        var version = "0.1.2";
         assertEquals(version, pomAnalyzer.version());
     }
 }

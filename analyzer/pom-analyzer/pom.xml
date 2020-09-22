@@ -13,7 +13,7 @@
 
     <groupId>eu.fasten.analyzer</groupId>
     <artifactId>pom-analyzer</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>pom-analyzer</name>
@@ -76,7 +76,7 @@
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
                                         <Plugin-Class>eu.fasten.analyzer.pomanalyzer.POMAnalyzerPlugin</Plugin-Class>
                                         <Plugin-Id>pom-analyzer</Plugin-Id>
-                                        <Plugin-Version>0.0.1</Plugin-Version>
+                                        <Plugin-Version>0.1.2</Plugin-Version>
                                         <Plugin-Description>POM Analyzer Plugin</Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
