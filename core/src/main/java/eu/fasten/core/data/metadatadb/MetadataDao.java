@@ -87,6 +87,24 @@ public class MetadataDao {
     }
 
     /**
+     * Inserts a record in 'packages' table in the database.
+     *
+     * @param packageName Name of the package
+     * @param forge       Forge of the package
+     * @return ID of the new record
+     */
+    public long insertPackage(String packageName, String forge) {
+        var resultRecord = context.insertInto(Packages.PACKAGES,
+                Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.FORGE)
+                .values(packageName, forge)
+                .onConflictOnConstraint(Keys.UNIQUE_PACKAGE_FORGE).doUpdate()
+                .set(Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.as("excluded").PACKAGE_NAME)
+                .set(Packages.PACKAGES.FORGE, Packages.PACKAGES.as("excluded").FORGE)
+                .returning(Packages.PACKAGES.ID).fetchOne();
+        return resultRecord.getValue(Packages.PACKAGES.ID);
+    }
+
+    /**
      * Inserts multiple records in the 'packages' table in the database.
      *
      * @param packageNames List of names of the packages
@@ -435,6 +453,25 @@ public class MetadataDao {
                 .set(Files.FILES.CREATED_AT, Files.FILES.as("excluded").CREATED_AT)
                 .set(Files.FILES.METADATA, JsonbDSL.concat(Files.FILES.METADATA,
                         Files.FILES.as("excluded").METADATA))
+                .returning(Files.FILES.ID).fetchOne();
+        return resultRecord.getValue(Files.FILES.ID);
+    }
+
+    /**
+     * Insert a new record into 'files' table in the database.
+     *
+     * @param packageVersionId ID of the package version to which the file belongs
+     *                         (references 'package_versions.id')
+     * @param path             Path of the file
+     * @return ID of the new record
+     */
+    public long insertFile(long packageVersionId, String path) {
+        var resultRecord = context.insertInto(Files.FILES,
+                Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH)
+                .values(packageVersionId, path)
+                .onConflictOnConstraint(Keys.UNIQUE_VERSION_PATH).doUpdate()
+                .set(Files.FILES.PACKAGE_VERSION_ID, Files.FILES.as("excluded").PACKAGE_VERSION_ID)
+                .set(Files.FILES.PATH, Files.FILES.as("excluded").PATH)
                 .returning(Files.FILES.ID).fetchOne();
         return resultRecord.getValue(Files.FILES.ID);
     }

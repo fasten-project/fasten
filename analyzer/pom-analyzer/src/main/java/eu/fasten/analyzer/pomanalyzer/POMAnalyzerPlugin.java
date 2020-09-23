@@ -206,8 +206,7 @@ public class POMAnalyzerPlugin extends Plugin {
                     packageVersionMetadata);
             for (var dep : dependencyData.dependencies) {
                 var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
-                final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge,
-                        null, null, null);
+                final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge);
                 metadataDao.insertDependency(packageVersionId, depId,
                         dep.getVersionConstraints(), dep.toJSON());
             }

@@ -20,6 +20,7 @@ package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
@@ -210,70 +211,26 @@ public class MetadataDatabasePlugin extends Plugin {
          * @return Package ID saved in the database
          */
         public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
-            final var timestamp = this.getProperTimestamp(callGraph.timestamp);
-            final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge,
-                    null, null, null);
+
+            final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge);
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    callGraph.getCgGenerator(), callGraph.version, timestamp, new JSONObject());
+                    callGraph.getCgGenerator(), callGraph.version,
+                    getProperTimestamp(callGraph.timestamp), new JSONObject());
             var cha = callGraph.getClassHierarchy();
             var internalTypes = cha.get(ExtendedRevisionCallGraph.Scope.internalTypes);
             var callables = new ArrayList<CallablesRecord>();
             for (var fastenUri : internalTypes.keySet()) {
                 var type = internalTypes.get(fastenUri);
-                var moduleMetadata = new JSONObject();
-                moduleMetadata.put("superInterfaces",
-                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
-                moduleMetadata.put("superClasses",
-                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
-                moduleMetadata.put("access", type.getAccess());
-                moduleMetadata.put("final", type.isFinal());
-                long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
-                        null, moduleMetadata);
-                var fileName = type.getSourceFileName();
-                var fileId = metadataDao.insertFile(packageVersionId, fileName, null, null, null);
+                var moduleId = insertModule(type, fastenUri, packageVersionId, metadataDao);
+                var fileId = metadataDao.insertFile(packageVersionId, type.getSourceFileName());
                 metadataDao.insertModuleContent(moduleId, fileId);
-                for (var methodEntry : type.getMethods().entrySet()) {
-                    var localId = (long) methodEntry.getKey();
-                    var uri = methodEntry.getValue().getUri().toString();
-                    var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
-                    Integer firstLine = null;
-                    if (callableMetadata.has("first")) {
-                        firstLine = callableMetadata.getInt("first");
-                        callableMetadata.remove("first");
-                    }
-                    Integer lastLine = null;
-                    if (callableMetadata.has("last")) {
-                        lastLine = callableMetadata.getInt("last");
-                        callableMetadata.remove("last");
-                    }
-                    callables.add(new CallablesRecord(localId, moduleId, uri, true,
-                            null, firstLine, lastLine,
-                            JSONB.valueOf(callableMetadata.toString())));
-                }
+                callables.addAll(extractCallablesFromType(type, moduleId, true));
             }
             final var numInternal = callables.size();
             var externalTypes = cha.get(ExtendedRevisionCallGraph.Scope.externalTypes);
             for (var fastenUri : externalTypes.keySet()) {
                 var type = externalTypes.get(fastenUri);
-                var moduleMetadata = new JSONObject();
-                moduleMetadata.put("superInterfaces",
-                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
-                moduleMetadata.put("superClasses",
-                        ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
-                moduleMetadata.put("access", type.getAccess());
-                moduleMetadata.put("final", type.isFinal());
-                long moduleId = metadataDao.insertModule(packageVersionId, fastenUri.toString(),
-                        null, moduleMetadata);
-                var fileName = type.getSourceFileName();
-                var fileId = metadataDao.insertFile(packageVersionId, fileName, null, null, null);
-                metadataDao.insertModuleContent(moduleId, fileId);
-                for (var methodEntry : type.getMethods().entrySet()) {
-                    var localId = (long) methodEntry.getKey();
-                    var uri = methodEntry.getValue().getUri().toString();
-                    var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
-                    callables.add(new CallablesRecord(localId, -1L, uri, false,
-                            null, null, null, JSONB.valueOf(callableMetadata.toString())));
-                }
+                callables.addAll(extractCallablesFromType(type, -1L, false));
             }
             var callablesIds = new LongArrayList(callables.size());
             callablesIds.addAll(metadataDao.insertCallablesSeparately(callables, numInternal));
@@ -281,16 +238,57 @@ public class MetadataDatabasePlugin extends Plugin {
             for (int i = 0; i < callables.size(); i++) {
                 lidToGidMap.put(callables.get(i).getId().longValue(), callablesIds.getLong(i));
             }
-            final var graph = callGraph.getGraph();
+            var edges = insertEdges(callGraph.getGraph(), lidToGidMap, metadataDao);
+            this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
+                    callablesIds, numInternal, edges);
+            return packageVersionId;
+        }
+
+        private long insertModule(ExtendedRevisionCallGraph.Type type, FastenURI fastenUri,
+                                  long packageVersionId, MetadataDao metadataDao) {
+            var moduleMetadata = new JSONObject();
+            moduleMetadata.put("superInterfaces",
+                    ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
+            moduleMetadata.put("superClasses",
+                    ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
+            moduleMetadata.put("access", type.getAccess());
+            moduleMetadata.put("final", type.isFinal());
+            return metadataDao.insertModule(packageVersionId, fastenUri.toString(),
+                    null, moduleMetadata);
+        }
+
+        private List<CallablesRecord> extractCallablesFromType(ExtendedRevisionCallGraph.Type type,
+                                                               long moduleId, boolean isInternal) {
+            var callables = new ArrayList<CallablesRecord>(type.getMethods().size());
+            for (var methodEntry : type.getMethods().entrySet()) {
+                var localId = (long) methodEntry.getKey();
+                var uri = methodEntry.getValue().getUri().toString();
+                var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
+                Integer firstLine = null;
+                if (callableMetadata.has("first")) {
+                    firstLine = callableMetadata.getInt("first");
+                    callableMetadata.remove("first");
+                }
+                Integer lastLine = null;
+                if (callableMetadata.has("last")) {
+                    lastLine = callableMetadata.getInt("last");
+                    callableMetadata.remove("last");
+                }
+                callables.add(new CallablesRecord(localId, moduleId, uri, isInternal, null,
+                        firstLine, lastLine, JSONB.valueOf(callableMetadata.toString())));
+            }
+            return callables;
+        }
+
+        private List<EdgesRecord> insertEdges(ExtendedRevisionCallGraph.Graph graph,
+                                 Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
             var graphCalls = graph.getInternalCalls();
             graphCalls.putAll(graph.getExternalCalls());
             var edges = new ArrayList<EdgesRecord>(numEdges);
             for (var edgeEntry : graphCalls.entrySet()) {
-                var localSource = (long) edgeEntry.getKey().get(0);
-                var localTarget = (long) edgeEntry.getKey().get(1);
-                var globalSource = lidToGidMap.get(localSource);
-                var globalTarget = lidToGidMap.get(localTarget);
+                var source = lidToGidMap.get((long) edgeEntry.getKey().get(0));
+                var target = lidToGidMap.get((long) edgeEntry.getKey().get(1));
                 var receivers = new ReceiverRecord[edgeEntry.getValue().size()];
                 var counter = 0;
                 for (var obj : edgeEntry.getValue().keySet()) {
@@ -306,8 +304,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     String receiverUri = callMetadata.optString("receiver");
                     receivers[counter++] = new ReceiverRecord(line, type, receiverUri);
                 }
-                edges.add(new EdgesRecord(globalSource, globalTarget, receivers,
-                        JSONB.valueOf("{}")));
+                edges.add(new EdgesRecord(source, target, receivers, JSONB.valueOf("{}")));
             }
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
@@ -318,9 +315,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
             }
-            this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
-                    callablesIds, numInternal, edges);
-            return packageVersionId;
+            return edges;
         }
 
         private ReceiverType getReceiverType(String type) {
