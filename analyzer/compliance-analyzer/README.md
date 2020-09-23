@@ -36,7 +36,7 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
    This demo simulates a Kafka topic consumption by reading the [`dummyKafkaTopic.json` file](dummyKafkaTopic.json).\
    Upon topic consumption, the `compliance-analyzer` launches Quartermaster that will build the specified repository. 
 
-1. Wait for the building process to be over:
+1. Wait for the build and analysis phases to be over:
     ```bash
     kubectl logs --follow $(kubectl get pods --selector job-name=qmstr -o=name) qmstr-client
     ```
@@ -56,60 +56,79 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
         <img src="https://user-images.githubusercontent.com/45048351/92643192-0649f280-f2ea-11ea-842d-ee9612f54f7c.png" alt="DGraph login page" width="75%"/>
     </p>
 
-1. Navigate to the "Console" page
+1. Navigate to the "Console" page.
 
-1. You should now be able to query the database
+1. You should now be able to query the database:  
     ```graphql
     {
-        # *.class files
-        PackageNode(func: has(packageNodeType)) {
-            uid 
+        PackageNodes(func: has(packageNodeType)) @recurse(loop: true, depth: 3) {
+            uid
             name
             version
-            buildConfig
-            timestamp
             packageNodeType
-            targets { # a.k.a. "target FileNodes"
-                uid
-                path
-                name
-                timestamp
-                fileNodeType
-            }
+            targets
+            additionalInfo
+            buildConfig
+            diagnosticInfo
+            timestamp
         }
-
-        # FileNodes of compiled outer and inner [anonymous] classes
-        FileNode(func: has(fileNodeType)) {
+    
+        FileNodes(func: has(fileNodeType)) @recurse(loop: true, depth: 3) {
             uid
             fileNodeType
             path
             name
+            fileData
             timestamp
-            fileData { # points to "target FileNodes"
-                uid
-                fileDataNodeType
-                hash
-            }
-            derivedFrom { # *.java files
-                uid
-                fileNodeType
-                path
-                name
-                timestamp
-                fileData { # outer FileData nodes
-                    uid
-                    fileDataNodeType
-                    hash
-                }
-            }
+            derivedFrom
+            dependencies
+        }
+    
+        FileDataNodes(func: has(fileDataNodeType)) @recurse(loop: true, depth: 3) {
+            uid
+            fileDataNodeType
+            hash
+            additionalInfo
+            diagnosticInfo
+        }
+    
+        InfoNodes(func: has(infoNodeType)) @recurse(loop: true, depth: 3) {
+            uid
+            infoNodeType
+            type
+            confidenceScore
+            analyzer
+            dataNodes
+            timestamp
+        }
+    
+        Analyzers(func: has(analyzerNodeType)) @recurse(loop: true, depth: 3) {
+            uid
+            name
+            analyzerNodeType
+            trustLevel
+            pathSub
+            old
+            new
+        }
+    
+        DataNodes(func: has(dataNodeType)) @recurse(loop: true, depth: 3) {
+            uid
+            dataNodeType
+            type
+            data
+            timestamp
         }
     }
     ```
 
-1. The generated Build Graph should look something like this:
+1. The generated graph should look something like this:
     <p align="center">
-        <img src="https://user-images.githubusercontent.com/45048351/92642755-5d02fc80-f2e9-11ea-87e4-c0e013ff25d4.png" alt="Generated Build Graph example"/>
+        <img src="https://github.com/endocode/qmstr/blob/feature/self-contained-modules/deploy/img/graph.png?raw=true" alt="Generated Build Graph example"/>
     </p>
+    The left part of the graph consists in the usual build graph, having in this case a single (Java) package node in green as the central node.
+    License and compliance information is on the right, having the analyzer node in pink right in the middle.
+
 
 ## Join the community
 
