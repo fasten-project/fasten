@@ -21,6 +21,7 @@ package eu.fasten.analyzer.pomanalyzer.pom;
 import eu.fasten.analyzer.pomanalyzer.pom.data.Dependency;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
 import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyManagement;
+import eu.fasten.core.data.Constants;
 import org.dom4j.DocumentException;
 import org.dom4j.io.SAXReader;
 import org.json.JSONObject;
@@ -369,5 +370,12 @@ public class DataExtractorTest {
         var str = "hello ${world}";
         var value = dataExtractor.replacePropertyReferences(str, map, new SAXReader().read(new ByteArrayInputStream(xml.getBytes())).getRootElement());
         assertEquals(str, value);
+    }
+
+    @Test
+    public void extractParentTest() {
+        var expected = "org.apache.logging.log4j" + Constants.mvnCoordinateSeparator + "log4j" + Constants.mvnCoordinateSeparator + "2.13.3";
+        var actual = dataExtractor.extractParentCoordinate("org.apache.logging.log4j", "log4j-api","2.13.3");
+        assertEquals(expected, actual);
     }
 }
