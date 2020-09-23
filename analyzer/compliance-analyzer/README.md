@@ -16,7 +16,6 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
 
 ## Arguments
 - `-r` `--repo` `--repository`                Path to JSON file containing repository information
-- `-c` `--credentials` `--cluster-credentials`  Path to the Kubernetes cluster credentials file
 
 ## Usage 
 
