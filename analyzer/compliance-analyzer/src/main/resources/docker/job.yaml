@@ -12,9 +12,8 @@ spec:
       restartPolicy: Never
       containers:
         - name: qmstr-master
-          image: endocodeci/qmstr-master:sha-4678e1d
-          command: [ "/usr/local/bin/qmstr-master" ]
-          args: [ "--config", "/home/qmstr/config/qmstr.yaml" ]
+          image: endocodeci/qmstr-master:sha-086f323
+          command: [ "sh", "-c", "sleep 40 && /usr/local/bin/qmstr-master --config /home/qmstr/config/qmstr.yaml" ]
           ports:
             - containerPort: 50051
           env:
@@ -28,18 +27,15 @@ spec:
         - name: dgraph
           image: dgraph/standalone:latest
         - name: qmstr-client
-          image: endocodeci/qmstr-client-mvn:sha-6d95b9e # generic "project" directory
-          command: [ "sh", "./entrypoint.sh" ]
-          ports:
-            - containerPort: 8000
-              name: http-ratel
-            - containerPort: 8080
-              name: http-alpha
+          image: endocodeci/qmstr-client-mvn:sha-086f323
+          command: [ "sh", "-c", "sleep 60 && mvn package -Dmaven.test.skip=true && qmstrctl analyze --verbose" ]
           env:
             - name: QMSTRADDRENV
               value: "localhost:50051"
             - name: BUILDROOT
               value: /var/qmstr/buildroot
+            - name: QMSTR_MASTER
+              value: "localhost:50051"
           volumeMounts:
             - name: buildroot-volume
               mountPath: /var/qmstr/buildroot
@@ -56,13 +52,13 @@ spec:
             - "git"
             - "clone"
           args:
-            - "url"
+            - REPOSITORY_URL
             - "/home/git/buildroot/project"
           volumeMounts:
             - name: buildroot-volume
               mountPath: /home/git/buildroot
         - name: pom-patch
-          image: endocodeci/pom-patch:sha-4678e1d
+          image: endocodeci/pom-patch:sha-086f323
           command: [ "python", "insert-build-plugin.py", "qmstr-maven-plugin.xml" ]
           volumeMounts:
             - name: buildroot-volume

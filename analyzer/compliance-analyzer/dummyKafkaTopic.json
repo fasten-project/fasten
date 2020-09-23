@@ -1,20 +1,20 @@
 {
   "input": {
-    "artifactId": "junit",
-    "groupId": "junit",
-    "version": "4.12",
+    "artifactId": "javacv",
+    "groupId": "javacv",
+    "version": "1.5.4",
     "dependendencyData": {
     },
     "commitTag": ""
   },
   "plugin_version": "0.0.1",
   "payload": {
-    "artifactId": "junit",
-    "groupId": "junit",
-    "version": "4.12",
-    "repoUrl": "http://github.com/junit-team/junit",
-    "repoPath": "/j/junit/junit"
+    "artifactId": "javacv",
+    "groupId": "javacv",
+    "version": "1.5.4",
+    "repoUrl": "https://github.com/bytedeco/javacv",
+    "repoPath": "/j/javacv/javacv"
   },
-  "created_at": 1594820036478,
+  "created_at": 1600851029,
   "plugin_name": "RepoCloner"
 }
