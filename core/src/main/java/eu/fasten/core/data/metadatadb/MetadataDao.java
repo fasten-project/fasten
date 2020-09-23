@@ -539,6 +539,30 @@ public class MetadataDao {
     }
 
     /**
+     * Updates a metadata in the 'callables' table in the database.
+     * If the record doesn't exist, it will create a new one.
+     *
+     * @param moduleId       ID of the module where the callable belongs (references 'modules.id')
+     * @param fastenUri      URI of the callable in FASTEN
+     * @param isInternal 'true' if call is internal, 'false' if external
+     * @param metadata       Metadata of the callable
+     * @return ID of the record
+     */
+    public long updateCallableMetadata(Long moduleId, String fastenUri, boolean isInternal,
+                               JSONObject metadata) {
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
+        var resultRecord = context.insertInto(Callables.CALLABLES,
+                Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
+                Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.METADATA)
+                .values(moduleId, fastenUri, isInternal, metadataJsonb)
+                .onConflictOnConstraint(Keys.UNIQUE_URI_CALL).doUpdate()
+                .set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
+                        Callables.CALLABLES.as("excluded").METADATA))
+                .returning(Callables.CALLABLES.ID).fetchOne();
+        return resultRecord.getValue(Callables.CALLABLES.ID);
+    }
+
+    /**
      * Inserts multiple records in the 'callables' table in the database.
      *
      * @param moduleId         ID of the common module
