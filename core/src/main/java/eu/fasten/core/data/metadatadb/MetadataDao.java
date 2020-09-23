@@ -550,7 +550,8 @@ public class MetadataDao {
      */
     public long updateCallableMetadata(Long moduleId, String fastenUri, boolean isInternal,
                                JSONObject metadata) {
-        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
+        var metadataJsonb = metadata != null
+                ? JSONB.valueOf(metadata.toString()) : JSONB.valueOf("{}");
         var resultRecord = context.insertInto(Callables.CALLABLES,
                 Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.METADATA)

@@ -71,7 +71,6 @@ public class MetadataDatabasePlugin extends Plugin {
         private Throwable pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
         private boolean restartTransaction = false;
-        private final int transactionRestartLimit = 3;
         private GidGraph gidGraph = null;
         private String outputPath;
 
@@ -102,6 +101,7 @@ public class MetadataDatabasePlugin extends Plugin {
             final var path = consumedJson.optString("dir");
             final ExtendedRevisionCallGraph callgraph;
             if (!path.isEmpty()) {
+                // Parse ERCG from file
                 try {
                     JSONTokener tokener = new JSONTokener(new FileReader(path));
                     callgraph = new ExtendedRevisionCallGraph(new JSONObject(tokener));
@@ -113,6 +113,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     return;
                 }
             } else {
+                // Parse ERCG straight from consumed record
                 try {
                     callgraph = new ExtendedRevisionCallGraph(consumedJson);
                 } catch (JSONException e) {
@@ -123,24 +124,15 @@ public class MetadataDatabasePlugin extends Plugin {
                     return;
                 }
             }
-            final var artifact = callgraph.product + Constants.mvnCoordinateSeparator
+            final var mvnCoordinate = callgraph.product + Constants.mvnCoordinateSeparator
                     + callgraph.version;
-            final String groupId;
-            final String artifactId;
-            if (callgraph.product.contains(Constants.mvnCoordinateSeparator)) {
-                groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
-                artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
-            } else {
-                final var productParts = callgraph.product.split("\\.");
-                groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
-                artifactId = productParts[productParts.length - 1];
-            }
+            final String groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
+            final String artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
             var version = callgraph.version;
             var forge = callgraph.forge;
+
             var product = artifactId + "_" + groupId + "_" + version;
-
             var firstLetter = artifactId.substring(0, 1);
-
             outputPath = File.separator + forge + File.separator
                     + firstLetter + File.separator
                     + artifactId + File.separator + product + ".json";
@@ -151,6 +143,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 try {
                     var metadataDao = new MetadataDao(dslContext);
                     dslContext.transaction(transaction -> {
+                        // Start transaction
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
@@ -158,17 +151,19 @@ public class MetadataDatabasePlugin extends Plugin {
                         } catch (RuntimeException e) {
                             processedRecord = false;
                             if (e instanceof DataAccessException) {
+                                // Database connection error
                                 if (e.getCause() instanceof BatchUpdateException) {
                                     var exception = ((BatchUpdateException) e.getCause())
                                             .getNextException();
-                                    logger.error("Error saving to the database: '" + artifact + "'",
+                                    logger.error("Error saving to the database: '" + mvnCoordinate + "'",
                                             exception);
                                     setPluginError(exception);
                                 } else {
-                                    logger.error("Error saving to the database: '" + artifact + "'", e);
+                                    logger.error("Error saving to the database: '" + mvnCoordinate + "'", e);
                                     setPluginError(e);
                                 }
-                                logger.info("Restarting transaction for '" + artifact + "'");
+                                logger.info("Restarting transaction for '" + mvnCoordinate + "'");
+                                // It could be a deadlock, so restart transaction
                                 restartTransaction = true;
                             } else {
                                 restartTransaction = false;
@@ -178,7 +173,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         if (getPluginError() == null) {
                             processedRecord = true;
                             restartTransaction = false;
-                            logger.info("Saved the '" + artifact + "' callgraph metadata "
+                            logger.info("Saved the '" + mvnCoordinate + "' callgraph metadata "
                                     + "to the database with package version ID = " + id);
                         }
                     });
@@ -186,7 +181,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 }
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
-                    && transactionRestartCount < transactionRestartLimit);
+                    && transactionRestartCount < Constants.transactionRestartLimit);
         }
 
         @Override
@@ -211,14 +206,19 @@ public class MetadataDatabasePlugin extends Plugin {
          * @return Package ID saved in the database
          */
         public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
-
+            // Insert package record
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge);
+
+            // Insert package version record
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
                     callGraph.getCgGenerator(), callGraph.version,
                     getProperTimestamp(callGraph.timestamp), new JSONObject());
+
             var cha = callGraph.getClassHierarchy();
             var internalTypes = cha.get(ExtendedRevisionCallGraph.Scope.internalTypes);
             var callables = new ArrayList<CallablesRecord>();
+
+            // Insert all modules, files, module contents and extract callables from internal types
             for (var fastenUri : internalTypes.keySet()) {
                 var type = internalTypes.get(fastenUri);
                 var moduleId = insertModule(type, fastenUri, packageVersionId, metadataDao);
@@ -227,18 +227,28 @@ public class MetadataDatabasePlugin extends Plugin {
                 callables.addAll(extractCallablesFromType(type, moduleId, true));
             }
             final var numInternal = callables.size();
+
             var externalTypes = cha.get(ExtendedRevisionCallGraph.Scope.externalTypes);
+            // Extract all external callables
             for (var fastenUri : externalTypes.keySet()) {
                 var type = externalTypes.get(fastenUri);
                 callables.addAll(extractCallablesFromType(type, -1L, false));
             }
+
             var callablesIds = new LongArrayList(callables.size());
+            // Save all callables in the database
             callablesIds.addAll(metadataDao.insertCallablesSeparately(callables, numInternal));
+
+            // Build a map from callable Local ID to Global ID
             var lidToGidMap = new Long2LongOpenHashMap();
             for (int i = 0; i < callables.size(); i++) {
                 lidToGidMap.put(callables.get(i).getId().longValue(), callablesIds.getLong(i));
             }
+
+            // Insert all the edges
             var edges = insertEdges(callGraph.getGraph(), lidToGidMap, metadataDao);
+
+            // Create a GID Graph for production
             this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
                     callablesIds, numInternal, edges);
             return packageVersionId;
@@ -246,6 +256,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
         private long insertModule(ExtendedRevisionCallGraph.Type type, FastenURI fastenUri,
                                   long packageVersionId, MetadataDao metadataDao) {
+            // Collect metadata of the module
             var moduleMetadata = new JSONObject();
             moduleMetadata.put("superInterfaces",
                     ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
@@ -253,16 +264,25 @@ public class MetadataDatabasePlugin extends Plugin {
                     ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
             moduleMetadata.put("access", type.getAccess());
             moduleMetadata.put("final", type.isFinal());
+
+            // Put everything in the database
             return metadataDao.insertModule(packageVersionId, fastenUri.toString(),
                     null, moduleMetadata);
         }
 
         private List<CallablesRecord> extractCallablesFromType(ExtendedRevisionCallGraph.Type type,
                                                                long moduleId, boolean isInternal) {
+            // Extracts a list of all callable records and their metadata from the type
             var callables = new ArrayList<CallablesRecord>(type.getMethods().size());
+
             for (var methodEntry : type.getMethods().entrySet()) {
+                // Get Local ID
                 var localId = (long) methodEntry.getKey();
+
+                // Get FASTEN URI
                 var uri = methodEntry.getValue().getUri().toString();
+
+                // Collect metadata
                 var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
                 Integer firstLine = null;
                 if (callableMetadata.has("first")) {
@@ -274,6 +294,8 @@ public class MetadataDatabasePlugin extends Plugin {
                     lastLine = callableMetadata.getInt("last");
                     callableMetadata.remove("last");
                 }
+
+                // Add a record to the list
                 callables.add(new CallablesRecord(localId, moduleId, uri, isInternal, null,
                         firstLine, lastLine, JSONB.valueOf(callableMetadata.toString())));
             }
@@ -283,29 +305,44 @@ public class MetadataDatabasePlugin extends Plugin {
         private List<EdgesRecord> insertEdges(ExtendedRevisionCallGraph.Graph graph,
                                  Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
+
+            // Map of all edges (internal and external)
             var graphCalls = graph.getInternalCalls();
             graphCalls.putAll(graph.getExternalCalls());
+
             var edges = new ArrayList<EdgesRecord>(numEdges);
             for (var edgeEntry : graphCalls.entrySet()) {
+
+                // Get Global ID of the source callable
                 var source = lidToGidMap.get((long) edgeEntry.getKey().get(0));
+                // Get Global ID of the target callable
                 var target = lidToGidMap.get((long) edgeEntry.getKey().get(1));
+
+                // Create receivers
                 var receivers = new ReceiverRecord[edgeEntry.getValue().size()];
                 var counter = 0;
                 for (var obj : edgeEntry.getValue().keySet()) {
                     var pc = obj.toString();
+                    // Get edge metadata
                     var metadataMap = (Map<String, Object>) edgeEntry.getValue()
                             .get(Integer.parseInt(pc));
                     var callMetadata = new JSONObject();
                     for (var key : metadataMap.keySet()) {
                         callMetadata.put(key, metadataMap.get(key));
                     }
+
+                    // Extract receiver information from the metadata
                     int line = callMetadata.optInt("line", -1);
                     var type = this.getReceiverType(callMetadata.optString("type"));
                     String receiverUri = callMetadata.optString("receiver");
                     receivers[counter++] = new ReceiverRecord(line, type, receiverUri);
                 }
+
+                // Add edge record to the list of records
                 edges.add(new EdgesRecord(source, target, receivers, JSONB.valueOf("{}")));
             }
+
+            // Batch insert all edges
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
                 var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
