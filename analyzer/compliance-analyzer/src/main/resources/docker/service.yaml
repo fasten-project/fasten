@@ -15,3 +15,6 @@ spec:
     - name: http-ratel
       port: 8000
       targetPort: 8000
+    - name: grpc-alpha
+      port: 9080
+      targetPort: 9080
