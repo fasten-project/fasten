@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal.data;
 
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
@@ -145,10 +146,14 @@ public class PartialCallGraph {
             final var currentClass = classFile.thisType();
             final var methods = getMethodsMap(methodNum.get(),
                     JavaConverters.asJavaIterable(classFile.methods()));
+            var namespace = OPALMethod.getPackageName(classFile.thisType());
+            var filepath = namespace != null ? namespace.replace(".", "/") : "";
             final var type = new OPALType(methods,
                     OPALType.extractSuperClasses(project.classHierarchy(), currentClass),
                     OPALType.extractSuperInterfaces(project.classHierarchy(), currentClass),
-                    classFile.sourceFile().getOrElse(() -> "NotFound"),
+                    classFile.sourceFile().isDefined()
+                            ? filepath + "/" + classFile.sourceFile().get()
+                            : "NotFound",
                     classFile.isPublic() ? "public" : "packagePrivate", classFile.isFinal());
 
             result.put(currentClass, type);

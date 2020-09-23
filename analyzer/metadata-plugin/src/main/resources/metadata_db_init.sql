@@ -73,14 +73,26 @@ CREATE TABLE callables
     fasten_uri       TEXT    NOT NULL,
     is_internal_call BOOLEAN NOT NULL,
     created_at       TIMESTAMP,
+    line_start       INTEGER,
+    line_end         INTEGER,
     metadata         JSONB
+);
+
+CREATE TYPE RECEIVER_TYPE AS ENUM ('static', 'dynamic', 'virtual', 'interface', 'special');
+
+CREATE TYPE RECEIVER AS
+(
+    line         INTEGER,
+    type         RECEIVER_TYPE,
+    receiver_uri TEXT
 );
 
 CREATE TABLE edges
 (
-    source_id BIGINT NOT NULL REFERENCES callables (id),
-    target_id BIGINT NOT NULL REFERENCES callables (id),
-    metadata  JSONB  NOT NULL
+    source_id BIGINT     NOT NULL REFERENCES callables (id),
+    target_id BIGINT     NOT NULL REFERENCES callables (id),
+    receivers RECEIVER[] NOT NULL,
+    metadata  JSONB
 );
 
 -- CREATE INDEX CONCURRENTLY package_versions_package_id ON package_versions USING btree (package_id);

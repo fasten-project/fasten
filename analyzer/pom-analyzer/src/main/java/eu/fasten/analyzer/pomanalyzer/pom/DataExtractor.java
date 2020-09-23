@@ -169,6 +169,52 @@ public class DataExtractor {
     }
 
     /**
+     * Extracts Maven coordinate of the parent from POM of certain Maven coordinate.
+     *
+     * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
+     * @param version    version of the coordinate
+     * @return Parent coordinate as String in the form of "groupId:artifactId:version"
+     */
+    public String extractParentCoordinate(String groupId, String artifactId, String version) {
+        String parent = null;
+        try {
+            var pom = getPomRootElement(groupId, artifactId, version);
+            updateResolutionMetadata(groupId, artifactId, version, pom);
+            var properties = this.resolutionMetadata.getRight().getLeft();
+            var parentNode = pom.selectSingleNode("./*[local-name()='parent']");
+            if (parentNode != null) {
+                var parentGroupNode = parentNode
+                        .selectSingleNode("./*[local-name()='groupId']");
+                var parentArtifactNode = parentNode
+                        .selectSingleNode("./*[local-name()='artifactId']");
+                var parentVersionNode = parentNode
+                        .selectSingleNode("./*[local-name()='version']");
+                if (parentGroupNode != null && parentArtifactNode != null
+                        && parentVersionNode != null) {
+                    var parentGroup = replacePropertyReferences(parentGroupNode.getText(),
+                            properties, pom);
+                    var parentArtifact = replacePropertyReferences(parentArtifactNode.getText(),
+                            properties, pom);
+                    var parentVersion = replacePropertyReferences(parentVersionNode.getText(),
+                            properties, pom);
+                    parent = parentGroup + Constants.mvnCoordinateSeparator + parentArtifact
+                            + Constants.mvnCoordinateSeparator + parentVersion;
+                }
+            }
+        } catch (DocumentException e) {
+            logger.error("Error parsing POM file for: "
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
+        } catch (FileNotFoundException e) {
+            logger.error("Error downloading POM file for: "
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
+        }
+        return parent;
+    }
+
+    /**
      * Replaces all property references with their actual values.
      *
      * @param ref        String that can contain property references

@@ -370,4 +370,11 @@ public class DataExtractorTest {
         var value = dataExtractor.replacePropertyReferences(str, map, new SAXReader().read(new ByteArrayInputStream(xml.getBytes())).getRootElement());
         assertEquals(str, value);
     }
+
+    @Test
+    public void extractParentTest() {
+        var expected = "org.apache.logging.log4j" + Constants.mvnCoordinateSeparator + "log4j" + Constants.mvnCoordinateSeparator + "2.13.3";
+        var actual = dataExtractor.extractParentCoordinate("org.apache.logging.log4j", "log4j-api","2.13.3");
+        assertEquals(expected, actual);
+    }
 }
