@@ -68,6 +68,11 @@ public class ComplianceAnalyzerPlugin extends Plugin {
          */
         protected final String clusterCredentialsFilePath;
 
+        /**
+         * Placeholder for the repository URL in the Kubernetes Job file
+         */
+        protected final String repositoryUrlPlaceholder = "REPOSITORY_URL";
+
         public CompliancePluginExtension() {
             this.clusterCredentialsFilePath = System.getProperty(CLUSTER_CREDENTIALS_ENV);
         }
@@ -159,7 +164,7 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 Path jobFileSystemPath = Paths.get(jobFileFullPath);
                 Charset jobFileCharset = StandardCharsets.UTF_8;
                 String jobFileContent = Files.readString(jobFileSystemPath, jobFileCharset);
-                jobFileContent = jobFileContent.replaceAll("url", repoUrl);
+                jobFileContent = jobFileContent.replaceAll(repositoryUrlPlaceholder, repoUrl);
                 Files.write(jobFileSystemPath, jobFileContent.getBytes(jobFileCharset));
 
                 // Deploying the QMSTR Job

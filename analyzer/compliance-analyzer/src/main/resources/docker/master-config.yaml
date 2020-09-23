@@ -10,5 +10,12 @@ data:
       metadata:
         message: "Hello World!"
       server:
-        dbAddress: "dgraph:9000"
+        dbAddress: "dgraph:9080"
+        rpcAddress: "localhost:50051" # master address
       analysis:
+        - analyzer: scancode-analyzer
+          name: "Scancode Analyzer"
+          config:
+            workdir: "/var/qmstr/buildroot"
+            resultfile: "/var/qmstr/buildroot/scancode.json"
+    #       cached: "true"
