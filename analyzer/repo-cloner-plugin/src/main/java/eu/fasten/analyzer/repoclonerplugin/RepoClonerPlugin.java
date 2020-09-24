@@ -54,6 +54,8 @@ public class RepoClonerPlugin extends Plugin {
         private String commitTag = null;
         private String sourcesUrl = null;
         private String repoUrl = null;
+        private long date = -1L;
+        private String forge = null;
         private static String baseDir = "";
         private String outputPath = null;
 
@@ -82,6 +84,8 @@ public class RepoClonerPlugin extends Plugin {
             json.put("commitTag", (commitTag != null) ? commitTag : "");
             json.put("sourcesUrl", (sourcesUrl != null) ? sourcesUrl : "");
             json.put("repoUrl", (repoUrl != null) ? repoUrl : "");
+            json.put("date", date);
+            json.put("forge", (forge != null) ? forge : "");
             return Optional.of(json.toString());
         }
 
@@ -108,6 +112,8 @@ public class RepoClonerPlugin extends Plugin {
             version = json.getString("version").replaceAll("[\\n\\t ]", "");
             commitTag = json.optString("commitTag").replaceAll("[\\n\\t ]", "");
             sourcesUrl = json.optString("sourcesUrl").replaceAll("[\\n\\t ]", "");
+            date = json.optLong("date", -1L);
+            forge = json.optString("forge");
             String product = group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version;
             outputPath = File.separator + artifact.charAt(0) + File.separator + artifact

@@ -62,12 +62,13 @@ public class RepoClonerPluginTest {
     public void consumeTest() {
         var json = new JSONObject("{\n" +
                 "\t\"payload\": {\n" +
+                "\t\t\"repoUrl\": \"https://github.com/fasten-project/fasten.git\",\n" +
                 "\t\t\"artifactId\": \"fasten\",\n" +
                 "\t\t\"groupId\": \"fasten-project\",\n" +
                 "\t\t\"version\": \"1\",\n" +
                 "\t\t\"commitTag\": \"123\",\n" +
                 "\t\t\"sourcesUrl\": \"someURL\",\n" +
-                "\t\t\"repoUrl\": \"https://github.com/fasten-project/fasten.git\"\n" +
+                "\t\t\"forge\": \"mvn\"\n" +
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
@@ -78,7 +79,10 @@ public class RepoClonerPluginTest {
                 "\t\"version\": \"1\",\n" +
                 "\t\"repoPath\": \"" + repoPath + "\",\n" +
                 "\t\"commitTag\": \"123\",\n" +
-                "\t\"sourcesUrl\": \"someURL\"\n" +
+                "\t\"sourcesUrl\": \"someURL\",\n" +
+                "\t\"repoUrl\": \"https://github.com/fasten-project/fasten.git\",\n" +
+                "\t\"date\": -1,\n" +
+                "\t\"forge\": \"mvn\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
         assertEquals(expected, actual);
@@ -92,7 +96,8 @@ public class RepoClonerPluginTest {
                 "\t\"payload\": {\n" +
                 "\t\t\"artifactId\": \"fasten\",\n" +
                 "\t\t\"groupId\": \"fasten-project\",\n" +
-                "\t\t\"version\": \"1\"\n" +
+                "\t\t\"version\": \"1\",\n" +
+                "\t\t\"forge\": \"mvn\"\n" +
                 "\t}\n" +
                 "}");
         repoCloner.consume(json.toString());
@@ -102,7 +107,10 @@ public class RepoClonerPluginTest {
                 "\t\"version\": \"1\",\n" +
                 "\t\"repoPath\": \"\",\n" +
                 "\t\"commitTag\": \"\",\n" +
-                "\t\"sourcesUrl\": \"\"\n" +
+                "\t\"sourcesUrl\": \"\",\n" +
+                "\t\"repoUrl\": \"\",\n" +
+                "\t\"date\": -1,\n" +
+                "\t\"forge\": \"mvn\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
         assertEquals(expected, actual);

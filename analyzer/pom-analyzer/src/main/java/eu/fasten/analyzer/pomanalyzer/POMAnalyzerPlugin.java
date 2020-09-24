@@ -239,6 +239,7 @@ public class POMAnalyzerPlugin extends Plugin {
             json.put("projectName", (projectName != null) ? projectName : "");
             json.put("parentCoordinate", (parentCoordinate != null) ? parentCoordinate : "");
             json.put("dependencyData", dependencyData.toJSON());
+            json.put("forge", Constants.mvnForge);
             return Optional.of(json.toString());
         }
 
