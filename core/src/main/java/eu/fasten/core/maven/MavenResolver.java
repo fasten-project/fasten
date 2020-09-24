@@ -52,6 +52,10 @@ public class MavenResolver implements Runnable {
             defaultValue = "postgres")
     protected String dbUser;
 
+    @CommandLine.Option(names = {"-o", "--online"},
+            description = "Use online resolution mode")
+    protected boolean onlineMode;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new MavenResolver()).execute(args);
         System.exit(exitCode);
@@ -70,13 +74,24 @@ public class MavenResolver implements Runnable {
             }
             var mavenCoordinate = group + Constants.mvnCoordinateSeparator
                     + artifact + Constants.mvnCoordinateSeparator + version;
-            var dependencySet = mavenResolver.resolveDependencies(group, artifact, version, timestamp, dbContext);
             System.out.println("--------------------------------------------------");
             System.out.println("Maven coordinate: " + mavenCoordinate);
-            System.out.println("--------------------------------------------------");
-            System.out.println("Full dependency set:");
-            for (var dependency : dependencySet) {
-                System.out.println(dependency.toCanonicalForm());
+            if (onlineMode) {
+                var dependencySet = mavenResolver
+                        .resolveArtifactDependenciesOnline(mavenCoordinate, timestamp, dbContext);
+                System.out.println("--------------------------------------------------");
+                System.out.println("Full dependency set:");
+                for (var dependency : dependencySet) {
+                    System.out.println(dependency.toCanonicalForm());
+                }
+            } else {
+                var dependencySet = mavenResolver
+                        .resolveDependencies(group, artifact, version, timestamp, dbContext);
+                System.out.println("--------------------------------------------------");
+                System.out.println("Full dependency set:");
+                for (var dependency : dependencySet) {
+                    System.out.println(dependency.toCanonicalForm());
+                }
             }
         } else {
             System.err.println("You need to specify Maven coordinate by providing its "
@@ -96,9 +111,9 @@ public class MavenResolver implements Runnable {
      * @param dbContext  Database connection context
      * @return Full dependency set (including transitive dependencies) of the maven coordinate
      */
-    public Set<MavenCoordinate> resolveArtifactDependencies(String coordinate,
-                                                            long timestamp,
-                                                            DSLContext dbContext) {
+    public Set<MavenCoordinate> resolveArtifactDependenciesOnline(String coordinate,
+                                                                  long timestamp,
+                                                                  DSLContext dbContext) {
         var mavenCoordinate = new MavenCoordinate(coordinate);
         var artifacts = Arrays.stream(
                 Maven.resolver()
@@ -120,7 +135,7 @@ public class MavenResolver implements Runnable {
         ).collect(Collectors.toSet());
         var fullDependencySet = new HashSet<>(dependencies);
         for (var dependency : dependencies) {
-            fullDependencySet.addAll(this.resolveArtifactDependencies(
+            fullDependencySet.addAll(this.resolveArtifactDependenciesOnline(
                     dependency.toCanonicalForm(), timestamp, dbContext
             ));
         }

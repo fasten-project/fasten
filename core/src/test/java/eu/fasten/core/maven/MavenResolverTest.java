@@ -50,7 +50,7 @@ public class MavenResolverTest {
         var connection = new MockConnection(provider);
         var dbContext = DSL.using(connection, SQLDialect.POSTGRES);
         var expected = Set.of(new MavenCoordinate("org.hamcrest", "hamcrest-core", "1.2"));
-        var actual = mavenResolver.resolveArtifactDependencies("junit:junit:4.12", 1307318400000L, dbContext);
+        var actual = mavenResolver.resolveArtifactDependenciesOnline("junit:junit:4.12", 1307318400000L, dbContext);
         assertEquals(expected, actual);
     }
 
