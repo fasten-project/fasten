@@ -74,5 +74,8 @@ public class Main implements Runnable {
         final JSONObject jsonCallgraph = new JSONObject(new JSONTokener(reader));
         metadataPlugin.consume(jsonCallgraph.toString());
         metadataPlugin.produce().ifPresent(System.out::println);
+        if (metadataPlugin.getPluginError() != null) {
+            metadataPlugin.getPluginError().printStackTrace(System.err);
+        }
     }
 }

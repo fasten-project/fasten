@@ -50,7 +50,6 @@ import java.nio.file.Paths;
 import java.sql.BatchUpdateException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -150,17 +149,14 @@ public class MetadataDatabasePlugin extends Plugin {
                             id = saveToDatabase(callgraph, metadataDao);
                         } catch (RuntimeException e) {
                             processedRecord = false;
+                            logger.error("Error saving to the database: '" + mvnCoordinate + "'", e);
+                            setPluginError(e);
                             if (e instanceof DataAccessException) {
                                 // Database connection error
                                 if (e.getCause() instanceof BatchUpdateException) {
                                     var exception = ((BatchUpdateException) e.getCause())
                                             .getNextException();
-                                    logger.error("Error saving to the database: '" + mvnCoordinate + "'",
-                                            exception);
                                     setPluginError(exception);
-                                } else {
-                                    logger.error("Error saving to the database: '" + mvnCoordinate + "'", e);
-                                    setPluginError(e);
                                 }
                                 logger.info("Restarting transaction for '" + mvnCoordinate + "'");
                                 // It could be a deadlock, so restart transaction
@@ -285,12 +281,14 @@ public class MetadataDatabasePlugin extends Plugin {
                 // Collect metadata
                 var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
                 Integer firstLine = null;
-                if (callableMetadata.has("first")) {
+                if (callableMetadata.has("first")
+                        && !"notFound".equals(callableMetadata.get("first"))) {
                     firstLine = callableMetadata.getInt("first");
                     callableMetadata.remove("first");
                 }
                 Integer lastLine = null;
-                if (callableMetadata.has("last")) {
+                if (callableMetadata.has("last")
+                        && !"notFound".equals(callableMetadata.get("last"))) {
                     lastLine = callableMetadata.getInt("last");
                     callableMetadata.remove("last");
                 }
