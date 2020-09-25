@@ -26,7 +26,7 @@ import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class Dependency {
+public class Dependency implements MavenArtifact {
 
     public final String artifactId;
     public final String groupId;
@@ -129,6 +129,21 @@ public class Dependency {
         json.put("type", this.type);
         json.put("classifier", this.classifier);
         return json;
+    }
+
+    @Override
+    public String getGroupId() {
+        return this.groupId;
+    }
+
+    @Override
+    public String getArtifactId() {
+        return this.artifactId;
+    }
+
+    @Override
+    public String getVersion() {
+        return String.join(",", this.getVersionConstraints());
     }
 
     public String toCanonicalForm() {

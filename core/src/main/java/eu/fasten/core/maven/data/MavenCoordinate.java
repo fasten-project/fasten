@@ -4,11 +4,12 @@ import eu.fasten.core.data.Constants;
 import org.jboss.shrinkwrap.resolver.api.maven.PackagingType;
 
 public class MavenCoordinate
-        implements org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate {
+        implements org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate,
+        MavenArtifact {
 
-    private String artifactId;
-    private String groupId;
-    private String version;
+    private final String artifactId;
+    private final String groupId;
+    private final String version;
 
     public MavenCoordinate(String groupId, String artifactId, String version) {
         if (groupId == null) {

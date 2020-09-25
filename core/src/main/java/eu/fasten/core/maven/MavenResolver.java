@@ -6,13 +6,15 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.DependencyTree;
+import eu.fasten.core.maven.data.MavenArtifact;
 import eu.fasten.core.maven.data.MavenCoordinate;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jooq.DSLContext;
+import org.json.JSONException;
 import org.json.JSONObject;
 import picocli.CommandLine;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -63,7 +65,6 @@ public class MavenResolver implements Runnable {
 
     @Override
     public void run() {
-        var mavenResolver = new MavenResolver();
         if (artifact != null && group != null && version != null) {
             DSLContext dbContext;
             try {
@@ -72,27 +73,28 @@ public class MavenResolver implements Runnable {
                 System.err.println("Could not connect to the database: " + e.getMessage());
                 return;
             }
-            var mavenCoordinate = group + Constants.mvnCoordinateSeparator
-                    + artifact + Constants.mvnCoordinateSeparator + version;
+            var dependencyTree = this.buildFullDependencyTree(group, artifact, version, onlineMode,
+                    dbContext);
             System.out.println("--------------------------------------------------");
-            System.out.println("Maven coordinate: " + mavenCoordinate);
-            if (onlineMode) {
-                var dependencySet = mavenResolver
-                        .resolveArtifactDependenciesOnline(mavenCoordinate, timestamp, dbContext);
-                System.out.println("--------------------------------------------------");
-                System.out.println("Full dependency set:");
-                for (var dependency : dependencySet) {
-                    System.out.println(dependency.toCanonicalForm());
-                }
-            } else {
-                var dependencySet = mavenResolver
-                        .resolveDependencies(group, artifact, version, timestamp, dbContext);
-                System.out.println("--------------------------------------------------");
-                System.out.println("Full dependency set:");
-                for (var dependency : dependencySet) {
-                    System.out.println(dependency.toCanonicalForm());
-                }
-            }
+            System.out.println(dependencyTree.toJSON());
+            System.out.println("--------------------------------------------------");
+//            var mavenCoordinate = group + Constants.mvnCoordinateSeparator
+//                    + artifact + Constants.mvnCoordinateSeparator + version;
+//            Set<MavenArtifact> dependencySet;
+//            if (onlineMode) {
+//                dependencySet = new HashSet<>(mavenResolver
+//                        .resolveArtifactDependenciesOnline(mavenCoordinate, timestamp, dbContext));
+//            } else {
+//                dependencySet = new HashSet<>(mavenResolver
+//                        .resolveDependencies(group, artifact, version, timestamp, dbContext));
+//            }
+//            System.out.println("--------------------------------------------------");
+//            System.out.println("Maven coordinate: " + mavenCoordinate);
+//            System.out.println("--------------------------------------------------");
+//            System.out.println("Full dependency set:");
+//            for (var dependency : dependencySet) {
+//                System.out.println(dependency.toCanonicalForm());
+//            }
         } else {
             System.err.println("You need to specify Maven coordinate by providing its "
                     + "artifactId ('-a'), groupId ('-g') and version ('-v'). "
@@ -100,69 +102,90 @@ public class MavenResolver implements Runnable {
         }
     }
 
-    /**
-     * Resolves full dependency set of certain Maven artifact.
-     *
-     * @param coordinate Maven coordinate in the form of "groupId:artifactId:version"
-     * @param timestamp  Optional timestamp. Use -1 in order not to provide the timestamp.
-     *                   If provided then any dependency version with release timestamp
-     *                   later than the provided timestamp will not be included
-     *                   in the dependency set (they will downgraded to the suitable version).
-     * @param dbContext  Database connection context
-     * @return Full dependency set (including transitive dependencies) of the maven coordinate
-     */
-    public Set<MavenCoordinate> resolveArtifactDependenciesOnline(String coordinate,
-                                                                  long timestamp,
-                                                                  DSLContext dbContext) {
+    public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
+                                                  boolean onlineMode, DSLContext dbContext) {
+        MavenArtifact previousParent = new MavenCoordinate(groupId, artifactId, version);
+        var parent = this.getParentArtifact(groupId, artifactId, version, dbContext);
+        while (parent != null) {
+            previousParent = parent;
+            parent = this.getParentArtifact(parent.getGroupId(), parent.getArtifactId(),
+                    parent.getVersion(), dbContext);
+        }
+        parent = previousParent;
+        List<MavenArtifact> dependencies;
+        if (onlineMode) {
+            var parentCoordinate = parent.getGroupId()
+                    + Constants.mvnCoordinateSeparator + parent.getArtifactId()
+                    + Constants.mvnCoordinateSeparator + parent.getVersion();
+            dependencies = new ArrayList<>(this.getDependenciesOnline(parentCoordinate));
+        } else {
+            dependencies = new ArrayList<>(this.getArtifactDependenciesFromDatabase(
+                    parent.getGroupId(), parent.getArtifactId(), parent.getVersion(), dbContext
+            ));
+        }
+        DependencyTree dependencyTree;
+        if (dependencies.isEmpty()) {
+            dependencyTree = new DependencyTree(parent, null);
+        } else {
+            var childTrees = new ArrayList<DependencyTree>();
+            for (var dep : dependencies) {
+                childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
+                        dep.getVersion(), onlineMode, dbContext));
+            }
+            dependencyTree = new DependencyTree(parent, childTrees);
+        }
+        return dependencyTree;
+    }
+
+    public MavenArtifact getParentArtifact(String groupId, String artifactId, String version,
+                                           DSLContext context) {
+        var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
+        var result = context.select(PackageVersions.PACKAGE_VERSIONS.METADATA)
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
+                .fetchOne();
+        if (result == null || result.component1() == null) {
+            return null;
+        }
+        var metadata = new JSONObject(result.component1().data());
+        String parentCoordinate;
+        try {
+            parentCoordinate = metadata.getString("parentCoordinate");
+            if (parentCoordinate.isEmpty()) {
+                return null;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace(System.err);
+            return null;
+        }
+        return new MavenCoordinate(parentCoordinate);
+    }
+
+    public List<MavenCoordinate> getDependenciesOnline(String coordinate) {
         var mavenCoordinate = new MavenCoordinate(coordinate);
         var artifacts = Arrays.stream(
                 Maven.resolver()
                         .resolve(mavenCoordinate.toCanonicalForm())
-                        .withTransitivity()
+                        .withoutTransitivity()
                         .asResolvedArtifact()
         ).collect(Collectors.toList());
         if (artifacts.size() < 1) {
             throw new RuntimeException("Could not resolve artifact "
                     + mavenCoordinate.toCanonicalForm());
         }
-        var dependencies = Arrays.stream(
-                artifacts.get(0).getDependencies()
-        ).map(d -> new MavenCoordinate(
+        return Arrays.stream(artifacts.get(0).getDependencies())
+                .map(d -> new MavenCoordinate(
                         d.getCoordinate().getGroupId(),
                         d.getCoordinate().getArtifactId(),
-                        d.getResolvedVersion()
-                )
-        ).collect(Collectors.toSet());
-        var fullDependencySet = new HashSet<>(dependencies);
-        for (var dependency : dependencies) {
-            fullDependencySet.addAll(this.resolveArtifactDependenciesOnline(
-                    dependency.toCanonicalForm(), timestamp, dbContext
-            ));
-        }
-        if (timestamp != -1) {
-            return filterByTimestamp(fullDependencySet, timestamp, dbContext);
-        } else {
-            return fullDependencySet;
-        }
+                        d.getResolvedVersion()))
+                .collect(Collectors.toList());
     }
 
-    public Set<Dependency> resolveDependencies(String groupId, String artifactId, String version,
-                                               long timestamp, DSLContext dbContext) {
-        var directDependencies = getArtifactDependencies(groupId, artifactId, version, dbContext);
-        var fullDependencySet = new HashSet<>(directDependencies);
-        for (var dependency : directDependencies) {
-            var depVersion = String.join(",", dependency.getVersionConstraints());
-            fullDependencySet.addAll(getArtifactDependencies(dependency.groupId, dependency.artifactId, depVersion, dbContext));
-        }
-        if (timestamp == -1) {
-            return fullDependencySet;
-        } else {
-            return filterDependenciesByTimestamp(fullDependencySet, new Timestamp(timestamp), dbContext);
-        }
-    }
-
-    public List<Dependency> getArtifactDependencies(String groupId, String artifactId,
-                                                    String version, DSLContext context) {
+    public List<Dependency> getArtifactDependenciesFromDatabase(String groupId, String artifactId,
+                                                                String version, DSLContext context) {
         var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
         var result = context.select(Dependencies.DEPENDENCIES.METADATA)
                 .from(Dependencies.DEPENDENCIES)
@@ -177,98 +200,159 @@ public class MavenResolver implements Runnable {
         return result.map(r -> Dependency.fromJSON(new JSONObject(r.component1().data())));
     }
 
-    private Set<Dependency> filterDependenciesByTimestamp(Set<Dependency> dependencies,
-                                                          Timestamp timestamp, DSLContext context) {
-        var filteredDependencies = new HashSet<Dependency>(dependencies.size());
-        for (var dependency : dependencies) {
-            var packageName = dependency.groupId + Constants.mvnCoordinateSeparator + dependency.artifactId;
-            var result = context.select(PackageVersions.PACKAGE_VERSIONS.VERSION)
-                    .from(PackageVersions.PACKAGE_VERSIONS)
-                    .join(Packages.PACKAGES)
-                    .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                    .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                    .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                    .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.lessOrEqual(timestamp))
-                    .orderBy(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.desc())
-                    .limit(1)
-                    .fetchOne();
-            String suitableVersion = null;
-            if (result != null) {
-                suitableVersion = result.value1();
-            }
-            if (suitableVersion == null) {
-                filteredDependencies.add(dependency);
-            } else {
-                filteredDependencies.add(
-                        new Dependency(dependency.groupId, dependency.artifactId, suitableVersion)
-                );
-            }
-        }
-        return filteredDependencies;
-    }
+//    /**
+//     * Resolves full dependency set of certain Maven artifact.
+//     *
+//     * @param coordinate Maven coordinate in the form of "groupId:artifactId:version"
+//     * @param timestamp  Optional timestamp. Use -1 in order not to provide the timestamp.
+//     *                   If provided then any dependency version with release timestamp
+//     *                   later than the provided timestamp will not be included
+//     *                   in the dependency set (they will downgraded to the suitable version).
+//     * @param dbContext  Database connection context
+//     * @return Full dependency set (including transitive dependencies) of the maven coordinate
+//     */
+//    public Set<MavenCoordinate> resolveArtifactDependenciesOnline(String coordinate,
+//                                                                  long timestamp,
+//                                                                  DSLContext dbContext) {
+//        var mavenCoordinate = new MavenCoordinate(coordinate);
+//        var artifacts = Arrays.stream(
+//                Maven.resolver()
+//                        .resolve(mavenCoordinate.toCanonicalForm())
+//                        .withTransitivity()
+//                        .asResolvedArtifact()
+//        ).collect(Collectors.toList());
+//        if (artifacts.size() < 1) {
+//            throw new RuntimeException("Could not resolve artifact "
+//                    + mavenCoordinate.toCanonicalForm());
+//        }
+//        var dependencies = Arrays.stream(
+//                artifacts.get(0).getDependencies()
+//        ).map(d -> new MavenCoordinate(
+//                        d.getCoordinate().getGroupId(),
+//                        d.getCoordinate().getArtifactId(),
+//                        d.getResolvedVersion()
+//                )
+//        ).collect(Collectors.toSet());
+//        var fullDependencySet = new HashSet<>(dependencies);
+//        for (var dependency : dependencies) {
+//            fullDependencySet.addAll(this.resolveArtifactDependenciesOnline(
+//                    dependency.toCanonicalForm(), timestamp, dbContext
+//            ));
+//        }
+//        if (timestamp != -1) {
+//            return filterByTimestamp(fullDependencySet, timestamp, dbContext);
+//        } else {
+//            return fullDependencySet;
+//        }
+//    }
 
-    private Set<MavenCoordinate> filterByTimestamp(Set<MavenCoordinate> artifacts,
-                                                   long timestamp, DSLContext dbContext) {
-        var filteredArtifacts = new HashSet<MavenCoordinate>();
-        for (var artifact : artifacts) {
-            var filtered = false;
-            var packageName = artifact.getGroupId() + Constants.mvnCoordinateSeparator
-                    + artifact.getArtifactId();
-            var timestampedVersions = getTimestampedVersionsFromDB(packageName, dbContext);
-            if (timestampedVersions.isEmpty()) {
-                filteredArtifacts.add(artifact);
-                continue;
-            }
-            for (var versionEntry : timestampedVersions.entrySet()) {
-                if (versionEntry.getValue().equals(artifact.getVersion())
-                        && versionEntry.getKey() <= timestamp) {
-                    filteredArtifacts.add(artifact);
-                    filtered = true;
-                    break;
-                }
-            }
-            if (!filtered) {
-                var timestamps = new ArrayList<>(timestampedVersions.keySet());
-                Collections.sort(timestamps);
-                var latestTimestamp = -1L;
-                for (var t : timestamps) {
-                    if (t <= timestamp) {
-                        latestTimestamp = t;
-                    }
-                }
-                var properVersion = timestampedVersions.get(latestTimestamp);
-                var downgradedArtifact = new MavenCoordinate(
-                        artifact.getGroupId(),
-                        artifact.getArtifactId(),
-                        properVersion
-                );
-                filteredArtifacts.add(downgradedArtifact);
-            }
-        }
-        return filteredArtifacts;
-    }
+//    public Set<Dependency> resolveDependencies(String groupId, String artifactId, String version,
+//                                               long timestamp, DSLContext dbContext) {
+//        var directDependencies = getArtifactDependencies(groupId, artifactId, version, dbContext);
+//        var fullDependencySet = new HashSet<>(directDependencies);
+//        for (var dependency : directDependencies) {
+//            var depVersion = String.join(",", dependency.getVersionConstraints());
+//            fullDependencySet.addAll(getArtifactDependencies(dependency.groupId, dependency.artifactId, depVersion, dbContext));
+//        }
+//        if (timestamp == -1) {
+//            return fullDependencySet;
+//        } else {
+//            return filterDependenciesByTimestamp(fullDependencySet, new Timestamp(timestamp), dbContext);
+//        }
+//    }
 
-    private Map<Long, String> getTimestampedVersionsFromDB(String packageName,
-                                                           DSLContext dbContext) {
-        var versions = dbContext.select(
-                PackageVersions.PACKAGE_VERSIONS.VERSION,
-                PackageVersions.PACKAGE_VERSIONS.CREATED_AT
-        ).from(PackageVersions.PACKAGE_VERSIONS)
-                .join(Packages.PACKAGES)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                .fetch();
-        var timestampedVersionsMap = new HashMap<Long, String>();
-        if (versions.isNotEmpty()) {
-            versions.forEach((r) -> {
-                if (r.component2() != null) {
-                    var timestamp = r.component2().getTime();
-                    var version = r.component1();
-                    timestampedVersionsMap.put(timestamp, version);
-                }
-            });
-        }
-        return timestampedVersionsMap;
-    }
+//    private Set<Dependency> filterDependenciesByTimestamp(Set<Dependency> dependencies,
+//                                                          Timestamp timestamp, DSLContext context) {
+//        var filteredDependencies = new HashSet<Dependency>(dependencies.size());
+//        for (var dependency : dependencies) {
+//            var packageName = dependency.groupId + Constants.mvnCoordinateSeparator + dependency.artifactId;
+//            var result = context.select(PackageVersions.PACKAGE_VERSIONS.VERSION)
+//                    .from(PackageVersions.PACKAGE_VERSIONS)
+//                    .join(Packages.PACKAGES)
+//                    .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+//                    .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+//                    .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+//                    .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.lessOrEqual(timestamp))
+//                    .orderBy(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.desc())
+//                    .limit(1)
+//                    .fetchOne();
+//            String suitableVersion = null;
+//            if (result != null) {
+//                suitableVersion = result.value1();
+//            }
+//            if (suitableVersion == null) {
+//                filteredDependencies.add(dependency);
+//            } else {
+//                filteredDependencies.add(
+//                        new Dependency(dependency.groupId, dependency.artifactId, suitableVersion)
+//                );
+//            }
+//        }
+//        return filteredDependencies;
+//    }
+
+//    private Set<MavenCoordinate> filterByTimestamp(Set<MavenCoordinate> artifacts,
+//                                                   long timestamp, DSLContext dbContext) {
+//        var filteredArtifacts = new HashSet<MavenCoordinate>();
+//        for (var artifact : artifacts) {
+//            var filtered = false;
+//            var packageName = artifact.getGroupId() + Constants.mvnCoordinateSeparator
+//                    + artifact.getArtifactId();
+//            var timestampedVersions = getTimestampedVersionsFromDB(packageName, dbContext);
+//            if (timestampedVersions.isEmpty()) {
+//                filteredArtifacts.add(artifact);
+//                continue;
+//            }
+//            for (var versionEntry : timestampedVersions.entrySet()) {
+//                if (versionEntry.getValue().equals(artifact.getVersion())
+//                        && versionEntry.getKey() <= timestamp) {
+//                    filteredArtifacts.add(artifact);
+//                    filtered = true;
+//                    break;
+//                }
+//            }
+//            if (!filtered) {
+//                var timestamps = new ArrayList<>(timestampedVersions.keySet());
+//                Collections.sort(timestamps);
+//                var latestTimestamp = -1L;
+//                for (var t : timestamps) {
+//                    if (t <= timestamp) {
+//                        latestTimestamp = t;
+//                    }
+//                }
+//                var properVersion = timestampedVersions.get(latestTimestamp);
+//                var downgradedArtifact = new MavenCoordinate(
+//                        artifact.getGroupId(),
+//                        artifact.getArtifactId(),
+//                        properVersion
+//                );
+//                filteredArtifacts.add(downgradedArtifact);
+//            }
+//        }
+//        return filteredArtifacts;
+//    }
+
+//    private Map<Long, String> getTimestampedVersionsFromDB(String packageName,
+//                                                           DSLContext dbContext) {
+//        var versions = dbContext.select(
+//                PackageVersions.PACKAGE_VERSIONS.VERSION,
+//                PackageVersions.PACKAGE_VERSIONS.CREATED_AT
+//        ).from(PackageVersions.PACKAGE_VERSIONS)
+//                .join(Packages.PACKAGES)
+//                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+//                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+//                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+//                .fetch();
+//        var timestampedVersionsMap = new HashMap<Long, String>();
+//        if (versions.isNotEmpty()) {
+//            versions.forEach((r) -> {
+//                if (r.component2() != null) {
+//                    var timestamp = r.component2().getTime();
+//                    var version = r.component1();
+//                    timestampedVersionsMap.put(timestamp, version);
+//                }
+//            });
+//        }
+//        return timestampedVersionsMap;
+//    }
 }
