@@ -282,13 +282,13 @@ public class MetadataDatabasePlugin extends Plugin {
                 var callableMetadata = new JSONObject(methodEntry.getValue().getMetadata());
                 Integer firstLine = null;
                 if (callableMetadata.has("first")
-                        && !"notFound".equals(callableMetadata.get("first"))) {
+                        && !(callableMetadata.get("first") instanceof String)) {
                     firstLine = callableMetadata.getInt("first");
                     callableMetadata.remove("first");
                 }
                 Integer lastLine = null;
                 if (callableMetadata.has("last")
-                        && !"notFound".equals(callableMetadata.get("last"))) {
+                        && !(callableMetadata.get("last") instanceof String)) {
                     lastLine = callableMetadata.getInt("last");
                     callableMetadata.remove("last");
                 }
