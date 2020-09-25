@@ -192,6 +192,12 @@ public class RocksDaoTest {
     }
 
     @Test
+    public void graphNotFoundTest() throws RocksDBException {
+        var graph = rocksDao.getGraphData(-1);
+        assertNull(graph);
+    }
+
+    @Test
     public void multipleGraphsDatabaseTest() throws IOException, RocksDBException {
         var json1 = new JSONObject("{" +
                 "\"index\": 1," +

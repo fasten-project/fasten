@@ -220,24 +220,30 @@ public class RocksDao implements Closeable {
      */
 	public CallGraphData getGraphData(final long index)
             throws RocksDBException {
-        final byte[] buffer = rocksDb.get(Longs.toByteArray(index));
-        final Input input = new Input(buffer);
-        assert kryo != null;
-		final boolean compressed = kryo.readObject(input, Boolean.class).booleanValue();
+	    try {
+            final byte[] buffer = rocksDb.get(Longs.toByteArray(index));
+            final Input input = new Input(buffer);
+            assert kryo != null;
 
-        final var graphs = new ImmutableGraph[]{
-                kryo.readObject(input, BVGraph.class),
-                kryo.readObject(input, BVGraph.class)
-        };
-        final int numInternal = kryo.readObject(input, int.class);
-        final Properties[] properties = new Properties[]{
-                kryo.readObject(input, Properties.class),
-                kryo.readObject(input, Properties.class)
-        };
-        final long[] LID2GID = kryo.readObject(input, long[].class);
-		final GOV3LongFunction GID2LID = kryo.readObject(input, GOV3LongFunction.class);
-		return new CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
-                LID2GID, GID2LID, numInternal, buffer.length);
+            final boolean compressed = kryo.readObject(input, Boolean.class).booleanValue();
+
+            final var graphs = new ImmutableGraph[]{
+                    kryo.readObject(input, BVGraph.class),
+                    kryo.readObject(input, BVGraph.class)
+            };
+            final int numInternal = kryo.readObject(input, int.class);
+            final Properties[] properties = new Properties[]{
+                    kryo.readObject(input, Properties.class),
+                    kryo.readObject(input, Properties.class)
+            };
+            final long[] LID2GID = kryo.readObject(input, long[].class);
+            final GOV3LongFunction GID2LID = kryo.readObject(input, GOV3LongFunction.class);
+            return new CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
+                    LID2GID, GID2LID, numInternal, buffer.length);
+        } catch (NullPointerException e) {
+	        logger.warn("Graph with index " + index + " could not be found");
+	        return null;
+        }
     }
 
     @Override
