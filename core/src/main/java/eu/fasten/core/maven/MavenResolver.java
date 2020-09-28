@@ -79,6 +79,11 @@ public class MavenResolver implements Runnable {
             var dependencySet = this.resolveFullDependencySet(group, artifact, version,
                     timestamp, onlineMode, dbContext);
             System.out.println("--------------------------------------------------");
+            System.out.println("Maven coordinate:");
+            System.out.println(group + Constants.mvnCoordinateSeparator + artifact
+                    + Constants.mvnCoordinateSeparator + version);
+            System.out.println("--------------------------------------------------");
+            System.out.println("Full dependency set:");
             dependencySet.forEach(System.out::println);
             System.out.println("--------------------------------------------------");
         } else {
@@ -97,6 +102,7 @@ public class MavenResolver implements Runnable {
         dependencyTree = filterDependencyTreeByScope(dependencyTree);
         dependencyTree = filterDependencyTreeByExclusions(dependencyTree);
         var dependencySet = collectDependencyTree(dependencyTree);
+        dependencySet.remove(new Dependency(groupId, artifactId, version));
         if (timestamp != -1) {
             dependencySet = filterDependenciesByTimestamp(dependencySet, new Timestamp(timestamp),
                     dbContext);
