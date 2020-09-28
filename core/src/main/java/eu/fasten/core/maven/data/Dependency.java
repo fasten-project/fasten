@@ -26,7 +26,7 @@ import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class Dependency implements MavenArtifact {
+public class Dependency {
 
     public final String artifactId;
     public final String groupId;
@@ -73,6 +73,24 @@ public class Dependency implements MavenArtifact {
 
     public Dependency(final String groupId, final String artifactId, final String version) {
         this(groupId, artifactId, version, new ArrayList<>(), "", false, "", "");
+    }
+
+    public Dependency(String mavenCoordinate) {
+        if (!mavenCoordinate.matches(".+" + Constants.mvnCoordinateSeparator
+                + ".+" + Constants.mvnCoordinateSeparator + ".+")) {
+            throw new IllegalArgumentException("Maven coordinate must be in form of 'groupId"
+                    + Constants.mvnCoordinateSeparator + "artifactId"
+                    + Constants.mvnCoordinateSeparator + "version'");
+        }
+        var coordinates = mavenCoordinate.split(Constants.mvnCoordinateSeparator);
+        this.groupId = coordinates[0];
+        this.artifactId = coordinates[1];
+        this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[2]);
+        this.exclusions = new ArrayList<>();
+        this.scope = "";
+        this.optional = false;
+        this.type = "";
+        this.classifier = "";
     }
 
     /**
@@ -131,17 +149,14 @@ public class Dependency implements MavenArtifact {
         return json;
     }
 
-    @Override
     public String getGroupId() {
         return this.groupId;
     }
 
-    @Override
     public String getArtifactId() {
         return this.artifactId;
     }
 
-    @Override
     public String getVersion() {
         return String.join(",", this.getVersionConstraints());
     }
