@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
@@ -96,51 +114,58 @@ public class MavenResolver implements Runnable {
     public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
                                                     String version, long timestamp,
                                                     boolean onlineMode, DSLContext dbContext) {
-        var dependencyTree = buildFullDependencyTree(groupId, artifactId, version,
-                onlineMode, dbContext);
-        dependencyTree = filterOptionalDependencies(dependencyTree);
-        dependencyTree = filterDependencyTreeByScope(dependencyTree);
-        dependencyTree = filterDependencyTreeByExclusions(dependencyTree);
-        var dependencySet = collectDependencyTree(dependencyTree);
-        dependencySet.remove(new Dependency(groupId, artifactId, version));
-        if (timestamp != -1) {
-            dependencySet = filterDependenciesByTimestamp(dependencySet, new Timestamp(timestamp),
-                    dbContext);
+        var parents = new HashSet<Dependency>();
+        parents.add(new Dependency(groupId, artifactId, version));
+        var parent = this.getParentArtifact(groupId, artifactId, version, dbContext);
+        while (parent != null) {
+            parents.add(parent);
+            parent = this.getParentArtifact(parent.getGroupId(), parent.getArtifactId(),
+                    parent.getVersion(), dbContext);
         }
+        var dependencySet = new HashSet<Dependency>();
+        for (var parentArtifact : parents) {
+            var dependencyTree = buildFullDependencyTree(parentArtifact.getGroupId(),
+                    parentArtifact.getArtifactId(), parentArtifact.getVersion(), onlineMode,
+                    dbContext);
+            dependencyTree = filterOptionalDependencies(dependencyTree);
+            dependencyTree = filterDependencyTreeByScope(dependencyTree);
+            dependencyTree = filterDependencyTreeByExclusions(dependencyTree);
+            var currentDependencySet = collectDependencyTree(dependencyTree);
+            if (timestamp != -1) {
+                currentDependencySet = filterDependenciesByTimestamp(dependencySet,
+                        new Timestamp(timestamp), dbContext);
+            }
+            dependencySet.addAll(currentDependencySet);
+        }
+        dependencySet.remove(new Dependency(groupId, artifactId, version));
         return dependencySet;
     }
 
     public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
                                                   boolean onlineMode, DSLContext dbContext) {
-        var previousParent = new Dependency(groupId, artifactId, version);
-        var parent = this.getParentArtifact(groupId, artifactId, version, dbContext);
-        while (parent != null) {
-            previousParent = parent;
-            parent = this.getParentArtifact(parent.getGroupId(), parent.getArtifactId(),
-                    parent.getVersion(), dbContext);
-        }
-        parent = previousParent;
-        List<Dependency> dependencies;
+        var artifact = new Dependency(groupId, artifactId, version);
+        List<Dependency> dependencies = new ArrayList<>();
         if (onlineMode) {
-            var parentCoordinate = parent.getGroupId()
-                    + Constants.mvnCoordinateSeparator + parent.getArtifactId()
-                    + Constants.mvnCoordinateSeparator + parent.getVersion();
-            dependencies = new ArrayList<>(this.getDependenciesOnline(parentCoordinate));
+            var parentCoordinate = artifact.getGroupId()
+                    + Constants.mvnCoordinateSeparator + artifact.getArtifactId()
+                    + Constants.mvnCoordinateSeparator + artifact.getVersion();
+            dependencies.addAll(this.getDependenciesOnline(parentCoordinate));
         } else {
-            dependencies = new ArrayList<>(this.getArtifactDependenciesFromDatabase(
-                    parent.getGroupId(), parent.getArtifactId(), parent.getVersion(), dbContext
+            dependencies.addAll(this.getArtifactDependenciesFromDatabase(
+                    artifact.getGroupId(), artifact.getArtifactId(),
+                    artifact.getVersion(), dbContext
             ));
         }
         DependencyTree dependencyTree;
         if (dependencies.isEmpty()) {
-            dependencyTree = new DependencyTree(parent, new ArrayList<>());
+            dependencyTree = new DependencyTree(artifact, new ArrayList<>());
         } else {
             var childTrees = new ArrayList<DependencyTree>();
             for (var dep : dependencies) {
                 childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
                         dep.getVersion(), onlineMode, dbContext));
             }
-            dependencyTree = new DependencyTree(parent, childTrees);
+            dependencyTree = new DependencyTree(artifact, childTrees);
         }
         return dependencyTree;
     }
@@ -177,7 +202,7 @@ public class MavenResolver implements Runnable {
     }
 
     public Dependency getParentArtifact(String groupId, String artifactId, String version,
-                                           DSLContext context) {
+                                        DSLContext context) {
         var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
         var result = context.select(PackageVersions.PACKAGE_VERSIONS.METADATA)
                 .from(PackageVersions.PACKAGE_VERSIONS)
@@ -203,15 +228,15 @@ public class MavenResolver implements Runnable {
         return new Dependency(parentCoordinate);
     }
 
-    public List<Dependency> getDependenciesOnline(String coordinate) {
+    public List<Dependency> getDependenciesOnline(String mavenCoordinate) {
         var artifacts = Arrays.stream(
                 Maven.resolver()
-                        .resolve(coordinate)
+                        .resolve(mavenCoordinate)
                         .withoutTransitivity()
                         .asResolvedArtifact()
         ).collect(Collectors.toList());
         if (artifacts.size() < 1) {
-            throw new RuntimeException("Could not resolve artifact " + coordinate);
+            throw new RuntimeException("Could not resolve artifact " + mavenCoordinate);
         }
         return Arrays.stream(artifacts.get(0).getDependencies())
                 .map(d -> new Dependency(
@@ -242,8 +267,8 @@ public class MavenResolver implements Runnable {
         return result.map(r -> Dependency.fromJSON(new JSONObject(r.component1().data())));
     }
 
-    private Set<Dependency> filterDependenciesByTimestamp(Set<Dependency> dependencies,
-                                                          Timestamp timestamp, DSLContext context) {
+    public Set<Dependency> filterDependenciesByTimestamp(Set<Dependency> dependencies,
+                                                         Timestamp timestamp, DSLContext context) {
         var filteredDependencies = new HashSet<Dependency>(dependencies.size());
         for (var dependency : dependencies) {
             var packageName = dependency.groupId + Constants.mvnCoordinateSeparator + dependency.artifactId;
