@@ -18,7 +18,7 @@
 | `/mvn/packages/{pkg}/{pkg_ver}/callgraph` | `GET` | — | — | 200 | OK |
 | | | | | 404 | Package not found |
 | | | | | 404 | Package version not found |
-| `/mvn/packages/{pkg}/{pkg_ver}/callgraph?resolve={timestamp}&full=T` | `GET` | — | `timestamp`: `dateTime`, `full`: `boolean` |  |  |
+| `/mvn/packages/{pkg}/{pkg_ver}/callgraph` | `GET` | — | `resolve`: `dateTime`, `full`: `boolean` |  |  |
 | | | | | 400 | Bad request: invalid timestamp |
 | | | | | 404 | Package not found |
 | | | | | 404 | Package version not found |
@@ -30,7 +30,7 @@
 | `/mvn/packages/{pkg}/{pkg_ver}/deps` | `GET` | — | — | 200 | OK |
 | | | | | 404 | Package not found |
 | | | | | 404 | Package version not found |
-| `/mvn/packages/{pkg}/{pkg_ver}/deps?resolve={timestamp}` | `GET` | — | `timestamp`: `dateTime` | 200 | OK |
+| `/mvn/packages/{pkg}/{pkg_ver}/deps` | `GET` | — | `resolve`: `dateTime` | 200 | OK |
 | | | | | 400 | Bad request: invalid timestamp |
 | | | | | 404 | Package not found |
 | | | | | 404 | Package version not found |
