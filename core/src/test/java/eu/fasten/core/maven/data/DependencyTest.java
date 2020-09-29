@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.pomanalyzer.pom.data;
+package eu.fasten.core.maven.data;
 
-import eu.fasten.core.maven.data.Dependency;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import java.util.List;
