@@ -648,10 +648,12 @@ public class DataExtractor {
                                 .selectSingleNode("./*[local-name()='artifactId']");
                         var exclusionGroupNode = exclusionNode
                                 .selectSingleNode("./*[local-name()='groupId']");
-                        exclusions.add(new Dependency.Exclusion(
-                                exclusionArtifactNode.getText(),
-                                exclusionGroupNode.getText()
-                        ));
+                        if (exclusionArtifactNode != null && exclusionGroupNode != null) {
+                            exclusions.add(new Dependency.Exclusion(
+                                    exclusionArtifactNode.getText(),
+                                    exclusionGroupNode.getText()
+                            ));
+                        }
                     }
                 }
                 var scopeNode = dependencyNode
@@ -668,18 +670,19 @@ public class DataExtractor {
                 } else {
                     version = null;
                 }
-                dependencies.add(new Dependency(
-                        artifactNode.getText(),
-                        groupNode.getText(),
-                        version,
-                        exclusions,
-                        (scopeNode != null) ? scopeNode.getText() : "",
-                        (optionalNode != null) && Boolean.parseBoolean(
-                                optionalNode.getText()
-                        ),
-                        (typeNode != null) ? typeNode.getText() : "",
-                        (classifierNode != null) ? classifierNode.getText() : ""
-                ));
+                if (groupNode != null && artifactNode != null) {
+                    dependencies.add(new Dependency(
+                            groupNode.getText(),
+                            artifactNode.getText(),
+                            version,
+                            exclusions,
+                            (scopeNode != null) ? scopeNode.getText() : "",
+                            (optionalNode != null)
+                                    && Boolean.parseBoolean(optionalNode.getText()),
+                            (typeNode != null) ? typeNode.getText() : "",
+                            (classifierNode != null) ? classifierNode.getText() : ""
+                    ));
+                }
             }
         }
         return dependencies;
