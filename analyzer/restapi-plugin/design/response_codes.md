@@ -4,7 +4,7 @@
 
 | Resource | Method | Req. body | Query params | Status | Description |
 |-|-|-|-|-|-|
-| `/mvn/packages/{pkg}/versions` | `GET` | — | `limit`: `integer`, `offset`: `integer` | 200 | OK |
+| `/mvn/packages/{pkg}/versions` | `GET` | — | `limit`: `integer`, `offset`: `integer` | 200 | Package versions returned |
 | | | | | 404 | Package not found |
 | `/mvn/packages/{pkg}/{pkg_ver}` | `GET` | — | `limit`: `integer`, `offset`: `integer` | 200 | OK |
 | | | | | 404 | Package not found |

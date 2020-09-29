@@ -1,0 +1,167 @@
+openapi: 3.0.0
+
+info:
+  version: '1.0'
+  title: "FASTEN's KB API"
+  description: "Exposing FASTEN's KnowledgeBase"
+  contact:
+    email: marco.micera+fasten@endocode.com
+    name: Marco Micera
+    url: 'https://endocode.com'
+  # license:
+  #   name:
+  #   url:
+
+tags:
+  - name: packages
+    # description:
+  - name: dependencies
+    # description:
+  - name: modules
+    # description:
+  - name: binarymodules
+    # description:
+  - name: callables
+    # description:
+  - name: edges
+    # description:
+  - name: files
+    # description:
+    
+paths:
+  '/mvn/packages/{pkg}/versions':
+    get:
+      tags:
+        - packages
+      # summary:
+      # operationId: 
+      # description: 
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/packageName'
+      responses:
+        '200':
+          description: Package versions returned
+  # '/mvn/packages/{pkg}/{pkg_ver}':
+  #   get:
+  #     tags:
+  #       - packages
+  # '/mvn/packages/{pkg}/{pkg_ver}/metadata':
+  #   get:
+  #     tags:
+  #       - packages
+  # '/mvn/packages/{pkg}/{pkg_ver}/vulnerabilities':
+  #   get:
+  #     tags:
+  #       - packages
+  # '/mvn/packages/{pkg}/{pkg_ver}/callgraph':
+  #   get:
+  #     tags:
+  #       - packages
+  # '/mvn/packages/{pkg}/{pkg_ver}/callgraph?resolve={timestamp}&full=T':
+  #   get:
+  #     tags:
+  #       - packages
+  # '/mvn/packages/{pkg}/{pkg_ver}/deps':
+  #   get:
+  #     tags:
+  #       - dependencies
+  # '/mvn/packages/{pkg}/{pkg_ver}/deps?resolve={timestamp}':
+  #   get:
+  #     tags:
+  #       - dependencies
+  # '/mvn/packages/{pkg}/{pkg_ver}/modules':
+  #   get:
+  #     tags:
+  #       - modules
+  # '/mvn/packages/{pkg}/{pkg_ver}/modules/{namespace}/metadata':
+  #   get:
+  #     tags:
+  #       - modules
+  # '/mvn/packages/{pkg}/{pkg_ver}/modules/{namespace}/files':
+  #   get:
+  #     tags:
+  #       - modules
+  # '/mvn/packages/{pkg}/{pkg_ver}/binary-modules':
+  #   get:
+  #     tags:
+  #       - binarymodules
+  # '/mvn/packages/{pkg}/{pkg_ver}/binary-modules/{binary}/metadata':
+  #   get:
+  #     tags:
+  #       - binarymodules
+  # '/mvn/packages/{pkg}/{pkg_ver}/binary-modules/{binary}/files':
+  #   get:
+  #     tags:
+  #       - binarymodules
+  # '/mvn/packages/{pkg}/{pkg_ver}/callables':
+  #   get:
+  #     tags:
+  #       - callables
+  # '/mvn/packages/{pkg}/{pkg_ver}/{fasten_uri}/vulnerabilities	':
+  #   get:
+  #     tags:
+  #       - callables
+  # '/mvn/packages/{pkg}/{pkg_ver}/{fasten_uri}/metadata':
+  #   get:
+  #     tags:
+  #       - callables
+  # '/mvn/packages/{pkg}/{pkg_ver}/{fasten_uri}/reach':
+  #   get:
+  #     tags:
+  #       - callables
+  # '/mvn/packages/{pkg}/{pkg_ver}/edges':
+  #   get:
+  #     tags:
+  #       - edges
+  # '/mvn/packages/{pkg}/{pkg_ver}/files':
+  #   get:
+  #     tags:
+  #       - files
+  
+components:
+  schemas:
+    packageName:
+      description: A Maven package name
+      type: string
+      example: junit:junit
+    packageVersion:
+      description: A Maven package version
+      type: string
+      example: 0.4
+  parameters:
+    limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+      description: The numbers of items to return
+    offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+      description: The number of items to skip before starting to collect the result set
+    packageName:
+      name: pkg
+      in: path
+      required: true
+      description: The Maven packge name
+      schema:
+        $ref: '#/components/schemas/packageName'
+    pageNumber:
+      name: page
+      in: query
+      required: false
+      description: The desired page result
+      schema:
+        type: integer
+        format: int32
+        default: 0
