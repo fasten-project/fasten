@@ -181,8 +181,13 @@ public class MavenResolver implements Runnable {
     }
 
     public DependencyTree filterDependencyTreeByScope(DependencyTree dependencyTree) {
-        // TODO: Implement
-        return dependencyTree;
+        var filteredDependencies = new ArrayList<DependencyTree>();
+        for (var childTree : dependencyTree.dependencies) {
+            if (!childTree.artifact.scope.equals("test")) {
+                filteredDependencies.add(filterDependencyTreeByScope(childTree));
+            }
+        }
+        return new DependencyTree(dependencyTree.artifact, filteredDependencies);
     }
 
     public DependencyTree filterExcludedDependencies(DependencyTree dependencyTree) {
@@ -203,8 +208,6 @@ public class MavenResolver implements Runnable {
     }
 
     public Set<Dependency> collectDependencyTree(DependencyTree dependencyTree) {
-        // TODO: Implement usage of distance
-        //       If several versions are available, the closest one should be chosen
         var dependencySet = new HashSet<Dependency>();
         dependencySet.add(dependencyTree.artifact);
         for (var childTree : dependencyTree.dependencies) {

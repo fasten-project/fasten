@@ -131,6 +131,7 @@ public class MavenResolverTest {
         }
         var dbContext = DSL.using(new MockConnection(new DataProvider()));
         var expected = new DependencyTree(new Dependency("hello", "world", "42"), emptyList());
+        // TODO: Fix these test
 //        var actual = mavenResolver.buildFullDependencyTree("hello", "world", "42", false, dbContext);
 //        assertEquals(expected, actual);
     }
@@ -169,6 +170,20 @@ public class MavenResolverTest {
                         List.of(new DependencyTree(new Dependency("excluded", "dependency", "1"),
                                 List.of(new DependencyTree(new Dependency("foo:bar:42"), emptyList())))))));
         assertEquals(noExcludedDependenciesTree, mavenResolver.filterExcludedDependencies(excludedDependenciesTree));
+    }
+
+    @Test
+    public void filterTestDependenciesTest() {
+        var noOptionalDependenciesTree = new DependencyTree(new Dependency("junit:junit:4.12"),
+                List.of(new DependencyTree(new Dependency("org.hamcrest:hamcrest-core:1.2"), emptyList()))
+        );
+        assertEquals(noOptionalDependenciesTree, mavenResolver.filterOptionalDependencies(noOptionalDependenciesTree));
+
+        var testDependenciesTree = new DependencyTree(new Dependency("junit:junit:4.12"),
+                List.of(new DependencyTree(new Dependency("org.hamcrest:hamcrest-core:1.2"),
+                        List.of(new DependencyTree(new Dependency("optional", "dependency", "1", emptyList(), "test", false, "", ""),
+                                List.of(new DependencyTree(new Dependency("foo:bar:42"), emptyList())))))));
+        assertEquals(noOptionalDependenciesTree, mavenResolver.filterDependencyTreeByScope(testDependenciesTree));
     }
 
     @Test
