@@ -18,7 +18,7 @@
 | `/mvn/packages/{pkg}/{pkg_ver}/callgraph` | `GET` | — | `limit`: `integer`, `offset`: `integer` | 200 | OK |
 | | | | | 404 | Package not found |
 | | | | | 404 | Package version not found |
-| `/mvn/packages/{pkg}/{pkg_ver}/callgraph` | `GET` | `limit`: `integer`, `offset`: `integer` | `resolve`: `dateTime`, `full`: `boolean` |  |  |
+| `/mvn/packages/{pkg}/{pkg_ver}/callgraph` | `GET` | — | `limit`: `integer`, `offset`: `integer`, `resolve`: `dateTime`, `full`: `boolean` |  |  |
 | | | | | 400 | Bad request: invalid timestamp |
 | | | | | 404 | Package not found |
 | | | | | 404 | Package version not found |
