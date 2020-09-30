@@ -32,9 +32,9 @@ import org.json.JSONTokener;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class ExtendedRevisionCallGraphTest {
+class ExtendedRevisionJavaCallGraphTest {
 
-    private static ExtendedRevisionCallGraph graph;
+    private static ExtendedRevisionJavaCallGraph graph;
 
     @BeforeAll
     static void setUp() throws IOException {
@@ -44,7 +44,7 @@ class ExtendedRevisionCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        graph = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+        graph = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
     }
 
     @Test
@@ -113,7 +113,7 @@ class ExtendedRevisionCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+        var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -126,7 +126,7 @@ class ExtendedRevisionCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+        var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -139,7 +139,7 @@ class ExtendedRevisionCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+        var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -152,7 +152,7 @@ class ExtendedRevisionCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+        var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
 
         assertTrue(cg.isCallGraphEmpty());
     }

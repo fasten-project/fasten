@@ -19,7 +19,10 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
@@ -99,12 +102,12 @@ public class MetadataDatabasePlugin extends Plugin {
                 consumedJson = consumedJson.getJSONObject("payload");
             }
             final var path = consumedJson.optString("dir");
-            final ExtendedRevisionCallGraph callgraph;
+            final ExtendedRevisionJavaCallGraph callgraph;
             if (!path.isEmpty()) {
                 // Parse ERCG from file
                 try {
                     JSONTokener tokener = new JSONTokener(new FileReader(path));
-                    callgraph = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+                    callgraph = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
                 } catch (JSONException | IOException e) {
                     logger.error("Error parsing JSON callgraph from path for '"
                             + Paths.get(path).getFileName() + "'", e);
@@ -115,7 +118,7 @@ public class MetadataDatabasePlugin extends Plugin {
             } else {
                 // Parse ERCG straight from consumed record
                 try {
-                    callgraph = new ExtendedRevisionCallGraph(consumedJson);
+                    callgraph = new ExtendedRevisionJavaCallGraph(consumedJson);
                 } catch (JSONException e) {
                     logger.error("Error parsing JSON callgraph for '"
                             + Paths.get(path).getFileName() + "'", e);
@@ -202,7 +205,7 @@ public class MetadataDatabasePlugin extends Plugin {
          * @param metadataDao Data Access Object to insert records in the database
          * @return Package ID saved in the database
          */
-        public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
+        public long saveToDatabase(ExtendedRevisionJavaCallGraph callGraph, MetadataDao metadataDao) {
             // Insert package record
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge);
 
@@ -212,7 +215,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     getProperTimestamp(callGraph.timestamp), new JSONObject());
 
             var cha = callGraph.getClassHierarchy();
-            var internalTypes = cha.get(ExtendedRevisionCallGraph.Scope.internalTypes);
+            var internalTypes = cha.get(JavaScope.internalTypes);
             var callables = new ArrayList<CallablesRecord>();
 
             // Insert all modules, files, module contents and extract callables from internal types
@@ -225,7 +228,7 @@ public class MetadataDatabasePlugin extends Plugin {
             }
             var numInternal = callables.size();
 
-            var externalTypes = cha.get(ExtendedRevisionCallGraph.Scope.externalTypes);
+            var externalTypes = cha.get(JavaScope.externalTypes);
             // Extract all external callables
             for (var fastenUri : externalTypes.keySet()) {
                 var type = externalTypes.get(fastenUri);
@@ -267,14 +270,14 @@ public class MetadataDatabasePlugin extends Plugin {
             return packageVersionId;
         }
 
-        private long insertModule(ExtendedRevisionCallGraph.Type type, FastenURI fastenUri,
+        private long insertModule(JavaType type, FastenURI fastenUri,
                                   long packageVersionId, MetadataDao metadataDao) {
             // Collect metadata of the module
             var moduleMetadata = new JSONObject();
             moduleMetadata.put("superInterfaces",
-                    ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperInterfaces()));
+                    JavaType.toListOfString(type.getSuperInterfaces()));
             moduleMetadata.put("superClasses",
-                    ExtendedRevisionCallGraph.Type.toListOfString(type.getSuperClasses()));
+                    JavaType.toListOfString(type.getSuperClasses()));
             moduleMetadata.put("access", type.getAccess());
             moduleMetadata.put("final", type.isFinal());
 
@@ -283,7 +286,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     null, moduleMetadata);
         }
 
-        private List<CallablesRecord> extractCallablesFromType(ExtendedRevisionCallGraph.Type type,
+        private List<CallablesRecord> extractCallablesFromType(JavaType type,
                                                                long moduleId, boolean isInternal) {
             // Extracts a list of all callable records and their metadata from the type
             var callables = new ArrayList<CallablesRecord>(type.getMethods().size());
@@ -317,7 +320,7 @@ public class MetadataDatabasePlugin extends Plugin {
             return callables;
         }
 
-        private List<EdgesRecord> insertEdges(ExtendedRevisionCallGraph.Graph graph,
+        private List<EdgesRecord> insertEdges(Graph graph,
                                  Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 

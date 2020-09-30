@@ -21,7 +21,9 @@ package eu.fasten.analyzer.javacgopal.data.analysis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -115,14 +117,14 @@ class OPALClassHierarchyTest {
         var uriHierarchy = opalClassHierarchy.asURIHierarchy(classHierarchy);
 
         assertNotNull(uriHierarchy);
-        assertEquals(1, uriHierarchy.get(ExtendedRevisionCallGraph.Scope.internalTypes).size());
-        assertEquals(1, uriHierarchy.get(ExtendedRevisionCallGraph.Scope.externalTypes).size());
+        assertEquals(1, uriHierarchy.get(JavaScope.internalTypes).size());
+        assertEquals(1, uriHierarchy.get(JavaScope.externalTypes).size());
 
         var internalUri = uriHierarchy
-                .get(ExtendedRevisionCallGraph.Scope.internalTypes)
+                .get(JavaScope.internalTypes)
                 .get(FastenURI.create("/some.package/typeName"));
         var externalUri = uriHierarchy
-                .get(ExtendedRevisionCallGraph.Scope.externalTypes)
+                .get(JavaScope.externalTypes)
                 .get(FastenURI.create("/some.package/typeName"));
 
         Assertions.assertEquals("source.java", internalUri.getSourceFileName());
@@ -487,8 +489,8 @@ class OPALClassHierarchyTest {
     void appendGraph() {
         OPALClassHierarchy classHierarchy =
                 Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
-        var newGraph = Mockito.mock(ExtendedRevisionCallGraph.Graph.class);
-        var existingGraph = Mockito.mock(ExtendedRevisionCallGraph.Graph.class);
+        var newGraph = Mockito.mock(Graph.class);
+        var existingGraph = Mockito.mock(Graph.class);
 
         Mockito.doReturn(newGraph).when(classHierarchy).getSubGraph(Mockito.any(), Mockito.any());
 
