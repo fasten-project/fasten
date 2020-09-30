@@ -28,7 +28,7 @@
 | | | | | 400 | Invalid offset value |
 | | | | | 404 | Package not found |
 | | | | | 404 | Package version not found |
-| `/mvn/packages/{pkg}/{pkg_ver}/callgraph` | `GET` | — | `limit`: `integer`, `offset`: `integer`, `resolve`: `dateTime`, `full`: `boolean` |  |  |
+| `/mvn/packages/{pkg}/{pkg_ver}/callgraph` | `GET` | — | `limit`: `integer`, `offset`: `integer`, `resolve`: `dateTime`, `full`: `boolean` | 200 | OK |
 | | | | | 400 | Invalid limit value |
 | | | | | 400 | Invalid offset value |
 | | | | | 400 | Invalid timestamp |
