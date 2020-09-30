@@ -672,8 +672,8 @@ public class DataExtractor {
                 }
                 if (groupNode != null && artifactNode != null) {
                     dependencies.add(new Dependency(
-                            artifactNode.getText(),
                             groupNode.getText(),
+                            artifactNode.getText(),
                             version,
                             exclusions,
                             (scopeNode != null) ? scopeNode.getText() : "",
