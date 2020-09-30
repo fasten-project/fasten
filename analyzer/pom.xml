@@ -22,6 +22,7 @@
         <module>graph-plugin</module>
         <module>pom-analyzer</module>
         <module>repo-cloner-plugin</module>
+        <module>restapi-plugin</module>
     </modules>
 
     <build>
