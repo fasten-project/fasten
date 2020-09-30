@@ -526,9 +526,9 @@ public class DataExtractor {
                     resolvedExclusionArtifact = replacePropertyReferences(
                             exclusion.artifactId, properties, pom);
                 }
-                resolvedExclusions.set(j, new Dependency.Exclusion(
-                        resolvedExclusionArtifact, resolvedExclusionGroup
-                ));
+                resolvedExclusions.set(j,
+                        new Dependency.Exclusion(resolvedExclusionGroup, resolvedExclusionArtifact)
+                );
             }
             var resolvedScope = dep.scope;
             if (dep.scope.contains("$")) {
@@ -650,8 +650,8 @@ public class DataExtractor {
                                 .selectSingleNode("./*[local-name()='groupId']");
                         if (exclusionArtifactNode != null && exclusionGroupNode != null) {
                             exclusions.add(new Dependency.Exclusion(
-                                    exclusionArtifactNode.getText(),
-                                    exclusionGroupNode.getText()
+                                    exclusionGroupNode.getText(),
+                                    exclusionArtifactNode.getText()
                             ));
                         }
                     }

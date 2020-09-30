@@ -129,7 +129,7 @@ public class MavenResolver implements Runnable {
                     dbContext);
             dependencyTree = filterOptionalDependencies(dependencyTree);
             dependencyTree = filterDependencyTreeByScope(dependencyTree);
-            dependencyTree = filterDependencyTreeByExclusions(dependencyTree);
+            dependencyTree = filterExcludedDependencies(dependencyTree);
             var currentDependencySet = collectDependencyTree(dependencyTree);
             if (timestamp != -1) {
                 currentDependencySet = filterDependenciesByTimestamp(dependencySet,
@@ -185,9 +185,21 @@ public class MavenResolver implements Runnable {
         return dependencyTree;
     }
 
-    public DependencyTree filterDependencyTreeByExclusions(DependencyTree dependencyTree) {
-        // TODO: Implement
-        return dependencyTree;
+    public DependencyTree filterExcludedDependencies(DependencyTree dependencyTree) {
+        return filterExcludedDependenciesRecursively(dependencyTree, new HashSet<>());
+    }
+
+    private DependencyTree filterExcludedDependenciesRecursively(
+            DependencyTree dependencyTree, Set<Dependency.Exclusion> exclusions) {
+        exclusions.addAll(dependencyTree.artifact.exclusions);
+        var filteredDependencies = new ArrayList<DependencyTree>();
+        for (var childTree : dependencyTree.dependencies) {
+            if (!exclusions.contains(new Dependency.Exclusion(childTree.artifact.groupId,
+                    childTree.artifact.artifactId))) {
+                filteredDependencies.add(filterExcludedDependenciesRecursively(childTree, exclusions));
+            }
+        }
+        return new DependencyTree(dependencyTree.artifact, filteredDependencies);
     }
 
     public Set<Dependency> collectDependencyTree(DependencyTree dependencyTree) {

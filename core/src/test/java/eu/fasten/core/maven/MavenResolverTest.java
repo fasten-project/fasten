@@ -158,6 +158,20 @@ public class MavenResolverTest {
     }
 
     @Test
+    public void filterExcludedDependenciesTest() {
+        var noExcludedDependenciesTree = new DependencyTree(new Dependency("junit:junit:4.12"),
+                List.of(new DependencyTree(new Dependency("org.hamcrest:hamcrest-core:1.2"), emptyList()))
+        );
+        assertEquals(noExcludedDependenciesTree, mavenResolver.filterOptionalDependencies(noExcludedDependenciesTree));
+
+        var excludedDependenciesTree = new DependencyTree(new Dependency("junit", "junit", "4.12", List.of(new Dependency.Exclusion("excluded", "dependency")), "", false, "", ""),
+                List.of(new DependencyTree(new Dependency("org.hamcrest","hamcrest-core","1.2"),
+                        List.of(new DependencyTree(new Dependency("excluded", "dependency", "1"),
+                                List.of(new DependencyTree(new Dependency("foo:bar:42"), emptyList())))))));
+        assertEquals(noExcludedDependenciesTree, mavenResolver.filterExcludedDependencies(excludedDependenciesTree));
+    }
+
+    @Test
     public void filterDependenciesByTimestampTest() {
         class DataProvider implements MockDataProvider {
             @Override

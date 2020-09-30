@@ -392,12 +392,12 @@ public class Dependency {
          * Constructor for Exclusion object.
          * Exclusion defines a dependency which must be excluded from transitive dependencies.
          *
-         * @param artifactId artifactId of excluded Maven coordinate
          * @param groupId    groupId of excluded Maven coordinate
+         * @param artifactId artifactId of excluded Maven coordinate
          */
-        public Exclusion(final String artifactId, final String groupId) {
-            this.artifactId = artifactId;
+        public Exclusion(final String groupId, final String artifactId) {
             this.groupId = groupId;
+            this.artifactId = artifactId;
         }
 
         @Override
@@ -422,8 +422,8 @@ public class Dependency {
          */
         public JSONObject toJSON() {
             final var json = new JSONObject();
-            json.put("artifactId", this.artifactId);
             json.put("groupId", this.groupId);
+            json.put("artifactId", this.artifactId);
             return json;
         }
 
@@ -434,9 +434,21 @@ public class Dependency {
          * @return Exclusion object
          */
         public static Exclusion fromJSON(JSONObject json) {
-            var artifactId = json.getString("artifactId");
             var groupId = json.getString("groupId");
-            return new Exclusion(artifactId, groupId);
+            var artifactId = json.getString("artifactId");
+            return new Exclusion(groupId, artifactId);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = artifactId != null ? artifactId.hashCode() : 0;
+            result = 31 * result + (groupId != null ? groupId.hashCode() : 0);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return toJSON().toString();
         }
     }
 }
