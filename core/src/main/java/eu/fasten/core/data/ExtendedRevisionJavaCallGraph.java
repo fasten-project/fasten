@@ -30,17 +30,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *
      * @param builder builder for {@link ExtendedRevisionJavaCallGraph}
      */
-    private ExtendedRevisionJavaCallGraph(final ExtendedBuilder builder) {
-        this.forge = builder.forge;
-        this.product = builder.product;
-        this.version = builder.version;
-        this.timestamp = builder.timestamp;
-        this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
-        this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
-        this.cgGenerator = builder.cgGenerator;
-        this.classHierarchy = builder.classHierarchy;
-        this.graph = builder.graph;
-        this.nodeCount = builder.nodeCount;
+    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<Map<JavaScope, Map<FastenURI, JavaType>>> builder) {
+        super(builder);
     }
 
     /**
@@ -78,8 +69,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *
      * @return created builder
      */
-    public static ExtendedBuilder extendedBuilder() {
-        return new ExtendedBuilder();
+    public static ExtendedBuilderJava extendedBuilder() {
+        return new ExtendedBuilderJava();
     }
 
     /**
@@ -157,65 +148,4 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         return result;
     }
 
-    /**
-     * Builder for {@link ExtendedRevisionJavaCallGraph}.
-     */
-    public static final class ExtendedBuilder {
-
-        private String forge;
-        private String product;
-        private String version;
-        private String cgGenerator;
-        private long timestamp;
-        private Map<JavaScope, Map<FastenURI, JavaType>> classHierarchy;
-        private Graph graph;
-        private int nodeCount;
-
-        private ExtendedBuilder() {
-        }
-
-        public ExtendedBuilder nodeCount(final int nodeCount) {
-            this.nodeCount = nodeCount;
-            return this;
-        }
-
-        public ExtendedBuilder forge(final String forge) {
-            this.forge = forge;
-            return this;
-        }
-
-        public ExtendedBuilder product(final String product) {
-            this.product = product;
-            return this;
-        }
-
-        public ExtendedBuilder version(final String version) {
-            this.version = version;
-            return this;
-        }
-
-        public ExtendedBuilder cgGenerator(final String cgGenerator) {
-            this.cgGenerator = cgGenerator;
-            return this;
-        }
-
-        public ExtendedBuilder timestamp(final long timestamp) {
-            this.timestamp = timestamp;
-            return this;
-        }
-
-        public ExtendedBuilder graph(final Graph graph) {
-            this.graph = graph;
-            return this;
-        }
-
-        public ExtendedBuilder classHierarchy(final Map<JavaScope, Map<FastenURI, JavaType>> cha) {
-            this.classHierarchy = cha;
-            return this;
-        }
-
-        public ExtendedRevisionJavaCallGraph build() {
-            return new ExtendedRevisionJavaCallGraph(this);
-        }
-    }
 }

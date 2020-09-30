@@ -24,7 +24,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class ExtendedRevisionCallGraph<A extends Map<?,?>> {
+public abstract class ExtendedRevisionCallGraph<A> {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
 
@@ -83,6 +83,24 @@ public abstract class ExtendedRevisionCallGraph<A extends Map<?,?>> {
     protected ExtendedRevisionCallGraph() {}
 
     /**
+     * Creates {@link ExtendedRevisionJavaCallGraph} with the given builder.
+     *
+     * @param builder builder for {@link ExtendedRevisionJavaCallGraph}
+     */
+    protected ExtendedRevisionCallGraph(final ExtendedBuilder<A> builder) {
+        this.forge = builder.getForge();
+        this.product = builder.getProduct();
+        this.version = builder.getVersion();
+        this.timestamp = builder.getTimeStamp();
+        this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
+        this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
+        this.cgGenerator = builder.getCgGenerator();
+        this.classHierarchy = builder.getClassHierarchy();
+        this.graph = builder.getGraph();
+        this.nodeCount = builder.getNodeCount();
+    }
+
+    /**
      * Creates {@link ExtendedRevisionCallGraph} with the given data.
      *
      * @param forge          the forge.
@@ -96,7 +114,7 @@ public abstract class ExtendedRevisionCallGraph<A extends Map<?,?>> {
      *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
-    public ExtendedRevisionCallGraph(final String forge, final String product, final String version,
+    protected ExtendedRevisionCallGraph(final String forge, final String product, final String version,
                                      final long timestamp, int nodeCount, final String cgGenerator,
                                      final A classHierarchy,
                                      final Graph graph) {
@@ -117,7 +135,7 @@ public abstract class ExtendedRevisionCallGraph<A extends Map<?,?>> {
      *
      * @param json JSONObject of a revision call graph.
      */
-    public ExtendedRevisionCallGraph(final JSONObject json) throws JSONException {
+    protected ExtendedRevisionCallGraph(final JSONObject json) throws JSONException {
         this.forge = json.getString("forge");
         this.product = json.getString("product");
         this.version = json.getString("version");
@@ -174,6 +192,14 @@ public abstract class ExtendedRevisionCallGraph<A extends Map<?,?>> {
     public abstract Map<Integer, JavaNode> mapOfAllMethods();
 
     /**
+     * Produces the JSON representation of class hierarchy.
+     *
+     * @param cha class hierarchy
+     * @return the JSON representation
+     */
+    public abstract JSONObject classHierarchyToJSON(final A cha);
+
+    /**
      * Checks whether this {@link ExtendedRevisionCallGraph} is empty, e.g. has no calls.
      *
      * @return true if this {@link ExtendedRevisionCallGraph} is empty
@@ -183,14 +209,6 @@ public abstract class ExtendedRevisionCallGraph<A extends Map<?,?>> {
                 && this.graph.getExternalCalls().isEmpty()
                 && this.graph.getResolvedCalls().isEmpty();
     }
-
-    /**
-     * Produces the JSON representation of class hierarchy.
-     *
-     * @param cha class hierarchy
-     * @return the JSON representation
-     */
-    public abstract JSONObject classHierarchyToJSON(final A cha);
 
     /**
      * Produces the JSON representation of this {@link ExtendedRevisionCallGraph}.
