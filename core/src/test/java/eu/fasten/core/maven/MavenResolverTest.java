@@ -177,13 +177,13 @@ public class MavenResolverTest {
         var noOptionalDependenciesTree = new DependencyTree(new Dependency("junit:junit:4.12"),
                 List.of(new DependencyTree(new Dependency("org.hamcrest:hamcrest-core:1.2"), emptyList()))
         );
-        assertEquals(noOptionalDependenciesTree, mavenResolver.filterOptionalDependencies(noOptionalDependenciesTree));
-
+        assertEquals(noOptionalDependenciesTree, mavenResolver.filterDependencyTreeByScope(noOptionalDependenciesTree, List.of("runtime", "compile", "provided")));
         var testDependenciesTree = new DependencyTree(new Dependency("junit:junit:4.12"),
                 List.of(new DependencyTree(new Dependency("org.hamcrest:hamcrest-core:1.2"),
                         List.of(new DependencyTree(new Dependency("optional", "dependency", "1", emptyList(), "test", false, "", ""),
                                 List.of(new DependencyTree(new Dependency("foo:bar:42"), emptyList())))))));
-        assertEquals(noOptionalDependenciesTree, mavenResolver.filterDependencyTreeByScope(testDependenciesTree));
+        assertEquals(noOptionalDependenciesTree, mavenResolver.filterDependencyTreeByScope(testDependenciesTree, List.of("runtime", "compile", "provided")));
+        assertEquals(testDependenciesTree, mavenResolver.filterDependencyTreeByScope(testDependenciesTree, List.of("runtime", "compile", "provided", "test")));
     }
 
     @Test

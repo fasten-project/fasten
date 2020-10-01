@@ -63,6 +63,13 @@ public class MavenResolver implements Runnable {
             defaultValue = "-1")
     protected long timestamp;
 
+    @CommandLine.Option(names = {"-s", "--scopes"},
+            paramLabel = "SCOPES",
+            description = "List of scopes to use for resolution (separated by \",\")",
+            defaultValue = "compile,runtime,provided",
+            split = ",")
+    protected List<String> scopes;
+
     @CommandLine.Option(names = {"-d", "--database"},
             paramLabel = "DB_URL",
             description = "Database URL for connection",
@@ -95,7 +102,7 @@ public class MavenResolver implements Runnable {
                 return;
             }
             var dependencySet = this.resolveFullDependencySet(group, artifact, version,
-                    timestamp, onlineMode, dbContext);
+                    timestamp, scopes, onlineMode, dbContext);
             System.out.println("--------------------------------------------------");
             System.out.println("Maven coordinate:");
             System.out.println(group + Constants.mvnCoordinateSeparator + artifact
@@ -113,7 +120,8 @@ public class MavenResolver implements Runnable {
 
     public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
                                                     String version, long timestamp,
-                                                    boolean onlineMode, DSLContext dbContext) {
+                                                    List<String> scopes, boolean onlineMode,
+                                                    DSLContext dbContext) {
         var parents = new HashSet<Dependency>();
         parents.add(new Dependency(groupId, artifactId, version));
         var parent = this.getParentArtifact(groupId, artifactId, version, dbContext);
@@ -128,7 +136,7 @@ public class MavenResolver implements Runnable {
                     parentArtifact.getArtifactId(), parentArtifact.getVersion(), onlineMode,
                     dbContext);
             dependencyTree = filterOptionalDependencies(dependencyTree);
-            dependencyTree = filterDependencyTreeByScope(dependencyTree);
+            dependencyTree = filterDependencyTreeByScope(dependencyTree, scopes);
             dependencyTree = filterExcludedDependencies(dependencyTree);
             var currentDependencySet = collectDependencyTree(dependencyTree);
             if (timestamp != -1) {
@@ -180,11 +188,13 @@ public class MavenResolver implements Runnable {
         return new DependencyTree(dependencyTree.artifact, filteredDependencies);
     }
 
-    public DependencyTree filterDependencyTreeByScope(DependencyTree dependencyTree) {
+    public DependencyTree filterDependencyTreeByScope(DependencyTree dependencyTree,
+                                                      List<String> scopes) {
         var filteredDependencies = new ArrayList<DependencyTree>();
         for (var childTree : dependencyTree.dependencies) {
-            if (!childTree.artifact.scope.equals("test")) {
-                filteredDependencies.add(filterDependencyTreeByScope(childTree));
+            if (childTree.artifact.scope == null || childTree.artifact.scope.isEmpty()
+                    || scopes.contains(childTree.artifact.scope)) {
+                filteredDependencies.add(filterDependencyTreeByScope(childTree, scopes));
             }
         }
         return new DependencyTree(dependencyTree.artifact, filteredDependencies);
