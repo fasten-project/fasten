@@ -19,7 +19,9 @@ The FASTEN Rest API Plugin is a tool to expose canned queries from the [Metadata
 - [Response codes table](design/response_codes.md)
 - ~~API specifications~~
 
-<!-- TODO ## Arguments -->
+## Arguments
+- `-h` `--help` Show this help message and exit.
+- `-p` `--port` REST server port.
 
 <!-- TODO ## Usage -->
 

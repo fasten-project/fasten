@@ -23,6 +23,12 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "RestAPIPlugin")
 public class Main implements Runnable {
 
+    @CommandLine.Option(names = {"-p", "--port"},
+            paramLabel = "port",
+            description = "REST server port",
+            defaultValue = "8080")
+    int port;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -30,7 +36,7 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var restAPIPlugin = new RestAPIPlugin.RestAPIExtension();
+        var restAPIPlugin = new RestAPIPlugin.RestAPIExtension(port);
         restAPIPlugin.start();
     }
 }

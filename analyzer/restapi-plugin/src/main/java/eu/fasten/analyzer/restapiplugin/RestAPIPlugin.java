@@ -46,12 +46,6 @@ public class RestAPIPlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(RestAPIPlugin.class.getName());
 
         /**
-         * Port to which the REST server will be exposed.
-         * TODO Make it an argument.
-         */
-        protected static final int SERVER_PORT = 8080;
-
-        /**
          * Application context, a.k.a. Jetty's handler tree.
          */
         protected static final String CONTEXT_ROOT = "/";
@@ -66,14 +60,22 @@ public class RestAPIPlugin extends Plugin {
          */
         protected final Server server;
 
+        /**
+         * REST server port.
+         */
+        protected final int SERVER_PORT;
+
         private Throwable pluginError = null;
 
         /**
          * Default constructor, setting up the REST server.
          * This replaces the deployment descriptor file.
+         *
+         * @param port  REST server port.
          */
-        public RestAPIExtension() {
+        public RestAPIExtension(int port) {
             logger.info("Setting up the REST server...");
+            SERVER_PORT = port;
             server = new Server(SERVER_PORT);
             final ServletContextHandler context = new ServletContextHandler(server, CONTEXT_ROOT);
             final ServletHolder restEasyServlet = new ServletHolder(new HttpServletDispatcher());
@@ -112,7 +114,7 @@ public class RestAPIPlugin extends Plugin {
         @Override
         public void start() {
 
-            logger.info("Starting the REST server...");
+            logger.info("Starting the REST server on port " + SERVER_PORT + "...");
             try {
                 server.start();
                 server.join();
@@ -133,7 +135,7 @@ public class RestAPIPlugin extends Plugin {
             logger.info("...shutting down the REST server.");
             try {
                 server.stop();
-            } catch(Exception e) {
+            } catch (Exception e) {
                 logger.error("Couldn't stop the REST server", e);
                 setPluginError(e);
             }
