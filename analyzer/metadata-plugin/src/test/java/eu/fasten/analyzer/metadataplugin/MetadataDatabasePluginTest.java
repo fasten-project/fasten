@@ -40,7 +40,7 @@ public class MetadataDatabasePluginTest {
     @BeforeEach
     public void setUp() {
         var dslContext = Mockito.mock(DSLContext.class);
-        metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
+        metadataDBExtension = new MetadataDatabasePlugin.MetadataDBJavaExtension();
         metadataDBExtension.setTopic("fasten.OPAL.out");
         metadataDBExtension.setDBConnection(dslContext);
     }

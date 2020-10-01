@@ -57,7 +57,7 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
+        var metadataPlugin = new MetadataDatabasePlugin.MetadataDBJavaExtension();
         try {
             metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
         } catch (IllegalArgumentException | SQLException e) {

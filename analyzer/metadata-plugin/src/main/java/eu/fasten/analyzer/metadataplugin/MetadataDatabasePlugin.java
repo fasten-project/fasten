@@ -67,20 +67,20 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBExtension implements KafkaPlugin, DBConnector {
+    public static abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
-        private String consumerTopic = "fasten.OPAL.out";
-        private static DSLContext dslContext;
-        private boolean processedRecord = false;
-        private Throwable pluginError = null;
-        private final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
-        private boolean restartTransaction = false;
-        private GidGraph gidGraph = null;
-        private String outputPath;
+        protected String consumerTopic = "fasten.OPAL.out";
+        protected DSLContext dslContext;
+        protected boolean processedRecord = false;
+        protected Throwable pluginError = null;
+        protected final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
+        protected boolean restartTransaction = false;
+        protected GidGraph gidGraph = null;
+        protected String outputPath;
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
-            MetadataDBExtension.dslContext = dslContext;
+            this.dslContext = dslContext;
         }
 
         @Override
@@ -130,18 +130,8 @@ public class MetadataDatabasePlugin extends Plugin {
                 setPluginError(e);
                 return;
             }
-            final var mvnCoordinate = callgraph.product + Constants.mvnCoordinateSeparator
-                    + callgraph.version;
-            final String groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
-            final String artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
-            var version = callgraph.version;
-            var forge = callgraph.forge;
 
-            var product = artifactId + "_" + groupId + "_" + version;
-            var firstLetter = artifactId.substring(0, 1);
-            outputPath = File.separator + forge + File.separator
-                    + firstLetter + File.separator
-                    + artifactId + File.separator + product + ".json";
+            var revision = setOutputPath(callgraph);
 
             int transactionRestartCount = 0;
             do {
@@ -156,7 +146,7 @@ public class MetadataDatabasePlugin extends Plugin {
                             id = saveToDatabase(callgraph, metadataDao);
                         } catch (RuntimeException e) {
                             processedRecord = false;
-                            logger.error("Error saving to the database: '" + mvnCoordinate + "'", e);
+                            logger.error("Error saving to the database: '" + revision + "'", e);
                             setPluginError(e);
                             if (e instanceof DataAccessException) {
                                 // Database connection error
@@ -165,7 +155,7 @@ public class MetadataDatabasePlugin extends Plugin {
                                             .getNextException();
                                     setPluginError(exception);
                                 }
-                                logger.info("Restarting transaction for '" + mvnCoordinate + "'");
+                                logger.info("Restarting transaction for '" + revision + "'");
                                 // It could be a deadlock, so restart transaction
                                 restartTransaction = true;
                             } else {
@@ -176,7 +166,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         if (getPluginError() == null) {
                             processedRecord = true;
                             restartTransaction = false;
-                            logger.info("Saved the '" + mvnCoordinate + "' callgraph metadata "
+                            logger.info("Saved the '" + revision + "' callgraph metadata "
                                     + "to the database with package version ID = " + id);
                         }
                     });
@@ -201,6 +191,22 @@ public class MetadataDatabasePlugin extends Plugin {
             return outputPath;
         }
 
+        protected String setOutputPath(ExtendedRevisionCallGraph callgraph) {
+            final var revision = callgraph.product + Constants.mvnCoordinateSeparator
+                    + callgraph.version;
+            final String groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
+            final String artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
+            var version = callgraph.version;
+            var forge = callgraph.forge;
+
+            var product = artifactId + "_" + groupId + "_" + version;
+            var firstLetter = artifactId.substring(0, 1);
+            outputPath = File.separator + forge + File.separator
+                    + firstLetter + File.separator
+                    + artifactId + File.separator + product + ".json";
+            return revision;
+        }
+
         /**
          * Saves a callgraph of new format to the database to appropriate tables.
          *
@@ -208,7 +214,7 @@ public class MetadataDatabasePlugin extends Plugin {
          * @param metadataDao Data Access Object to insert records in the database
          * @return Package ID saved in the database
          */
-        public long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
+        protected long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
             // Insert package record
             final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge);
 
@@ -255,6 +261,70 @@ public class MetadataDatabasePlugin extends Plugin {
             return packageVersionId;
         }
 
+        public abstract ArrayList<CallablesRecord> instertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId);
+
+        protected abstract long insertModule(JavaType type, FastenURI fastenUri,
+                                  long packageVersionId, MetadataDao metadataDao);
+
+        protected abstract List<EdgesRecord> insertEdges(Graph graph,
+                                 Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao);
+
+        private Timestamp getProperTimestamp(long timestamp) {
+            if (timestamp == -1) {
+                return null;
+            } else {
+                if (timestamp / (1000L * 60 * 60 * 24 * 365) < 1L) {
+                    return new Timestamp(timestamp * 1000);
+                } else {
+                    return new Timestamp(timestamp);
+                }
+            }
+        }
+
+        @Override
+        public String name() {
+            return "Metadata plugin";
+        }
+
+        @Override
+        public String description() {
+            return "Metadata plugin. "
+                    + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
+                    + " and populates metadata database with consumed data"
+                    + " and writes graph of GIDs of callgraph to another Kafka topic.";
+        }
+
+        @Override
+        public String version() {
+            return "0.1.2";
+        }
+
+        @Override
+        public void start() {
+        }
+
+        @Override
+        public void stop() {
+        }
+
+        public void setPluginError(Throwable throwable) {
+            this.pluginError = throwable;
+        }
+
+        @Override
+        public Throwable getPluginError() {
+            return this.pluginError;
+        }
+
+        @Override
+        public void freeResource() {
+
+        }
+    }
+
+    @Extension
+    public static class MetadataDBJavaExtension extends MetadataDBExtension {
+
         public ArrayList<CallablesRecord> instertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
             ExtendedRevisionJavaCallGraph javaCallGraph = (ExtendedRevisionJavaCallGraph) callgraph;
             var callables = new ArrayList<CallablesRecord>();
@@ -278,7 +348,7 @@ public class MetadataDatabasePlugin extends Plugin {
             return callables;
         }
 
-        private long insertModule(JavaType type, FastenURI fastenUri,
+        protected long insertModule(JavaType type, FastenURI fastenUri,
                                   long packageVersionId, MetadataDao metadataDao) {
             // Collect metadata of the module
             var moduleMetadata = new JSONObject();
@@ -328,7 +398,7 @@ public class MetadataDatabasePlugin extends Plugin {
             return callables;
         }
 
-        private List<EdgesRecord> insertEdges(Graph graph,
+        protected List<EdgesRecord> insertEdges(Graph graph,
                                  Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
@@ -396,58 +466,6 @@ public class MetadataDatabasePlugin extends Plugin {
                 default:
                     return null;
             }
-        }
-
-        private Timestamp getProperTimestamp(long timestamp) {
-            if (timestamp == -1) {
-                return null;
-            } else {
-                if (timestamp / (1000L * 60 * 60 * 24 * 365) < 1L) {
-                    return new Timestamp(timestamp * 1000);
-                } else {
-                    return new Timestamp(timestamp);
-                }
-            }
-        }
-
-        @Override
-        public String name() {
-            return "Metadata plugin";
-        }
-
-        @Override
-        public String description() {
-            return "Metadata plugin. "
-                    + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
-                    + " and populates metadata database with consumed data"
-                    + " and writes graph of GIDs of callgraph to another Kafka topic.";
-        }
-
-        @Override
-        public String version() {
-            return "0.1.2";
-        }
-
-        @Override
-        public void start() {
-        }
-
-        @Override
-        public void stop() {
-        }
-
-        public void setPluginError(Throwable throwable) {
-            this.pluginError = throwable;
-        }
-
-        @Override
-        public Throwable getPluginError() {
-            return this.pluginError;
-        }
-
-        @Override
-        public void freeResource() {
-
         }
     }
 }
