@@ -20,7 +20,6 @@ package eu.fasten.core.maven.data;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import eu.fasten.core.data.Constants;
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
@@ -58,10 +57,10 @@ public class Dependency {
         this.artifactId = artifactId;
         this.versionConstraints = versionConstraints;
         this.exclusions = exclusions;
-        this.scope = scope;
+        this.scope = scope.toLowerCase();
         this.optional = optional;
-        this.type = type;
-        this.classifier = classifier;
+        this.type = type.toLowerCase();
+        this.classifier = classifier.toLowerCase();
     }
 
     public Dependency(final String groupId, final String artifactId, final String version,
@@ -115,7 +114,45 @@ public class Dependency {
             return false;
         }
         Dependency that = (Dependency) o;
-        return this.toCanonicalForm().equals(that.toCanonicalForm());
+        // TODO: Fix proper comparison
+//        if (!artifactId.equals(that.artifactId)) {
+//            return false;
+//        }
+//        if (!groupId.equals(that.groupId)) {
+//            return false;
+//        }
+//        if (!versionConstraints.equals(that.versionConstraints)) {
+//            return false;
+//        }
+//        if (scope.isEmpty() ^ that.scope.isEmpty()) {
+//            if (scope.isEmpty() && !that.scope.equals("compile")) {
+//                return false;
+//            }
+//            if (that.scope.isEmpty() && !scope.equals("compile")) {
+//                return false;
+//            }
+//        } else {
+//            if (!scope.equals(that.scope) ) {
+//                return false;
+//            }
+//        }
+//        if (optional != that.optional) {
+//            return false;
+//        }
+//        if (type.isEmpty() ^ that.type.isEmpty()) {
+//            if (type.isEmpty() && !that.type.equals("jar")) {
+//                return false;
+//            }
+//            if (that.type.isEmpty() && !type.equals("jar")) {
+//                return false;
+//            }
+//        } else {
+//            if (!type.equals(that.scope)) {
+//                return false;
+//            }
+//        }
+//        return classifier.equals(that.classifier);
+        return toCanonicalForm().equals(that.toCanonicalForm());
     }
 
     @Override

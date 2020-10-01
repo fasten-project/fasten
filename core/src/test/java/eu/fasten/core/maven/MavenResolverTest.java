@@ -22,7 +22,6 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
-import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -32,7 +31,6 @@ import org.jooq.tools.jdbc.MockExecuteContext;
 import org.jooq.tools.jdbc.MockResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Set;
@@ -52,13 +50,10 @@ public class MavenResolverTest {
     @Test
     public void resolveDependenciesTest() {
         class DataProvider implements MockDataProvider {
-            private int queries = 0;
+            private boolean queriesDependencies = false;
 
             @Override
             public MockResult[] execute(MockExecuteContext ctx) {
-                if (queries >= 3) {
-                    return new MockResult[]{new MockResult(0)};
-                }
                 var create = DSL.using(SQLDialect.POSTGRES);
                 var mockData = new MockResult[1];
                 var dependencyResult = create.newResult(Dependencies.DEPENDENCIES.METADATA);
@@ -73,24 +68,25 @@ public class MavenResolverTest {
                 packageVersionMetadataResult.add(create
                         .newRecord(PackageVersions.PACKAGE_VERSIONS.METADATA)
                         .values(JSONB.valueOf("{\"parentCoordinate\":\"\"}")));
-                System.err.println(ctx.sql());
                 if (ctx.sql().startsWith("select \"public\".\"dependencies\".\"metadata\"")) {
-                    mockData[0] = new MockResult(dependencyResult.size(), dependencyResult);
-                    queries++;
+                    if (!queriesDependencies) {
+                        mockData[0] = new MockResult(dependencyResult.size(), dependencyResult);
+                        queriesDependencies = true;
+                    } else {
+                        return new MockResult[]{new MockResult(0, create.newResult(Dependencies.DEPENDENCIES.METADATA))};
+                    }
                 } else if (ctx.sql().startsWith("select \"public\".\"package_versions\".\"version\"")) {
                     mockData[0] = new MockResult(packageVersionsResult.size(), packageVersionsResult);
-                    queries++;
                 } else if (ctx.sql().startsWith("select \"public\".\"package_versions\".\"metadata\"")) {
                     mockData[0] = new MockResult(packageVersionMetadataResult.size(), packageVersionMetadataResult);
-                    queries++;
                 }
                 return mockData;
             }
         }
         var dbContext = DSL.using(new MockConnection(new DataProvider()));
         var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.2"));
-//        var actual = mavenResolver.resolveFullDependencySet("junit", "junit", "4.12", 1307318400000L, false, dbContext);
-//        assertEquals(expected, actual);
+        var actual = mavenResolver.resolveFullDependencySet("junit", "junit", "4.12", 1307318400000L, List.of("compile", "runtime", "provided"), dbContext);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -100,9 +96,9 @@ public class MavenResolverTest {
 
             @Override
             public MockResult[] execute(MockExecuteContext ctx) {
+                var create = DSL.using(SQLDialect.POSTGRES);
                 if (!queried) {
                     queried = true;
-                    var create = DSL.using(SQLDialect.POSTGRES);
                     var mockData = new MockResult[1];
                     var dependencyResult = create.newResult(Dependencies.DEPENDENCIES.METADATA);
                     dependencyResult.add(create
@@ -111,14 +107,14 @@ public class MavenResolverTest {
                     mockData[0] = new MockResult(dependencyResult.size(), dependencyResult);
                     return mockData;
                 } else {
-                    return new MockResult[]{};
+                    return new MockResult[]{new MockResult(0, create.newResult(Dependencies.DEPENDENCIES.METADATA))};
                 }
             }
         }
         var dbContext = DSL.using(new MockConnection(new DataProvider()));
         var expected = new DependencyTree(new Dependency("junit", "junit", "4.12"), List.of(new DependencyTree(new Dependency("org.hamcrest", "hamcrest-core", "1.3"), emptyList())));
-//        var actual = mavenResolver.buildFullDependencyTree("junit", "junit", "4.12", false, dbContext);
-//        assertEquals(expected, actual);
+        var actual = mavenResolver.buildFullDependencyTree("junit", "junit", "4.12", dbContext);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -126,21 +122,20 @@ public class MavenResolverTest {
         class DataProvider implements MockDataProvider {
             @Override
             public MockResult[] execute(MockExecuteContext ctx) {
-                return new MockResult[]{};
+                var create = DSL.using(SQLDialect.POSTGRES);
+                return new MockResult[]{new MockResult(0, create.newResult(Dependencies.DEPENDENCIES.METADATA))};
             }
         }
         var dbContext = DSL.using(new MockConnection(new DataProvider()));
         var expected = new DependencyTree(new Dependency("hello", "world", "42"), emptyList());
-        // TODO: Fix these test
-//        var actual = mavenResolver.buildFullDependencyTree("hello", "world", "42", false, dbContext);
-//        assertEquals(expected, actual);
+        var actual = mavenResolver.buildFullDependencyTree("hello", "world", "42", dbContext);
+        assertEquals(expected, actual);
     }
 
     @Test
-    public void buildFullDependencyTreeOnlineTest() {
-        var dbContext = Mockito.mock(DSLContext.class);
-        var expected = new DependencyTree(new Dependency("junit", "junit", "4.12"), List.of(new DependencyTree(new Dependency("org.hamcrest", "hamcrest-core", "1.3"), emptyList())));
-        var actual = mavenResolver.buildFullDependencyTree("junit", "junit", "4.12", true, dbContext);
+    public void resolveFullDependencySetOnlineTest() {
+        var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.3", emptyList(), "", false, "jar", ""));
+        var actual = mavenResolver.resolveFullDependencySetOnline("junit:junit:4.12", -1, null);
         assertEquals(expected, actual);
     }
 
@@ -166,7 +161,7 @@ public class MavenResolverTest {
         assertEquals(noExcludedDependenciesTree, mavenResolver.filterOptionalDependencies(noExcludedDependenciesTree));
 
         var excludedDependenciesTree = new DependencyTree(new Dependency("junit", "junit", "4.12", List.of(new Dependency.Exclusion("excluded", "dependency")), "", false, "", ""),
-                List.of(new DependencyTree(new Dependency("org.hamcrest","hamcrest-core","1.2"),
+                List.of(new DependencyTree(new Dependency("org.hamcrest", "hamcrest-core", "1.2"),
                         List.of(new DependencyTree(new Dependency("excluded", "dependency", "1"),
                                 List.of(new DependencyTree(new Dependency("foo:bar:42"), emptyList())))))));
         assertEquals(noExcludedDependenciesTree, mavenResolver.filterExcludedDependencies(excludedDependenciesTree));

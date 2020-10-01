@@ -94,15 +94,24 @@ public class MavenResolver implements Runnable {
     @Override
     public void run() {
         if (artifact != null && group != null && version != null) {
-            DSLContext dbContext;
-            try {
-                dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
-            } catch (SQLException e) {
-                System.err.println("Could not connect to the database: " + e.getMessage());
-                return;
+            DSLContext dbContext = null;
+            if (!onlineMode && timestamp != -1) {
+                try {
+                    dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
+                } catch (SQLException e) {
+                    System.err.println("Could not connect to the database: " + e.getMessage());
+                    return;
+                }
             }
-            var dependencySet = this.resolveFullDependencySet(group, artifact, version,
-                    timestamp, scopes, onlineMode, dbContext);
+            Set<Dependency> dependencySet;
+            if (!onlineMode) {
+                dependencySet = this.resolveFullDependencySet(group, artifact, version,
+                        timestamp, scopes, dbContext);
+            } else {
+                var coordinate = group + Constants.mvnCoordinateSeparator + artifact
+                        + Constants.mvnCoordinateSeparator + version;
+                dependencySet = this.resolveFullDependencySetOnline(coordinate, timestamp, dbContext);
+            }
             System.out.println("--------------------------------------------------");
             System.out.println("Maven coordinate:");
             System.out.println(group + Constants.mvnCoordinateSeparator + artifact
@@ -118,10 +127,20 @@ public class MavenResolver implements Runnable {
         }
     }
 
+    /**
+     * Creates and resolves a full dependency set of the given Maven artifact.
+     *
+     * @param groupId    groupId of the Maven artifact to resolve
+     * @param artifactId artifactId of the Maven artifact to resolve
+     * @param version    version of the Maven artifact to resolve
+     * @param timestamp  timestamp to perform version filtering (-1 in order not to filter)
+     * @param scopes     Dependency scopes to use (other scopes will be filtered out)
+     * @param dbContext  Database connection context
+     * @return Set of dependencies including transitive dependencies
+     */
     public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
                                                     String version, long timestamp,
-                                                    List<String> scopes, boolean onlineMode,
-                                                    DSLContext dbContext) {
+                                                    List<String> scopes, DSLContext dbContext) {
         var parents = new HashSet<Dependency>();
         parents.add(new Dependency(groupId, artifactId, version));
         var parent = this.getParentArtifact(groupId, artifactId, version, dbContext);
@@ -133,37 +152,38 @@ public class MavenResolver implements Runnable {
         var dependencySet = new HashSet<Dependency>();
         for (var parentArtifact : parents) {
             var dependencyTree = buildFullDependencyTree(parentArtifact.getGroupId(),
-                    parentArtifact.getArtifactId(), parentArtifact.getVersion(), onlineMode,
+                    parentArtifact.getArtifactId(), parentArtifact.getVersion(),
                     dbContext);
             dependencyTree = filterOptionalDependencies(dependencyTree);
             dependencyTree = filterDependencyTreeByScope(dependencyTree, scopes);
             dependencyTree = filterExcludedDependencies(dependencyTree);
             var currentDependencySet = collectDependencyTree(dependencyTree);
+            currentDependencySet.remove(new Dependency(groupId, artifactId, version));
             if (timestamp != -1) {
-                currentDependencySet = filterDependenciesByTimestamp(dependencySet,
+                currentDependencySet = filterDependenciesByTimestamp(currentDependencySet,
                         new Timestamp(timestamp), dbContext);
             }
             dependencySet.addAll(currentDependencySet);
         }
-        dependencySet.remove(new Dependency(groupId, artifactId, version));
         return dependencySet;
     }
 
+    /**
+     * Builds a full dependency tree using data from the database.
+     *
+     * @param groupId    groupId of the artifact to resolve
+     * @param artifactId artifactId of the artifact to resolve
+     * @param version    version of the artifact to resolve
+     * @param dbContext  Database connection context
+     * @return Dependency tree with all transitive dependencies
+     */
     public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
-                                                  boolean onlineMode, DSLContext dbContext) {
+                                                  DSLContext dbContext) {
         var artifact = new Dependency(groupId, artifactId, version);
-        List<Dependency> dependencies = new ArrayList<>();
-        if (onlineMode) {
-            var parentCoordinate = artifact.getGroupId()
-                    + Constants.mvnCoordinateSeparator + artifact.getArtifactId()
-                    + Constants.mvnCoordinateSeparator + artifact.getVersion();
-            dependencies.addAll(this.getDependenciesOnline(parentCoordinate));
-        } else {
-            dependencies.addAll(this.getArtifactDependenciesFromDatabase(
-                    artifact.getGroupId(), artifact.getArtifactId(),
-                    artifact.getVersion(), dbContext
-            ));
-        }
+        List<Dependency> dependencies = new ArrayList<>(this.getArtifactDependenciesFromDatabase(
+                artifact.getGroupId(), artifact.getArtifactId(),
+                artifact.getVersion(), dbContext
+        ));
         DependencyTree dependencyTree;
         if (dependencies.isEmpty()) {
             dependencyTree = new DependencyTree(artifact, new ArrayList<>());
@@ -171,13 +191,19 @@ public class MavenResolver implements Runnable {
             var childTrees = new ArrayList<DependencyTree>();
             for (var dep : dependencies) {
                 childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
-                        dep.getVersion(), onlineMode, dbContext));
+                        dep.getVersion(), dbContext));
             }
             dependencyTree = new DependencyTree(artifact, childTrees);
         }
         return dependencyTree;
     }
 
+    /**
+     * Filters out the optional dependencies from the dependency tree.
+     *
+     * @param dependencyTree Dependency tree to filter
+     * @return Same dependency tree as given but without any optional dependencies
+     */
     public DependencyTree filterOptionalDependencies(DependencyTree dependencyTree) {
         var filteredDependencies = new ArrayList<DependencyTree>();
         for (var childTree : dependencyTree.dependencies) {
@@ -188,18 +214,39 @@ public class MavenResolver implements Runnable {
         return new DependencyTree(dependencyTree.artifact, filteredDependencies);
     }
 
+    /**
+     * Filters a dependency tree by dependency scope.
+     *
+     * @param dependencyTree Dependency tree to filter
+     * @param scopes         List of scopes with which the dependencies will be left in tree.
+     *                       If dependency scope is not in the list of scopes,
+     *                       it will be removed from the dependency tree tree
+     * @return Same dependency tree as given
+     * but with only those dependencies whose scopes are in the list
+     */
     public DependencyTree filterDependencyTreeByScope(DependencyTree dependencyTree,
                                                       List<String> scopes) {
         var filteredDependencies = new ArrayList<DependencyTree>();
         for (var childTree : dependencyTree.dependencies) {
-            if (childTree.artifact.scope == null || childTree.artifact.scope.isEmpty()
-                    || scopes.contains(childTree.artifact.scope)) {
+            var dependencyScope = childTree.artifact.scope;
+            if (dependencyScope == null || dependencyScope.isEmpty()) {
+                dependencyScope = "compile";
+            }
+            if (scopes.contains(dependencyScope)) {
                 filteredDependencies.add(filterDependencyTreeByScope(childTree, scopes));
             }
         }
         return new DependencyTree(dependencyTree.artifact, filteredDependencies);
     }
 
+    /**
+     * Filters out excluded dependencies from the dependency tree.
+     * If some dependency is in the list of exclusions of its (transitive) parent,
+     * it will be removed from the dependency tree.
+     *
+     * @param dependencyTree Dependency tree to filter.
+     * @return Same dependency tree as given but without excluded dependencies
+     */
     public DependencyTree filterExcludedDependencies(DependencyTree dependencyTree) {
         return filterExcludedDependenciesRecursively(dependencyTree, new HashSet<>());
     }
@@ -217,6 +264,12 @@ public class MavenResolver implements Runnable {
         return new DependencyTree(dependencyTree.artifact, filteredDependencies);
     }
 
+    /**
+     * Transforms a dependency tree into set.
+     *
+     * @param dependencyTree Dependency tree to transform
+     * @return A set of all dependencies from the given dependency tree
+     */
     public Set<Dependency> collectDependencyTree(DependencyTree dependencyTree) {
         var dependencySet = new HashSet<Dependency>();
         dependencySet.add(dependencyTree.artifact);
@@ -226,6 +279,15 @@ public class MavenResolver implements Runnable {
         return dependencySet;
     }
 
+    /**
+     * Retrieves a parent Maven artifact from the database.
+     *
+     * @param groupId    groupId of the artifact to find its parent
+     * @param artifactId artifactId of the artifact to find its parent
+     * @param version    version of the artifact to find its parent
+     * @param context    Database connection context
+     * @return a dependency/maven coordinate which is parent coordinate of the given one
+     */
     public Dependency getParentArtifact(String groupId, String artifactId, String version,
                                         DSLContext context) {
         var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
@@ -253,29 +315,15 @@ public class MavenResolver implements Runnable {
         return new Dependency(parentCoordinate);
     }
 
-    public List<Dependency> getDependenciesOnline(String mavenCoordinate) {
-        var artifacts = Arrays.stream(
-                Maven.resolver()
-                        .resolve(mavenCoordinate)
-                        .withoutTransitivity()
-                        .asResolvedArtifact()
-        ).collect(Collectors.toList());
-        if (artifacts.size() < 1) {
-            throw new RuntimeException("Could not resolve artifact " + mavenCoordinate);
-        }
-        return Arrays.stream(artifacts.get(0).getDependencies())
-                .map(d -> new Dependency(
-                        d.getCoordinate().getGroupId(),
-                        d.getCoordinate().getArtifactId(),
-                        d.getResolvedVersion(),
-                        new ArrayList<>(),
-                        d.getScope().name(),
-                        d.isOptional(),
-                        d.getCoordinate().getType().toString(),
-                        d.getCoordinate().getClassifier()))
-                .collect(Collectors.toList());
-    }
-
+    /**
+     * Retrieve all direct dependencies of certain Maven artifact from the database.
+     *
+     * @param groupId    groupId of the artifact to find its dependencies
+     * @param artifactId artifactId of the artifact to find its dependencies
+     * @param version    version of the artifact to find its dependencies
+     * @param context    Database connection context
+     * @return A list of direct dependencies of the given Maven artifact
+     */
     public List<Dependency> getArtifactDependenciesFromDatabase(String groupId, String artifactId,
                                                                 String version, DSLContext context) {
         var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
@@ -292,6 +340,18 @@ public class MavenResolver implements Runnable {
         return result.map(r -> Dependency.fromJSON(new JSONObject(r.component1().data())));
     }
 
+    /**
+     * Filters dependency versions by timestamp.
+     * If the version of some dependency in the given dependency set was released later
+     * than the provided timestamp then this dependency version will be downgraded
+     * to use latest version which was release earlier or at the given timestamp.
+     *
+     * @param dependencies Set of dependencies to check
+     * @param timestamp    Timestamp to filter by
+     * @param context      Database connection context
+     * @return same dependency set as given one
+     * but with dependency versions released no later than the given timestamp
+     */
     public Set<Dependency> filterDependenciesByTimestamp(Set<Dependency> dependencies,
                                                          Timestamp timestamp, DSLContext context) {
         var filteredDependencies = new HashSet<Dependency>(dependencies.size());
@@ -320,5 +380,42 @@ public class MavenResolver implements Runnable {
             }
         }
         return filteredDependencies;
+    }
+
+    /**
+     * Resolves full dependency set online using ShrinkWrap's MavenResolver.
+     *
+     * @param mavenCoordinate Maven coordinate to resolve in the form of groupId:artifactId:version
+     * @param timestamp       Timestamp for filtering dependency versions (-1 in order not to filter)
+     * @param dbContext       Database connection context (needed only for filtering by timestamp)
+     * @return A dependency set (including all transitive dependencies) of given Maven coordinate
+     */
+    public Set<Dependency> resolveFullDependencySetOnline(String mavenCoordinate, long timestamp,
+                                                          DSLContext dbContext) {
+        var artifacts = Arrays.stream(
+                Maven.resolver()
+                        .resolve(mavenCoordinate)
+                        .withTransitivity()
+                        .asResolvedArtifact()
+        ).collect(Collectors.toList());
+        if (artifacts.size() < 1) {
+            throw new RuntimeException("Could not resolve artifact " + mavenCoordinate);
+        }
+        var dependencySet = Arrays.stream(artifacts.get(0).getDependencies())
+                .map(d -> new Dependency(
+                        d.getCoordinate().getGroupId(),
+                        d.getCoordinate().getArtifactId(),
+                        d.getResolvedVersion(),
+                        new ArrayList<>(),
+                        d.getScope().name(),
+                        d.isOptional(),
+                        d.getCoordinate().getType().toString(),
+                        d.getCoordinate().getClassifier()))
+                .collect(Collectors.toSet());
+        if (timestamp != -1) {
+            dependencySet = this.filterDependenciesByTimestamp(
+                    dependencySet, new Timestamp(timestamp), dbContext);
+        }
+        return dependencySet;
     }
 }
