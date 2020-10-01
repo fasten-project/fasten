@@ -19,7 +19,11 @@
 package eu.fasten.analyzer.restapiplugin;
 
 import eu.fasten.core.plugins.DBConnector;
-import org.apache.commons.lang.NotImplementedException;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jooq.DSLContext;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -33,10 +37,54 @@ public class RestAPIPlugin extends Plugin {
         super(wrapper);
     }
 
+    /**
+     * RESTeasy + Jetty REST API.
+     */
     @Extension
     public static class RestAPIExtension implements DBConnector {
 
         private final Logger logger = LoggerFactory.getLogger(RestAPIPlugin.class.getName());
+
+        /**
+         * Port to which the REST server will be exposed.
+         * TODO Make it an argument.
+         */
+        protected static final int SERVER_PORT = 8080;
+
+        /**
+         * Application context, a.k.a. Jetty's handler tree.
+         */
+        protected static final String CONTEXT_ROOT = "/";
+
+        /**
+         * RESTeasy's HttpServletDispatcher at `APPLICATION_PATH`/*.
+         */
+        protected static final String APPLICATION_PATH = "/api";
+
+        /**
+         * REST server object.
+         */
+        protected final Server server;
+
+        private Throwable pluginError = null;
+
+        /**
+         * Default constructor, setting up the REST server.
+         * This replaces the deployment descriptor file.
+         */
+        public RestAPIExtension() {
+            logger.info("Setting up the REST server...");
+            server = new Server(SERVER_PORT);
+            final ServletContextHandler context = new ServletContextHandler(server, CONTEXT_ROOT);
+            final ServletHolder restEasyServlet = new ServletHolder(new HttpServletDispatcher());
+            restEasyServlet.setInitParameter("resteasy.servlet.mapping.prefix", APPLICATION_PATH);
+            restEasyServlet.setInitParameter("javax.ws.rs.Application",
+                    "eu.fasten.analyzer.restapiplugin.api.RestApplication");
+            context.addServlet(restEasyServlet, APPLICATION_PATH + "/*");
+            final ServletHolder defaultServlet = new ServletHolder(new DefaultServlet()); // default at context root
+            context.addServlet(defaultServlet, CONTEXT_ROOT);
+            logger.info("...REST server configuration done.");
+        }
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
@@ -58,21 +106,46 @@ public class RestAPIPlugin extends Plugin {
             return "0.1.0";
         }
 
+        /**
+         * Starts the REST server and joins its thread.
+         */
         @Override
         public void start() {
-            logger.info("REST API plugin!");
+
+            logger.info("Starting the REST server...");
+            try {
+                server.start();
+                server.join();
+            } catch (InterruptedException e) {
+                logger.error("REST API server thread has been interrupted", e);
+                setPluginError(e);
+            } catch (Exception e) {
+                logger.error("Error while starting the REST API server", e);
+                setPluginError(e);
+            }
         }
 
+        /**
+         * Stops the REST server.
+         */
         @Override
         public void stop() {
+            logger.info("...shutting down the REST server.");
+            try {
+                server.stop();
+            } catch(Exception e) {
+                logger.error("Couldn't stop the REST server", e);
+                setPluginError(e);
+            }
         }
 
         @Override
         public Throwable getPluginError() {
-            return new NotImplementedException().getThrowable(0);
+            return this.pluginError;
         }
 
         public void setPluginError(Throwable throwable) {
+            this.pluginError = throwable;
         }
 
         @Override
