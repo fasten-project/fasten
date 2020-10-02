@@ -5,18 +5,22 @@
 | Resource | Method | Req. body | Query params | Response codes | Response body | Notes |
 |-|-|-|-|-|-|-|
 | `/mvn/packages/{pkg}/versions` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: Package versions returned</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li></ul> | `(package_versions:* ∪ callables:metadata)` | — |
-| `/mvn/packages/{pkg}/{pkg_ver}` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li></ul> | `package_versions:(* \ metadata)` | — |
+| `/mvn/packages/{pkg}/{pkg_ver}` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li></ul> | `package_versions:*` | — |
 | `/mvn/packages/{pkg}/{pkg_ver}/metadata` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li></ul> | `package_versions:metadata` | — |
-| `/mvn/packages/{pkg}/{pkg_ver}/vulnerabilities` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li></ul> | `callables:metadata` | — |
 | `/mvn/packages/{pkg}/{pkg_ver}/callgraph` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li></ul> | `edges:(source_id, target_id)` | Could be retrieved directly from graph DB |
+<!--
 | `/mvn/packages/{pkg}/{pkg_ver}/callgraph` | `GET` | — | `limit`: `integer`, `offset`: `integer`, `resolve`: `dateTime`, `full`: `boolean` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`400`: Invalid timestamp</li><li>`404`: Package not found</li><li>`404`: Package version not found</li></ul> | ? | Graph stichting is a WIP. Will be retrievable through a simple `mvn` call. |
+| `/mvn/packages/{pkg}/{pkg_ver}/vulnerabilities` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li></ul> | `callables:metadata` | — |
+-->
 
 ## Dependencies
 
 | Resource | Method | Req. body | Query params | Response codes | Response body | Notes |
 |-|-|-|-|-|-|-|
 | `/mvn/packages/{pkg}/{pkg_ver}/deps` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li></ul> | `dependencies:*` | — |
+<!--
 | `/mvn/packages/{pkg}/{pkg_ver}/deps` | `GET` | — | `limit`: `integer`, `offset`: `integer`, `resolve`: `dateTime` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`400`: Invalid timestamp</li><li>`404`: Package not found</li><li>`404`: Package version not found</li></ul> | ? | Depends on `/mvn/packages/{pkg}/{pkg_ver}/callgraph`. |
+-->
 
 ## Modules
 
@@ -41,9 +45,11 @@ Callable ID = module ID (package version) + FASTEN URI + other
 | Resource | Method | Req. body | Query params | Response codes | Response body | Notes |
 |-|-|-|-|-|-|-|
 | `/mvn/packages/{pkg}/{pkg_ver}/callables` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li></ul> | `callables:*` | Retrievably directly from graph DB, one-line query. |
-| `/mvn/packages/{pkg}/{pkg_ver}/{fasten_uri}/vulnerabilities` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li><li>`404`: FASTEN URI not found</li></ul> | `callables:metadata` | Vulnerabilities only. |
 | `/mvn/packages/{pkg}/{pkg_ver}/{fasten_uri}/metadata` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li><li>`404`: FASTEN URI not found</li></ul> | `callables:metadata` | All metadata. |
+<!--
 | `/mvn/packages/{pkg}/{pkg_ver}/{fasten_uri}/reach` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li><li>`404`: FASTEN URI not found</li></ul> | `dependencies:dependency_id` | There should be a query for this already. |
+| `/mvn/packages/{pkg}/{pkg_ver}/{fasten_uri}/vulnerabilities` | `GET` | — | `limit`: `integer`, `offset`: `integer` | <ul><li>`200`: OK</li><li>`400`: Invalid limit value</li><li>`400`: Invalid offset value</li><li>`404`: Package not found</li><li>`404`: Package version not found</li><li>`404`: FASTEN URI not found</li></ul> | `callables:metadata` | Vulnerabilities only. |
+-->
 
 ## Edges
 
