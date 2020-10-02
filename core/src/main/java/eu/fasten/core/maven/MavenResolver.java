@@ -66,7 +66,7 @@ public class MavenResolver implements Runnable {
     @CommandLine.Option(names = {"-s", "--scopes"},
             paramLabel = "SCOPES",
             description = "List of scopes to use for resolution (separated by \",\")",
-            defaultValue = "compile,runtime,provided",
+            defaultValue = Constants.defaultMavenResolutionScopes,
             split = ",")
     protected List<String> scopes;
 
@@ -166,6 +166,22 @@ public class MavenResolver implements Runnable {
             dependencySet.addAll(currentDependencySet);
         }
         return dependencySet;
+    }
+
+    /**
+     * Creates and resolves a full dependency set of the given Maven artifact.
+     *
+     * @param groupId    groupId of the Maven artifact to resolve
+     * @param artifactId artifactId of the Maven artifact to resolve
+     * @param version    version of the Maven artifact to resolve
+     * @param dbContext  Database connection context
+     * @return Set of dependencies including transitive dependencies
+     */
+    public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
+                                                    String version, DSLContext dbContext) {
+        return resolveFullDependencySet(groupId, artifactId, version, -1,
+                Arrays.asList(Constants.defaultMavenResolutionScopes.split(",").clone()),
+                dbContext);
     }
 
     /**
@@ -417,5 +433,15 @@ public class MavenResolver implements Runnable {
                     dependencySet, new Timestamp(timestamp), dbContext);
         }
         return dependencySet;
+    }
+
+    /**
+     * Resolves full dependency set online using ShrinkWrap's MavenResolver.
+     *
+     * @param mavenCoordinate Maven coordinate to resolve in the form of groupId:artifactId:version
+     * @return A dependency set (including all transitive dependencies) of given Maven coordinate
+     */
+    public Set<Dependency> resolveFullDependencySetOnline(String mavenCoordinate) {
+        return resolveFullDependencySetOnline(mavenCoordinate, -1, null);
     }
 }

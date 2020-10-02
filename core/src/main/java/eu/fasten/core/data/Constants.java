@@ -1,5 +1,7 @@
 package eu.fasten.core.data;
 
+import java.util.List;
+
 public class Constants {
 
     public static final String mvnCoordinateSeparator = ":";
@@ -17,5 +19,7 @@ public class Constants {
     public static final String fastenDbPassEnvVariable = "FASTEN_DBPASS";
 
     public static final String pgPasswordEnvVariable = "PGPASSWORD";
+
+    public static final String defaultMavenResolutionScopes = "compile,runtime,provided";
 
 }

@@ -114,50 +114,48 @@ public class Dependency {
             return false;
         }
         Dependency that = (Dependency) o;
-        // TODO: Fix proper comparison
-//        if (!artifactId.equals(that.artifactId)) {
-//            return false;
-//        }
-//        if (!groupId.equals(that.groupId)) {
-//            return false;
-//        }
-//        if (!versionConstraints.equals(that.versionConstraints)) {
-//            return false;
-//        }
-//        if (scope.isEmpty() ^ that.scope.isEmpty()) {
-//            if (scope.isEmpty() && !that.scope.equals("compile")) {
-//                return false;
-//            }
-//            if (that.scope.isEmpty() && !scope.equals("compile")) {
-//                return false;
-//            }
-//        } else {
-//            if (!scope.equals(that.scope) ) {
-//                return false;
-//            }
-//        }
-//        if (optional != that.optional) {
-//            return false;
-//        }
-//        if (type.isEmpty() ^ that.type.isEmpty()) {
-//            if (type.isEmpty() && !that.type.equals("jar")) {
-//                return false;
-//            }
-//            if (that.type.isEmpty() && !type.equals("jar")) {
-//                return false;
-//            }
-//        } else {
-//            if (!type.equals(that.scope)) {
-//                return false;
-//            }
-//        }
-//        return classifier.equals(that.classifier);
-        return toCanonicalForm().equals(that.toCanonicalForm());
+        if (!artifactId.equals(that.artifactId)) {
+            return false;
+        }
+        if (!groupId.equals(that.groupId)) {
+            return false;
+        }
+        if (!versionConstraints.equals(that.versionConstraints)) {
+            return false;
+        }
+        if (scope.isEmpty() ^ that.scope.isEmpty()) {
+            if (scope.isEmpty() && !that.scope.equals("compile")) {
+                return false;
+            }
+            if (that.scope.isEmpty() && !scope.equals("compile")) {
+                return false;
+            }
+        } else {
+            if (!scope.equals(that.scope) ) {
+                return false;
+            }
+        }
+        if (optional != that.optional) {
+            return false;
+        }
+        if (type.isEmpty() ^ that.type.isEmpty()) {
+            if (type.isEmpty() && !that.type.equals("jar")) {
+                return false;
+            }
+            if (that.type.isEmpty() && !type.equals("jar")) {
+                return false;
+            }
+        } else {
+            if (!type.equals(that.type)) {
+                return false;
+            }
+        }
+        return classifier.equals(that.classifier);
     }
 
     @Override
     public int hashCode() {
-        return this.toCanonicalForm().hashCode();
+        return this.toFullCanonicalForm().hashCode();
     }
 
     /**
@@ -208,6 +206,26 @@ public class Dependency {
             builder.append(this.type);
             builder.append(Constants.mvnCoordinateSeparator);
         }
+        if (!this.classifier.isEmpty()) {
+            builder.append(this.classifier);
+            builder.append(Constants.mvnCoordinateSeparator);
+        }
+        builder.append(String.join(",", this.getVersionConstraints()));
+        return builder.toString();
+    }
+
+    public String toFullCanonicalForm() {
+        var builder = new StringBuilder();
+        builder.append(this.groupId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        builder.append(this.artifactId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        if (!this.type.isEmpty()) {
+            builder.append(this.type);
+        } else {
+            builder.append("jar");
+        }
+        builder.append(Constants.mvnCoordinateSeparator);
         if (!this.classifier.isEmpty()) {
             builder.append(this.classifier);
             builder.append(Constants.mvnCoordinateSeparator);
