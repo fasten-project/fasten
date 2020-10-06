@@ -167,24 +167,7 @@ public class MavenResolverTest {
         var actual = mavenResolver.buildFullDependencyTree("hello", "world", "42", dbContext);
         assertEquals(expected, actual);
     }
-
-    @Test
-    public void resolveWithNoArtifactsTest() {
-        class DataProvider implements MockDataProvider {
-            @Override
-            public MockResult[] execute(MockExecuteContext ctx) {
-                var create = DSL.using(SQLDialect.POSTGRES);
-                if (ctx.sql().startsWith("select \"public\".\"packages\".\"package_name\", \"public\".\"package_versions\".\"version\"")) {
-                    return new MockResult[]{new MockResult(0, create.newResult(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION))};
-                }
-                return new MockResult[]{new MockResult(0, create.newResult(Dependencies.DEPENDENCIES.METADATA))};
-            }
-        }
-        var dbContext = DSL.using(new MockConnection(new DataProvider()));
-        var result = mavenResolver.buildFullDependencyTree("hello", "world", "42", dbContext);
-        assertNull(result);
-    }
-
+    
     @Test
     public void resolveFullDependencySetOnlineTest() {
         var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.3", emptyList(), "", false, "jar", ""));
