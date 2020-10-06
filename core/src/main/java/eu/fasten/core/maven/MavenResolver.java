@@ -180,6 +180,8 @@ public class MavenResolver implements Runnable {
                 dbContext);
     }
 
+    private static Map<Dependency, List<Dependency>> dependencyGraph;
+
     /**
      * Builds a full dependency tree using data from the database.
      *
@@ -190,33 +192,24 @@ public class MavenResolver implements Runnable {
      * @return Dependency tree with all transitive dependencies
      */
     public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
-                                                  DSLContext dbContext,
-                                                  Map<Dependency, List<Dependency>> dependencyGraph) {
+                                                  DSLContext dbContext) {
         var artifact = new Dependency(groupId, artifactId, version);
         if (dependencyGraph == null) {
             dependencyGraph = new DependencyGraphBuilder().buildMavenDependencyGraph(dbContext);
         }
-        if (dependencyGraph == null || dependencyGraph.isEmpty()) {
-            return null;
-        }
-        var dependencies = new ArrayList<>(dependencyGraph.get(artifact));
+        var dependencies = dependencyGraph.get(artifact);
         DependencyTree dependencyTree;
-        if (dependencies.isEmpty()) {
+        if (dependencies == null || dependencies.isEmpty()) {
             dependencyTree = new DependencyTree(artifact, new ArrayList<>());
         } else {
             var childTrees = new ArrayList<DependencyTree>();
             for (var dep : dependencies) {
                 childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
-                        dep.getVersion(), dbContext, dependencyGraph));
+                        dep.getVersion(), dbContext));
             }
             dependencyTree = new DependencyTree(artifact, childTrees);
         }
         return dependencyTree;
-    }
-
-    public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
-                                                  DSLContext dbContext) {
-        return buildFullDependencyTree(groupId, artifactId, version, dbContext, null);
     }
 
     /**

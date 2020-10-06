@@ -102,7 +102,6 @@ public class MavenResolverBenchmark implements Runnable {
         System.out.println("Successful match rate is " + finalResult + " for " + artifactCount + " artifacts");
         System.out.println("Database resolution success rate: " + (float) dbResolutionSuccess / (float) dbCount);
         System.out.println("Online resolution success rate: " + (float) onlineResolutionSuccess / (float) onlineCount);
-        System.out.println();
         System.out.println("--------------------------------------------------");
     }
 }

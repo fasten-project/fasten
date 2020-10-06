@@ -18,6 +18,7 @@ public class DependencyGraphBuilder {
                 .join(PackageVersions.PACKAGE_VERSIONS)
                 .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
                 .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                .and(Packages.PACKAGES.ID.greaterThan(0L))
                 .fetch();
         if (result == null || result.isEmpty()) {
             return new HashMap<>();
