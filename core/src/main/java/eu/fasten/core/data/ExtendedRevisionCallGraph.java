@@ -36,7 +36,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
      */
     protected A classHierarchy;
 
-    protected String classHierarchyJSONKey = "cha";
+    protected static String classHierarchyJSONKey = "cha";
 
     /**
      * The number of nodes in a revision call graph.

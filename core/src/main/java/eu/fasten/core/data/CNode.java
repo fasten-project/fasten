@@ -20,6 +20,8 @@ package eu.fasten.core.data;
 
 import java.util.Map;
 import java.util.List;
+import org.json.JSONObject;
+import org.json.JSONArray;
 
 public class CNode extends Node {
 
@@ -34,5 +36,20 @@ public class CNode extends Node {
     public CNode(final FastenURI uri, final Map<String, Object> metadata, final List<String> files) {
         super(uri, metadata);
         this.files = files;
+    }
+
+    /**
+     * Converts this {@link CNode} object to its JSON representation.
+     *
+     * @return the corresponding JSON representation.
+     */
+    public JSONObject toJSON() {
+        final var result = new JSONObject();
+
+        result.put("metadata", new JSONObject(metadata));
+        result.put("files", new JSONArray(files));
+        result.put("uri", uri.toString());
+
+        return result;
     }
 }
