@@ -171,7 +171,7 @@ public class MavenResolverTest {
     @Test
     public void resolveFullDependencySetOnlineTest() {
         var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.3", emptyList(), "", false, "jar", ""));
-        var actual = mavenResolver.resolveFullDependencySetOnline("junit:junit:4.12", -1, null);
+        var actual = mavenResolver.resolveFullDependencySetOnline("junit", "junit", "4.12", -1, null);
         assertEquals(expected, actual);
     }
 

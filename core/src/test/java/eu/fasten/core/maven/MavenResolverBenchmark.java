@@ -82,7 +82,7 @@ public class MavenResolverBenchmark implements Runnable {
                 var dbDependencySet = mavenResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
                 dbResolutionSuccess++;
                 onlineCount++;
-                var onlineDependencySet = mavenResolver.resolveFullDependencySetOnline(line);
+                var onlineDependencySet = mavenResolver.resolveFullDependencySetOnline(artifactId, groupId, version);
                 onlineResolutionSuccess++;
                 var setSize = Math.max(dbDependencySet.size(), onlineDependencySet.size());
                 var intersection = new HashSet<>(dbDependencySet);

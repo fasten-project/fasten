@@ -25,18 +25,32 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
-import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "MavenResolver")
 public class MavenResolver implements Runnable {
+
+    private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
 
     @CommandLine.Option(names = {"-a", "--artifactId"},
             paramLabel = "ARTIFACT",
@@ -104,9 +118,7 @@ public class MavenResolver implements Runnable {
                 dependencySet = this.resolveFullDependencySet(group, artifact, version,
                         timestamp, scopes, dbContext);
             } else {
-                var coordinate = group + Constants.mvnCoordinateSeparator + artifact
-                        + Constants.mvnCoordinateSeparator + version;
-                dependencySet = this.resolveFullDependencySetOnline(coordinate, timestamp, dbContext);
+                dependencySet = this.resolveFullDependencySetOnline(group, artifact, version, timestamp, dbContext);
             }
             System.out.println("--------------------------------------------------");
             System.out.println("Maven coordinate:");
@@ -396,50 +408,152 @@ public class MavenResolver implements Runnable {
         return filteredDependencies;
     }
 
+    // TODO(roman): duplicate from DataExtractor; extrapolate the function as a utility function for public use.
+    private Optional<File> downloadPom(String artifactId, String groupId, String version) {
+
+        List<String> mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
+                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
+                : Collections.singletonList("https://repo.maven.apache.org/maven2/");
+
+        for (var repo : mavenRepos) {
+            var pomUrl = this.getPomUrl(artifactId, groupId, version, repo);
+            Optional<File> pom;
+            try {
+                pom = httpGetToFile(pomUrl);
+            } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+                continue;
+            }
+            if (pom.isPresent()) {
+                return pom;
+            }
+        }
+        return Optional.empty();
+    }
+
+    // TODO(roman): duplicate from DataExtractor; extrapolate the function as a utility function for public use.
+    private String getPomUrl(String artifactId, String groupId, String version, String repo) {
+        return repo + groupId.replace('.', '/') + "/" + artifactId + "/" + version
+                + "/" + artifactId + "-" + version + ".pom";
+    }
+
     /**
-     * Resolves full dependency set online using ShrinkWrap's MavenResolver.
+     * Utility function that stores the contents of GET request to a temporary file.
+     * TODO(roman): duplicate from DataExtractor; extrapolate the function as a utility function for public use.
      *
-     * @param mavenCoordinate Maven coordinate to resolve in the form of groupId:artifactId:version
-     * @param timestamp       Timestamp for filtering dependency versions (-1 in order not to filter)
-     * @param dbContext       Database connection context (needed only for filtering by timestamp)
+     * @param url       The url of the wanted file.
+     * @return a temporarily saved file.
+     */
+    private static Optional<File> httpGetToFile(String url)
+            throws FileNotFoundException, UnknownHostException, MalformedURLException {
+        logger.debug("HTTP GET: " + url);
+        try {
+            final var tempFile = Files.createTempFile("fasten", ".pom");
+            final InputStream in = new URL(url).openStream();
+            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+            in.close();
+            return Optional.of(new File(tempFile.toAbsolutePath().toString()));
+        } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
+            logger.error("Could not find URL: {}", e.getMessage(), e);
+            throw e;
+        } catch (IOException e) {
+            logger.error("Error getting file from URL: " + url, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Resolves full dependency set online.
+     *
+     * @param group      Group id of the artifact to resolve
+     * @param artifact   Artifact id of the artifact to resolve
+     * @param version    Version of the artifact to resolve
+     * @param timestamp  Timestamp for filtering dependency versions (-1 in order not to filter)
+     * @param dbContext  Database connection context (needed only for filtering by timestamp)
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
      */
-    public Set<Dependency> resolveFullDependencySetOnline(String mavenCoordinate, long timestamp,
-                                                          DSLContext dbContext) {
-        var artifacts = Arrays.stream(
-                Maven.resolver()
-                        .resolve(mavenCoordinate)
-                        .withTransitivity()
-                        .asResolvedArtifact()
-        ).collect(Collectors.toList());
-        if (artifacts.size() < 1) {
-            throw new RuntimeException("Could not resolve artifact " + mavenCoordinate);
+    public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version,
+                                                          long timestamp, DSLContext dbContext) {
+
+        // Result set.
+        Set<Dependency> dependencySet = new HashSet<>();
+
+        // Download pom file from the repo.
+        Optional<File> pomOpt = downloadPom(artifact, group, version);
+
+        // If it's unavailable, return empty set of dependencies.
+        if(pomOpt.isEmpty())
+            return dependencySet;
+        File pom = pomOpt.get();
+
+        try {
+
+            // Use it in order to work with execution of commands.
+            // Print the dependency tree of the downloaded pom file and format the output simply by line.
+            //
+            // In order for runtime executor to run the pipeline, bash needs to be forcely called on the actual pipelined command.
+            String[] cmd = {
+                    "bash",
+                    "-c",
+                    "mvn dependency:tree -f" + pom.getName() + " |grep +- |sed -e 's/.*+- \\(.*\\)$/\\1/'|sort |uniq"
+            };
+            Process process = Runtime.getRuntime().exec(cmd, null, pom.getParentFile());
+
+            // Reader for the command's output.
+            BufferedReader stdInput = new BufferedReader(new
+                    InputStreamReader(process.getInputStream()));
+
+            // Reader for the command's errors.
+            BufferedReader stdError = new BufferedReader(new
+                    InputStreamReader(process.getErrorStream()));
+
+            // Helper var for reading buffers.
+            String s;
+
+            // Parse the output from the command.
+            while ((s = stdInput.readLine()) != null) {
+
+                // Split the dependency's coordinate by the separator.
+                String[] coordinateArray = s.split(Constants.mvnCoordinateSeparator);
+
+                // Create an instance of Dependency from it.
+                Dependency d = new Dependency(
+                        coordinateArray[0],
+                        coordinateArray[1],
+                        coordinateArray[3]
+                );
+
+                // Add to result set.
+                dependencySet.add(d);
+            }
+
+            // Parse any errors from the attempted command.
+            while ((s = stdError.readLine()) != null) {
+                logger.error(s);
+            }
+
+            // Filter the set by timestamp.
+            if (timestamp != -1) {
+                dependencySet = this.filterDependenciesByTimestamp(
+                        dependencySet, new Timestamp(timestamp), dbContext);
+            }
+
+        } catch (IOException e) {
+            String coordinate = artifact + Constants.mvnCoordinateSeparator + group + Constants.mvnCoordinateSeparator + version;
+            logger.error("Error resolving Maven artifact: " + coordinate, e);
         }
-        var dependencySet = Arrays.stream(artifacts.get(0).getDependencies())
-                .map(d -> new Dependency(
-                        d.getCoordinate().getGroupId(),
-                        d.getCoordinate().getArtifactId(),
-                        d.getResolvedVersion(),
-                        new ArrayList<>(),
-                        d.getScope().name(),
-                        d.isOptional(),
-                        d.getCoordinate().getType().toString(),
-                        d.getCoordinate().getClassifier()))
-                .collect(Collectors.toSet());
-        if (timestamp != -1) {
-            dependencySet = this.filterDependenciesByTimestamp(
-                    dependencySet, new Timestamp(timestamp), dbContext);
-        }
+
         return dependencySet;
     }
 
     /**
      * Resolves full dependency set online using ShrinkWrap's MavenResolver.
      *
-     * @param mavenCoordinate Maven coordinate to resolve in the form of groupId:artifactId:version
+     * @param group      Group id of the artifact to resolve
+     * @param artifact   Artifact id of the artifact to resolve
+     * @param version    Version of the artifact to resolve
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
      */
-    public Set<Dependency> resolveFullDependencySetOnline(String mavenCoordinate) {
-        return resolveFullDependencySetOnline(mavenCoordinate, -1, null);
+    public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version) {
+        return resolveFullDependencySetOnline(artifact, group, version,  -1, null);
     }
 }
