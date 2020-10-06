@@ -133,7 +133,7 @@ public class KBStats {
 			statGraphs++;
 			nodes.add(callGraphData.numNodes());
 			arcs.add(callGraphData.numArcs());
-			final long b = callGraphData.size + callGraphData.numNodes() * 6;
+			final long b = callGraphData.size;// + callGraphData.numNodes() * 6;
 			bytes.add(b);
 			final long r = callGraphData.numArcs() * 16 + callGraphData.numNodes() * 2 * 8 + callGraphData.numNodes() * (8 + 8) * 3 / 2;
 			rawBytes.add(r);
