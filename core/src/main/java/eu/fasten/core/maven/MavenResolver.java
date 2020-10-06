@@ -32,11 +32,7 @@ import org.json.JSONObject;
 import picocli.CommandLine;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "MavenResolver")
@@ -194,12 +190,16 @@ public class MavenResolver implements Runnable {
      * @return Dependency tree with all transitive dependencies
      */
     public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
-                                                  DSLContext dbContext) {
+                                                  DSLContext dbContext,
+                                                  Map<Dependency, List<Dependency>> dependencyGraph) {
         var artifact = new Dependency(groupId, artifactId, version);
-        List<Dependency> dependencies = new ArrayList<>(this.getArtifactDependenciesFromDatabase(
-                artifact.getGroupId(), artifact.getArtifactId(),
-                artifact.getVersion(), dbContext
-        ));
+        if (dependencyGraph == null) {
+            dependencyGraph = new DependencyGraphBuilder().buildMavenDependencyGraph(dbContext);
+        }
+        if (dependencyGraph == null || dependencyGraph.isEmpty()) {
+            return null;
+        }
+        var dependencies = new ArrayList<>(dependencyGraph.get(artifact));
         DependencyTree dependencyTree;
         if (dependencies.isEmpty()) {
             dependencyTree = new DependencyTree(artifact, new ArrayList<>());
@@ -207,11 +207,16 @@ public class MavenResolver implements Runnable {
             var childTrees = new ArrayList<DependencyTree>();
             for (var dep : dependencies) {
                 childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
-                        dep.getVersion(), dbContext));
+                        dep.getVersion(), dbContext, dependencyGraph));
             }
             dependencyTree = new DependencyTree(artifact, childTrees);
         }
         return dependencyTree;
+    }
+
+    public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
+                                                  DSLContext dbContext) {
+        return buildFullDependencyTree(groupId, artifactId, version, dbContext, null);
     }
 
     /**

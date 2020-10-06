@@ -20,6 +20,7 @@ package eu.fasten.core.maven;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
 import org.jooq.JSONB;
@@ -68,6 +69,20 @@ public class MavenResolverTest {
                 packageVersionMetadataResult.add(create
                         .newRecord(PackageVersions.PACKAGE_VERSIONS.METADATA)
                         .values(JSONB.valueOf("{\"parentCoordinate\":\"\"}")));
+                if (ctx.sql().startsWith("select \"public\".\"packages\".\"package_name\", \"public\".\"package_versions\".\"version\"")) {
+                    var artifactsResult = create.newResult(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION);
+                    artifactsResult.add(create
+                            .newRecord(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION)
+                            .values("junit:junit", "4.12"));
+                    artifactsResult.add(create
+                            .newRecord(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION)
+                            .values("org.hamcrest:hamcrest-core", "1.3"));
+                    artifactsResult.add(create
+                            .newRecord(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION)
+                            .values("org.hamcrest:hamcrest-core", "1.2"));
+                    mockData[0] = new MockResult(artifactsResult.size(), artifactsResult);
+                    return mockData;
+                }
                 if (ctx.sql().startsWith("select \"public\".\"dependencies\".\"metadata\"")) {
                     if (!queriesDependencies) {
                         mockData[0] = new MockResult(dependencyResult.size(), dependencyResult);
@@ -97,6 +112,18 @@ public class MavenResolverTest {
             @Override
             public MockResult[] execute(MockExecuteContext ctx) {
                 var create = DSL.using(SQLDialect.POSTGRES);
+                if (ctx.sql().startsWith("select \"public\".\"packages\".\"package_name\", \"public\".\"package_versions\".\"version\"")) {
+                    var mockData = new MockResult[1];
+                    var artifactsResult = create.newResult(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION);
+                    artifactsResult.add(create
+                            .newRecord(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION)
+                            .values("junit:junit", "4.12"));
+                    artifactsResult.add(create
+                            .newRecord(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION)
+                            .values("org.hamcrest:hamcrest-core", "1.3"));
+                    mockData[0] = new MockResult(artifactsResult.size(), artifactsResult);
+                    return mockData;
+                }
                 if (!queried) {
                     queried = true;
                     var mockData = new MockResult[1];
@@ -123,6 +150,15 @@ public class MavenResolverTest {
             @Override
             public MockResult[] execute(MockExecuteContext ctx) {
                 var create = DSL.using(SQLDialect.POSTGRES);
+                if (ctx.sql().startsWith("select \"public\".\"packages\".\"package_name\", \"public\".\"package_versions\".\"version\"")) {
+                    var mockData = new MockResult[1];
+                    var artifactsResult = create.newResult(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION);
+                    artifactsResult.add(create
+                            .newRecord(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION)
+                            .values("hello:world", "42"));
+                    mockData[0] = new MockResult(artifactsResult.size(), artifactsResult);
+                    return mockData;
+                }
                 return new MockResult[]{new MockResult(0, create.newResult(Dependencies.DEPENDENCIES.METADATA))};
             }
         }
@@ -130,6 +166,23 @@ public class MavenResolverTest {
         var expected = new DependencyTree(new Dependency("hello", "world", "42"), emptyList());
         var actual = mavenResolver.buildFullDependencyTree("hello", "world", "42", dbContext);
         assertEquals(expected, actual);
+    }
+
+    @Test
+    public void resolveWithNoArtifactsTest() {
+        class DataProvider implements MockDataProvider {
+            @Override
+            public MockResult[] execute(MockExecuteContext ctx) {
+                var create = DSL.using(SQLDialect.POSTGRES);
+                if (ctx.sql().startsWith("select \"public\".\"packages\".\"package_name\", \"public\".\"package_versions\".\"version\"")) {
+                    return new MockResult[]{new MockResult(0, create.newResult(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION))};
+                }
+                return new MockResult[]{new MockResult(0, create.newResult(Dependencies.DEPENDENCIES.METADATA))};
+            }
+        }
+        var dbContext = DSL.using(new MockConnection(new DataProvider()));
+        var result = mavenResolver.buildFullDependencyTree("hello", "world", "42", dbContext);
+        assertNull(result);
     }
 
     @Test
