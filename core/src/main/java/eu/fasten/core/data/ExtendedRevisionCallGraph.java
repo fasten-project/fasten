@@ -188,8 +188,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
      *
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
-    // FIXME
-    public abstract Map<Integer, JavaNode> mapOfAllMethods();
+    public abstract <T> T mapOfAllMethods();
 
     /**
      * Produces the JSON representation of class hierarchy.

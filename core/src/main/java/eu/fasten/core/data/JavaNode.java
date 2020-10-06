@@ -21,17 +21,7 @@ package eu.fasten.core.data;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
-public class JavaNode {
-
-    /**
-     * FastenURI corresponding to this JavaNode.
-     */
-    final private FastenURI uri;
-
-    /**
-     * Metadata associated with this JavaNode.
-     */
-    final private Map<String, Object> metadata;
+public class JavaNode extends Node {
 
     /**
      * Creates {@link JavaNode} from a FastenURI and metadata.
@@ -40,25 +30,7 @@ public class JavaNode {
      * @param metadata metadata associated with this JavaNode
      */
     public JavaNode(final FastenURI uri, final Map<String, Object> metadata) {
-        this.uri = uri;
-        this.metadata = metadata;
-    }
-
-    public FastenURI getUri() {
-        return uri;
-    }
-
-    public Map<String, Object> getMetadata() {
-        return metadata;
-    }
-
-    /**
-     * Get entity from the FastenURI.
-     *
-     * @return entity
-     */
-    public String getEntity() {
-        return this.uri.getEntity();
+        super(uri, metadata);
     }
 
     /**

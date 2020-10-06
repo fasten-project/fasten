@@ -106,6 +106,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
+    @Override
     public Map<Integer, JavaNode> mapOfAllMethods() {
         Map<Integer, JavaNode> result = new HashMap<>();
         for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
