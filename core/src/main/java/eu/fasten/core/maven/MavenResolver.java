@@ -19,7 +19,6 @@
 package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -32,7 +31,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -46,7 +44,14 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 @CommandLine.Command(name = "MavenResolver")
 public class MavenResolver implements Runnable {
@@ -418,7 +423,7 @@ public class MavenResolver implements Runnable {
      * Utility function that stores the contents of GET request to a temporary file.
      * TODO(roman): duplicate from DataExtractor; extrapolate the function as a utility function for public use.
      *
-     * @param url       The url of the wanted file.
+     * @param url The url of the wanted file.
      * @return a temporarily saved file.
      */
     private static Optional<File> httpGetToFile(String url)
@@ -442,11 +447,11 @@ public class MavenResolver implements Runnable {
     /**
      * Resolves full dependency set online.
      *
-     * @param group      Group id of the artifact to resolve
-     * @param artifact   Artifact id of the artifact to resolve
-     * @param version    Version of the artifact to resolve
-     * @param timestamp  Timestamp for filtering dependency versions (-1 in order not to filter)
-     * @param dbContext  Database connection context (needed only for filtering by timestamp)
+     * @param group     Group id of the artifact to resolve
+     * @param artifact  Artifact id of the artifact to resolve
+     * @param version   Version of the artifact to resolve
+     * @param timestamp Timestamp for filtering dependency versions (-1 in order not to filter)
+     * @param dbContext Database connection context (needed only for filtering by timestamp)
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
      */
     public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version,
@@ -459,7 +464,7 @@ public class MavenResolver implements Runnable {
         Optional<File> pomOpt = downloadPom(artifact, group, version);
 
         // If it's unavailable, return empty set of dependencies.
-        if(pomOpt.isEmpty())
+        if (pomOpt.isEmpty())
             return dependencySet;
         File pom = pomOpt.get();
 
@@ -526,12 +531,12 @@ public class MavenResolver implements Runnable {
     /**
      * Resolves full dependency set online using ShrinkWrap's MavenResolver.
      *
-     * @param group      Group id of the artifact to resolve
-     * @param artifact   Artifact id of the artifact to resolve
-     * @param version    Version of the artifact to resolve
+     * @param group    Group id of the artifact to resolve
+     * @param artifact Artifact id of the artifact to resolve
+     * @param version  Version of the artifact to resolve
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
      */
     public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version) {
-        return resolveFullDependencySetOnline(artifact, group, version,  -1, null);
+        return resolveFullDependencySetOnline(artifact, group, version, -1, null);
     }
 }
