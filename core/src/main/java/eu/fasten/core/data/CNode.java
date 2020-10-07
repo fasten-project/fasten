@@ -38,6 +38,16 @@ public class CNode extends Node {
         this.files = files;
     }
 
+    public List<String> getFiles() {
+        return files;
+    }
+
+    public String getFile() {
+        if (files.isEmpty())
+            return "";
+        return files.get(0);
+    }
+
     /**
      * Converts this {@link CNode} object to its JSON representation.
      *
