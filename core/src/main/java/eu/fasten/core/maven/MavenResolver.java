@@ -25,6 +25,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -192,7 +193,7 @@ public class MavenResolver implements Runnable {
                 dbContext);
     }
 
-    private static Map<Dependency, List<Dependency>> dependencyGraph;
+    private static Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph;
 
     /**
      * Builds a full dependency tree using data from the database.
@@ -209,15 +210,17 @@ public class MavenResolver implements Runnable {
         if (dependencyGraph == null) {
             dependencyGraph = new DependencyGraphBuilder().buildMavenDependencyGraph(dbContext);
         }
-        var dependencies = dependencyGraph.get(artifact);
+        var edges = dependencyGraph.get(artifact);
         DependencyTree dependencyTree;
-        if (dependencies == null || dependencies.isEmpty()) {
+        if (edges == null || edges.isEmpty()) {
             dependencyTree = new DependencyTree(artifact, new ArrayList<>());
         } else {
             var childTrees = new ArrayList<DependencyTree>();
-            for (var dep : dependencies) {
-                childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
-                        dep.getVersion(), dbContext));
+            for (var edge : edges) {
+                childTrees.add(this.buildFullDependencyTree(
+                        edge.getLeft().getGroupId(), edge.getLeft().getArtifactId(),
+                        edge.getLeft().getVersion(), dbContext
+                ));
             }
             dependencyTree = new DependencyTree(artifact, childTrees);
         }
