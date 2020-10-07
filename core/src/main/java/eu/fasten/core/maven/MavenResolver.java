@@ -115,7 +115,7 @@ public class MavenResolver implements Runnable {
                 try {
                     dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
                 } catch (SQLException e) {
-                    System.err.println("Could not connect to the database: " + e.getMessage());
+                    logger.error("Could not connect to the database", e);
                     return;
                 }
             }
@@ -126,16 +126,16 @@ public class MavenResolver implements Runnable {
             } else {
                 dependencySet = this.resolveFullDependencySetOnline(group, artifact, version, timestamp, dbContext);
             }
-            System.out.println("--------------------------------------------------");
-            System.out.println("Maven coordinate:");
-            System.out.println(group + Constants.mvnCoordinateSeparator + artifact
+            logger.info("--------------------------------------------------");
+            logger.info("Maven coordinate:");
+            logger.info(group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version);
-            System.out.println("--------------------------------------------------");
-            System.out.println("Full dependency set:");
-            dependencySet.forEach(System.out::println);
-            System.out.println("--------------------------------------------------");
+            logger.info("--------------------------------------------------");
+            logger.info("Full dependency set:");
+            dependencySet.forEach(d -> logger.info(d.toCanonicalForm()));
+            logger.info("--------------------------------------------------");
         } else {
-            System.err.println("You need to specify Maven coordinate by providing its "
+            logger.error("You need to specify Maven coordinate by providing its "
                     + "artifactId ('-a'), groupId ('-g') and version ('-v'). "
                     + "Optional timestamp (-t) can also be provided.");
         }
@@ -343,7 +343,7 @@ public class MavenResolver implements Runnable {
                 return null;
             }
         } catch (JSONException e) {
-            e.printStackTrace(System.err);
+            logger.error("Could not parse JSON for package version's metadata", e);
             return null;
         }
         return new Dependency(parentCoordinate);
