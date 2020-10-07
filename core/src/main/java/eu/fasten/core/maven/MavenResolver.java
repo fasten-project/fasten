@@ -19,19 +19,18 @@
 package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -45,7 +44,14 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 @CommandLine.Command(name = "MavenResolver")
 public class MavenResolver implements Runnable {
@@ -109,7 +115,7 @@ public class MavenResolver implements Runnable {
                 try {
                     dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
                 } catch (SQLException e) {
-                    System.err.println("Could not connect to the database: " + e.getMessage());
+                    logger.error("Could not connect to the database", e);
                     return;
                 }
             }
@@ -120,16 +126,16 @@ public class MavenResolver implements Runnable {
             } else {
                 dependencySet = this.resolveFullDependencySetOnline(group, artifact, version, timestamp, dbContext);
             }
-            System.out.println("--------------------------------------------------");
-            System.out.println("Maven coordinate:");
-            System.out.println(group + Constants.mvnCoordinateSeparator + artifact
+            logger.info("--------------------------------------------------");
+            logger.info("Maven coordinate:");
+            logger.info(group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version);
-            System.out.println("--------------------------------------------------");
-            System.out.println("Full dependency set:");
-            dependencySet.forEach(System.out::println);
-            System.out.println("--------------------------------------------------");
+            logger.info("--------------------------------------------------");
+            logger.info("Full dependency set:");
+            dependencySet.forEach(d -> logger.info(d.toCanonicalForm()));
+            logger.info("--------------------------------------------------");
         } else {
-            System.err.println("You need to specify Maven coordinate by providing its "
+            logger.error("You need to specify Maven coordinate by providing its "
                     + "artifactId ('-a'), groupId ('-g') and version ('-v'). "
                     + "Optional timestamp (-t) can also be provided.");
         }
@@ -192,7 +198,7 @@ public class MavenResolver implements Runnable {
                 dbContext);
     }
 
-    private static Map<Dependency, List<Dependency>> dependencyGraph;
+    private static Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph;
 
     /**
      * Builds a full dependency tree using data from the database.
@@ -209,15 +215,17 @@ public class MavenResolver implements Runnable {
         if (dependencyGraph == null) {
             dependencyGraph = new DependencyGraphBuilder().buildMavenDependencyGraph(dbContext);
         }
-        var dependencies = dependencyGraph.get(artifact);
+        var edges = dependencyGraph.get(artifact);
         DependencyTree dependencyTree;
-        if (dependencies == null || dependencies.isEmpty()) {
+        if (edges == null || edges.isEmpty()) {
             dependencyTree = new DependencyTree(artifact, new ArrayList<>());
         } else {
             var childTrees = new ArrayList<DependencyTree>();
-            for (var dep : dependencies) {
-                childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
-                        dep.getVersion(), dbContext));
+            for (var edge : edges) {
+                childTrees.add(this.buildFullDependencyTree(
+                        edge.getLeft().getGroupId(), edge.getLeft().getArtifactId(),
+                        edge.getLeft().getVersion(), dbContext
+                ));
             }
             dependencyTree = new DependencyTree(artifact, childTrees);
         }
@@ -335,35 +343,10 @@ public class MavenResolver implements Runnable {
                 return null;
             }
         } catch (JSONException e) {
-            e.printStackTrace(System.err);
+            logger.error("Could not parse JSON for package version's metadata", e);
             return null;
         }
         return new Dependency(parentCoordinate);
-    }
-
-    /**
-     * Retrieve all direct dependencies of certain Maven artifact from the database.
-     *
-     * @param groupId    groupId of the artifact to find its dependencies
-     * @param artifactId artifactId of the artifact to find its dependencies
-     * @param version    version of the artifact to find its dependencies
-     * @param context    Database connection context
-     * @return A list of direct dependencies of the given Maven artifact
-     */
-    public List<Dependency> getArtifactDependenciesFromDatabase(String groupId, String artifactId,
-                                                                String version, DSLContext context) {
-        var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
-        var result = context.select(Dependencies.DEPENDENCIES.METADATA)
-                .from(Dependencies.DEPENDENCIES)
-                .join(PackageVersions.PACKAGE_VERSIONS)
-                .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID
-                        .eq(PackageVersions.PACKAGE_VERSIONS.ID))
-                .join(Packages.PACKAGES)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
-                .fetch();
-        return result.map(r -> Dependency.fromJSON(new JSONObject(r.component1().data())));
     }
 
     /**
@@ -440,7 +423,7 @@ public class MavenResolver implements Runnable {
      * Utility function that stores the contents of GET request to a temporary file.
      * TODO(roman): duplicate from DataExtractor; extrapolate the function as a utility function for public use.
      *
-     * @param url       The url of the wanted file.
+     * @param url The url of the wanted file.
      * @return a temporarily saved file.
      */
     private static Optional<File> httpGetToFile(String url)
@@ -464,11 +447,11 @@ public class MavenResolver implements Runnable {
     /**
      * Resolves full dependency set online.
      *
-     * @param group      Group id of the artifact to resolve
-     * @param artifact   Artifact id of the artifact to resolve
-     * @param version    Version of the artifact to resolve
-     * @param timestamp  Timestamp for filtering dependency versions (-1 in order not to filter)
-     * @param dbContext  Database connection context (needed only for filtering by timestamp)
+     * @param group     Group id of the artifact to resolve
+     * @param artifact  Artifact id of the artifact to resolve
+     * @param version   Version of the artifact to resolve
+     * @param timestamp Timestamp for filtering dependency versions (-1 in order not to filter)
+     * @param dbContext Database connection context (needed only for filtering by timestamp)
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
      */
     public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version,
@@ -481,7 +464,7 @@ public class MavenResolver implements Runnable {
         var pomOpt = downloadPom(artifact, group, version);
 
         // If it's unavailable, return empty set of dependencies.
-        if(pomOpt.isEmpty())
+        if (pomOpt.isEmpty())
             return dependencySet;
         var pom = pomOpt.get();
 
@@ -555,12 +538,12 @@ public class MavenResolver implements Runnable {
     /**
      * Resolves full dependency set online using ShrinkWrap's MavenResolver.
      *
-     * @param group      Group id of the artifact to resolve
-     * @param artifact   Artifact id of the artifact to resolve
-     * @param version    Version of the artifact to resolve
+     * @param group    Group id of the artifact to resolve
+     * @param artifact Artifact id of the artifact to resolve
+     * @param version  Version of the artifact to resolve
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
      */
     public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version) {
-        return resolveFullDependencySetOnline(artifact, group, version,  -1, null);
+        return resolveFullDependencySetOnline(artifact, group, version, -1, null);
     }
 }
