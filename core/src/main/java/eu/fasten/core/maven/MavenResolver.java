@@ -487,14 +487,15 @@ public class MavenResolver implements Runnable {
 
         try {
 
-            // Use it in order to work with execution of commands.
             // Print the dependency tree of the downloaded pom file and format the output simply by line.
-            //
             // In order for runtime executor to run the pipeline, bash needs to be forcely called on the actual pipelined command.
             String[] cmd = {
                     "bash",
                     "-c",
-                    "mvn dependency:tree -f" + pom.getName() + " |grep +- |sed -e 's/.*+- \\(.*\\)$/\\1/'|sort |uniq"
+                    "mvn dependency:list -f" + pom.getName() +                                  // Get the list of dependencies applied on the temp file.
+                            "| grep -e '^\\[.*\\I\\N\\F\\O.*\\]    .*:.*:.*:.*:.*' " +          // Match only this list, ignore other output garbage.
+                            "| sed -e 's/.*    \\(.*\\)$/\\1/'" +                               // Remove garbage from the line leaving only the coordinate (artifact:group:type:version:scope).
+                            "| sort | uniq"
             };
             Process process = Runtime.getRuntime().exec(cmd, null, pom.getParentFile());
 
@@ -519,11 +520,17 @@ public class MavenResolver implements Runnable {
                 Dependency d = new Dependency(
                         coordinateArray[0],
                         coordinateArray[1],
-                        coordinateArray[3]
+                        coordinateArray[3],
+                        new ArrayList<>(),
+                        coordinateArray[4],
+                        false,
+                        coordinateArray[2],
+                        ""
                 );
 
                 // Add to result set.
                 dependencySet.add(d);
+
             }
 
             // Parse any errors from the attempted command.
