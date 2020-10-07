@@ -489,15 +489,14 @@ public class MavenResolver implements Runnable {
                                                           long timestamp, DSLContext dbContext) {
 
         // Result set.
-        var dependencySet = (Set<Dependency>)(new HashSet<Dependency>());
+        var dependencySet = (Set<Dependency>) (new HashSet<Dependency>());
 
         // Download pom file from the repo.
         var pomOpt = downloadPom(artifact, group, version);
 
-        // If it's unavailable, return empty set of dependencies.
-        if (pomOpt.isEmpty())
-            return dependencySet;
-        var pom = pomOpt.get();
+        var pom = pomOpt.orElseGet(() -> {
+            throw new RuntimeException("Could not download artifact");
+        });
 
         try {
 
