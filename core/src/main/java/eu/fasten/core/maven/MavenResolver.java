@@ -345,31 +345,6 @@ public class MavenResolver implements Runnable {
     }
 
     /**
-     * Retrieve all direct dependencies of certain Maven artifact from the database.
-     *
-     * @param groupId    groupId of the artifact to find its dependencies
-     * @param artifactId artifactId of the artifact to find its dependencies
-     * @param version    version of the artifact to find its dependencies
-     * @param context    Database connection context
-     * @return A list of direct dependencies of the given Maven artifact
-     */
-    public List<Dependency> getArtifactDependenciesFromDatabase(String groupId, String artifactId,
-                                                                String version, DSLContext context) {
-        var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
-        var result = context.select(Dependencies.DEPENDENCIES.METADATA)
-                .from(Dependencies.DEPENDENCIES)
-                .join(PackageVersions.PACKAGE_VERSIONS)
-                .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID
-                        .eq(PackageVersions.PACKAGE_VERSIONS.ID))
-                .join(Packages.PACKAGES)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
-                .fetch();
-        return result.map(r -> Dependency.fromJSON(new JSONObject(r.component1().data())));
-    }
-
-    /**
      * Filters dependency versions by timestamp.
      * If the version of some dependency in the given dependency set was released later
      * than the provided timestamp then this dependency version will be downgraded
