@@ -475,21 +475,21 @@ public class MavenResolver implements Runnable {
                                                           long timestamp, DSLContext dbContext) {
 
         // Result set.
-        Set<Dependency> dependencySet = new HashSet<>();
+        var dependencySet = (Set<Dependency>)(new HashSet<Dependency>());
 
         // Download pom file from the repo.
-        Optional<File> pomOpt = downloadPom(artifact, group, version);
+        var pomOpt = downloadPom(artifact, group, version);
 
         // If it's unavailable, return empty set of dependencies.
         if(pomOpt.isEmpty())
             return dependencySet;
-        File pom = pomOpt.get();
+        var pom = pomOpt.get();
 
         try {
 
             // Print the dependency tree of the downloaded pom file and format the output simply by line.
             // In order for runtime executor to run the pipeline, bash needs to be forcely called on the actual pipelined command.
-            String[] cmd = {
+            var cmd = new String[]{
                     "bash",
                     "-c",
                     "mvn dependency:list -f" + pom.getName() +                                  // Get the list of dependencies applied on the temp file.
@@ -497,27 +497,27 @@ public class MavenResolver implements Runnable {
                             "| sed -e 's/.*    \\(.*\\)$/\\1/'" +                               // Remove garbage from the line leaving only the coordinate (artifact:group:type:version:scope).
                             "| sort | uniq"
             };
-            Process process = Runtime.getRuntime().exec(cmd, null, pom.getParentFile());
+            var process = Runtime.getRuntime().exec(cmd, null, pom.getParentFile());
 
             // Reader for the command's output.
-            BufferedReader stdInput = new BufferedReader(new
+            var stdInput = new BufferedReader(new
                     InputStreamReader(process.getInputStream()));
 
             // Reader for the command's errors.
-            BufferedReader stdError = new BufferedReader(new
+            var stdError = new BufferedReader(new
                     InputStreamReader(process.getErrorStream()));
 
             // Helper var for reading buffers.
-            String s;
+            var s = "";
 
             // Parse the output from the command.
             while ((s = stdInput.readLine()) != null) {
 
                 // Split the dependency's coordinate by the separator.
-                String[] coordinateArray = s.split(Constants.mvnCoordinateSeparator);
+                var coordinateArray = s.split(Constants.mvnCoordinateSeparator);
 
                 // Create an instance of Dependency from it.
-                Dependency d = new Dependency(
+                var d = new Dependency(
                         coordinateArray[0],
                         coordinateArray[1],
                         coordinateArray[3],
@@ -545,7 +545,7 @@ public class MavenResolver implements Runnable {
             }
 
         } catch (IOException e) {
-            String coordinate = artifact + Constants.mvnCoordinateSeparator + group + Constants.mvnCoordinateSeparator + version;
+            var coordinate = artifact + Constants.mvnCoordinateSeparator + group + Constants.mvnCoordinateSeparator + version;
             logger.error("Error resolving Maven artifact: " + coordinate, e);
         }
 
