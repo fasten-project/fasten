@@ -77,9 +77,9 @@ public class Dependency {
     public Dependency(String mavenCoordinate) {
         if (!mavenCoordinate.matches(".+" + Constants.mvnCoordinateSeparator
                 + ".+" + Constants.mvnCoordinateSeparator + ".+")) {
-            throw new IllegalArgumentException("Maven coordinate must be in form of 'groupId"
+            throw new IllegalArgumentException("Maven coordinate must be in form of groupId"
                     + Constants.mvnCoordinateSeparator + "artifactId"
-                    + Constants.mvnCoordinateSeparator + "version'");
+                    + Constants.mvnCoordinateSeparator + "version, but was " + mavenCoordinate);
         }
         var coordinates = mavenCoordinate.split(Constants.mvnCoordinateSeparator);
         this.groupId = coordinates[0];
