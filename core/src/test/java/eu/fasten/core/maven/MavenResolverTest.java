@@ -23,6 +23,8 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.JSONB;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -33,6 +35,7 @@ import org.jooq.tools.jdbc.MockResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import static java.util.Collections.emptyList;
@@ -237,5 +240,23 @@ public class MavenResolverTest {
         var parent = new Dependency("dependency", "parent", "1");
         actual = mavenResolver.getParentArtifact("junit", "junit", "4.12", dbContext);
         assertEquals(parent, actual);
+    }
+
+    @Test
+    public void filterDependencyGraphByTimestampTest() {
+        var expected = new HashMap<Dependency, List<Pair<Dependency, Timestamp>>>();
+        expected.put(new Dependency("a:a:1"), List.of(
+                new ImmutablePair<>(new Dependency("b:b:1"), new Timestamp(1))
+        ));
+        var graph = new HashMap<Dependency, List<Pair<Dependency, Timestamp>>>();
+        graph.put(new Dependency("a:a:1"), List.of(
+                new ImmutablePair<>(new Dependency("b:b:1"), new Timestamp(1)),
+                new ImmutablePair<>(new Dependency("b:b:2"), new Timestamp(2))
+        ));
+        graph.put(new Dependency("b:b:2"), List.of(
+                new ImmutablePair<>(new Dependency("c:c:3"), new Timestamp(3))
+        ));
+        var actual = mavenResolver.filterDependencyGraphByTimestamp(graph, new Timestamp(1));
+        assertEquals(expected, actual);
     }
 }

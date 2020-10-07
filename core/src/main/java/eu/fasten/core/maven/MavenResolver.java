@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "MavenResolver")
 public class MavenResolver implements Runnable {
@@ -101,6 +102,8 @@ public class MavenResolver implements Runnable {
     @CommandLine.Option(names = {"-o", "--online"},
             description = "Use online resolution mode")
     protected boolean onlineMode;
+
+    private static Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new MavenResolver()).execute(args);
@@ -197,8 +200,6 @@ public class MavenResolver implements Runnable {
                 Arrays.asList(Constants.defaultMavenResolutionScopes.split(",").clone()),
                 dbContext);
     }
-
-    private static Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph;
 
     /**
      * Builds a full dependency tree using data from the database.
@@ -350,6 +351,36 @@ public class MavenResolver implements Runnable {
     }
 
     /**
+     * Filters dependency graph removing edges
+     * which point to artifacts released later than the provided timestamp.
+     *
+     * @param timestamp Timestamp for filtering
+     * @return Filtered dependency graph
+     */
+    public Map<Dependency, List<Pair<Dependency, Timestamp>>> filterDependencyGraphByTimestamp(
+            Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph,
+            Timestamp timestamp) {
+        var graph = dependencyGraph
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        for (var artifact : dependencyGraph.keySet()) {
+            for (var edge : dependencyGraph.get(artifact)) {
+                if (edge.getRight().after(timestamp)) {
+                    var edges = dependencyGraph.get(artifact)
+                            .stream()
+                            .filter(e -> !e.equals(edge))
+                            .collect(Collectors.toList());
+                    graph.put(artifact, edges);
+                    var dep = edge.getLeft();
+                    graph.remove(new Dependency(dep.groupId, dep.artifactId, dep.getVersion()));
+                }
+            }
+        }
+        return graph;
+    }
+
+    /**
      * Filters dependency versions by timestamp.
      * If the version of some dependency in the given dependency set was released later
      * than the provided timestamp then this dependency version will be downgraded
@@ -473,7 +504,7 @@ public class MavenResolver implements Runnable {
             // Use it in order to work with execution of commands.
             // Print the dependency tree of the downloaded pom file and format the output simply by line.
             //
-            // In order for runtime executor to run the pipeline, bash needs to be forcely called on the actual pipelined command.
+            // In order for runtime executor to run the pipeline, bash needs to be forcefully called on the actual pipelined command.
             String[] cmd = {
                     "bash",
                     "-c",
