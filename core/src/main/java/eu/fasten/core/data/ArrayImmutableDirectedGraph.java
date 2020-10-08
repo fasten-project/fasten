@@ -23,6 +23,7 @@ import java.util.Arrays;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -51,8 +52,9 @@ import it.unimi.dsi.fastutil.longs.LongSet;
  */
 
 public class ArrayImmutableDirectedGraph implements DirectedGraph {
+
 	public static class Builder {
-		private final Long2ObjectArrayMap<LongOpenHashSet> graph = new Long2ObjectArrayMap<>();
+		private final Long2ObjectOpenHashMap<LongOpenHashSet> graph = new Long2ObjectOpenHashMap<>();
 		private final LongOpenHashSet externalNodes = new LongOpenHashSet();
 		private int numArcs;
 
@@ -101,14 +103,23 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph {
 				for (int j = 0; j < outdegree; j++) succpred[i++] = s.nextLong();
 
 				final LongArrayList pred = transpose.get(x);
-				final int indegree = pred.size();
+				final int indegree = pred == null ? 0 : pred.size();
 				succpred[offset] |= (long)indegree << 32;
-				final LongIterator p = pred.iterator();
-				for (int j = 0; j < indegree; j++) succpred[i++] = p.nextLong();
+				if (indegree != 0) {
+					final LongIterator p = pred.iterator();
+					for (int j = 0; j < indegree; j++) succpred[i++] = p.nextLong();
+				}
 			}
 
 			return new ArrayImmutableDirectedGraph(GID2Offset, succpred, externalNodes);
 		}
+	}
+
+	// Constructor needed for kryo serialization
+	protected ArrayImmutableDirectedGraph() {
+		GID2Offset = null;
+		succpred = null;
+		externalNodes = null;
 	}
 
 	/** A map from node identifiers to offsets into {@link #succpred}. */

@@ -31,6 +31,7 @@ import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.exception.DataAccessException;
@@ -222,7 +223,7 @@ public class MetadataDatabasePlugin extends Plugin {
                 metadataDao.insertModuleContent(moduleId, fileId);
                 callables.addAll(extractCallablesFromType(type, moduleId, true));
             }
-            final var numInternal = callables.size();
+            var numInternal = callables.size();
 
             var externalTypes = cha.get(ExtendedRevisionCallGraph.Scope.externalTypes);
             // Extract all external callables
@@ -243,6 +244,22 @@ public class MetadataDatabasePlugin extends Plugin {
 
             // Insert all the edges
             var edges = insertEdges(callGraph.getGraph(), lidToGidMap, metadataDao);
+            
+            // Remove duplicate nodes
+            var internalIds = new LongArrayList(numInternal);
+            var externalIds = new LongArrayList(callablesIds.size() - numInternal);
+            for (int i = 0; i < numInternal; i++) {
+                internalIds.add(callablesIds.getLong(i));
+            }
+            for (int i = numInternal; i < callablesIds.size(); i++) {
+                externalIds.add(callablesIds.getLong(i));
+            }
+            var internalNodesSet = new LongLinkedOpenHashSet(internalIds);
+            var externalNodesSet = new LongLinkedOpenHashSet(externalIds);
+            numInternal = internalNodesSet.size();
+            callablesIds = new LongArrayList(internalNodesSet.size() + externalNodesSet.size());
+            callablesIds.addAll(internalNodesSet);
+            callablesIds.addAll(externalNodesSet);
 
             // Create a GID Graph for production
             this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
