@@ -84,7 +84,8 @@ public class RocksDao implements Closeable {
     public RocksDao(final String dbDir, final boolean readOnly) throws RocksDBException {
         RocksDB.loadLibrary();
         final ColumnFamilyOptions cfOptions = new ColumnFamilyOptions();
-        final DBOptions dbOptions = new DBOptions()
+		@SuppressWarnings("resource")
+		final DBOptions dbOptions = new DBOptions()
                 .setCreateIfMissing(true)
                 .setCreateMissingColumnFamilies(true);
         final List<ColumnFamilyDescriptor> cfDescriptors = Collections.singletonList(
@@ -140,6 +141,12 @@ public class RocksDao implements Closeable {
         }
 
 		if (nodes.size() <= Constants.MIN_COMPRESSED_GRAPH_SIZE) {
+			/**
+			 * In this case (very small graphs) there is not much difference with a compressed version, so we
+			 * use the fast-and-easy implementation of a DirectedGraph given in ArrayImmutableDirectedGraph. The
+			 * graph is simply serialized with kryo, as it already implements the return interface of
+			 * getGraphData().
+			 */
 			final Builder builder = new ArrayImmutableDirectedGraph.Builder();
 			for (int i = 0; i < numInternal; i++) builder.addInternalNode(nodes.get(i));
 			for (int i = numInternal; i < nodes.size(); i++) builder.addExternalNode(nodes.get(i));
@@ -153,6 +160,13 @@ public class RocksDao implements Closeable {
 			// Write to DB
 			rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
 		} else {
+			/**
+			 * In this case we compress the graph: first, we remap GIDs into a compact temporary ID space
+			 * [0..nodes.size()). Then, we build an ArrayListMutableGraph that represent the original graph in
+			 * the temporary ID space. We run LLP on the graph obtaining a permutation of the temporary ID space
+			 * that improves greatly compression. Finally, we store the permuted graph and the transpose using
+			 * BVGraph, and store the bijective mapping between GIDs and the (permuted) temporary ID space.
+			 */
 			final long[] temporary2GID = new long[nodes.size()];
 			final var nodesList = new LongArrayList(nodes);
 			LongIterators.unwrap(nodesList.iterator(), temporary2GID);
@@ -181,14 +195,15 @@ public class RocksDao implements Closeable {
 			final var graphProperties = new Properties();
 			final var transposeProperties = new Properties();
 			FileInputStream propertyFile;
-			// Compress, load and serialize graph
 
 			final ImmutableGraph unpermutedGraph = mutableGraph.immutableView();
 			final int numNodes = unpermutedGraph.numNodes();
+			// Run LLP on the graph
 			final ImmutableGraph symGraph = new ArrayListMutableGraph(Transform.symmetrize(unpermutedGraph)).immutableView();
 			final LayeredLabelPropagation clustering = new LayeredLabelPropagation(symGraph, null, Math.min(Runtime.getRuntime().availableProcessors(), 1 + numNodes / 100), 0, false);
 			final int[] perm = clustering.computePermutation(LayeredLabelPropagation.DEFAULT_GAMMAS, null);
 
+			// Fix permutation returned by LLP so that it doesn't mix internal and external nodes
 			Util.invertPermutationInPlace(perm);
 			final int[] sorted = new int[numNodes];
 			int internal = 0, external = numInternal;
@@ -198,6 +213,7 @@ public class RocksDao implements Closeable {
 			}
 			Util.invertPermutationInPlace(sorted);
 
+			// Permute, compress and load the graph
 			final ImmutableGraph graph = Transform.map(unpermutedGraph, sorted);
 			BVGraph.store(graph, file.toString());
 			propertyFile = new FileInputStream(file + BVGraph.PROPERTIES_EXTENSION);
@@ -207,14 +223,17 @@ public class RocksDao implements Closeable {
 			final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
 			kryo.writeObject(bbo, Boolean.TRUE);
 			kryo.writeObject(bbo, BVGraph.load(file.toString()));
-			// Compute LIDs according to the current node renumbering based on BFS
+
+			// Compute LIDs according to the current node numbering based on the LLP permutation
 			final long[] LID2GID = new long[temporary2GID.length];
 			for (int x = 0; x < temporary2GID.length; x++) {
 				LID2GID[sorted[x]] = temporary2GID[x];
 			}
 
+			// Compute a succinct version of the function mapping GIDs to LIDs
 			final GOV3LongFunction GID2LID = new GOV3LongFunction.Builder().keys(LongArrayList.wrap(LID2GID)).build();
-			// Compress, load and serialize transpose graph
+
+			// Compress and load the transpose
 			BVGraph.store(Transform.transpose(graph), file.toString());
 			propertyFile = new FileInputStream(file + BVGraph.PROPERTIES_EXTENSION);
 			transposeProperties.load(propertyFile);
