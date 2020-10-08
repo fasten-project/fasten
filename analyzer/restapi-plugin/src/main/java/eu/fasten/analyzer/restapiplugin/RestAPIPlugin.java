@@ -56,7 +56,7 @@ public class RestAPIPlugin extends Plugin {
         /**
          * RESTeasy's HttpServletDispatcher at `APPLICATION_PATH`/*.
          */
-        protected static final String APPLICATION_PATH = "/api";
+        protected static final String APPLICATION_PATH = "";
 
         /**
          * REST server object.
