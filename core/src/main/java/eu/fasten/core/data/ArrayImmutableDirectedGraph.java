@@ -102,10 +102,12 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph {
 				for (int j = 0; j < outdegree; j++) succpred[i++] = s.nextLong();
 
 				final LongArrayList pred = transpose.get(x);
-				final int indegree = pred.size();
+				final int indegree = pred == null ? 0 : pred.size();
 				succpred[offset] |= (long)indegree << 32;
-				final LongIterator p = pred.iterator();
-				for (int j = 0; j < indegree; j++) succpred[i++] = p.nextLong();
+				if (indegree != 0) {
+					final LongIterator p = pred.iterator();
+					for (int j = 0; j < indegree; j++) succpred[i++] = p.nextLong();
+				}
 			}
 
 			return new ArrayImmutableDirectedGraph(GID2Offset, succpred, externalNodes);
