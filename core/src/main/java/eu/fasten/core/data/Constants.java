@@ -18,4 +18,6 @@ public class Constants {
 
     public static final String pgPasswordEnvVariable = "PGPASSWORD";
 
+	public static final int MIN_COMPRESSED_GRAPH_SIZE = 100;
+
 }

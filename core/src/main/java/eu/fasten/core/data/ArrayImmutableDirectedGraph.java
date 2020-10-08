@@ -23,6 +23,7 @@ import java.util.Arrays;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -52,7 +53,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 
 public class ArrayImmutableDirectedGraph implements DirectedGraph {
 	public static class Builder {
-		private final Long2ObjectArrayMap<LongOpenHashSet> graph = new Long2ObjectArrayMap<>();
+		private final Long2ObjectOpenHashMap<LongOpenHashSet> graph = new Long2ObjectOpenHashMap<>();
 		private final LongOpenHashSet externalNodes = new LongOpenHashSet();
 		private int numArcs;
 
