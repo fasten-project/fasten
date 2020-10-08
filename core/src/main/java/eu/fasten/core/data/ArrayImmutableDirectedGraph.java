@@ -52,6 +52,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
  */
 
 public class ArrayImmutableDirectedGraph implements DirectedGraph {
+
 	public static class Builder {
 		private final Long2ObjectOpenHashMap<LongOpenHashSet> graph = new Long2ObjectOpenHashMap<>();
 		private final LongOpenHashSet externalNodes = new LongOpenHashSet();
@@ -112,6 +113,13 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph {
 
 			return new ArrayImmutableDirectedGraph(GID2Offset, succpred, externalNodes);
 		}
+	}
+
+	// Constructor needed for kryo serialization
+	protected ArrayImmutableDirectedGraph() {
+		GID2Offset = null;
+		succpred = null;
+		externalNodes = null;
 	}
 
 	/** A map from node identifiers to offsets into {@link #succpred}. */
