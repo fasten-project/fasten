@@ -16,8 +16,7 @@ The FASTEN Rest API Plugin is a tool to expose canned queries from the [Metadata
 
 ## Design
 
-- [Response codes table](design/response_codes.md)
-- ~~API specifications~~
+- [Endpoints details](https://github.com/fasten-project/fasten/wiki/API-endpoints-for-Maven-projects)
 
 ## Arguments
 - `-h` `--help` Show this help message and exit.
