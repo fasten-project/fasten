@@ -19,12 +19,12 @@
 package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -49,10 +49,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "MavenResolver")
 public class MavenResolver implements Runnable {
@@ -102,8 +100,6 @@ public class MavenResolver implements Runnable {
     @CommandLine.Option(names = {"-o", "--online"},
             description = "Use online resolution mode")
     protected boolean onlineMode;
-
-    private static Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new MavenResolver()).execute(args);
@@ -213,20 +209,18 @@ public class MavenResolver implements Runnable {
     public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
                                                   DSLContext dbContext) {
         var artifact = new Dependency(groupId, artifactId, version);
-        if (dependencyGraph == null) {
-            dependencyGraph = new DependencyGraphBuilder().buildMavenDependencyGraph(dbContext);
-        }
-        var edges = dependencyGraph.get(artifact);
+        List<Dependency> dependencies = new ArrayList<>(this.getArtifactDependenciesFromDatabase(
+                artifact.getGroupId(), artifact.getArtifactId(),
+                artifact.getVersion(), dbContext
+        ));
         DependencyTree dependencyTree;
-        if (edges == null || edges.isEmpty()) {
+        if (dependencies.isEmpty()) {
             dependencyTree = new DependencyTree(artifact, new ArrayList<>());
         } else {
             var childTrees = new ArrayList<DependencyTree>();
-            for (var edge : edges) {
-                childTrees.add(this.buildFullDependencyTree(
-                        edge.getLeft().getGroupId(), edge.getLeft().getArtifactId(),
-                        edge.getLeft().getVersion(), dbContext
-                ));
+            for (var dep : dependencies) {
+                childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
+                        dep.getVersion(), dbContext));
             }
             dependencyTree = new DependencyTree(artifact, childTrees);
         }
@@ -351,33 +345,28 @@ public class MavenResolver implements Runnable {
     }
 
     /**
-     * Filters dependency graph removing edges
-     * which point to artifacts released later than the provided timestamp.
+     * Retrieve all direct dependencies of certain Maven artifact from the database.
      *
-     * @param timestamp Timestamp for filtering
-     * @return Filtered dependency graph
+     * @param groupId    groupId of the artifact to find its dependencies
+     * @param artifactId artifactId of the artifact to find its dependencies
+     * @param version    version of the artifact to find its dependencies
+     * @param context    Database connection context
+     * @return A list of direct dependencies of the given Maven artifact
      */
-    public Map<Dependency, List<Pair<Dependency, Timestamp>>> filterDependencyGraphByTimestamp(
-            Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph,
-            Timestamp timestamp) {
-        var graph = dependencyGraph
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        for (var artifact : dependencyGraph.keySet()) {
-            for (var edge : dependencyGraph.get(artifact)) {
-                if (edge.getRight().after(timestamp)) {
-                    var edges = dependencyGraph.get(artifact)
-                            .stream()
-                            .filter(e -> !e.equals(edge))
-                            .collect(Collectors.toList());
-                    graph.put(artifact, edges);
-                    var dep = edge.getLeft();
-                    graph.remove(new Dependency(dep.groupId, dep.artifactId, dep.getVersion()));
-                }
-            }
-        }
-        return graph;
+    public List<Dependency> getArtifactDependenciesFromDatabase(String groupId, String artifactId,
+                                                                String version, DSLContext context) {
+        var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
+        var result = context.select(Dependencies.DEPENDENCIES.METADATA)
+                .from(Dependencies.DEPENDENCIES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID
+                        .eq(PackageVersions.PACKAGE_VERSIONS.ID))
+                .join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
+                .fetch();
+        return result.map(r -> Dependency.fromJSON(new JSONObject(r.component1().data())));
     }
 
     /**

@@ -23,8 +23,6 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.JSONB;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -35,7 +33,6 @@ import org.jooq.tools.jdbc.MockResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.sql.Timestamp;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import static java.util.Collections.emptyList;
@@ -54,10 +51,16 @@ public class MavenResolverTest {
     @Test
     public void resolveDependenciesTest() {
         class DataProvider implements MockDataProvider {
+            private boolean queriesDependencies = false;
+
             @Override
             public MockResult[] execute(MockExecuteContext ctx) {
                 var create = DSL.using(SQLDialect.POSTGRES);
                 var mockData = new MockResult[1];
+                var dependencyResult = create.newResult(Dependencies.DEPENDENCIES.METADATA);
+                dependencyResult.add(create
+                        .newRecord(Dependencies.DEPENDENCIES.METADATA)
+                        .values(JSONB.valueOf("{\"type\": \"\", \"scope\": \"\", \"groupId\": \"org.hamcrest\", \"optional\": false, \"artifactId\": \"hamcrest-core\", \"classifier\": \"\", \"exclusions\": [], \"versionConstraints\": [{\"lowerBound\": \"1.3\", \"upperBound\": \"1.3\", \"isLowerHardRequirement\": false, \"isUpperHardRequirement\": false}]}")));
                 var packageVersionsResult = create.newResult(PackageVersions.PACKAGE_VERSIONS.VERSION);
                 packageVersionsResult.add(create
                         .newRecord(PackageVersions.PACKAGE_VERSIONS.VERSION)
@@ -66,18 +69,14 @@ public class MavenResolverTest {
                 packageVersionMetadataResult.add(create
                         .newRecord(PackageVersions.PACKAGE_VERSIONS.METADATA)
                         .values(JSONB.valueOf("{\"parentCoordinate\":\"\"}")));
-                if (ctx.sql().startsWith("select \"public\".\"packages\".\"package_name\", \"public\".\"package_versions\".\"version\"")) {
-                    var artifactsResult = create.newResult(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION, Dependencies.DEPENDENCIES.METADATA);
-                    artifactsResult.add(create
-                            .newRecord(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION, Dependencies.DEPENDENCIES.METADATA)
-                            .values("junit:junit", "4.12", JSONB.valueOf("{\"type\": \"\", \"scope\": \"\", \"groupId\": \"org.hamcrest\", \"optional\": false, \"artifactId\": \"hamcrest-core\", \"classifier\": \"\", \"exclusions\": [], \"versionConstraints\": [{\"lowerBound\": \"1.3\", \"upperBound\": \"1.3\", \"isLowerHardRequirement\": false, \"isUpperHardRequirement\": false}]}")));
-                    artifactsResult.add(create
-                            .newRecord(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION, Dependencies.DEPENDENCIES.METADATA)
-                            .values("junit:junit", "4.12", JSONB.valueOf("{\"type\": \"\", \"scope\": \"\", \"groupId\": \"org.hamcrest\", \"optional\": false, \"artifactId\": \"hamcrest-core\", \"classifier\": \"\", \"exclusions\": [], \"versionConstraints\": [{\"lowerBound\": \"1.2\", \"upperBound\": \"1.2\", \"isLowerHardRequirement\": false, \"isUpperHardRequirement\": false}]}")));
-                    mockData[0] = new MockResult(artifactsResult.size(), artifactsResult);
-                    return mockData;
-                }
-                if (ctx.sql().startsWith("select \"public\".\"package_versions\".\"version\"")) {
+                if (ctx.sql().startsWith("select \"public\".\"dependencies\".\"metadata\"")) {
+                    if (!queriesDependencies) {
+                        mockData[0] = new MockResult(dependencyResult.size(), dependencyResult);
+                        queriesDependencies = true;
+                    } else {
+                        return new MockResult[]{new MockResult(0, create.newResult(Dependencies.DEPENDENCIES.METADATA))};
+                    }
+                } else if (ctx.sql().startsWith("select \"public\".\"package_versions\".\"version\"")) {
                     mockData[0] = new MockResult(packageVersionsResult.size(), packageVersionsResult);
                 } else if (ctx.sql().startsWith("select \"public\".\"package_versions\".\"metadata\"")) {
                     mockData[0] = new MockResult(packageVersionMetadataResult.size(), packageVersionMetadataResult);
@@ -94,23 +93,23 @@ public class MavenResolverTest {
     @Test
     public void buildFullDependencyTreeTest() {
         class DataProvider implements MockDataProvider {
+            private boolean queried = false;
+
             @Override
             public MockResult[] execute(MockExecuteContext ctx) {
                 var create = DSL.using(SQLDialect.POSTGRES);
-                if (ctx.sql().startsWith("select \"public\".\"packages\".\"package_name\", \"public\".\"package_versions\".\"version\", \"public\".\"package_versions\".\"created_at\"")) {
-                    return new MockResult[]{new MockResult(0, create.newResult(
-                            Packages.PACKAGES.PACKAGE_NAME,
-                            PackageVersions.PACKAGE_VERSIONS.VERSION,
-                            PackageVersions.PACKAGE_VERSIONS.CREATED_AT
-                    ))};
+                if (!queried) {
+                    queried = true;
+                    var mockData = new MockResult[1];
+                    var dependencyResult = create.newResult(Dependencies.DEPENDENCIES.METADATA);
+                    dependencyResult.add(create
+                            .newRecord(Dependencies.DEPENDENCIES.METADATA)
+                            .values(JSONB.valueOf("{\"type\": \"\", \"scope\": \"\", \"groupId\": \"org.hamcrest\", \"optional\": false, \"artifactId\": \"hamcrest-core\", \"classifier\": \"\", \"exclusions\": [], \"versionConstraints\": [{\"lowerBound\": \"1.3\", \"upperBound\": \"1.3\", \"isLowerHardRequirement\": false, \"isUpperHardRequirement\": false}]}")));
+                    mockData[0] = new MockResult(dependencyResult.size(), dependencyResult);
+                    return mockData;
+                } else {
+                    return new MockResult[]{new MockResult(0, create.newResult(Dependencies.DEPENDENCIES.METADATA))};
                 }
-                var mockData = new MockResult[1];
-                var artifactsResult = create.newResult(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION, Dependencies.DEPENDENCIES.METADATA);
-                artifactsResult.add(create
-                        .newRecord(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION, Dependencies.DEPENDENCIES.METADATA)
-                        .values("junit:junit", "4.12", JSONB.valueOf("{\"type\": \"\", \"scope\": \"\", \"groupId\": \"org.hamcrest\", \"optional\": false, \"artifactId\": \"hamcrest-core\", \"classifier\": \"\", \"exclusions\": [], \"versionConstraints\": [{\"lowerBound\": \"1.3\", \"upperBound\": \"1.3\", \"isLowerHardRequirement\": false, \"isUpperHardRequirement\": false}]}")));
-                mockData[0] = new MockResult(artifactsResult.size(), artifactsResult);
-                return mockData;
             }
         }
         var dbContext = DSL.using(new MockConnection(new DataProvider()));
@@ -137,7 +136,7 @@ public class MavenResolverTest {
         var actual = mavenResolver.buildFullDependencyTree("hello", "world", "42", dbContext);
         assertEquals(expected, actual);
     }
-    
+
     @Test
     public void resolveFullDependencySetOnlineTest() {
         var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.3"));
@@ -240,23 +239,5 @@ public class MavenResolverTest {
         var parent = new Dependency("dependency", "parent", "1");
         actual = mavenResolver.getParentArtifact("junit", "junit", "4.12", dbContext);
         assertEquals(parent, actual);
-    }
-
-    @Test
-    public void filterDependencyGraphByTimestampTest() {
-        var expected = new HashMap<Dependency, List<Pair<Dependency, Timestamp>>>();
-        expected.put(new Dependency("a:a:1"), List.of(
-                new ImmutablePair<>(new Dependency("b:b:1"), new Timestamp(1))
-        ));
-        var graph = new HashMap<Dependency, List<Pair<Dependency, Timestamp>>>();
-        graph.put(new Dependency("a:a:1"), List.of(
-                new ImmutablePair<>(new Dependency("b:b:1"), new Timestamp(1)),
-                new ImmutablePair<>(new Dependency("b:b:2"), new Timestamp(2))
-        ));
-        graph.put(new Dependency("b:b:2"), List.of(
-                new ImmutablePair<>(new Dependency("c:c:3"), new Timestamp(3))
-        ));
-        var actual = mavenResolver.filterDependencyGraphByTimestamp(graph, new Timestamp(1));
-        assertEquals(expected, actual);
     }
 }
