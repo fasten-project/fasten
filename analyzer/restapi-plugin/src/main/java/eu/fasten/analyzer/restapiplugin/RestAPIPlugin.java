@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin;
 
 import eu.fasten.core.plugins.DBConnector;
+import eu.fasten.server.connectors.PostgresConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -30,6 +31,8 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.sql.SQLException;
 
 public class RestAPIPlugin extends Plugin {
 
@@ -65,16 +68,30 @@ public class RestAPIPlugin extends Plugin {
          */
         protected final int SERVER_PORT;
 
+        /**
+         * KnoweldgeBase information.
+         */
+        protected final String KB_URL, KB_USER;
+
+        /**
+         * KnoweldgeBase DSL context.
+         */
+        protected DSLContext kbDslContext;
+
         private Throwable pluginError = null;
 
         /**
          * Default constructor, setting up the REST server.
          * This replaces the deployment descriptor file.
          *
-         * @param port  REST server port.
+         * @param port   REST server port.
+         * @param kbUrl  KnowledgeBase URL.
+         * @param kbUser KnowledgeBase username.
          */
-        public RestAPIExtension(int port) {
+        public RestAPIExtension(int port, String kbUrl, String kbUser) {
             logger.info("Setting up the REST server...");
+            KB_URL = kbUrl;
+            KB_USER = kbUser;
             SERVER_PORT = port;
             server = new Server(SERVER_PORT);
             final ServletContextHandler context = new ServletContextHandler(server, CONTEXT_ROOT);
@@ -90,6 +107,7 @@ public class RestAPIPlugin extends Plugin {
 
         @Override
         public void setDBConnection(DSLContext dslContext) {
+            kbDslContext = dslContext;
         }
 
         @Override
@@ -113,6 +131,15 @@ public class RestAPIPlugin extends Plugin {
          */
         @Override
         public void start() {
+
+            logger.info("Establishing connection to the KnowledgeBase...");
+            try {
+                setDBConnection(PostgresConnector.getDSLContext(KB_URL, KB_USER));
+            } catch (SQLException e) {
+                logger.error("Couldn't connect to the KnowledgeBase", e);
+                return;
+            }
+            logger.info("...KnowledgeBase connection established successfully.");
 
             logger.info("Starting the REST server on port " + SERVER_PORT + "...");
             try {

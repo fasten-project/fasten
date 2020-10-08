@@ -29,6 +29,18 @@ public class Main implements Runnable {
             defaultValue = "8080")
     int port;
 
+    @CommandLine.Option(names = {"-d", "--db", "--database"},
+            paramLabel = "dbURL",
+            description = "KnowledgeBase URL",
+            defaultValue = "jdbc:postgresql:postgres")
+    String kbUrl;
+
+    @CommandLine.Option(names = {"-u", "--user", "--username"},
+            paramLabel = "dbUser",
+            description = "KnowledgeBase username",
+            defaultValue = "user")
+    String kbUser;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -36,7 +48,7 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var restAPIPlugin = new RestAPIPlugin.RestAPIExtension(port);
+        var restAPIPlugin = new RestAPIPlugin.RestAPIExtension(port, kbUrl, kbUser);
         restAPIPlugin.start();
     }
 }
