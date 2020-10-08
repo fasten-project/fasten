@@ -13,7 +13,6 @@ public class RestApplication extends Application {
     @Override
     public Set<Object> getSingletons() {
         HashSet<Object> set = new HashSet<Object>();
-        set.add(new MessageResource());
         return set;
     }
 }
