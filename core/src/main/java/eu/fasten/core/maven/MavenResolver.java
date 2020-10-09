@@ -19,12 +19,12 @@
 package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -49,7 +49,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -199,8 +198,6 @@ public class MavenResolver implements Runnable {
                 dbContext);
     }
 
-    private static Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph;
-
     /**
      * Builds a full dependency tree using data from the database.
      *
@@ -213,20 +210,18 @@ public class MavenResolver implements Runnable {
     public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
                                                   DSLContext dbContext) {
         var artifact = new Dependency(groupId, artifactId, version);
-        if (dependencyGraph == null) {
-            dependencyGraph = new DependencyGraphBuilder().buildMavenDependencyGraph(dbContext);
-        }
-        var edges = dependencyGraph.get(artifact);
+        List<Dependency> dependencies = new ArrayList<>(this.getArtifactDependenciesFromDatabase(
+                artifact.getGroupId(), artifact.getArtifactId(),
+                artifact.getVersion(), dbContext
+        ));
         DependencyTree dependencyTree;
-        if (edges == null || edges.isEmpty()) {
+        if (dependencies.isEmpty()) {
             dependencyTree = new DependencyTree(artifact, new ArrayList<>());
         } else {
             var childTrees = new ArrayList<DependencyTree>();
-            for (var edge : edges) {
-                childTrees.add(this.buildFullDependencyTree(
-                        edge.getLeft().getGroupId(), edge.getLeft().getArtifactId(),
-                        edge.getLeft().getVersion(), dbContext
-                ));
+            for (var dep : dependencies) {
+                childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
+                        dep.getVersion(), dbContext));
             }
             dependencyTree = new DependencyTree(artifact, childTrees);
         }
@@ -351,6 +346,31 @@ public class MavenResolver implements Runnable {
     }
 
     /**
+     * Retrieve all direct dependencies of certain Maven artifact from the database.
+     *
+     * @param groupId    groupId of the artifact to find its dependencies
+     * @param artifactId artifactId of the artifact to find its dependencies
+     * @param version    version of the artifact to find its dependencies
+     * @param context    Database connection context
+     * @return A list of direct dependencies of the given Maven artifact
+     */
+    public List<Dependency> getArtifactDependenciesFromDatabase(String groupId, String artifactId,
+                                                                String version, DSLContext context) {
+        var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
+        var result = context.select(Dependencies.DEPENDENCIES.METADATA)
+                .from(Dependencies.DEPENDENCIES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID
+                        .eq(PackageVersions.PACKAGE_VERSIONS.ID))
+                .join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
+                .fetch();
+        return result.map(r -> Dependency.fromJSON(new JSONObject(r.component1().data())));
+    }
+
+    /**
      * Filters dependency versions by timestamp.
      * If the version of some dependency in the given dependency set was released later
      * than the provided timestamp then this dependency version will be downgraded
@@ -460,19 +480,22 @@ public class MavenResolver implements Runnable {
                                                           long timestamp, DSLContext dbContext) throws NoSuchElementException {
 
         // Result set.
-        var dependencySet = (Set<Dependency>)(new HashSet<Dependency>());
+        var dependencySet = (Set<Dependency>) (new HashSet<Dependency>());
 
         // Download pom file from the repo.
         var pomOpt = downloadPom(artifact, group, version);
 
         // Await exception if pom file is unavailable.
-        var pom = pomOpt.get();
+        var pom = pomOpt.orElseGet(() -> {
+            throw new NoSuchElementException("Could not download artifact");
+        });
 
         try {
 
             // Print the dependency tree of the downloaded pom file and format the output simply by line.
-            // In order for runtime executor to run the pipeline, bash needs to be forcely called on the actual pipelined command.
-            var cmd = new String[]{
+            //
+            // In order for runtime executor to run the pipeline, bash needs to be forcefully called on the actual pipelined command.
+            String[] cmd = {
                     "bash",
                     "-c",
                     "mvn dependency:list -f" + pom.getName() +                                  // Get the list of dependencies applied on the temp file.

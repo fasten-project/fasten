@@ -23,9 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 public class ArrayImmutableDirectedGraphTest {
     @Test
@@ -83,4 +84,16 @@ public class ArrayImmutableDirectedGraphTest {
         assertFalse(graph.isInternal(78));
 
     }
+
+	@Test
+	public void testNoPred() {
+		final ArrayImmutableDirectedGraph.Builder builder = new ArrayImmutableDirectedGraph.Builder();
+		builder.addInternalNode(12);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			builder.addInternalNode(12);
+		});
+		builder.addInternalNode(34);
+		final ArrayImmutableDirectedGraph graph = builder.build();
+		assertEquals(2, graph.numNodes());
+	}
 }
