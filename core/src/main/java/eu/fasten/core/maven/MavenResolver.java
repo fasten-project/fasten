@@ -487,7 +487,7 @@ public class MavenResolver implements Runnable {
 
         // Await exception if pom file is unavailable.
         var pom = pomOpt.orElseGet(() -> {
-            throw new NoSuchElementException("Could not download artifact");
+            throw new NoSuchElementException("Could not download pom file");
         });
 
         try {
