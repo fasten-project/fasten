@@ -499,6 +499,10 @@ public class MavenResolver implements Runnable {
                 // Split the dependency's coordinate by the separator.
                 var coordinateArray = s.split(Constants.mvnCoordinateSeparator);
 
+                // Must be artifact:group:type:version:scope
+                if(coordinateArray.length != 5)
+                    continue;
+
                 // Create an instance of Dependency from it.
                 var d = new Dependency(
                         coordinateArray[0],
