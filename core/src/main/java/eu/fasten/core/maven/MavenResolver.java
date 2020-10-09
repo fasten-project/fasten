@@ -519,27 +519,8 @@ public class MavenResolver implements Runnable {
             // Parse the output from the command.
             while ((s = stdInput.readLine()) != null) {
 
-                // Split the dependency's coordinate by the separator.
-                var coordinateArray = s.split(Constants.mvnCoordinateSeparator);
-
-                // Must be artifact:group:type:version:scope
-                if(coordinateArray.length != 5)
-                    continue;
-
-                // Create an instance of Dependency from it.
-                var d = new Dependency(
-                        coordinateArray[0],
-                        coordinateArray[1],
-                        coordinateArray[3],
-                        new ArrayList<>(),
-                        coordinateArray[4],
-                        false,
-                        coordinateArray[2],
-                        ""
-                );
-
-                // Add to result set.
-                dependencySet.add(d);
+                // Add to result set a new instance of the Dependency object.
+                dependencySet.add(new Dependency(s));
 
             }
 

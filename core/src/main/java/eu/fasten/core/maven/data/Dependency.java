@@ -19,6 +19,8 @@
 package eu.fasten.core.maven.data;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.IllegalFormatException;
 import java.util.List;
 import eu.fasten.core.data.Constants;
 import org.apache.commons.lang.StringUtils;
@@ -35,6 +37,19 @@ public class Dependency {
     public final boolean optional;
     public final String type;
     public final String classifier;
+
+    /**
+     * Valid dependency scopes. Defined by maven.
+     * Learn more: http://maven.apache.org/pom.html
+     */
+    final String[] SCOPES = {
+            "compile",
+            "provided",
+            "runtime",
+            "test",
+            "system",
+            "import"
+    };
 
     /**
      * Constructor for Dependency object.
@@ -74,22 +89,77 @@ public class Dependency {
         this(groupId, artifactId, version, new ArrayList<>(), "", false, "", "");
     }
 
+    /**
+     * Constructor for Dependency object.
+     * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
+     *
+     * Allowed format:
+     *     group:artifact:type[:classifier]:version:scope:pathname [(optional)]
+     *
+     * @param mavenCoordinate the string of coordinate parameters concatenated by a separator.
+     * @throws IllegalArgumentException if the coordinate is wrongly formatted.
+     */
     public Dependency(String mavenCoordinate) {
-        if (!mavenCoordinate.matches(".+" + Constants.mvnCoordinateSeparator
-                + ".+" + Constants.mvnCoordinateSeparator + ".+")) {
-            throw new IllegalArgumentException("Maven coordinate must be in form of groupId"
-                    + Constants.mvnCoordinateSeparator + "artifactId"
-                    + Constants.mvnCoordinateSeparator + "version, but was " + mavenCoordinate);
+
+        // Used to separate the coordinate itself and the optional tag.
+        // Some coordinates may have format artifact:group:type:version:scope (optional),
+        // which means that they are optional.
+        var splitBySpace = mavenCoordinate.split(" ");
+
+        var optional = false;
+        if (splitBySpace.length > 1 && splitBySpace[1].equals("(optional)")) {
+            optional = true;
         }
-        var coordinates = mavenCoordinate.split(Constants.mvnCoordinateSeparator);
+
+        var coordinates = splitBySpace[0].split(Constants.mvnCoordinateSeparator);
+        var sep = Constants.mvnCoordinateSeparator;
+
+        if (coordinates.length > 7 || coordinates.length < 3) {
+            throw new IllegalArgumentException(
+                    String.format(
+                        "Maven coordinate must be in form of " +
+                                "group%1$sartifact%1$stype[%1$sclassifier]%1$sversion%1$sscope[%1$spathname] [(optional)] or group:artifact:version, " +
+                                "but was %2$s",
+                        sep,
+                        mavenCoordinate
+                    )
+            );
+        }
+
+        this.optional = optional;
         this.groupId = coordinates[0];
         this.artifactId = coordinates[1];
-        this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[2]);
         this.exclusions = new ArrayList<>();
-        this.scope = "";
-        this.optional = false;
-        this.type = "";
-        this.classifier = "";
+
+        // If the coordinate is in the short form group:artifact:version with 3 attributes,
+        // else some more complex structure.
+        if (coordinates.length == 3) {
+            this.type = "";
+            this.classifier = "";
+            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[2]);
+            this.scope = "";
+        } else {
+
+            this.type = coordinates[2];
+
+            var scopesList = Arrays.asList(SCOPES);
+
+            // If scope is found at index 4,
+            // else another option can be at index 5,
+            // otherwise throw an exception of missing valid scope.
+            if (scopesList.contains(coordinates[4])) {
+                this.classifier = "";
+                this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[3]);
+                this.scope = coordinates[4];
+            } else if (scopesList.contains(coordinates[5])){
+                this.classifier = coordinates[3];
+                this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[4]);
+                this.scope = coordinates[5];
+            } else {
+                throw new IllegalArgumentException("The scope is invalid. Allowed one of " + Arrays.toString(SCOPES));
+            }
+
+        }
     }
 
     /**
