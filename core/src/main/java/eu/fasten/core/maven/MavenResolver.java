@@ -50,6 +50,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 
@@ -453,9 +454,10 @@ public class MavenResolver implements Runnable {
      * @param timestamp Timestamp for filtering dependency versions (-1 in order not to filter)
      * @param dbContext Database connection context (needed only for filtering by timestamp)
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
+     * @throws NoSuchElementException if pom file was not retrieved
      */
     public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version,
-                                                          long timestamp, DSLContext dbContext) {
+                                                          long timestamp, DSLContext dbContext) throws NoSuchElementException {
 
         // Result set.
         var dependencySet = (Set<Dependency>)(new HashSet<Dependency>());
@@ -463,9 +465,7 @@ public class MavenResolver implements Runnable {
         // Download pom file from the repo.
         var pomOpt = downloadPom(artifact, group, version);
 
-        // If it's unavailable, return empty set of dependencies.
-        if (pomOpt.isEmpty())
-            return dependencySet;
+        // Await exception if pom file is unavailable.
         var pom = pomOpt.get();
 
         try {
