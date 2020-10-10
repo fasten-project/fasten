@@ -25,7 +25,6 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
-import org.apache.commons.lang3.SystemUtils;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
