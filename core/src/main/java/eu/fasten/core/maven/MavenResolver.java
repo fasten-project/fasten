@@ -498,9 +498,10 @@ public class MavenResolver implements Runnable {
             String[] cmd = new String[]{
                     "bash",
                     "-c",
-                    "mvn dependency:list -f" + pom.getName() +                                  // Get the list of dependencies applied on the temp file.
-                            "| grep -e '^\\[.*\\I\\N\\F\\O.*\\]    .*:.*:.*:.*:.*' " +          // Match only this list, ignore other output garbage.
-                            "| sed -e 's/.*    \\(.*\\)$/\\1/'" +                               // Remove garbage from the line leaving only the coordinate (artifact:group:type:version:scope).
+                    "mvn -q dependency:list -f" + pom.getName() + " -DoutputFile=>(cat) " +       // Get the list of dependencies applied on the temp file.
+                            "| tail -n +3" +                                                      // Match only this list, ignore other output garbage.
+                            "| grep ." +                                                          // Remove garbage empty lines
+                            "| sed -e 's/^[[:space:]]*//'" +                                      // Remove spaces leading spaces in coordinates
                             "| sort | uniq"
             };
             var process = Runtime.getRuntime().exec(cmd, null, pom.getParentFile());

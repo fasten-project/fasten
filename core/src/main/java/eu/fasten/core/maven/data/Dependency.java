@@ -120,7 +120,7 @@ public class Dependency {
                                 "group%1$sartifact%1$stype[%1$sclassifier]%1$sversion%1$sscope[%1$spathname] [(optional)] or group:artifact:version, " +
                                 "but was %2$s",
                         sep,
-                        mavenCoordinate
+                        mavenCoordinate.isBlank() ? "[empty]" : mavenCoordinate
                     )
             );
         }
