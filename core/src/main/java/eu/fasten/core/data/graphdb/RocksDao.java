@@ -126,9 +126,25 @@ public class RocksDao implements Closeable {
      * @throws IOException      if there was a problem writing to files
      * @throws RocksDBException if there was a problem inserting in the database
      */
-    public void saveToRocksDb(final long index, final List<Long> nodes, final int numInternal, final List<List<Long>> edges)
+    public void saveToRocksDb(final long index, List<Long> nodes, int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
-        final var nodesSet = new LongLinkedOpenHashSet(nodes);
+
+		var internalIds = new LongArrayList(numInternal);
+		var externalIds = new LongArrayList(nodes.size() - numInternal);
+		for (int i = 0; i < numInternal; i++) {
+			internalIds.add(nodes.get(i).longValue());
+		}
+		for (int i = numInternal; i < nodes.size(); i++) {
+			externalIds.add(nodes.get(i).longValue());
+		}
+		var internalNodesSet = new LongLinkedOpenHashSet(internalIds);
+		var externalNodesSet = new LongLinkedOpenHashSet(externalIds);
+		numInternal = internalNodesSet.size();
+		nodes = new LongArrayList(internalNodesSet.size() + externalNodesSet.size());
+		nodes.addAll(internalNodesSet);
+		nodes.addAll(externalNodesSet);
+
+		final var nodesSet = new LongLinkedOpenHashSet(nodes);
         final var edgeNodesSet = new LongOpenHashSet();
         for (final var edge : edges) {
             edgeNodesSet.addAll(edge);
@@ -141,7 +157,7 @@ public class RocksDao implements Closeable {
         }
 
 		if (nodes.size() <= Constants.MIN_COMPRESSED_GRAPH_SIZE) {
-			/**
+			/*
 			 * In this case (very small graphs) there is not much difference with a compressed version, so we
 			 * use the fast-and-easy implementation of a DirectedGraph given in ArrayImmutableDirectedGraph. The
 			 * graph is simply serialized with kryo, as it already implements the return interface of
@@ -160,7 +176,7 @@ public class RocksDao implements Closeable {
 			// Write to DB
 			rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
 		} else {
-			/**
+			/*
 			 * In this case we compress the graph: first, we remap GIDs into a compact temporary ID space
 			 * [0..nodes.size()). Then, we build an ArrayListMutableGraph that represent the original graph in
 			 * the temporary ID space. We run LLP on the graph obtaining a permutation of the temporary ID space
