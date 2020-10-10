@@ -20,7 +20,6 @@ package eu.fasten.core.maven.data;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.IllegalFormatException;
 import java.util.List;
 import eu.fasten.core.data.Constants;
 import org.apache.commons.lang.StringUtils;

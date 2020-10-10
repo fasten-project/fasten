@@ -25,6 +25,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
+import org.apache.commons.lang3.SystemUtils;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -480,7 +481,7 @@ public class MavenResolver implements Runnable {
                                                           long timestamp, DSLContext dbContext) throws NoSuchElementException {
 
         // Result set.
-        var dependencySet = (Set<Dependency>) (new HashSet<Dependency>());
+        Set<Dependency> dependencySet = new HashSet<>();
 
         // Download pom file from the repo.
         var pomOpt = downloadPom(artifact, group, version);
@@ -495,14 +496,26 @@ public class MavenResolver implements Runnable {
             // Print the dependency tree of the downloaded pom file and format the output simply by line.
             //
             // In order for runtime executor to run the pipeline, bash needs to be forcefully called on the actual pipelined command.
-            String[] cmd = {
-                    "bash",
-                    "-c",
-                    "mvn dependency:list -f" + pom.getName() +                                  // Get the list of dependencies applied on the temp file.
-                            "| grep -e '^\\[.*\\I\\N\\F\\O.*\\]    .*:.*:.*:.*:.*' " +          // Match only this list, ignore other output garbage.
-                            "| sed -e 's/.*    \\(.*\\)$/\\1/'" +                               // Remove garbage from the line leaving only the coordinate (artifact:group:type:version:scope).
-                            "| sort | uniq"
-            };
+            String[] cmd;
+            if (SystemUtils.IS_OS_WINDOWS) {
+                cmd = new String[]{
+                        "cmd.exe",
+                        "/c",
+                        "mvn dependency:list -f" + pom.getName() +                                  // Get the list of dependencies applied on the temp file.
+                                "| grep -e '^\\[.*\\I\\N\\F\\O.*\\]    .*:.*:.*:.*:.*' " +          // Match only this list, ignore other output garbage.
+                                "| sed -e 's/.*    \\(.*\\)$/\\1/'" +                               // Remove garbage from the line leaving only the coordinate (artifact:group:type:version:scope).
+                                "| sort | uniq"
+                };
+            } else {
+                cmd = new String[]{
+                        "bash",
+                        "-c",
+                        "mvn dependency:list -f" + pom.getName() +
+                                "| grep -e '^\\[.*\\I\\N\\F\\O.*\\]    .*:.*:.*:.*:.*' " +
+                                "| sed -e 's/.*    \\(.*\\)$/\\1/'" +
+                                "| sort | uniq"
+                };
+            }
             var process = Runtime.getRuntime().exec(cmd, null, pom.getParentFile());
 
             // Reader for the command's output.
