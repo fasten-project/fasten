@@ -93,6 +93,15 @@ public class MavenResolverBenchmark implements Runnable {
                 }
                 result += matching;
                 artifactCount++;
+                System.out.println("##################################################");
+                System.out.println("Artifact: " + line);
+                System.out.println("##################################################");
+                System.out.println("Database resolution dependencies:");
+                dbDependencySet.forEach(d -> System.out.println("\t" + d.toFullCanonicalForm()));
+                System.out.println("##################################################");
+                System.out.println("Online resolution dependencies:");
+                onlineDependencySet.forEach(d -> System.out.println("\t" + d.toFullCanonicalForm()));
+                System.out.println("##################################################");
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }

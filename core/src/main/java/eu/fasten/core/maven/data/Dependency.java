@@ -41,7 +41,7 @@ public class Dependency {
      * Valid dependency scopes. Defined by maven.
      * Learn more: http://maven.apache.org/pom.html
      */
-    final String[] SCOPES = {
+    public static final String[] SCOPES = {
             "compile",
             "provided",
             "runtime",
@@ -91,9 +91,9 @@ public class Dependency {
     /**
      * Constructor for Dependency object.
      * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
-     *
+     * <p>
      * Allowed format:
-     *     group:artifact:type[:classifier]:version:scope:pathname [(optional)]
+     * group:artifact:type[:classifier]:version:scope:pathname [(optional)]
      *
      * @param mavenCoordinate the string of coordinate parameters concatenated by a separator.
      * @throws IllegalArgumentException if the coordinate is wrongly formatted.
@@ -116,11 +116,11 @@ public class Dependency {
         if (coordinates.length > 7 || coordinates.length < 3) {
             throw new IllegalArgumentException(
                     String.format(
-                        "Maven coordinate must be in form of " +
-                                "group%1$sartifact%1$stype[%1$sclassifier]%1$sversion%1$sscope[%1$spathname] [(optional)] or group:artifact:version, " +
-                                "but was %2$s",
-                        sep,
-                        mavenCoordinate.isBlank() ? "[empty]" : mavenCoordinate
+                            "Maven coordinate must be in form of " +
+                                    "group%1$sartifact%1$stype[%1$sclassifier]%1$sversion%1$sscope[%1$spathname] [(optional)] or group:artifact:version, " +
+                                    "but was %2$s",
+                            sep,
+                            mavenCoordinate.isBlank() ? "[empty]" : mavenCoordinate
                     )
             );
         }
@@ -150,7 +150,7 @@ public class Dependency {
                 this.classifier = "";
                 this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[3]);
                 this.scope = coordinates[4];
-            } else if (scopesList.contains(coordinates[5])){
+            } else if (scopesList.contains(coordinates[5])) {
                 this.classifier = coordinates[3];
                 this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[4]);
                 this.scope = coordinates[5];
@@ -200,7 +200,7 @@ public class Dependency {
                 return false;
             }
         } else {
-            if (!scope.equals(that.scope) ) {
+            if (!scope.equals(that.scope)) {
                 return false;
             }
         }
@@ -299,7 +299,13 @@ public class Dependency {
             builder.append(this.classifier);
             builder.append(Constants.mvnCoordinateSeparator);
         }
-        builder.append(String.join(",", this.getVersionConstraints()));
+        builder.append(this.getVersion());
+        builder.append(Constants.mvnCoordinateSeparator);
+        if (!this.scope.isEmpty()) {
+            builder.append(this.scope);
+        } else {
+            builder.append("compile");
+        }
         return builder.toString();
     }
 

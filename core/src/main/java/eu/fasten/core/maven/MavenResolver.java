@@ -194,8 +194,7 @@ public class MavenResolver implements Runnable {
     public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
                                                     String version, DSLContext dbContext) {
         return resolveFullDependencySet(groupId, artifactId, version, -1,
-                Arrays.asList(Constants.defaultMavenResolutionScopes.split(",").clone()),
-                dbContext);
+                Arrays.asList(Dependency.SCOPES), dbContext);
     }
 
     /**
