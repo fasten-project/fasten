@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -777,55 +778,50 @@ public class MetadataDao {
     }
 
     /**
-     * Returns a package version table entry given its name and version.
+     * Returns package version information given its name and version.
      *
-     * @param packageName   Name of the requested package
-     * @param version       Version of the requested package
-     * @return              Package version entry
+     * @param packageName   Name of the package of interest.
+     * @param version       Version of the package of interest.
+     * @param fieldSelector Field selector, causing the `select` clause to change and making code reuse possible.
+     *                      Allowed values are described in `ALLOWED_FIELD_SELECTORS`.
+     * @return              Package version information.
      */
-    public String getPackageVersion(String packageName, String version) {
+    public String getPackageInfo(String packageName, String version, String fieldSelector) {
+
+        final String[] ALLOWED_FIELD_SELECTORS = {"all", "metadata"};
 
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
 
-        // Query
-        Result<Record> queryResult = context
-                .select(pv.fields())
+        // Select clause
+        SelectField<?>[] select = null;
+        switch (fieldSelector) {
+
+            case "metadata":
+                select = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, pv.METADATA};
+                break;
+
+            // All "package_version" fields
+            case "all":
+                select = pv.fields();
+                break;
+
+            default:
+                throw new IllegalArgumentException("Invalid field selector. " +
+                        "Allowed values: " + Arrays.toString(ALLOWED_FIELD_SELECTORS));
+        }
+
+        // Building and executing the query
+        Result<Record> queryResult = this.context
+                .select(select)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName).and(pv.VERSION.equalIgnoreCase(version)))
                 .fetch();
 
+        // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-
-        return queryResult.formatJSON();
-    }
-
-    /**
-     * Returns package metadata given its name and version.
-     *
-     * @param packageName Name of the package whose metadata is being requested
-     * @param version     Version of the package whose metadata is being requested
-     * @return metadata   Package version's metadata
-     */
-    public String getPackageMetadata(String packageName, String version) {
-
-        // Tables
-        Packages p = Packages.PACKAGES;
-        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
-
-        // Query
-        Result<Record> queryResult = context
-                .select(p.PACKAGE_NAME)
-                .select(pv.VERSION, pv.METADATA)
-                .from(p)
-                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName).and(pv.VERSION.equalIgnoreCase(version)))
-                .fetch();
-
-        logger.debug("Total rows: " + queryResult.size());
-
         return queryResult.formatJSON();
     }
 
