@@ -16,11 +16,34 @@ public class PackageApi {
     PackageApiService service = new PackageApiServiceImpl();
 
     @GET
+    @Path("/{pkg}/versions")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getPackageVersions(@PathParam("pkg") String package_name) {
+        return service.getPackageVersions(package_name);
+    }
+
+    @GET
     @Path("/{pkg}/{pkg_ver}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getPackageVersions(@PathParam("pkg") String package_name,
+    public Response getPackage(@PathParam("pkg") String package_name,
+                               @PathParam("pkg_ver") String package_version) {
+        return service.getPackage(package_name, package_version);
+    }
+
+    @GET
+    @Path("/{pkg}/{pkg_ver}/metadata")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getPackageMetadata(@PathParam("pkg") String package_name,
                                        @PathParam("pkg_ver") String package_version) {
-        return service.getPackageVersions(package_name, package_version);
+        return service.getPackageMetadata(package_name, package_version);
+    }
+
+    @GET
+    @Path("/{pkg}/{pkg_ver}/callgraph")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getPackageCallgraph(@PathParam("pkg") String package_name,
+                                        @PathParam("pkg_ver") String package_version) {
+        return service.getPackageCallgraph(package_name, package_version);
     }
 }
 

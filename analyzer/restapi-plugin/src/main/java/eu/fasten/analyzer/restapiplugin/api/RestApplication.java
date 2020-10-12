@@ -1,6 +1,6 @@
 package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.api.mvn.PackageApi;
+import eu.fasten.analyzer.restapiplugin.api.mvn.*;
 
 import javax.ws.rs.core.Application;
 import java.util.HashSet;
@@ -13,6 +13,12 @@ public class RestApplication extends Application {
 
     public RestApplication() {
         resources.add(PackageApi.class);
+        resources.add(DependencyApi.class);
+        resources.add(ModuleApi.class);
+        resources.add(BinaryModuleApi.class);
+        resources.add(CallableApi.class);
+        resources.add(EdgeApi.class);
+        resources.add(FileApi.class);
     }
 
     @Override

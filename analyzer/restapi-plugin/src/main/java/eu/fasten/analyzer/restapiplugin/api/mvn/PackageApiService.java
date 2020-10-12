@@ -4,5 +4,8 @@ import javax.ws.rs.core.Response;
 
 public interface PackageApiService {
 
-    Response getPackageVersions(String package_name, String package_version);
+    Response getPackageVersions(String package_name);
+    Response getPackage(String package_name, String package_version);
+    Response getPackageMetadata(String package_name, String package_version);
+    Response getPackageCallgraph(String package_name, String package_version);
 }
