@@ -24,7 +24,20 @@ The FASTEN Rest API Plugin is a tool to expose canned queries from the [Metadata
 - `-d` `--db` `--database` KnowledgeBase URL.
 - `-u` `--user` `--username` KnowledgeBase username.
 
-<!-- TODO ## Usage -->
+## Usage
+
+1. Port-forward the remote Postgres server to a local port, e.g., `5433`:    
+    ```bash
+    export KB_USER=...
+    export KB_ADDR=...
+    ssh -f ${KB_USER}@${KB_ADDR} -L 5433:${KB_ADDR}:5432 -N
+    ```
+1. Launch the REST server (example from the root directory and with port `9090`):
+    ```bash
+    PGPASSWORD=... mvn clean install exec:java \
+      -f analyzer/restapi-plugin/pom.xml \
+      -Dexec.args='--port 9090 --database jdbc:postgresql://localhost:5433/<DB_NAME> --username <KB_USER>'
+    ```
 
 <!-- TODO ### Requirements  -->
 
