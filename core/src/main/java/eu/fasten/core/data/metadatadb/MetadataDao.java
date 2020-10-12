@@ -777,6 +777,32 @@ public class MetadataDao {
     }
 
     /**
+     * Returns a package version table entry given its name and version.
+     *
+     * @param packageName   Name of the requested package
+     * @param version       Version of the requested package
+     * @return              Package version entry
+     */
+    public String getPackageVersion(String packageName, String version) {
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(pv.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName).and(pv.VERSION.equalIgnoreCase(version)))
+                .fetch();
+
+        logger.debug("Total rows: " + queryResult.size());
+
+        return queryResult.formatJSON();
+    }
+
+    /**
      * Returns package metadata given its name and version.
      *
      * @param packageName Name of the package whose metadata is being requested

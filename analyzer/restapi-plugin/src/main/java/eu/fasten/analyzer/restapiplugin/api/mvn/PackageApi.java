@@ -25,9 +25,9 @@ public class PackageApi {
     @GET
     @Path("/{pkg}/{pkg_ver}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getPackage(@PathParam("pkg") String package_name,
+    public Response getPackageVersion(@PathParam("pkg") String package_name,
                                @PathParam("pkg_ver") String package_version) {
-        return service.getPackage(package_name, package_version);
+        return service.getPackageVersion(package_name, package_version);
     }
 
     @GET

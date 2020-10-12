@@ -16,10 +16,8 @@ public class PackageApiServiceImpl implements PackageApiService {
     }
 
     @Override
-    public Response getPackage(String package_name, String package_version) {
-
-        // TODO Implement
-        String result = "Package " + package_name + " (version " + package_version + "): ...";
+    public Response getPackageVersion(String package_name, String package_version) {
+        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageVersion(package_name, package_version);
         return Response.status(200).entity(result).build();
     }
 
