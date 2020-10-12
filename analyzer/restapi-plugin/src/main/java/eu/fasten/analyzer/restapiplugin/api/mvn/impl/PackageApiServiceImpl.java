@@ -1,5 +1,6 @@
 package eu.fasten.analyzer.restapiplugin.api.mvn.impl;
 
+import eu.fasten.analyzer.restapiplugin.RestAPIPlugin;
 import eu.fasten.analyzer.restapiplugin.api.mvn.PackageApiService;
 
 import javax.ws.rs.core.Response;
@@ -24,9 +25,7 @@ public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
     public Response getPackageMetadata(String package_name, String package_version) {
-
-        // TODO Implement
-        String result = "Package " + package_name + " (version " + package_version + ") metadata: ...";
+        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageMetadata(package_name, package_version);
         return Response.status(200).entity(result).build();
     }
 

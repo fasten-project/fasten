@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.restapiplugin;
 
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.server.connectors.PostgresConnector;
 import org.eclipse.jetty.server.Server;
@@ -76,7 +77,12 @@ public class RestAPIPlugin extends Plugin {
         /**
          * KnoweldgeBase DSL context.
          */
-        protected DSLContext kbDslContext;
+        protected static DSLContext kbDslContext;
+
+        /**
+         * KnowledgeBase data access object.
+         */
+        public static MetadataDao kbDao;
 
         private Throwable pluginError = null;
 
@@ -135,6 +141,7 @@ public class RestAPIPlugin extends Plugin {
             logger.info("Establishing connection to the KnowledgeBase...");
             try {
                 setDBConnection(PostgresConnector.getDSLContext(KB_URL, KB_USER));
+                kbDao = new MetadataDao(kbDslContext);
             } catch (SQLException e) {
                 logger.error("Couldn't connect to the KnowledgeBase", e);
                 return;

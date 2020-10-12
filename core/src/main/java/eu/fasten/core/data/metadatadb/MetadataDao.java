@@ -20,16 +20,7 @@ package eu.fasten.core.data.metadatadb;
 
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
-import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
-import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
-import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
-import eu.fasten.core.data.metadatadb.codegen.tables.Files;
-import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
@@ -40,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -787,35 +777,30 @@ public class MetadataDao {
     }
 
     /**
-     * Gets all known metadata given a forge, package name and its version
+     * Returns package metadata given its name and version.
      *
-     * @param forge       Forge of the package
-     * @param packageName Name of the package
-     * @param version     Version of the package
-     * @return metadata   All known metadata
+     * @param packageName Name of the package whose metadata is being requested
+     * @param version     Version of the package whose metadata is being requested
+     * @return metadata   Package version's metadata
      */
-    public String getAllMetadataForPkg(String forge, String packageName, String version) {
+    public String getPackageMetadata(String packageName, String version) {
 
-        Packages p = Packages.PACKAGES.as("p");
-        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS.as("pv");
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
 
-        Result<Record> queryResult =
-                context
-                        .select(p.FORGE, p.PACKAGE_NAME)
-                        .select(pv.VERSION, pv.METADATA.as("metadata"))
-                        .from(p)
-                        .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                        .where(p.FORGE.equalIgnoreCase(forge)
-                                .and(p.PACKAGE_NAME.equalIgnoreCase(packageName)
-                                        .and(pv.VERSION.equalIgnoreCase(version))
-                                )
-                        )
-                        .fetch();
+        // Query
+        Result<Record> queryResult = context
+                .select(p.PACKAGE_NAME)
+                .select(pv.VERSION, pv.METADATA)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName).and(pv.VERSION.equalIgnoreCase(version)))
+                .fetch();
 
         logger.debug("Total rows: " + queryResult.size());
 
-        String result = queryResult.formatJSON();
-        return result;
+        return queryResult.formatJSON();
     }
 
     /**
