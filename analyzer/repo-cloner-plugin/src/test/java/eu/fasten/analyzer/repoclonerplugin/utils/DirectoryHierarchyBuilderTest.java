@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.repoclonerplugin.utils;
 
+import java.nio.file.Path;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +31,6 @@ public class DirectoryHierarchyBuilderTest {
         String owner = "test";
         var hierarchyBuilder = new DirectoryHierarchyBuilder(baseDir);
         var dir = hierarchyBuilder.getDirectoryFromHierarchy(owner, name);
-        Assertions.assertEquals("test/t/test/repo", dir.getPath());
+        Assertions.assertEquals(Path.of("test","t","test","repo").toString(), dir.getPath());
     }
 }
