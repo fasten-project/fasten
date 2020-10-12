@@ -826,6 +826,44 @@ public class MetadataDao {
     }
 
     /**
+     * Returns all dependencies of a given package version.
+     *
+     * @param packageName   Name of the package whose dependencies are of interest.
+     * @param version       Version of the package whose dependencies are of interest.
+     * @return              All package version dependencies.
+     */
+    public String getPackageDependencies(String packageName, String version) {
+
+        // SQL query
+        /*
+            SELECT d.*
+            FROM packages AS p
+                JOIN package_versions AS pv ON p.id = pv.package_id
+                JOIN dependencies AS d ON pv.id = d.package_version_id
+            WHERE p.package_name = <packageName>
+                AND pv.version = <version>
+        */
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Dependencies d = Dependencies.DEPENDENCIES;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(d.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(d).on(pv.ID.eq(d.PACKAGE_VERSION_ID))
+                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName)).and(pv.VERSION.equalIgnoreCase(version))
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON();
+    }
+
+    /**
      * Reconstructs the dependency network given a product and a timestamp.
      *
      * @param forge       Forge of the package
