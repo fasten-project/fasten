@@ -38,30 +38,6 @@ public class QualityAnalyzerPluginTest {
     }
 
     @Test
-    public void consumeTest() {
-        var record = new JSONObject("{" +
-                "\"payload\": {" +
-                "\"artifactId\": \"junit\"," +
-                "\"groupId\": \"junit\"," +
-                "\"version\": \"4.12\"," +
-                "\"metrics\": {" +
-                "      \"nloc\": 1234,\n" +
-                "      \"method_count\": 123,\n" +
-                "      \"complexity\": 12,\n" +
-                "      \"token_count\": 98765,\n" +
-                "      \"file_list\": []\n" +
-                "}}}").toString();
-        qualityAnalyzer.consume(record);
-        var output = qualityAnalyzer.produce();
-        assertTrue(output.isPresent());
-    }
-
-    @Test
-    public void saveToDatabaseTest() {
-        assertTrue(true);
-    }
-
-    @Test
     public void consumerTopicsTest() {
         var topics = Optional.of(Collections.singletonList("fasten.RapidPlugin.out"));
         assertEquals(topics, qualityAnalyzer.consumeTopic());
@@ -81,14 +57,6 @@ public class QualityAnalyzerPluginTest {
     public void nameTest() {
         var name = "Quality Analyzer Plugin";
         assertEquals(name, qualityAnalyzer.name());
-    }
-
-    @Test
-    public void descriptionTest() {
-        var description = "Quality Analyzer Plugin. "
-                + "Consumes JSON objects (code metrics by lizard) from Kafka topic"
-                + " and populates metadata database with consumed data.";
-        assertEquals(description, qualityAnalyzer.description());
     }
 
     @Test
