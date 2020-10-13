@@ -14,6 +14,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 
 import javax.annotation.processing.Generated;
 
@@ -55,6 +56,7 @@ public class Indexes {
     public static final Index UNIQUE_PACKAGE_VERSION_GENERATOR = Indexes0.UNIQUE_PACKAGE_VERSION_GENERATOR;
     public static final Index PACKAGES_PKEY = Indexes0.PACKAGES_PKEY;
     public static final Index UNIQUE_PACKAGE_FORGE = Indexes0.UNIQUE_PACKAGE_FORGE;
+    public static final Index UNIQUE_VIRTUAL_IMPLEMENTATION = Indexes0.UNIQUE_VIRTUAL_IMPLEMENTATION;
 
     // -------------------------------------------------------------------------
     // [#1459] distribute members to avoid static initialisers > 64kb
@@ -77,5 +79,6 @@ public class Indexes {
         public static Index UNIQUE_PACKAGE_VERSION_GENERATOR = Internal.createIndex("unique_package_version_generator", PackageVersions.PACKAGE_VERSIONS, new OrderField[] { PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR }, true);
         public static Index PACKAGES_PKEY = Internal.createIndex("packages_pkey", Packages.PACKAGES, new OrderField[] { Packages.PACKAGES.ID }, true);
         public static Index UNIQUE_PACKAGE_FORGE = Internal.createIndex("unique_package_forge", Packages.PACKAGES, new OrderField[] { Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.FORGE }, true);
+        public static Index UNIQUE_VIRTUAL_IMPLEMENTATION = Internal.createIndex("unique_virtual_implementation", VirtualImplementations.VIRTUAL_IMPLEMENTATIONS, new OrderField[] { VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.VIRTUAL_PACKAGE_VERSION_ID, VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.PACKAGE_VERSION_ID }, true);
     }
 }
