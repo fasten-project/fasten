@@ -23,6 +23,7 @@ import java.io.FileReader;
 import java.sql.SQLException;
 import java.util.HashMap;
 
+import eu.fasten.analyzer.qualityanalyzer.data.QAConstants;
 import eu.fasten.server.connectors.PostgresConnector;
 
 import org.jooq.DSLContext;
@@ -70,18 +71,17 @@ public class Main implements Runnable {
             var dbUrl = "jdbc:postgresql:fasten_java";
             var dbUser = "fasten";
             var context = PostgresConnector.getDSLContext(dbUrl, dbUser);
-            hm.put("mvn", context);
-            hm.put("java", context);
+            hm.put(QAConstants.MVN_FORGE, context);
 
             dbUrl = "jdbc:postgresql:fasten_c";
             dbUser = "fasten";
             context = PostgresConnector.getDSLContext(dbUrl, dbUser);
-            hm.put("d", context);
+            hm.put(QAConstants.C_FORGE, context);
 
             dbUrl = "jdbc:postgresql:fasten_python";
             dbUser = "fasten";
             context = PostgresConnector.getDSLContext(dbUrl, dbUser);
-            hm.put("python", context);
+            hm.put(QAConstants.PyPI_FORGE, context);
         } catch(SQLException e) {
             logger.error("Could not connect to the database " +dbUrl, e);
             return;
