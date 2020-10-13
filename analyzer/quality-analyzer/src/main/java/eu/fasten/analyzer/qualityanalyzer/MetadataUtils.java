@@ -67,7 +67,6 @@ public class MetadataUtils {
 
         switch(forge) {
             case QAConstants.MVN_FORGE:
-            case QAConstants.JAVA_FORGE:
                 insertMvnMetadataIntoDB(payload);
                 break;
             case QAConstants.PyPI_FORGE:
