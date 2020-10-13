@@ -78,7 +78,7 @@ public class QualityAnalyzerPlugin extends Plugin {
 
             logger.info("forge = " + forge);
 
-            //TODO: what if forge = null? Throw an exception? Assume default - Java? Skip?
+            //TODO: what if forge = null? Throw an exception?
 
             if (forge != null) {
                 utils.insertMetadataIntoDB(forge, jsonRecord);
