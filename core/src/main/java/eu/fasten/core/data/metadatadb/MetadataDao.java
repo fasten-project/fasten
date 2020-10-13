@@ -1002,6 +1002,37 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
+    public String getPackageFiles(String packageName, String packageVersion) {
+
+        // SQL query
+        /*
+            SELECT f.*
+            FROM packages AS p
+                JOIN package_versions AS pv ON p.id = pv.package_id
+                JOIN files AS f ON pv.id = f.package_version_id
+            WHERE p.package_name = <packageName>
+                AND pv.version = <packageVersion>
+        */
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Files f = Files.FILES;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(f.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON();
+    }
+
     /**
      * Reconstructs the dependency network given a product and a timestamp.
      *
