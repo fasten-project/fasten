@@ -23,7 +23,6 @@ public class QAConstants {
     public static final String QA_VERSION_NUMBER = "0.0.1";
 
     public static final String MVN_FORGE = "mvn";
-    public static final String JAVA_FORGE = "java";
     public static final String C_FORGE = "C";
     public static final String PyPI_FORGE = "PyPI";
 
