@@ -15,9 +15,7 @@ public class ModuleApiServiceImpl implements ModuleApiService {
 
     @Override
     public Response getModuleMetadata(String package_name, String package_version, String module_namespace) {
-
-        // TODO Implement
-        String result = "Module " + module_namespace + " metadata: ...";
+        String result = RestAPIPlugin.RestAPIExtension.kbDao.getModuleMetadata(package_name, package_version, module_namespace);
         return Response.status(200).entity(result).build();
     }
 

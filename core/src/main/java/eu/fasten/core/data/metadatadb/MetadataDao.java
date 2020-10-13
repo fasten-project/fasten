@@ -35,6 +35,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.jooq.impl.DSL.trueCondition;
+
 public class MetadataDao {
 
     private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
@@ -777,47 +779,40 @@ public class MetadataDao {
         return ids;
     }
 
-    /**
-     * Returns package version information given its name and version.
-     *
-     * @param packageName   Name of the package of interest.
-     * @param version       Version of the package of interest.
-     * @param fieldSelector Field selector, causing the `select` clause to change and making code reuse possible.
-     *                      Allowed values are described in `ALLOWED_FIELD_SELECTORS`.
-     * @return              Package version information.
-     */
-    public String getPackageInfo(String packageName, String version, String fieldSelector) {
+    protected Condition packageVersionWhereClause(String name, String version) {
+        return trueCondition()
+                .and(Packages.PACKAGES.PACKAGE_NAME.equalIgnoreCase(name))
+                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equalIgnoreCase(version));
+    }
 
-        final String[] ALLOWED_FIELD_SELECTORS = {"all", "metadata"};
+    public String getPackageVersion(String packageName, String packageVersion) {
+        return getPackageInfo(packageName, packageVersion, false);
+    }
+
+    public String getPackageMetadata(String packageName, String packageVersion) {
+        return getPackageInfo(packageName, packageVersion, true);
+    }
+
+    protected String getPackageInfo(String packageName, String packageVersion, boolean metadataOnly) {
 
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
 
         // Select clause
-        SelectField<?>[] select = null;
-        switch (fieldSelector) {
-
-            case "metadata":
-                select = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, pv.METADATA};
-                break;
-
-            // All "package_version" fields
-            case "all":
-                select = pv.fields();
-                break;
-
-            default:
-                throw new IllegalArgumentException("Invalid field selector. " +
-                        "Allowed values: " + Arrays.toString(ALLOWED_FIELD_SELECTORS));
+        SelectField<?>[] selectClause;
+        if (metadataOnly) {
+            selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, pv.METADATA};
+        } else {
+            selectClause = pv.fields();
         }
 
         // Building and executing the query
         Result<Record> queryResult = this.context
-                .select(select)
+                .select(selectClause)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName).and(pv.VERSION.equalIgnoreCase(version)))
+                .where(packageVersionWhereClause(packageName, packageVersion))
                 .fetch();
 
         // Returning the result
@@ -828,21 +823,11 @@ public class MetadataDao {
     /**
      * Returns all dependencies of a given package version.
      *
-     * @param packageName   Name of the package whose dependencies are of interest.
-     * @param version       Version of the package whose dependencies are of interest.
-     * @return              All package version dependencies.
+     * @param packageName       Name of the package whose dependencies are of interest.
+     * @param packageVersion    Version of the package whose dependencies are of interest.
+     * @return                  All package version dependencies.
      */
-    public String getPackageDependencies(String packageName, String version) {
-
-        // SQL query
-        /*
-            SELECT d.*
-            FROM packages AS p
-                JOIN package_versions AS pv ON p.id = pv.package_id
-                JOIN dependencies AS d ON pv.id = d.package_version_id
-            WHERE p.package_name = <packageName>
-                AND pv.version = <version>
-        */
+    public String getPackageDependencies(String packageName, String packageVersion) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -855,7 +840,7 @@ public class MetadataDao {
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(d).on(pv.ID.eq(d.PACKAGE_VERSION_ID))
-                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName)).and(pv.VERSION.equalIgnoreCase(version))
+                .where(packageVersionWhereClause(packageName, packageVersion))
                 .fetch();
 
         // Returning the result
@@ -863,37 +848,45 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
-    /**
-     * Returns all modules of a given package version.
-     *
-     * @param packageName   Name of the package whose modules are of interest.
-     * @param version       Version of the package whose modules are of interest.
-     * @return              All package version modules.
-     */
-    public String getPackageModules(String packageName, String version) {
+    public String getPackageModules(String packageName, String packageVersion) {
+        return getModuleInfo(packageName, packageVersion, null, false);
+    }
 
-        // SQL query
-        /*
-            SELECT d.*
-            FROM packages AS p
-                JOIN package_versions AS pv ON p.id = pv.package_id
-                JOIN modules AS m ON pv.id = m.package_version_id
-            WHERE p.package_name = <packageName>
-                AND pv.version = <version>
-        */
+    public String getModuleMetadata(String packageName, String packageVersion, String moduleNamespace) {
+        return getModuleInfo(packageName, packageVersion, moduleNamespace, true);
+    }
+
+    protected String getModuleInfo(String packageName,
+                                   String packageVersion,
+                                   String moduleNamespace,
+                                   boolean metadataOnly) {
 
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
 
-        // Query
+        // Select clause
+        SelectField<?>[] selectClause;
+        if (metadataOnly) {
+            selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, m.NAMESPACE, m.METADATA};
+        } else {
+            selectClause = m.fields();
+        }
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
+        if (metadataOnly) {
+            whereClause = whereClause.and(m.NAMESPACE.equalIgnoreCase(moduleNamespace));
+        }
+
+        // Building and executing the query
         Result<Record> queryResult = context
-                .select(m.fields())
+                .select(selectClause)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
-                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName)).and(pv.VERSION.equalIgnoreCase(version))
+                .where(whereClause)
                 .fetch();
 
         // Returning the result

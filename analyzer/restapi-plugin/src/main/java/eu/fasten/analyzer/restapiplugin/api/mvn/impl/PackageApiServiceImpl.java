@@ -17,13 +17,13 @@ public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
     public Response getPackageVersion(String package_name, String package_version) {
-        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageInfo(package_name, package_version, "all");
+        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageVersion(package_name, package_version);
         return Response.status(200).entity(result).build();
     }
 
     @Override
     public Response getPackageMetadata(String package_name, String package_version) {
-        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageInfo(package_name, package_version, "metadata");
+        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageMetadata(package_name, package_version);
         return Response.status(200).entity(result).build();
     }
 
