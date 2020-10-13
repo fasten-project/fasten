@@ -930,6 +930,78 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
+    public String getPackageBinaryModules(String packageName, String packageVersion) {
+        return getBinaryModuleInfo(packageName, packageVersion, null, false);
+    }
+
+    public String getBinaryModuleMetadata(String packageName, String packageVersion, String binaryModule) {
+        return getBinaryModuleInfo(packageName, packageVersion, binaryModule, true);
+    }
+
+    // TODO Test with real DB data
+    protected String getBinaryModuleInfo(String packageName,
+                                         String packageVersion,
+                                         String binaryModule,
+                                         boolean metadataOnly) {
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        BinaryModules b = BinaryModules.BINARY_MODULES;
+
+        // Select clause
+        SelectField<?>[] selectClause;
+        if (metadataOnly) {
+            selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, b.NAME, b.METADATA};
+        } else {
+            selectClause = b.fields();
+        }
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
+        if (metadataOnly) {
+            whereClause = whereClause.and(b.NAME.equalIgnoreCase(binaryModule));
+        }
+
+        // Building and executing the query
+        Result<Record> queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(b).on(pv.ID.eq(b.PACKAGE_VERSION_ID))
+                .where(whereClause)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON();
+    }
+
+    // TODO Test with real DB data
+    public String getBinaryModuleFiles(String packageName, String packageVersion, String binaryModule) {
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        BinaryModules b = BinaryModules.BINARY_MODULES;
+        Files f = Files.FILES;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(f.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(b).on(pv.ID.eq(b.PACKAGE_VERSION_ID))
+                .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .and(b.NAME.equalIgnoreCase(binaryModule))
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON();
+    }
+
     /**
      * Reconstructs the dependency network given a product and a timestamp.
      *
