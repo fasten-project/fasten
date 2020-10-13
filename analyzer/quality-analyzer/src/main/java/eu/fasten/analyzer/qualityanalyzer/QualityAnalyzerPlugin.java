@@ -18,13 +18,10 @@
 
 package eu.fasten.analyzer.qualityanalyzer;
 
+import eu.fasten.analyzer.qualityanalyzer.data.QAConstants;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.data.Constants;
 
-import org.jooq.exception.DataAccessException;
-import org.jooq.impl.DSL;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -33,7 +30,6 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.List;
@@ -50,21 +46,12 @@ public class QualityAnalyzerPlugin extends Plugin {
     @Extension
     public static class QualityAnalyzer implements KafkaPlugin, DBConnector {
 
-        private String consumerTopic = "fasten.RapidPlugin.out";
-        private static DSLContext dslContext;
         private final Logger logger = LoggerFactory.getLogger(QualityAnalyzer.class.getName());
-        private Throwable pluginError = null;
-        private String product = null;
-        private String artifact = null;
-        private String group = null;
-        private String version = null;
-        private JSONObject metrics = null;
-        private boolean restartTransaction = false;
-        private boolean processedRecord = false;
+        private String consumerTopic = "fasten.RapidPlugin.out";
+        private MetadataUtils utils = null;
 
         @Override
-        public void setDBConnection(DSLContext dslContext) {
-            QualityAnalyzer.dslContext = dslContext;
+        public void setDBConnection(DSLContext context) {
         }
 
         @Override
@@ -79,84 +66,35 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public void consume(String record) {
-            pluginError = null;
-            product = null;
-            group  =null;
-            artifact = null;
-            version = null;
-            metrics = null;
-            this.processedRecord = false;
-            this.restartTransaction = false;
-            logger.info("Consumed: " + record);
-            var jsonRecord = new JSONObject(record);
-            var payload = new JSONObject();
-            if (jsonRecord.has("payload")) {
-                payload = jsonRecord.getJSONObject("payload");
-            }
-            group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
-            artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
-            version = payload.getString("version").replaceAll("[\\n\\t ]", "");
-            metrics = payload.getJSONObject("metrics");
-            int transactionRestartCount = 0;
-            do {
-                try {
-                    var metadataDao = new MetadataDao(dslContext);
-                    dslContext.transaction(transaction -> {
-                        metadataDao.setContext(DSL.using(transaction));
-                        long id;
-                        try {
-                            id = saveToDatabase(group + Constants.mvnCoordinateSeparator + artifact,
-                                    version,
-                                    metrics,
-                                    metadataDao);
-                        } catch (RuntimeException e) {
-                            logger.error("Error saving data to the database: '" + product + Constants.mvnCoordinateSeparator + version + "'", e);
-                            processedRecord = false;
-                            this.pluginError = e;
-                            if (e instanceof DataAccessException) {
-                                logger.info("Restarting transaction for '" + product + Constants.mvnCoordinateSeparator + version + "'");
-                                restartTransaction = true;
-                            } else {
-                                restartTransaction = false;
-                            }
-                            throw e;
-                        }
-                        if (getPluginError() == null) {
-                            processedRecord = true;
-                            restartTransaction = false;
-                            logger.info("Saved data for " + product + Constants.mvnCoordinateSeparator + version
-                                    + " with package version ID = " + id);
-                        }
-                    });
-                } catch (Exception expected) {
-                }
-                transactionRestartCount++;
-            } while (restartTransaction && !processedRecord
-                    && transactionRestartCount < Constants.transactionRestartLimit);
-        }
 
-        public long saveToDatabase(String product, String version, JSONObject metrics, MetadataDao metadataDao) {
-            final var packageId = metadataDao.insertPackage(product, Constants.mvnForge, null, null, null);
-            var packageVersionMetadata = new JSONObject();
-            packageVersionMetadata.put("metrics", metrics);
-            final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    Constants.opalGenerator, version, null, packageVersionMetadata);
-            return packageVersionId;
+            logger.info("Consumed: " + record);
+
+            var jsonRecord = new JSONObject(record);
+            String forge = null;
+
+            if (jsonRecord.has("payload")) {
+                forge = jsonRecord.getJSONObject("payload").getString("forge".replaceAll("[\\n\\t ]", ""));
+            }
+
+            logger.info("forge = " + forge);
+
+            //TODO: what if forge = null? Throw an exception? Assume default - Java? Skip?
+
+            if (forge != null) {
+                utils.insertMetadataIntoDB(forge, jsonRecord);
+            }
+
+            logger.error("Could not extract forge from the message");
         }
 
         @Override
         public Optional<String> produce() {
-            var json = new JSONObject();
-            json.put("artifactId", artifact);
-            json.put("groupId", group);
-            json.put("version", version);
-            return Optional.of(json.toString());
+            return Optional.empty();
         }
 
         @Override
         public String getOutputPath() {
-            return File.separator + artifact.charAt(0) + File.separator
-                    + artifact + File.separator + artifact + "_" + group + "_" + version + ".json";
+            return null;
         }
 
         @Override
@@ -166,14 +104,13 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public String description() {
-            return "Quality Analyzer Plugin. "
-                    + "Consumes JSON objects (code metrics by lizard) from Kafka topic"
-                    + " and populates metadata database with consumed data.";
+            return "Consumes code metrics generated by Lizard from Kafka topic"
+                    + " and populates callable metadata with this metrics.";
         }
 
         @Override
         public String version() {
-            return "0.0.1";
+            return QAConstants.QA_VERSION_NUMBER;
         }
 
         @Override
@@ -186,7 +123,7 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public Throwable getPluginError() {
-            return this.pluginError;
+            return null;
         }
 
         @Override
