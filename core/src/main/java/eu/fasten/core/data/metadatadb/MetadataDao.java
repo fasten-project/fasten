@@ -894,6 +894,42 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
+    public String getModuleFiles(String packageName, String packageVersion, String moduleNamespace) {
+
+        // SQL query
+        /*
+            SELECT f.*
+            FROM packages AS p
+                JOIN package_versions AS pv ON p.id = pv.package_id
+                JOIN modules AS m ON pv.id = m.package_version_id
+                JOIN files AS f ON pv.id = f.package_version_id
+            WHERE p.package_name = <packageName>
+                AND pv.version = <packageVersion>
+                AND m.namespace = <moduleNamespace>
+        */
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Files f = Files.FILES;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(f.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .and(m.NAMESPACE.equalIgnoreCase(moduleNamespace))
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON();
+    }
+
     /**
      * Reconstructs the dependency network given a product and a timestamp.
      *

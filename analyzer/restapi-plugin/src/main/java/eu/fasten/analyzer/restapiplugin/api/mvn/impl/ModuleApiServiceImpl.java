@@ -21,9 +21,7 @@ public class ModuleApiServiceImpl implements ModuleApiService {
 
     @Override
     public Response getModuleFiles(String package_name, String package_version, String module_namespace) {
-
-        // TODO Implement
-        String result = "Module " + module_namespace + " files: ...";
+        String result = RestAPIPlugin.RestAPIExtension.kbDao.getModuleFiles(package_name, package_version, module_namespace);
         return Response.status(200).entity(result).build();
     }
 }
