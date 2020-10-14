@@ -821,6 +821,46 @@ public class MetadataDao {
     }
 
     /**
+     * Returns information about versions of a package, including potential vulnerabilities.
+     *
+     * @param packageName   Name of the package of interest.
+     * @return              Package version information, including potential vulnerabilities.
+     */
+    public String getPackageVersions(String packageName) {
+
+        // SQL query
+        /*
+            SELECT pv.*, c.metadata AS callable_metadata
+            FROM packages AS p
+                JOIN package_versions AS pv ON p.id = pv.package_id
+                JOIN modules AS m ON pv.id = m.package_version_id
+                JOIN callables AS c ON m.id = c.module_id
+            WHERE p.package_name=<package_name>
+        */
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(pv.fields())
+                .select(c.METADATA.as("callable_metadata"))
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON();
+    }
+
+    /**
      * Returns all dependencies of a given package version.
      *
      * @param packageName       Name of the package whose dependencies are of interest.

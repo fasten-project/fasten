@@ -9,9 +9,7 @@ public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
     public Response getPackageVersions(String package_name) {
-
-        // TODO Implement
-        String result = "Package " + package_name + " versions: ...";
+        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageVersions(package_name);
         return Response.status(200).entity(result).build();
     }
 
