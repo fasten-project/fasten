@@ -411,58 +411,6 @@ public class MavenResolver implements Runnable {
         return filteredDependencies;
     }
 
-    // TODO(roman): duplicate from DataExtractor; extrapolate the function as a utility function for public use.
-    private Optional<File> downloadPom(String artifactId, String groupId, String version) {
-
-        List<String> mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
-                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
-                : Collections.singletonList("https://repo.maven.apache.org/maven2/");
-
-        for (var repo : mavenRepos) {
-            var pomUrl = this.getPomUrl(artifactId, groupId, version, repo);
-            Optional<File> pom;
-            try {
-                pom = httpGetToFile(pomUrl);
-            } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
-                continue;
-            }
-            if (pom.isPresent()) {
-                return pom;
-            }
-        }
-        return Optional.empty();
-    }
-
-    // TODO(roman): duplicate from DataExtractor; extrapolate the function as a utility function for public use.
-    private String getPomUrl(String artifactId, String groupId, String version, String repo) {
-        return repo + groupId.replace('.', '/') + "/" + artifactId + "/" + version
-                + "/" + artifactId + "-" + version + ".pom";
-    }
-
-    /**
-     * Utility function that stores the contents of GET request to a temporary file.
-     * TODO(roman): duplicate from DataExtractor; extrapolate the function as a utility function for public use.
-     *
-     * @param url The url of the wanted file.
-     * @return a temporarily saved file.
-     */
-    private static Optional<File> httpGetToFile(String url)
-            throws FileNotFoundException, UnknownHostException, MalformedURLException {
-        logger.debug("HTTP GET: " + url);
-        try {
-            final var tempFile = Files.createTempFile("fasten", ".pom");
-            final InputStream in = new URL(url).openStream();
-            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            in.close();
-            return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-        } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
-            logger.error("Could not find URL: {}", e.getMessage(), e);
-            throw e;
-        } catch (IOException e) {
-            logger.error("Error getting file from URL: " + url, e);
-            return Optional.empty();
-        }
-    }
 
     /**
      * Resolves full dependency set online.
@@ -482,7 +430,7 @@ public class MavenResolver implements Runnable {
         Set<Dependency> dependencySet = new HashSet<>();
 
         // Download pom file from the repo.
-        var pomOpt = downloadPom(artifact, group, version);
+        var pomOpt = MavenUtilities.downloadPom(group, artifact, version);
 
         // Await exception if pom file is unavailable.
         var pom = pomOpt.orElseGet(() -> {

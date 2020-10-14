@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.MavenUtilities;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -83,9 +84,7 @@ public class MavenCoordinate {
      */
     public MavenCoordinate(final String groupID, final String artifactID, final String version,
                            final String packaging) {
-        this.mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
-                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
-                : Collections.singletonList("https://repo.maven.apache.org/maven2/");
+        this.mavenRepos = MavenUtilities.getRepos();
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
@@ -98,9 +97,7 @@ public class MavenCoordinate {
      * @param kafkaConsumedJson json representation of Meven coordinate
      */
     public MavenCoordinate(final JSONObject kafkaConsumedJson) throws JSONException {
-        this.mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
-                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
-                : Collections.singletonList("https://repo.maven.apache.org/maven2/");
+        this.mavenRepos = MavenUtilities.getRepos();
         this.groupID = kafkaConsumedJson.getString("groupId");
         this.artifactID = kafkaConsumedJson.getString("artifactId");
         this.versionConstraint = kafkaConsumedJson.getString("version");
