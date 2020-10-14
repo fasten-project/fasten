@@ -102,13 +102,19 @@ public class MavenResolverBenchmark implements Runnable {
                 System.out.println("Online resolution dependencies:");
                 onlineDependencySet.forEach(d -> System.out.println("\t" + d.toFullCanonicalForm()));
                 System.out.println("##################################################");
+                System.out.println("Current progress");
+                System.out.println("Final result");
+                System.out.println("Successful match rate is " + result / (float) artifactCount + " for " + artifactCount + " artifacts");
+                System.out.println("Database resolution success rate: " + (float) dbResolutionSuccess / (float) dbCount);
+                System.out.println("Online resolution success rate: " + (float) onlineResolutionSuccess / (float) onlineCount);
+                System.out.println("--------------------------------------------------");
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
         }
-        var finalResult = result / (float) artifactCount;
         System.out.println("--------------------------------------------------");
-        System.out.println("Successful match rate is " + finalResult + " for " + artifactCount + " artifacts");
+        System.out.println("Final result");
+        System.out.println("Successful match rate is " + result / (float) artifactCount + " for " + artifactCount + " artifacts");
         System.out.println("Database resolution success rate: " + (float) dbResolutionSuccess / (float) dbCount);
         System.out.println("Online resolution success rate: " + (float) onlineResolutionSuccess / (float) onlineCount);
         System.out.println("--------------------------------------------------");
