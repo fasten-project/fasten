@@ -40,9 +40,20 @@ public class MavenUtilities {
      * @return an optional pom file instance
      */
     public static Optional<File> downloadPom(String groupId, String artifactId, String version) {
-
         List<String> mavenRepos = MavenUtilities.getRepos();
+        return MavenUtilities.downloadPom(groupId, artifactId, version, mavenRepos);
+    }
 
+    /**
+     * Download pom file of the given coordinate with a given set of maven repositories.
+     *
+     * @param groupId    groupId of the artifact to find its dependencies
+     * @param artifactId artifactId of the artifact to find its dependencies
+     * @param version    version of the artifact to find its dependencies
+     * @param mavenRepos the list of predefined maven repositories
+     * @return an optional pom file instance
+     */
+    public static Optional<File> downloadPom(String groupId, String artifactId, String version, List<String> mavenRepos) {
         for (var repo : mavenRepos) {
             var pomUrl = MavenUtilities.getPomUrl(groupId, artifactId, version, repo);
             Optional<File> pom;

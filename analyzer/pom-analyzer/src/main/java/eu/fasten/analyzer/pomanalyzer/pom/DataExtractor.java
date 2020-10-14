@@ -340,7 +340,7 @@ public class DataExtractor {
                 (groupId + Constants.mvnCoordinateSeparator + artifactId
                         + Constants.mvnCoordinateSeparator + version).equals(this.mavenCoordinate)
                         ? new ByteArrayInputStream(this.pomContents.getBytes())
-                        : new ByteArrayInputStream(this.downloadPom(artifactId, groupId, version)
+                        : new ByteArrayInputStream(this.downloadPom(groupId, artifactId, version)
                         .orElseThrow(FileNotFoundException::new).getBytes());
         return new SAXReader().read(pomByteStream).getRootElement();
     }
@@ -688,12 +688,14 @@ public class DataExtractor {
     }
 
     private Optional<String> downloadPom(String groupId, String artifactId, String version) {
-        var pom = MavenUtilities.downloadPom(groupId, artifactId, version);
+
+        var pom = MavenUtilities.downloadPom(groupId, artifactId, version, this.mavenRepos).flatMap(DataExtractor::fileToString);
 
         if (pom.isPresent()) {
             this.mavenCoordinate = groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version;
-            this.pomContents = pom.flatMap(DataExtractor::fileToString).get();
+            this.pomContents = pom.get();
+            return pom;
         }
 
         return Optional.empty();
