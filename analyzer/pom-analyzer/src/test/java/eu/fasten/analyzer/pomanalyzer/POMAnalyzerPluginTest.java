@@ -141,7 +141,7 @@ public class POMAnalyzerPluginTest {
         packageVersionMetadata.put("sourcesUrl", sourcesUrl);
         packageVersionMetadata.put("packagingType", packagingType);
         packageVersionMetadata.put("parentCoordinate", "");
-        Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", null, packageVersionMetadata))
+        Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", null, null, packageVersionMetadata))
                 .thenReturn(packageVersionId);
         final var dependencyId = 16L;
         Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", Constants.mvnForge, null, null, null))

@@ -202,13 +202,13 @@ public class POMAnalyzerPlugin extends Plugin {
             packageVersionMetadata.put("parentCoordinate", (parentCoordinate != null)
                     ? parentCoordinate : "");
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    Constants.opalGenerator, version, this.getProperTimestamp(timestamp),
+                    Constants.opalGenerator, version, null, this.getProperTimestamp(timestamp),
                     packageVersionMetadata);
             for (var dep : dependencyData.dependencies) {
                 var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
                 final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge);
                 metadataDao.insertDependency(packageVersionId, depId,
-                        dep.getVersionConstraints(), dep.toJSON());
+                        dep.getVersionConstraints(), null, null, null, dep.toJSON());
             }
             return packageVersionId;
         }
