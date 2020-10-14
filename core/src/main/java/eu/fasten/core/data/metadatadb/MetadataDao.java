@@ -1042,6 +1042,66 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
+    public String getPackageCallables(String packageName, String packageVersion) {
+        return getCallablesInfo(packageName, packageVersion, null, false);
+    }
+
+    public String getCallableMetadata(String packageName, String packageVersion, String fastenURI) {
+        return getCallablesInfo(packageName, packageVersion, fastenURI, true);
+    }
+
+    protected String getCallablesInfo(String packageName,
+                                      String packageVersion,
+                                      String fastenURI,
+                                      boolean metadataOnly) {
+
+        // SQL query
+        /*
+            SELECT {c.* | c.metadata}
+            FROM packages AS p
+                JOIN package_versions AS pv ON p.id = pv.package_id
+                JOIN modules AS m ON pv.id = m.package_version_id
+                JOIN callables AS c ON m.id = c.module_id
+            WHERE p.package_name = <packageName>
+                AND pv.version = <packageVersion>
+                [AND c.fasten_uri = <fastenURI>]
+        */
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
+        // Select clause
+        SelectField<?>[] selectClause;
+        if (metadataOnly) {
+            selectClause = new SelectField[]{p.PACKAGE_NAME, c.FASTEN_URI, c.METADATA};
+        } else {
+            selectClause = c.fields();
+        }
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
+        if (metadataOnly) {
+            whereClause = whereClause.and(c.FASTEN_URI.equalIgnoreCase(fastenURI));
+        }
+
+        // Building and executing the query
+        Result<Record> queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .where(whereClause)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON();
+    }
+
     public String getPackageFiles(String packageName, String packageVersion) {
 
         // SQL query
