@@ -126,11 +126,12 @@ public class MetadataDao {
     /**
      * Inserts a record in 'package_versions' table in the database.
      *
-     * @param packageId   ID of the package (references 'packages.id')
-     * @param cgGenerator Tool used to generate this callgraph
-     * @param version     Version of the package
-     * @param createdAt   Timestamp when the package version was created
-     * @param metadata    Metadata of the package version
+     * @param packageId    ID of the package (references 'packages.id')
+     * @param cgGenerator  Tool used to generate this callgraph
+     * @param version      Version of the package
+     * @param architecture Architecture of the package
+     * @param createdAt    Timestamp when the package version was created
+     * @param metadata     Metadata of the package version
      * @return ID of the new record
      */
     public long insertPackageVersion(long packageId, String cgGenerator, String version,
@@ -144,38 +145,6 @@ public class MetadataDao {
                 PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
                 PackageVersions.PACKAGE_VERSIONS.METADATA)
                 .values(packageId, cgGenerator, version, architecture, createdAt, metadataJsonb)
-                .onConflictOnConstraint(Keys.UNIQUE_PACKAGE_VERSION_GENERATOR).doUpdate()
-                .set(PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
-                        PackageVersions.PACKAGE_VERSIONS.as("excluded").CREATED_AT)
-                .set(PackageVersions.PACKAGE_VERSIONS.METADATA,
-                        JsonbDSL.concat(PackageVersions.PACKAGE_VERSIONS.METADATA,
-                                PackageVersions.PACKAGE_VERSIONS.as("excluded").METADATA))
-                .returning(PackageVersions.PACKAGE_VERSIONS.ID).fetchOne();
-        return resultRecord.getValue(PackageVersions.PACKAGE_VERSIONS.ID);
-    }
-
-    /**
-     * Inserts a record in 'package_versions' table in the database.
-     *
-     * @param packageId   ID of the package (references 'packages.id')
-     * @param cgGenerator Tool used to generate this callgraph
-     * @param version     Version of the package
-     * @param arch        Architecture of the package
-     * @param createdAt   Timestamp when the package version was created
-     * @param metadata    Metadata of the package version
-     * @return ID of the new record
-     */
-    public long insertPackageVersion(long packageId, String cgGenerator, String version,
-                                     String arch, Timestamp createdAt, JSONObject metadata) {
-        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        // TODO handle architecture
-        var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
-                PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID,
-                PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
-                PackageVersions.PACKAGE_VERSIONS.VERSION,
-                PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
-                PackageVersions.PACKAGE_VERSIONS.METADATA)
-                .values(packageId, cgGenerator, version, createdAt, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_PACKAGE_VERSION_GENERATOR).doUpdate()
                 .set(PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
                         PackageVersions.PACKAGE_VERSIONS.as("excluded").CREATED_AT)

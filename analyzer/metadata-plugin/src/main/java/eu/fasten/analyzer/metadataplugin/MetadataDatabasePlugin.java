@@ -249,7 +249,7 @@ public class MetadataDatabasePlugin extends Plugin {
                     getProperTimestamp(callGraph.timestamp), new JSONObject());
 
             var callables = instertDataExtractCallables(callGraph, metadataDao, packageVersionId);
-            final var numInternal = callables.size();
+            var numInternal = callables.size();
 
             var callablesIds = new LongArrayList(callables.size());
             // Save all callables in the database
@@ -511,7 +511,7 @@ public class MetadataDatabasePlugin extends Plugin {
             // Insert package version record
             // TODO Add architecture
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    CCallGraph.getCgGenerator(), CCallGraph.version,
+                    CCallGraph.getCgGenerator(), CCallGraph.version, "",
                     getProperTimestamp(CCallGraph.timestamp), new JSONObject());
 
             var callables = instertDataExtractCallables(callGraph, metadataDao, packageVersionId);
