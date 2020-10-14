@@ -35,7 +35,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.jooq.impl.DSL.trueCondition;
+import static org.jooq.impl.DSL.*;
 
 public class MetadataDao {
 
@@ -1127,6 +1127,52 @@ public class MetadataDao {
                 .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
                 .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON();
+    }
+
+    public String getPackageEdges(String packageName, String packageVersion) {
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+        Edges e = Edges.EDGES;
+
+        /*
+            CREATE OR REPLACE VIEW callable_ids AS
+            SELECT c.id
+            FROM packages AS p
+                JOIN package_versions AS pv ON p.id = pv.package_id
+                JOIN modules AS m ON pv.id = m.package_version_id
+                JOIN callables AS c ON m.id = c.module_id
+            WHERE p.package_name = <packageName>
+                AND pv.version = <packageVersion>
+         */
+        final String CALLABLE_IDS_VIEW_NAME = "callable_ids";
+        context.createOrReplaceView(CALLABLE_IDS_VIEW_NAME)
+                .as(select(c.ID)
+                        .from(p)
+                        .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                        .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                        .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                        .where(packageVersionWhereClause(packageName, packageVersion)))
+                .execute();
+
+        /*
+            SELECT *
+            FROM edges
+            WHERE source_id IN (SELECT id FROM callable_ids) OR target_id IN (SELECT id FROM callable_ids)
+         */
+        String callableIds = "(SELECT id FROM callable_ids)";
+        String query = "SELECT * " +
+                "FROM edges " +
+                "WHERE source_id IN " + callableIds +
+                " OR target_id IN " + callableIds;
+        Result<Record> queryResult = context.fetch(query);
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
