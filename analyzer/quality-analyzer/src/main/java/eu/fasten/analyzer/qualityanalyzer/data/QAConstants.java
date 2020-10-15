@@ -33,9 +33,7 @@ public class QAConstants {
     public static final String FASTEN_URI = "fasten_uri";
     public static final String MODULE_ID = "module_id";
 
-
     public static final int transactionRestartLimit = 3;
-
     public static final int insertionBatchSize = 4096;
 
     public static final String fastenDbPassEnvVariable = "FASTEN_DBPASS";
