@@ -27,9 +27,7 @@ public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
     public Response getPackageCallgraph(String package_name, String package_version) {
-
-        // TODO Implement
-        String result = "Package " + package_name + " (version " + package_version + ") callgraph: ...";
+        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageCallgraph(package_name, package_version);
         return Response.status(200).entity(result).build();
     }
 }

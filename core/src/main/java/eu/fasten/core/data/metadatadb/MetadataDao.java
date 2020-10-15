@@ -1133,11 +1133,19 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
+    public String getPackageCallgraph(String packageName, String packageVersion) {
+        return getEdgesInfo(packageName, packageVersion, true);
+    }
+
     public String getPackageEdges(String packageName, String packageVersion) {
+        return getEdgesInfo(packageName, packageVersion, false);
+    }
+
+    protected String getEdgesInfo(String packageName, String packageVersion, boolean idsOnly) {
 
         // SQL query
         /*
-            SELECT  e.*
+            SELECT {e.* | (e.source_id, e.target_id)}
             FROM edges AS e
                 JOIN callables AS c ON e.source_id = c.id
                 JOIN modules AS m ON m.id = c.module_id
@@ -1154,9 +1162,17 @@ public class MetadataDao {
         Callables c = Callables.CALLABLES;
         Edges e = Edges.EDGES;
 
+        // Select clause
+        SelectField<?>[] selectClause;
+        if (idsOnly) {
+            selectClause = new SelectField[]{e.SOURCE_ID, e.TARGET_ID};
+        } else {
+            selectClause = e.fields();
+        }
+
         // Query
         Result<Record> queryResult = context
-                .select(e.fields())
+                .select(selectClause)
                 .from(e)
                 .innerJoin(c).on(e.SOURCE_ID.eq(c.ID))
                 .innerJoin(m).on(m.ID.eq(c.MODULE_ID))
