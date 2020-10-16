@@ -7,7 +7,7 @@
         <img src="https://img.shields.io/github/workflow/status/fasten-project/fasten/Java%20CI?logo=GitHub%20Actions&logoColor=white&style=for-the-badge" /></a>
     <a href="https://github.com/fasten-project/fasten/releases" alt="GitHub Workflow Status">
                 <img src="https://img.shields.io/github/v/release/fasten-project/fasten?logo=GitHub&style=for-the-badge" /></a>
-    <a href="https://github.com/fasten-project/fasten/" alt="Gitter">
+    <a href="https://gitter.im/fasten-public" alt="Gitter">
             <img src="https://img.shields.io/gitter/room/fasten-project/fasten?style=for-the-badge&logo=gitter" /></a>
 </p>
 <br/>
