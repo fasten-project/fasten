@@ -208,19 +208,28 @@ public class MavenResolver implements Runnable {
      */
     public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
                                                   DSLContext dbContext) {
+        return buildFullDependencyTree(groupId, artifactId, version, dbContext, new HashSet<>());
+    }
+
+    private DependencyTree buildFullDependencyTree(String groupId, String artifactId,
+                                                   String version, DSLContext dbContext,
+                                                   Set<Dependency> dependencySet) {
         var artifact = new Dependency(groupId, artifactId, version);
         List<Dependency> dependencies = new ArrayList<>(this.getArtifactDependenciesFromDatabase(
                 artifact.getGroupId(), artifact.getArtifactId(),
                 artifact.getVersion(), dbContext
         ));
+        dependencySet.add(artifact);
         DependencyTree dependencyTree;
         if (dependencies.isEmpty()) {
             dependencyTree = new DependencyTree(artifact, new ArrayList<>());
         } else {
             var childTrees = new ArrayList<DependencyTree>();
             for (var dep : dependencies) {
-                childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
-                        dep.getVersion(), dbContext));
+                if (!dependencySet.contains(dep)) {
+                    childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
+                            dep.getVersion(), dbContext, dependencySet));
+                }
             }
             dependencyTree = new DependencyTree(artifact, childTrees);
         }

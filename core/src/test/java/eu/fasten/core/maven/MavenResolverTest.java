@@ -119,6 +119,58 @@ public class MavenResolverTest {
     }
 
     @Test
+    public void buildFullDependencyTreeWithCyclicDependencyTest() {
+        // A->B->C->A should result in A->B->C
+        class DataProvider implements MockDataProvider {
+            private int queries = 0;
+
+            @Override
+            public MockResult[] execute(MockExecuteContext ctx) {
+                var create = DSL.using(SQLDialect.POSTGRES);
+                switch (queries) {
+                    case 0: {
+                        queries++;
+                        var mockData = new MockResult[1];
+                        var dependencyResult = create.newResult(Dependencies.DEPENDENCIES.METADATA);
+                        dependencyResult.add(create
+                                .newRecord(Dependencies.DEPENDENCIES.METADATA)
+                                .values(JSONB.valueOf("{\"type\": \"\", \"scope\": \"\", \"groupId\": \"B\", \"optional\": false, \"artifactId\": \"B\", \"classifier\": \"\", \"exclusions\": [], \"versionConstraints\": [{\"lowerBound\": \"2\", \"upperBound\": \"2\", \"isLowerHardRequirement\": false, \"isUpperHardRequirement\": false}]}")));
+                        mockData[0] = new MockResult(dependencyResult.size(), dependencyResult);
+                        return mockData;
+                    }
+                    case 1: {
+                        queries++;
+                        var mockData = new MockResult[1];
+                        var dependencyResult = create.newResult(Dependencies.DEPENDENCIES.METADATA);
+                        dependencyResult.add(create
+                                .newRecord(Dependencies.DEPENDENCIES.METADATA)
+                                .values(JSONB.valueOf("{\"type\": \"\", \"scope\": \"\", \"groupId\": \"C\", \"optional\": false, \"artifactId\": \"C\", \"classifier\": \"\", \"exclusions\": [], \"versionConstraints\": [{\"lowerBound\": \"3\", \"upperBound\": \"3\", \"isLowerHardRequirement\": false, \"isUpperHardRequirement\": false}]}")));
+                        mockData[0] = new MockResult(dependencyResult.size(), dependencyResult);
+                        return mockData;
+                    }
+                    case 2: {
+                        queries++;
+                        var mockData = new MockResult[1];
+                        var dependencyResult = create.newResult(Dependencies.DEPENDENCIES.METADATA);
+                        dependencyResult.add(create
+                                .newRecord(Dependencies.DEPENDENCIES.METADATA)
+                                .values(JSONB.valueOf("{\"type\": \"\", \"scope\": \"\", \"groupId\": \"A\", \"optional\": false, \"artifactId\": \"A\", \"classifier\": \"\", \"exclusions\": [], \"versionConstraints\": [{\"lowerBound\": \"1\", \"upperBound\": \"1\", \"isLowerHardRequirement\": false, \"isUpperHardRequirement\": false}]}")));
+                        mockData[0] = new MockResult(dependencyResult.size(), dependencyResult);
+                        return mockData;
+                    }
+                    default: {
+                        return new MockResult[]{new MockResult(0, create.newResult(Dependencies.DEPENDENCIES.METADATA))};
+                    }
+                }
+            }
+        }
+        var dbContext = DSL.using(new MockConnection(new DataProvider()));
+        var expected = new DependencyTree(new Dependency("A", "A", "1"), List.of(new DependencyTree(new Dependency("B", "B", "2"), List.of(new DependencyTree(new Dependency("C", "C", "3"), emptyList())))));
+        var actual = mavenResolver.buildFullDependencyTree("A", "A", "1", dbContext);
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void buildFullDependencyTreeWithNoDependenciesTest() {
         class DataProvider implements MockDataProvider {
             @Override
