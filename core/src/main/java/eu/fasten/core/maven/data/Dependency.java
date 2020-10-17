@@ -222,11 +222,6 @@ public class Dependency {
         return classifier.equals(that.classifier);
     }
 
-    @Override
-    public int hashCode() {
-        return this.toFullCanonicalForm().hashCode();
-    }
-
     /**
      * Converts Dependency object into JSON.
      *
@@ -279,8 +274,16 @@ public class Dependency {
             builder.append(this.classifier);
             builder.append(Constants.mvnCoordinateSeparator);
         }
-        builder.append(String.join(",", this.getVersionConstraints()));
+        builder.append(this.getVersion());
         return builder.toString();
+    }
+
+    public String toMavenCoordinate() {
+        return this.groupId +
+                Constants.mvnCoordinateSeparator +
+                this.artifactId +
+                Constants.mvnCoordinateSeparator +
+                this.getVersion();
     }
 
     public String toFullCanonicalForm() {
@@ -307,6 +310,11 @@ public class Dependency {
             builder.append("compile");
         }
         return builder.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return this.toMavenCoordinate().hashCode();
     }
 
     @Override
