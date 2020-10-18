@@ -219,7 +219,7 @@ public class MavenResolver implements Runnable {
         } else {
             var childTrees = new ArrayList<DependencyTree>();
             for (var dep : dependencies) {
-                if (!setContainsDependency(visitedDependencies, dep)) {
+                if (!visitedDependencies.contains(dep)) {
                     childTrees.add(this.buildFullDependencyTree(dep.getGroupId(), dep.getArtifactId(),
                             dep.getVersion(), dbContext, visitedDependencies));
                 }
@@ -227,13 +227,6 @@ public class MavenResolver implements Runnable {
             dependencyTree = new DependencyTree(artifact, childTrees);
         }
         return dependencyTree;
-    }
-
-    private boolean setContainsDependency(Set<Dependency> set, Dependency dependency) {
-        final var oldSize = set.size();
-        set.add(dependency);
-        final var newSize = set.size();
-        return oldSize == newSize;
     }
 
     /**
@@ -458,7 +451,8 @@ public class MavenResolver implements Runnable {
                             "| tail -n +3" +                                                      // Match only this list, ignore other output garbage.
                             "| grep ." +                                                          // Remove garbage empty lines
                             "| sed -e 's/^[[:space:]]*//'" +                                      // Remove spaces leading spaces in coordinates
-                            "| sort | uniq"
+                            "| sort | uniq " +
+                            "| grep -E ':compile$|:provided$|:runtime$|:test$|:system$|:import$'"
             };
             var process = Runtime.getRuntime().exec(cmd, null, pom.getParentFile());
 

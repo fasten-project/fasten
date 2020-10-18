@@ -7,6 +7,7 @@ import picocli.CommandLine;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Scanner;
 
@@ -64,6 +65,7 @@ public class MavenResolverBenchmark implements Runnable {
             System.err.println("Could not connect to the database: " + e.getMessage());
             return;
         }
+        System.out.println("Starting benchmark - " + new Date());
         var mavenResolver = new MavenResolver();
         var artifactCount = 0;
         var dbCount = 0;
@@ -111,6 +113,8 @@ public class MavenResolverBenchmark implements Runnable {
                 e.printStackTrace(System.err);
             }
         }
+        System.out.println("--------------------------------------------------");
+        System.out.println("Benchmark completed - " + new Date());
         System.out.println("--------------------------------------------------");
         System.out.println("Final result");
         System.out.println("Successful match rate is " + result / (float) artifactCount + " for " + artifactCount + " artifacts");

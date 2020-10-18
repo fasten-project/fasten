@@ -174,54 +174,6 @@ public class Dependency {
         return constraints;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Dependency that = (Dependency) o;
-        if (!artifactId.equals(that.artifactId)) {
-            return false;
-        }
-        if (!groupId.equals(that.groupId)) {
-            return false;
-        }
-        if (!versionConstraints.equals(that.versionConstraints)) {
-            return false;
-        }
-        if (scope.isEmpty() ^ that.scope.isEmpty()) {
-            if (scope.isEmpty() && !that.scope.equals("compile")) {
-                return false;
-            }
-            if (that.scope.isEmpty() && !scope.equals("compile")) {
-                return false;
-            }
-        } else {
-            if (!scope.equals(that.scope)) {
-                return false;
-            }
-        }
-        if (optional != that.optional) {
-            return false;
-        }
-        if (type.isEmpty() ^ that.type.isEmpty()) {
-            if (type.isEmpty() && !that.type.equals("jar")) {
-                return false;
-            }
-            if (that.type.isEmpty() && !type.equals("jar")) {
-                return false;
-            }
-        } else {
-            if (!type.equals(that.type)) {
-                return false;
-            }
-        }
-        return classifier.equals(that.classifier);
-    }
-
     /**
      * Converts Dependency object into JSON.
      *
@@ -310,6 +262,24 @@ public class Dependency {
             builder.append("compile");
         }
         return builder.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Dependency that = (Dependency) o;
+        if (!artifactId.equals(that.artifactId)) {
+            return false;
+        }
+        if (!groupId.equals(that.groupId)) {
+            return false;
+        }
+        return versionConstraints.equals(that.versionConstraints);
     }
 
     @Override
