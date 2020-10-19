@@ -544,25 +544,25 @@ public class MetadataDatabasePlugin extends Plugin {
             var callables = new ArrayList<CallablesRecord>();
             for (final var name : cha.get(scope).entrySet()) {
                 for (final var method : name.getValue().entrySet()) {
-                    // FIXME Create correctly dummy modules
-                    // We use "" for dummy modules
-                    String namespace = isInternal ? "" : "C";
+                    // We use dummy modules to connect files to callables
+                    // otherwise we set the global "C" as the namespace.
+                    String namespace = saveFiles ? null : "C";
                     var moduleId = -1L;
                     // Save module
                     if (saveFiles) {
-                        // FIXME Create correctly dummy modules
-                        moduleId = metadataDao.insertModule(packageVersionId, namespace, null, null);
                         // We save only the first file of a CNode
                         var fileId = metadataDao.insertFile(packageVersionId, method.getValue().getFile());
+                        // Check if dummy module already exist for this file.
+                        moduleId = metadataDao.getModuleContent(fileId);
+                        if (moduleId == -1L) {
+                            moduleId = metadataDao.insertModule(packageVersionId, namespace, null, null, true);
+                        }
                         metadataDao.insertModuleContent(moduleId, fileId);
                         // Save binary Module
                         if (scope.equals(CScope.internalBinaries)) {
                             var binModuleId = metadataDao.insertBinaryModule(packageVersionId, name.getKey(), null, null);
                             metadataDao.insertBinaryModuleContent(binModuleId, fileId);
                         }
-                        // FIXME we should change the check_module_id constraint in Postgres
-                        // to handle static functions.
-                        moduleId = isInternal ? moduleId : -1L;
                     }
                     // Save Callable
                     var localId = (long) method.getKey();
@@ -584,7 +584,7 @@ public class MetadataDatabasePlugin extends Plugin {
                             lastLine = Integer.parseInt(callableMetadata.getString("last"));
                         callableMetadata.remove("last");
                     }
-                    callableMetadata.put("type", CScope.internalBinaries);
+                    callableMetadata.put("type", scope);
                     callables.add(new CallablesRecord(localId, moduleId, uri, isInternal, null,
                         firstLine, lastLine, JSONB.valueOf(callableMetadata.toString())));
                 }
