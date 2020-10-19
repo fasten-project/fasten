@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Vector;
 
 public class MetadataUtils {
 
@@ -98,7 +97,7 @@ public class MetadataUtils {
         Long fileId = getFileId(pckVersionId, path);
         List<Long> modulesId = getModuleIds(fileId);
 
-        Vector<CallableHolder> callables = new Vector<CallableHolder>();
+        ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
 
         if(!modulesId.isEmpty()) {
 
@@ -242,9 +241,13 @@ public class MetadataUtils {
         List<CallableHolder> calls = new ArrayList<>();
 
         // Get all the records with the moduleId given
+        //and line start and line end are as given
+        //we could use line start *or* line end
         Result<Record> crs = selectedContext.select()
                 .from(Callables.CALLABLES)
                 .where(Callables.CALLABLES.MODULE_ID.equal(moduleId))
+                .and(Callables.CALLABLES.LINE_START.equal(lineStart))
+                .and(Callables.CALLABLES.LINE_END.equal(lineEnd))
                 .fetch();
 
         for (Record cr : crs) {
@@ -252,10 +255,7 @@ public class MetadataUtils {
             // Create callable object
             CallableHolder ch = new CallableHolder(cr);
             //filter and store callable only if start and end line overlap with input
-            if( (ch.getLine_start() == lineStart) && (ch.getLine_end() == lineEnd)) {
-                calls.add(ch);
-            }
-
+            calls.add(ch);
         }
         return calls;
     }
