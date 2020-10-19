@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "MavenResolver", mixinStandardHelpOptions = true)
+@CommandLine.Command(name = "MavenMerger", mixinStandardHelpOptions = true)
 public class Merger implements Runnable {
 
     @CommandLine.Option(names = {"-a", "--artifact"},

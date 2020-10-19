@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
@@ -603,6 +604,20 @@ public class ExtendedRevisionCallGraph {
         public FastenURI changeName(final String className, final String methodName) {
             final var uri = this.getUri().toString().replace("/" + getClassName() + ".", "/" + className + ".");
             return FastenURI.create(uri.replace("." + getMethodName() + "(", "." + methodName + "("));
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Node node = (Node) o;
+            return Objects.equals(uri, node.uri) &&
+                    Objects.equals(metadata, node.metadata);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(uri, metadata);
         }
     }
 
