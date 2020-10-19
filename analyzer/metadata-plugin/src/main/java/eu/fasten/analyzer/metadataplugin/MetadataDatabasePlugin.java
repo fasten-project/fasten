@@ -509,9 +509,8 @@ public class MetadataDatabasePlugin extends Plugin {
             final long packageId = metadataDao.insertPackage(CCallGraph.product, CCallGraph.forge);
 
             // Insert package version record
-            // TODO Add architecture
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    CCallGraph.getCgGenerator(), CCallGraph.version, "",
+                    CCallGraph.getCgGenerator(), CCallGraph.version, CCallGraph.architecture,
                     getProperTimestamp(CCallGraph.timestamp), new JSONObject());
 
             var callables = instertDataExtractCallables(callGraph, metadataDao, packageVersionId);

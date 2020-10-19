@@ -30,6 +30,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
     static {
         classHierarchyJSONKey = "functions";
     }
+    public String architecture;
 
     /**
      * Creates {@link ExtendedRevisionCCallGraph} with the given builder.
@@ -62,12 +63,36 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
     }
 
     /**
+     * Creates {@link ExtendedRevisionCCallGraph} with the given data.
+     *
+     * @param forge          the forge.
+     * @param product        the product.
+     * @param version        the version.
+     * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
+     *                       it is set to -1.
+     * @param nodeCount      number of nodes
+     * @param cgGenerator    The name of call graph generator that generated this call graph.
+     * @param classHierarchy class hierarchy of this revision including all classes of the revision
+     *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
+     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param architecture   the architecture.
+     */
+    public ExtendedRevisionCCallGraph(final String forge, final String product, final String version,
+                                     final long timestamp, int nodeCount, final String cgGenerator,
+                                     final Map<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
+                                     final Graph graph, final String architecture) {
+        super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
+        this.architecture = architecture;
+    }
+
+    /**
      * Creates {@link ExtendedRevisionCallGraph} for the given JSONObject.
      *
      * @param json JSONObject of a revision call graph.
      */
     public ExtendedRevisionCCallGraph(final JSONObject json) throws JSONException {
         super(json);
+        this.architecture = json.has("architecture") ? json.getString("architecture") : null;
     }
 
     /**
