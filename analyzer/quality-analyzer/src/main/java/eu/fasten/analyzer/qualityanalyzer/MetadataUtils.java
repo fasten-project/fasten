@@ -15,14 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.analyzer.qualityanalyzer.data.*;
 
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.*;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.FilesRecord;
 
+import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.Result;
@@ -32,7 +34,9 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Vector;
 
 public class MetadataUtils {
@@ -47,9 +51,6 @@ public class MetadataUtils {
 
     private JSONObject metrics = null;
 
-    private boolean restartTransaction = false;
-    private boolean processedRecord = false;
-
     DSLContext selectedContext = null;
 
     public MetadataUtils(HashMap<String, DSLContext> contexts) {
@@ -58,70 +59,204 @@ public class MetadataUtils {
 
     public void insertMetadataIntoDB(String forge, JSONObject jsonRecord) {
 
-        this.processedRecord = false;
-        this.restartTransaction = false;
-
-        var payload = jsonRecord.getJSONObject("payload");
-
         selectedContext = contexts.get(forge);
 
-        switch(forge) {
-            case QAConstants.MVN_FORGE:
-                insertMvnMetadataIntoDB(payload);
-                break;
-            case QAConstants.PyPI_FORGE:
-                insertPyPIMetadataIntoDB(payload);
-                break;
-            case QAConstants.C_FORGE:
-                insertDebianMetadataIntoDB(payload);
-                break;
-            default:
-                logger.error("Forge type is not defined!");
-        }
-    }
-
-        // Inject all the info at the package-level and store packageVersionsId
-    private void insertMvnMetadataIntoDB(JSONObject payload) {
-
-        CallableHolder callableHolder = new CallableHolder(payload);
-
-        var startLine = callableHolder.getLine_start();
-        var endLine = callableHolder.getLine_end();
-        var retType = callableHolder.getPartialType();
-
-        Result<Record> crs = selectedContext.select()
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.LINE_START.equal(startLine))
-                .and(Callables.CALLABLES.LINE_END.equal(endLine))
-                .and(Callables.CALLABLES.FASTEN_URI.contains(retType))
-                .fetch();
-
-        //TODO: we need a unique record here? Not, if the method is the same, the quality params are the same?
-
-        Vector<CallableHolder> callables = new Vector<CallableHolder>();
-
-        for (Record cr : crs) {
-            callableHolder.setValues(cr);
-            callables.add(callableHolder);
-        }
-
-        logger.info("Found " + callables.size() + " methods for which startLine= " + startLine + " and endLine= " + endLine);
+        List<CallableHolder> callableHolderList = getCallables(forge, jsonRecord);
 
         var metadataDao = new MetadataDao(selectedContext);
-        for(CallableHolder callable : callables){
+        for(CallableHolder callable : callableHolderList){
             metadataDao.updateCallableMetadata(callable.getModuleId(), callable.getFastenUri(), callable.isInternal(), callable.getCallableMetadata());
         }
     }
 
 
-    private void insertDebianMetadataIntoDB(JSONObject jsonRecord) {
-        //TODO: check whether this insertion is the same as insertMvnMetadataIntoDB
-        this.insertMvnMetadataIntoDB(jsonRecord);
+    private List<CallableHolder> getCallables(String forge, JSONObject jsonRecord) {
+
+        //1. get package and version
+        //2. get packageversionid
+        //3. getfileid
+        //4. getmoduleid
+        //5. get callables for module id
+        //6. filter callables that contain "good" values for start and end line
+
+        String product = null;
+        String version = null;
+
+        if (jsonRecord.has("input")) {
+            product = jsonRecord.getJSONObject("input").getString("product");
+            version = jsonRecord.getJSONObject("input").getString("version");
+        }
+
+        //TODO: check for null values here
+
+        Long pckVersionId = getPackageVersionId(product, forge, version);
+
+        String path = jsonRecord.getJSONObject("payload").getString("filepath");
+        int lineStart = Integer.parseInt(jsonRecord.getJSONObject("payload").getJSONObject("metrics").getString("start_line"));
+        int lineEnd = Integer.parseInt(jsonRecord.getJSONObject("payload").getJSONObject("metrics").getString("end_line"));
+
+        Long fileId = getFileId(pckVersionId, path);
+        List<Long> modulesId = getModuleIds(fileId);
+
+        Vector<CallableHolder> callables = new Vector<CallableHolder>();
+
+        if(!modulesId.isEmpty()) {
+
+            for(Long moduleId : modulesId) {
+                callables.addAll(getCallablesInformation(moduleId, lineStart, lineEnd));
+            }
+
+            //TODO: we need a unique record here!
+            logger.info("Found " + callables.size() + " methods for which startLine= " + lineStart + " and endLine= " + lineEnd);
+
+        }
+
+        return callables;
 
     }
 
-    private void insertPyPIMetadataIntoDB(JSONObject jsonRecord) {
-        //TODO: check whether this insertion is the same as insertMvnMetadataIntoDB
-        this.insertMvnMetadataIntoDB(jsonRecord);
+    /**
+     * Retrieves the package_version_id given the purl of the package version.
+     * @param purl - follows purl specifications
+     * @return negative if it cannot be found
+     */
+    private Long getPackageVersionId(String coordinate, String forge, String version) {
+
+        logger.info("Looking for package_version_id of " + coordinate);
+
+        Long packageId = getPackageIdFromCoordinate(
+                coordinate,
+                forge);
+
+        if (packageId != null) {
+            return getPackageVersionIdFromVersion(
+                    packageId,
+                    version);
+        }
+
+        return -1L;
+    }
+
+
+
+    /**
+     * Finds the ID of the package given the package given coordinate and forge.
+     * Note, this is ecosystem agnostic
+     * @param coordinate - includes information about the package
+     * @param forge - ['mvn', 'PyPI', 'Debian']
+     * @return - Record of the package if found
+     */
+    private Long getPackageIdFromCoordinate(String coordinate, String forge) {
+
+        PackagesRecord record = (PackagesRecord) selectedContext.select()
+                .from(Packages.PACKAGES)
+                .where(Packages.PACKAGES.PACKAGE_NAME.equal(coordinate))
+                .and(Packages.PACKAGES.FORGE.equal(forge))
+                .fetchOne();
+
+        if (record != null) {
+            return record.component1();
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds the ID of the package_version in all the version of the package.
+     * @param pkgId - ID of the package
+     * @param version - String of the version of the package_version
+     * @return - Record of the package_version if found
+     */
+    private Long getPackageVersionIdFromVersion(Long pkgId, String version) {
+
+        // Find the package version record
+        PackageVersionsRecord pkgVersionRecord = (PackageVersionsRecord) selectedContext.select()
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .where(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.equal(pkgId))
+                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equal(version))
+                .fetchOne();
+
+        if(pkgVersionRecord != null) {
+            return pkgVersionRecord.getId();
+        }
+
+        return -1L;
+
+    }
+    /**
+     * Retrieve the fileId of the file
+     * @param packageVersionId - package version ID
+     * @param filepath - path to the file
+     * @return -1 if the file cannot be found
+     */
+    private Long getFileId(Long packageVersionId, String filepath) {
+        // For the demo, just cut out the filename, without the path
+        var splits = filepath.split("/");
+        var filename = splits[splits.length - 1];
+
+        FilesRecord fr = (FilesRecord) selectedContext.select()
+                .from(Files.FILES)
+                .where(Files.FILES.PACKAGE_VERSION_ID.equal(packageVersionId))
+                .and(Files.FILES.PATH.equal(filename))
+                .fetchOne();
+
+        if (fr != null) {
+            return fr.getId();
+        }
+
+        return -1L;
+
+    }
+
+    /**
+     * Gets the moduleId that corresponds to the file.
+     * @param fileId - Long fileId
+     * @return list of module Ids
+     */
+    public List<Long> getModuleIds(Long fileId) {
+        List<Long> moduleIds = new ArrayList<>();
+        Result<Record> mcr = selectedContext.select()
+                .from(ModuleContents.MODULE_CONTENTS)
+                .where(ModuleContents.MODULE_CONTENTS.FILE_ID.equal(fileId))
+                .fetch();
+
+        if(mcr.isNotEmpty()) {
+            for (Record record : mcr) {
+                moduleIds.add((Long) record.get(0));
+            }
+        }
+
+        return moduleIds;//we cannot return -1 here since that implies external callable
+    }
+
+    /**
+     * Retrieves the callables information from the DB that have a start and end line.
+     *
+     * @param moduleId - Long ID of the file where the callable was changed.
+     * @param startLine
+     * @param endLine
+     *
+     * @return Long ID of the callable (-1L if it cannot find it)
+     */
+    private List<CallableHolder> getCallablesInformation(Long moduleId, int lineStart, int lineEnd)  {
+        List<CallableHolder> calls = new ArrayList<>();
+
+        // Get all the records with the moduleId given
+        Result<Record> crs = selectedContext.select()
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.MODULE_ID.equal(moduleId))
+                .fetch();
+
+        for (Record cr : crs) {
+
+            // Create callable object
+            CallableHolder ch = new CallableHolder(cr);
+            //filter and store callable only if start and end line overlap with input
+            if( (ch.getLine_start() == lineStart) && (ch.getLine_end() == lineEnd)) {
+                calls.add(ch);
+            }
+
+        }
+        return calls;
     }
 }
