@@ -36,12 +36,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 
 @CommandLine.Command(name = "MavenResolver")
 public class MavenResolver implements Runnable {
@@ -298,14 +293,23 @@ public class MavenResolver implements Runnable {
     /**
      * Transforms a dependency tree into set.
      *
-     * @param dependencyTree Dependency tree to transform
+     * @param rootDependencyTree Root of the Dependency tree to transform
      * @return A set of all dependencies from the given dependency tree
      */
-    public Set<Dependency> collectDependencyTree(DependencyTree dependencyTree) {
+    public Set<Dependency> collectDependencyTree(DependencyTree rootDependencyTree) {
         var dependencySet = new HashSet<Dependency>();
-        dependencySet.add(dependencyTree.artifact);
-        for (var childTree : dependencyTree.dependencies) {
-            dependencySet.addAll(collectDependencyTree(childTree));
+        var packages = new HashSet<String>();
+        Queue<DependencyTree> queue = new LinkedList<>();
+        queue.add(rootDependencyTree);
+        while (!queue.isEmpty()) {
+            DependencyTree tree = queue.poll();
+            var artifactPackage = tree.artifact.groupId + Constants.mvnCoordinateSeparator
+                    + tree.artifact.artifactId;
+            if (!packages.contains(artifactPackage)) {
+                packages.add(artifactPackage);
+                dependencySet.add(tree.artifact);
+            }
+            queue.addAll(tree.dependencies);
         }
         return dependencySet;
     }

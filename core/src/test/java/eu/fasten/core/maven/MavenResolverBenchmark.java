@@ -3,6 +3,8 @@ package eu.fasten.core.maven;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import org.jooq.DSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -16,6 +18,8 @@ import java.util.Scanner;
  */
 @CommandLine.Command(name = "MavenResolverBenchmark")
 public class MavenResolverBenchmark implements Runnable {
+
+    private static final Logger logger = LoggerFactory.getLogger(MavenResolverBenchmark.class);
 
     @CommandLine.Option(names = {"-f", "--file"},
             paramLabel = "COORDS_FILE",
@@ -52,7 +56,7 @@ public class MavenResolverBenchmark implements Runnable {
         try {
             input = new Scanner(new File(file));
         } catch (FileNotFoundException e) {
-            System.err.println(e.getMessage());
+            logger.error("Could not find the file with Maven coordinates", e);
             return;
         }
         if (skipFirstLine && input.hasNextLine()) {
@@ -62,10 +66,10 @@ public class MavenResolverBenchmark implements Runnable {
         try {
             dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
         } catch (SQLException e) {
-            System.err.println("Could not connect to the database: " + e.getMessage());
+            logger.error("Could not connect to the database", e);
             return;
         }
-        System.out.println("Starting benchmark - " + new Date());
+        logger.info("Starting benchmark - " + new Date());
         var mavenResolver = new MavenResolver();
         var artifactCount = 0;
         var dbCount = 0;
@@ -95,31 +99,31 @@ public class MavenResolverBenchmark implements Runnable {
                 }
                 result += matching;
                 artifactCount++;
-                System.out.println("##################################################");
-                System.out.println("Artifact: " + line);
-                System.out.println("##################################################");
-                System.out.println("Database resolution dependencies:");
-                dbDependencySet.forEach(d -> System.out.println("\t" + d.toFullCanonicalForm()));
-                System.out.println("##################################################");
-                System.out.println("Online resolution dependencies:");
-                onlineDependencySet.forEach(d -> System.out.println("\t" + d.toFullCanonicalForm()));
-                System.out.println("##################################################");
-                System.out.println("Current progress");
-                System.out.println("Successful match rate is " + result / (float) artifactCount + " for " + artifactCount + " artifacts");
-                System.out.println("Database resolution success rate: " + (float) dbResolutionSuccess / (float) dbCount);
-                System.out.println("Online resolution success rate: " + (float) onlineResolutionSuccess / (float) onlineCount);
-                System.out.println("--------------------------------------------------");
+                logger.info("##################################################");
+                logger.info("Artifact: " + line);
+                logger.info("##################################################");
+                logger.info("Database resolution dependencies:");
+                dbDependencySet.forEach(d -> logger.info("\t" + d.toFullCanonicalForm()));
+                logger.info("##################################################");
+                logger.info("Online resolution dependencies:");
+                onlineDependencySet.forEach(d -> logger.info("\t" + d.toFullCanonicalForm()));
+                logger.info("##################################################");
+                logger.info("Current progress");
+                logger.info("Successful match rate is " + result / (float) artifactCount + " for " + artifactCount + " artifacts");
+                logger.info("Database resolution success rate: " + (float) dbResolutionSuccess / (float) dbCount);
+                logger.info("Online resolution success rate: " + (float) onlineResolutionSuccess / (float) onlineCount);
+                logger.info("--------------------------------------------------");
             } catch (Exception e) {
-                e.printStackTrace(System.err);
+                logger.error("Resolution error", e);
             }
         }
-        System.out.println("--------------------------------------------------");
-        System.out.println("Benchmark completed - " + new Date());
-        System.out.println("--------------------------------------------------");
-        System.out.println("Final result");
-        System.out.println("Successful match rate is " + result / (float) artifactCount + " for " + artifactCount + " artifacts");
-        System.out.println("Database resolution success rate: " + (float) dbResolutionSuccess / (float) dbCount);
-        System.out.println("Online resolution success rate: " + (float) onlineResolutionSuccess / (float) onlineCount);
-        System.out.println("--------------------------------------------------");
+        logger.info("--------------------------------------------------");
+        logger.info("Benchmark completed - " + new Date());
+        logger.info("--------------------------------------------------");
+        logger.info("Final result");
+        logger.info("Successful match rate is " + result / (float) artifactCount + " for " + artifactCount + " artifacts");
+        logger.info("Database resolution success rate: " + (float) dbResolutionSuccess / (float) dbCount);
+        logger.info("Online resolution success rate: " + (float) onlineResolutionSuccess / (float) onlineCount);
+        logger.info("--------------------------------------------------");
     }
 }
