@@ -785,15 +785,19 @@ public class MetadataDao {
                 .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equalIgnoreCase(version));
     }
 
-    public String getPackageVersion(String packageName, String packageVersion) {
-        return getPackageInfo(packageName, packageVersion, false);
+    public String getPackageVersion(String packageName, String packageVersion, short offset, short limit) {
+        return getPackageInfo(packageName, packageVersion, false, offset, limit);
     }
 
-    public String getPackageMetadata(String packageName, String packageVersion) {
-        return getPackageInfo(packageName, packageVersion, true);
+    public String getPackageMetadata(String packageName, String packageVersion, short offset, short limit) {
+        return getPackageInfo(packageName, packageVersion, true, offset, limit);
     }
 
-    protected String getPackageInfo(String packageName, String packageVersion, boolean metadataOnly) {
+    protected String getPackageInfo(String packageName,
+                                    String packageVersion,
+                                    boolean metadataOnly,
+                                    short offset,
+                                    short limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -813,6 +817,8 @@ public class MetadataDao {
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
+                .offset(offset)
+                .limit(limit)
                 .fetch();
 
         // Returning the result
@@ -824,9 +830,11 @@ public class MetadataDao {
      * Returns information about versions of a package, including potential vulnerabilities.
      *
      * @param packageName   Name of the package of interest.
+     * @param offset
+     * @param limit
      * @return              Package version information, including potential vulnerabilities.
      */
-    public String getPackageVersions(String packageName) {
+    public String getPackageVersions(String packageName, short offset, short limit) {
 
         // SQL query
         /*
@@ -853,6 +861,8 @@ public class MetadataDao {
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
+                .offset(offset)
+                .limit(limit)
                 .fetch();
 
         // Returning the result
@@ -865,9 +875,11 @@ public class MetadataDao {
      *
      * @param packageName       Name of the package whose dependencies are of interest.
      * @param packageVersion    Version of the package whose dependencies are of interest.
+     * @param offset
+     * @param limit
      * @return                  All package version dependencies.
      */
-    public String getPackageDependencies(String packageName, String packageVersion) {
+    public String getPackageDependencies(String packageName, String packageVersion, short offset, short limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -881,6 +893,8 @@ public class MetadataDao {
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(d).on(pv.ID.eq(d.PACKAGE_VERSION_ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
+                .offset(offset)
+                .limit(limit)
                 .fetch();
 
         // Returning the result
@@ -888,18 +902,27 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
-    public String getPackageModules(String packageName, String packageVersion) {
-        return getModuleInfo(packageName, packageVersion, null, false);
+    public String getPackageModules(String packageName,
+                                    String packageVersion,
+                                    short offset,
+                                    short limit) {
+        return getModuleInfo(packageName, packageVersion, null, false, offset, limit);
     }
 
-    public String getModuleMetadata(String packageName, String packageVersion, String moduleNamespace) {
-        return getModuleInfo(packageName, packageVersion, moduleNamespace, true);
+    public String getModuleMetadata(String packageName,
+                                    String packageVersion,
+                                    String moduleNamespace,
+                                    short offset,
+                                    short limit) {
+        return getModuleInfo(packageName, packageVersion, moduleNamespace, true, offset, limit);
     }
 
     protected String getModuleInfo(String packageName,
                                    String packageVersion,
                                    String moduleNamespace,
-                                   boolean metadataOnly) {
+                                   boolean metadataOnly,
+                                   short offset,
+                                   short limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -927,6 +950,8 @@ public class MetadataDao {
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .where(whereClause)
+                .offset(offset)
+                .limit(limit)
                 .fetch();
 
         // Returning the result
@@ -934,7 +959,11 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
-    public String getModuleFiles(String packageName, String packageVersion, String moduleNamespace) {
+    public String getModuleFiles(String packageName,
+                                 String packageVersion,
+                                 String moduleNamespace,
+                                 short offset,
+                                 short limit) {
 
         // SQL query
         /*
@@ -963,6 +992,8 @@ public class MetadataDao {
                 .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
                 .and(m.NAMESPACE.equalIgnoreCase(moduleNamespace))
+                .offset(offset)
+                .limit(limit)
                 .fetch();
 
         // Returning the result
@@ -970,19 +1001,25 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
-    public String getPackageBinaryModules(String packageName, String packageVersion) {
-        return getBinaryModuleInfo(packageName, packageVersion, null, false);
+    public String getPackageBinaryModules(String packageName, String packageVersion, short offset, short limit) {
+        return getBinaryModuleInfo(packageName, packageVersion, null, false, offset, limit);
     }
 
-    public String getBinaryModuleMetadata(String packageName, String packageVersion, String binaryModule) {
-        return getBinaryModuleInfo(packageName, packageVersion, binaryModule, true);
+    public String getBinaryModuleMetadata(String packageName,
+                                          String packageVersion,
+                                          String binaryModule,
+                                          short offset,
+                                          short limit) {
+        return getBinaryModuleInfo(packageName, packageVersion, binaryModule, true, offset, limit);
     }
 
     // TODO Test with real DB data
     protected String getBinaryModuleInfo(String packageName,
                                          String packageVersion,
                                          String binaryModule,
-                                         boolean metadataOnly) {
+                                         boolean metadataOnly,
+                                         short offset,
+                                         short limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1010,6 +1047,8 @@ public class MetadataDao {
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(b).on(pv.ID.eq(b.PACKAGE_VERSION_ID))
                 .where(whereClause)
+                .offset(offset)
+                .limit(limit)
                 .fetch();
 
         // Returning the result
@@ -1018,7 +1057,11 @@ public class MetadataDao {
     }
 
     // TODO Test with real DB data
-    public String getBinaryModuleFiles(String packageName, String packageVersion, String binaryModule) {
+    public String getBinaryModuleFiles(String packageName,
+                                       String packageVersion,
+                                       String binaryModule,
+                                       short offset,
+                                       short limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1035,6 +1078,8 @@ public class MetadataDao {
                 .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
                 .and(b.NAME.equalIgnoreCase(binaryModule))
+                .offset(offset)
+                .limit(limit)
                 .fetch();
 
         // Returning the result
@@ -1042,18 +1087,24 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
-    public String getPackageCallables(String packageName, String packageVersion) {
-        return getCallablesInfo(packageName, packageVersion, null, false);
+    public String getPackageCallables(String packageName, String packageVersion, short offset, short limit) {
+        return getCallablesInfo(packageName, packageVersion, null, false, offset, limit);
     }
 
-    public String getCallableMetadata(String packageName, String packageVersion, String fastenURI) {
-        return getCallablesInfo(packageName, packageVersion, fastenURI, true);
+    public String getCallableMetadata(String packageName,
+                                      String packageVersion,
+                                      String fastenURI,
+                                      short offset,
+                                      short limit) {
+        return getCallablesInfo(packageName, packageVersion, fastenURI, true, offset, limit);
     }
 
     protected String getCallablesInfo(String packageName,
                                       String packageVersion,
                                       String fastenURI,
-                                      boolean metadataOnly) {
+                                      boolean metadataOnly,
+                                      short offset,
+                                      short limit) {
 
         // SQL query
         /*
@@ -1095,6 +1146,8 @@ public class MetadataDao {
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
                 .where(whereClause)
+                .offset(offset)
+                .limit(limit)
                 .fetch();
 
         // Returning the result
@@ -1102,7 +1155,7 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
-    public String getPackageFiles(String packageName, String packageVersion) {
+    public String getPackageFiles(String packageName, String packageVersion, short offset, short limit) {
 
         // SQL query
         /*
@@ -1126,6 +1179,8 @@ public class MetadataDao {
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
+                .offset(offset)
+                .limit(limit)
                 .fetch();
 
         // Returning the result
@@ -1133,15 +1188,19 @@ public class MetadataDao {
         return queryResult.formatJSON();
     }
 
-    public String getPackageCallgraph(String packageName, String packageVersion) {
-        return getEdgesInfo(packageName, packageVersion, true);
+    public String getPackageCallgraph(String packageName, String packageVersion, short offset, short limit) {
+        return getEdgesInfo(packageName, packageVersion, true, offset, limit);
     }
 
-    public String getPackageEdges(String packageName, String packageVersion) {
-        return getEdgesInfo(packageName, packageVersion, false);
+    public String getPackageEdges(String packageName, String packageVersion, short offset, short limit) {
+        return getEdgesInfo(packageName, packageVersion, false, offset, limit);
     }
 
-    protected String getEdgesInfo(String packageName, String packageVersion, boolean idsOnly) {
+    protected String getEdgesInfo(String packageName,
+                                  String packageVersion,
+                                  boolean idsOnly,
+                                  short offset,
+                                  short limit) {
 
         // SQL query
         /*
@@ -1179,6 +1238,8 @@ public class MetadataDao {
                 .innerJoin(pv).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .innerJoin(p).on(p.ID.eq(pv.PACKAGE_ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
+                .offset(offset)
+                .limit(limit)
                 .fetch();
 
         // Returning the result

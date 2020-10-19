@@ -11,6 +11,8 @@ public class RestApplication extends Application {
 
     private final Set<Class<?>> resources = new HashSet<>();
 
+    public static final String DEFAULT_PAGE_SIZE = "10";
+
     public RestApplication() {
         resources.add(PackageApi.class);
         resources.add(DependencyApi.class);

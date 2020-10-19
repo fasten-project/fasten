@@ -4,5 +4,8 @@ import javax.ws.rs.core.Response;
 
 public interface FileApiService {
 
-    Response getPackageFiles(String package_name, String package_version);
+    Response getPackageFiles(String package_name,
+                             String package_version,
+                             short offset,
+                             short limit);
 }

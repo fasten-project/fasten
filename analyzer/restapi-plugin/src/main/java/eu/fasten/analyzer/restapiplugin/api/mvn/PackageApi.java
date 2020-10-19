@@ -1,11 +1,9 @@
 package eu.fasten.analyzer.restapiplugin.api.mvn;
 
+import eu.fasten.analyzer.restapiplugin.api.RestApplication;
 import eu.fasten.analyzer.restapiplugin.api.mvn.impl.PackageApiServiceImpl;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -18,32 +16,48 @@ public class PackageApi {
     @GET
     @Path("/{pkg}/versions")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getPackageVersions(@PathParam("pkg") String package_name) {
-        return service.getPackageVersions(package_name);
+    public Response getPackageVersions(@PathParam("pkg") String package_name,
+                                       @DefaultValue("0")
+                                       @QueryParam("offset") short offset,
+                                       @DefaultValue(RestApplication.DEFAULT_PAGE_SIZE)
+                                       @QueryParam("limit") short limit) {
+        return service.getPackageVersions(package_name, offset, limit);
     }
 
     @GET
     @Path("/{pkg}/{pkg_ver}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getPackageVersion(@PathParam("pkg") String package_name,
-                               @PathParam("pkg_ver") String package_version) {
-        return service.getPackageVersion(package_name, package_version);
+                                      @PathParam("pkg_ver") String package_version,
+                                      @DefaultValue("0")
+                                      @QueryParam("offset") short offset,
+                                      @DefaultValue(RestApplication.DEFAULT_PAGE_SIZE)
+                                      @QueryParam("limit") short limit) {
+        return service.getPackageVersion(package_name, package_version, offset, limit);
     }
 
     @GET
     @Path("/{pkg}/{pkg_ver}/metadata")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getPackageMetadata(@PathParam("pkg") String package_name,
-                                       @PathParam("pkg_ver") String package_version) {
-        return service.getPackageMetadata(package_name, package_version);
+                                       @PathParam("pkg_ver") String package_version,
+                                       @DefaultValue("0")
+                                       @QueryParam("offset") short offset,
+                                       @DefaultValue(RestApplication.DEFAULT_PAGE_SIZE)
+                                       @QueryParam("limit") short limit) {
+        return service.getPackageMetadata(package_name, package_version, offset, limit);
     }
 
     @GET
     @Path("/{pkg}/{pkg_ver}/callgraph")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getPackageCallgraph(@PathParam("pkg") String package_name,
-                                        @PathParam("pkg_ver") String package_version) {
-        return service.getPackageCallgraph(package_name, package_version);
+                                        @PathParam("pkg_ver") String package_version,
+                                        @DefaultValue("0")
+                                        @QueryParam("offset") short offset,
+                                        @DefaultValue(RestApplication.DEFAULT_PAGE_SIZE)
+                                        @QueryParam("limit") short limit) {
+        return service.getPackageCallgraph(package_name, package_version, offset, limit);
     }
 }
 
