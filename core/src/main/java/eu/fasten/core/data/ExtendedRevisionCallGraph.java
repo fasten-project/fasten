@@ -245,6 +245,30 @@ public class ExtendedRevisionCallGraph {
         return result;
     }
 
+    public Map<Integer, Type> externalNodeIdToTypeMap() {
+        final Map<Integer, Type> result = new HashMap<>();
+        this.classHierarchy.get(Scope.externalTypes).values().parallelStream().forEach(type -> {
+            for (final var key : type.methods.keySet()) {
+                synchronized (result) {
+                    result.put(key, type);
+                }
+            }
+        });
+        return result;
+    }
+
+    public Map<Integer, Type> internalNodeIdToTypeMap() {
+        final Map<Integer, Type> result = new HashMap<>();
+        this.classHierarchy.get(Scope.internalTypes).values().parallelStream().forEach(type -> {
+            for (final var key : type.methods.keySet()) {
+                synchronized (result) {
+                    result.put(key, type);
+                }
+            }
+        });
+        return result;
+    }
+
     /**
      * Checks whether this {@link ExtendedRevisionCallGraph} is empty, e.g. has no calls.
      *
@@ -549,13 +573,19 @@ public class ExtendedRevisionCallGraph {
         final private Map<String, Object> metadata;
 
         /**
+         * Method signature.
+         */
+        final private String signature;
+
+        /**
          * Creates {@link Node} from a FastenURI and metadata.
          *
          * @param uri      FastenURI corresponding to this Node
          * @param metadata metadata associated with this Node
          */
         public Node(final FastenURI uri, final Map<String, Object> metadata) {
-            this.uri = uri;
+            this.uri = uri.canonicalize();
+            this.signature = StringUtils.substringAfter(uri.getEntity(), ".");
             this.metadata = metadata;
         }
 
@@ -565,6 +595,10 @@ public class ExtendedRevisionCallGraph {
 
         public Map<String, Object> getMetadata() {
             return metadata;
+        }
+
+        public String getSignature() {
+            return signature;
         }
 
         /**
@@ -591,7 +625,7 @@ public class ExtendedRevisionCallGraph {
          * @return method name
          */
         public String getMethodName() {
-            return StringUtils.substringBetween(getEntity(), getClassName() + ".", "(");
+            return StringUtils.substringBetween(getEntity(), ".", "(");
         }
 
         /**
@@ -602,8 +636,15 @@ public class ExtendedRevisionCallGraph {
          * @return FastenURI with new class and method names
          */
         public FastenURI changeName(final String className, final String methodName) {
-            final var uri = this.getUri().toString().replace("/" + getClassName() + ".", "/" + className + ".");
-            return FastenURI.create(uri.replace("." + getMethodName() + "(", "." + methodName + "("));
+            final var uri = this.getUri().toString().replace("/" + getClassName() + ".",
+                    "/" + className + ".");
+            var newUri = uri.replace("." + FastenJavaURI.pctEncodeArg(getMethodName())
+                    + "(", "." + FastenJavaURI.pctEncodeArg(methodName) + "(");
+            return FastenURI.create(newUri);
+        }
+
+        public String changeSignature(final String methodName) {
+            return signature.replace( getMethodName() + "(",methodName +"(");
         }
 
         @Override
@@ -637,6 +678,11 @@ public class ExtendedRevisionCallGraph {
         private final BiMap<Integer, Node> methods;
 
         /**
+         * Defined methods.
+         */
+        private final Map<String, Node> definedMethods;
+
+        /**
          * Classes that this type inherits from in the order of instantiation.
          */
         private final LinkedList<FastenURI> superClasses;
@@ -667,11 +713,13 @@ public class ExtendedRevisionCallGraph {
          * @param isFinal         true if the Type is final
          */
         public Type(final String sourceFile, final BiMap<Integer, Node> methods,
+                    final Map<String, Node> defined,
                     final LinkedList<FastenURI> superClasses,
                     final List<FastenURI> superInterfaces, final String access,
                     final boolean isFinal) {
             this.sourceFileName = sourceFile;
             this.methods = methods;
+            this.definedMethods = defined;
             this.superClasses = superClasses;
             this.superInterfaces = superInterfaces;
             this.access = access;
@@ -689,10 +737,18 @@ public class ExtendedRevisionCallGraph {
 
             final var methodsJson = type.getJSONObject("methods");
             this.methods = HashBiMap.create();
+            this.definedMethods = new HashMap<>();
             for (final var methodKey : methodsJson.keySet()) {
                 final var nodeJson = methodsJson.getJSONObject(methodKey);
-                this.methods.put(Integer.parseInt(methodKey),
-                        new Node(FastenURI.create(nodeJson.getString("uri")), nodeJson.getJSONObject("metadata").toMap()));
+                final var metadata = nodeJson.getJSONObject("metadata").toMap();
+                final var uri = FastenURI.create(nodeJson.getString("uri"));
+                final var node = new Node(uri, metadata);
+                this.methods.put(Integer.parseInt(methodKey), node);
+                if (!metadata.isEmpty()) {
+                    if ((Boolean) metadata.get("defined")){
+                        definedMethods.put(getMethodSignature(uri), node);
+                    }
+                }
             }
 
             final var superClassesJSON = type.getJSONArray("superClasses");
@@ -720,6 +776,7 @@ public class ExtendedRevisionCallGraph {
         public Type(final String sourceFileName) {
             this.sourceFileName = sourceFileName;
             this.methods = HashBiMap.create();
+            this.definedMethods = new HashMap<>();
             this.superClasses = new LinkedList<>();
             this.superInterfaces = new ArrayList<>();
             this.access = "";
@@ -748,6 +805,10 @@ public class ExtendedRevisionCallGraph {
 
         public boolean isFinal() {
             return isFinal;
+        }
+
+        public Map<String, Node> getDefinedMethods() {
+            return definedMethods;
         }
 
         /**
@@ -806,6 +867,10 @@ public class ExtendedRevisionCallGraph {
                     .stream()
                     .filter(node -> node.getValue().uri.getEntity().contains(signature))
                     .findAny();
+        }
+
+        private static String getMethodSignature(final FastenURI uri) {
+            return StringUtils.substringAfter(uri.getEntity(), ".");
         }
 
         /**

@@ -30,6 +30,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
@@ -105,7 +107,7 @@ public class OPALType {
         }
 
         return Map.of(OPALMethod.getTypeURI(klass),
-                new Type("", toURIDeclaredMethods(methods), superClassesURIs,
+                new Type("", toURIDeclaredMethods(methods), new HashMap<>(), superClassesURIs,
                         toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass)),
                         "", false));
     }
@@ -126,10 +128,41 @@ public class OPALType {
             superClassesURIs = new LinkedList<>();
         }
 
+        final var methodsMap = getMethodMaps(type.getMethods());
         return Map.of(OPALMethod.getTypeURI(klass),
-                new Type(type.getSourceFileName(), toURIMethods(type.getMethods()),
+                new Type(type.getSourceFileName(), methodsMap.getRight(), methodsMap.getLeft(),
                         superClassesURIs, toURIInterfaces(type.getSuperInterfaces()),
                         type.access, type.isFinal));
+    }
+
+    /**
+     * Converts a {@link Map} of {@link Method} to a Map of {@link FastenURI}. And also
+     * shifts the keys and values.
+     *
+     * @param methods {@link Method} are keys and their unique id in the artifact are
+     *                values.
+     * @return A Map in which the unique id of each method in the artifact is the key and the
+     * {@link FastenURI} of the method is the value.
+     */
+    public static Pair<Map<String, Node>, BiMap<Integer, Node>> getMethodMaps(final Map<Method,
+            Integer> methods) {
+        final BiMap<Integer, Node> nodes = HashBiMap.create();
+        final Map<String, Node> defs = new HashMap<>();
+
+        for (final var entry : methods.entrySet()) {
+            final var method = entry.getKey();
+            final var defined = method.instructionsOption().isDefined();
+            final var node = new Node(getUri(method), Map.of("first",
+                    getFirstLine(method),
+                    "last", getLastLine(method),
+                    "defined", defined,
+                    "access", getAccessModifier(method)));
+            if (defined) {
+                defs.put(node.getSignature(), node);
+            }
+            nodes.put(entry.getValue(), node);
+        }
+        return MutablePair.of(defs, nodes);
     }
 
     /**
