@@ -29,13 +29,20 @@ public abstract class ExtendedRevisionCallGraph<A> {
     private static final Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
 
     /**
-     * For each class in the revision, class hierarchy keeps a {@link Type} that is accessible by
-     * the {@link FastenURI} of the class as a key.
+     * Each implementation of ExtendedRevisionCallGraph provides a different
+     * data structure for saving the classHierarchy.
      *
-     * @implNote each method in the revision has a unique id in this CHA.
+     * Some languages that don't have a class hierarchy save in this field
+     * information about methods. For example, see ExtendedRevisionCCallGraph.
      */
     protected A classHierarchy;
 
+    /**
+     * Different languages may save the class hierarchy in a different JSON key.
+     *
+     * For instance, in C revision call graph format, a key called functions
+     * contains the information to be saved in the classHierarchy field.
+     */
     protected static String classHierarchyJSONKey = "cha";
 
     /**
@@ -44,7 +51,8 @@ public abstract class ExtendedRevisionCallGraph<A> {
     protected int nodeCount;
 
     /**
-     * Includes all the edges of the revision call graph (internal & external).
+     * Includes all the edges of the revision call graph (internal, external,
+     * and resolved).
      */
     protected Graph graph;
 
@@ -52,26 +60,32 @@ public abstract class ExtendedRevisionCallGraph<A> {
      * The forge.
      */
     public String forge;
+
     /**
      * The product.
      */
     public String product;
+
     /**
      * The version.
      */
     public String version;
+
     /**
      * The timestamp (if specified, or -1) in seconds from UNIX Epoch.
      */
     public long timestamp;
+
     /**
      * The URI of this revision.
      */
     public FastenURI uri;
+
     /**
      * The forgeless URI of this revision.
      */
     public FastenURI forgelessUri;
+
     /**
      * Keeps the name of call graph generator that generated this revision call graph.
      */
@@ -83,9 +97,9 @@ public abstract class ExtendedRevisionCallGraph<A> {
     protected ExtendedRevisionCallGraph() {}
 
     /**
-     * Creates {@link ExtendedRevisionJavaCallGraph} with the given builder.
+     * Creates {@link ExtendedRevisionCallGraph} with the given builder.
      *
-     * @param builder builder for {@link ExtendedRevisionJavaCallGraph}
+     * @param builder builder for {@link ExtendedRevisionCallGraph}
      */
     protected ExtendedRevisionCallGraph(final ExtendedBuilder<A> builder) {
         this.forge = builder.getForge();
@@ -110,8 +124,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
      *                       it is set to -1.
      * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
-     * @param classHierarchy class hierarchy of this revision including all classes of the revision
-     *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
+     * @param classHierarchy
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     protected ExtendedRevisionCallGraph(final String forge, final String product, final String version,

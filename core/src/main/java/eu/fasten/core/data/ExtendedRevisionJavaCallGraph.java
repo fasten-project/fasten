@@ -23,6 +23,12 @@ import java.util.Map;
 import org.json.JSONObject;
 import org.json.JSONException;
 
+/**
+ * For each class in the revision, class hierarchy keeps a {@link Type} that is accessible by
+ * the {@link FastenURI} of the class as a key.
+ *
+ * @implNote each method in the revision has a unique id in this CHA.
+ */
 public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map<JavaScope, Map<FastenURI, JavaType>>> {
 
     /**

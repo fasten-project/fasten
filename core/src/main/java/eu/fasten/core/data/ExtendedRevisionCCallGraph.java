@@ -25,7 +25,13 @@ import java.util.ArrayList;
 import org.json.JSONObject;
 import org.json.JSONException;
 
-//Map<CScope, Map<String, Map<Integer, CNode>>>
+/**
+ * We use the key function in the JSON to get the information we want to save
+ * in classHierarchy.
+ *
+ * The data structure contains a map with CScopes to a map of functions'
+ * URIs to a map of NodeIds to CNodes.
+ */
 public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CScope, Map<String, Map<Integer, CNode>>>> {
     static {
         classHierarchyJSONKey = "functions";
@@ -39,6 +45,8 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
      */
     public ExtendedRevisionCCallGraph(final ExtendedBuilder<Map<CScope, Map<String, Map<Integer, CNode>>>> builder) {
         super(builder);
+        ExtendedBuilderC cBuilder = (ExtendedBuilderC) builder;
+        this.architecture = cBuilder.getArchitecture();
     }
 
     /**
@@ -156,16 +164,16 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
         final var external = cha.getJSONObject("external");
         // Parse internal binaries
         final var internalBinaries = internal.getJSONObject("binaries");
-        methods.put(CScope.internalBinaries, parseMethods(internalBinaries, true));
+        methods.put(CScope.internalBinary, parseMethods(internalBinaries, true));
         // Parse internal static functions
         final var internalStatic = internal.getJSONObject("static_functions").getJSONObject("methods");
-        methods.put(CScope.internalStaticFunctions, parseMethods(internalStatic, false));
+        methods.put(CScope.internalStaticFunction, parseMethods(internalStatic, false));
         // Parse external product functions
         final var externalProducts = external.getJSONObject("products");
-        methods.put(CScope.externalProducts, parseMethods(externalProducts, true));
+        methods.put(CScope.externalProduct, parseMethods(externalProducts, true));
         // Parse external static functions
         final var externalStatic = external.getJSONObject("static_functions");
-        methods.put(CScope.externalStraticFunctions, parseMethods(externalStatic, true));
+        methods.put(CScope.externalStaticFunction, parseMethods(externalStatic, true));
         // Parse external undefined functions
         final var externalUndefined = external.getJSONObject("undefined").getJSONObject("methods");
         methods.put(CScope.externalUndefined, parseMethods(externalUndefined, false));
@@ -181,15 +189,15 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
     public Map<Integer, CNode> mapOfAllMethods() {
         Map<Integer, CNode> result = new HashMap<>();
 
-        for (final var name : this.getClassHierarchy().get(CScope.internalBinaries).entrySet())
+        for (final var name : this.getClassHierarchy().get(CScope.internalBinary).entrySet())
             for (final var method : name.getValue().entrySet())
                 result.put(method.getKey(), method.getValue());
 
-        for (final var name : this.getClassHierarchy().get(CScope.internalStaticFunctions).entrySet())
+        for (final var name : this.getClassHierarchy().get(CScope.internalStaticFunction).entrySet())
             for (final var method : name.getValue().entrySet())
                 result.put(method.getKey(), method.getValue());
 
-        for (final var name : this.getClassHierarchy().get(CScope.externalProducts).entrySet())
+        for (final var name : this.getClassHierarchy().get(CScope.externalProduct).entrySet())
             for (final var method : name.getValue().entrySet())
                 result.put(method.getKey(), method.getValue());
 
@@ -197,7 +205,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
             for (final var method : name.getValue().entrySet())
                 result.put(method.getKey(), method.getValue());
 
-        for (final var name : this.getClassHierarchy().get(CScope.externalStraticFunctions).entrySet())
+        for (final var name : this.getClassHierarchy().get(CScope.externalStaticFunction).entrySet())
             for (final var method : name.getValue().entrySet())
                 result.put(method.getKey(), method.getValue());
 
@@ -252,10 +260,10 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
         final var result = new JSONObject();
         final var internal = new JSONObject();
         final var external = new JSONObject();
-        final var internalBinaries = methodsToJSON(cha, CScope.internalBinaries, true);
-        final var internalStaticFunctions = methodsToJSON(cha, CScope.internalStaticFunctions);
-        final var externalProducts = methodsToJSON(cha, CScope.externalProducts, true);
-        final var externalStraticFunctions = methodsToJSON(cha, CScope.externalStraticFunctions, true);
+        final var internalBinaries = methodsToJSON(cha, CScope.internalBinary, true);
+        final var internalStaticFunctions = methodsToJSON(cha, CScope.internalStaticFunction);
+        final var externalProducts = methodsToJSON(cha, CScope.externalProduct, true);
+        final var externalStraticFunctions = methodsToJSON(cha, CScope.externalStaticFunction, true);
         final var externalUndefined = methodsToJSON(cha, CScope.externalUndefined);
 
         internal.put("binaries", internalBinaries);

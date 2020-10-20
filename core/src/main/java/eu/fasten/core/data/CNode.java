@@ -32,6 +32,9 @@ public class CNode extends Node {
      *
      * @param uri      FastenURI corresponding to this CNode
      * @param metadata metadata associated with this CNode
+     * @param files    a list with the files of this CNode. In most cases, there
+     *                 is only one file in the list. Currently, we handle files
+     *                 as if it is always at most one file.
      */
     public CNode(final FastenURI uri, final Map<String, Object> metadata, final List<String> files) {
         super(uri, metadata);
@@ -42,6 +45,10 @@ public class CNode extends Node {
         return files;
     }
 
+    /**
+     * Returns an empty String if there isn't any file, otherwise returns the
+     * first file.
+     */
     public String getFile() {
         if (files.isEmpty())
             return "";

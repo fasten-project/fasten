@@ -286,7 +286,8 @@ public class MetadataDatabasePlugin extends Plugin {
             return packageVersionId;
         }
 
-        public abstract ArrayList<CallablesRecord> instertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId);
+        public abstract ArrayList<CallablesRecord> instertDataExtractCallables(
+                ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId);
 
         protected abstract List<EdgesRecord> insertEdges(Graph graph,
                                  Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao);
@@ -347,7 +348,8 @@ public class MetadataDatabasePlugin extends Plugin {
     @Extension
     public static class MetadataDBJavaExtension extends MetadataDBExtension {
 
-        public ArrayList<CallablesRecord> instertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
+        public ArrayList<CallablesRecord> instertDataExtractCallables(
+                ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
             ExtendedRevisionJavaCallGraph javaCallGraph = (ExtendedRevisionJavaCallGraph) callgraph;
             var callables = new ArrayList<CallablesRecord>();
             var cha = javaCallGraph.getClassHierarchy();
@@ -559,7 +561,7 @@ public class MetadataDatabasePlugin extends Plugin {
                         }
                         metadataDao.insertModuleContent(moduleId, fileId);
                         // Save binary Module
-                        if (scope.equals(CScope.internalBinaries)) {
+                        if (scope.equals(CScope.internalBinary)) {
                             var binModuleId = metadataDao.insertBinaryModule(packageVersionId, name.getKey(), null, null);
                             metadataDao.insertBinaryModuleContent(binModuleId, fileId);
                         }
@@ -597,11 +599,11 @@ public class MetadataDatabasePlugin extends Plugin {
             var callables = new ArrayList<CallablesRecord>();
             var cha = CCallGraph.getClassHierarchy();
 
-            callables.addAll(getCallables(cha, CScope.internalBinaries, true, true, packageVersionId, metadataDao));
-            callables.addAll(getCallables(cha, CScope.internalStaticFunctions, true, true, packageVersionId, metadataDao));
-            callables.addAll(getCallables(cha, CScope.externalProducts, false, false, packageVersionId, metadataDao));
+            callables.addAll(getCallables(cha, CScope.internalBinary, true, true, packageVersionId, metadataDao));
+            callables.addAll(getCallables(cha, CScope.internalStaticFunction, true, true, packageVersionId, metadataDao));
+            callables.addAll(getCallables(cha, CScope.externalProduct, false, false, packageVersionId, metadataDao));
             callables.addAll(getCallables(cha, CScope.externalUndefined, false, false, packageVersionId, metadataDao));
-            callables.addAll(getCallables(cha, CScope.externalStraticFunctions, false, true, packageVersionId, metadataDao));
+            callables.addAll(getCallables(cha, CScope.externalStaticFunction, false, true, packageVersionId, metadataDao));
 
             return callables;
         }

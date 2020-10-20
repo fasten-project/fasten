@@ -24,6 +24,11 @@ import java.util.Map;
  * Builder for {@link ExtendedRevisionCCallGraph}.
  */
 public final class ExtendedBuilderC extends ExtendedBuilder<Map<CScope, Map<String, Map<Integer, CNode>>>> {
+    public String architecture;
+
+    public String getArchitecture() {
+        return architecture;
+    }
 
     public ExtendedBuilderC nodeCount(final int nodeCount) {
         return this;
@@ -41,6 +46,11 @@ public final class ExtendedBuilderC extends ExtendedBuilder<Map<CScope, Map<Stri
 
     public ExtendedBuilderC version(final String version) {
         this.version = version;
+        return this;
+    }
+
+    public ExtendedBuilderC architecture(final String architecture) {
+        this.architecture = architecture;
         return this;
     }
 

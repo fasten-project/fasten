@@ -19,7 +19,7 @@
 package eu.fasten.core.data;
 
 /**
- * Builder for {@link ExtendedRevisionJavaCallGraph}.
+ * Builder for {@link ExtendedRevisionCallGraph}.
  */
 public abstract class ExtendedBuilder<A> {
 

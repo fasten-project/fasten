@@ -19,12 +19,12 @@
 package eu.fasten.core.data;
 
 /**
- * Scope of C funcitons.
+ * Scope of C functions.
  */
 public enum CScope {
-    internalBinaries,
-    internalStaticFunctions,
-    externalProducts,
-    externalStraticFunctions,
+    internalBinary,
+    internalStaticFunction,
+    externalProduct,
+    externalStaticFunction,
     externalUndefined
 }
