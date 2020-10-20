@@ -18,10 +18,17 @@
 
 package eu.fasten.analyzer.restapiplugin;
 
+import eu.fasten.server.connectors.PostgresConnector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
+import java.sql.SQLException;
 
 @CommandLine.Command(name = "RestAPIPlugin")
 public class Main implements Runnable {
+
+    private final Logger logger = LoggerFactory.getLogger(RestAPIPlugin.class.getName());
 
     @CommandLine.Option(names = {"-p", "--port"},
             paramLabel = "port",
@@ -48,7 +55,18 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var restAPIPlugin = new RestAPIPlugin.RestAPIExtension(port, kbUrl, kbUser);
+
+        var restAPIPlugin = new RestAPIPlugin.RestAPIExtension(port);
+
+        logger.info("Establishing connection to the KnowledgeBase...");
+        try {
+            restAPIPlugin.setDBConnection(PostgresConnector.getDSLContext(kbUrl, kbUser));
+        } catch (SQLException e) {
+            logger.error("Couldn't connect to the KnowledgeBase", e);
+            return;
+        }
+        logger.info("...KnowledgeBase connection established successfully.");
+
         restAPIPlugin.start();
     }
 }
