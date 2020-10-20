@@ -24,12 +24,14 @@ import java.util.Objects;
 
 public class DependencyEdge {
 
+    public final long id;
     public final String scope;
     public final boolean optional;
     public final List<Dependency.Exclusion> exclusions;
 
-    public DependencyEdge(String scope, boolean optional,
+    public DependencyEdge(long id, String scope, boolean optional,
                           List<Dependency.Exclusion> exclusions) {
+        this.id = id;
         this.scope = scope;
         this.optional = optional;
         this.exclusions = exclusions;
@@ -44,6 +46,9 @@ public class DependencyEdge {
             return false;
         }
         DependencyEdge that = (DependencyEdge) o;
+        if (id != that.id) {
+            return false;
+        }
         if (optional != that.optional) {
             return false;
         }
@@ -55,7 +60,8 @@ public class DependencyEdge {
 
     @Override
     public int hashCode() {
-        int result = scope != null ? scope.hashCode() : 0;
+        int result = (int) (id ^ (id >>> 32));
+        result = 31 * result + (scope != null ? scope.hashCode() : 0);
         result = 31 * result + (optional ? 1 : 0);
         result = 31 * result + (exclusions != null ? exclusions.hashCode() : 0);
         return result;
@@ -64,7 +70,8 @@ public class DependencyEdge {
     @Override
     public String toString() {
         return "DependencyEdge{" +
-                "scope='" + scope + '\'' +
+                "id=" + id +
+                ", scope='" + scope + '\'' +
                 ", optional=" + optional +
                 ", exclusions=" + exclusions +
                 '}';

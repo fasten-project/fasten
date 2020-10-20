@@ -92,6 +92,7 @@ public class DependencyGraphBuilder {
         for (var entry : timestampedArtifacts.entrySet()) {
             dependencyGraph.addVertex(new DependencyNode(entry.getKey(), entry.getValue()));
         }
+        long id = 0;
         for (var entry : dependencies.entrySet()) {
             var source = new DependencyNode(entry.getKey(), timestampedArtifacts.get(entry.getKey()));
             if (!dependencyGraph.containsVertex(source)) {
@@ -100,11 +101,13 @@ public class DependencyGraphBuilder {
             var dependencyList = entry.getValue();
             for (var dependency : dependencyList) {
                 var targetDependency = new Dependency(dependency.toMavenCoordinate());
-                var target = new DependencyNode(targetDependency, timestampedArtifacts.get(targetDependency));
+                var targetTimestamp = timestampedArtifacts.get(targetDependency) != null
+                        ? timestampedArtifacts.get(targetDependency) : new Timestamp(-1);
+                var target = new DependencyNode(targetDependency, targetTimestamp);
                 if (!dependencyGraph.containsVertex(target)) {
                     dependencyGraph.addVertex(target);
                 }
-                var edge = new DependencyEdge(dependency.scope, dependency.optional, dependency.exclusions);
+                var edge = new DependencyEdge(id++, dependency.scope, dependency.optional, dependency.exclusions);
                 dependencyGraph.addEdge(source, target, edge);
             }
         }

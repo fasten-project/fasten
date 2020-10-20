@@ -38,7 +38,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,7 +47,7 @@ import java.util.Set;
 @CommandLine.Command(name = "GraphMavenResolver")
 public class GraphMavenResolver implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
+    private static final Logger logger = LoggerFactory.getLogger(GraphMavenResolver.class);
 
     @CommandLine.Option(names = {"-a", "--artifactId"},
             paramLabel = "ARTIFACT",
@@ -93,7 +92,7 @@ public class GraphMavenResolver implements Runnable {
     private static Graph<DependencyNode, DependencyEdge> dependencyGraph;
 
     public static void main(String[] args) {
-        final int exitCode = new CommandLine(new MavenResolver()).execute(args);
+        final int exitCode = new CommandLine(new GraphMavenResolver()).execute(args);
         System.exit(exitCode);
     }
 
@@ -125,6 +124,10 @@ public class GraphMavenResolver implements Runnable {
         }
     }
 
+    public void buildDependencyGraph(DSLContext dbContext) {
+        dependencyGraph = new DependencyGraphBuilder().buildDependencyGraph(dbContext);
+    }
+
     public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
                                                     String version, DSLContext dbContext) {
         return resolveFullDependencySet(groupId, artifactId, version, -1,
@@ -135,7 +138,7 @@ public class GraphMavenResolver implements Runnable {
                                                     String version, long timestamp,
                                                     List<String> scopes, DSLContext dbContext) {
         if (dependencyGraph == null) {
-            dependencyGraph = new DependencyGraphBuilder().buildDependencyGraph(dbContext);
+            buildDependencyGraph(dbContext);
         }
         var parents = new HashSet<Dependency>();
         parents.add(new Dependency(groupId, artifactId, version));
@@ -152,7 +155,8 @@ public class GraphMavenResolver implements Runnable {
                 graph = filterDependencyGraphByTimestamp(graph, new Timestamp(timestamp));
             }
             graph = filterDependencyGraphByScope(graph, scopes);
-            var dependencyTree = buildDependencyTree(graph, parentArtifact);
+            var rootNode = findNodeByArtifact(parentArtifact, graph);
+            var dependencyTree = buildDependencyTreeFromGraph(graph, rootNode);
             dependencyTree = filterExcludedDependencies(dependencyTree);
             var currentDependencySet = collectDependencyTree(dependencyTree);
             currentDependencySet.remove(new Dependency(groupId, artifactId, version));
@@ -196,7 +200,11 @@ public class GraphMavenResolver implements Runnable {
             List<String> scopes) {
         var graph = cloneDependencyGraph(dependencyGraph);
         for (var edge : dependencyGraph.edgeSet()) {
-            if (!scopes.contains(edge.scope)) {
+            var dependencyScope = edge.scope;
+            if (dependencyScope == null || dependencyScope.isEmpty()) {
+                dependencyScope = "compile";
+            }
+            if (!scopes.contains(dependencyScope)) {
                 graph.removeEdge(edge);
             }
         }
@@ -217,10 +225,24 @@ public class GraphMavenResolver implements Runnable {
         return graph;
     }
 
-    public DependencyTree buildDependencyTree(Graph<DependencyNode, DependencyEdge> graph,
-                                              Dependency root) {
-        // TODO: Implement transformation from dependency graph to dependency graph
-        return new DependencyTree(root, Collections.emptyList());
+    public DependencyTree buildDependencyTreeFromGraph(Graph<DependencyNode, DependencyEdge> graph,
+                                                       DependencyNode root) {
+        var childTrees = new ArrayList<DependencyTree>();
+        var rootEdges = graph.outgoingEdgesOf(root);
+        for (var edge : rootEdges) {
+            var target = graph.getEdgeTarget(edge);
+            childTrees.add(buildDependencyTreeFromGraph(graph, target));
+        }
+        return new DependencyTree(root.artifact, childTrees);
+    }
+
+    private DependencyNode findNodeByArtifact(Dependency artifact, Graph<DependencyNode, DependencyEdge> graph) {
+        for (var node : graph.vertexSet()) {
+            if (node.artifact.equals(artifact)) {
+                return node;
+            }
+        }
+        return null;
     }
 
     public DependencyTree filterExcludedDependencies(DependencyTree dependencyTree) {
