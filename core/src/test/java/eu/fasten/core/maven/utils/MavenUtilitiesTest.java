@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.maven;
+package eu.fasten.core.maven.utils;
 
 import org.junit.jupiter.api.Test;
 import java.util.List;

@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom;
 
-import eu.fasten.core.maven.MavenUtilities;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.maven.data.DependencyManagement;
@@ -28,19 +28,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
-import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
