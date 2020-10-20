@@ -219,8 +219,7 @@ public class Main implements Runnable {
         final var art = generate(artifact, this.commands.computations.main,
                 commands.computations.genAlgorithm, true);
 
-        result = new LocalMerger().mergeCallGraph(art, deps,
-                commands.computations.tools.merge.mergeAlgorithm);
+        result = new LocalMerger(art, deps).mergeWithCHA();
 
         if (!this.output.isEmpty() && result != null) {
             CallGraphUtils.writeToFile(this.output, result.toJSON(),

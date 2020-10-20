@@ -20,15 +20,19 @@ package eu.fasten.core.merge;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -36,65 +40,31 @@ import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class LocalMerger {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalMerger.class);
 
-    public ExtendedRevisionCallGraph mergeCallGraph(final ExtendedRevisionCallGraph artifact,
-                                                    final List<ExtendedRevisionCallGraph>
-                                                            dependencies,
-                                                    final String algorithm) {
-        if (algorithm.equals("CHA")) {
-            return mergeWithCHA(artifact, dependencies);
-        } else {
-            logger.warn("{} algorithm is not supported for merge, please enter RA or CHA.",
-                    algorithm);
-            return null;
-        }
+    private final ExtendedRevisionCallGraph artifact;
+    private final List<ExtendedRevisionCallGraph> dependencies;
 
+    /**
+     * Creates instance of local merger.
+     *
+     * @param artifact     artifact to resolve
+     * @param dependencies dependencies of the artifact
+     */
+    public LocalMerger(final ExtendedRevisionCallGraph artifact,
+                       final List<ExtendedRevisionCallGraph> dependencies) {
+        this.artifact = artifact;
+        this.dependencies = dependencies;
+        this.dependencies.add(artifact);
     }
-
-    private ExtendedRevisionCallGraph mergeWithCHA(ExtendedRevisionCallGraph artifact,
-                                                   List<ExtendedRevisionCallGraph> dependencies) {
-        dependencies.add(artifact);
-        return mergeWithCHA(artifact, createUniversalCHA(dependencies),
-                createTypeDictionary(dependencies));
-    }
-
-    public static Map<String, List<ExtendedRevisionCallGraph>> createTypeDictionary(
-            final List<ExtendedRevisionCallGraph> rcgs) {
-
-        Map<String, List<ExtendedRevisionCallGraph>> result = new HashMap<>();
-
-        for (final var rcg : rcgs) {
-            for (final var type : rcg
-                    .getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.internalTypes)
-                    .entrySet()) {
-                result.merge(type.getKey().toString(), new ArrayList<>(Collections.singletonList(rcg)),
-                        (old, nieuw) -> {
-                            old.addAll(nieuw);
-                            return old;
-                        });
-            }
-        }
-        return result;
-    }
-
 
     public static class CGHA {
-        final Map<List<Integer>, Map<Object, Object>> graph;
-        final BiMap<String, ExtendedRevisionCallGraph.Type> CHA;
-        int nodeCount;
 
-        public CGHA(final Map<List<Integer>, Map<Object, Object>> graph,
-                    final BiMap<FastenURI, ExtendedRevisionCallGraph.Type> CHA,
-                    final int nodeCount) {
-            this.graph = graph;
-            this.CHA = HashBiMap.create();
-            CHA.forEach((key, value) -> this.CHA.put(key.toString(), value));
-            this.nodeCount = nodeCount;
-        }
+        private final Map<List<Integer>, Map<Object, Object>> graph;
+        private final BiMap<String, ExtendedRevisionCallGraph.Type> CHA;
+        private int nodeCount;
 
         public CGHA(final ExtendedRevisionCallGraph toResolve) {
             this.graph = toResolve.getGraph().getResolvedCalls();
@@ -113,9 +83,10 @@ public class LocalMerger {
     }
 
     public static class Call {
-        final List<Integer> indices;
-        final Map<Object, Object> metadata;
-        final ExtendedRevisionCallGraph.Node target;
+
+        private final List<Integer> indices;
+        private final Map<Object, Object> metadata;
+        private final ExtendedRevisionCallGraph.Node target;
 
         public Call(final List<Integer> indices, Map<Object, Object> metadata,
                     final ExtendedRevisionCallGraph.Node target) {
@@ -124,66 +95,71 @@ public class LocalMerger {
             this.target = target;
         }
 
-        public Call(final Map.Entry<List<Integer>, Map<Object, Object>> arc,
-                    final ExtendedRevisionCallGraph.Node target) {
-            this.indices = arc.getKey();
-            this.metadata = arc.getValue();
-            this.target = target;
-        }
-
-        public Call(final Call call, final ExtendedRevisionCallGraph.Node node) {
-            this.indices = call.indices;
-            this.metadata = call.metadata;
-            this.target = node;
-        }
-
         public boolean isConstructor() {
-            return target.getSignature().startsWith("<init>")
-                    || target.getSignature().startsWith("%3Cinit%3E");
+            return target.getSignature().startsWith("<init>");
         }
-
     }
 
-    public ExtendedRevisionCallGraph mergeWithCHA(
-            final ExtendedRevisionCallGraph toResolve,
-            final org.jgrapht.Graph<String, DefaultEdge> universalCHA,
-            final Map<String, List<ExtendedRevisionCallGraph>> typeDictionary) {
+    /**
+     * Merges a call graph with its dependencies using CHA algorithm.
+     *
+     * @return merged call graph
+     */
+    public ExtendedRevisionCallGraph mergeWithCHA() {
+        final var UCH = createUniversalCHA();
+        final var universalParents = UCH.getLeft();
+        final var universalChildren = UCH.getRight();
+        final var typeDictionary = createTypeDictionary();
 
-        final var result = new CGHA(toResolve);
+        final var result = new CGHA(artifact);
+        final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
+        final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
 
-        final var externalNodeIdToTypeMap = toResolve.externalNodeIdToTypeMap();
-        final var internalNodeIdToTypeMap = toResolve.internalNodeIdToTypeMap();
+        final var externalTypeToId = HashBiMap.create(artifact.getClassHierarchy()
+                .get(ExtendedRevisionCallGraph.Scope.externalTypes)).inverse();
+        final var internalTypeToId = HashBiMap.create(artifact.getClassHierarchy()
+                .get(ExtendedRevisionCallGraph.Scope.internalTypes)).inverse();
 
-        final var externalTypeToId = HashBiMap.create(toResolve.getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.externalTypes));
-        final var internalTypeToId = HashBiMap.create(toResolve.getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.internalTypes));
-
-
-        toResolve.getGraph().getExternalCalls().entrySet().forEach(arc -> {
+        artifact.getGraph().getExternalCalls().entrySet().parallelStream().forEach(arc -> {
             final var targetKey = arc.getKey().get(1);
             final var sourceKey = arc.getKey().get(0);
 
             if (externalNodeIdToTypeMap.containsKey(targetKey)) {
                 final var type = externalNodeIdToTypeMap.get(targetKey);
-                resolve(universalCHA, typeDictionary, result, arc, targetKey, type,
-                        externalTypeToId.inverse().get(type).toString(), false);
+                resolve(universalParents, universalChildren, typeDictionary, result, arc,
+                        targetKey, type, externalTypeToId.get(type).toString(), false);
 
             } else if (externalNodeIdToTypeMap.containsKey(sourceKey)) {
                 final var type = externalNodeIdToTypeMap.get(sourceKey);
-                resolve(universalCHA, typeDictionary, result, arc, sourceKey, type,
-                        externalTypeToId.inverse().get(type).toString(), true);
+                resolve(universalParents, universalChildren, typeDictionary, result, arc,
+                        sourceKey, type, externalTypeToId.get(type).toString(), true);
             } else {
                 final var type = internalNodeIdToTypeMap.get(sourceKey);
-                final var typeUri = internalTypeToId.inverse().get(type).toString();
-                final var call = new Call(arc, type.getMethods().get(sourceKey));
-                resolveClassInits(result, call, typeDictionary, universalCHA, typeUri, false);
+                final var typeUri = internalTypeToId.get(type).toString();
+                final var call = new Call(arc.getKey(), arc.getValue(),
+                        type.getMethods().get(sourceKey));
+                resolveInitsAndConstructors(result, call, typeDictionary, universalParents, typeUri,
+                        false);
             }
         });
-
-        return buildRCG(toResolve, result);
+        return buildRCG(artifact, result);
     }
 
-
-    private void resolve(final Graph<String, DefaultEdge> universalCHA,
+    /**
+     * Resolve an external call.
+     *
+     * @param universalParents  universal CHA with parents nodes
+     * @param universalChildren universal CHA with child nodes
+     * @param typeDictionary    type dictionary
+     * @param result            call graph with resolved calls
+     * @param arc               source, target, and metadata
+     * @param nodeKey           node id
+     * @param type              type information
+     * @param typeUri           type uri
+     * @param isCallback        true, if the call is a callback
+     */
+    private void resolve(final Map<String, List<String>> universalParents,
+                         final Map<String, List<String>> universalChildren,
                          final Map<String, List<ExtendedRevisionCallGraph>> typeDictionary,
                          final CGHA result,
                          final Map.Entry<List<Integer>, Map<Object, Object>> arc,
@@ -192,9 +168,10 @@ public class LocalMerger {
                          final String typeUri,
                          final boolean isCallback) {
 
-        var call = new Call(arc, type.getMethods().get(nodeKey));
+        var call = new Call(arc.getKey(), arc.getValue(), type.getMethods().get(nodeKey));
         if (call.isConstructor()) {
-            resolveClassInits(result, call, typeDictionary, universalCHA, typeUri, isCallback);
+            resolveInitsAndConstructors(result, call, typeDictionary, universalParents, typeUri,
+                    isCallback);
         }
 
         for (final var entry : arc.getValue().entrySet()) {
@@ -202,77 +179,147 @@ public class LocalMerger {
             final var receiverTypeUri = (String) callSite.get("receiver");
             if (callSite.get("type").equals("invokevirtual")
                     || callSite.get("type").equals("invokeinterface")) {
-                final var types =
-                        new ArrayList<>(Collections.singletonList(receiverTypeUri));
-                if (universalCHA.containsVertex(receiverTypeUri)) {
-                    types.addAll(Graphs.successorListOf(universalCHA, receiverTypeUri));
-                }
+                final var types = universalChildren.get(receiverTypeUri);
+                if (types != null) {
+                    for (final var depTypeUri : types) {
+                        for (final var dep : typeDictionary
+                                .getOrDefault(depTypeUri, new ArrayList<>())) {
 
-                for (final var depTypeUri : types) {
-                    for (final var dep : typeDictionary
-                            .getOrDefault(depTypeUri, new ArrayList<>())) {
-
-                        resolveToDynamics(result, call, dep.getClassHierarchy()
-                                .get(ExtendedRevisionCallGraph.Scope.internalTypes)
-                                .get(FastenURI.create(depTypeUri)), dep.product + "$" + dep.version, depTypeUri, isCallback);
+                            resolveToDynamics(result, call, dep.getClassHierarchy()
+                                            .get(ExtendedRevisionCallGraph.Scope.internalTypes)
+                                            .get(FastenURI.create(depTypeUri)),
+                                    dep.product + "$" + dep.version, depTypeUri, isCallback);
+                        }
                     }
                 }
             } else if (callSite.get("type").equals("invokespecial")) {
-
-                resolveClassInits(result, call, typeDictionary, universalCHA, typeUri, isCallback);
+                resolveInitsAndConstructors(result, call, typeDictionary, universalParents, typeUri,
+                        isCallback);
 
             } else if (callSite.get("type").equals("invokedynamic")) {
-                logger.warn("OPAL didn're rewrite the invokedynamic");
+                logger.warn("OPAL didn't rewrite the invokedynamic");
             } else {
                 for (final var dep : typeDictionary
                         .getOrDefault(receiverTypeUri, new ArrayList<>())) {
                     resolveIfDefined(result, call, dep.getClassHierarchy()
                                     .get(ExtendedRevisionCallGraph.Scope.internalTypes)
-                                    .get(FastenURI.create(receiverTypeUri)), dep.product + "$" + dep.version,
-                            receiverTypeUri, isCallback);
+                                    .get(FastenURI.create(receiverTypeUri)),
+                            dep.product + "$" + dep.version, receiverTypeUri, isCallback);
                 }
             }
         }
+    }
+
+    private Collection<String> getChildernToLeaf(final Graph<String, DefaultEdge> universalCHA,
+                                                 final List<String> types) {
+
+        final var result = new ArrayList<>(types);
+        for (final var type : types) {
+            result.addAll(getParentsUpToRoot(universalCHA, Graphs.successorListOf(universalCHA,
+                    type)));
+        }
+        return result;
     }
 
     private void resolveToDynamics(final CGHA cgha, final Call call,
                                    final ExtendedRevisionCallGraph.Type type,
                                    final String product, final String depTypeUri,
                                    boolean isCallback) {
+        //TODO maybe we need to dereletivize the uris before putting them into signatures
         final var node = type.getDefinedMethods().get(call.target.getSignature());
         if (node != null) {
-            addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
+            addEdge(cgha, new Call(call.indices, call.metadata, node),
+                    product, type, depTypeUri, isCallback);
         }
     }
 
+    /**
+     * Resolves inits and constructors.
+     *
+     * @param result           call graph with resolved calls
+     * @param call             call information
+     * @param typeFinder       type dictionary
+     * @param universalParents universal CHA with parent nodes
+     * @param constructorType  type uri
+     * @param isCallback       true, if the call is a constructor
+     */
+    private void resolveInitsAndConstructors(final CGHA result, final Call call,
+                                             final Map<String, List<ExtendedRevisionCallGraph>> typeFinder,
+                                             final Map<String, List<String>> universalParents,
+                                             final String constructorType, boolean isCallback) {
+        // The <init> methods are called only when a new instance is created. At least one <init>
+        // method will be invoked for each class along the inheritance path of the newly created
+        // object, and multiple <init> methods could be invoked for any one class along that path.
+        // This is how multiple <init> methods get invoked when an object is instantiated.
+        // The virtual machine invokes an <init> method declared in the object's class.
+        // That <init> method first invokes either another <init> method in the same class,
+        // or an <init> method in its superclass. This process continues all the way up to Object.
+        final var typeList = universalParents.get(constructorType);
+        if (typeList != null) {
+            for (final var superTypeUri : typeList) {
+                for (final var dep : typeFinder.getOrDefault(superTypeUri, new ArrayList<>())) {
 
-    private void resolveClassInits(final CGHA result, final Call call,
-                                   final Map<String, List<ExtendedRevisionCallGraph>> typeFinder,
-                                   final Graph<String, DefaultEdge> universalCHA,
-                                   final String constructorType, boolean isCallback) {
-        //The <init> methods are called only when a new instance is created. At least one <init> method will be invoked for each class along the inheritance path of the newly created object, and multiple <init> methods could be invoked for any one class along that path.
-        // This is how multiple <init> methods get invoked when an object is instantiated. The virtual machine invokes an <init> method declared in the object's class. That <init> method first invokes either another <init> method in the same class, or an <init> method in its superclass. This process continues all the way up to Object.
-        final var typeList = new ArrayList<>(Collections.singletonList(constructorType));
-        if (universalCHA.containsVertex(constructorType)) {
-            typeList.addAll(Graphs.predecessorListOf(universalCHA, constructorType));
-        }
-        for (final var superTypeUri : typeList) {
-            for (final var dep : typeFinder.getOrDefault(superTypeUri, new ArrayList<>())) {
-                final var callToSuper =
-                        new Call(Arrays.asList(call.indices.get(0), result.nodeCount), call.metadata,
-                                new ExtendedRevisionCallGraph.Node(
-                                        call.target.changeName(call.target.getClassName(), "<clinit>"),
-                                        call.target.getMetadata()));
+                    resolveIfDefined(result, call, dep.getClassHierarchy()
+                                    .get(ExtendedRevisionCallGraph.Scope.internalTypes)
+                                    .get(FastenURI.create(superTypeUri)),
+                            dep.product + "$" + dep.version, superTypeUri, isCallback);
 
-                resolveIfDefined(result, callToSuper, dep.getClassHierarchy()
-                        .get(ExtendedRevisionCallGraph.Scope.internalTypes)
-                        .get(FastenURI.create(superTypeUri)), dep.product + "$" + dep.version, superTypeUri, isCallback);
+                    final var callToInit =
+                            new Call(Arrays.asList(call.indices.get(0), result.nodeCount),
+                                    call.metadata, new ExtendedRevisionCallGraph.Node(
+                                    call.target.changeName(call.target.getClassName(), "<clinit>"),
+                                    call.target.getMetadata()));
+
+                    resolveIfDefined(result, callToInit, dep.getClassHierarchy()
+                                    .get(ExtendedRevisionCallGraph.Scope.internalTypes)
+                                    .get(FastenURI.create(superTypeUri)),
+                            dep.product + "$" + dep.version, superTypeUri, isCallback);
+                }
             }
         }
     }
 
-    public static org.jgrapht.Graph<String, DefaultEdge> createUniversalCHA(
-            final List<ExtendedRevisionCallGraph> dependencies) {
+    private Collection<? extends String> getParentsUpToRoot(
+            final Graph<String, DefaultEdge> universalCHA,
+            final List<String> types) {
+        final var result = new ArrayList<>(types);
+        for (final var type : types) {
+            result.addAll(getParentsUpToRoot(universalCHA, Graphs.predecessorListOf(universalCHA,
+                    type)));
+        }
+        return result;
+    }
+
+    /**
+     * Create a map with types as keys and a list of {@link ExtendedRevisionCallGraph} that
+     * contain this type as values.
+     *
+     * @return type dictionary
+     */
+    private Map<String, List<ExtendedRevisionCallGraph>> createTypeDictionary() {
+
+        Map<String, List<ExtendedRevisionCallGraph>> result = new HashMap<>();
+
+        for (final var rcg : dependencies) {
+            for (final var type : rcg
+                    .getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.internalTypes)
+                    .entrySet()) {
+                result.merge(type.getKey().toString(), new ArrayList<>(Collections.singletonList(rcg)),
+                        (old, nieuw) -> {
+                            old.addAll(nieuw);
+                            return old;
+                        });
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Create a universal CHA for all dependencies including the artifact to resolve.
+     *
+     * @return universal CHA
+     */
+    private Pair<Map<String, List<String>>, Map<String, List<String>>> createUniversalCHA() {
         final var allPackages = new ArrayList<>(dependencies);
 
         final var result = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
@@ -286,12 +333,65 @@ public class LocalMerger {
                 addSuperTypes(result, type.getKey().toString(), type.getValue().getSuperInterfaces());
             }
         }
+        final Map<String, List<String>> universalParents = new HashMap<>();
+        final Map<String, List<String>> universalChildren = new HashMap<>();
+        for (final var type : result.vertexSet()) {
+
+            final var children = new ArrayList<>(Collections.singletonList(type));
+            children.addAll(getAllChildren(result, type));
+            universalChildren.put(type, children);
+
+            final var parents = new ArrayList<>(Collections.singletonList(type));
+            parents.addAll(getAllParents(result, type));
+            universalParents.put(type, parents);
+        }
+        return ImmutablePair.of(universalParents, universalChildren);
+    }
+
+    /**
+     * Get all parents of a given type.
+     *
+     * @param graph universal CHA
+     * @param type  type uri
+     * @return list of types parents
+     */
+    private List<String> getAllParents(final DefaultDirectedGraph<String, DefaultEdge> graph,
+                                       final String type) {
+        final var children = Graphs.predecessorListOf(graph, type);
+        final List<String> result = new ArrayList<>(children);
+        for (final var child : children) {
+            result.addAll(getAllParents(graph, child));
+        }
         return result;
     }
 
-    private static void addSuperTypes(final DefaultDirectedGraph<String, DefaultEdge> result,
-                                      final String sourceTypes,
-                                      final List<FastenURI> targetTypes) {
+    /**
+     * Get all children of a given type.
+     *
+     * @param graph universal CHA
+     * @param type  type uri
+     * @return list of types children
+     */
+    private List<String> getAllChildren(final DefaultDirectedGraph<String, DefaultEdge> graph,
+                                        final String type) {
+        final var children = Graphs.successorListOf(graph, type);
+        final List<String> result = new ArrayList<>(children);
+        for (final var child : children) {
+            result.addAll(getAllChildren(graph, child));
+        }
+        return result;
+    }
+
+    /**
+     * Add super classes and interfaces to the universal CHA
+     *
+     * @param result      universal CHA graph
+     * @param sourceTypes  source type
+     * @param targetTypes list of target target types
+     */
+    private void addSuperTypes(final DefaultDirectedGraph<String, DefaultEdge> result,
+                               final String sourceTypes,
+                               final List<FastenURI> targetTypes) {
         for (final var superClass : targetTypes) {
             if (!result.containsVertex(superClass.toString())) {
                 result.addVertex(superClass.toString());
@@ -304,10 +404,12 @@ public class LocalMerger {
 
     private void resolveIfDefined(final CGHA cgha, final Call call,
                                   final ExtendedRevisionCallGraph.Type type,
-                                  final String product, final String depTypeUri, boolean isCallback) {
+                                  final String product, final String depTypeUri,
+                                  boolean isCallback) {
         final var node = type.getDefinedMethods().get(call.target.getSignature());
         if (node != null) {
-            addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
+            addEdge(cgha, new Call(call.indices, call.metadata, node),
+                    product, type, depTypeUri, isCallback);
         }
     }
 
@@ -334,19 +436,19 @@ public class LocalMerger {
                                 final String depTypeUri) {
         final var keyType = getVisionedUri(depTypeUri, product);
         final var type = cgha.CHA.getOrDefault(keyType,
-                new ExtendedRevisionCallGraph.Type(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
-                        depType.getSuperClasses(), depType.getSuperInterfaces(), depType.getAccess(),
-                        depType.isFinal()));
-        final var index = type.addMethod(new ExtendedRevisionCallGraph.Node(target.getUri(),
-                target.getMetadata()), cgha.nodeCount);
+                new ExtendedRevisionCallGraph.Type(depType.getSourceFileName(), HashBiMap.create(),
+                        depType.getDefinedMethods(), depType.getSuperClasses(),
+                        depType.getSuperInterfaces(), depType.getAccess(), depType.isFinal()));
+        final var index = type.addMethod(
+                new ExtendedRevisionCallGraph.Node(target.getUri(),
+                        target.getMetadata()),
+                cgha.nodeCount);
         cgha.CHA.put(keyType, type);
         return index;
     }
 
-    private static String getVisionedUri(final String uri,
-                                         final String product) {
-        return uri.replaceFirst("/",
-                java.util.regex.Matcher.quoteReplacement("//" + product + "/"));
+    private static String getVisionedUri(final String uri, final String product) {
+        return uri.replaceFirst("/", Matcher.quoteReplacement("//" + product + "/"));
     }
 
     private static ExtendedRevisionCallGraph buildRCG(final ExtendedRevisionCallGraph artifact,
