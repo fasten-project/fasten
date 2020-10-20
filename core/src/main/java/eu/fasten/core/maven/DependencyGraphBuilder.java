@@ -23,21 +23,21 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.maven.data.Dependency;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import eu.fasten.core.maven.data.graph.DependencyEdge;
+import eu.fasten.core.maven.data.graph.DependencyNode;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class DependencyGraphBuilder {
 
-    public Map<Dependency, List<Pair<Dependency, Timestamp>>> buildMavenDependencyGraph(DSLContext dbContext) {
+    public Graph<DependencyNode, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
 
-        // Get all artifact and their dependencies from database
         var dependenciesResult = dbContext
                 .select(Packages.PACKAGES.PACKAGE_NAME,
                         PackageVersions.PACKAGE_VERSIONS.VERSION,
@@ -50,10 +50,9 @@ public class DependencyGraphBuilder {
                 .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
                 .fetch();
         if (dependenciesResult == null || dependenciesResult.isEmpty()) {
-            return new HashMap<>();
+            return null;
         }
 
-        // Get timestamps from the database
         var timestampsResult = dbContext
                 .select(
                         Packages.PACKAGES.PACKAGE_NAME,
@@ -74,26 +73,41 @@ public class DependencyGraphBuilder {
             }
             timestampedArtifacts.put(new Dependency(mavenCoordinate), timestamp);
         }
-
-        // Build dependency graph
-        var graph = new HashMap<Dependency, List<Pair<Dependency, Timestamp>>>(dependenciesResult.size());
+        var dependencies = new HashMap<Dependency, List<Dependency>>();
         for (var record : dependenciesResult) {
             var mavenCoordinate = record.component1() + Constants.mvnCoordinateSeparator + record.component2();
             var artifact = new Dependency(mavenCoordinate);
             var dependency = Dependency.fromJSON(new JSONObject(record.component3().data()));
-            var timestamp = timestampedArtifacts.get(new Dependency(
-                    dependency.groupId, dependency.artifactId, dependency.getVersion()
-            ));
-            var edge = new ImmutablePair<>(dependency, timestamp);
-            var edges = graph.get(artifact);
-            if (edges == null) {
-                graph.put(artifact, List.of(edge));
+            var depList = dependencies.get(artifact);
+            if (depList == null) {
+                dependencies.put(artifact, List.of(dependency));
             } else {
-                var newEdges = new ArrayList<>(edges);
-                newEdges.add(edge);
-                graph.put(artifact, newEdges);
+                var newDepList = new ArrayList<>(depList);
+                newDepList.add(dependency);
+                dependencies.put(artifact, newDepList);
             }
         }
-        return graph;
+
+        var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+        for (var entry : timestampedArtifacts.entrySet()) {
+            dependencyGraph.addVertex(new DependencyNode(entry.getKey(), entry.getValue()));
+        }
+        for (var entry : dependencies.entrySet()) {
+            var source = new DependencyNode(entry.getKey(), timestampedArtifacts.get(entry.getKey()));
+            if (!dependencyGraph.containsVertex(source)) {
+                dependencyGraph.addVertex(source);
+            }
+            var dependencyList = entry.getValue();
+            for (var dependency : dependencyList) {
+                var targetDependency = new Dependency(dependency.toMavenCoordinate());
+                var target = new DependencyNode(targetDependency, timestampedArtifacts.get(targetDependency));
+                if (!dependencyGraph.containsVertex(target)) {
+                    dependencyGraph.addVertex(target);
+                }
+                var edge = new DependencyEdge(dependency.scope, dependency.optional, dependency.exclusions);
+                dependencyGraph.addEdge(source, target, edge);
+            }
+        }
+        return dependencyGraph;
     }
 }

@@ -24,7 +24,10 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
-import org.apache.commons.lang3.tuple.Pair;
+import eu.fasten.core.maven.data.graph.DependencyEdge;
+import eu.fasten.core.maven.data.graph.DependencyNode;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,10 +36,16 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
 
-@CommandLine.Command(name = "MavenResolver")
+@CommandLine.Command(name = "GraphMavenResolver")
 public class GraphMavenResolver implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
@@ -81,7 +90,7 @@ public class GraphMavenResolver implements Runnable {
             defaultValue = "postgres")
     protected String dbUser;
 
-    private static Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph;
+    private static Graph<DependencyNode, DependencyEdge> dependencyGraph;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new MavenResolver()).execute(args);
@@ -126,11 +135,7 @@ public class GraphMavenResolver implements Runnable {
                                                     String version, long timestamp,
                                                     List<String> scopes, DSLContext dbContext) {
         if (dependencyGraph == null) {
-            dependencyGraph = new DependencyGraphBuilder().buildMavenDependencyGraph(dbContext);
-        }
-        var filteredGraph = dependencyGraph;
-        if (timestamp != -1) {
-            filteredGraph = filterDependencyGraphByTimestamp(filteredGraph, new Timestamp(timestamp));
+            dependencyGraph = new DependencyGraphBuilder().buildDependencyGraph(dbContext);
         }
         var parents = new HashSet<Dependency>();
         parents.add(new Dependency(groupId, artifactId, version));
@@ -142,36 +147,18 @@ public class GraphMavenResolver implements Runnable {
         }
         var dependencySet = new HashSet<Dependency>();
         for (var parentArtifact : parents) {
-            var dependencyTree = buildFullDependencyTree(parentArtifact.getGroupId(),
-                    parentArtifact.getArtifactId(), parentArtifact.getVersion(), filteredGraph);
-            dependencyTree = filterOptionalDependencies(dependencyTree);
-            dependencyTree = filterDependencyTreeByScope(dependencyTree, scopes);
+            var graph = filterOptionalDependencies(dependencyGraph);
+            if (timestamp != -1) {
+                graph = filterDependencyGraphByTimestamp(graph, new Timestamp(timestamp));
+            }
+            graph = filterDependencyGraphByScope(graph, scopes);
+            var dependencyTree = buildDependencyTree(graph, parentArtifact);
             dependencyTree = filterExcludedDependencies(dependencyTree);
             var currentDependencySet = collectDependencyTree(dependencyTree);
             currentDependencySet.remove(new Dependency(groupId, artifactId, version));
             dependencySet.addAll(currentDependencySet);
         }
         return dependencySet;
-    }
-
-    public DependencyTree buildFullDependencyTree(String groupId, String artifactId, String version,
-                                                  Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph) {
-        var artifact = new Dependency(groupId, artifactId, version);
-        var edges = dependencyGraph.get(artifact);
-        DependencyTree dependencyTree;
-        if (edges == null || edges.isEmpty()) {
-            dependencyTree = new DependencyTree(artifact, new ArrayList<>());
-        } else {
-            var childTrees = new ArrayList<DependencyTree>();
-            for (var edge : edges) {
-                childTrees.add(this.buildFullDependencyTree(
-                        edge.getLeft().getGroupId(), edge.getLeft().getArtifactId(),
-                        edge.getLeft().getVersion(), dependencyGraph
-                ));
-            }
-            dependencyTree = new DependencyTree(artifact, childTrees);
-        }
-        return dependencyTree;
     }
 
     /**
@@ -181,52 +168,59 @@ public class GraphMavenResolver implements Runnable {
      * @param timestamp Timestamp for filtering
      * @return Filtered dependency graph
      */
-    public Map<Dependency, List<Pair<Dependency, Timestamp>>> filterDependencyGraphByTimestamp(
-            Map<Dependency, List<Pair<Dependency, Timestamp>>> dependencyGraph,
-            Timestamp timestamp) {
-        var graph = dependencyGraph
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        for (var artifact : dependencyGraph.keySet()) {
-            for (var edge : dependencyGraph.get(artifact)) {
-                if (edge.getRight().after(timestamp)) {
-                    var edges = dependencyGraph.get(artifact)
-                            .stream()
-                            .filter(e -> !e.equals(edge))
-                            .collect(Collectors.toList());
-                    graph.put(artifact, edges);
-                    var dep = edge.getLeft();
-                    graph.remove(new Dependency(dep.groupId, dep.artifactId, dep.getVersion()));
-                }
+    public Graph<DependencyNode, DependencyEdge> filterDependencyGraphByTimestamp(
+            Graph<DependencyNode, DependencyEdge> dependencyGraph, Timestamp timestamp) {
+        var graph = cloneDependencyGraph(dependencyGraph);
+        for (var node : dependencyGraph.vertexSet()) {
+            if (node.releaseTimestamp.after(timestamp)
+                    && !node.releaseTimestamp.equals(new Timestamp(-1))) {
+                graph.removeVertex(node);
             }
         }
         return graph;
     }
 
-    public DependencyTree filterOptionalDependencies(DependencyTree dependencyTree) {
-        var filteredDependencies = new ArrayList<DependencyTree>();
-        for (var childTree : dependencyTree.dependencies) {
-            if (!childTree.artifact.optional) {
-                filteredDependencies.add(filterOptionalDependencies(childTree));
+    public Graph<DependencyNode, DependencyEdge> filterOptionalDependencies(
+            Graph<DependencyNode, DependencyEdge> dependencyGraph) {
+        var graph = cloneDependencyGraph(dependencyGraph);
+        for (var edge : dependencyGraph.edgeSet()) {
+            if (edge.optional) {
+                graph.removeEdge(edge);
             }
         }
-        return new DependencyTree(dependencyTree.artifact, filteredDependencies);
+        return graph;
     }
 
-    public DependencyTree filterDependencyTreeByScope(DependencyTree dependencyTree,
-                                                      List<String> scopes) {
-        var filteredDependencies = new ArrayList<DependencyTree>();
-        for (var childTree : dependencyTree.dependencies) {
-            var dependencyScope = childTree.artifact.scope;
-            if (dependencyScope == null || dependencyScope.isEmpty()) {
-                dependencyScope = "compile";
-            }
-            if (scopes.contains(dependencyScope)) {
-                filteredDependencies.add(filterDependencyTreeByScope(childTree, scopes));
+    public Graph<DependencyNode, DependencyEdge> filterDependencyGraphByScope(
+            Graph<DependencyNode, DependencyEdge> dependencyGraph,
+            List<String> scopes) {
+        var graph = cloneDependencyGraph(dependencyGraph);
+        for (var edge : dependencyGraph.edgeSet()) {
+            if (!scopes.contains(edge.scope)) {
+                graph.removeEdge(edge);
             }
         }
-        return new DependencyTree(dependencyTree.artifact, filteredDependencies);
+        return graph;
+    }
+
+    private Graph<DependencyNode, DependencyEdge> cloneDependencyGraph(
+            Graph<DependencyNode, DependencyEdge> dependencyGraph) {
+        var graph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+        for (var node : dependencyGraph.vertexSet()) {
+            graph.addVertex(node);
+        }
+        for (var edge : dependencyGraph.edgeSet()) {
+            var source = dependencyGraph.getEdgeSource(edge);
+            var target = dependencyGraph.getEdgeTarget(edge);
+            graph.addEdge(source, target, edge);
+        }
+        return graph;
+    }
+
+    public DependencyTree buildDependencyTree(Graph<DependencyNode, DependencyEdge> graph,
+                                              Dependency root) {
+        // TODO: Implement transformation from dependency graph to dependency graph
+        return new DependencyTree(root, Collections.emptyList());
     }
 
     public DependencyTree filterExcludedDependencies(DependencyTree dependencyTree) {
