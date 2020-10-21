@@ -30,6 +30,9 @@ import org.json.JSONException;
  * @implNote each method in the revision has a unique id in this CHA.
  */
 public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map<JavaScope, Map<FastenURI, JavaType>>> {
+    static {
+        classHierarchyJSONKey = "cha";
+    }
 
     /**
      * Creates {@link ExtendedRevisionJavaCallGraph} with the given builder.
