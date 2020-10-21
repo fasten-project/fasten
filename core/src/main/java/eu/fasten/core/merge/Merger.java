@@ -88,7 +88,9 @@ public class Merger implements Runnable {
 
                     var databaseMerger = new DatabaseMerger(artifact, dependencies, dbContext, rocksDao);
                     var mergedDirectedGraph = databaseMerger.mergeWithCHA();
-                    logger.info("Resolved {} calls in {} seconds", mergedDirectedGraph.nodes().size(),
+                    logger.info("Resolved {} nodes, {} calls in {} seconds",
+                            mergedDirectedGraph.numNodes(),
+                            mergedDirectedGraph.numArcs(),
                             new DecimalFormat("#0.000")
                                     .format((System.currentTimeMillis() - startTime) / 1000d));
 
@@ -119,7 +121,9 @@ public class Merger implements Runnable {
 
                     var localMerger = new LocalMerger(artFile, depFiles);
                     var mergedERCG = localMerger.mergeWithCHA();
-                    logger.info("Resolved {} calls in {} seconds", mergedERCG.getGraph().getResolvedCalls().size(),
+                    logger.info("Resolved {} nodes, {} calls in {} seconds",
+                            mergedERCG.getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.resolvedTypes).size(),
+                            mergedERCG.getGraph().getResolvedCalls().size(),
                             new DecimalFormat("#0.000")
                                     .format((System.currentTimeMillis() - startTime) / 1000d));
                     break;
