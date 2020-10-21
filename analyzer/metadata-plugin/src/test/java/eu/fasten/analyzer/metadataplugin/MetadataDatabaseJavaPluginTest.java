@@ -33,14 +33,14 @@ import java.util.List;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class MetadataDatabasePluginTest {
+public class MetadataDatabaseJavaPluginTest {
 
-    private MetadataDatabasePlugin.MetadataDBExtension metadataDBExtension;
+    private MetadataDatabaseJavaPlugin.MetadataDBJavaExtension metadataDBExtension;
 
     @BeforeEach
     public void setUp() {
         var dslContext = Mockito.mock(DSLContext.class);
-        metadataDBExtension = new MetadataDatabasePlugin.MetadataDBJavaExtension();
+        metadataDBExtension = new MetadataDatabaseJavaPlugin.MetadataDBJavaExtension();
         metadataDBExtension.setTopic("fasten.OPAL.out");
         metadataDBExtension.setDBConnection(dslContext);
     }

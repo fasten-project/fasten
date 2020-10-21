@@ -61,11 +61,11 @@ public class Main implements Runnable {
         System.exit(exitCode);
     }
 
-    public MetadataDatabasePlugin.MetadataDBExtension getMetadataDBExtension() {
+    public MetadataDBExtension getMetadataDBExtension() {
         if (language.equals("java"))
-            return new MetadataDatabasePlugin.MetadataDBJavaExtension();
+            return new MetadataDatabaseJavaPlugin.MetadataDBJavaExtension();
         else if (language.equals("c"))
-            return new MetadataDatabasePlugin.MetadataDBCExtension();
+            return new MetadataDatabaseCPlugin.MetadataDBCExtension();
         return null;
     }
 
