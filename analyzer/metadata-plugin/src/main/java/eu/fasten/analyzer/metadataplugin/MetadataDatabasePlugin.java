@@ -70,7 +70,7 @@ public class MetadataDatabasePlugin extends Plugin {
     }
 
     @Extension
-    public static abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
+    public static class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
         protected String consumerTopic = "fasten.OPAL.out";
         protected DSLContext dslContext;
@@ -286,11 +286,15 @@ public class MetadataDatabasePlugin extends Plugin {
             return packageVersionId;
         }
 
-        public abstract ArrayList<CallablesRecord> instertDataExtractCallables(
-                ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId);
+        public ArrayList<CallablesRecord> instertDataExtractCallables(
+                ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
+            return new ArrayList<CallablesRecord>();
+        }
 
-        protected abstract List<EdgesRecord> insertEdges(Graph graph,
-                                 Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao);
+        protected List<EdgesRecord> insertEdges(Graph graph,
+                                 Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
+            return new ArrayList<EdgesRecord>();
+        }
 
         protected Timestamp getProperTimestamp(long timestamp) {
             if (timestamp == -1) {
