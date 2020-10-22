@@ -70,6 +70,17 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
 
     @Extension
     public static class MetadataDBJavaExtension extends MetadataDBExtension {
+        private static DSLContext dslContext;
+
+        @Override
+        public void setDBConnection(DSLContext dslContext) {
+            MetadataDBJavaExtension.dslContext = dslContext;
+        }
+
+        @Override
+        public DSLContext getDBConnection() {
+            return MetadataDBJavaExtension.dslContext;
+        }
 
         public ArrayList<CallablesRecord> instertDataExtractCallables(
                 ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {

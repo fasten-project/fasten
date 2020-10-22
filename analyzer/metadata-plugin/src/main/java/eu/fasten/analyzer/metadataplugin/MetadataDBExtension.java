@@ -54,7 +54,7 @@ import java.util.Optional;
 public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
     protected String consumerTopic = "fasten.OPAL.out";
-    protected DSLContext dslContext;
+    private static DSLContext dslContext;
     protected boolean processedRecord = false;
     protected Throwable pluginError = null;
     protected final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
@@ -64,7 +64,11 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
     @Override
     public void setDBConnection(DSLContext dslContext) {
-        this.dslContext = dslContext;
+        MetadataDBExtension.dslContext = dslContext;
+    }
+
+    public DSLContext getDBConnection() {
+        return MetadataDBExtension.dslContext;
     }
 
     @Override
@@ -120,8 +124,8 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         do {
             setPluginError(null);
             try {
-                var metadataDao = new MetadataDao(dslContext);
-                dslContext.transaction(transaction -> {
+                var metadataDao = new MetadataDao(getDBConnection());
+                getDBConnection().transaction(transaction -> {
                     // Start transaction
                     metadataDao.setContext(DSL.using(transaction));
                     long id;

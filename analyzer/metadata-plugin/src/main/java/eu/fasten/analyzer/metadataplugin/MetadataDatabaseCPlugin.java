@@ -70,6 +70,17 @@ public class MetadataDatabaseCPlugin extends Plugin {
 
     @Extension
     public static class MetadataDBCExtension extends MetadataDBExtension {
+        private static DSLContext dslContext;
+
+        @Override
+        public void setDBConnection(DSLContext dslContext) {
+            MetadataDBCExtension.dslContext = dslContext;
+        }
+
+        @Override
+        public DSLContext getDBConnection() {
+            return MetadataDBCExtension.dslContext;
+        }
 
         /**
          * Saves a callgraph of new format to the database to appropriate tables.
