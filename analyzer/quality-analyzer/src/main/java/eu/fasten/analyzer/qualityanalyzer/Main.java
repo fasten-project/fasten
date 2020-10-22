@@ -29,6 +29,7 @@ import eu.fasten.server.connectors.PostgresConnector;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,41 +46,17 @@ public class Main implements Runnable {
 
     String jsonFile;
 
-    @CommandLine.Option(names = {"-jd", "--javadatabase"},
-            paramLabel = "DB_URL",
+    @CommandLine.Option(names = {"-d", "--database"},
+            paramLabel = "dbURL",
             description = "Database URL for connection",
-            defaultValue = "jdbc:postgresql:postgres")
+            defaultValue = "jdbc:postgresql:POSTGRESS")
     String jdbUrl;
 
-    @CommandLine.Option(names = {"-ju", "--javauser"},
-            paramLabel = "JAVA_DB_USER",
+    @CommandLine.Option(names = {"-du", "--user"},
+            paramLabel = "dbUser",
             description = "Java database user name",
             defaultValue = "postgres")
     String jdbUser;
-
-    @CommandLine.Option(names = {"-cd", "--cdatabase"},
-            paramLabel = "C_DB_URL",
-            description = "C database URL for connection",
-            defaultValue = "jdbc:postgresql:postgres")
-    String cdbUrl;
-
-    @CommandLine.Option(names = {"-cu", "--cuser"},
-            paramLabel = "C_DB_USER",
-            description = "C database user name",
-            defaultValue = "postgres")
-    String cdbUser;
-
-    @CommandLine.Option(names = {"-pd", "--pypidatabase"},
-            paramLabel = "PyPI_DB_URL",
-            description = "PyPI database URL for connection",
-            defaultValue = "jdbc:postgresql:postgres")
-    String pdbUrl;
-
-    @CommandLine.Option(names = {"-pu", "--pypiuser"},
-            paramLabel = "PyPI_DB_USER",
-            description = "PyPI database user name",
-            defaultValue = "postgres")
-    String pdbUser;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
@@ -88,41 +65,16 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
+
         var qualityAnalyser = new QualityAnalyzerPlugin.QualityAnalyzer();
 
-        HashMap<String, DSLContext> hm = new HashMap<String, DSLContext>();
-
         try {
-            jdbUrl = "jdbc:postgresql:fasten_java";
-            jdbUser = "fasten";
-            var javaContext = PostgresConnector.getDSLContext(jdbUrl, jdbUser);
-            hm.put(QAConstants.MVN_FORGE, javaContext);
-        } catch(SQLException e) {
-            logger.error("Could not connect to the database " + jdbUrl, e);
+            pomAnalyzer.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
+        } catch (SQLException e) {
+            System.err.println("Error connecting to the database:");
+            e.printStackTrace(System.err);
             return;
         }
-
-        try {
-            cdbUrl = "jdbc:postgresql:fasten_c";
-            cdbUser = "fasten";
-            var cContext = PostgresConnector.getDSLContext(cdbUrl, cdbUser);
-            hm.put(QAConstants.C_FORGE, cContext);
-        } catch(SQLException e) {
-            logger.error("Could not connect to the database " + cdbUrl, e);
-            return;
-        }
-
-        try {
-            pdbUrl = "jdbc:postgresql:fasten_python";
-            pdbUser = "fasten";
-            var pypiContext = PostgresConnector.getDSLContext(pdbUrl, pdbUser);
-            hm.put(QAConstants.PyPI_FORGE, pypiContext);
-        } catch(SQLException e) {
-            logger.error("Could not connect to the database " + pdbUrl, e);
-            return;
-        }
-
-        MetadataUtils mu = new MetadataUtils(hm);
 
         final FileReader reader;
 
