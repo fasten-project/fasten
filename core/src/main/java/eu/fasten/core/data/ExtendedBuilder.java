@@ -32,7 +32,6 @@ public abstract class ExtendedBuilder<A> {
     protected Graph graph;
     protected int nodeCount;
 
-    // TODO Do we need to convert this class to Singleton?
     public ExtendedBuilder() {
     }
 
