@@ -20,11 +20,11 @@ package eu.fasten.analyzer.qualityanalyzer;
 import eu.fasten.analyzer.qualityanalyzer.data.*;
 
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.*;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.FilesRecord;
 
+import eu.fasten.core.data.metadatadb.codegen.tables.records.FilesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
+
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.Result;
@@ -35,30 +35,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class MetadataUtils {
 
-    private HashMap<String, DSLContext> contexts;
     private final Logger logger = LoggerFactory.getLogger(MetadataUtils.class.getName());
-
-    private String product = null;
-    private String artifact = null;
-    private String group = null;
-    private String version = null;
-
-    private JSONObject metrics = null;
 
     DSLContext selectedContext = null;
 
-    public MetadataUtils(HashMap<String, DSLContext> contexts) {
-        this.contexts = contexts;
+    public MetadataUtils(DSLContext context) {
+        this.selectedContext = context;
     }
 
+    /**
+     *
+     * @param forge         String which could have value MVN, PyPI or C.
+     * @param jsonRecord    Object that contains quality analysis metadata.
+     */
     public void insertMetadataIntoDB(String forge, JSONObject jsonRecord) {
-
-        selectedContext = contexts.get(forge);
 
         List<CallableHolder> callableHolderList = getCallables(forge, jsonRecord);
 
@@ -139,11 +133,11 @@ public class MetadataUtils {
 
 
     /**
-     * Finds the ID of the package given the package given coordinate and forge.
-     * Note, this is ecosystem agnostic
+     * Finds the ID of the package given coordinate and forge.
+     * This is ecosystem agnostic
      * @param coordinate - includes information about the package
      * @param forge - ['mvn', 'PyPI', 'Debian']
-     * @return - Record of the package if found
+     * @return - Value of the package ID if found, null otherwise.
      */
     private Long getPackageIdFromCoordinate(String coordinate, String forge) {
 
@@ -164,7 +158,7 @@ public class MetadataUtils {
      * Finds the ID of the package_version in all the version of the package.
      * @param pkgId - ID of the package
      * @param version - String of the version of the package_version
-     * @return - Record of the package_version if found
+     * @return - Value of the package_version if found, -1 otherwise.
      */
     private Long getPackageVersionIdFromVersion(Long pkgId, String version) {
 
@@ -186,7 +180,7 @@ public class MetadataUtils {
      * Retrieve the fileId of the file
      * @param packageVersionId - package version ID
      * @param filepath - path to the file
-     * @return -1 if the file cannot be found
+     * @return - Long value of fileId or -1 if the file cannot be found
      */
     private Long getFileId(Long packageVersionId, String filepath) {
         // For the demo, just cut out the filename, without the path
@@ -204,7 +198,6 @@ public class MetadataUtils {
         }
 
         return -1L;
-
     }
 
     /**
@@ -229,15 +222,16 @@ public class MetadataUtils {
     }
 
     /**
-     * Retrieves the callables information from the DB that have a start and end line.
+     * Retrieves the callables information from the DB with a given values for the start and end line.
      *
      * @param moduleId - Long ID of the file where the callable was changed.
-     * @param startLine
-     * @param endLine
+     * @param startLine - int value that indicates start callable line in source file.
+     * @param endLine - int value that indicates the last callable line in source file.
      *
      * @return Long ID of the callable (-1L if it cannot find it)
      */
     private List<CallableHolder> getCallablesInformation(Long moduleId, int lineStart, int lineEnd)  {
+
         List<CallableHolder> calls = new ArrayList<>();
 
         // Get all the records with the moduleId given
