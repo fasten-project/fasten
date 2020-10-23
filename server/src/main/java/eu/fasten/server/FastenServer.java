@@ -107,11 +107,6 @@ public class FastenServer implements Runnable {
             split = ",")
     Map<String, String> dbUrls;
 
-//    @Option(names = {"-du", "--user"},
-//            paramLabel = "dbUser",
-//            description = "Database user name")
-//    String dbUser;
-
     @Option(names = {"-gd", "--graphdb_dir"},
             paramLabel = "dir",
             description = "Path to directory with RocksDB database")
@@ -238,15 +233,16 @@ public class FastenServer implements Runnable {
                 p.setDBConnection(dbUrls.entrySet().stream().map(e -> new AbstractMap.SimpleEntry<>(e.getKey(),
                         e.getValue())).collect(Collectors.toMap(AbstractMap.SimpleEntry::toString, e -> {
                     try {
+                        logger.debug("Set {} DB connection successfully for plug-in {}",
+                                e.getKey(), p.getClass().getSimpleName());
                         return getDSLContext(e.getValue());
                     } catch (SQLException ex) {
-                        logger.error("Couldn't set DB connection for plug-in {}\n{}",
-                                p.getClass().getSimpleName(), ex.getStackTrace());
+                        logger.error("Couldn't set {} DB connection for plug-in {}\n{}",
+                                e.getKey(), p.getClass().getSimpleName(), ex.getStackTrace());
                     }
                     return null;
                 })));
-                logger.debug("Set DB connection successfully for plug-in {}",
-                        p.getClass().getSimpleName());
+
             } else {
                 logger.error("Couldn't make a DB connection. Make sure that you have "
                         + "provided a valid DB URL, username and password.");
