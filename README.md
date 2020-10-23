@@ -12,7 +12,7 @@
 </p>
 <br/>
 
-The FASTEN project is an intelligent software package management systems that will enhance robustness and security in software ecosystems. The research and development activities include innovative ecosystem analysis techniques,  with C, Java and Python applications. Derived techniques will tackle the problems of security and risk evaluation, license compliance and change impact analysis. Moreover, a back-end service and a knowledge base will host the results of those analyses while the integration of those analyses will reach the developer’s workflow and Continuous Integration (CI) tool chains.
+The FASTEN project is an intelligent software package management system that will enhance robustness and security in software ecosystems. The research and development activities include innovative ecosystem analysis techniques,  with C, Java and Python applications. Derived techniques will tackle the problems of security and risk evaluation, license compliance and change impact analysis. Moreover, a back-end service and a knowledge base will host the results of those analyses while the integration of those analyses will reach the developer’s workflow and Continuous Integration (CI) tool chains.
 
 ## Contributing
 We welcome contributions from external collaborators. If you are interested in contributing code or otherwise, please have a look at our [contributing guidelines](https://github.com/fasten-project/fasten/blob/master/CONTRIBUTING.md). Have a look at the issue board if you are looking for some inspiration.
