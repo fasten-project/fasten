@@ -22,6 +22,9 @@ import eu.fasten.server.connectors.PostgresConnector;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
@@ -59,7 +62,8 @@ public class Main implements Runnable {
     public void run() {
         var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
         try {
-            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
+            metadataPlugin.setDBConnection(new HashMap<>(Map.of("java",
+                    PostgresConnector.getDSLContext(dbUrl, dbUser))));
         } catch (IllegalArgumentException | SQLException e) {
             logger.error("Could not connect to the database", e);
             return;

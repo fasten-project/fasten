@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 @CommandLine.Command(name = "RestAPIPlugin")
 public class Main implements Runnable {
@@ -50,7 +52,8 @@ public class Main implements Runnable {
     public void run() {
         var restAPIPlugin = new RestAPIPlugin.RestAPIExtension();
         try {
-            restAPIPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
+            restAPIPlugin.setDBConnection(new HashMap<>(Map.of("java",
+                    PostgresConnector.getDSLContext(dbUrl, dbUser))));
         } catch (IllegalArgumentException | SQLException e) {
             logger.error("Could not connect to the database", e);
             return;

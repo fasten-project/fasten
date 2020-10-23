@@ -29,17 +29,23 @@ import eu.fasten.server.connectors.PostgresConnector;
 import eu.fasten.server.connectors.RocksDBConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
+
+import java.net.URI;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.ObjectUtils;
+import org.jooq.DSLContext;
 import org.pf4j.JarPluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
+
 
 
 @CommandLine.Command(name = "FastenServer", mixinStandardHelpOptions = true)
@@ -96,13 +102,15 @@ public class FastenServer implements Runnable {
 
     @Option(names = {"-d", "--database"},
             paramLabel = "dbURL",
-            description = "Database URL for connection")
-    String dbUrl;
+            description = "Kay-value pairs of Database URLs for connection Example - " +
+                    "java=jdbc:postgresql://postgres@localhost/dbname",
+            split = ",")
+    Map<String, String> dbUrls;
 
-    @Option(names = {"-du", "--user"},
-            paramLabel = "dbUser",
-            description = "Database user name")
-    String dbUser;
+//    @Option(names = {"-du", "--user"},
+//            paramLabel = "dbUser",
+//            description = "Database user name")
+//    String dbUser;
 
     @Option(names = {"-gd", "--graphdb_dir"},
             paramLabel = "dir",
@@ -226,20 +234,36 @@ public class FastenServer implements Runnable {
      */
     private void makeDBConnection(List<DBConnector> dbPlugins) {
         dbPlugins.forEach((p) -> {
-            if (ObjectUtils.allNotNull(dbUrl, dbUser)) {
-                try {
-                    p.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
-                    logger.debug("Set DB connection successfully for plug-in {}",
-                            p.getClass().getSimpleName());
-                } catch (SQLException e) {
-                    logger.error("Couldn't set DB connection for plug-in {}\n{}",
-                            p.getClass().getSimpleName(), e.getStackTrace());
-                }
+            if (dbUrls != null) {
+                p.setDBConnection(dbUrls.entrySet().stream().map(e -> new AbstractMap.SimpleEntry<>(e.getKey(),
+                        e.getValue())).collect(Collectors.toMap(AbstractMap.SimpleEntry::toString, e -> {
+                    try {
+                        return getDSLContext(e.getValue());
+                    } catch (SQLException ex) {
+                        logger.error("Couldn't set DB connection for plug-in {}\n{}",
+                                p.getClass().getSimpleName(), ex.getStackTrace());
+                    }
+                    return null;
+                })));
+                logger.debug("Set DB connection successfully for plug-in {}",
+                        p.getClass().getSimpleName());
             } else {
                 logger.error("Couldn't make a DB connection. Make sure that you have "
                         + "provided a valid DB URL, username and password.");
             }
         });
+    }
+
+    /**
+     * Get a DB connection for a given DB URL
+     * @param dbURL JDBC URI
+     * @throws SQLException
+     */
+    private DSLContext getDSLContext(String dbURL) throws SQLException {
+        String cleanURI = dbURL.substring(5);
+        URI uri = URI.create(cleanURI);
+        return PostgresConnector.getDSLContext("jdbc:postgresql://" + uri.getHost() + uri.getPath(),
+                uri.getUserInfo());
     }
 
     /**

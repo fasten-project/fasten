@@ -28,9 +28,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MetadataDatabasePluginTest {
@@ -42,7 +41,7 @@ public class MetadataDatabasePluginTest {
         var dslContext = Mockito.mock(DSLContext.class);
         metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
         metadataDBExtension.setTopic("fasten.OPAL.out");
-        metadataDBExtension.setDBConnection(dslContext);
+        metadataDBExtension.setDBConnection(new HashMap<>(Map.of("java", dslContext)));
     }
 
     @Test
