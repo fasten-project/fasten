@@ -24,14 +24,17 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
 
 import org.json.JSONObject;
+import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.List;
+import java.util.Collections;
 
 import org.jooq.DSLContext;
 
@@ -49,9 +52,10 @@ public class QualityAnalyzerPlugin extends Plugin {
         private String consumerTopic = "fasten.RapidPlugin.out";
         private MetadataUtils utils = null;
 
+
         @Override
-        public void setDBConnection(DSLContext context) {
-            this.utils = new MetadataUtils(dslContext);
+        public void setDBConnection(Map<String, DSLContext> dslContexts) {
+            this.utils = new MetadataUtils(dslContexts);
         }
 
         @Override

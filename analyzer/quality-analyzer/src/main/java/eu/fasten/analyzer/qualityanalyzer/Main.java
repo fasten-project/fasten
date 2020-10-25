@@ -20,8 +20,11 @@ package eu.fasten.analyzer.qualityanalyzer;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.net.URI;
 import java.sql.SQLException;
-import java.util.HashMap;
+import java.util.AbstractMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import eu.fasten.analyzer.qualityanalyzer.data.QAConstants;
 import eu.fasten.server.connectors.PostgresConnector;
@@ -47,10 +50,11 @@ public class Main implements Runnable {
     String jsonFile;
 
     @CommandLine.Option(names = {"-d", "--database"},
-            paramLabel = "dbURL",
-            description = "Database URL for connection",
-            defaultValue = "jdbc:postgresql:POSTGRESS")
-    String jdbUrl;
+    paramLabel = "dbURL",
+    description = "Kay-value pairs of Database URLs for connection Example - " +
+            "java=jdbc:postgresql://postgres@localhost/dbname",
+    split = ",")
+    Map<String, String> dbUrls;
 
     @CommandLine.Option(names = {"-du", "--user"},
             paramLabel = "dbUser",
@@ -66,15 +70,9 @@ public class Main implements Runnable {
     @Override
     public void run() {
 
-        var qualityAnalyser = new QualityAnalyzerPlugin.QualityAnalyzer();
+        QualityAnalyzerPlugin.QualityAnalyzer qualityAnalyzer = new QualityAnalyzerPlugin.QualityAnalyzer();
 
-        try {
-            pomAnalyzer.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
-        } catch (SQLException e) {
-            System.err.println("Error connecting to the database:");
-            e.printStackTrace(System.err);
-            return;
-        }
+        setDBConnections(qualityAnalyzer);
 
         final FileReader reader;
 
@@ -86,7 +84,49 @@ public class Main implements Runnable {
         }
 
         final JSONObject json = new JSONObject(new JSONTokener(reader));
-        qualityAnalyser.consume(json.toString());
-        qualityAnalyser.produce().ifPresent(System.out::println);
+        qualityAnalyzer.consume(json.toString());
+        qualityAnalyzer.produce().ifPresent(System.out::println);
+    }
+
+
+
+    /**
+     * Setup DB connection for DB plugins.
+     *
+     * @param dbPlugins list of DB plugins
+     */
+    private void setDBConnections(QualityAnalyzerPlugin.QualityAnalyzer qualityAnalyzer) {
+
+            if (dbUrls != null) {
+                qualityAnalyzer.setDBConnection(dbUrls.entrySet().stream().map(e -> new AbstractMap.SimpleEntry<>(e.getKey(),
+                        e.getValue())).collect(Collectors.toMap(AbstractMap.SimpleEntry::toString, e -> {
+                    try {
+                        logger.debug("Set {} DB connection successfully for plug-in {}",
+                                e.getKey(), QAConstants.QA_PLUGIN_NAME);
+                        return getDSLContext(e.getValue());
+                    } catch (SQLException ex) {
+                        logger.error("Couldn't set {} DB connection for plug-in {}\n{}",
+                                e.getKey(), QAConstants.QA_PLUGIN_NAME, ex.getStackTrace());
+                    }
+                    return null;
+                })));
+
+            } else {
+                logger.error("Couldn't make a DB connection. Make sure that you have "
+                        + "provided a valid DB URL, username and password.");
+            }
+    }
+
+    /**
+     * Get a DB connection for a given DB URL
+     * @param dbURL JDBC URI
+     * @throws SQLException
+     */
+    private DSLContext getDSLContext(String dbURL) throws SQLException {
+        int position = dbURL.indexOf("=");
+        String cleanURI = dbURL.substring(position);
+        URI uri = URI.create(cleanURI);
+        return PostgresConnector.getDSLContext("jdbc:postgresql://" + uri.getHost() + uri.getPath(),
+                uri.getUserInfo());
     }
 }

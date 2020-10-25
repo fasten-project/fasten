@@ -21,6 +21,7 @@ import eu.fasten.analyzer.qualityanalyzer.data.*;
 
 import eu.fasten.core.data.metadatadb.MetadataDao;
 
+import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.FilesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
@@ -36,15 +37,19 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 
 public class MetadataUtils {
 
     private final Logger logger = LoggerFactory.getLogger(MetadataUtils.class.getName());
 
-    DSLContext selectedContext = null;
+    private Map<String, DSLContext> dslContexts = null;
 
-    public MetadataUtils(DSLContext context) {
-        this.selectedContext = context;
+    private DSLContext selectedContext = null;
+
+    public MetadataUtils(Map<String, DSLContext> contexts) {
+        this.dslContexts = contexts;
     }
 
     /**
@@ -53,6 +58,12 @@ public class MetadataUtils {
      * @param jsonRecord    Object that contains quality analysis metadata.
      */
     public void insertMetadataIntoDB(String forge, JSONObject jsonRecord) {
+
+        if(forge.equalsIgnoreCase(QAConstants.MVN_FORGE)) {
+            forge = "java";
+        }
+
+        selectedContext = dslContexts.get(forge);
 
         List<CallableHolder> callableHolderList = getCallables(forge, jsonRecord);
 

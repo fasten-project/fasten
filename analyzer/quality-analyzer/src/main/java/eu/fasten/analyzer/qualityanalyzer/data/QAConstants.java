@@ -21,10 +21,11 @@ package eu.fasten.analyzer.qualityanalyzer.data;
 public class QAConstants {
 
     public static final String QA_VERSION_NUMBER = "0.0.1";
+    public static final String QA_PLUGIN_NAME = "Quality Analyzer Plugin";
 
     public static final String MVN_FORGE = "mvn";
     public static final String C_FORGE = "C";
-    public static final String PyPI_FORGE = "PyPI";
+    public static final String PyPI_FORGE = "python";
 
     //field names in JSON Object sent by Rapid
     public static final String LINE_START = "line_start";
