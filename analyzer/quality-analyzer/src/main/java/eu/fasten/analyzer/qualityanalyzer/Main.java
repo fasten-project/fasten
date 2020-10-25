@@ -46,7 +46,6 @@ public class Main implements Runnable {
     @CommandLine.Option(names = {"-f", "--file"},
             paramLabel = "JSON File",
             description = "Path to JSON file that contains JSON with Lizard tool generated quality metrics")
-
     String jsonFile;
 
     @CommandLine.Option(names = {"-d", "--database"},
@@ -55,17 +54,6 @@ public class Main implements Runnable {
             "java=jdbc:postgresql://postgres@localhost/dbname",
     split = ",")
     Map<String, String> dbUrls;
-
-    @CommandLine.Option(names = {"-du", "--user"},
-            paramLabel = "dbUser",
-            description = "Java database user name",
-            defaultValue = "postgres")
-    String jdbUser;
-
-    public static void main(String[] args) {
-        final int exitCode = new CommandLine(new Main()).execute(args);
-        System.exit(exitCode);
-    }
 
     @Override
     public void run() {
@@ -97,7 +85,7 @@ public class Main implements Runnable {
      */
     private void setDBConnections(QualityAnalyzerPlugin.QualityAnalyzer qualityAnalyzer) {
 
-            if (dbUrls != null) {
+        if (dbUrls != null) {
                 qualityAnalyzer.setDBConnection(dbUrls.entrySet().stream().map(e -> new AbstractMap.SimpleEntry<>(e.getKey(),
                         e.getValue())).collect(Collectors.toMap(AbstractMap.SimpleEntry::toString, e -> {
                     try {
@@ -123,10 +111,14 @@ public class Main implements Runnable {
      * @throws SQLException
      */
     private DSLContext getDSLContext(String dbURL) throws SQLException {
-        int position = dbURL.indexOf("=");
-        String cleanURI = dbURL.substring(position);
+        String cleanURI = dbURL.substring(5);
         URI uri = URI.create(cleanURI);
         return PostgresConnector.getDSLContext("jdbc:postgresql://" + uri.getHost() + uri.getPath(),
                 uri.getUserInfo());
+    }
+
+    public static void main(String[] args) {
+        final int exitCode = new CommandLine(new Main()).execute(args);
+        System.exit(exitCode);
     }
 }
