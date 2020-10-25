@@ -86,7 +86,7 @@ class PartialCallGraphTest {
                 .get(FastenURI.create("/name.space/SingleSourceToTarget"));
 
         // Check filename
-        Assertions.assertEquals("SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
+        Assertions.assertEquals("name/space/SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
 
         // Check super interfaces and classes
         Assertions.assertEquals(0, SSTTInternalType.getSuperInterfaces().size());
@@ -96,7 +96,7 @@ class PartialCallGraphTest {
         // Check methods
         Assertions.assertEquals(3, SSTTInternalType.getMethods().size());
 
-        Assertions.assertEquals(FastenURI.create("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType"),
+        Assertions.assertEquals(FastenURI.create("/name.space/SingleSourceToTarget.%3Cinit%3E()%2Fjava.lang%2FVoidType"),
                 SSTTInternalType.getMethods().get(0).getUri());
         Assertions.assertEquals("public", SSTTInternalType.getMethods().get(0).getMetadata().get("access"));
         Assertions.assertEquals(true, SSTTInternalType.getMethods().get(0).getMetadata().get("defined"));
@@ -116,7 +116,7 @@ class PartialCallGraphTest {
         // Check methods
         Assertions.assertEquals(1, SSTTExternalType.getMethods().size());
 
-        Assertions.assertEquals(FastenURI.create("/java.lang/Object.Object()VoidType"),
+        Assertions.assertEquals(FastenURI.create("/java.lang/Object.%3Cinit%3E()VoidType"),
                 SSTTExternalType.getMethods().get(3).getUri());
         Assertions.assertEquals(0, SSTTExternalType.getMethods().get(3).getMetadata().size());
     }

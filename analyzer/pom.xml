@@ -23,6 +23,7 @@
         <module>pom-analyzer</module>
         <module>repo-cloner-plugin</module>
         <module>quality-analyzer</module>
+        <module>restapi-plugin</module>
     </modules>
 
     <build>

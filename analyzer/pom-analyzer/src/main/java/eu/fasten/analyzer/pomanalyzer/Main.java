@@ -22,6 +22,9 @@ import eu.fasten.server.connectors.PostgresConnector;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import picocli.CommandLine;
@@ -70,7 +73,8 @@ public class Main implements Runnable {
     public void run() {
         var pomAnalyzer = new POMAnalyzerPlugin.POMAnalyzer();
         try {
-            pomAnalyzer.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
+            pomAnalyzer.setDBConnection(new HashMap<>(Map.of("java",
+                    PostgresConnector.getDSLContext(dbUrl, dbUser))));
         } catch (SQLException e) {
             System.err.println("Error connecting to the database:");
             e.printStackTrace(System.err);

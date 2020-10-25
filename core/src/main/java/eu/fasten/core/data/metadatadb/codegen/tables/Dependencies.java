@@ -20,7 +20,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row4;
+import org.jooq.Row7;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -42,7 +42,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dependencies extends TableImpl<DependenciesRecord> {
 
-    private static final long serialVersionUID = -1731959661;
+    private static final long serialVersionUID = -974168096;
 
     /**
      * The reference instance of <code>public.dependencies</code>
@@ -76,6 +76,21 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
      * The column <code>public.dependencies.metadata</code>.
      */
     public final TableField<DependenciesRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB, this, "");
+
+    /**
+     * The column <code>public.dependencies.architecture</code>.
+     */
+    public final TableField<DependenciesRecord, String[]> ARCHITECTURE = createField(DSL.name("architecture"), org.jooq.impl.SQLDataType.CLOB.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>public.dependencies.dependency_type</code>.
+     */
+    public final TableField<DependenciesRecord, String[]> DEPENDENCY_TYPE = createField(DSL.name("dependency_type"), org.jooq.impl.SQLDataType.CLOB.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>public.dependencies.alternative_group</code>.
+     */
+    public final TableField<DependenciesRecord, Long> ALTERNATIVE_GROUP = createField(DSL.name("alternative_group"), org.jooq.impl.SQLDataType.BIGINT, this, "");
 
     /**
      * Create a <code>public.dependencies</code> table reference
@@ -165,11 +180,11 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row4 type methods
+    // Row7 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row4<Long, Long, String[], JSONB> fieldsRow() {
-        return (Row4) super.fieldsRow();
+    public Row7<Long, Long, String[], JSONB, String[], String[], Long> fieldsRow() {
+        return (Row7) super.fieldsRow();
     }
 }

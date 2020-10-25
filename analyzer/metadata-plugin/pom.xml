@@ -13,7 +13,7 @@
 
     <groupId>eu.fasten.analyzer</groupId>
     <artifactId>metadata-plugin</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>metadata-plugin</name>
@@ -67,7 +67,7 @@
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
                                         <Plugin-Class>eu.fasten.analyzer.metadataplugin.MetadataDatabasePlugin</Plugin-Class>
                                         <Plugin-Id>metadata-plugin</Plugin-Id>
-                                        <Plugin-Version>0.1.1</Plugin-Version>
+                                        <Plugin-Version>0.1.2</Plugin-Version>
                                         <Plugin-Description>Metadata Plugin</Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>

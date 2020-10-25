@@ -140,12 +140,13 @@ public class POMAnalyzerPluginTest {
         packageVersionMetadata.put("commitTag", commitTag);
         packageVersionMetadata.put("sourcesUrl", sourcesUrl);
         packageVersionMetadata.put("packagingType", packagingType);
-        Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", null, packageVersionMetadata))
+        packageVersionMetadata.put("parentCoordinate", "");
+        Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", null, null, packageVersionMetadata))
                 .thenReturn(packageVersionId);
         final var dependencyId = 16L;
         Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", Constants.mvnForge, null, null, null))
                 .thenReturn(dependencyId);
-        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, -1, projectName, dependencyData, metadataDao);
+        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, -1, projectName, null, dependencyData, metadataDao);
         assertEquals(packageVersionId, result);
     }
 
@@ -183,7 +184,7 @@ public class POMAnalyzerPluginTest {
 
     @Test
     public void versionTest() {
-        var version = "0.1.1";
+        var version = "0.1.2";
         assertEquals(version, pomAnalyzer.version());
     }
 }
