@@ -30,6 +30,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -80,7 +81,7 @@ public class MetadataDatabaseCPlugin extends Plugin {
                     getProperTimestamp(CCallGraph.timestamp), new JSONObject());
 
             var callables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId);
-            final var numInternal = callables.size();
+            var numInternal = callables.size();
 
             var callablesIds = new LongArrayList(callables.size());
             // Save all callables in the database
@@ -94,6 +95,22 @@ public class MetadataDatabaseCPlugin extends Plugin {
 
             // Insert all the edges
             var edges = insertEdges(callGraph.getGraph(), lidToGidMap, metadataDao);
+
+            // Remove duplicate nodes
+            var internalIds = new LongArrayList(numInternal);
+            var externalIds = new LongArrayList(callablesIds.size() - numInternal);
+            for (int i = 0; i < numInternal; i++) {
+                internalIds.add(callablesIds.getLong(i));
+            }
+            for (int i = numInternal; i < callablesIds.size(); i++) {
+                externalIds.add(callablesIds.getLong(i));
+            }
+            var internalNodesSet = new LongLinkedOpenHashSet(internalIds);
+            var externalNodesSet = new LongLinkedOpenHashSet(externalIds);
+            numInternal = internalNodesSet.size();
+            callablesIds = new LongArrayList(internalNodesSet.size() + externalNodesSet.size());
+            callablesIds.addAll(internalNodesSet);
+            callablesIds.addAll(externalNodesSet);
 
             // Create a GID Graph for production
             this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
