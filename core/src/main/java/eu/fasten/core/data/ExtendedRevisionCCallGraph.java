@@ -277,4 +277,12 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
         return result;
     }
 
+    /**
+     * Returns a string representation of the revision.
+     *
+     * @return String representation of the revision.
+     */
+    public String getRevisionName() {
+        return this.product + "_" + this.architecture + "_" + this.version;
+    }
 }

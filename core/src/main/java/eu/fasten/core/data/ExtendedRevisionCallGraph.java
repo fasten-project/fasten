@@ -242,4 +242,11 @@ public abstract class ExtendedRevisionCallGraph<A> {
 
         return result;
     }
+
+    /**
+     * Returns a string representation of the revision.
+     *
+     * @return String representation of the revision.
+     */
+    public abstract String getRevisionName();
 }

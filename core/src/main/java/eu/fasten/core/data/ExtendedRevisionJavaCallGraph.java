@@ -158,4 +158,15 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         return result;
     }
 
+    /**
+     * Returns a string representation of the revision.
+     *
+     * @return String representation of the revision.
+     */
+    public String getRevisionName() {
+        final String groupId = this.product.split(Constants.mvnCoordinateSeparator)[0];
+        final String artifactId = this.product.split(Constants.mvnCoordinateSeparator)[1];
+        return artifactId + "_" + groupId + "_" + this.version;
+    }
+
 }
