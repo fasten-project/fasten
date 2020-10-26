@@ -53,9 +53,9 @@ public class OPALMethod {
         var params = getParametersURI(JavaConverters.seqAsJavaList(descriptor.parameterTypes()));
         var returnType = getTypeURI(descriptor.returnType());
 
-        final var javaURI = FastenJavaURI.create(null, product, null,
+        final var javaURIRaw = FastenJavaURI.create(null, product, null,
                 packageName, className, method, params, returnType);
-        //final var javaURI = javaURIRaw.canonicalize();
+        final var javaURI = javaURIRaw.canonicalize();
 
         return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
                 javaURI.getRawVersion(),

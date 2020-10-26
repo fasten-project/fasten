@@ -28,8 +28,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -158,8 +160,8 @@ public class LocalMerger {
      * @param typeUri           type uri
      * @param isCallback        true, if the call is a callback
      */
-    private void resolve(final Map<String, List<String>> universalParents,
-                         final Map<String, List<String>> universalChildren,
+    private void resolve(final Map<String, Set<String>> universalParents,
+                         final Map<String, Set<String>> universalChildren,
                          final Map<String, List<ExtendedRevisionCallGraph>> typeDictionary,
                          final CGHA result,
                          final Map.Entry<List<Integer>, Map<Object, Object>> arc,
@@ -245,7 +247,7 @@ public class LocalMerger {
      */
     private void resolveInitsAndConstructors(final CGHA result, final Call call,
                                              final Map<String, List<ExtendedRevisionCallGraph>> typeFinder,
-                                             final Map<String, List<String>> universalParents,
+                                             final Map<String, Set<String>> universalParents,
                                              final String constructorType, boolean isCallback) {
         // The <init> methods are called only when a new instance is created. At least one <init>
         // method will be invoked for each class along the inheritance path of the newly created
@@ -319,7 +321,7 @@ public class LocalMerger {
      *
      * @return universal CHA
      */
-    private Pair<Map<String, List<String>>, Map<String, List<String>>> createUniversalCHA() {
+    private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA() {
         final var allPackages = new ArrayList<>(dependencies);
 
         final var result = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
@@ -333,15 +335,15 @@ public class LocalMerger {
                 addSuperTypes(result, type.getKey().toString(), type.getValue().getSuperInterfaces());
             }
         }
-        final Map<String, List<String>> universalParents = new HashMap<>();
-        final Map<String, List<String>> universalChildren = new HashMap<>();
+        final Map<String, Set<String>> universalParents = new HashMap<>();
+        final Map<String, Set<String>> universalChildren = new HashMap<>();
         for (final var type : result.vertexSet()) {
 
-            final var children = new ArrayList<>(Collections.singletonList(type));
+            final var children = new HashSet<>(Collections.singletonList(type));
             children.addAll(getAllChildren(result, type));
             universalChildren.put(type, children);
 
-            final var parents = new ArrayList<>(Collections.singletonList(type));
+            final var parents = new HashSet<>(Collections.singletonList(type));
             parents.addAll(getAllParents(result, type));
             universalParents.put(type, parents);
         }

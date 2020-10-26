@@ -584,8 +584,8 @@ public class ExtendedRevisionCallGraph {
          * @param metadata metadata associated with this Node
          */
         public Node(final FastenURI uri, final Map<String, Object> metadata) {
-            this.uri = uri.canonicalize();
-            this.signature = StringUtils.substringAfter(uri.getEntity(), ".");
+            this.uri = FastenURI.create(StringUtils.stripStart(uri.decanonicalize().toString(), "fasten:"));
+            this.signature = StringUtils.substringAfter(this.uri.getEntity(), ".");
             this.metadata = metadata;
         }
 
@@ -741,7 +741,7 @@ public class ExtendedRevisionCallGraph {
             for (final var methodKey : methodsJson.keySet()) {
                 final var nodeJson = methodsJson.getJSONObject(methodKey);
                 final var metadata = nodeJson.getJSONObject("metadata").toMap();
-                final var uri = FastenURI.create(nodeJson.getString("uri"));
+                final var uri = FastenJavaURI.create(nodeJson.getString("uri"));
                 final var node = new Node(uri, metadata);
                 this.methods.put(Integer.parseInt(methodKey), node);
                 if (!metadata.isEmpty()) {
@@ -836,7 +836,7 @@ public class ExtendedRevisionCallGraph {
             final Map<Integer, JSONObject> methods = new HashMap<>();
             for (final var entry : map.entrySet()) {
                 final JSONObject node = new JSONObject();
-                node.put("uri", entry.getValue().getUri());
+                node.put("uri", FastenJavaURI.create(entry.getValue().getUri().toString()).canonicalize());
                 node.put("metadata", new JSONObject(entry.getValue().getMetadata()));
                 methods.put(entry.getKey(), node);
             }
