@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "Quality Analyzer")
+@CommandLine.Command(name = "QualityAnalyzerPlugin")
 public class Main implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
@@ -50,8 +50,9 @@ public class Main implements Runnable {
 
     @CommandLine.Option(names = {"-d", "--database"},
     paramLabel = "dbURL",
-    description = "Kay-value pairs of Database URLs for connection Example - " +
-            "java=jdbc:postgresql://postgres@localhost/dbname",
+    description = "Key-value pairs of Database URLs for connection Example - " +
+            "java=jdbc:postgresql://postgres@localhost/dbname," +
+            "python=jdbc:postgresql://postgres@localhost/dbname1",
     split = ",")
     Map<String, String> dbUrls;
 
@@ -79,9 +80,9 @@ public class Main implements Runnable {
 
 
     /**
-     * Setup DB connection for DB plugins.
+     * Set multiple database connections for quality analyzer plugin.
      *
-     * @param dbPlugins list of DB plugins
+     * @param qualityAnalyzer Quality Analyzer
      */
     private void setDBConnections(QualityAnalyzerPlugin.QualityAnalyzer qualityAnalyzer) {
 
@@ -106,7 +107,7 @@ public class Main implements Runnable {
     }
 
     /**
-     * Get a DB connection for a given DB URL
+     * Get a database connection for a given database URL
      * @param dbURL JDBC URI
      * @throws SQLException
      */
