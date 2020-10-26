@@ -227,11 +227,20 @@ public class GraphMavenResolver implements Runnable {
 
     public DependencyTree buildDependencyTreeFromGraph(Graph<DependencyNode, DependencyEdge> graph,
                                                        DependencyNode root) {
+        return this.buildDependencyTreeFromGraph(graph, root, new HashSet<>());
+    }
+
+    public DependencyTree buildDependencyTreeFromGraph(Graph<DependencyNode, DependencyEdge> graph,
+                                                       DependencyNode root,
+                                                       Set<Dependency> visitedArtifacts) {
         var childTrees = new ArrayList<DependencyTree>();
+        visitedArtifacts.add(root.artifact);
         var rootEdges = graph.outgoingEdgesOf(root);
         for (var edge : rootEdges) {
             var target = graph.getEdgeTarget(edge);
-            childTrees.add(buildDependencyTreeFromGraph(graph, target));
+            if (!visitedArtifacts.contains(target.artifact)) {
+                childTrees.add(buildDependencyTreeFromGraph(graph, target, visitedArtifacts));
+            }
         }
         return new DependencyTree(root.artifact, childTrees);
     }

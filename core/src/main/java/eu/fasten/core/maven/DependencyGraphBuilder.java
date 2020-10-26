@@ -29,6 +29,8 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,8 +38,10 @@ import java.util.List;
 
 public class DependencyGraphBuilder {
 
-    public Graph<DependencyNode, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
+    private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
+    public Graph<DependencyNode, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
+        logger.info("Obtaining dependency data for generating dependency graph");
         var dependenciesResult = dbContext
                 .select(Packages.PACKAGES.PACKAGE_NAME,
                         PackageVersions.PACKAGE_VERSIONS.VERSION,
@@ -52,7 +56,7 @@ public class DependencyGraphBuilder {
         if (dependenciesResult == null || dependenciesResult.isEmpty()) {
             return null;
         }
-
+        logger.info("Obtaining timestamps of artifacts for generating dependency graph");
         var timestampsResult = dbContext
                 .select(
                         Packages.PACKAGES.PACKAGE_NAME,
@@ -87,7 +91,7 @@ public class DependencyGraphBuilder {
                 dependencies.put(artifact, newDepList);
             }
         }
-
+        logger.info("Generating global dependency graph");
         var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
         for (var entry : timestampedArtifacts.entrySet()) {
             dependencyGraph.addVertex(new DependencyNode(entry.getKey(), entry.getValue()));
@@ -111,6 +115,7 @@ public class DependencyGraphBuilder {
                 dependencyGraph.addEdge(source, target, edge);
             }
         }
+        logger.info("Successfully generated ecosystem-wide dependency graph");
         return dependencyGraph;
     }
 }
