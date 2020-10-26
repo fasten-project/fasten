@@ -1,6 +1,3 @@
-<p align="center">
-    <img src=https://user-images.githubusercontent.com/45048351/89231067-3ddbc580-d5ed-11ea-9639-2838059dda2c.jpg">
-</p>
 <br/>
 <p align="center">
     <a href="https://github.com/fasten-project/fasten/actions" alt="GitHub Workflow Status">
@@ -14,7 +11,7 @@
 
 QualityAnalyzer is FASTEN plugin to store/update code quality metadata from Kafka topic. There is a single Kafka message per single callable produced 
 by [Rapid Plugin](https://github.com/fasten-project/quality-analyzer/tree/master/rapidplugin) using [Lizard](https://github.com/terryyin/lizard). 
-Once a metadata message is consumed, the metadata is stored to respective database depending on the forge (mvn, c, python).
+Once a metadata message is consumed, the metadata is stored to respective database depending on the forge (mvn, C, PyPI).
 
 It can be used both as a standalone tool and as a part of FASTEN server.
 
