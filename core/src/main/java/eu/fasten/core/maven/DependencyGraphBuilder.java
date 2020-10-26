@@ -22,6 +22,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.graph.DependencyEdge;
 import eu.fasten.core.maven.data.graph.DependencyNode;
@@ -31,6 +32,7 @@ import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,24 +40,15 @@ import java.util.List;
 
 public class DependencyGraphBuilder {
 
+    public static void main(String[] args) throws SQLException {
+        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5433/fasten_java", "fasten");
+        var graphBuilder = new DependencyGraphBuilder();
+        graphBuilder.buildDependencyGraph(dbContext);
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
     public Graph<DependencyNode, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
-        logger.info("Obtaining dependency data for generating dependency graph");
-        var dependenciesResult = dbContext
-                .select(Packages.PACKAGES.PACKAGE_NAME,
-                        PackageVersions.PACKAGE_VERSIONS.VERSION,
-                        Dependencies.DEPENDENCIES.METADATA)
-                .from(Packages.PACKAGES)
-                .join(PackageVersions.PACKAGE_VERSIONS)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .join(Dependencies.DEPENDENCIES)
-                .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
-                .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                .fetch();
-        if (dependenciesResult == null || dependenciesResult.isEmpty()) {
-            return null;
-        }
         logger.info("Obtaining timestamps of artifacts for generating dependency graph");
         var timestampsResult = dbContext
                 .select(
@@ -75,7 +68,27 @@ public class DependencyGraphBuilder {
             if (timestamp == null) {
                 timestamp = new Timestamp(-1);
             }
-            timestampedArtifacts.put(new Dependency(mavenCoordinate), timestamp);
+            try {
+                timestampedArtifacts.put(new Dependency(mavenCoordinate), timestamp);
+            } catch (IllegalArgumentException e) {
+                logger.error("Error parsing Maven coordinate '" + mavenCoordinate + "'", e);
+            }
+        }
+        timestampsResult = null;
+        logger.info("Obtaining dependency data for generating dependency graph");
+        var dependenciesResult = dbContext
+                .select(Packages.PACKAGES.PACKAGE_NAME,
+                        PackageVersions.PACKAGE_VERSIONS.VERSION,
+                        Dependencies.DEPENDENCIES.METADATA)
+                .from(Packages.PACKAGES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .join(Dependencies.DEPENDENCIES)
+                .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
+                .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                .fetch();
+        if (dependenciesResult == null || dependenciesResult.isEmpty()) {
+            return null;
         }
         var dependencies = new HashMap<Dependency, List<Dependency>>();
         for (var record : dependenciesResult) {
@@ -91,6 +104,7 @@ public class DependencyGraphBuilder {
                 dependencies.put(artifact, newDepList);
             }
         }
+        dependenciesResult = null;
         logger.info("Generating global dependency graph");
         var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
         for (var entry : timestampedArtifacts.entrySet()) {
