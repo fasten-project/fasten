@@ -23,6 +23,7 @@ public class QAConstants {
     public static final String QA_VERSION_NUMBER = "0.0.1";
     public static final String QA_PLUGIN_NAME = "Quality Analyzer Plugin";
 
+    //needs to be integrated with core.data.Constants
     public static final String MVN_FORGE = "mvn";
     public static final String C_FORGE = "C";
     public static final String PyPI_FORGE = "python";
@@ -33,10 +34,5 @@ public class QAConstants {
     public static final String RETURN_TYPE = "return_type";
     public static final String FASTEN_URI = "fasten_uri";
     public static final String MODULE_ID = "module_id";
-
-    public static final int transactionRestartLimit = 3;
-    public static final int insertionBatchSize = 4096;
-
-    public static final String fastenDbPassEnvVariable = "FASTEN_DBPASS";
 
 }
