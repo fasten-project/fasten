@@ -18,50 +18,28 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.core.data.CScope;
-import eu.fasten.core.data.CNode;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.JavaType;
-import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.graphdb.GidGraph;
+import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
-import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.plugins.KafkaPlugin;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
-import org.jooq.exception.DataAccessException;
-import org.jooq.impl.DSL;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.sql.BatchUpdateException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public class MetadataDatabaseJavaPlugin extends Plugin {
     public MetadataDatabaseJavaPlugin(PluginWrapper wrapper) {
@@ -82,7 +60,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             return MetadataDBJavaExtension.dslContext;
         }
 
-        public ArrayList<CallablesRecord> instertDataExtractCallables(
+        public ArrayList<CallablesRecord> insertDataExtractCallables(
                 ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
             ExtendedRevisionJavaCallGraph javaCallGraph = (ExtendedRevisionJavaCallGraph) callgraph;
             var callables = new ArrayList<CallablesRecord>();

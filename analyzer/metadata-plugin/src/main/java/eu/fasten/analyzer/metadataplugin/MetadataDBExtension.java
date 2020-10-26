@@ -109,7 +109,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
             if (!consumedJson.has("forge"))
                 throw new JSONException("forge");
             final String forge = consumedJson.get("forge").toString();
-            callgraph =  getExtendedRevisionCallGraph(forge, consumedJson);
+            callgraph = getExtendedRevisionCallGraph(forge, consumedJson);
         } catch (JSONException e) {
             logger.error("Error parsing JSON callgraph for '"
                     + Paths.get(path).getFileName() + "'", e);
@@ -118,7 +118,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
             return;
         }
 
-        var revision = setOutputPath(callgraph);
+        var revision = callgraph.product + Constants.mvnCoordinateSeparator + callgraph.version;
 
         int transactionRestartCount = 0;
         do {
@@ -178,30 +178,22 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         return outputPath;
     }
 
-    // FIXME Add comments, decouple logic, make it language agnostic
-    protected String setOutputPath(ExtendedRevisionCallGraph callgraph) {
+    /**
+     * Sets outputPath to a JSON file where plugin's output can be stored.
+     *
+     * @param callgraph Callgraph which contains information needed for output path
+     */
+    protected void setOutputPath(ExtendedRevisionCallGraph callgraph) {
         var product = callgraph.product;
         var version = callgraph.version;
         var forge = callgraph.forge;
-        String revision;
-        if (forge.equals("mvn")) {
-            revision = product + Constants.mvnCoordinateSeparator + version;
-            final String groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
-            final String artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
-
-            product = artifactId + "_" + groupId + "_" + version;
-            var firstLetter = artifactId.substring(0, 1);
-            outputPath = File.separator + forge + File.separator
-                    + firstLetter + File.separator
-                    + artifactId + File.separator + product + ".json";
-        } else {
-            var firstLetter = product.substring(0, 1);
-            outputPath = File.separator + forge + File.separator
-                    + firstLetter + File.separator
-                    + product + ".json";
-            revision = product + "_" + version;
-        }
-        return revision;
+        final String groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
+        final String artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
+        product = artifactId + "_" + groupId + "_" + version;
+        var firstLetter = artifactId.substring(0, 1);
+        this.outputPath = File.separator + forge + File.separator
+                + firstLetter + File.separator
+                + groupId + File.separator + product + ".json";
     }
 
     /**
@@ -233,7 +225,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
                 callGraph.getCgGenerator(), callGraph.version, null,
                 getProperTimestamp(callGraph.timestamp), new JSONObject());
 
-        var callables = instertDataExtractCallables(callGraph, metadataDao, packageVersionId);
+        var callables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId);
         var numInternal = callables.size();
 
         var callablesIds = new LongArrayList(callables.size());
@@ -271,13 +263,13 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         return packageVersionId;
     }
 
-    public ArrayList<CallablesRecord> instertDataExtractCallables(
+    public ArrayList<CallablesRecord> insertDataExtractCallables(
             ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
         return new ArrayList<CallablesRecord>();
     }
 
     protected List<EdgesRecord> insertEdges(Graph graph,
-                             Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
+                                            Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
         return new ArrayList<EdgesRecord>();
     }
 
