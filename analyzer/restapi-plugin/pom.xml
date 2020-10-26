@@ -20,7 +20,7 @@
 
     <!-- Plugin and dependency versions -->
     <properties>
-        <resteasy.version>3.9.3.Final</resteasy.version>
+        <resteasy.version>4.5.8.Final</resteasy.version>
         <servlet-api.version>4.0.1</servlet-api.version>
         <jetty.version>9.4.9.v20180320</jetty.version>
         <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
@@ -43,7 +43,7 @@
         <!-- RESTEasy runtime dependencies -->
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxrs</artifactId>
+            <artifactId>resteasy-servlet-initializer</artifactId>
             <version>${resteasy.version}</version>
         </dependency>
         <dependency>
