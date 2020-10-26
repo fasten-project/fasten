@@ -52,6 +52,12 @@ public class MetadataUtils {
         this.dslContexts = contexts;
     }
 
+    public void freeResource() {
+        for(String key: dslContexts.keySet()) {
+            dslContexts.get(key).close();
+        }
+    }
+
     /**
      *
      * @param forge         String which could have value MVN, PyPI or C.
