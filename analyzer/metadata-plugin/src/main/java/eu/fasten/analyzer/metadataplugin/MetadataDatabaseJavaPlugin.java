@@ -40,6 +40,7 @@ import org.pf4j.PluginWrapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.io.File;
 
 public class MetadataDatabaseJavaPlugin extends Plugin {
     public MetadataDatabaseJavaPlugin(PluginWrapper wrapper) {
@@ -58,6 +59,22 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
         @Override
         public DSLContext getDBConnection() {
             return MetadataDBJavaExtension.dslContext;
+        }
+
+        /**
+         * Sets outputPath to a JSON file where plugin's output can be stored.
+         *
+         * @param callgraph Callgraph which contains information needed for output path
+         */
+        @Override
+        protected void setOutputPath(ExtendedRevisionCallGraph callgraph) {
+            var forge = callgraph.forge;
+            final String groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
+            var product = callgraph.getRevisionName();
+            var firstLetter = product.substring(0, 1);
+            this.outputPath = File.separator + forge + File.separator
+                    + firstLetter + File.separator
+                    + groupId + File.separator + product + ".json";
         }
 
         public ArrayList<CallablesRecord> insertDataExtractCallables(

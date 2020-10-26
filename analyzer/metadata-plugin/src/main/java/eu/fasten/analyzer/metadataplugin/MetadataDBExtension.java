@@ -184,16 +184,11 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
      * @param callgraph Callgraph which contains information needed for output path
      */
     protected void setOutputPath(ExtendedRevisionCallGraph callgraph) {
-        var product = callgraph.product;
-        var version = callgraph.version;
         var forge = callgraph.forge;
-        final String groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
-        final String artifactId = callgraph.product.split(Constants.mvnCoordinateSeparator)[1];
-        product = artifactId + "_" + groupId + "_" + version;
-        var firstLetter = artifactId.substring(0, 1);
+        var product = callgraph.getRevisionName();
+        var firstLetter = product.substring(0, 1);
         this.outputPath = File.separator + forge + File.separator
-                + firstLetter + File.separator
-                + groupId + File.separator + product + ".json";
+                + firstLetter + File.separator + product + ".json";
     }
 
     /**
