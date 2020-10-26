@@ -52,7 +52,6 @@ public class QualityAnalyzerPlugin extends Plugin {
         private String consumerTopic = "fasten.RapidPlugin.out";
         private MetadataUtils utils = null;
 
-
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
             this.utils = new MetadataUtils(dslContexts);
@@ -77,10 +76,9 @@ public class QualityAnalyzerPlugin extends Plugin {
             String forge = null;
 
             if (jsonRecord.has("payload")) {
-                //forge = jsonRecord.getJSONObject("payload").getString("forge".replaceAll("[\\n\\t ]", ""));
                 forge = jsonRecord
                         .getJSONObject("payload")
-                        .getString("forge");
+                        .getString("forge".replaceAll("[\\n\\t ]", ""));
             }
 
             logger.info("forge = " + forge);
@@ -89,9 +87,9 @@ public class QualityAnalyzerPlugin extends Plugin {
 
             if (forge != null) {
                 utils.insertMetadataIntoDB(forge, jsonRecord);
+            } else {
+                logger.error("Could not extract forge from the message");
             }
-
-            logger.error("Could not extract forge from the message");
         }
 
         @Override
@@ -135,8 +133,8 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public void freeResource() {
+            utils.freeResource();
         }
-
     }
 
 
