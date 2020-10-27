@@ -25,10 +25,14 @@ import java.util.Objects;
 public class DependencyNode {
 
     public final Dependency artifact;
-    public final Timestamp releaseTimestamp;
+    public Timestamp releaseTimestamp;
 
     public DependencyNode(Dependency artifact, Timestamp timestamp) {
         this.artifact = artifact;
+        this.releaseTimestamp = timestamp;
+    }
+
+    public void updateTimestamp(Timestamp timestamp) {
         this.releaseTimestamp = timestamp;
     }
 
