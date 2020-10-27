@@ -114,9 +114,9 @@ public class PartialCallGraph {
             final MavenCoordinate coordinate, final String mainClass,
             final String algorithm, final long timestamp)
             throws FileNotFoundException, OPALException {
-	
-	File file = null;
-	try {
+
+        File file = null;
+        try {
             file = new MavenCoordinate.MavenResolver().downloadArtifact(coordinate);
 
             logger.info("OPAL is analysing the artifact");
@@ -129,9 +129,11 @@ public class PartialCallGraph {
                     partialCallGraph.getNodeCount(), Constants.opalGenerator,
                     partialCallGraph.getClassHierarchy(),
                     partialCallGraph.getGraph());
-       } finally {
-          if (file != null){ file.delete();} 
-       }
+        } finally {
+            if (file != null) {
+                file.delete();
+            }
+        }
     }
 
     /**
