@@ -1,3 +1,7 @@
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/45048351/89231067-3ddbc580-d5ed-11ea-9639-2838059dda2c.jpg">
+</p>
+
 <br/>
 <p align="center">
     <a href="https://github.com/fasten-project/fasten/actions" alt="GitHub Workflow Status">
