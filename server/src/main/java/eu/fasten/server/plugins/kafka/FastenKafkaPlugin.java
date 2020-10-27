@@ -184,8 +184,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     getStdErrMsg(input, e, consumeTimestamp));
         } catch (Throwable t) {
             System.err.println("Unrecoverable error");
-            System.err.println(t.getMessage());
-            t.printStackTrace(System.err);
             System.exit(1);
         }
     }

@@ -232,11 +232,11 @@ public class MavenCoordinate {
                 return Optional.of(new File(tempFile.toAbsolutePath().toString()));
             } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
                 logger.error("Couldn't find an artifact: {}", url);
-		if (tempFile != null) {tempFile.toFile().delete();}
+		        if (tempFile != null) {tempFile.toFile().delete();}
                 throw e;
             } catch (IOException e) {
                 logger.error("IO exception occurred while retrieving URL: {}", url);
-		if (tempFile != null) {tempFile.toFile().delete();}
+		        if (tempFile != null) {tempFile.toFile().delete();}
                 return Optional.empty();
             }
         }
