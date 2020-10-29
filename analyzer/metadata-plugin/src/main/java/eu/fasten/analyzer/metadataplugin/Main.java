@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
+import eu.fasten.core.data.Constants;
 import eu.fasten.server.connectors.PostgresConnector;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -62,7 +63,7 @@ public class Main implements Runnable {
     public void run() {
         var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
         try {
-            metadataPlugin.setDBConnection(new HashMap<>(Map.of("java",
+            metadataPlugin.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge,
                     PostgresConnector.getDSLContext(dbUrl, dbUser))));
         } catch (IllegalArgumentException | SQLException e) {
             logger.error("Could not connect to the database", e);

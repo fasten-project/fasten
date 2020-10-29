@@ -79,7 +79,7 @@ public class POMAnalyzerPlugin extends Plugin {
 
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
-            POMAnalyzer.dslContext = dslContexts.get("java");
+            POMAnalyzer.dslContext = dslContexts.get(Constants.mvnForge);
         }
 
         @Override

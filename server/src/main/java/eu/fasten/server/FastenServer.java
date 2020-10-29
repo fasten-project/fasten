@@ -103,7 +103,7 @@ public class FastenServer implements Runnable {
     @Option(names = {"-d", "--database"},
             paramLabel = "dbURL",
             description = "Kay-value pairs of Database URLs for connection Example - " +
-                    "java=jdbc:postgresql://postgres@localhost/dbname",
+                    "mvn=jdbc:postgresql://postgres@localhost/dbname",
             split = ",")
     Map<String, String> dbUrls;
 

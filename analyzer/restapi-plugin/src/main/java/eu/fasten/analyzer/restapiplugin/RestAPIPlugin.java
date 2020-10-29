@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin;
 
 import eu.fasten.analyzer.restapiplugin.server.OpenAPIServer;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.plugins.DBConnector;
 import io.vertx.core.Vertx;
 import org.jooq.DSLContext;
@@ -46,7 +47,7 @@ public class RestAPIPlugin extends Plugin {
 
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
-            RestAPIExtension.dslContext = dslContexts.get("java");
+            RestAPIExtension.dslContext = dslContexts.get(Constants.mvnForge);
         }
 
         @Override

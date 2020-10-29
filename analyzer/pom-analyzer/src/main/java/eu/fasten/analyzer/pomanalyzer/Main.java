@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.pomanalyzer;
 
+import eu.fasten.core.data.Constants;
 import eu.fasten.server.connectors.PostgresConnector;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -73,7 +74,7 @@ public class Main implements Runnable {
     public void run() {
         var pomAnalyzer = new POMAnalyzerPlugin.POMAnalyzer();
         try {
-            pomAnalyzer.setDBConnection(new HashMap<>(Map.of("java",
+            pomAnalyzer.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge,
                     PostgresConnector.getDSLContext(dbUrl, dbUser))));
         } catch (SQLException e) {
             System.err.println("Error connecting to the database:");
