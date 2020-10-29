@@ -51,7 +51,7 @@ public class DependencyGraphBuilder {
     }
 
     public static void main(String[] args) throws SQLException {
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5433/fasten_java", "fasten");
+        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fasten");
         var graphBuilder = new DependencyGraphBuilder();
         var graph = graphBuilder.buildDependencyGraph(dbContext);
         System.out.println("____________________________________________________________________");
@@ -228,7 +228,13 @@ public class DependencyGraphBuilder {
         var dependencies = new HashMap<Dependency, List<Dependency>>();
         for (var record : dependenciesResult) {
             var mavenCoordinate = record.component1() + Constants.mvnCoordinateSeparator + record.component2();
-            var artifact = new Dependency(mavenCoordinate);
+            Dependency artifact;
+            try {
+                artifact = new Dependency(mavenCoordinate);
+            } catch (IllegalArgumentException e) {
+                logger.error("Error parsing Maven coordinate '" + mavenCoordinate + "'", e);
+                continue;
+            }
             var dependency = Dependency.fromJSON(new JSONObject(record.component3().data()));
             var depList = dependencies.get(artifact);
             if (depList == null) {
@@ -253,7 +259,7 @@ public class DependencyGraphBuilder {
             }
             var dependencyList = entry.getValue();
             for (var dependency : dependencyList) {
-                var targetDependency = new Dependency(dependency.toMavenCoordinate());
+                var targetDependency = new Dependency(dependency.groupId, dependency.artifactId, dependency.getVersion());
                 var targetTimestamp = timestampedArtifacts.get(targetDependency) != null
                         ? timestampedArtifacts.get(targetDependency) : new Timestamp(-1);
                 var target = new DependencyNode(targetDependency, targetTimestamp);
