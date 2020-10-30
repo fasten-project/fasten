@@ -6,6 +6,10 @@ public class Constants {
 
     public static final String mvnForge = "mvn";
 
+    public static final String pyForge = "pypi";
+
+    public static final String cForge = "debian";
+
     public static final String opalGenerator = "OPAL";
 
     public static final int transactionRestartLimit = 3;
