@@ -36,13 +36,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
 @CommandLine.Command(name = "GraphMavenResolver")
 public class GraphMavenResolver implements Runnable {
@@ -140,7 +134,7 @@ public class GraphMavenResolver implements Runnable {
     public Set<Dependency> resolveFullDependentsSet(String groupId, String artifactId,
                                                     String version, DSLContext dbContext) {
         return this.resolveFullDependentsSet(groupId, artifactId, version, -1,
-                Arrays.asList(Dependency.SCOPES), dbContext);
+                List.of("compile"), dbContext); // TODO: Change to all scopes
     }
 
     public Set<Dependency> resolveFullDependentsSet(String groupId, String artifactId,
@@ -253,6 +247,9 @@ public class GraphMavenResolver implements Runnable {
     public DependencyTree buildDependencyTreeFromGraph(Graph<DependencyNode, DependencyEdge> graph,
                                                        DependencyNode root,
                                                        Set<Dependency> visitedArtifacts) {
+        if (root == null) {
+            return new DependencyTree(null, Collections.emptyList());
+        }
         var childTrees = new ArrayList<DependencyTree>();
         visitedArtifacts.add(root.artifact);
         var rootEdges = graph.outgoingEdgesOf(root);

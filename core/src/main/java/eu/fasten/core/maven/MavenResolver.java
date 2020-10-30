@@ -457,7 +457,8 @@ public class MavenResolver implements Runnable {
                             "| grep ." +                                                          // Remove garbage empty lines
                             "| sed -e 's/^[[:space:]]*//'" +                                      // Remove spaces leading spaces in coordinates
                             "| sort | uniq " +
-                            "| grep -E ':compile$|:provided$|:runtime$|:test$|:system$|:import$'"
+                            "| grep -E ':compile$|:provided$|:runtime$|:test$|:system$|:import$'" +
+                            "| grep -E ':compile$'" // TODO: Remove this line
             };
             var process = Runtime.getRuntime().exec(cmd, null, pom.getParentFile());
 
