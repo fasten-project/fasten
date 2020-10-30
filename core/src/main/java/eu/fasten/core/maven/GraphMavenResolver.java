@@ -89,6 +89,10 @@ public class GraphMavenResolver implements Runnable {
             defaultValue = "postgres")
     protected String dbUser;
 
+    @CommandLine.Option(names = {"-r", "--reverse"},
+            description = "Use reverse resolution (resolve dependents instead of dependencies)")
+    boolean reverseResolution;
+
     private static Graph<DependencyNode, DependencyEdge> dependencyGraph;
 
     public static void main(String[] args) {
@@ -106,16 +110,21 @@ public class GraphMavenResolver implements Runnable {
                 logger.error("Could not connect to the database", e);
                 return;
             }
-            Set<Dependency> dependencySet;
-            dependencySet = this.resolveFullDependencySet(group, artifact, version, timestamp,
-                    scopes, dbContext);
+            Set<Dependency> artifactSet;
+            if (reverseResolution) {
+                artifactSet = this.resolveFullDependentsSet(group, artifact, version, timestamp,
+                        scopes, dbContext);
+            } else {
+                artifactSet = this.resolveFullDependencySet(group, artifact, version, timestamp,
+                        scopes, dbContext);
+            }
             logger.info("--------------------------------------------------");
             logger.info("Maven coordinate:");
             logger.info(group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version);
             logger.info("--------------------------------------------------");
             logger.info("Full dependency set:");
-            dependencySet.forEach(d -> logger.info(d.toCanonicalForm()));
+            artifactSet.forEach(d -> logger.info(d.toCanonicalForm()));
             logger.info("--------------------------------------------------");
         } else {
             logger.error("You need to specify Maven coordinate by providing its "
@@ -126,6 +135,23 @@ public class GraphMavenResolver implements Runnable {
 
     public void buildDependencyGraph(DSLContext dbContext) {
         dependencyGraph = new DependencyGraphBuilder().buildDependencyGraph(dbContext);
+    }
+
+    public Set<Dependency> resolveFullDependentsSet(String groupId, String artifactId,
+                                                    String version, DSLContext dbContext) {
+        return this.resolveFullDependentsSet(groupId, artifactId, version, -1,
+                Arrays.asList(Dependency.SCOPES), dbContext);
+    }
+
+    public Set<Dependency> resolveFullDependentsSet(String groupId, String artifactId,
+                                                    String version, long timestamp,
+                                                    List<String> scopes, DSLContext dbContext) {
+        if (dependencyGraph == null) {
+            buildDependencyGraph(dbContext);
+        }
+        var reverseGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
+        return this.resolveDependencySetUsingGraph(groupId, artifactId, version, timestamp,
+                scopes, dbContext, reverseGraph);
     }
 
     public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
@@ -140,6 +166,14 @@ public class GraphMavenResolver implements Runnable {
         if (dependencyGraph == null) {
             buildDependencyGraph(dbContext);
         }
+        return this.resolveDependencySetUsingGraph(groupId, artifactId, version, timestamp,
+                scopes, dbContext, dependencyGraph);
+    }
+
+    public Set<Dependency> resolveDependencySetUsingGraph(String groupId, String artifactId,
+                                                          String version, long timestamp,
+                                                          List<String> scopes, DSLContext dbContext,
+                                                          Graph<DependencyNode, DependencyEdge> dependencyGraph) {
         var parents = new HashSet<Dependency>();
         parents.add(new Dependency(groupId, artifactId, version));
         var parent = this.getParentArtifact(groupId, artifactId, version, dbContext);
