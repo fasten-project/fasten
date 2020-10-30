@@ -50,11 +50,12 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         private final Logger logger = LoggerFactory.getLogger(QualityAnalyzer.class.getName());
         private String consumerTopic = "fasten.RapidPlugin.out";
-        private MetadataUtils utils = null;
+        private static MetadataUtils utils = null;
+        private Throwable pluginError = null;
 
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
-            this.utils = new MetadataUtils(dslContexts);
+            QualityAnalyzer.utils = new MetadataUtils(dslContexts);
         }
 
         @Override
@@ -82,8 +83,6 @@ public class QualityAnalyzerPlugin extends Plugin {
             }
 
             logger.info("forge = " + forge);
-
-            //TODO: what if forge = null? Throw an exception?
 
             if (forge != null) {
                 utils.insertMetadataIntoDB(forge, jsonRecord);
@@ -128,7 +127,7 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public Throwable getPluginError() {
-            return null;
+            return pluginError;
         }
 
         @Override
