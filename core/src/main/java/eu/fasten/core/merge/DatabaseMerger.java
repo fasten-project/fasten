@@ -3,6 +3,7 @@ package eu.fasten.core.merge;
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
@@ -18,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -88,9 +90,9 @@ public class DatabaseMerger {
          *
          * @param uri fastenURI
          */
-        public Node(final String uri) {
-            this.typeUri = uri.split("\\.[^.]*\\(")[0];
-            this.signature = uri.replace(this.typeUri + ".", "");
+        public Node(final FastenJavaURI uri) {
+            this.typeUri = "/" + uri.getNamespace() + "/" + uri.getClassName();
+            this.signature = StringUtils.substringAfter(uri.getEntity(), ".");
         }
 
         /**
@@ -215,7 +217,7 @@ public class DatabaseMerger {
 
         //System.out.print("CONSTRUCTOR: " + arc.source + " -> " + arc.target + " :: ");
         for (final var superTypeUri : typeList) {
-            var superSignature = node.signature.replace("%3Cinit%3E", "%3Cclinit%3E");
+            var superSignature = node.signature.replace("<init>", "<clinit>");
             for (final var target : typeDictionary.getOrDefault(superTypeUri,
                     new HashMap<>()).getOrDefault(superSignature, new HashSet<>())) {
                 addEdge(result, arc.source, target, isCallback);
@@ -301,7 +303,7 @@ public class DatabaseMerger {
                 .where(Callables.CALLABLES.ID.in(nodesIds))
                 .fetch();
 
-        callables.forEach(callable -> typeMap.put(callable.value1(), new Node(callable.value2())));
+        callables.forEach(callable -> typeMap.put(callable.value1(), new Node(FastenJavaURI.create(callable.value2()).decanonicalize())));
         return typeMap;
     }
 
@@ -321,13 +323,12 @@ public class DatabaseMerger {
                 .where(Callables.CALLABLES.ID.in(callables))
                 .fetch()
                 .forEach(callable -> {
-                    var typeUri = callable.value1().split("\\.[^.]*\\(")[0];
-                    var signature = callable.value1().replace(typeUri + ".", "");
-                    result.putIfAbsent(typeUri, new HashMap<>());
-                    var type = result.get(typeUri);
+                    var node = new Node(FastenJavaURI.create(callable.value1()).decanonicalize());
+                    result.putIfAbsent(node.typeUri, new HashMap<>());
+                    var type = result.get(node.typeUri);
                     var newestSet = new HashSet<Long>();
                     newestSet.add(callable.value2());
-                    type.merge(signature, newestSet, (old, newest) -> {
+                    type.merge(node.signature, newestSet, (old, newest) -> {
                         old.addAll(newest);
                         return old;
                     });
