@@ -65,10 +65,6 @@ public class MetadataUtils {
      */
     public void insertMetadataIntoDB(String forge, JSONObject jsonRecord) {
 
-        if(forge.equalsIgnoreCase(QAConstants.MVN_FORGE)) {
-            forge = "java";
-        }
-
         selectedContext = dslContexts.get(forge);
 
         List<CallableHolder> callableHolderList = getCallables(forge, jsonRecord);
