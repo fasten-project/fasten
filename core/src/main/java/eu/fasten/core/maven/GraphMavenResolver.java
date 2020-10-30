@@ -26,8 +26,8 @@ import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
 import eu.fasten.core.maven.data.graph.DependencyEdge;
 import eu.fasten.core.maven.data.graph.DependencyNode;
+import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -174,7 +174,7 @@ public class GraphMavenResolver implements Runnable {
      */
     public Graph<DependencyNode, DependencyEdge> filterDependencyGraphByTimestamp(
             Graph<DependencyNode, DependencyEdge> dependencyGraph, Timestamp timestamp) {
-        var graph = cloneDependencyGraph(dependencyGraph);
+        var graph = DependencyGraphUtilities.cloneDependencyGraph(dependencyGraph);
         for (var node : dependencyGraph.vertexSet()) {
             if (node.releaseTimestamp.after(timestamp)
                     && !node.releaseTimestamp.equals(new Timestamp(-1))) {
@@ -186,7 +186,7 @@ public class GraphMavenResolver implements Runnable {
 
     public Graph<DependencyNode, DependencyEdge> filterOptionalDependencies(
             Graph<DependencyNode, DependencyEdge> dependencyGraph) {
-        var graph = cloneDependencyGraph(dependencyGraph);
+        var graph = DependencyGraphUtilities.cloneDependencyGraph(dependencyGraph);
         for (var edge : dependencyGraph.edgeSet()) {
             if (edge.optional) {
                 graph.removeEdge(edge);
@@ -198,7 +198,7 @@ public class GraphMavenResolver implements Runnable {
     public Graph<DependencyNode, DependencyEdge> filterDependencyGraphByScope(
             Graph<DependencyNode, DependencyEdge> dependencyGraph,
             List<String> scopes) {
-        var graph = cloneDependencyGraph(dependencyGraph);
+        var graph = DependencyGraphUtilities.cloneDependencyGraph(dependencyGraph);
         for (var edge : dependencyGraph.edgeSet()) {
             var dependencyScope = edge.scope;
             if (dependencyScope == null || dependencyScope.isEmpty()) {
@@ -207,20 +207,6 @@ public class GraphMavenResolver implements Runnable {
             if (!scopes.contains(dependencyScope)) {
                 graph.removeEdge(edge);
             }
-        }
-        return graph;
-    }
-
-    private Graph<DependencyNode, DependencyEdge> cloneDependencyGraph(
-            Graph<DependencyNode, DependencyEdge> dependencyGraph) {
-        var graph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
-        for (var node : dependencyGraph.vertexSet()) {
-            graph.addVertex(node);
-        }
-        for (var edge : dependencyGraph.edgeSet()) {
-            var source = dependencyGraph.getEdgeSource(edge);
-            var target = dependencyGraph.getEdgeTarget(edge);
-            graph.addEdge(source, target, edge);
         }
         return graph;
     }
