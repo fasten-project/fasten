@@ -27,10 +27,13 @@ It can be used both as a standalone tool and as a part of FASTEN server.
 
 ## Usage 
 
-To start as part of FASTEN server:
+A password must be provided through the environmental variable `$FASTEN_DBPASS`. 
+Currently, all three databases use the same password (this will change).
+
+To start as part of FASTEN server, 
 
 ```
-java -cp /path/to/projects/fasten/docker/server/server-0.0.1-SNAPSHOT-with-dependencies.jar eu.fasten.server.FastenServer -p /home/fasten/projects/fasten/docker/plugins/ -k localhost:9092 -pl "QualityAnalyzer" -kt "QualityAnalyzer=fasten.RapidPlugin.out" -d "java=jdbc:postgresql://postgres@localhost/dbname,python=jdbc:postgresql://postgres@localhost/pythondbname"
+FASTEN_DBPASS=pass ... -p /path-to/fasten/docker/plugins/ -k localhost:9092 -pl "QualityAnalyzer" -kt "QualityAnalyzer=fasten.RapidPlugin.out" -d "mvn=jdbc:postgresql://postgres@localhost/dbname,debian=jdbc:postgresql://postgres@localhost/pythondbname"
 ```
 
 ## Join the community
