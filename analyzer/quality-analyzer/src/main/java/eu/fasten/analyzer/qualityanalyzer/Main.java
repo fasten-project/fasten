@@ -22,8 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.net.URI;
 import java.sql.SQLException;
-import java.util.AbstractMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import eu.fasten.analyzer.qualityanalyzer.data.QAConstants;
@@ -38,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import picocli.CommandLine;
 
+import java.util.Arrays;
+
 @CommandLine.Command(name = "QualityAnalyzerPlugin")
 public class Main implements Runnable {
 
@@ -51,8 +52,8 @@ public class Main implements Runnable {
     @CommandLine.Option(names = {"-d", "--database"},
     paramLabel = "dbURL",
     description = "Key-value pairs of Database URLs for connection Example - " +
-            "java=jdbc:postgresql://postgres@localhost/dbname," +
-            "python=jdbc:postgresql://postgres@localhost/dbname1",
+            "mvn=jdbc:postgresql://postgres@localhost/dbname," +
+            "PyPI=jdbc:postgresql://postgres@localhost/dbname1",
     split = ",")
     Map<String, String> dbUrls;
 
@@ -60,6 +61,13 @@ public class Main implements Runnable {
     public void run() {
 
         QualityAnalyzerPlugin.QualityAnalyzer qualityAnalyzer = new QualityAnalyzerPlugin.QualityAnalyzer();
+
+        if(!verifyDBUrls()) {
+            logger.error("DB forges not properly defined!");
+            return;
+        }
+
+        logger.info("DB forges properly defined!");
 
         setDBConnections(qualityAnalyzer);
 
@@ -77,7 +85,29 @@ public class Main implements Runnable {
         qualityAnalyzer.produce().ifPresent(System.out::println);
     }
 
+    /**
+     * Verify that forges in DB URLs are properly defined.
+     *
+     * @return boolean that indicates whether forges are properly defined or not in DB argument.
+     */
+    private boolean verifyDBUrls() {
 
+        if(dbUrls == null) {
+            return false;
+        }
+
+        Set<String> forges = dbUrls.keySet();
+
+        List<String> goodForges = Arrays.asList(QAConstants.PYTHON_FORGE, QAConstants.C_FORGE, QAConstants.MVN_FORGE);
+
+        for(String forge: forges) {
+            if(!goodForges.contains(forge)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /**
      * Set multiple database connections for quality analyzer plugin.
@@ -86,24 +116,19 @@ public class Main implements Runnable {
      */
     private void setDBConnections(QualityAnalyzerPlugin.QualityAnalyzer qualityAnalyzer) {
 
-        if (dbUrls != null) {
-                qualityAnalyzer.setDBConnection(dbUrls.entrySet().stream().map(e -> new AbstractMap.SimpleEntry<>(e.getKey(),
-                        e.getValue())).collect(Collectors.toMap(AbstractMap.SimpleEntry::toString, e -> {
-                    try {
-                        logger.debug("Set {} DB connection successfully for plug-in {}",
-                                e.getKey(), QAConstants.QA_PLUGIN_NAME);
-                        return getDSLContext(e.getValue());
-                    } catch (SQLException ex) {
-                        logger.error("Couldn't set {} DB connection for plug-in {}\n{}",
-                                e.getKey(), QAConstants.QA_PLUGIN_NAME, ex.getStackTrace());
-                    }
-                    return null;
-                })));
-
-            } else {
-                logger.error("Couldn't make a DB connection. Make sure that you have "
-                        + "provided a valid DB URL, username and password.");
+        qualityAnalyzer.setDBConnection(dbUrls.entrySet().stream().map(e -> new AbstractMap.SimpleEntry<>(e.getKey(),
+                e.getValue())).collect(Collectors.toMap(AbstractMap.SimpleEntry::toString, e -> {
+            try {
+                logger.debug("Set {} DB connection successfully for plug-in {}",
+                        e.getKey(), QAConstants.QA_PLUGIN_NAME);
+                return getDSLContext(e.getValue());
+            } catch (SQLException ex) {
+                logger.error("Couldn't set {} DB connection for plug-in {}\n{}",
+                        e.getKey(), QAConstants.QA_PLUGIN_NAME, ex.getStackTrace());
             }
+            return null;
+        })));
+
     }
 
     /**
@@ -119,6 +144,7 @@ public class Main implements Runnable {
     }
 
     public static void main(String[] args) {
+
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }
