@@ -23,11 +23,6 @@ public class QAConstants {
     public static final String QA_VERSION_NUMBER = "0.0.1";
     public static final String QA_PLUGIN_NAME = "Quality Analyzer Plugin";
 
-    //needs to be integrated with core.data.Constants
-    public static final String MVN_FORGE = "mvn";
-    public static final String C_FORGE = "Debian";
-    public static final String PYTHON_FORGE = "PyPI";
-
     //field names in JSON Object sent by Rapid
     public static final String LINE_START = "line_start";
     public static final String LINE_END = "line_end";

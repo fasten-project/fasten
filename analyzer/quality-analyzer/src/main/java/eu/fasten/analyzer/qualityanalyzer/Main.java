@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import eu.fasten.analyzer.qualityanalyzer.data.QAConstants;
+import eu.fasten.core.data.Constants;
 import eu.fasten.server.connectors.PostgresConnector;
 
 import org.jooq.DSLContext;
@@ -98,7 +99,7 @@ public class Main implements Runnable {
 
         Set<String> forges = dbUrls.keySet();
 
-        List<String> goodForges = Arrays.asList(QAConstants.PYTHON_FORGE, QAConstants.C_FORGE, QAConstants.MVN_FORGE);
+        List<String> goodForges = Arrays.asList(Constants.mvnForge, Constants.cForge, Constants.pyForge);
 
         for(String forge: forges) {
             if(!goodForges.contains(forge)) {
@@ -144,7 +145,6 @@ public class Main implements Runnable {
     }
 
     public static void main(String[] args) {
-
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }
