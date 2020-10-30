@@ -25,8 +25,8 @@ public class QAConstants {
 
     //needs to be integrated with core.data.Constants
     public static final String MVN_FORGE = "mvn";
-    public static final String C_FORGE = "C";
-    public static final String PyPI_FORGE = "python";
+    public static final String C_FORGE = "Debian";
+    public static final String PYTHON_FORGE = "PyPI";
 
     //field names in JSON Object sent by Rapid
     public static final String LINE_START = "line_start";
