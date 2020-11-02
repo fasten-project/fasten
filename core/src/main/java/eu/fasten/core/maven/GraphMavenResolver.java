@@ -277,7 +277,9 @@ public class GraphMavenResolver implements Runnable {
 
     private DependencyTree filterExcludedDependenciesRecursively(
             DependencyTree dependencyTree, Set<Dependency.Exclusion> exclusions) {
-        exclusions.addAll(dependencyTree.artifact.exclusions);
+        if (dependencyTree.artifact != null) {
+            exclusions.addAll(dependencyTree.artifact.exclusions);
+        }
         var filteredDependencies = new ArrayList<DependencyTree>();
         for (var childTree : dependencyTree.dependencies) {
             if (!exclusions.contains(new Dependency.Exclusion(childTree.artifact.groupId,
