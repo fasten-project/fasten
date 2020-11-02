@@ -90,6 +90,7 @@ public class QualityAnalyzerPlugin extends Plugin {
 
             if(forge == null) {
                 logger.error("Could not extract forge from the message");
+                setPluginError(new RuntimeException("Could not extract forge from the message"));
                 return;
             }
 
@@ -106,9 +107,10 @@ public class QualityAnalyzerPlugin extends Plugin {
                 } catch (RuntimeException e) {
 
                     processedRecord = false;
+                    restartTransaction = false;
+
                     logger.error("Error saving to the database: '" + forge + "'", e);
                     setPluginError(e);
-                    restartTransaction = false;
 
                     if (e instanceof DataAccessException) {
                         // Database connection error
@@ -118,7 +120,7 @@ public class QualityAnalyzerPlugin extends Plugin {
                             setPluginError(exception);
                         }
 
-                        logger.info("Restarting transaction for '" + forge + "'");
+                        logger.info("Restarting transaction for '" + recordId + "'");
                         // It could be a deadlock, so restart transaction
                         restartTransaction = true;
                     }
