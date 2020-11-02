@@ -195,9 +195,9 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
      * Factory method for ExtendedRevisionCallGraph
      */
     public ExtendedRevisionCallGraph getExtendedRevisionCallGraph(String forge, JSONObject json) {
-        if (forge.equals("mvn")) {
+        if (forge.equals(Constants.mvnForge)) {
             return new ExtendedRevisionJavaCallGraph(json);
-        } else if (forge.equals("debian")) {
+        } else if (forge.equals(Constants.debianForge)) {
             return new ExtendedRevisionCCallGraph(json);
         }
 
