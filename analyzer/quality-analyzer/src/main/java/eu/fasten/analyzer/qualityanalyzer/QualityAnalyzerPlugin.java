@@ -74,6 +74,7 @@ public class QualityAnalyzerPlugin extends Plugin {
             logger.info("Consumed: " + kafkaMessage);
 
             var jsonRecord = new JSONObject(kafkaMessage);
+
             String forge = null;
 
             if (jsonRecord.has("payload")) {
@@ -84,8 +85,14 @@ public class QualityAnalyzerPlugin extends Plugin {
 
             logger.info("forge = " + forge);
 
+            this.pluginError = null;
+
             if (forge != null) {
-                utils.insertMetadataIntoDB(forge, jsonRecord);
+                try {
+                    utils.updateMetadataInDB(forge, jsonRecord);
+                } catch(Exception ex) {
+                    setPluginError(ex);
+                }
             } else {
                 logger.error("Could not extract forge from the message");
             }
@@ -133,6 +140,10 @@ public class QualityAnalyzerPlugin extends Plugin {
         @Override
         public void freeResource() {
             utils.freeResource();
+        }
+
+        public void setPluginError(Throwable throwable) {
+            this.pluginError = throwable;
         }
     }
 

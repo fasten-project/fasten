@@ -63,20 +63,24 @@ public class MetadataUtils {
      * @param forge         String which could have value MVN, PyPI or C.
      * @param jsonRecord    Object that contains quality analysis metadata.
      */
-    public void insertMetadataIntoDB(String forge, JSONObject jsonRecord) {
+    public void updateMetadataInDB(String forge, JSONObject jsonRecord) throws Exception {
 
         selectedContext = dslContexts.get(forge);
 
+        //could return an empty List
         List<CallableHolder> callableHolderList = getCallables(forge, jsonRecord);
 
-        var metadataDao = new MetadataDao(selectedContext);
-        for(CallableHolder callable : callableHolderList){
-            metadataDao.updateCallableMetadata(callable.getModuleId(), callable.getFastenUri(), callable.isInternal(), callable.getCallableMetadata());
+        if( ! callableHolderList.isEmpty() ) {
+
+            var metadataDao = new MetadataDao(selectedContext);
+
+            for (CallableHolder callable : callableHolderList) {
+                metadataDao.updateCallableMetadata(callable.getModuleId(), callable.getFastenUri(), callable.isInternal(), callable.getCallableMetadata());
+            }
         }
     }
 
-
-    private List<CallableHolder> getCallables(String forge, JSONObject jsonRecord) {
+    private List<CallableHolder> getCallables(String forge, JSONObject jsonRecord) throws Exception {
 
         //1. get package and version
         //2. get packageversionid
@@ -93,16 +97,32 @@ public class MetadataUtils {
             version = jsonRecord.getJSONObject("input").getString("version");
         }
 
-        //TODO: check for null values here
+        if( (product == null) || (version == null)) {
+            logger.error("Product or version are null");
+            throw new Exception("Product or version are null");
+        }
 
         Long pckVersionId = getPackageVersionId(product, forge, version);
+
+        if( pckVersionId == null ) {
+            logger.error("Could not fetch package version id for product = " + product +
+                    " forge = " + forge + " version = " + version);
+            throw new Exception("Could not find package version id");
+        }
 
         String path = jsonRecord.getJSONObject("payload").getString("filepath");
         int lineStart = Integer.parseInt(jsonRecord.getJSONObject("payload").getJSONObject("metrics").getString("start_line"));
         int lineEnd = Integer.parseInt(jsonRecord.getJSONObject("payload").getJSONObject("metrics").getString("end_line"));
 
-        Long fileId = getFileId(pckVersionId, path);
-        List<Long> modulesId = getModuleIds(fileId);
+        Long fileId = getFileId(pckVersionId, path);//could return null
+
+        if(fileId == null ) {
+            logger.error("Could not fetch fileID for package version id = " + pckVersionId +
+                    " and path = " + path);
+            throw new Exception("Could not find package version id");
+        }
+
+        List<Long> modulesId = getModuleIds(fileId);//could return empty List
 
         ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
 
@@ -112,7 +132,6 @@ public class MetadataUtils {
                 callables.addAll(getCallablesInformation(moduleId, lineStart, lineEnd));
             }
 
-            //TODO: we need a unique record here!
             logger.info("Found " + callables.size() + " methods for which startLine= " + lineStart + " and endLine= " + lineEnd);
 
         }
@@ -140,10 +159,8 @@ public class MetadataUtils {
                     version);
         }
 
-        return -1L;
+        return null;
     }
-
-
 
     /**
      * Finds the ID of the package given coordinate and forge.
@@ -186,7 +203,8 @@ public class MetadataUtils {
             return pkgVersionRecord.getId();
         }
 
-        return -1L;
+        //otherwise return null, -1 is "reserved" for external callable reference
+        return null;
 
     }
     /**
@@ -210,7 +228,7 @@ public class MetadataUtils {
             return fr.getId();
         }
 
-        return -1L;
+        return null;
     }
 
     /**
@@ -231,7 +249,7 @@ public class MetadataUtils {
             }
         }
 
-        return moduleIds;//we cannot return -1 here since that implies external callable
+        return moduleIds;//we cannot return-1 here since that implies external callable
     }
 
     /**
@@ -241,7 +259,7 @@ public class MetadataUtils {
      * @param startLine - int value that indicates start callable line in source file.
      * @param endLine - int value that indicates the last callable line in source file.
      *
-     * @return Long ID of the callable (-1L if it cannot find it)
+     * @return List of CallableHolder (empty List if no callable could be found)
      */
     private List<CallableHolder> getCallablesInformation(Long moduleId, int lineStart, int lineEnd)  {
 
