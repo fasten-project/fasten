@@ -465,7 +465,10 @@ public class MavenResolver implements Runnable {
             var process = new ProcessBuilder().command(cmd).start();
             var exitValue = process.waitFor();
             logger.debug("Maven resolution finished with exit code " + exitValue);
-
+            if (exitValue != 0) {
+                throw new RuntimeException("Maven resolution failed with exit code " + exitValue);
+            }
+            
             // Reader for the command's output.
             var stdInput = new BufferedReader(new
                     InputStreamReader(process.getInputStream()));
