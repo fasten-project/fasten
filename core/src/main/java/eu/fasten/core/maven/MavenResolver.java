@@ -119,7 +119,8 @@ public class MavenResolver implements Runnable {
             logger.info(group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version);
             logger.info("--------------------------------------------------");
-            logger.info("Full dependency set:");
+            logger.info("Found " + dependencySet.size() + " (transitive) dependencies"
+                    + (dependencySet.size() > 0 ? ":" : "."));
             dependencySet.forEach(d -> logger.info(d.toCanonicalForm()));
             logger.info("--------------------------------------------------");
         } else {
@@ -435,6 +436,8 @@ public class MavenResolver implements Runnable {
         // Result set.
         Set<Dependency> dependencySet = new HashSet<>();
 
+        logger.debug("Downloading artifact's POM file");
+
         // Download pom file from the repo.
         var pomOpt = MavenUtilities.downloadPom(group, artifact, version);
 
@@ -444,6 +447,7 @@ public class MavenResolver implements Runnable {
         });
 
         try {
+            logger.debug("Running 'mvn dependency:list' and parsing the output");
 
             // Print the dependency tree of the downloaded pom file and format the output simply by line.
             //
@@ -451,14 +455,16 @@ public class MavenResolver implements Runnable {
             String[] cmd = new String[]{
                     "bash",
                     "-c",
-                    "mvn -q dependency:list -f" + pom.getName() + " -DoutputFile=>(cat) " +       // Get the list of dependencies applied on the temp file.
-                            "| tail -n +3" +                                                      // Match only this list, ignore other output garbage.
-                            "| grep ." +                                                          // Remove garbage empty lines
-                            "| sed -e 's/^[[:space:]]*//'" +                                      // Remove spaces leading spaces in coordinates
+                    "mvn dependency:list -f \"" + pom.getAbsolutePath() + "\" -DoutputFile=>(cat) " +   // Get the list of dependencies applied on the temp file.
+                            "| tail -n +3 " +                                                           // Match only this list, ignore other output garbage.
+                            "| grep . " +                                                               // Remove garbage empty lines
+                            "| sed -e \"s/^[[:space:]]*//\" " +                                         // Remove spaces leading spaces in coordinates
                             "| sort | uniq " +
-                            "| grep -E ':compile$|:provided$|:runtime$|:test$|:system$|:import$'"
+                            "| grep -E \":compile$|:provided$|:runtime$|:test$|:system$|:import$\""
             };
-            var process = Runtime.getRuntime().exec(cmd, null, pom.getParentFile());
+            var process = new ProcessBuilder().command(cmd).start();
+            var exitValue = process.waitFor();
+            logger.debug("Maven resolution finished with exit code " + exitValue);
 
             // Reader for the command's output.
             var stdInput = new BufferedReader(new
@@ -470,13 +476,10 @@ public class MavenResolver implements Runnable {
 
             // Helper var for reading buffers.
             var s = "";
-
             // Parse the output from the command.
             while ((s = stdInput.readLine()) != null) {
-
                 // Add to result set a new instance of the Dependency object.
                 dependencySet.add(new Dependency(s));
-
             }
 
             // Parse any errors from the attempted command.
@@ -490,7 +493,7 @@ public class MavenResolver implements Runnable {
                         dependencySet, new Timestamp(timestamp), dbContext);
             }
 
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             var coordinate = artifact + Constants.mvnCoordinateSeparator + group + Constants.mvnCoordinateSeparator + version;
             logger.error("Error resolving Maven artifact: " + coordinate, e);
         }
