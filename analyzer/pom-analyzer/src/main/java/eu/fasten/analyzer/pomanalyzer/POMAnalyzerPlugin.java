@@ -28,6 +28,7 @@ import java.io.File;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
@@ -77,8 +78,8 @@ public class POMAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public void setDBConnection(DSLContext dslContext) {
-            POMAnalyzer.dslContext = dslContext;
+        public void setDBConnection(Map<String, DSLContext> dslContexts) {
+            POMAnalyzer.dslContext = dslContexts.get(Constants.mvnForge);
         }
 
         @Override
