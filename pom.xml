@@ -34,7 +34,31 @@
             <email/>
             <organization>TU Delft</organization>
         </developer>
+        <developer>
+            <name>Mihhail Sokolov</name>
+            <email>mihhail1998@gmail.com</email>
+            <organization>TU Delft</organization>
+        </developer>
     </developers>
+
+    <contributors>
+        <contributor>
+            <name>Marco Micera</name>
+            <email>marco.micera@endocode.com</email>
+            <organization>Endocode AG</organization>
+            <organizationUrl>https://endocode.com</organizationUrl>
+            <url>http://marcomicera.github.io</url>
+            <timezone>Europe/Berlin</timezone>
+        </contributor>
+        <contributor>
+            <name>Ingrid Sena</name>
+            <email>ingrid.sena@endocode.com</email>
+            <organization>Endocode AG</organization>
+            <organizationUrl>https://endocode.com</organizationUrl>
+            <url>https://about.me/fullsushidev</url>
+            <timezone>Europe/Berlin</timezone>
+        </contributor>
+    </contributors>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
