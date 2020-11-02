@@ -20,9 +20,11 @@ package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.analyzer.qualityanalyzer.data.QAConstants;
 
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
 
+import org.jooq.exception.DataAccessException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -31,6 +33,7 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
+import java.sql.BatchUpdateException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.List;
@@ -85,17 +88,57 @@ public class QualityAnalyzerPlugin extends Plugin {
 
             logger.info("forge = " + forge);
 
-            this.pluginError = null;
-
-            if (forge != null) {
-                try {
-                    utils.updateMetadataInDB(forge, jsonRecord);
-                } catch(Exception ex) {
-                    setPluginError(ex);
-                }
-            } else {
+            if(forge == null) {
                 logger.error("Could not extract forge from the message");
+                return;
             }
+
+            boolean processedRecord = false;
+            int transactionRestartCount = 0;
+            boolean restartTransaction = false;
+
+            Long recordId = null;
+
+            do {
+                setPluginError(null);
+                try {
+                    recordId = utils.updateMetadataInDB(forge, jsonRecord);
+                } catch (RuntimeException e) {
+
+                    processedRecord = false;
+                    logger.error("Error saving to the database: '" + forge + "'", e);
+                    setPluginError(e);
+                    restartTransaction = false;
+
+                    if (e instanceof DataAccessException) {
+                        // Database connection error
+                        if (e.getCause() instanceof BatchUpdateException) {
+                            var exception = ((BatchUpdateException) e.getCause())
+                                    .getNextException();
+                            setPluginError(exception);
+                        }
+
+                        logger.info("Restarting transaction for '" + forge + "'");
+                        // It could be a deadlock, so restart transaction
+                        restartTransaction = true;
+                    }
+
+                    throw e;
+                } catch(Exception expected) {
+
+                }
+
+                if (getPluginError() == null) {
+                    processedRecord = true;
+                    restartTransaction = false;
+
+                    logger.info("Updated the callable for  '" + forge + "' metadata "
+                            + "with callable id = " + recordId);
+                }
+
+                transactionRestartCount++;
+
+            } while( restartTransaction && !processedRecord && transactionRestartCount < Constants.transactionRestartLimit );
         }
 
         @Override

@@ -19,6 +19,7 @@ package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.analyzer.qualityanalyzer.data.*;
 
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
@@ -30,6 +31,7 @@ import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.Result;
 
+import org.jooq.impl.DSL;
 import org.json.JSONObject;
 
 import org.slf4j.Logger;
@@ -48,6 +50,8 @@ public class MetadataUtils {
 
     private DSLContext selectedContext = null;
 
+    private Long recordId = null;
+
     public MetadataUtils(Map<String, DSLContext> contexts) {
         this.dslContexts = contexts;
     }
@@ -62,22 +66,28 @@ public class MetadataUtils {
      *
      * @param forge         String which could have value MVN, PyPI or C.
      * @param jsonRecord    Object that contains quality analysis metadata.
+     * @return              id of the callable record
      */
-    public void updateMetadataInDB(String forge, JSONObject jsonRecord) throws Exception {
+    public Long updateMetadataInDB(String forge, JSONObject jsonRecord) throws RuntimeException, Exception {
 
         selectedContext = dslContexts.get(forge);
 
         //could return an empty List
         List<CallableHolder> callableHolderList = getCallables(forge, jsonRecord);
 
-        if( ! callableHolderList.isEmpty() ) {
+        var metadataDao = new MetadataDao(selectedContext);
+        selectedContext.transaction(transaction -> {
+            // Start transaction
+            metadataDao.setContext(DSL.using(transaction));
 
-            var metadataDao = new MetadataDao(selectedContext);
-
-            for (CallableHolder callable : callableHolderList) {
-                metadataDao.updateCallableMetadata(callable.getModuleId(), callable.getFastenUri(), callable.isInternal(), callable.getCallableMetadata());
+            if( ! callableHolderList.isEmpty() ) {
+                for (CallableHolder callable : callableHolderList) {
+                    recordId = metadataDao.updateCallableMetadata(callable.getModuleId(), callable.getFastenUri(), callable.isInternal(), callable.getCallableMetadata());
+                }
             }
-        }
+        });
+
+        return recordId;
     }
 
     private List<CallableHolder> getCallables(String forge, JSONObject jsonRecord) throws Exception {
