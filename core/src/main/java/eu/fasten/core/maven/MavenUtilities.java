@@ -121,7 +121,15 @@ public class MavenUtilities {
         }
     }
 
+    /**
+     * Force-deletes the file or directory.
+     *
+     * @param file File to be deleted
+     */
     public static void forceDeleteFile(File file) {
+        if (file == null) {
+            return;
+        }
         try {
             FileUtils.forceDelete(file);
         } catch (IOException ignored) {

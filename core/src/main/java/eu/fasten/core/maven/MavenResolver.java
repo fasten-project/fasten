@@ -175,7 +175,7 @@ public class MavenResolver implements Runnable {
                 }
             }
             logger.info("Finished resolving Maven coordinates");
-            logger.info("Success rate is " + success / total + " for " + (int)total + " coordinates");
+            logger.info("Success rate is " + success / total + " for " + (int) total + " coordinates");
             if (!errors.isEmpty()) {
                 logger.info("Errors encountered:");
                 errors.forEach((key, value) -> logger.info(key.toFullCanonicalForm() + " -> " + value.getMessage()));
@@ -491,7 +491,6 @@ public class MavenResolver implements Runnable {
      */
     public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version,
                                                           long timestamp, DSLContext dbContext) throws NoSuchElementException {
-
         // Result set.
         Set<Dependency> dependencySet = new HashSet<>();
 
@@ -528,7 +527,7 @@ public class MavenResolver implements Runnable {
                 MavenUtilities.forceDeleteFile(pom);
                 throw new RuntimeException("Maven resolution failed with exit code " + exitValue);
             }
-            
+
             // Reader for the command's output.
             var stdInput = new BufferedReader(new
                     InputStreamReader(process.getInputStream()));
