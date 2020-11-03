@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import eu.fasten.core.data.Constants;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -692,10 +693,23 @@ public class DataExtractor {
         for (var repo : this.mavenRepos) {
             var pomUrl = this.getPomUrl(artifactId, groupId, version, repo);
             Optional<String> pom;
+            File pomFile = null;
             try {
-                pom = httpGetToFile(pomUrl).flatMap(DataExtractor::fileToString);
+                var pomFileOpt =  httpGetToFile(pomUrl);
+                pomFile = pomFileOpt.orElse(null);
+                pom = pomFileOpt.flatMap(DataExtractor::fileToString);
             } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
                 continue;
+            } finally {
+                if (pomFile != null) {
+                    try {
+                        FileUtils.forceDelete(pomFile);
+                    } catch (IOException e) {
+                        if (pomFile.exists()) {
+                            pomFile.delete();
+                        }
+                    }
+                }
             }
             if (pom.isPresent()) {
                 this.mavenCoordinate = groupId + Constants.mvnCoordinateSeparator + artifactId
