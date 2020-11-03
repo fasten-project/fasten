@@ -180,13 +180,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     plugin.getClass().getSimpleName()),
                     getStdOutMsg(input, payload, consumeTimestamp));
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             emitMessage(this.producer, String.format("fasten.%s.err",
                     plugin.getClass().getSimpleName()),
                     getStdErrMsg(input, e, consumeTimestamp));
-        } catch (Throwable t) {
-            System.err.println("Unrecoverable error");
-            System.exit(1);
         }
     }
 
