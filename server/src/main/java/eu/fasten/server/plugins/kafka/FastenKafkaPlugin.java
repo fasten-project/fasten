@@ -122,10 +122,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Starts a thread.
      */
     public void start() {
-        this.thread = new Thread(this);
-        this.thread.setName(this.plugin.getClass().getSimpleName() + "_plugin");
-        this.thread.start();
-        this.plugin.start();
+//        this.thread = new Thread(this);
+//        this.thread.setName(this.plugin.getClass().getSimpleName() + "_plugin");
+//        this.thread.start();
+//        this.plugin.start();
+
+        this.run();
     }
 
     /**

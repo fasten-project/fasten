@@ -165,7 +165,7 @@ public class FastenServer implements Runnable {
 
         kafkaServerPlugins.forEach(FastenServerPlugin::start);
 
-        waitForInterruption(kafkaServerPlugins);
+        //waitForInterruption(kafkaServerPlugins);
     }
 
     /**
