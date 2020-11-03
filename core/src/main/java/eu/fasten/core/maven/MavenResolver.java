@@ -34,6 +34,8 @@ import picocli.CommandLine;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
@@ -87,6 +89,15 @@ public class MavenResolver implements Runnable {
             description = "Use online resolution mode")
     protected boolean onlineMode;
 
+    @CommandLine.Option(names = {"-f", "--file"},
+            paramLabel = "COORD_FILE",
+            description = "Path to file with the list of coordinates for resolution")
+    protected String file;
+
+    @CommandLine.Option(names = {"-sk", "--skip"},
+            description = "Skip first line in the file")
+    protected boolean skipLine;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new MavenResolver()).execute(args);
         System.exit(exitCode);
@@ -94,19 +105,19 @@ public class MavenResolver implements Runnable {
 
     @Override
     public void run() {
-        if (artifact != null && group != null && version != null) {
-            DSLContext dbContext = null;
+        DSLContext dbContext = null;
 
-            // Database connection is needed only if not using online resolution
-            // or if using filtering by timestamp
-            if (!onlineMode || timestamp != -1) {
-                try {
-                    dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
-                } catch (SQLException e) {
-                    logger.error("Could not connect to the database", e);
-                    return;
-                }
+        // Database connection is needed only if not using online resolution
+        // or if using filtering by timestamp
+        if (!onlineMode || timestamp != -1) {
+            try {
+                dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
+            } catch (SQLException e) {
+                logger.error("Could not connect to the database", e);
+                return;
             }
+        }
+        if (artifact != null && group != null && version != null) {
             Set<Dependency> dependencySet;
             if (!onlineMode) {
                 dependencySet = this.resolveFullDependencySet(group, artifact, version,
@@ -123,10 +134,58 @@ public class MavenResolver implements Runnable {
                     + (dependencySet.size() > 0 ? ":" : "."));
             dependencySet.forEach(d -> logger.info(d.toCanonicalForm()));
             logger.info("--------------------------------------------------");
+        } else if (file != null) {
+            List<String> coordinates;
+            try {
+                coordinates = Files.readAllLines(Paths.get(file));
+            } catch (IOException e) {
+                logger.error("Could not read from file: " + file, e);
+                return;
+            }
+            if (skipLine) {
+                coordinates.remove(0);
+            }
+            float success = 0;
+            float total = 0;
+            var errors = new HashMap<Dependency, Throwable>();
+            for (var coordinate : coordinates) {
+                Set<Dependency> dependencySet;
+                var artifact = new Dependency(coordinate);
+                total++;
+                try {
+                    if (onlineMode) {
+                        dependencySet = this.resolveFullDependencySetOnline(artifact.groupId,
+                                artifact.artifactId, artifact.getVersion(), timestamp, dbContext);
+                    } else {
+                        dependencySet = this.resolveFullDependencySet(artifact.groupId,
+                                artifact.artifactId, artifact.getVersion(), timestamp, scopes, dbContext);
+                    }
+                    success++;
+                    logger.info("--------------------------------------------------");
+                    logger.info("Maven coordinate:");
+                    logger.info(artifact.toCanonicalForm());
+                    logger.info("--------------------------------------------------");
+                    logger.info("Found " + dependencySet.size() + " (transitive) dependencies"
+                            + (dependencySet.size() > 0 ? ":" : "."));
+                    dependencySet.forEach(d -> logger.info(d.toCanonicalForm()));
+                    logger.info("--------------------------------------------------");
+                } catch (Exception e) {
+                    logger.error("Error resolving " + artifact.toMavenCoordinate(), e);
+                    errors.put(artifact, e);
+                }
+            }
+            logger.info("Finished resolving Maven coordinates");
+            logger.info("Success rate is " + success / total + " for " + (int)total + " coordinates");
+            if (!errors.isEmpty()) {
+                logger.info("Errors encountered:");
+                errors.forEach((key, value) -> logger.info(key.toFullCanonicalForm() + " -> " + value.getMessage()));
+            }
         } else {
             logger.error("You need to specify Maven coordinate by providing its "
                     + "artifactId ('-a'), groupId ('-g') and version ('-v'). "
-                    + "Optional timestamp (-t) can also be provided.");
+                    + "Optional timestamp (-t) can also be provided. "
+                    + "Otherwise you need to specify file (-f) which contains "
+                    + "the list of coordinates you want to resolve");
         }
     }
 
