@@ -1,6 +1,7 @@
 package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +118,17 @@ public class MavenUtilities {
         } catch (IOException e) {
             logger.error("Error getting file from URL: " + url, e);
             return Optional.empty();
+        }
+    }
+
+    public static void forceDeleteFile(File file) {
+        try {
+            FileUtils.forceDelete(file);
+        } catch (IOException ignored) {
+        } finally {
+            if (file.exists()) {
+                file.delete();
+            }
         }
     }
 

@@ -525,6 +525,7 @@ public class MavenResolver implements Runnable {
             var exitValue = process.waitFor();
             logger.debug("Maven resolution finished with exit code " + exitValue);
             if (exitValue != 0) {
+                MavenUtilities.forceDeleteFile(pom);
                 throw new RuntimeException("Maven resolution failed with exit code " + exitValue);
             }
             
@@ -559,7 +560,7 @@ public class MavenResolver implements Runnable {
             var coordinate = artifact + Constants.mvnCoordinateSeparator + group + Constants.mvnCoordinateSeparator + version;
             logger.error("Error resolving Maven artifact: " + coordinate, e);
         }
-
+        MavenUtilities.forceDeleteFile(pom);
         return dependencySet;
     }
 
