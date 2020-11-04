@@ -34,9 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class DependencyGraphBuilder {
@@ -285,6 +283,15 @@ public class DependencyGraphBuilder {
         return dependencyGraph;
     }
 
+    private Optional<Dependency> safeDependencyParse(String depStr) {
+        try {
+            return Optional.of(new Dependency(depStr));
+        } catch (Exception e) {
+            logger.error("Error parsing: " + depStr);
+            return Optional.empty();
+        }
+    }
+
     private Graph<DependencyNode, DependencyEdge> buildDependencyGraphWithoutPagination2(DSLContext dbContext) {
         var startTs = System.currentTimeMillis();
         logger.info("Obtaining dependency data");
@@ -314,14 +321,14 @@ public class DependencyGraphBuilder {
 
         var timestampedArtifacts = dependenciesResult.stream().parallel().collect(
                 Collectors.toConcurrentMap(
-                    x -> new Dependency(x.component1() + Constants.mvnCoordinateSeparator + x.component2()),
+                    x -> safeDependencyParse(x.component1() + Constants.mvnCoordinateSeparator + x.component2()),
                     x -> x.component4(),
                     (x, y) -> x
         ));
 
         var dependencies = dependenciesResult.stream().parallel().collect(
                 Collectors.toConcurrentMap(
-                    x -> new Dependency(x.component1() + Constants.mvnCoordinateSeparator + x.component2()),
+                    x -> safeDependencyParse(x.component1() + Constants.mvnCoordinateSeparator + x.component2()),
                     x -> List.of(Dependency.fromJSON(new JSONObject(x.component3().data()))),
                     (x, y) -> {var z = new ArrayList<Dependency>(); z.addAll(x); z.addAll(y); return z;})
         );
@@ -331,7 +338,11 @@ public class DependencyGraphBuilder {
         startTs = System.currentTimeMillis();
         long idx = 0;
         for (var entry : dependencies.entrySet()) {
-            var source = new DependencyNode(entry.getKey(), timestampedArtifacts.get(entry.getKey()));
+            if (!entry.getKey().isPresent()) {
+                continue;
+            }
+
+            var source = new DependencyNode(entry.getKey().get(), timestampedArtifacts.get(entry.getKey()));
             if (!dependencyGraph.containsVertex(source)) {
                 dependencyGraph.addVertex(source);
             }
