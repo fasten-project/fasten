@@ -221,7 +221,7 @@ public class GraphMavenResolver implements Runnable {
             var currentDependencySet = collectDependencyTree(dependencyTree);
             dependencySet.addAll(currentDependencySet);
         }
-        dependencySet.retainAll(parents);
+        dependencySet.removeAll(parents);
         return dependencySet;
     }
 
