@@ -36,7 +36,13 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
 
 @CommandLine.Command(name = "GraphMavenResolver")
 public class GraphMavenResolver implements Runnable {
@@ -87,6 +93,18 @@ public class GraphMavenResolver implements Runnable {
             description = "Use reverse resolution (resolve dependents instead of dependencies)")
     boolean reverseResolution;
 
+    @CommandLine.Option(names = {"-fo", "--filter-optional"},
+            description = "Filter out optional dependencies")
+    boolean filterOptional;
+
+    @CommandLine.Option(names = {"-fs", "--filter-scopes"},
+            description = "Filter out dependencies by scope")
+    boolean filterScopes;
+
+    @CommandLine.Option(names = {"-fe", "--filter-exclusions"},
+            description = "Filter out excluded dependencies")
+    boolean filterExclusions;
+
     private static Graph<DependencyNode, DependencyEdge> dependencyGraph;
 
     public static void main(String[] args) {
@@ -107,17 +125,18 @@ public class GraphMavenResolver implements Runnable {
             Set<Dependency> artifactSet;
             if (reverseResolution) {
                 artifactSet = this.resolveFullDependentsSet(group, artifact, version, timestamp,
-                        scopes, dbContext);
+                        scopes, dbContext, filterOptional, filterScopes, filterExclusions);
             } else {
                 artifactSet = this.resolveFullDependencySet(group, artifact, version, timestamp,
-                        scopes, dbContext);
+                        scopes, dbContext, filterOptional, filterScopes, filterExclusions);
             }
             logger.info("--------------------------------------------------");
             logger.info("Maven coordinate:");
             logger.info(group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version);
             logger.info("--------------------------------------------------");
-            logger.info("Full dependency set:");
+            logger.info("Found " + artifactSet.size() + " (transitive) dependencies"
+                    + (artifactSet.size() > 0 ? ":" : "."));
             artifactSet.forEach(d -> logger.info(d.toCanonicalForm()));
             logger.info("--------------------------------------------------");
         } else {
@@ -134,40 +153,47 @@ public class GraphMavenResolver implements Runnable {
     public Set<Dependency> resolveFullDependentsSet(String groupId, String artifactId,
                                                     String version, DSLContext dbContext) {
         return this.resolveFullDependentsSet(groupId, artifactId, version, -1,
-                List.of("compile"), dbContext); // TODO: Change to all scopes
+                Arrays.asList(Dependency.SCOPES), dbContext, false, false, false);
     }
 
     public Set<Dependency> resolveFullDependentsSet(String groupId, String artifactId,
                                                     String version, long timestamp,
-                                                    List<String> scopes, DSLContext dbContext) {
+                                                    List<String> scopes, DSLContext dbContext,
+                                                    boolean filterOptional, boolean filterScopes,
+                                                    boolean filterExclusions) {
         if (dependencyGraph == null) {
             buildDependencyGraph(dbContext);
         }
         var reverseGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
         return this.resolveDependencySetUsingGraph(groupId, artifactId, version, timestamp,
-                scopes, dbContext, reverseGraph);
+                scopes, dbContext, reverseGraph, filterOptional, filterScopes, filterExclusions);
     }
 
     public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
                                                     String version, DSLContext dbContext) {
         return resolveFullDependencySet(groupId, artifactId, version, -1,
-                Arrays.asList(Dependency.SCOPES), dbContext);
+                Arrays.asList(Dependency.SCOPES), dbContext, false, false, false);
     }
 
     public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
                                                     String version, long timestamp,
-                                                    List<String> scopes, DSLContext dbContext) {
+                                                    List<String> scopes, DSLContext dbContext,
+                                                    boolean filterOptional, boolean filterScopes,
+                                                    boolean filterExclusions) {
         if (dependencyGraph == null) {
             buildDependencyGraph(dbContext);
         }
+        var graph = DependencyGraphUtilities.cloneDependencyGraph(dependencyGraph);
         return this.resolveDependencySetUsingGraph(groupId, artifactId, version, timestamp,
-                scopes, dbContext, dependencyGraph);
+                scopes, dbContext, graph, filterOptional, filterScopes, filterExclusions);
     }
 
     public Set<Dependency> resolveDependencySetUsingGraph(String groupId, String artifactId,
                                                           String version, long timestamp,
                                                           List<String> scopes, DSLContext dbContext,
-                                                          Graph<DependencyNode, DependencyEdge> dependencyGraph) {
+                                                          Graph<DependencyNode, DependencyEdge> dependencyGraph,
+                                                          boolean filterOptional, boolean filterScopes,
+                                                          boolean filterExclusions) {
         var parents = new HashSet<Dependency>();
         parents.add(new Dependency(groupId, artifactId, version));
         var parent = this.getParentArtifact(groupId, artifactId, version, dbContext);
@@ -177,20 +203,36 @@ public class GraphMavenResolver implements Runnable {
                     parent.getVersion(), dbContext);
         }
         var dependencySet = new HashSet<Dependency>();
-        for (var parentArtifact : parents) {
-            var graph = filterOptionalDependencies(dependencyGraph);
+        for (var artifact : parents) {
+            var graph = dependencyGraph;
+            if (filterOptional) {
+                graph = filterOptionalDependencies(dependencyGraph);
+            }
             if (timestamp != -1) {
                 graph = filterDependencyGraphByTimestamp(graph, new Timestamp(timestamp));
             }
-            graph = filterDependencyGraphByScope(graph, scopes);
-            var rootNode = findNodeByArtifact(parentArtifact, graph);
+            if (filterScopes) {
+                graph = filterDependencyGraphByScope(graph, scopes);
+            }
+            var rootNode = findNodeByArtifact(artifact, graph);
             var dependencyTree = buildDependencyTreeFromGraph(graph, rootNode);
-            dependencyTree = filterExcludedDependencies(dependencyTree);
+            if (filterExclusions) {
+                dependencyTree = filterExcludedDependencies(dependencyTree);
+            }
             var currentDependencySet = collectDependencyTree(dependencyTree);
-            currentDependencySet.remove(new Dependency(groupId, artifactId, version));
             dependencySet.addAll(currentDependencySet);
         }
+        dependencySet.removeAll(parents);
         return dependencySet;
+    }
+
+    private DependencyNode findNodeByArtifact(Dependency artifact, Graph<DependencyNode, DependencyEdge> graph) {
+        for (var node : graph.vertexSet()) {
+            if (node.artifact.equals(artifact)) {
+                return node;
+            }
+        }
+        throw new RuntimeException("Could not find resolution artifact's node in the dependency graph: " + artifact);
     }
 
     /**
@@ -206,6 +248,12 @@ public class GraphMavenResolver implements Runnable {
         for (var node : dependencyGraph.vertexSet()) {
             if (node.releaseTimestamp.after(timestamp)
                     && !node.releaseTimestamp.equals(new Timestamp(-1))) {
+                dependencyGraph.edgeSet().stream().filter(e -> {
+                    if (graph.containsEdge(e)) {
+                        return graph.getEdgeTarget(e).equals(node) || graph.getEdgeSource(e).equals(node);
+                    }
+                    return false;
+                }).forEach(graph::removeEdge);
                 graph.removeVertex(node);
             }
         }
@@ -217,6 +265,7 @@ public class GraphMavenResolver implements Runnable {
         var graph = DependencyGraphUtilities.cloneDependencyGraph(dependencyGraph);
         for (var edge : dependencyGraph.edgeSet()) {
             if (edge.optional) {
+                graph.removeVertex(dependencyGraph.getEdgeTarget(edge));
                 graph.removeEdge(edge);
             }
         }
@@ -233,6 +282,7 @@ public class GraphMavenResolver implements Runnable {
                 dependencyScope = "compile";
             }
             if (!scopes.contains(dependencyScope)) {
+                graph.removeVertex(dependencyGraph.getEdgeTarget(edge));
                 graph.removeEdge(edge);
             }
         }
@@ -247,9 +297,6 @@ public class GraphMavenResolver implements Runnable {
     public DependencyTree buildDependencyTreeFromGraph(Graph<DependencyNode, DependencyEdge> graph,
                                                        DependencyNode root,
                                                        Set<Dependency> visitedArtifacts) {
-        if (root == null) {
-            return new DependencyTree(null, Collections.emptyList());
-        }
         var childTrees = new ArrayList<DependencyTree>();
         visitedArtifacts.add(root.artifact);
         var rootEdges = graph.outgoingEdgesOf(root);
@@ -260,15 +307,6 @@ public class GraphMavenResolver implements Runnable {
             }
         }
         return new DependencyTree(root.artifact, childTrees);
-    }
-
-    private DependencyNode findNodeByArtifact(Dependency artifact, Graph<DependencyNode, DependencyEdge> graph) {
-        for (var node : graph.vertexSet()) {
-            if (node.artifact.equals(artifact)) {
-                return node;
-            }
-        }
-        return null;
     }
 
     public DependencyTree filterExcludedDependencies(DependencyTree dependencyTree) {
