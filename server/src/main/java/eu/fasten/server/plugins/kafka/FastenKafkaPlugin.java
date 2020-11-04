@@ -167,7 +167,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private void handleProducing(String input, long consumeTimestamp) {
         try {
             if (plugin.getPluginError() != null) {
-                throw plugin.getPluginError();
+                throw new Exception(plugin.getPluginError());
             }
 
             var result = plugin.produce();
@@ -180,7 +180,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     plugin.getClass().getSimpleName()),
                     getStdOutMsg(input, payload, consumeTimestamp));
 
-        } catch (Throwable e) {
+        } catch (Exception e) {
             emitMessage(this.producer, String.format("fasten.%s.err",
                     plugin.getClass().getSimpleName()),
                     getStdErrMsg(input, e, consumeTimestamp));
