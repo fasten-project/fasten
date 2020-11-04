@@ -219,9 +219,9 @@ public class GraphMavenResolver implements Runnable {
                 dependencyTree = filterExcludedDependencies(dependencyTree);
             }
             var currentDependencySet = collectDependencyTree(dependencyTree);
-            currentDependencySet.remove(new Dependency(groupId, artifactId, version));
             dependencySet.addAll(currentDependencySet);
         }
+        dependencySet.retainAll(parents);
         return dependencySet;
     }
 
@@ -247,13 +247,12 @@ public class GraphMavenResolver implements Runnable {
         for (var node : dependencyGraph.vertexSet()) {
             if (node.releaseTimestamp.after(timestamp)
                     && !node.releaseTimestamp.equals(new Timestamp(-1))) {
-                dependencyGraph.edgeSet().stream()
-                        .filter(e -> {
-                            if (graph.containsEdge(e)) {
-                                return graph.getEdgeTarget(e).equals(node) || graph.getEdgeSource(e).equals(node);
-                            }
-                            return false;
-                        }).forEach(graph::removeEdge);
+                dependencyGraph.edgeSet().stream().filter(e -> {
+                    if (graph.containsEdge(e)) {
+                        return graph.getEdgeTarget(e).equals(node) || graph.getEdgeSource(e).equals(node);
+                    }
+                    return false;
+                }).forEach(graph::removeEdge);
                 graph.removeVertex(node);
             }
         }
