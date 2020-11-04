@@ -68,29 +68,35 @@ public class MetadataUtils {
      * @param jsonRecord    Object that contains quality analysis metadata.
      * @return              id of the callable record
      */
-    public Long updateMetadataInDB(String forge, JSONObject jsonRecord) throws RuntimeException, Exception {
+    public Long updateMetadataInDB(String forge, JSONObject jsonRecord) throws RuntimeException, IllegalStateException {
 
         selectedContext = dslContexts.get(forge);
 
         //could return an empty List
         List<CallableHolder> callableHolderList = getCallables(forge, jsonRecord);
 
+        if(callableHolderList.isEmpty() ) {
+            throw new IllegalStateException("Empty list of callables");
+        }
+
+
         var metadataDao = new MetadataDao(selectedContext);
         selectedContext.transaction(transaction -> {
             // Start transaction
             metadataDao.setContext(DSL.using(transaction));
-
-            if( ! callableHolderList.isEmpty() ) {
+            try {
                 for (CallableHolder callable : callableHolderList) {
                     recordId = metadataDao.updateCallableMetadata(callable.getModuleId(), callable.getFastenUri(), callable.isInternal(), callable.getCallableMetadata());
                 }
+            } catch(RuntimeException ex) {
+                throw ex;
             }
         });
 
         return recordId;
     }
 
-    private List<CallableHolder> getCallables(String forge, JSONObject jsonRecord) throws Exception {
+    private List<CallableHolder> getCallables(String forge, JSONObject jsonRecord) throws IllegalStateException {
 
         //1. get package and version
         //2. get packageversionid
@@ -109,7 +115,7 @@ public class MetadataUtils {
 
         if( (product == null) || (version == null)) {
             logger.error("Product or version are null");
-            throw new Exception("Product or version are null");
+            throw new IllegalStateException("Product or version are null");
         }
 
         Long pckVersionId = getPackageVersionId(product, forge, version);
@@ -117,7 +123,7 @@ public class MetadataUtils {
         if( pckVersionId == null ) {
             logger.error("Could not fetch package version id for product = " + product +
                     " forge = " + forge + " version = " + version);
-            throw new Exception("Could not find package version id");
+            throw new IllegalStateException("Could not find package version id");
         }
 
         String path = jsonRecord.getJSONObject("payload").getString("filepath");
@@ -129,7 +135,7 @@ public class MetadataUtils {
         if(fileId == null ) {
             logger.error("Could not fetch fileID for package version id = " + pckVersionId +
                     " and path = " + path);
-            throw new Exception("Could not find package version id");
+            throw new IllegalStateException("Could not find package version id");
         }
 
         List<Long> modulesId = getModuleIds(fileId);//could return empty List

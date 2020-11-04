@@ -125,8 +125,11 @@ public class QualityAnalyzerPlugin extends Plugin {
                         restartTransaction = true;
                     }
 
-                    throw e;
-                } catch(Exception expected) {
+                    if (e instanceof IllegalStateException) {
+                        //do not restart transaction, callable list is empty
+                        restartTransaction = false;
+                        setPluginError(e);
+                    }
 
                 }
 
