@@ -37,6 +37,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DependencyGraphBuilder {
 
@@ -51,12 +52,22 @@ public class DependencyGraphBuilder {
     }
 
     public static void main(String[] args) throws SQLException {
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fasten");
+        var tsStart = System.currentTimeMillis();
+        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
         var graphBuilder = new DependencyGraphBuilder();
-        var graph = graphBuilder.buildDependencyGraph(dbContext);
+        var graph1 = graphBuilder.buildDependencyGraphWithoutPagination(dbContext);
+        var tsEnd = System.currentTimeMillis();
         System.out.println("____________________________________________________________________");
-        System.out.println("Graph has " + graph.vertexSet().size() + " nodes and "
-                + graph.edgeSet().size() + " edges");
+        System.out.println("Graph has " + graph1.vertexSet().size() + " nodes and "
+                + graph1.edgeSet().size() + " edges (" + (tsEnd - tsStart) +" ms)");
+
+        tsStart = System.currentTimeMillis();
+        var graph2 = graphBuilder.buildDependencyGraphWithoutPagination2(dbContext);
+
+        tsEnd = System.currentTimeMillis();
+        System.out.println("____________________________________________________________________");
+        System.out.println("Graph has " + graph2.vertexSet().size() + " nodes and "
+                + graph2.edgeSet().size() + " edges (" + (tsEnd - tsStart) +" ms)");
     }
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
@@ -270,6 +281,73 @@ public class DependencyGraphBuilder {
                 dependencyGraph.addEdge(source, target, edge);
             }
         }
+        logger.info("Successfully generated ecosystem-wide dependency graph");
+        return dependencyGraph;
+    }
+
+    private Graph<DependencyNode, DependencyEdge> buildDependencyGraphWithoutPagination2(DSLContext dbContext) {
+        var startTs = System.currentTimeMillis();
+        logger.info("Obtaining dependency data");
+        var dependenciesResult = dbContext
+                .select(Packages.PACKAGES.PACKAGE_NAME,
+                        PackageVersions.PACKAGE_VERSIONS.VERSION,
+                        Dependencies.DEPENDENCIES.METADATA,
+                        PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
+                .from(Packages.PACKAGES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .join(Dependencies.DEPENDENCIES)
+                .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
+                .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNotNull())
+                .fetch();
+
+        logger.info(String.format("Fetched %d dependency pairs, %d ms",
+                dependenciesResult.size(), (System.currentTimeMillis() - startTs)));
+        if (dependenciesResult == null || dependenciesResult.isEmpty()) {
+            return null;
+        }
+
+        startTs = System.currentTimeMillis();
+        logger.info("Indexing dependency pairs");
+        var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+
+        var timestampedArtifacts = dependenciesResult.stream().parallel().collect(
+                Collectors.toConcurrentMap(
+                    x -> new Dependency(x.component1() + Constants.mvnCoordinateSeparator + x.component2()),
+                    x -> x.component4(),
+                    (x, y) -> x
+        ));
+
+        var dependencies = dependenciesResult.stream().parallel().collect(
+                Collectors.toConcurrentMap(
+                    x -> new Dependency(x.component1() + Constants.mvnCoordinateSeparator + x.component2()),
+                    x -> List.of(Dependency.fromJSON(new JSONObject(x.component3().data()))),
+                    (x, y) -> {var z = new ArrayList<Dependency>(); z.addAll(x); z.addAll(y); return z;})
+        );
+        logger.info(String.format("Indexed pairs: %d unique nodes, %d ms",
+                timestampedArtifacts.size(), System.currentTimeMillis() - startTs));
+
+        startTs = System.currentTimeMillis();
+        long idx = 0;
+        for (var entry : dependencies.entrySet()) {
+            var source = new DependencyNode(entry.getKey(), timestampedArtifacts.get(entry.getKey()));
+            if (!dependencyGraph.containsVertex(source)) {
+                dependencyGraph.addVertex(source);
+            }
+            var dependencyList = entry.getValue();
+            for (var dependency : dependencyList) {
+                var targetTimestamp = timestampedArtifacts.get(dependency) != null
+                        ? timestampedArtifacts.get(dependency) : new Timestamp(-1);
+                var target = new DependencyNode(dependency, targetTimestamp);
+                if (!dependencyGraph.containsVertex(target)) {
+                    dependencyGraph.addVertex(target);
+                }
+                var edge = new DependencyEdge(idx++, dependency.scope, dependency.optional, dependency.exclusions);
+                dependencyGraph.addEdge(source, target, edge);
+            }
+        }
+        logger.info(String.format("Created graph: %d ms",  System.currentTimeMillis() - startTs));
         logger.info("Successfully generated ecosystem-wide dependency graph");
         return dependencyGraph;
     }
