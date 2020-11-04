@@ -135,7 +135,8 @@ public class GraphMavenResolver implements Runnable {
             logger.info(group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version);
             logger.info("--------------------------------------------------");
-            logger.info("Full dependency set:");
+            logger.info("Found " + artifactSet.size() + " (transitive) dependencies"
+                    + (artifactSet.size() > 0 ? ":" : "."));
             artifactSet.forEach(d -> logger.info(d.toCanonicalForm()));
             logger.info("--------------------------------------------------");
         } else {
@@ -152,7 +153,7 @@ public class GraphMavenResolver implements Runnable {
     public Set<Dependency> resolveFullDependentsSet(String groupId, String artifactId,
                                                     String version, DSLContext dbContext) {
         return this.resolveFullDependentsSet(groupId, artifactId, version, -1,
-                List.of("compile"), dbContext, false, false, false); // TODO: Change to all scopes
+                Arrays.asList(Dependency.SCOPES), dbContext, false, false, false);
     }
 
     public Set<Dependency> resolveFullDependentsSet(String groupId, String artifactId,
