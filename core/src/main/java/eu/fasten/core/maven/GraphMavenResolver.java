@@ -203,7 +203,7 @@ public class GraphMavenResolver implements Runnable {
                     parent.getVersion(), dbContext);
         }
         var dependencySet = new HashSet<Dependency>();
-        for (var parentArtifact : parents) {
+        for (var artifact : parents) {
             var graph = dependencyGraph;
             if (filterOptional) {
                 graph = filterOptionalDependencies(dependencyGraph);
@@ -214,7 +214,7 @@ public class GraphMavenResolver implements Runnable {
             if (filterScopes) {
                 graph = filterDependencyGraphByScope(graph, scopes);
             }
-            var rootNode = findNodeByArtifact(parentArtifact, graph);
+            var rootNode = findNodeByArtifact(artifact, graph);
             var dependencyTree = buildDependencyTreeFromGraph(graph, rootNode);
             if (filterExclusions) {
                 dependencyTree = filterExcludedDependencies(dependencyTree);
@@ -232,7 +232,7 @@ public class GraphMavenResolver implements Runnable {
                 return node;
             }
         }
-        throw new RuntimeException("Could not find resolution artifact's node in the dependency graph");
+        throw new RuntimeException("Could not find resolution artifact's node in the dependency graph: " + artifact);
     }
 
     /**
