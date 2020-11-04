@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
-import org.jgrapht.Graph;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -133,9 +134,9 @@ public class DatabaseMerger {
         final long startTime = System.currentTimeMillis();
         for (final var arc : arcs) {
             if (callGraphData.isExternal(arc.target)) {
-                resolve(result, arc, typeMap.get(arc.target), universalCHA, typeDictionary, false);
+                resolve(result, arc, typeMap.get(arc.target), universalCHA.getLeft(), universalCHA.getRight(), typeDictionary, false);
             } else {
-                resolve(result, arc, typeMap.get(arc.source), universalCHA, typeDictionary,
+                resolve(result, arc, typeMap.get(arc.source), universalCHA.getLeft(), universalCHA.getRight(), typeDictionary,
                         callGraphData.isExternal(arc.source));
             }
         }
@@ -147,48 +148,53 @@ public class DatabaseMerger {
     /**
      * Resolve an external call.
      *
-     * @param result         graph with resolved calls
-     * @param arc            source, target and receivers information
-     * @param node           type and method information
-     * @param universalCHA   universal class hierarchy of all dependencies
-     * @param typeDictionary Mapping of types and method signatures to their global IDs
-     * @param isCallback     true, if a given arc is a callback
+     * @param result            graph with resolved calls
+     * @param arc               source, target and receivers information
+     * @param node              type and method information
+     * @param universalParents  universal class hierarchy parents
+     * @param universalChildren universal class hierarchy children
+     * @param typeDictionary    Mapping of types and method signatures to their global IDs
+     * @param isCallback        true, if a given arc is a callback
      */
     private void resolve(final ArrayImmutableDirectedGraph.Builder result,
                          final Arc arc,
                          final Node node,
-                         final Graph<String, DefaultEdge> universalCHA,
+                         final Map<String, Set<String>> universalParents,
+                         final Map<String, Set<String>> universalChildren,
                          final Map<String, Map<String, Set<Long>>> typeDictionary,
                          final boolean isCallback) {
         if (node.isConstructor()) {
-            resolveClassInits(result, arc, node, universalCHA, typeDictionary, isCallback);
+            resolveInitsAndConstructors(result, arc, node, universalParents, typeDictionary, isCallback);
         }
 
         for (var entry : arc.receivers) {
             var receiverTypeUri = entry.component3();
             var type = entry.component2().getLiteral();
-            if (type.equals("virtual") || type.equals("interface") || type.equals("dynamic")) {
-                final var types = new ArrayList<>(Collections.singletonList(receiverTypeUri));
-                if (universalCHA.containsVertex(receiverTypeUri)) {
-                    types.addAll(Graphs.successorListOf(universalCHA, receiverTypeUri));
-                }
-                //System.out.print("DYNAMIC: " + arc.source + " -> " + arc.target + " :: ");
-                for (final var depTypeUri : types) {
-                    for (final var target : typeDictionary.getOrDefault(depTypeUri,
+            switch (type) {
+                case "virtual":
+                case "interface":
+                    final var types = universalChildren.get(receiverTypeUri);
+                    if (types != null) {
+                        for (final var depTypeUri : types) {
+                            for (final var target : typeDictionary.getOrDefault(depTypeUri,
+                                    new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
+                                addEdge(result, arc.source, target, isCallback);
+                            }
+                        }
+                    }
+                    break;
+                case "special":
+                    resolveInitsAndConstructors(result, arc, node, universalParents, typeDictionary, isCallback);
+                    break;
+                case "dynamic":
+                    logger.warn("OPAL didn't rewrite the dynamic");
+                    break;
+                default:
+                    for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                         addEdge(result, arc.source, target, isCallback);
-                        //System.out.print(target + " ");
                     }
-                }
-                //System.out.println();
-            } else {
-                //System.out.print("DEFINED: " + arc.source + " -> " + arc.target + " :: ");
-                for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
-                        new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
-                    addEdge(result, arc.source, target, isCallback);
-                    //System.out.print(target + " ");
-                }
-                //System.out.println();
+                    break;
             }
 
         }
@@ -197,34 +203,33 @@ public class DatabaseMerger {
     /**
      * Resolves constructors.
      *
-     * @param result         {@link DirectedGraph} with resolved calls
-     * @param arc            source, target and receivers information
-     * @param node           type and method information
-     * @param universalCHA   universal class hierarchy of all dependencies
-     * @param typeDictionary Mapping of types and method signatures to their global IDs
-     * @param isCallback     true, if a given arc is a callback
+     * @param result           {@link DirectedGraph} with resolved calls
+     * @param arc              source, target and receivers information
+     * @param node             type and method information
+     * @param universalParents universal class hierarchy of all dependencies
+     * @param typeDictionary   Mapping of types and method signatures to their global IDs
+     * @param isCallback       true, if a given arc is a callback
      */
-    private void resolveClassInits(final ArrayImmutableDirectedGraph.Builder result,
-                                   final Arc arc,
-                                   final Node node,
-                                   final Graph<String, DefaultEdge> universalCHA,
-                                   final Map<String, Map<String, Set<Long>>> typeDictionary,
-                                   final boolean isCallback) {
-        final var typeList = new ArrayList<>(Collections.singletonList(node.typeUri));
-        if (universalCHA.containsVertex(node.typeUri)) {
-            typeList.addAll(Graphs.predecessorListOf(universalCHA, node.typeUri));
-        }
-
-        //System.out.print("CONSTRUCTOR: " + arc.source + " -> " + arc.target + " :: ");
-        for (final var superTypeUri : typeList) {
-            var superSignature = node.signature.replace("<init>", "<clinit>");
-            for (final var target : typeDictionary.getOrDefault(superTypeUri,
-                    new HashMap<>()).getOrDefault(superSignature, new HashSet<>())) {
-                addEdge(result, arc.source, target, isCallback);
-                //System.out.print(target + " ");
+    private void resolveInitsAndConstructors(final ArrayImmutableDirectedGraph.Builder result,
+                                             final Arc arc,
+                                             final Node node,
+                                             final Map<String, Set<String>> universalParents,
+                                             final Map<String, Map<String, Set<Long>>> typeDictionary,
+                                             final boolean isCallback) {
+        final var typeList = universalParents.get(node.typeUri);
+        if (typeList != null) {
+            for (final var superTypeUri : typeList) {
+                for (final var target : typeDictionary.getOrDefault(superTypeUri,
+                        new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
+                    addEdge(result, arc.source, target, isCallback);
+                }
+                var superSignature = node.signature.replace("<init>", "<clinit>");
+                for (final var target : typeDictionary.getOrDefault(superTypeUri,
+                        new HashMap<>()).getOrDefault(superSignature, new HashSet<>())) {
+                    addEdge(result, arc.source, target, isCallback);
+                }
             }
         }
-        //System.out.println();
     }
 
     /**
@@ -345,7 +350,7 @@ public class DatabaseMerger {
      * @param dependenciesIds IDs of dependencies
      * @return universal CHA
      */
-    private Graph<String, DefaultEdge> createUniversalCHA(final Set<Long> dependenciesIds) {
+    private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA(final Set<Long> dependenciesIds) {
         var universalCHA = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
 
         var callables = getCallables(dependenciesIds);
@@ -375,9 +380,56 @@ public class DatabaseMerger {
             addSuperTypes(universalCHA, callable.value1(), superInterfaces);
         }
 
+        final Map<String, Set<String>> universalParents = new HashMap<>();
+        final Map<String, Set<String>> universalChildren = new HashMap<>();
+        for (final var type : universalCHA.vertexSet()) {
+
+            final var children = new HashSet<>(Collections.singletonList(type));
+            children.addAll(getAllChildren(universalCHA, type));
+            universalChildren.put(type, children);
+
+            final var parents = new HashSet<>(Collections.singletonList(type));
+            parents.addAll(getAllParents(universalCHA, type));
+            universalParents.put(type, parents);
+        }
+
         logger.info("Created the Universal CHA with {} vertices", universalCHA.vertexSet().size());
 
-        return universalCHA;
+        return ImmutablePair.of(universalParents, universalChildren);
+    }
+
+    /**
+     * Get all parents of a given type.
+     *
+     * @param graph universal CHA
+     * @param type  type uri
+     * @return list of types parents
+     */
+    private List<String> getAllParents(final DefaultDirectedGraph<String, DefaultEdge> graph,
+                                       final String type) {
+        final var children = Graphs.predecessorListOf(graph, type);
+        final List<String> result = new ArrayList<>(children);
+        for (final var child : children) {
+            result.addAll(getAllParents(graph, child));
+        }
+        return result;
+    }
+
+    /**
+     * Get all children of a given type.
+     *
+     * @param graph universal CHA
+     * @param type  type uri
+     * @return list of types children
+     */
+    private List<String> getAllChildren(final DefaultDirectedGraph<String, DefaultEdge> graph,
+                                        final String type) {
+        final var children = Graphs.successorListOf(graph, type);
+        final List<String> result = new ArrayList<>(children);
+        for (final var child : children) {
+            result.addAll(getAllChildren(graph, child));
+        }
+        return result;
     }
 
     /**
