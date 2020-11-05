@@ -22,7 +22,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row6;
+import org.jooq.Row7;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class PackageVersions extends TableImpl<PackageVersionsRecord> {
 
-    private static final long serialVersionUID = -624954406;
+    private static final long serialVersionUID = -1739447162;
 
     /**
      * The reference instance of <code>public.package_versions</code>
@@ -88,6 +88,11 @@ public class PackageVersions extends TableImpl<PackageVersionsRecord> {
      * The column <code>public.package_versions.metadata</code>.
      */
     public final TableField<PackageVersionsRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB, this, "");
+
+    /**
+     * The column <code>public.package_versions.architecture</code>.
+     */
+    public final TableField<PackageVersionsRecord, String> ARCHITECTURE = createField(DSL.name("architecture"), org.jooq.impl.SQLDataType.CLOB, this, "");
 
     /**
      * Create a <code>public.package_versions</code> table reference
@@ -183,11 +188,11 @@ public class PackageVersions extends TableImpl<PackageVersionsRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row6 type methods
+    // Row7 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row6<Long, Long, String, String, Timestamp, JSONB> fieldsRow() {
-        return (Row6) super.fieldsRow();
+    public Row7<Long, Long, String, String, Timestamp, JSONB, String> fieldsRow() {
+        return (Row7) super.fieldsRow();
     }
 }

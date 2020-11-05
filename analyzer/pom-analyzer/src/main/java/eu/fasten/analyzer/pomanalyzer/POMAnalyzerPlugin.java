@@ -28,6 +28,7 @@ import java.io.File;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
@@ -77,8 +78,8 @@ public class POMAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public void setDBConnection(DSLContext dslContext) {
-            POMAnalyzer.dslContext = dslContext;
+        public void setDBConnection(Map<String, DSLContext> dslContexts) {
+            POMAnalyzer.dslContext = dslContexts.get(Constants.mvnForge);
         }
 
         @Override
@@ -202,13 +203,13 @@ public class POMAnalyzerPlugin extends Plugin {
             packageVersionMetadata.put("parentCoordinate", (parentCoordinate != null)
                     ? parentCoordinate : "");
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    Constants.opalGenerator, version, this.getProperTimestamp(timestamp),
+                    Constants.opalGenerator, version, null, this.getProperTimestamp(timestamp),
                     packageVersionMetadata);
             for (var dep : dependencyData.dependencies) {
                 var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
                 final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge);
                 metadataDao.insertDependency(packageVersionId, depId,
-                        dep.getVersionConstraints(), dep.toJSON());
+                        dep.getVersionConstraints(), null, null, null, dep.toJSON());
             }
             return packageVersionId;
         }

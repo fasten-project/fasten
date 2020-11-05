@@ -18,12 +18,15 @@
 
 package eu.fasten.analyzer.restapiplugin;
 
+import eu.fasten.core.data.Constants;
 import eu.fasten.server.connectors.PostgresConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 @CommandLine.Command(name = "RestAPIPlugin")
 public class Main implements Runnable {
@@ -50,7 +53,8 @@ public class Main implements Runnable {
     public void run() {
         var restAPIPlugin = new RestAPIPlugin.RestAPIExtension();
         try {
-            restAPIPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
+            restAPIPlugin.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge,
+                    PostgresConnector.getDSLContext(dbUrl, dbUser))));
         } catch (IllegalArgumentException | SQLException e) {
             logger.error("Could not connect to the database", e);
             return;
