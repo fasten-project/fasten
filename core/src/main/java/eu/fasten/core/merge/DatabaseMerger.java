@@ -102,7 +102,7 @@ public class DatabaseMerger {
          * @return true, if the method is constructor
          */
         public boolean isConstructor() {
-            return signature.startsWith("%3Cinit%3E");
+            return signature.startsWith("<init>");
         }
 
         /**
