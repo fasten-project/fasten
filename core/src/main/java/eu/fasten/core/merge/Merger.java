@@ -7,6 +7,7 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -53,6 +54,11 @@ public class Merger implements Runnable {
             defaultValue = "LOCAL")
     String mode;
 
+    @CommandLine.Option(names = {"-o", "--output"},
+            paramLabel = "output",
+            description = "Output file path")
+    String output;
+
     private static final Logger logger = LoggerFactory.getLogger(Merger.class);
 
     public static void main(String[] args) {
@@ -65,6 +71,10 @@ public class Merger implements Runnable {
             var root = (ch.qos.logback.classic.Logger) LoggerFactory
                     .getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
             root.setLevel(Level.INFO);
+
+            System.out.println("==========================");
+            System.out.println("+         MERGER         +");
+            System.out.println("==========================");
 
             System.out.println("--------------------------------------------------");
             System.out.println("Artifact: " + artifact);
@@ -126,6 +136,14 @@ public class Merger implements Runnable {
                             mergedERCG.getGraph().getResolvedCalls().size(),
                             new DecimalFormat("#0.000")
                                     .format((System.currentTimeMillis() - startTime) / 1000d));
+
+                    if (output != null) {
+                        try {
+                            CallGraphUtils.writeToFile(output, mergedERCG.toJSON(), "");
+                        } catch (IOException e) {
+                            logger.error("Unable to write to file");
+                        }
+                    }
                     break;
 
                 default:
