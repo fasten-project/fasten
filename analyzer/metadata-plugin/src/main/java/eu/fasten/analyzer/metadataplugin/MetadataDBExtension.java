@@ -200,7 +200,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
             return new ExtendedRevisionJavaCallGraph(json);
         } else if (forge.equals(Constants.debianForge)) {
             return new ExtendedRevisionCCallGraph(json);
-        } else if (forge.equals("PyPI")) {
+        } else if (forge.equals(Constants.pypiForge)) {
             return new ExtendedRevisionPythonCallGraph(json);
         }
 
