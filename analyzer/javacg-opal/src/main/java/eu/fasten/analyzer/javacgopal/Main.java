@@ -210,7 +210,7 @@ public class Main implements Runnable {
     public <T> ExtendedRevisionCallGraph merge(final T artifact,
                                                final List<T> dependencies)
             throws IOException, OPALException {
-
+        final long startTime = System.currentTimeMillis();
         final ExtendedRevisionCallGraph result;
         final var deps = new ArrayList<ExtendedRevisionCallGraph>();
         for (final var dep : dependencies) {
@@ -220,12 +220,18 @@ public class Main implements Runnable {
                 commands.computations.genAlgorithm, true);
 
         result = new LocalMerger(art, deps).mergeWithCHA();
+        if (result != null) {
+            logger.info("Resolved {} nodes, {} calls in {} seconds",
+                    result.getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.resolvedTypes).size(),
+                    result.getGraph().getResolvedCalls().size(),
+                    new DecimalFormat("#0.000")
+                            .format((System.currentTimeMillis() - startTime) / 1000d));
 
-        if (!this.output.isEmpty() && result != null) {
-            CallGraphUtils.writeToFile(this.output, result.toJSON(),
-                    "_" + result.product + "_merged");
+            if (!this.output.isEmpty()) {
+                CallGraphUtils.writeToFile(this.output, result.toJSON(),
+                        "_" + result.product + "_merged");
+            }
         }
-
         return result;
     }
 
