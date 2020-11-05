@@ -319,6 +319,7 @@ public class DatabaseMerger {
      * @return a type dictionary
      */
     private Map<String, Map<String, Set<Long>>> createTypeDictionary(final Set<Long> dependenciesIds) {
+        final long startTime = System.currentTimeMillis();
         var result = new HashMap<String, Map<String, Set<Long>>>();
 
         var callables = getCallables(dependenciesIds);
@@ -339,7 +340,9 @@ public class DatabaseMerger {
                     });
                 });
 
-        logger.info("Created the type dictionary with {} types", result.size());
+        logger.info("Created the type dictionary with {} types in {} seconds", result.size(),
+                new DecimalFormat("#0.000")
+                        .format((System.currentTimeMillis() - startTime) / 1000d));
 
         return result;
     }
@@ -351,6 +354,7 @@ public class DatabaseMerger {
      * @return universal CHA
      */
     private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA(final Set<Long> dependenciesIds) {
+        final long startTime = System.currentTimeMillis();
         var universalCHA = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
 
         var callables = getCallables(dependenciesIds);
@@ -393,7 +397,10 @@ public class DatabaseMerger {
             universalParents.put(type, parents);
         }
 
-        logger.info("Created the Universal CHA with {} vertices", universalCHA.vertexSet().size());
+        logger.info("Created the Universal CHA with {} vertices in {}",
+                universalCHA.vertexSet().size(),
+                new DecimalFormat("#0.000")
+                        .format((System.currentTimeMillis() - startTime) / 1000d));
 
         return ImmutablePair.of(universalParents, universalChildren);
     }

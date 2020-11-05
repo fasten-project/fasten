@@ -3,7 +3,6 @@ package eu.fasten.core.merge;
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -12,13 +11,13 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.json.JSONObject;
@@ -63,6 +62,9 @@ public class Benchmark implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(Benchmark.class);
 
+    private DSLContext dbContext;
+    private RocksDao rocksDao;
+
     public static void main(String[] args) {
         System.exit(new CommandLine(new Benchmark()).execute(args));
     }
@@ -72,6 +74,18 @@ public class Benchmark implements Runnable {
         var root = (ch.qos.logback.classic.Logger) LoggerFactory
                 .getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.INFO);
+
+        try {
+            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
+            rocksDao = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphDbDir);
+        } catch (SQLException | IllegalArgumentException e) {
+            logger.error("Could not connect to the metadata database: " + e.getMessage());
+            System.exit(1);
+        } catch (RuntimeException e) {
+            logger.error("Could not connect to the graph database: " + e.getMessage());
+            System.exit(1);
+        }
+
         logger.info("Loading and generating call graphs...");
         var callgraph = getLocalCallGraph();
         var directedGraph = getDatabaseCallGraph();
@@ -80,48 +94,34 @@ public class Benchmark implements Runnable {
         System.out.println("+        BENCHMARK       +");
         System.out.println("==========================");
 
+        var localResolvedGraph = ERCGToSet(callgraph);
+        var databaseResolvedGraph = DirectedGraphToSet(directedGraph);
 
-        logger.info("Local merged graph: {} edges", callgraph.getGraph().getResolvedCalls().size());
-        logger.info("Database merged graph: {} edges", directedGraph.numArcs());
+        System.out.format("%14s%4s%12s%4s%12s\n", "", "|", "DATABASE", "|", "LOCAL");
+        System.out.println("--------------------------------------------------");
+        System.out.format("%14s%4s%12d%4s%12d\n", "Edges", "|", directedGraph.numArcs(), "|", callgraph.getGraph().getResolvedCalls().size());
+        System.out.format("%14s%4s%12d%4s%12d\n", "Unique edges", "|", databaseResolvedGraph.size(), "|", localResolvedGraph.size());
 
-        var localResolvedGraph = ERCGToMap(callgraph);
-        var databaseResolvedGraph = directedGraphToMap(directedGraph);
+        var missedEdgesInDatabaseMerge = getMissedEdges(localResolvedGraph, databaseResolvedGraph);
+        var missedEdgesInLocalMerge = getMissedEdges(databaseResolvedGraph, localResolvedGraph);
 
-        var missedEdges = getMissedEdges(localResolvedGraph, databaseResolvedGraph);
-        missedEdges.putAll(getMissedEdges(databaseResolvedGraph, localResolvedGraph));
+        System.out.println("--------------------------------------------------");
+        System.out.println("Missing in database call graph: " + missedEdgesInDatabaseMerge.size());
+        System.out.println("Missing in local call graph: " + missedEdgesInLocalMerge.size());
+        System.out.println("Database - Local total: "
+                + ((databaseResolvedGraph.size() > localResolvedGraph.size()) ? "+" : "-")
+                + Math.abs(databaseResolvedGraph.size() - localResolvedGraph.size()));
+        System.out.println("--------------------------------------------------");
 
-        var count = 0;
-        for (var edge : missedEdges.entrySet()) {
-            count += edge.getValue().size();
-            for (var target : edge.getValue()) {
-                System.out.println(FastenURI.create(target));
-            }
-        }
-
-        logger.info("Difference between graphs is {} edges", count);
         System.out.println("==========================");
     }
 
-    private Map<String, Set<String>> getMissedEdges(final Map<String, Set<String>> referenceGraph,
-                                                    final Map<String, Set<String>> callgraph) {
-        var missedEdges = new HashMap<String, Set<String>>();
-        for (var arc : referenceGraph.entrySet()) {
-            if (!callgraph.containsKey(arc.getKey())) {
-                for (var target : arc.getValue()) {
-                    missedEdges.merge(arc.getKey(), new HashSet<>(Collections.singleton(target)), (old, neu) -> {
-                        old.addAll(neu);
-                        return old;
-                    });
-                }
-            } else {
-                for (var target : arc.getValue()) {
-                    if (!callgraph.get(arc.getKey()).contains(target)) {
-                        missedEdges.merge(arc.getKey(), new HashSet<>(Collections.singleton(target)), (old, neu) -> {
-                            old.addAll(neu);
-                            return old;
-                        });
-                    }
-                }
+    private Set<Pair<String, String>> getMissedEdges(final Set<Pair<String, String>> referenceGraph,
+                                                     final Set<Pair<String, String>> callgraph) {
+        var missedEdges = new HashSet<Pair<String, String>>();
+        for (var arc : referenceGraph) {
+            if (!callgraph.contains(arc)) {
+                missedEdges.add(arc);
             }
         }
         return missedEdges;
@@ -139,63 +139,35 @@ public class Benchmark implements Runnable {
         return callgraph;
     }
 
-    private Map<String, Set<String>> ERCGToMap(final ExtendedRevisionCallGraph callgraph) {
+    private Set<Pair<String, String>> ERCGToSet(final ExtendedRevisionCallGraph callgraph) {
         var localMethodsMap = callgraph.mapOfAllMethods();
-        var localResolvedGraph = new HashMap<String, Set<String>>();
+        var localResolvedGraph = new HashSet<Pair<String, String>>();
 
-        var set = new HashSet<>();
         for (var arc : callgraph.getGraph().getResolvedCalls().keySet()) {
-            set.add(localMethodsMap.get(arc.get(0)).getUri().toString() + "->" + localMethodsMap.get(arc.get(1)).getUri().toString());
-            localResolvedGraph.merge(localMethodsMap.get(arc.get(0)).getUri().toString(), new HashSet<>(Collections.singleton(localMethodsMap.get(arc.get(1)).getUri().toString())), (old, neu) -> {
-                old.addAll(neu);
-                return old;
-            });
+            var newArc = ImmutablePair
+                    .of(localMethodsMap.get(arc.get(0)).getUri().toString(),
+                            localMethodsMap.get(arc.get(1)).getUri().toString());
+            localResolvedGraph.add(newArc);
         }
-        logger.info("Local merged graph: {} unique edges", set.size());
         return localResolvedGraph;
     }
 
-    private Map<String, Set<String>> directedGraphToMap(final DirectedGraph mergedDirectedGraph) {
-        DSLContext dbContext = null;
-        try {
-            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
-        } catch (SQLException | IllegalArgumentException e) {
-            logger.error("Could not connect to the metadata database: " + e.getMessage());
-            System.exit(1);
-        }
+    private Set<Pair<String, String>> DirectedGraphToSet(final DirectedGraph mergedDirectedGraph) {
         var databaseMethodsMap = getMethodsMap(dbContext, mergedDirectedGraph.nodes());
-        var databaseResolvedGraph = new HashMap<String, Set<String>>();
+        var databaseResolvedGraph = new HashSet<Pair<String, String>>();
 
-        var set = new HashSet<>();
         for (var source : mergedDirectedGraph.nodes()) {
             for (var target : mergedDirectedGraph.successors(source)) {
-                set.add(databaseMethodsMap.get(source) + "->" + databaseMethodsMap.get(target));
-                databaseResolvedGraph.merge(databaseMethodsMap.get(source), new HashSet<>(Collections.singleton(databaseMethodsMap.get(target))), (old, neu) -> {
-                    old.addAll(neu);
-                    return old;
-                });
+                var newArc = ImmutablePair.of(databaseMethodsMap.get(source),
+                        databaseMethodsMap.get(target));
+                databaseResolvedGraph.add(newArc);
             }
         }
-        logger.info("Database merged graph: {} unique edges", set.size());
         return databaseResolvedGraph;
     }
 
     private DirectedGraph getDatabaseCallGraph() {
-        DSLContext dbContext = null;
-        RocksDao rocksDao = null;
-        try {
-            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
-            rocksDao = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphDbDir);
-        } catch (SQLException | IllegalArgumentException e) {
-            logger.error("Could not connect to the metadata database: " + e.getMessage());
-            System.exit(1);
-        } catch (RuntimeException e) {
-            logger.error("Could not connect to the graph database: " + e.getMessage());
-            System.exit(1);
-        }
-
         var databaseMerger = new DatabaseMerger(artifact, dependencies, dbContext, rocksDao);
-
         return databaseMerger.mergeWithCHA();
     }
 
