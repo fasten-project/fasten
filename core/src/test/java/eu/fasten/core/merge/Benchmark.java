@@ -3,6 +3,7 @@ package eu.fasten.core.merge;
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -86,48 +87,44 @@ public class Benchmark implements Runnable {
         var localResolvedGraph = ERCGToMap(callgraph);
         var databaseResolvedGraph = directedGraphToMap(directedGraph);
 
-        var missedEdges = new HashMap<String, Set<String>>();
-        for (var arc : localResolvedGraph.entrySet()) {
-            if (!databaseResolvedGraph.containsKey(arc.getKey())) {
-                for (var target : arc.getValue()) {
-                    missedEdges.merge(arc.getKey(), new HashSet<>(Collections.singleton(target)), (old, neu) -> {
-                        old.addAll(neu);
-                        return old;
-                    });
-                }
-            } else {
-                for (var target : arc.getValue()) {
-                    if (!databaseResolvedGraph.get(arc.getKey()).contains(target)) {
-                        missedEdges.merge(arc.getKey(), new HashSet<>(Collections.singleton(target)), (old, neu) -> {
-                            old.addAll(neu);
-                            return old;
-                        });
-                    }
-                }
+        var missedEdges = getMissedEdges(localResolvedGraph, databaseResolvedGraph);
+        missedEdges.putAll(getMissedEdges(databaseResolvedGraph, localResolvedGraph));
+
+        var count = 0;
+        for (var edge : missedEdges.entrySet()) {
+            count += edge.getValue().size();
+            for (var target : edge.getValue()) {
+                System.out.println(FastenURI.create(target));
             }
         }
 
-        for (var arc : databaseResolvedGraph.entrySet()) {
-            if (!localResolvedGraph.containsKey(arc.getKey())) {
-                for (var target : arc.getValue()) {
-                    missedEdges.merge(arc.getKey(), new HashSet<>(Collections.singleton(target)), (old, neu) -> {
-                        old.addAll(neu);
-                        return old;
-                    });
-                }
-            } else {
-                for (var target : arc.getValue()) {
-                    if (!localResolvedGraph.get(arc.getKey()).contains(target)) {
-                        missedEdges.merge(arc.getKey(), new HashSet<>(Collections.singleton(target)), (old, neu) -> {
-                            old.addAll(neu);
-                            return old;
-                        });
-                    }
-                }
-            }
-        }
-
+        logger.info("Difference between graphs is {} edges", count);
         System.out.println("==========================");
+    }
+
+    private Map<String, Set<String>> getMissedEdges(final Map<String, Set<String>> referenceGraph,
+                                                    final Map<String, Set<String>> callgraph) {
+        var missedEdges = new HashMap<String, Set<String>>();
+        for (var arc : referenceGraph.entrySet()) {
+            if (!callgraph.containsKey(arc.getKey())) {
+                for (var target : arc.getValue()) {
+                    missedEdges.merge(arc.getKey(), new HashSet<>(Collections.singleton(target)), (old, neu) -> {
+                        old.addAll(neu);
+                        return old;
+                    });
+                }
+            } else {
+                for (var target : arc.getValue()) {
+                    if (!callgraph.get(arc.getKey()).contains(target)) {
+                        missedEdges.merge(arc.getKey(), new HashSet<>(Collections.singleton(target)), (old, neu) -> {
+                            old.addAll(neu);
+                            return old;
+                        });
+                    }
+                }
+            }
+        }
+        return missedEdges;
     }
 
     private ExtendedRevisionCallGraph getLocalCallGraph() {
