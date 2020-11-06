@@ -1,5 +1,6 @@
-package eu.fasten.server.connectors;
+package eu.fasten.core.dbconnectors;
 
+import com.github.stefanbirkner.systemlambda.SystemLambda;
 import eu.fasten.core.data.Constants;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -7,10 +8,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-
 import java.sql.SQLException;
-
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -36,7 +34,7 @@ public class PostgresConnectorTest {
 
         // Connection to DB should not throw any exceptions
         assertDoesNotThrow(() ->
-                withEnvironmentVariable(Constants.pgPasswordEnvVariable, KB_PASSWORD).execute(() ->
+                SystemLambda.withEnvironmentVariable(Constants.pgPasswordEnvVariable, KB_PASSWORD).execute(() ->
                         PostgresConnector.getDSLContext(
                                 postgreSQLContainer.getJdbcUrl(), postgreSQLContainer.getUsername())));
     }
@@ -59,7 +57,7 @@ public class PostgresConnectorTest {
                 "Using the right KB password during a test that was supposed to be using a wrong one.";
 
         assertThrows(SQLException.class, () ->
-                withEnvironmentVariable(Constants.pgPasswordEnvVariable, wrongKbPassword).execute(() ->
+                SystemLambda.withEnvironmentVariable(Constants.pgPasswordEnvVariable, wrongKbPassword).execute(() ->
                         PostgresConnector.getDSLContext(
                                 postgreSQLContainer.getJdbcUrl(), postgreSQLContainer.getUsername())));
     }
