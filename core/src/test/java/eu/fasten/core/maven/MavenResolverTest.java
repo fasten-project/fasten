@@ -32,6 +32,7 @@ import org.jooq.tools.jdbc.MockExecuteContext;
 import org.jooq.tools.jdbc.MockResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import java.io.FileNotFoundException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Set;
@@ -190,7 +191,7 @@ public class MavenResolverTest {
     }
 
     @Test
-    public void resolveFullDependencySetOnlineTest() {
+    public void resolveFullDependencySetOnlineTest() throws FileNotFoundException {
         var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.3"));
         var actual = mavenResolver.resolveFullDependencySetOnline("junit", "junit", "4.12", -1, null);
         assertEquals(expected, actual);

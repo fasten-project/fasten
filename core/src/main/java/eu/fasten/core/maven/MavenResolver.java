@@ -32,9 +32,9 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
@@ -88,6 +88,15 @@ public class MavenResolver implements Runnable {
             description = "Use online resolution mode")
     protected boolean onlineMode;
 
+    @CommandLine.Option(names = {"-f", "--file"},
+            paramLabel = "COORD_FILE",
+            description = "Path to file with the list of coordinates for resolution")
+    protected String file;
+
+    @CommandLine.Option(names = {"-sk", "--skip"},
+            description = "Skip first line in the file")
+    protected boolean skipLine;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new MavenResolver()).execute(args);
         System.exit(exitCode);
@@ -95,25 +104,31 @@ public class MavenResolver implements Runnable {
 
     @Override
     public void run() {
-        if (artifact != null && group != null && version != null) {
-            DSLContext dbContext = null;
+        DSLContext dbContext = null;
 
-            // Database connection is needed only if not using online resolution
-            // or if using filtering by timestamp
-            if (!onlineMode || timestamp != -1) {
-                try {
-                    dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
-                } catch (SQLException e) {
-                    logger.error("Could not connect to the database", e);
-                    return;
-                }
+        // Database connection is needed only if not using online resolution
+        // or if using filtering by timestamp
+        if (!onlineMode || timestamp != -1) {
+            try {
+                dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
+            } catch (SQLException e) {
+                logger.error("Could not connect to the database", e);
+                return;
             }
+        }
+        if (artifact != null && group != null && version != null) {
             Set<Dependency> dependencySet;
-            if (!onlineMode) {
-                dependencySet = this.resolveFullDependencySet(group, artifact, version,
-                        timestamp, scopes, dbContext);
-            } else {
-                dependencySet = this.resolveFullDependencySetOnline(group, artifact, version, timestamp, dbContext);
+            try {
+                if (!onlineMode) {
+                    dependencySet = this.resolveFullDependencySet(group, artifact, version,
+                            timestamp, scopes, dbContext);
+                } else {
+                    dependencySet = this.resolveFullDependencySetOnline(group, artifact, version, timestamp, dbContext);
+                }
+            } catch (Exception e) {
+                logger.error("Could not resolve dependencies of " + group + Constants.mvnCoordinateSeparator + artifact
+                        + Constants.mvnCoordinateSeparator + version, e);
+                return;
             }
             logger.info("--------------------------------------------------");
             logger.info("Maven coordinate:");
@@ -124,10 +139,58 @@ public class MavenResolver implements Runnable {
                     + (dependencySet.size() > 0 ? ":" : "."));
             dependencySet.forEach(d -> logger.info(d.toCanonicalForm()));
             logger.info("--------------------------------------------------");
+        } else if (file != null) {
+            List<String> coordinates;
+            try {
+                coordinates = Files.readAllLines(Paths.get(file));
+            } catch (IOException e) {
+                logger.error("Could not read from file: " + file, e);
+                return;
+            }
+            if (skipLine) {
+                coordinates.remove(0);
+            }
+            float success = 0;
+            float total = 0;
+            var errors = new HashMap<Dependency, Throwable>();
+            for (var coordinate : coordinates) {
+                Set<Dependency> dependencySet;
+                var artifact = new Dependency(coordinate);
+                total++;
+                try {
+                    if (onlineMode) {
+                        dependencySet = this.resolveFullDependencySetOnline(artifact.groupId,
+                                artifact.artifactId, artifact.getVersion(), timestamp, dbContext);
+                    } else {
+                        dependencySet = this.resolveFullDependencySet(artifact.groupId,
+                                artifact.artifactId, artifact.getVersion(), timestamp, scopes, dbContext);
+                    }
+                    success++;
+                    logger.info("--------------------------------------------------");
+                    logger.info("Maven coordinate:");
+                    logger.info(artifact.toCanonicalForm());
+                    logger.info("--------------------------------------------------");
+                    logger.info("Found " + dependencySet.size() + " (transitive) dependencies"
+                            + (dependencySet.size() > 0 ? ":" : "."));
+                    dependencySet.forEach(d -> logger.info(d.toCanonicalForm()));
+                    logger.info("--------------------------------------------------");
+                } catch (Exception e) {
+                    logger.error("Error resolving " + artifact.toMavenCoordinate(), e);
+                    errors.put(artifact, e);
+                }
+            }
+            logger.info("Finished resolving Maven coordinates");
+            logger.info("Success rate is " + success / total + " for " + (int) total + " coordinates");
+            if (!errors.isEmpty()) {
+                logger.info("Errors encountered:");
+                errors.forEach((key, value) -> logger.info(key.toFullCanonicalForm() + " -> " + value.getMessage()));
+            }
         } else {
             logger.error("You need to specify Maven coordinate by providing its "
                     + "artifactId ('-a'), groupId ('-g') and version ('-v'). "
-                    + "Optional timestamp (-t) can also be provided.");
+                    + "Optional timestamp (-t) can also be provided. "
+                    + "Otherwise you need to specify file (-f) which contains "
+                    + "the list of coordinates you want to resolve");
         }
     }
 
@@ -432,76 +495,88 @@ public class MavenResolver implements Runnable {
      * @throws NoSuchElementException if pom file was not retrieved
      */
     public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version,
-                                                          long timestamp, DSLContext dbContext) throws NoSuchElementException {
-
-        // Result set.
+                                                          long timestamp, DSLContext dbContext) throws FileNotFoundException {
         Set<Dependency> dependencySet = new HashSet<>();
 
         logger.debug("Downloading artifact's POM file");
 
-        // Download pom file from the repo.
         var pomOpt = MavenUtilities.downloadPom(group, artifact, version);
-
-        // Await exception if pom file is unavailable.
         var pom = pomOpt.orElseGet(() -> {
-            throw new NoSuchElementException("Could not download pom file");
+            throw new RuntimeException("Could not download pom file");
         });
+        if (!pom.exists()) {
+            throw new FileNotFoundException("Could not find file: " + pom.getAbsolutePath());
+        }
 
+        File outputFile = null;
         try {
-            logger.debug("Running 'mvn dependency:list' and parsing the output");
+            logger.debug("Running 'mvn dependency:list'");
 
-            // Print the dependency tree of the downloaded pom file and format the output simply by line.
-            //
-            // In order for runtime executor to run the pipeline, bash needs to be forcefully called on the actual pipelined command.
+            outputFile = Files.createTempFile("fasten", ".txt").toFile();
+
             String[] cmd = new String[]{
-                    "bash",
-                    "-c",
-                    "mvn dependency:list -f \"" + pom.getAbsolutePath() + "\" -DoutputFile=>(cat) " +   // Get the list of dependencies applied on the temp file.
-                            "| tail -n +3 " +                                                           // Match only this list, ignore other output garbage.
-                            "| grep . " +                                                               // Remove garbage empty lines
-                            "| sed -e \"s/^[[:space:]]*//\" " +                                         // Remove spaces leading spaces in coordinates
-                            "| sort | uniq " +
-                            "| grep -E \":compile$|:provided$|:runtime$|:test$|:system$|:import$\""
+                    "mvn",
+                    "dependency:list",
+                    "-f", "\"" + pom.getAbsolutePath() + "\"",
+                    "-DoutputFile=" + outputFile.getAbsolutePath()
             };
-            var process = new ProcessBuilder().command(cmd).start();
+            var process = new ProcessBuilder(cmd).start();
             var exitValue = process.waitFor();
+
+            var stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            var stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            var bufferStr = "";
+
             logger.debug("Maven resolution finished with exit code " + exitValue);
             if (exitValue != 0) {
+                while ((bufferStr = stdInput.readLine()) != null) {
+                    logger.debug(bufferStr);
+                }
+                while ((bufferStr = stdError.readLine()) != null) {
+                    logger.error("ERROR: " + bufferStr);
+                }
+                MavenUtilities.forceDeleteFile(pom);
                 throw new RuntimeException("Maven resolution failed with exit code " + exitValue);
             }
-            
-            // Reader for the command's output.
-            var stdInput = new BufferedReader(new
-                    InputStreamReader(process.getInputStream()));
 
-            // Reader for the command's errors.
-            var stdError = new BufferedReader(new
-                    InputStreamReader(process.getErrorStream()));
+            logger.debug("Parsing Maven resolution output");
+            cmd = new String[]{
+                    "bash",
+                    "-c",
+                    "cat \"" + outputFile.getAbsolutePath() + "\" " +
+                            "| tail -n +3 | grep . | sed -e \"s/^[[:space:]]*//\" | sort | uniq " +
+                            "| grep -E \":compile$|:provided$|:runtime$|:test$|:system$|:import$\""};
+            process = new ProcessBuilder(cmd).start();
+            exitValue = process.waitFor();
+            stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            if (exitValue != 0) {
+                while ((bufferStr = stdInput.readLine()) != null) {
+                    logger.debug(bufferStr);
+                }
+                while ((bufferStr = stdError.readLine()) != null) {
+                    logger.error("ERROR: " + bufferStr);
+                }
+                MavenUtilities.forceDeleteFile(pom);
+                throw new RuntimeException("Maven resolution output parsing failed with exit code " + exitValue);
+            }
+            logger.debug("Maven resolution output parsing finished with exit code " + exitValue);
 
-            // Helper var for reading buffers.
-            var s = "";
-            // Parse the output from the command.
-            while ((s = stdInput.readLine()) != null) {
-                // Add to result set a new instance of the Dependency object.
-                dependencySet.add(new Dependency(s));
+            while ((bufferStr = stdInput.readLine()) != null) {
+                dependencySet.add(new Dependency(bufferStr));
             }
 
-            // Parse any errors from the attempted command.
-            while ((s = stdError.readLine()) != null) {
-                logger.error(s);
-            }
-
-            // Filter the set by timestamp.
             if (timestamp != -1) {
                 dependencySet = this.filterDependenciesByTimestamp(
                         dependencySet, new Timestamp(timestamp), dbContext);
             }
-
         } catch (IOException | InterruptedException e) {
             var coordinate = artifact + Constants.mvnCoordinateSeparator + group + Constants.mvnCoordinateSeparator + version;
             logger.error("Error resolving Maven artifact: " + coordinate, e);
+        } finally {
+            MavenUtilities.forceDeleteFile(pom);
+            MavenUtilities.forceDeleteFile(outputFile);
         }
-
         return dependencySet;
     }
 
@@ -513,7 +588,7 @@ public class MavenResolver implements Runnable {
      * @param version  Version of the artifact to resolve
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
      */
-    public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version) {
+    public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version) throws FileNotFoundException {
         return resolveFullDependencySetOnline(artifact, group, version, -1, null);
     }
 }

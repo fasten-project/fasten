@@ -14,6 +14,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 
 import javax.annotation.processing.Generated;
 
@@ -80,4 +81,9 @@ public class Tables {
      * The table <code>public.packages</code>.
      */
     public static final Packages PACKAGES = Packages.PACKAGES;
+
+    /**
+     * The table <code>public.virtual_implementations</code>.
+     */
+    public static final VirtualImplementations VIRTUAL_IMPLEMENTATIONS = VirtualImplementations.VIRTUAL_IMPLEMENTATIONS;
 }

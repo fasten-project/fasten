@@ -86,6 +86,11 @@ public class GraphDatabasePlugin extends Plugin {
             this.pluginError = null;
             var json = new JSONObject(record);
             if (json.has("payload")) {
+		if (json.get("payload").toString().isEmpty()) {
+			logger.error("Empty payload");
+			setPluginError(new RuntimeException("Empty payload"));
+			return;
+		}
                 json = json.getJSONObject("payload");
             }
             final var path = json.optString("dir");

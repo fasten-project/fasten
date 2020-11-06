@@ -27,6 +27,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -212,11 +213,13 @@ public class MavenCoordinate {
          */
         private static Optional<File> httpGetFile(final String url) throws FileNotFoundException,
                 MalformedURLException, UnknownHostException {
-            try {
+	
+            Path tempFile = null;
+	    try {
                 logger.debug("HTTP GET: " + url);
 
                 final var packaging = url.substring(url.lastIndexOf("."));
-                final var tempFile = Files.createTempFile("fasten", packaging);
+                tempFile = Files.createTempFile("fasten", packaging);
 
                 final InputStream in = new URL(url).openStream();
                 Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
@@ -225,9 +228,11 @@ public class MavenCoordinate {
                 return Optional.of(new File(tempFile.toAbsolutePath().toString()));
             } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
                 logger.error("Couldn't find an artifact: {}", url);
+		        if (tempFile != null) {tempFile.toFile().delete();}
                 throw e;
             } catch (IOException e) {
                 logger.error("IO exception occurred while retrieving URL: {}", url);
+		        if (tempFile != null) {tempFile.toFile().delete();}
                 return Optional.empty();
             }
         }

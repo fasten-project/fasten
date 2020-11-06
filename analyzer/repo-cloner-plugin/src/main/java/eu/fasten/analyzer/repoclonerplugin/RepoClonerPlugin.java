@@ -58,6 +58,7 @@ public class RepoClonerPlugin extends Plugin {
         private String forge = null;
         private static String baseDir = "";
         private String outputPath = null;
+        private String repoType = null;
 
         @Override
         public void setBaseDir(String baseDir) {
@@ -86,6 +87,7 @@ public class RepoClonerPlugin extends Plugin {
             json.put("repoUrl", (repoUrl != null) ? repoUrl : "");
             json.put("date", date);
             json.put("forge", (forge != null) ? forge : "");
+            json.put("repoType", (repoType != null) ? repoType : "");
             return Optional.of(json.toString());
         }
 
@@ -103,6 +105,7 @@ public class RepoClonerPlugin extends Plugin {
             this.repoPath = null;
             this.commitTag = null;
             this.sourcesUrl = null;
+            this.repoType = null;
             var json = new JSONObject(record);
             if (json.has("payload")) {
                 json = json.getJSONObject("payload");
@@ -154,7 +157,9 @@ public class RepoClonerPlugin extends Plugin {
                 // Most likely Git repo, try to clone with GitCloner
                 triedGit = true;
                 try {
-                    return gitCloner.cloneRepo(repoUrl, artifact, group);
+                    var repo = gitCloner.cloneRepo(repoUrl, artifact, group);
+                    this.repoType = "git";
+                    return repo;
                 } catch (Exception e) {
                     pluginError = e;
                 }
@@ -164,7 +169,9 @@ public class RepoClonerPlugin extends Plugin {
                 // Most likely a SVN repo, try to clone with SvnCloner
                 triedSvn = true;
                 try {
-                    return svnCloner.cloneRepo(repoUrl, artifact, group);
+                    var repo = svnCloner.cloneRepo(repoUrl, artifact, group);
+                    this.repoType = "svn";
+                    return repo;
                 } catch (Exception e) {
                     pluginError = e;
                 }
@@ -172,20 +179,26 @@ public class RepoClonerPlugin extends Plugin {
             // If reached here then we don't really know what type of repository it is.
             // Try all types of repo cloners that haven't been tried yet.
             try {
-                return hgCloner.cloneRepo(repoUrl, artifact, group);
+                var repo = hgCloner.cloneRepo(repoUrl, artifact, group);
+                this.repoType = "hg";
+                return repo;
             } catch (Exception e) {
                 pluginError = e;
             }
             if (!triedGit) {
                 try {
-                    repoPath = gitCloner.cloneRepo(repoUrl, artifact, group);
+                    var repo = gitCloner.cloneRepo(repoUrl, artifact, group);
+                    this.repoType = "git";
+                    return repo;
                 } catch (Exception e) {
                     pluginError = e;
                 }
             }
             if (!triedSvn) {
                 try {
-                    repoPath = svnCloner.cloneRepo(repoUrl, artifact, group);
+                    var repo = svnCloner.cloneRepo(repoUrl, artifact, group);
+                    this.repoType = "svn";
+                    return repo;
                 } catch (Exception e) {
                     pluginError = e;
                 }
@@ -208,7 +221,7 @@ public class RepoClonerPlugin extends Plugin {
 
         @Override
         public String version() {
-            return "0.1.1";
+            return "0.1.2";
         }
 
         @Override
