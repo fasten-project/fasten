@@ -25,9 +25,10 @@ import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Scope;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Type;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -124,7 +125,7 @@ public class PartialCallGraph {
 
             final var partialCallGraph = new PartialCallGraph(opalCG);
 
-            return new ExtendedRevisionCallGraph(Constants.mvnForge, coordinate.getProduct(),
+            return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
                     coordinate.getVersionConstraint(), timestamp,
                     partialCallGraph.getNodeCount(), Constants.opalGenerator,
                     partialCallGraph.getClassHierarchy(),
