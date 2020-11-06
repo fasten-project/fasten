@@ -53,8 +53,8 @@ public class MetadataDatabasePythonPlugin extends Plugin {
         private static DSLContext dslContext;
 
         @Override
-        public void setDBConnection(DSLContext dslContext) {
-            MetadataDBPythonExtension.dslContext = dslContext;
+        public void setDBConnection(Map<String, DSLContext> dslContexts) {
+            MetadataDBPythonExtension.dslContext = dslContexts.get(Constants.pyForge);
         }
 
         @Override
