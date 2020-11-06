@@ -258,6 +258,8 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         return packageVersionId;
     }
 
+    // All classes that implements this class must provide an implementation
+    // for this method. We cannot convert this class to an abstract class.
     public ArrayList<CallablesRecord> insertDataExtractCallables(
             ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
         return new ArrayList<CallablesRecord>();
