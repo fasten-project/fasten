@@ -1,8 +1,27 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.core.merge;
 
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -99,11 +118,15 @@ public class Benchmark implements Runnable {
 
         System.out.format("%14s%4s%12s%4s%12s\n", "", "|", "DATABASE", "|", "LOCAL");
         System.out.println("--------------------------------------------------");
-        System.out.format("%14s%4s%12d%4s%12d\n", "Edges", "|", directedGraph.numArcs(), "|", callgraph.getGraph().getResolvedCalls().size());
-        System.out.format("%14s%4s%12d%4s%12d\n", "Unique edges", "|", databaseResolvedGraph.size(), "|", localResolvedGraph.size());
+        System.out.format("%14s%4s%12d%4s%12d\n", "Edges", "|",
+                directedGraph.numArcs(), "|", callgraph.getGraph().getResolvedCalls().size());
+        System.out.format("%14s%4s%12d%4s%12d\n", "Unique edges", "|",
+                databaseResolvedGraph.size(), "|", localResolvedGraph.size());
 
-        var missedEdgesInDatabaseMerge = getMissedEdges(localResolvedGraph, databaseResolvedGraph);
-        var missedEdgesInLocalMerge = getMissedEdges(databaseResolvedGraph, localResolvedGraph);
+        var missedEdgesInDatabaseMerge =
+                getMissedEdges(localResolvedGraph, databaseResolvedGraph);
+        var missedEdgesInLocalMerge =
+                getMissedEdges(databaseResolvedGraph, localResolvedGraph);
 
         System.out.println("--------------------------------------------------");
         System.out.println("Missing in database call graph: " + missedEdgesInDatabaseMerge.size());

@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.core.merge;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
@@ -134,9 +152,11 @@ public class DatabaseMerger {
         final long startTime = System.currentTimeMillis();
         for (final var arc : arcs) {
             if (callGraphData.isExternal(arc.target)) {
-                resolve(result, arc, typeMap.get(arc.target), universalCHA.getLeft(), universalCHA.getRight(), typeDictionary, false);
+                resolve(result, arc, typeMap.get(arc.target), universalCHA.getLeft(),
+                        universalCHA.getRight(), typeDictionary, false);
             } else {
-                resolve(result, arc, typeMap.get(arc.source), universalCHA.getLeft(), universalCHA.getRight(), typeDictionary,
+                resolve(result, arc, typeMap.get(arc.source), universalCHA.getLeft(),
+                        universalCHA.getRight(), typeDictionary,
                         callGraphData.isExternal(arc.source));
             }
         }
@@ -164,7 +184,8 @@ public class DatabaseMerger {
                          final Map<String, Map<String, Set<Long>>> typeDictionary,
                          final boolean isCallback) {
         if (node.isConstructor()) {
-            resolveInitsAndConstructors(result, arc, node, universalParents, typeDictionary, isCallback);
+            resolveInitsAndConstructors(result, arc, node, universalParents,
+                    typeDictionary, isCallback);
         }
 
         for (var entry : arc.receivers) {
@@ -233,7 +254,7 @@ public class DatabaseMerger {
     }
 
     /**
-     * Retrieve external calls and constructor calls from a call graph
+     * Retrieve external calls and constructor calls from a call graph.
      *
      * @param callGraphData call graph
      * @return list of external and constructor calls
@@ -270,22 +291,22 @@ public class DatabaseMerger {
      * @return call graph
      */
     private DirectedGraph fetchCallGraphData() {
-        var package_name = artifact.split(":")[0] + ":" + artifact.split(":")[1];
+        var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
         var version = artifact.split(":")[2];
 
-        var artifact_id = dbContext
+        var artifactId = dbContext
                 .select(PackageVersions.PACKAGE_VERSIONS.ID)
                 .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
                 .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
                 .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
-                .and(Packages.PACKAGES.PACKAGE_NAME.eq(package_name))
+                .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
                 .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
                 .fetchOne()
                 .component1();
 
         DirectedGraph callGraphData = null;
         try {
-            callGraphData = rocksDao.getGraphData(artifact_id);
+            callGraphData = rocksDao.getGraphData(artifactId);
         } catch (RocksDBException e) {
             e.printStackTrace();
         }
@@ -308,17 +329,19 @@ public class DatabaseMerger {
                 .where(Callables.CALLABLES.ID.in(nodesIds))
                 .fetch();
 
-        callables.forEach(callable -> typeMap.put(callable.value1(), new Node(FastenJavaURI.create(callable.value2()).decanonicalize())));
+        callables.forEach(callable -> typeMap.put(callable.value1(),
+                new Node(FastenJavaURI.create(callable.value2()).decanonicalize())));
         return typeMap;
     }
 
     /**
-     * Create a mapping from types and method signatures to callable IDs
+     * Create a mapping from types and method signatures to callable IDs.
      *
      * @param dependenciesIds IDs of dependencies
      * @return a type dictionary
      */
-    private Map<String, Map<String, Set<Long>>> createTypeDictionary(final Set<Long> dependenciesIds) {
+    private Map<String, Map<String, Set<Long>>> createTypeDictionary(
+            final Set<Long> dependenciesIds) {
         final long startTime = System.currentTimeMillis();
         var result = new HashMap<String, Map<String, Set<Long>>>();
 
@@ -353,7 +376,8 @@ public class DatabaseMerger {
      * @param dependenciesIds IDs of dependencies
      * @return universal CHA
      */
-    private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA(final Set<Long> dependenciesIds) {
+    private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA(
+            final Set<Long> dependenciesIds) {
         final long startTime = System.currentTimeMillis();
         var universalCHA = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
 
