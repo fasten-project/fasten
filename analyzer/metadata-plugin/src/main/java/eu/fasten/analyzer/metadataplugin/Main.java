@@ -73,12 +73,20 @@ public class Main implements Runnable {
         return null;
     }
 
+    public String getForge() {
+        if (language.equals("java"))
+            return Constants.mvnForge;
+        else if (language.equals("c"))
+            return Constants.debianForge;
+        return null;
+    }
+
     @Override
     public void run() {
         var metadataPlugin = getMetadataDBExtension();
         try {
-            metadataPlugin.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge,
-                    PostgresConnector.getDSLContext(dbUrl, dbUser))));
+            metadataPlugin.setDBConnection(new HashMap<>(Map.of(getForge(),
+                                           PostgresConnector.getDSLContext(dbUrl, dbUser))));
         } catch (IllegalArgumentException | SQLException e) {
             logger.error("Could not connect to the database", e);
             return;
