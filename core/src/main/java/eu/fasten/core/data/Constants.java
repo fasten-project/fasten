@@ -10,7 +10,7 @@ public class Constants {
 
     public static final String pyForge = "pypi";
 
-    public static final String cForge = "debian";
+    public static final String debianForge = "debian";
 
     public static final String opalGenerator = "OPAL";
 

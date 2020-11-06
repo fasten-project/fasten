@@ -51,7 +51,7 @@ public class PartialCallGraph {
 
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
-    private final Map<Scope, Map<FastenURI, Type>> classHierarchy;
+    private final Map<JavaScope, Map<FastenURI, JavaType>> classHierarchy;
     private final Graph graph;
     private final int nodeCount;
 
@@ -88,7 +88,7 @@ public class PartialCallGraph {
         }
     }
 
-    public Map<Scope, Map<FastenURI, Type>> getClassHierarchy() {
+    public Map<JavaScope, Map<FastenURI, JavaType>> getClassHierarchy() {
         return classHierarchy;
     }
 
@@ -110,7 +110,7 @@ public class PartialCallGraph {
      * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
      *                               Maven central it throws this exception.
      */
-    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(
+    public static ExtendedRevisionJavaCallGraph createExtendedRevisionJavaCallGraph(
             final MavenCoordinate coordinate, final String mainClass,
             final String algorithm, final long timestamp)
             throws FileNotFoundException, OPALException {

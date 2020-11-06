@@ -22,7 +22,7 @@ import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.data.exceptions.EmptyCallGraphException;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ public class OPALPlugin extends Plugin {
 
         private String consumeTopic = "fasten.maven.pkg";
         private Throwable pluginError;
-        private ExtendedRevisionCallGraph graph;
+        private ExtendedRevisionJavaCallGraph graph;
         private String outputPath;
 
         @Override
@@ -70,7 +70,7 @@ public class OPALPlugin extends Plugin {
                 final var mavenCoordinate = new MavenCoordinate(kafkaConsumedJson);
 
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
-                this.graph = PartialCallGraph.createExtendedRevisionCallGraph(mavenCoordinate,
+                this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
                         "", "CHA", kafkaConsumedJson.optLong("date", -1));
 
                 if (this.graph.isCallGraphEmpty()) {

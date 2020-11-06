@@ -54,14 +54,28 @@ public class Main implements Runnable {
             defaultValue = "postgres")
     String dbUser;
 
+    @CommandLine.Option(names = {"-l", "--language"},
+            paramLabel = "LANGUAGE",
+            description = "Language of the callgraph",
+            defaultValue = "java")
+    String language;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }
 
+    public MetadataDBExtension getMetadataDBExtension() {
+        if (language.equals("java"))
+            return new MetadataDatabaseJavaPlugin.MetadataDBJavaExtension();
+        else if (language.equals("c"))
+            return new MetadataDatabaseCPlugin.MetadataDBCExtension();
+        return null;
+    }
+
     @Override
     public void run() {
-        var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
+        var metadataPlugin = getMetadataDBExtension();
         try {
             metadataPlugin.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge,
                     PostgresConnector.getDSLContext(dbUrl, dbUser))));
