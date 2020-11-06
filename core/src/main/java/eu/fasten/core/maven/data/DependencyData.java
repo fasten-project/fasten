@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.pomanalyzer.pom.data;
+package eu.fasten.core.maven.data;
 
 import java.util.ArrayList;
 import java.util.List;

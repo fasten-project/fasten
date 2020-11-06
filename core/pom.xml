@@ -94,6 +94,12 @@
             <version>2.17.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.shrinkwrap.resolver</groupId>
+            <artifactId>shrinkwrap-resolver-depchain</artifactId>
+            <version>3.1.4</version>
+            <type>pom</type>
+        </dependency>
     </dependencies>
 
     <build>

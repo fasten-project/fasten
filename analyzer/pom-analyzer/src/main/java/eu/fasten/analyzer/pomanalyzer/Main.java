@@ -19,13 +19,14 @@
 package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.server.connectors.PostgresConnector;
+import eu.fasten.core.dbconnectors.PostgresConnector;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
+import java.util.Scanner;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import picocli.CommandLine;
@@ -37,6 +38,16 @@ public class Main implements Runnable {
             paramLabel = "JSON_FILE",
             description = "Path to JSON file which contains the Maven coordinate")
     String jsonFile;
+
+    @CommandLine.Option(names = {"-cf", "--coordinates-file"},
+            paramLabel = "COORD_FILE",
+            description = "Path to file which contains the Maven coordinates "
+                    + "in form of groupId:artifactId:version")
+    String coordinatesFile;
+
+    @CommandLine.Option(names = {"-s", "--skip"},
+            description = "Skip first line of the coordinates file")
+    boolean skipFirstLine;
 
     @CommandLine.Option(names = {"-a", "--artifactId"},
             paramLabel = "ARTIFACT",
@@ -52,6 +63,11 @@ public class Main implements Runnable {
             paramLabel = "VERSION",
             description = "version of the Maven coordinate")
     String version;
+
+    @CommandLine.Option(names = {"-t", "--timestamp"},
+            paramLabel = "TS",
+            description = "Timestamp when the artifact was released")
+    String timestamp;
 
     @CommandLine.Option(names = {"-d", "--database"},
             paramLabel = "DB_URL",
@@ -86,10 +102,14 @@ public class Main implements Runnable {
             mvnCoordinate.put("artifactId", artifact);
             mvnCoordinate.put("groupId", group);
             mvnCoordinate.put("version", version);
+            mvnCoordinate.put("date", timestamp);
             var record = new JSONObject();
             record.put("payload", mvnCoordinate);
             pomAnalyzer.consume(record.toString());
             pomAnalyzer.produce().ifPresent(System.out::println);
+            if (pomAnalyzer.getPluginError() != null) {
+                System.err.println(pomAnalyzer.getPluginError().getMessage());
+            }
         } else if (jsonFile != null) {
             FileReader reader;
             try {
@@ -101,6 +121,43 @@ public class Main implements Runnable {
             var record = new JSONObject(new JSONTokener(reader));
             pomAnalyzer.consume(record.toString());
             pomAnalyzer.produce().ifPresent(System.out::println);
+            if (pomAnalyzer.getPluginError() != null) {
+                System.err.println(pomAnalyzer.getPluginError().getMessage());
+            }
+        } else if (coordinatesFile != null) {
+            Scanner input;
+            try {
+                input = new Scanner(new File(coordinatesFile));
+            } catch (FileNotFoundException e) {
+                System.err.println(e.getMessage());
+                return;
+            }
+            if (skipFirstLine && input.hasNextLine()) {
+                input.nextLine();
+            }
+            var count = 0F;
+            var result = 0F;
+            while (input.hasNextLine()) {
+                count += 1F;
+                var line = input.nextLine();
+                var mvnCoordinate = new JSONObject();
+                var coordinate = line.split(Constants.mvnCoordinateSeparator);
+                mvnCoordinate.put("artifactId", coordinate[1]);
+                mvnCoordinate.put("groupId", coordinate[0]);
+                mvnCoordinate.put("version", coordinate[2]);
+                var record = new JSONObject();
+                record.put("payload", mvnCoordinate);
+                pomAnalyzer.consume(record.toString());
+                pomAnalyzer.produce().ifPresent(System.out::println);
+                if (pomAnalyzer.getPluginError() != null) {
+                    System.err.println(pomAnalyzer.getPluginError().getMessage());
+                } else {
+                    result += 1F;
+                }
+            }
+            System.out.println("--------------------------------------------------");
+            System.out.println("Success rate: " + result / count);
+            System.out.println("--------------------------------------------------");
         } else {
             System.err.println("You need to specify Maven coordinate either by providing its "
                     + "artifactId ('-a'), groupId ('-g') and version ('-v') or by providing path "

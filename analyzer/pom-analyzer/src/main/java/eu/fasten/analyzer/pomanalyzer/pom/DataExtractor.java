@@ -18,9 +18,10 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom;
 
-import eu.fasten.analyzer.pomanalyzer.pom.data.Dependency;
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyManagement;
+import eu.fasten.core.maven.MavenUtilities;
+import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.DependencyData;
+import eu.fasten.core.maven.data.DependencyManagement;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -66,9 +67,7 @@ public class DataExtractor {
     private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
 
     public DataExtractor() {
-        this.mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
-                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
-                : Collections.singletonList("https://repo.maven.apache.org/maven2/");
+        this.mavenRepos = MavenUtilities.getRepos();
     }
 
     public DataExtractor(List<String> mavenRepos) {
@@ -342,7 +341,7 @@ public class DataExtractor {
                 (groupId + Constants.mvnCoordinateSeparator + artifactId
                         + Constants.mvnCoordinateSeparator + version).equals(this.mavenCoordinate)
                         ? new ByteArrayInputStream(this.pomContents.getBytes())
-                        : new ByteArrayInputStream(this.downloadPom(artifactId, groupId, version)
+                        : new ByteArrayInputStream(this.downloadPom(groupId, artifactId, version)
                         .orElseThrow(FileNotFoundException::new).getBytes());
         return new SAXReader().read(pomByteStream).getRootElement();
     }
@@ -458,8 +457,8 @@ public class DataExtractor {
                         if (parentDep.artifactId.equals(dependency.artifactId)
                                 && parentDep.groupId.equals(dependency.groupId)) {
                             resolvedDependencies.add(new Dependency(
-                                    dependency.artifactId,
                                     dependency.groupId,
+                                    dependency.artifactId,
                                     parentDep.versionConstraints,
                                     dependency.exclusions,
                                     dependency.scope,
@@ -473,8 +472,8 @@ public class DataExtractor {
                 }
                 if (!resolved) {
                     resolvedDependencies.add(new Dependency(
-                            dependency.artifactId,
                             dependency.groupId,
+                            dependency.artifactId,
                             replacePropertyReferences("${project.version}", properties, pom),
                             dependency.exclusions,
                             dependency.scope,
@@ -491,8 +490,8 @@ public class DataExtractor {
                     version = value;
                 }
                 resolvedDependencies.add(new Dependency(
-                        dependency.artifactId,
                         dependency.groupId,
+                        dependency.artifactId,
                         version,
                         dependency.exclusions,
                         dependency.scope,
@@ -527,9 +526,9 @@ public class DataExtractor {
                     resolvedExclusionArtifact = replacePropertyReferences(
                             exclusion.artifactId, properties, pom);
                 }
-                resolvedExclusions.set(j, new Dependency.Exclusion(
-                        resolvedExclusionArtifact, resolvedExclusionGroup
-                ));
+                resolvedExclusions.set(j,
+                        new Dependency.Exclusion(resolvedExclusionGroup, resolvedExclusionArtifact)
+                );
             }
             var resolvedScope = dep.scope;
             if (dep.scope.contains("$")) {
@@ -544,8 +543,8 @@ public class DataExtractor {
                 resolvedClassifier = replacePropertyReferences(dep.classifier, properties, pom);
             }
             resolvedDependencies.set(i, new Dependency(
-                    resolvedArtifact,
                     resolvedGroup,
+                    resolvedArtifact,
                     dep.versionConstraints,
                     resolvedExclusions,
                     resolvedScope,
@@ -595,7 +594,7 @@ public class DataExtractor {
                     .selectSingleNode("./*[local-name() ='version']").getText();
             try {
                 var parentPom = new SAXReader().read(new ByteArrayInputStream(
-                        this.downloadPom(parentArtifact, parentGroup, parentVersion)
+                        this.downloadPom(parentGroup, parentArtifact, parentVersion)
                                 .orElseThrow(FileNotFoundException::new).getBytes())).getRootElement();
                 var parentMetadata = this.extractDependencyResolutionMetadata(parentPom);
                 var parentProperties = parentMetadata.getLeft();
@@ -651,8 +650,8 @@ public class DataExtractor {
                                 .selectSingleNode("./*[local-name()='groupId']");
                         if (exclusionArtifactNode != null && exclusionGroupNode != null) {
                             exclusions.add(new Dependency.Exclusion(
-                                    exclusionArtifactNode.getText(),
-                                    exclusionGroupNode.getText()
+                                    exclusionGroupNode.getText(),
+                                    exclusionArtifactNode.getText()
                             ));
                         }
                     }
@@ -673,8 +672,8 @@ public class DataExtractor {
                 }
                 if (groupNode != null && artifactNode != null) {
                     dependencies.add(new Dependency(
-                            artifactNode.getText(),
                             groupNode.getText(),
+                            artifactNode.getText(),
                             version,
                             exclusions,
                             (scopeNode != null) ? scopeNode.getText() : "",
@@ -689,62 +688,17 @@ public class DataExtractor {
         return dependencies;
     }
 
-    private Optional<String> downloadPom(String artifactId, String groupId, String version) {
-        for (var repo : this.mavenRepos) {
-            var pomUrl = this.getPomUrl(artifactId, groupId, version, repo);
-            Optional<String> pom;
-            File pomFile = null;
-            try {
-                var pomFileOpt =  httpGetToFile(pomUrl);
-                pomFile = pomFileOpt.orElse(null);
-                pom = pomFileOpt.flatMap(DataExtractor::fileToString);
-            } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
-                continue;
-            } finally {
-                if (pomFile != null) {
-                    try {
-                        FileUtils.forceDelete(pomFile);
-                    } catch (IOException e) {
-                        if (pomFile.exists()) {
-                            pomFile.delete();
-                        }
-                    }
-                }
-            }
-            if (pom.isPresent()) {
-                this.mavenCoordinate = groupId + Constants.mvnCoordinateSeparator + artifactId
-                        + Constants.mvnCoordinateSeparator + version;
-                this.pomContents = pom.get();
-                return pom;
-            }
+    private Optional<String> downloadPom(String groupId, String artifactId, String version) {
+        var pom = MavenUtilities.downloadPom(groupId, artifactId, version, this.mavenRepos).flatMap(DataExtractor::fileToString);
+
+        if (pom.isPresent()) {
+            this.mavenCoordinate = groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version;
+            this.pomContents = pom.get();
+            return pom;
         }
+
         return Optional.empty();
-    }
-
-    private String getPomUrl(String artifactId, String groupId, String version, String repo) {
-        return repo + groupId.replace('.', '/') + "/" + artifactId + "/" + version
-                + "/" + artifactId + "-" + version + ".pom";
-    }
-
-    /**
-     * Utility function that stores the contents of GET request to a temporary file.
-     */
-    private static Optional<File> httpGetToFile(String url)
-            throws FileNotFoundException, UnknownHostException, MalformedURLException {
-        logger.debug("HTTP GET: " + url);
-        try {
-            final var tempFile = Files.createTempFile("fasten", ".pom");
-            final InputStream in = new URL(url).openStream();
-            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            in.close();
-            return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-        } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
-            logger.error("Could not find URL: {}", e.getMessage(), e);
-            throw e;
-        } catch (IOException e) {
-            logger.error("Error getting file from URL: " + url, e);
-            return Optional.empty();
-        }
     }
 
     /**

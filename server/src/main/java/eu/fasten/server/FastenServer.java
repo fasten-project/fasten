@@ -25,8 +25,8 @@ import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.GraphDBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.connectors.KafkaConnector;
-import eu.fasten.server.connectors.PostgresConnector;
-import eu.fasten.server.connectors.RocksDBConnector;
+import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.dbconnectors.RocksDBConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
 

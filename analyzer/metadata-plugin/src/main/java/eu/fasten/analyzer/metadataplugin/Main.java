@@ -18,8 +18,8 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
+import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.data.Constants;
-import eu.fasten.server.connectors.PostgresConnector;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
