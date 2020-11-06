@@ -21,6 +21,7 @@ package eu.fasten.analyzer.metadataplugin;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCCallGraph;
+import eu.fasten.core.data.ExtendedRevisionPythonCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.graphdb.GidGraph;
@@ -199,6 +200,8 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
             return new ExtendedRevisionJavaCallGraph(json);
         } else if (forge.equals(Constants.debianForge)) {
             return new ExtendedRevisionCCallGraph(json);
+        } else if (forge.equals(Constants.pypiForge)) {
+            return new ExtendedRevisionPythonCallGraph(json);
         }
 
         return null;
