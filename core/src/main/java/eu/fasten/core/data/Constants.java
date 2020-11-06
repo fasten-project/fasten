@@ -1,10 +1,14 @@
 package eu.fasten.core.data;
 
+import java.util.List;
+
 public class Constants {
 
     public static final String mvnCoordinateSeparator = ":";
 
     public static final String mvnForge = "mvn";
+
+    public static final String pyForge = "pypi";
 
     public static final String debianForge = "debian";
 
@@ -22,6 +26,8 @@ public class Constants {
 
     public static final String pgPasswordEnvVariable = "PGPASSWORD";
 
-	public static final int MIN_COMPRESSED_GRAPH_SIZE = 100;
+    public static final String defaultMavenResolutionScopes = "compile,runtime,provided";
+
+    public static final int MIN_COMPRESSED_GRAPH_SIZE = 100;
 
 }

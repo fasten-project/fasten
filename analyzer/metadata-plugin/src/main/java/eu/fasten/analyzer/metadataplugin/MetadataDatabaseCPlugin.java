@@ -52,8 +52,8 @@ public class MetadataDatabaseCPlugin extends Plugin {
         private static DSLContext dslContext;
 
         @Override
-        public void setDBConnection(DSLContext dslContext) {
-            MetadataDBCExtension.dslContext = dslContext;
+        public void setDBConnection(Map<String, DSLContext> dslContexts) {
+            MetadataDBCExtension.dslContext = dslContexts.get(Constants.debianForge);
         }
 
         @Override

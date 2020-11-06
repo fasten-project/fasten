@@ -16,13 +16,12 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.pomanalyzer.pom.data;
+package eu.fasten.core.maven.data;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DependencyTest {
 
@@ -32,6 +31,13 @@ public class DependencyTest {
         var json = expected.toJSON();
         var actual = Dependency.fromJSON(json);
         Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void equalsTest() {
+        Assertions.assertEquals(new Dependency("junit:junit:4.12"), new Dependency("junit", "junit", "4.12", new ArrayList<>(), "compile", false, "jar", ""));
+        Assertions.assertEquals(new Dependency("junit:junit:4.12"), new Dependency("junit", "junit", "4.12", new ArrayList<>(), "", false, "jar", ""));
+        Assertions.assertEquals(new Dependency("junit:junit:4.12"), new Dependency("junit", "junit", "4.12", new ArrayList<>(), "compile", false, "", ""));
     }
 
     @Test

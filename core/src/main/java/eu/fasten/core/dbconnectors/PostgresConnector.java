@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.server.connectors;
+package eu.fasten.core.dbconnectors;
 
 import java.sql.DriverManager;
 import java.sql.SQLException;

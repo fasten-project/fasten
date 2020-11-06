@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.server.connectors;
+package eu.fasten.core.dbconnectors;
 
 import eu.fasten.core.data.graphdb.RocksDao;
 import org.rocksdb.RocksDBException;

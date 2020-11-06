@@ -18,10 +18,10 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom;
 
-import eu.fasten.analyzer.pomanalyzer.pom.data.Dependency;
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyManagement;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.DependencyData;
+import eu.fasten.core.maven.data.DependencyManagement;
 import org.dom4j.DocumentException;
 import org.dom4j.io.SAXReader;
 import org.json.JSONObject;

@@ -52,8 +52,8 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
         private static DSLContext dslContext;
 
         @Override
-        public void setDBConnection(DSLContext dslContext) {
-            MetadataDBJavaExtension.dslContext = dslContext;
+        public void setDBConnection(Map<String, DSLContext> dslContexts) {
+            MetadataDBJavaExtension.dslContext = dslContexts.get(Constants.mvnForge);
         }
 
         @Override

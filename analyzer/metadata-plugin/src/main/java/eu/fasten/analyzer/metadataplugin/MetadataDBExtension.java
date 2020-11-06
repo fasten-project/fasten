@@ -50,6 +50,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class MetadataDBExtension implements KafkaPlugin, DBConnector {
@@ -64,8 +65,8 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
     protected String outputPath;
 
     @Override
-    public void setDBConnection(DSLContext dslContext) {
-        MetadataDBExtension.dslContext = dslContext;
+    public void setDBConnection(Map<String, DSLContext> dslContexts) {
+        MetadataDBExtension.dslContext = dslContexts.get("");
     }
 
     public DSLContext getDBConnection() {

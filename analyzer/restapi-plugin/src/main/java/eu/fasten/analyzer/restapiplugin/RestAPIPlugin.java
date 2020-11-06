@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin;
 
 import eu.fasten.analyzer.restapiplugin.server.OpenAPIServer;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.plugins.DBConnector;
 import io.vertx.core.Vertx;
 import org.jooq.DSLContext;
@@ -27,6 +28,8 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 public class RestAPIPlugin extends Plugin {
 
@@ -43,8 +46,8 @@ public class RestAPIPlugin extends Plugin {
         private Vertx vertx;
 
         @Override
-        public void setDBConnection(DSLContext dslContext) {
-            RestAPIExtension.dslContext = dslContext;
+        public void setDBConnection(Map<String, DSLContext> dslContexts) {
+            RestAPIExtension.dslContext = dslContexts.get(Constants.mvnForge);
         }
 
         @Override

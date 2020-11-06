@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.pomanalyzer.pom.data;
+package eu.fasten.core.maven.data;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import eu.fasten.core.data.Constants;
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -37,11 +38,24 @@ public class Dependency {
     public final String classifier;
 
     /**
+     * Valid dependency scopes. Defined by maven.
+     * Learn more: http://maven.apache.org/pom.html
+     */
+    public static final String[] SCOPES = {
+            "compile",
+            "provided",
+            "runtime",
+            "test",
+            "system",
+            "import"
+    };
+
+    /**
      * Constructor for Dependency object.
      * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
      *
-     * @param artifactId         artifactId of dependency Maven coordinate
      * @param groupId            groupId of dependency Maven coordinate
+     * @param artifactId         artifactId of dependency Maven coordinate
      * @param versionConstraints List of version constraints of the dependency
      * @param exclusions         List of exclusions
      * @param scope              Scope of the dependency
@@ -49,29 +63,106 @@ public class Dependency {
      * @param type               Type of the dependency
      * @param classifier         Classifier for dependency
      */
-    public Dependency(final String artifactId, final String groupId,
+    public Dependency(final String groupId, final String artifactId,
                       final List<VersionConstraint> versionConstraints,
                       final List<Exclusion> exclusions, final String scope, final boolean optional,
                       final String type, final String classifier) {
-        this.artifactId = artifactId;
         this.groupId = groupId;
+        this.artifactId = artifactId;
         this.versionConstraints = versionConstraints;
         this.exclusions = exclusions;
-        this.scope = scope;
+        this.scope = scope.toLowerCase();
         this.optional = optional;
-        this.type = type;
-        this.classifier = classifier;
+        this.type = type.toLowerCase();
+        this.classifier = classifier.toLowerCase();
     }
 
-    public Dependency(final String artifactId, final String groupId, final String version,
+    public Dependency(final String groupId, final String artifactId, final String version,
                       final List<Exclusion> exclusions, final String scope, final boolean optional,
                       final String type, final String classifier) {
-        this(artifactId, groupId, VersionConstraint.resolveMultipleVersionConstraints(version),
+        this(groupId, artifactId, VersionConstraint.resolveMultipleVersionConstraints(version),
                 exclusions, scope, optional, type, classifier);
     }
 
-    public Dependency(final String artifactId, final String groupId, final String version) {
-        this(artifactId, groupId, version, new ArrayList<>(), "", false, "", "");
+    public Dependency(final String groupId, final String artifactId, final String version) {
+        this(groupId, artifactId, version, new ArrayList<>(), "", false, "", "");
+    }
+
+    /**
+     * Constructor for Dependency object.
+     * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
+     * <p>
+     * Allowed format:
+     * group:artifact:type[:classifier]:version:scope:pathname [(optional)]
+     *
+     * @param mavenCoordinate the string of coordinate parameters concatenated by a separator.
+     * @throws IllegalArgumentException if the coordinate is wrongly formatted.
+     */
+    public Dependency(String mavenCoordinate) {
+        boolean optional1;
+
+        // Used to separate the coordinate itself and the optional tag.
+        // Some coordinates may have format artifact:group:type:version:scope (optional),
+        // which means that they are optional.
+        var splitBySpace = mavenCoordinate.split(" ");
+
+        var optional = false;
+        if (splitBySpace.length > 1 && splitBySpace[1].equals("(optional)")) {
+            optional = true;
+        }
+
+        var coordinates = splitBySpace[0].split(Constants.mvnCoordinateSeparator);
+        var sep = Constants.mvnCoordinateSeparator;
+
+        if (coordinates.length > 7 || coordinates.length < 3) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Maven coordinate must be in form of " +
+                                    "group%1$sartifact%1$stype[%1$sclassifier]%1$sversion%1$sscope[%1$spathname] [(optional)] or group:artifact:version, " +
+                                    "but was %2$s",
+                            sep,
+                            mavenCoordinate.isBlank() ? "[empty]" : mavenCoordinate
+                    )
+            );
+        }
+
+        optional1 = optional;
+        this.groupId = coordinates[0];
+        this.artifactId = coordinates[1];
+        this.exclusions = new ArrayList<>();
+
+        if (coordinates.length == 3) {
+            this.type = "";
+            this.classifier = "";
+            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[2]);
+            this.scope = "";
+        } else if (coordinates.length == 4) {
+            this.type = "";
+            this.classifier = "";
+            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[2]);
+            this.scope = coordinates[3];
+        } else if (coordinates.length == 5) {
+            this.type = coordinates[2];
+            this.classifier = "";
+            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[3]);
+            this.scope = coordinates[4];
+        } else if (coordinates.length == 6) {
+            this.type = coordinates[2];
+            this.classifier = coordinates[3];
+            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[4]);
+            this.scope = coordinates[5];
+        } else {
+            this.type = coordinates[2];
+            this.classifier = coordinates[3];
+            optional1 = coordinates[4].equals("optional");
+            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[5]);
+            this.scope = coordinates[6];
+        }
+        this.optional = optional1;
+        if (!scope.isEmpty() && !Arrays.asList(SCOPES).contains(scope)) {
+            throw new IllegalArgumentException("Invalid scope of the dependency '"
+                    + mavenCoordinate + "': " + scope);
+        }
     }
 
     /**
@@ -85,39 +176,6 @@ public class Dependency {
             constraints[i] = versionConstraints.get(i).toString();
         }
         return constraints;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Dependency that = (Dependency) o;
-        if (optional != that.optional) {
-            return false;
-        }
-        if (!artifactId.equals(that.artifactId)) {
-            return false;
-        }
-        if (!groupId.equals(that.groupId)) {
-            return false;
-        }
-        if (!Objects.equals(versionConstraints, that.versionConstraints)) {
-            return false;
-        }
-        if (!Objects.equals(exclusions, that.exclusions)) {
-            return false;
-        }
-        if (!Objects.equals(scope, that.scope)) {
-            return false;
-        }
-        if (!Objects.equals(type, that.type)) {
-            return false;
-        }
-        return Objects.equals(classifier, that.classifier);
     }
 
     /**
@@ -144,6 +202,98 @@ public class Dependency {
         json.put("type", this.type);
         json.put("classifier", this.classifier);
         return json;
+    }
+
+    public String getGroupId() {
+        return this.groupId;
+    }
+
+    public String getArtifactId() {
+        return this.artifactId;
+    }
+
+    public String getVersion() {
+        return String.join(",", this.getVersionConstraints());
+    }
+
+    public String toCanonicalForm() {
+        var builder = new StringBuilder();
+        builder.append(this.groupId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        builder.append(this.artifactId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        if (!this.type.isEmpty()) {
+            builder.append(this.type);
+            builder.append(Constants.mvnCoordinateSeparator);
+        }
+        if (!this.classifier.isEmpty()) {
+            builder.append(this.classifier);
+            builder.append(Constants.mvnCoordinateSeparator);
+        }
+        builder.append(this.getVersion());
+        return builder.toString();
+    }
+
+    public String toMavenCoordinate() {
+        return this.groupId +
+                Constants.mvnCoordinateSeparator +
+                this.artifactId +
+                Constants.mvnCoordinateSeparator +
+                this.getVersion();
+    }
+
+    public String toFullCanonicalForm() {
+        var builder = new StringBuilder();
+        builder.append(this.groupId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        builder.append(this.artifactId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        if (!this.type.isEmpty()) {
+            builder.append(this.type);
+        } else {
+            builder.append("jar");
+        }
+        builder.append(Constants.mvnCoordinateSeparator);
+        if (!this.classifier.isEmpty()) {
+            builder.append(this.classifier);
+            builder.append(Constants.mvnCoordinateSeparator);
+        }
+        builder.append(this.getVersion());
+        builder.append(Constants.mvnCoordinateSeparator);
+        if (!this.scope.isEmpty()) {
+            builder.append(this.scope);
+        } else {
+            builder.append("compile");
+        }
+        return builder.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Dependency that = (Dependency) o;
+        if (!artifactId.equals(that.artifactId)) {
+            return false;
+        }
+        if (!groupId.equals(that.groupId)) {
+            return false;
+        }
+        return versionConstraints.equals(that.versionConstraints);
+    }
+
+    @Override
+    public int hashCode() {
+        return this.toMavenCoordinate().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return toCanonicalForm();
     }
 
     /**
@@ -173,7 +323,7 @@ public class Dependency {
         var optional = json.optBoolean("optional", false);
         var type = json.optString("type");
         var classifier = json.optString("classifier");
-        return new Dependency(artifactId, groupId, versionConstraints, exclusions, scope,
+        return new Dependency(groupId, artifactId, versionConstraints, exclusions, scope,
                 optional, type, classifier);
     }
 
@@ -219,10 +369,17 @@ public class Dependency {
                 this.lowerBound = version;
 
             } else {
-                final var versionSplit = spec.substring(1, spec.length() - 1).split(",");
+                final var versionSplit = startsAndEndsWithBracket(spec)
+                        ? spec.substring(1, spec.length() - 1).split(",")
+                        : spec.split(",");
                 this.lowerBound = versionSplit[0];
                 this.upperBound = (versionSplit.length > 1) ? versionSplit[1] : "";
             }
+        }
+
+        private boolean startsAndEndsWithBracket(String str) {
+            return (str.startsWith("(") || str.startsWith("["))
+                    && (str.endsWith(")") || str.endsWith("]"));
         }
 
         @Override
@@ -354,12 +511,12 @@ public class Dependency {
          * Constructor for Exclusion object.
          * Exclusion defines a dependency which must be excluded from transitive dependencies.
          *
-         * @param artifactId artifactId of excluded Maven coordinate
          * @param groupId    groupId of excluded Maven coordinate
+         * @param artifactId artifactId of excluded Maven coordinate
          */
-        public Exclusion(final String artifactId, final String groupId) {
-            this.artifactId = artifactId;
+        public Exclusion(final String groupId, final String artifactId) {
             this.groupId = groupId;
+            this.artifactId = artifactId;
         }
 
         @Override
@@ -384,8 +541,8 @@ public class Dependency {
          */
         public JSONObject toJSON() {
             final var json = new JSONObject();
-            json.put("artifactId", this.artifactId);
             json.put("groupId", this.groupId);
+            json.put("artifactId", this.artifactId);
             return json;
         }
 
@@ -396,9 +553,21 @@ public class Dependency {
          * @return Exclusion object
          */
         public static Exclusion fromJSON(JSONObject json) {
-            var artifactId = json.getString("artifactId");
             var groupId = json.getString("groupId");
-            return new Exclusion(artifactId, groupId);
+            var artifactId = json.getString("artifactId");
+            return new Exclusion(groupId, artifactId);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = artifactId != null ? artifactId.hashCode() : 0;
+            result = 31 * result + (groupId != null ? groupId.hashCode() : 0);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return toJSON().toString();
         }
     }
 }
