@@ -70,6 +70,8 @@ public class Main implements Runnable {
             return new MetadataDatabaseJavaPlugin.MetadataDBJavaExtension();
         else if (language.equals("c"))
             return new MetadataDatabaseCPlugin.MetadataDBCExtension();
+        else if (language.equals("python"))
+            return new MetadataDatabasePythonPlugin.MetadataDBPythonExtension();
         return null;
     }
 
@@ -78,6 +80,8 @@ public class Main implements Runnable {
             return Constants.mvnForge;
         else if (language.equals("c"))
             return Constants.debianForge;
+        else if (language.equals("python"))
+            return Constants.pypiForge;
         return null;
     }
 
