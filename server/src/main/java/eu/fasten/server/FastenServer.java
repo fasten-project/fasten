@@ -135,8 +135,7 @@ public class FastenServer implements Runnable {
 
         // Stop plugins that are not passed as parameters.
         jarPluginManager.getPlugins().stream()
-                .filter(x -> !plugins.contains(jarPluginManager
-                        .getExtensions(x.getPluginId()).get(0).getClass().getSimpleName()))
+                .filter(x -> !jarPluginManager.getExtensions(x.getPluginId()).stream().anyMatch(e -> plugins.contains(e.getClass().getSimpleName())))
                 .forEach(x -> {
                     jarPluginManager.stopPlugin(x.getPluginId());
                     jarPluginManager.unloadPlugin(x.getPluginId());
