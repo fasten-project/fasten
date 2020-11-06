@@ -99,6 +99,7 @@ public class Dependency {
      * @throws IllegalArgumentException if the coordinate is wrongly formatted.
      */
     public Dependency(String mavenCoordinate) {
+        boolean optional1;
 
         // Used to separate the coordinate itself and the optional tag.
         // Some coordinates may have format artifact:group:type:version:scope (optional),
@@ -125,39 +126,42 @@ public class Dependency {
             );
         }
 
-        this.optional = optional;
+        optional1 = optional;
         this.groupId = coordinates[0];
         this.artifactId = coordinates[1];
         this.exclusions = new ArrayList<>();
 
-        // If the coordinate is in the short form group:artifact:version with 3 attributes,
-        // else some more complex structure.
         if (coordinates.length == 3) {
             this.type = "";
             this.classifier = "";
             this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[2]);
             this.scope = "";
-        } else {
-
+        } else if (coordinates.length == 4) {
+            this.type = "";
+            this.classifier = "";
+            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[2]);
+            this.scope = coordinates[3];
+        } else if (coordinates.length == 5) {
             this.type = coordinates[2];
-
-            var scopesList = Arrays.asList(SCOPES);
-
-            // If scope is found at index 4,
-            // else another option can be at index 5,
-            // otherwise throw an exception of missing valid scope.
-            if (scopesList.contains(coordinates[4])) {
-                this.classifier = "";
-                this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[3]);
-                this.scope = coordinates[4];
-            } else if (scopesList.contains(coordinates[5])) {
-                this.classifier = coordinates[3];
-                this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[4]);
-                this.scope = coordinates[5];
-            } else {
-                throw new IllegalArgumentException("The scope is invalid. Allowed one of " + Arrays.toString(SCOPES));
-            }
-
+            this.classifier = "";
+            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[3]);
+            this.scope = coordinates[4];
+        } else if (coordinates.length == 6) {
+            this.type = coordinates[2];
+            this.classifier = coordinates[3];
+            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[4]);
+            this.scope = coordinates[5];
+        } else {
+            this.type = coordinates[2];
+            this.classifier = coordinates[3];
+            optional1 = coordinates[4].equals("optional");
+            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[5]);
+            this.scope = coordinates[6];
+        }
+        this.optional = optional1;
+        if (!scope.isEmpty() && !Arrays.asList(SCOPES).contains(scope)) {
+            throw new IllegalArgumentException("Invalid scope of the dependency '"
+                    + mavenCoordinate + "': " + scope);
         }
     }
 
@@ -365,10 +369,17 @@ public class Dependency {
                 this.lowerBound = version;
 
             } else {
-                final var versionSplit = spec.substring(1, spec.length() - 1).split(",");
+                final var versionSplit = startsAndEndsWithBracket(spec)
+                        ? spec.substring(1, spec.length() - 1).split(",")
+                        : spec.split(",");
                 this.lowerBound = versionSplit[0];
                 this.upperBound = (versionSplit.length > 1) ? versionSplit[1] : "";
             }
+        }
+
+        private boolean startsAndEndsWithBracket(String str) {
+            return (str.startsWith("(") || str.startsWith("["))
+                    && (str.endsWith(")") || str.endsWith("]"));
         }
 
         @Override

@@ -2,6 +2,7 @@ package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.data.Dependency;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Scanner;
+import java.util.Set;
 
 /**
  * This class is a benchmark for MavenResolver to compare database and online resolution
@@ -42,6 +44,10 @@ public class MavenResolverBenchmark implements Runnable {
             description = "Skip first line of the file")
     boolean skipFirstLine;
 
+    @CommandLine.Option(names = {"-g", "--graph"},
+            description = "Use resolution based on global dependency graph")
+    boolean useGraph;
+
     /**
      * NB! Before running main() make sure to run POM Analyzer on the same coordinates as benchmark
      */
@@ -71,6 +77,10 @@ public class MavenResolverBenchmark implements Runnable {
         }
         logger.info("Starting benchmark - " + new Date());
         var mavenResolver = new MavenResolver();
+        var graphResolver = new GraphMavenResolver();
+        if (useGraph) {
+            graphResolver.buildDependencyGraph(dbContext);
+        }
         var artifactCount = 0;
         var dbCount = 0;
         var onlineCount = 0;
@@ -85,7 +95,12 @@ public class MavenResolverBenchmark implements Runnable {
             var version = coordinate[2];
             try {
                 dbCount++;
-                var dbDependencySet = mavenResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
+                Set<Dependency> dbDependencySet;
+                if (useGraph) {
+                    dbDependencySet = graphResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
+                } else {
+                    dbDependencySet = mavenResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
+                }
                 dbResolutionSuccess++;
                 onlineCount++;
                 var onlineDependencySet = mavenResolver.resolveFullDependencySetOnline(artifactId, groupId, version);
