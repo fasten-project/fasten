@@ -30,6 +30,8 @@ import org.mockito.Mockito;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -42,7 +44,7 @@ public class MetadataDatabasePythonPluginTest {
         var dslContext = Mockito.mock(DSLContext.class);
         metadataDBExtension = new MetadataDatabasePythonPlugin.MetadataDBPythonExtension();
         metadataDBExtension.setTopic("fasten.pypi.cg");
-        metadataDBExtension.setDBConnection(dslContext);
+        metadataDBExtension.setDBConnection(new HashMap<>(Map.of(Constants.pyForge, dslContext)));
     }
 
     @Test
