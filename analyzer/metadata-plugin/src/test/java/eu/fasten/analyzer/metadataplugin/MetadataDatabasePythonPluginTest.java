@@ -44,7 +44,7 @@ public class MetadataDatabasePythonPluginTest {
         var dslContext = Mockito.mock(DSLContext.class);
         metadataDBExtension = new MetadataDatabasePythonPlugin.MetadataDBPythonExtension();
         metadataDBExtension.setTopic("fasten.pypi.cg");
-        metadataDBExtension.setDBConnection(new HashMap<>(Map.of(Constants.pyForge, dslContext)));
+        metadataDBExtension.setDBConnection(new HashMap<>(Map.of(Constants.pypiForge, dslContext)));
     }
 
     @Test

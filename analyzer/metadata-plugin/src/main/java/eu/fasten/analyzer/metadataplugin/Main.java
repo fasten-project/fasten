@@ -81,7 +81,7 @@ public class Main implements Runnable {
         else if (language.equals("c"))
             return Constants.debianForge;
         else if (language.equals("python"))
-            return Constants.pyForge;
+            return Constants.pypiForge;
         return null;
     }
 
