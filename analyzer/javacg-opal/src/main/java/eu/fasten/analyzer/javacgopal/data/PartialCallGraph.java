@@ -23,12 +23,7 @@ import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
-import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Comparator;
@@ -115,8 +110,8 @@ public class PartialCallGraph {
             final String algorithm, final long timestamp)
             throws FileNotFoundException, OPALException {
 
-	File file = null;
-	try {
+        File file = null;
+        try {
             file = new MavenCoordinate.MavenResolver().downloadArtifact(coordinate);
 
             logger.info("OPAL is analysing the artifact");
@@ -124,14 +119,16 @@ public class PartialCallGraph {
 
             final var partialCallGraph = new PartialCallGraph(opalCG);
 
-            return new ExtendedRevisionCallGraph(Constants.mvnForge, coordinate.getProduct(),
+            return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
                     coordinate.getVersionConstraint(), timestamp,
                     partialCallGraph.getNodeCount(), Constants.opalGenerator,
                     partialCallGraph.getClassHierarchy(),
                     partialCallGraph.getGraph());
-       } finally {
-          if (file != null){ file.delete();}
-       }
+        } finally {
+            if (file != null) {
+                file.delete();
+            }
+        }
     }
 
     /**
