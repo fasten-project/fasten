@@ -82,6 +82,7 @@ public class RepoClonerPluginTest {
                 "\t\"sourcesUrl\": \"someURL\",\n" +
                 "\t\"repoUrl\": \"https://github.com/fasten-project/fasten.git\",\n" +
                 "\t\"date\": -1,\n" +
+                "\t\"repoType\": \"git\",\n" +
                 "\t\"forge\": \"mvn\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
@@ -110,6 +111,7 @@ public class RepoClonerPluginTest {
                 "\t\"sourcesUrl\": \"\",\n" +
                 "\t\"repoUrl\": \"\",\n" +
                 "\t\"date\": -1,\n" +
+                "\t\"repoType\": \"\",\n" +
                 "\t\"forge\": \"mvn\"\n" +
                 "}").toString();
         var actual = repoCloner.produce().isPresent() ? repoCloner.produce().get() : null;
@@ -179,7 +181,7 @@ public class RepoClonerPluginTest {
 
     @Test
     public void versionTest() {
-        var version = "0.1.0";
+        var version = "0.1.2";
         assertEquals(version, repoCloner.version());
     }
 }

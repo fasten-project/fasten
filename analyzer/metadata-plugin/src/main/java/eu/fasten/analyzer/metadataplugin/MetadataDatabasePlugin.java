@@ -75,8 +75,8 @@ public class MetadataDatabasePlugin extends Plugin {
         private String outputPath;
 
         @Override
-        public void setDBConnection(DSLContext dslContext) {
-            MetadataDBExtension.dslContext = dslContext;
+        public void setDBConnection(Map<String, DSLContext> dslContexts) {
+            MetadataDBExtension.dslContext = dslContexts.get(Constants.mvnForge);
         }
 
         @Override
@@ -208,7 +208,7 @@ public class MetadataDatabasePlugin extends Plugin {
 
             // Insert package version record
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    callGraph.getCgGenerator(), callGraph.version,
+                    callGraph.getCgGenerator(), callGraph.version, null,
                     getProperTimestamp(callGraph.timestamp), new JSONObject());
 
             var cha = callGraph.getClassHierarchy();

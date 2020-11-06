@@ -28,9 +28,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MetadataDatabasePluginTest {
@@ -42,7 +41,7 @@ public class MetadataDatabasePluginTest {
         var dslContext = Mockito.mock(DSLContext.class);
         metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
         metadataDBExtension.setTopic("fasten.OPAL.out");
-        metadataDBExtension.setDBConnection(dslContext);
+        metadataDBExtension.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge, dslContext)));
     }
 
     @Test
@@ -123,7 +122,7 @@ public class MetadataDatabasePluginTest {
         Mockito.when(metadataDao.insertPackage(json.getString("product"), Constants.mvnForge)).thenReturn(packageId);
         long packageVersionId = 42;
         Mockito.when(metadataDao.insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),
-                Mockito.eq(json.getString("version")), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class))).thenReturn(packageVersionId);
+                Mockito.eq(json.getString("version")), Mockito.eq(null), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class))).thenReturn(packageVersionId);
         long fileId = 4;
         Mockito.when(metadataDao.insertFile(packageVersionId, "B.java")).thenReturn(fileId);
         Mockito.when(metadataDao.insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt())).thenReturn(List.of(64L, 65L));
@@ -140,7 +139,7 @@ public class MetadataDatabasePluginTest {
         assertEquals(packageVersionId, id);
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), Constants.mvnForge);
         Mockito.verify(metadataDao).insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),
-                Mockito.eq(json.getString("version")), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class));
+                Mockito.eq(json.getString("version")), Mockito.eq(null), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class));
         Mockito.verify(metadataDao).insertFile(packageVersionId, "B.java");
         Mockito.verify(metadataDao).insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt());
         Mockito.verify(metadataDao).batchInsertEdges(Mockito.anyList());
