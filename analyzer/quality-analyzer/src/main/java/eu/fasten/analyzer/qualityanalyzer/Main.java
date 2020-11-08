@@ -118,7 +118,7 @@ public class Main implements Runnable {
     private void setDBConnections(QualityAnalyzerPlugin.QualityAnalyzer qualityAnalyzer) {
 
         qualityAnalyzer.setDBConnection(dbUrls.entrySet().stream().map(e -> new AbstractMap.SimpleEntry<>(e.getKey(),
-                e.getValue())).collect(Collectors.toMap(AbstractMap.SimpleEntry::toString, e -> {
+                e.getValue())).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, e -> {
             try {
                 logger.debug("Set {} DB connection successfully for plug-in {}",
                         e.getKey(), QAConstants.QA_PLUGIN_NAME);
