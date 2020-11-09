@@ -152,10 +152,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private void handleConsuming() {
         ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
         for (var r : records) {
-            doCommitSync();
             var consumeTimestamp = System.currentTimeMillis() / 1000L;
             plugin.consume(r.value());
             handleProducing(r.value(), consumeTimestamp);
+            doCommitSync();
         }
     }
 
