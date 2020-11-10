@@ -20,6 +20,7 @@ package eu.fasten.core.data;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -302,6 +303,11 @@ public class ExtendedRevisionCallGraph {
         result.put("nodes", nodeCount);
 
         return result;
+    }
+
+    public String toJSONString(){
+        Gson gson = new Gson();
+        return gson.toJson(this);
     }
 
     /**
@@ -810,6 +816,7 @@ public class ExtendedRevisionCallGraph {
 
             return result;
         }
+
 
         @Override
         public String toString() {
