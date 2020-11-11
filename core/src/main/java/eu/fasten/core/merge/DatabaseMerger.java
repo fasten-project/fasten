@@ -54,10 +54,12 @@ public class DatabaseMerger {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseMerger.class);
 
-    private final DSLContext dbContext;
-    private final RocksDao rocksDao;
-    private final String artifact;
-    private final List<String> dependencies;
+    private final DirectedGraph callGraphData;
+    private final Map<String, Set<String>> universalParents;
+    private final Map<String, Set<String>> universalChildren;
+    private final Map<String, Map<String, Set<Long>>> typeDictionary;
+    private final Map<Long, Node> typeMap;
+    private final List<Arc> arcs;
 
     /**
      * Create instance of database merger.
@@ -69,10 +71,15 @@ public class DatabaseMerger {
      */
     public DatabaseMerger(final String artifact, final List<String> dependencies,
                           final DSLContext dbContext, final RocksDao rocksDao) {
-        this.dbContext = dbContext;
-        this.rocksDao = rocksDao;
-        this.artifact = artifact;
-        this.dependencies = dependencies;
+        final var dependenciesIds = getDependenciesIds(artifact, dependencies, dbContext);
+        final var universalCHA = createUniversalCHA(dependenciesIds, dbContext, rocksDao);
+
+        this.universalParents = universalCHA.getLeft();
+        this.universalChildren = universalCHA.getRight();
+        this.typeDictionary = createTypeDictionary(dependenciesIds, dbContext, rocksDao);
+        this.callGraphData = fetchCallGraphData(artifact, dbContext, rocksDao);
+        this.typeMap = createTypeMap(callGraphData, dbContext);
+        this.arcs = getArcs(callGraphData, dbContext);
     }
 
     /**
@@ -141,23 +148,12 @@ public class DatabaseMerger {
     public DirectedGraph mergeWithCHA() {
         var result = new ArrayImmutableDirectedGraph.Builder();
 
-        final var dependenciesIds = getDependenciesIds();
-        final var universalCHA = createUniversalCHA(dependenciesIds);
-        final var typeDictionary = createTypeDictionary(dependenciesIds);
-
-        final var callGraphData = fetchCallGraphData();
-        final var typeMap = createTypeMap(callGraphData);
-        final var arcs = getArcs(callGraphData);
-
         final long startTime = System.currentTimeMillis();
         for (final var arc : arcs) {
             if (callGraphData.isExternal(arc.target)) {
-                resolve(result, arc, typeMap.get(arc.target), universalCHA.getLeft(),
-                        universalCHA.getRight(), typeDictionary, false);
+                resolve(result, arc, typeMap.get(arc.target), false);
             } else {
-                resolve(result, arc, typeMap.get(arc.source), universalCHA.getLeft(),
-                        universalCHA.getRight(), typeDictionary,
-                        callGraphData.isExternal(arc.source));
+                resolve(result, arc, typeMap.get(arc.source), callGraphData.isExternal(arc.source));
             }
         }
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
@@ -168,24 +164,17 @@ public class DatabaseMerger {
     /**
      * Resolve an external call.
      *
-     * @param result            graph with resolved calls
-     * @param arc               source, target and receivers information
-     * @param node              type and method information
-     * @param universalParents  universal class hierarchy parents
-     * @param universalChildren universal class hierarchy children
-     * @param typeDictionary    Mapping of types and method signatures to their global IDs
-     * @param isCallback        true, if a given arc is a callback
+     * @param result     graph with resolved calls
+     * @param arc        source, target and receivers information
+     * @param node       type and method information
+     * @param isCallback true, if a given arc is a callback
      */
     private void resolve(final ArrayImmutableDirectedGraph.Builder result,
                          final Arc arc,
                          final Node node,
-                         final Map<String, Set<String>> universalParents,
-                         final Map<String, Set<String>> universalChildren,
-                         final Map<String, Map<String, Set<Long>>> typeDictionary,
                          final boolean isCallback) {
         if (node.isConstructor()) {
-            resolveInitsAndConstructors(result, arc, node, universalParents,
-                    typeDictionary, isCallback);
+            resolveInitsAndConstructors(result, arc, node, isCallback);
         }
 
         for (var entry : arc.receivers) {
@@ -205,7 +194,7 @@ public class DatabaseMerger {
                     }
                     break;
                 case "special":
-                    resolveInitsAndConstructors(result, arc, node, universalParents, typeDictionary, isCallback);
+                    resolveInitsAndConstructors(result, arc, node, isCallback);
                     break;
                 case "dynamic":
                     logger.warn("OPAL didn't rewrite the dynamic");
@@ -224,18 +213,14 @@ public class DatabaseMerger {
     /**
      * Resolves constructors.
      *
-     * @param result           {@link DirectedGraph} with resolved calls
-     * @param arc              source, target and receivers information
-     * @param node             type and method information
-     * @param universalParents universal class hierarchy of all dependencies
-     * @param typeDictionary   Mapping of types and method signatures to their global IDs
-     * @param isCallback       true, if a given arc is a callback
+     * @param result     {@link DirectedGraph} with resolved calls
+     * @param arc        source, target and receivers information
+     * @param node       type and method information
+     * @param isCallback true, if a given arc is a callback
      */
     private void resolveInitsAndConstructors(final ArrayImmutableDirectedGraph.Builder result,
                                              final Arc arc,
                                              final Node node,
-                                             final Map<String, Set<String>> universalParents,
-                                             final Map<String, Map<String, Set<Long>>> typeDictionary,
                                              final boolean isCallback) {
         final var typeList = universalParents.get(node.typeUri);
         if (typeList != null) {
@@ -257,9 +242,10 @@ public class DatabaseMerger {
      * Retrieve external calls and constructor calls from a call graph.
      *
      * @param callGraphData call graph
+     * @param dbContext     DSL context
      * @return list of external and constructor calls
      */
-    private List<Arc> getArcs(final DirectedGraph callGraphData) {
+    private List<Arc> getArcs(final DirectedGraph callGraphData, final DSLContext dbContext) {
         var arcsList = new ArrayList<Arc>();
         Condition arcsCondition = null;
         for (var source : callGraphData.nodes()) {
@@ -288,9 +274,12 @@ public class DatabaseMerger {
     /**
      * Retrieve a call graph from a graph database given a maven coordinate.
      *
+     * @param dbContext DSL context
+     * @param rocksDao  rocks DAO
      * @return call graph
      */
-    private DirectedGraph fetchCallGraphData() {
+    private DirectedGraph fetchCallGraphData(final String artifact, final DSLContext dbContext,
+                                             final RocksDao rocksDao) {
         var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
         var version = artifact.split(":")[2];
 
@@ -318,9 +307,10 @@ public class DatabaseMerger {
      * Create a mapping from callable IDs to {@link Node}.
      *
      * @param callGraphData call graph
+     * @param dbContext     DSL context
      * @return a map of callable IDs and {@link Node}
      */
-    private Map<Long, Node> createTypeMap(final DirectedGraph callGraphData) {
+    private Map<Long, Node> createTypeMap(final DirectedGraph callGraphData, final DSLContext dbContext) {
         var typeMap = new HashMap<Long, Node>();
         var nodesIds = callGraphData.nodes();
         var callables = dbContext
@@ -338,14 +328,16 @@ public class DatabaseMerger {
      * Create a mapping from types and method signatures to callable IDs.
      *
      * @param dependenciesIds IDs of dependencies
+     * @param dbContext       DSL context
+     * @param rocksDao        rocks DAO
      * @return a type dictionary
      */
     private Map<String, Map<String, Set<Long>>> createTypeDictionary(
-            final Set<Long> dependenciesIds) {
+            final Set<Long> dependenciesIds, final DSLContext dbContext, final RocksDao rocksDao) {
         final long startTime = System.currentTimeMillis();
         var result = new HashMap<String, Map<String, Set<Long>>>();
 
-        var callables = getCallables(dependenciesIds);
+        var callables = getCallables(dependenciesIds, rocksDao);
 
         dbContext.select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID)
                 .from(Callables.CALLABLES)
@@ -374,14 +366,16 @@ public class DatabaseMerger {
      * Create a universal class hierarchy from all dependencies.
      *
      * @param dependenciesIds IDs of dependencies
+     * @param dbContext       DSL context
+     * @param rocksDao        rocks DAO
      * @return universal CHA
      */
     private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA(
-            final Set<Long> dependenciesIds) {
+            final Set<Long> dependenciesIds, final DSLContext dbContext, final RocksDao rocksDao) {
         final long startTime = System.currentTimeMillis();
         var universalCHA = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
 
-        var callables = getCallables(dependenciesIds);
+        var callables = getCallables(dependenciesIds, rocksDao);
 
         var modulesIds = dbContext
                 .select(Callables.CALLABLES.MODULE_ID)
@@ -467,9 +461,10 @@ public class DatabaseMerger {
      * Get callables from dependencies.
      *
      * @param dependenciesIds dependencies IDs
+     * @param rocksDao        rocks DAO
      * @return list of callables
      */
-    private List<Long> getCallables(final Set<Long> dependenciesIds) {
+    private List<Long> getCallables(final Set<Long> dependenciesIds, final RocksDao rocksDao) {
         var callables = new ArrayList<Long>();
         for (var id : dependenciesIds) {
             try {
@@ -487,9 +482,12 @@ public class DatabaseMerger {
     /**
      * Get dependencies IDs from a metadata database.
      *
+     * @param dbContext DSL context
      * @return set of IDs of dependencies
      */
-    private Set<Long> getDependenciesIds() {
+    private Set<Long> getDependenciesIds(final String artifact,
+                                         final List<String> dependencies,
+                                         final DSLContext dbContext) {
         var coordinates = new HashSet<>(dependencies);
         coordinates.add(artifact);
 
