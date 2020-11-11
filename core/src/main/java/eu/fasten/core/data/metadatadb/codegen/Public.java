@@ -14,6 +14,8 @@ import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
+import eu.fasten.core.data.metadatadb.codegen.udt.Receiver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +26,7 @@ import javax.annotation.processing.Generated;
 import org.jooq.Catalog;
 import org.jooq.Sequence;
 import org.jooq.Table;
+import org.jooq.UDT;
 import org.jooq.impl.SchemaImpl;
 
 
@@ -40,7 +43,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = 619820699;
+    private static final long serialVersionUID = -42696926;
 
     /**
      * The reference instance of <code>public</code>
@@ -98,6 +101,11 @@ public class Public extends SchemaImpl {
     public final Packages PACKAGES = eu.fasten.core.data.metadatadb.codegen.tables.Packages.PACKAGES;
 
     /**
+     * The table <code>public.virtual_implementations</code>.
+     */
+    public final VirtualImplementations VIRTUAL_IMPLEMENTATIONS = eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations.VIRTUAL_IMPLEMENTATIONS;
+
+    /**
      * No further instances allowed
      */
     private Public() {
@@ -145,6 +153,19 @@ public class Public extends SchemaImpl {
             ModuleContents.MODULE_CONTENTS,
             Modules.MODULES,
             PackageVersions.PACKAGE_VERSIONS,
-            Packages.PACKAGES);
+            Packages.PACKAGES,
+            VirtualImplementations.VIRTUAL_IMPLEMENTATIONS);
+    }
+
+    @Override
+    public final List<UDT<?>> getUDTs() {
+        List result = new ArrayList();
+        result.addAll(getUDTs0());
+        return result;
+    }
+
+    private final List<UDT<?>> getUDTs0() {
+        return Arrays.<UDT<?>>asList(
+            Receiver.RECEIVER);
     }
 }

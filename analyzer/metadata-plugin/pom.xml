@@ -13,7 +13,7 @@
 
     <groupId>eu.fasten.analyzer</groupId>
     <artifactId>metadata-plugin</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>metadata-plugin</name>
@@ -65,10 +65,36 @@
                                         </Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.metadataplugin.MetadataDatabasePlugin</Plugin-Class>
-                                        <Plugin-Id>metadata-plugin</Plugin-Id>
-                                        <Plugin-Version>0.0.1</Plugin-Version>
-                                        <Plugin-Description>Metadata Plugin</Plugin-Description>
+                                        <Plugin-Class>eu.fasten.analyzer.metadataplugin.MetadataDatabaseJavaPlugin</Plugin-Class>
+                                        <Plugin-Id>metadata-plugin-java</Plugin-Id>
+                                        <Plugin-Version>0.1.2</Plugin-Version>
+                                        <Plugin-Description>Metadata Plugin for Java CGs</Plugin-Description>
+                                        <Plugin-License>Apache License 2.0</Plugin-License>
+                                    </manifestEntries>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>eu.fasten.analyzer.metadataplugin.Main
+                                        </Main-Class>
+                                        <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
+                                        <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
+                                        <Plugin-Class>eu.fasten.analyzer.metadataplugin.MetadataDatabaseCPlugin</Plugin-Class>
+                                        <Plugin-Id>metadata-plugin-c</Plugin-Id>
+                                        <Plugin-Version>0.1.2</Plugin-Version>
+                                        <Plugin-Description>Metadata Plugin for C CGs</Plugin-Description>
+                                        <Plugin-License>Apache License 2.0</Plugin-License>
+                                    </manifestEntries>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>eu.fasten.analyzer.metadataplugin.Main
+                                        </Main-Class>
+                                        <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
+                                        <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
+                                        <Plugin-Class>eu.fasten.analyzer.metadataplugin.MetadataDatabasePythonPlugin</Plugin-Class>
+                                        <Plugin-Id>metadata-plugin-python</Plugin-Id>
+                                        <Plugin-Version>0.1.2</Plugin-Version>
+                                        <Plugin-Description>Metadata Plugin for Python CGs</Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
                                 </transformer>

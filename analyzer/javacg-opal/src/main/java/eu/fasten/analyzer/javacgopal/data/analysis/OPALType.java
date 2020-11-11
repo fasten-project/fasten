@@ -21,8 +21,8 @@ package eu.fasten.analyzer.javacgopal.data.analysis;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Node;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Type;
+import eu.fasten.core.data.JavaNode;
+import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,7 +92,7 @@ public class OPALType {
      * @param klass            object type
      * @return map of FastenURI and corresponding Types
      */
-    public static Map<FastenURI, Type> getType(ClassHierarchy projectHierarchy,
+    public static Map<FastenURI, JavaType> getType(ClassHierarchy projectHierarchy,
                                                final Map<DeclaredMethod, Integer> methods,
                                                final ObjectType klass) {
         final var superTypes = extractSuperClasses(projectHierarchy, klass);
@@ -105,7 +105,7 @@ public class OPALType {
         }
 
         return Map.of(OPALMethod.getTypeURI(klass),
-                new Type("", toURIDeclaredMethods(methods), superClassesURIs,
+                new JavaType("", toURIDeclaredMethods(methods), superClassesURIs,
                         toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass)),
                         "", false));
     }
@@ -118,7 +118,7 @@ public class OPALType {
      * @param klass object type
      * @return map of FastenURI and corresponding Types
      */
-    public static Map<FastenURI, Type> getType(final OPALType type, final ObjectType klass) {
+    public static Map<FastenURI, JavaType> getType(final OPALType type, final ObjectType klass) {
         final LinkedList<FastenURI> superClassesURIs;
         if (type.getSuperClasses() != null) {
             superClassesURIs = toURIClasses(type.getSuperClasses());
@@ -127,7 +127,7 @@ public class OPALType {
         }
 
         return Map.of(OPALMethod.getTypeURI(klass),
-                new Type(type.getSourceFileName(), toURIMethods(type.getMethods()),
+                new JavaType(type.getSourceFileName(), toURIMethods(type.getMethods()),
                         superClassesURIs, toURIInterfaces(type.getSuperInterfaces()),
                         type.access, type.isFinal));
     }
@@ -139,13 +139,13 @@ public class OPALType {
      * @param methods map of methods to convert
      * @return BiMap of Nodes
      */
-    public static BiMap<Integer, Node> toURIDeclaredMethods(
+    public static BiMap<Integer, JavaNode> toURIDeclaredMethods(
             final Map<DeclaredMethod, Integer> methods) {
-        final BiMap<Integer, Node> result = HashBiMap.create();
+        final BiMap<Integer, JavaNode> result = HashBiMap.create();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
-            result.put(entry.getValue(), new Node(OPALMethod.toCanonicalSchemelessURI(null,
+            result.put(entry.getValue(), new JavaNode(OPALMethod.toCanonicalSchemelessURI(null,
                     method.declaringClassType(), method.name(),
                     method.descriptor()), new HashMap<>()));
         }
@@ -185,12 +185,12 @@ public class OPALType {
      * @return A Map in which the unique id of each method in the artifact is the key and the
      * {@link FastenURI} of the method is the value.
      */
-    public static BiMap<Integer, Node> toURIMethods(final Map<Method, Integer> methods) {
-        final BiMap<Integer, Node> result = HashBiMap.create();
+    public static BiMap<Integer, JavaNode> toURIMethods(final Map<Method, Integer> methods) {
+        final BiMap<Integer, JavaNode> result = HashBiMap.create();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
-            result.put(entry.getValue(), new Node(getUri(method),
+            result.put(entry.getValue(), new JavaNode(getUri(method),
                     Map.of("first", getFirstLine(method),
                             "last", getLastLine(method),
                             "defined", method.instructionsOption().isDefined(),

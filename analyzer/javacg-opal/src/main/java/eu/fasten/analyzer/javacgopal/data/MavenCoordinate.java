@@ -20,15 +20,21 @@ package eu.fasten.analyzer.javacgopal.data;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
+import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,9 +84,7 @@ public class MavenCoordinate {
      */
     public MavenCoordinate(final String groupID, final String artifactID, final String version,
                            final String packaging) {
-        var repoHost = System.getenv("MVN_REPO") != null
-                ? System.getenv("MVN_REPO") : "https://repo.maven.apache.org/maven2/";
-        this.mavenRepos = new ArrayList<>(Collections.singletonList(repoHost));
+        this.mavenRepos = MavenUtilities.getRepos();
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
@@ -88,20 +92,16 @@ public class MavenCoordinate {
     }
 
     /**
-     * Construct MavenCoordinate form groupID, artifactID, and version.
+     * Construct MavenCoordinate form json.
      *
-     * @param repos      Maven repositories
-     * @param groupID    GroupID
-     * @param artifactID ArtifactID
-     * @param version    Version
+     * @param kafkaConsumedJson json representation of Meven coordinate
      */
-    public MavenCoordinate(final List<String> repos, final String groupID,
-                           final String artifactID, final String version, final String packaging) {
-        this.mavenRepos = repos;
-        this.groupID = groupID;
-        this.artifactID = artifactID;
-        this.versionConstraint = version;
-        this.packaging = packaging;
+    public MavenCoordinate(final JSONObject kafkaConsumedJson) throws JSONException {
+        this.mavenRepos = MavenUtilities.getRepos();
+        this.groupID = kafkaConsumedJson.getString("groupId");
+        this.artifactID = kafkaConsumedJson.getString("artifactId");
+        this.versionConstraint = kafkaConsumedJson.getString("version");
+        this.packaging = kafkaConsumedJson.optString("packagingType", "jar");
     }
 
     /**
@@ -111,16 +111,17 @@ public class MavenCoordinate {
      * @return MavenCoordinate
      */
     public static MavenCoordinate fromString(final String coords, final String packaging) {
-        var coordinate = coords.split(":");
+        var coordinate = coords.split(Constants.mvnCoordinateSeparator);
         return new MavenCoordinate(coordinate[0], coordinate[1], coordinate[2], packaging);
     }
 
     public String getProduct() {
-        return groupID + ":" + artifactID;
+        return groupID + Constants.mvnCoordinateSeparator + artifactID;
     }
 
     public String getCoordinate() {
-        return groupID + ":" + artifactID + ":" + versionConstraint;
+        return groupID + Constants.mvnCoordinateSeparator + artifactID
+                + Constants.mvnCoordinateSeparator + versionConstraint;
     }
 
     /**
@@ -148,7 +149,9 @@ public class MavenCoordinate {
      */
     public static class MavenResolver {
         private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
-        private static final String[] packaging = {"jar", "war", "zip", "ear", "rar", "ejb"};
+        private static final String[] packaging = {"jar", "war", "zip", "ear", "rar", "ejb", "par",
+                "aar", "car", "nar", "kar"};
+        private static final String[] defaultPackaging = {"zip", "aar", "tar.gz", "jar"};
 
         /**
          * Download a JAR file indicated by the provided Maven coordinate.
@@ -156,45 +159,80 @@ public class MavenCoordinate {
          * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
          * @return A temporary file on the filesystem
          */
-        public Optional<File> downloadJar(final MavenCoordinate mavenCoordinate)
+        public File downloadArtifact(final MavenCoordinate mavenCoordinate)
                 throws FileNotFoundException {
             logger.debug("Downloading JAR for " + mavenCoordinate);
-
-            for (var repo : mavenCoordinate.getMavenRepos()) {
-                Optional<File> jar;
-                if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
-                    jar = httpGetFile(mavenCoordinate
-                            .toProductUrl(repo, mavenCoordinate.getPackaging()));
-                } else {
-                    jar = httpGetFile(mavenCoordinate.toProductUrl(repo, "jar"));
+            var found = false;
+            Optional<File> jar = Optional.empty();
+            var repos = mavenCoordinate.getMavenRepos();
+            for (int i = 0; i < repos.size(); i++) {
+                try {
+                    if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
+                        found = true;
+                        jar = httpGetFile(mavenCoordinate
+                                .toProductUrl(repos.get(i), mavenCoordinate.getPackaging()));
+                    }
+                } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
+                    found = false;
+                    logger.error("Could not find URL: {}", e.getMessage());
                 }
                 if (jar.isPresent()) {
-                    return jar;
+                    return jar.get();
+                } else if (found && i == repos.size() - 1) {
+                    throw new RuntimeException();
+                } else if (found) {
+                    continue;
+                }
+
+                for (var s : defaultPackaging) {
+                    try {
+                        found = true;
+                        jar = httpGetFile(mavenCoordinate.toProductUrl(repos.get(i), s));
+                    } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
+                        found = false;
+                        logger.error("Could not find URL: {}", e.getMessage());
+                    }
+                    if (jar.isPresent()) {
+                        return jar.get();
+                    } else if (found && i == repos.size() - 1) {
+                        throw new RuntimeException();
+                    } else if (found) {
+                        break;
+                    }
                 }
             }
-            return Optional.empty();
+            throw new FileNotFoundException(
+                    mavenCoordinate.toURL(mavenCoordinate.getMavenRepos().size() > 0
+                            ? mavenCoordinate.getMavenRepos().get(0)
+                            : "no repos specified") + " | "
+                            + mavenCoordinate.getPackaging());
         }
 
         /**
          * Utility function that stores the contents of GET request to a temporary file.
          */
-        private static Optional<File> httpGetFile(final String url) throws FileNotFoundException {
-            logger.debug("HTTP GET: " + url);
+        private static Optional<File> httpGetFile(final String url) throws FileNotFoundException,
+                MalformedURLException, UnknownHostException {
+	
+            Path tempFile = null;
+	    try {
+                logger.debug("HTTP GET: " + url);
 
-            try {
                 final var packaging = url.substring(url.lastIndexOf("."));
-                final var tempFile = Files.createTempFile("fasten", packaging);
+                tempFile = Files.createTempFile("fasten", packaging);
 
                 final InputStream in = new URL(url).openStream();
                 Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
                 in.close();
 
                 return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-            } catch (FileNotFoundException e) {
-                logger.error("Could not find URL: " + url);
+            } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
+                logger.error("Couldn't find an artifact: {}", url);
+		        if (tempFile != null) {tempFile.toFile().delete();}
                 throw e;
-            } catch (Exception e) {
-                logger.error("Error retrieving URL: " + url);
+            } catch (IOException e) {
+                logger.error("IO exception occurred while retrieving URL: {}", url);
+		        if (tempFile != null) {tempFile.toFile().delete();}
                 return Optional.empty();
             }
         }

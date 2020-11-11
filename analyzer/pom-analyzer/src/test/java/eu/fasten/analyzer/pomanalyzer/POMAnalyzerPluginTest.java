@@ -18,12 +18,14 @@
 
 package eu.fasten.analyzer.pomanalyzer;
 
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
+import eu.fasten.core.maven.data.DependencyData;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,6 +52,7 @@ public class POMAnalyzerPluginTest {
         var repoUrl = "http://github.com/junit-team/junit/tree/master";
         var sourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
         var packagingType = "jar";
+        var projectName = "JUnit";
         var dependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
@@ -88,6 +91,7 @@ public class POMAnalyzerPluginTest {
         assertEquals(repoUrl, json.getString("repoUrl"));
         assertEquals(sourcesUrl, json.getString("sourcesUrl"));
         assertEquals(packagingType, json.getString("packagingType"));
+        assertEquals(projectName, json.getString("projectName"));
         assertEquals(dependencyData, DependencyData.fromJSON(json.getJSONObject("dependencyData")));
     }
 
@@ -97,6 +101,7 @@ public class POMAnalyzerPluginTest {
         var repoUrl = "http://github.com/junit-team/junit/tree/master";
         var sourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
         var packagingType = "jar";
+        var projectName = "JUnit";
         var dependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
@@ -127,7 +132,7 @@ public class POMAnalyzerPluginTest {
                 "}"));
         var commitTag = "f8a34a";
         final var packageId = 1L;
-        Mockito.when(metadataDao.insertPackage("junit.junit", "mvn", null, repoUrl, null))
+        Mockito.when(metadataDao.insertPackage("junit:junit", Constants.mvnForge, projectName, repoUrl, null))
                 .thenReturn(packageId);
         final var packageVersionId = 0L;
         var packageVersionMetadata = new JSONObject();
@@ -136,12 +141,13 @@ public class POMAnalyzerPluginTest {
         packageVersionMetadata.put("commitTag", commitTag);
         packageVersionMetadata.put("sourcesUrl", sourcesUrl);
         packageVersionMetadata.put("packagingType", packagingType);
-        Mockito.when(metadataDao.insertPackageVersion(packageId, "OPAL", "4.12", null, packageVersionMetadata))
+        packageVersionMetadata.put("parentCoordinate", "");
+        Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", null, null, packageVersionMetadata))
                 .thenReturn(packageVersionId);
         final var dependencyId = 16L;
-        Mockito.when(metadataDao.insertPackage("org.hamcrest.hamcrest-core", "mvn", null, null, null))
+        Mockito.when(metadataDao.insertPackage("org.hamcrest:hamcrest-core", Constants.mvnForge, null, null, null))
                 .thenReturn(dependencyId);
-        var result = pomAnalyzer.saveToDatabase("junit.junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, dependencyData, metadataDao);
+        var result = pomAnalyzer.saveToDatabase("junit:junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, -1, projectName, null, dependencyData, metadataDao);
         assertEquals(packageVersionId, result);
     }
 
@@ -179,7 +185,7 @@ public class POMAnalyzerPluginTest {
 
     @Test
     public void versionTest() {
-        var version = "0.0.1";
+        var version = "0.1.2";
         assertEquals(version, pomAnalyzer.version());
     }
 }

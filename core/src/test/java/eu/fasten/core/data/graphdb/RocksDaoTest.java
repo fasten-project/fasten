@@ -37,7 +37,7 @@ public class RocksDaoTest {
 
     @BeforeEach
     public void setUp() throws RocksDBException {
-        rocksDao = new RocksDao("graphDB");
+        rocksDao = new RocksDao("graphDB", false);
     }
 
     @AfterEach
@@ -167,7 +167,7 @@ public class RocksDaoTest {
         assertEquals(graph.getNumInternalNodes(), graphData.nodes().size() - graphData.externalNodes().size());
         assertEquals(graph.getNodes().size(), graphData.nodes().size());
         assertEquals(new LongOpenHashSet(graph.getNodes()), graphData.nodes());
-        assertEquals(new LongArrayList(List.of(9223372036854775805L, 9223372036854775807L)), graphData.successors(9223372036854775804L));
+        assertEquals(new LongArrayList(List.of(9223372036854775807L, 9223372036854775805L)), graphData.successors(9223372036854775804L));
         assertEquals(new LongArrayList(List.of(9223372036854775806L)), graphData.successors(9223372036854775805L));
         assertEquals(new LongArrayList(List.of(9223372036854775807L)), graphData.successors(9223372036854775806L));
         assertEquals(new LongArrayList(), graphData.predecessors(9223372036854775804L));
@@ -192,6 +192,12 @@ public class RocksDaoTest {
     }
 
     @Test
+    public void graphNotFoundTest() throws RocksDBException {
+        var graph = rocksDao.getGraphData(-1);
+        assertNull(graph);
+    }
+
+    @Test
     public void multipleGraphsDatabaseTest() throws IOException, RocksDBException {
         var json1 = new JSONObject("{" +
                 "\"index\": 1," +
@@ -207,7 +213,7 @@ public class RocksDaoTest {
         assertEquals(graph1.getNumInternalNodes(), graphData1.nodes().size() - graphData1.externalNodes().size());
         assertEquals(graph1.getNodes().size(), graphData1.nodes().size());
         assertEquals(new LongOpenHashSet(graph1.getNodes()), new LongOpenHashSet(graphData1.nodes()));
-        assertEquals(new LongArrayList(List.of(2L, 3L, 5L)), graphData1.successors(1L));
+        assertEquals(new LongArrayList(List.of(5L, 3L, 2L)), graphData1.successors(1L));
         assertEquals(new LongArrayList(List.of(4L)), graphData1.successors(2L));
         assertEquals(new LongArrayList(List.of(4L)), graphData1.successors(3L));
         assertEquals(new LongArrayList(List.of(1L)), graphData1.successors(4L));
@@ -215,7 +221,7 @@ public class RocksDaoTest {
         assertEquals(new LongArrayList(List.of(4L)), graphData1.predecessors(1L));
         assertEquals(new LongArrayList(List.of(1L)), graphData1.predecessors(2L));
         assertEquals(new LongArrayList(List.of(1L)), graphData1.predecessors(3L));
-        assertEquals(new LongArrayList(List.of(2L, 3L)), graphData1.predecessors(4L));
+        assertEquals(new LongArrayList(List.of(3L, 2L)), graphData1.predecessors(4L));
         assertEquals(new LongArrayList(List.of(1L)), graphData1.predecessors(5L));
         assertEquals(graph1.getEdges().size(), graphData1.numArcs());
         assertEquals(new LongOpenHashSet(List.of(4L, 5L)), graphData1.externalNodes());

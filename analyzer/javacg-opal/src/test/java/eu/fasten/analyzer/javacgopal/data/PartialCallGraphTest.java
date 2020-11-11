@@ -20,9 +20,14 @@ package eu.fasten.analyzer.javacgopal.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
@@ -60,7 +65,7 @@ class PartialCallGraphTest {
     private static PartialCallGraph singleCallCG;
 
     @BeforeAll
-    static void setUp() {
+    static void setUp() throws OPALException {
         singleCallCG = new PartialCallGraph(new CallGraphConstructor(
                 new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                         .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA"));
@@ -71,19 +76,19 @@ class PartialCallGraphTest {
         var cha = singleCallCG.getClassHierarchy();
 
         assertNotNull(cha);
-        assertNotNull(cha.get(ExtendedRevisionCallGraph.Scope.internalTypes));
-        assertEquals(1, cha.get(ExtendedRevisionCallGraph.Scope.internalTypes).size());
-        assertEquals(1, cha.get(ExtendedRevisionCallGraph.Scope.externalTypes).size());
-        assertEquals(0, cha.get(ExtendedRevisionCallGraph.Scope.resolvedTypes).size());
+        assertNotNull(cha.get(JavaScope.internalTypes));
+        assertEquals(1, cha.get(JavaScope.internalTypes).size());
+        assertEquals(1, cha.get(JavaScope.externalTypes).size());
+        assertEquals(0, cha.get(JavaScope.resolvedTypes).size());
 
         // -------
         // Check internal types
         // -------
-        var SSTTInternalType = cha.get(ExtendedRevisionCallGraph.Scope.internalTypes)
+        var SSTTInternalType = cha.get(JavaScope.internalTypes)
                 .get(FastenURI.create("/name.space/SingleSourceToTarget"));
 
         // Check filename
-        Assertions.assertEquals("SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
+        Assertions.assertEquals("name/space/SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
 
         // Check super interfaces and classes
         Assertions.assertEquals(0, SSTTInternalType.getSuperInterfaces().size());
@@ -93,7 +98,7 @@ class PartialCallGraphTest {
         // Check methods
         Assertions.assertEquals(3, SSTTInternalType.getMethods().size());
 
-        Assertions.assertEquals(FastenURI.create("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType"),
+        Assertions.assertEquals(FastenURI.create("/name.space/SingleSourceToTarget.%3Cinit%3E()%2Fjava.lang%2FVoidType"),
                 SSTTInternalType.getMethods().get(0).getUri());
         Assertions.assertEquals("public", SSTTInternalType.getMethods().get(0).getMetadata().get("access"));
         Assertions.assertEquals(true, SSTTInternalType.getMethods().get(0).getMetadata().get("defined"));
@@ -103,7 +108,7 @@ class PartialCallGraphTest {
         // -------
         // Check external types
         // -------
-        var SSTTExternalType = cha.get(ExtendedRevisionCallGraph.Scope.externalTypes)
+        var SSTTExternalType = cha.get(JavaScope.externalTypes)
                 .get(FastenURI.create("/java.lang/Object"));
 
         // Check super interfaces and classes
@@ -113,7 +118,7 @@ class PartialCallGraphTest {
         // Check methods
         Assertions.assertEquals(1, SSTTExternalType.getMethods().size());
 
-        Assertions.assertEquals(FastenURI.create("/java.lang/Object.Object()VoidType"),
+        Assertions.assertEquals(FastenURI.create("/java.lang/Object.%3Cinit%3E()VoidType"),
                 SSTTExternalType.getMethods().get(3).getUri());
         Assertions.assertEquals(0, SSTTExternalType.getMethods().get(3).getMetadata().size());
     }
@@ -148,12 +153,42 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void createExtendedRevisionCallGraph() throws FileNotFoundException {
+    void OPALExceptionInConstructorNotFromOpalTest() {
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        var exception = new RuntimeException("some message");
+        exception.setStackTrace(new StackTraceElement[]{new StackTraceElement("some.class", "some method", "some file", 10)});
+        Mockito.when(constructor.getProject()).thenThrow(exception);
+
+        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor));
+    }
+
+    @Test
+    void OPALExceptionInConstructorFromOpalTest() {
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        var exception = Mockito.mock(RuntimeException.class);
+        Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{new StackTraceElement("org.opalj", "some method", "some file", 10)});
+        Mockito.when(constructor.getProject()).thenThrow(exception);
+
+        assertThrows(OPALException.class, () -> new PartialCallGraph(constructor));
+    }
+
+    @Test
+    void OPALExceptionInConstructorEmptyStacktraceTest() {
+        var constructor = Mockito.mock(CallGraphConstructor.class);
+        var exception = Mockito.mock(RuntimeException.class);
+        Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{});
+        Mockito.when(constructor.getProject()).thenThrow(exception);
+
+        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor));
+    }
+
+    @Test
+    void createExtendedRevisionJavaCallGraph() throws FileNotFoundException, OPALException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
-        var cg = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
+        var cg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
                 "", "CHA", 1574072773);
         assertNotNull(cg);
-        Assertions.assertEquals("mvn", cg.forge);
+        Assertions.assertEquals(Constants.mvnForge, cg.forge);
         Assertions.assertEquals("1.7.29", cg.version);
         Assertions.assertEquals(1574072773, cg.timestamp);
         Assertions.assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
@@ -162,7 +197,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHAMultipleDeclarations() {
+    void internalExternalCHAMultipleDeclarations() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 
@@ -201,7 +236,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHASingleDeclaration() {
+    void internalExternalCHASingleDeclaration() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 
@@ -241,7 +276,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHAVirtual() {
+    void internalExternalCHAVirtual() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 
@@ -280,7 +315,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void internalExternalCHANoDefinition() {
+    void internalExternalCHANoDefinition() throws OPALException {
         var classFile = Mockito.mock(ClassFile.class);
         var type = Mockito.mock(ObjectType.class);
 

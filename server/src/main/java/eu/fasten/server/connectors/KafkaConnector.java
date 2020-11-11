@@ -46,12 +46,12 @@ public class KafkaConnector {
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "5");
+        properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "1");
 
         // Gives more time to the consumer for processing the records so
         // that the broker will NOT kill the consumer.
-        properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "3000");
-        properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "10000");
+        properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "200000");
+        properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "700000");
         properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "3600000");
 
         return properties;

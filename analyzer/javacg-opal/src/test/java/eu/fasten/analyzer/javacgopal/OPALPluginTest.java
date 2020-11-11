@@ -22,20 +22,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.analyzer.javacgopal.data.exceptions.EmptyCallGraphException;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class OPALPluginTest {
 
-    static OPALPlugin.OPAL plugin;
+    private OPALPlugin.OPAL plugin;
 
-    @BeforeAll
-    public static void setUp() {
+    @BeforeEach
+    public void setUp() {
         plugin = new OPALPlugin.OPAL();
     }
 
@@ -66,7 +66,7 @@ class OPALPluginTest {
         plugin.consume(coordinateJSON.toString());
 
         assertTrue(plugin.produce().isPresent());
-        assertFalse(new ExtendedRevisionCallGraph(new JSONObject(plugin.produce().get()))
+        assertFalse(new ExtendedRevisionJavaCallGraph(new JSONObject(plugin.produce().get()))
                 .isCallGraphEmpty());
     }
 
@@ -84,7 +84,7 @@ class OPALPluginTest {
         plugin.consume(coordinateJSON.toString());
 
         assertTrue(plugin.produce().isPresent());
-        assertFalse(new ExtendedRevisionCallGraph(new JSONObject(plugin.produce().get()))
+        assertFalse(new ExtendedRevisionJavaCallGraph(new JSONObject(plugin.produce().get()))
                 .isCallGraphEmpty());
     }
 
@@ -99,7 +99,6 @@ class OPALPluginTest {
 
         plugin.consume(noJARFile.toString());
         var error = plugin.getPluginError();
-
         assertFalse(plugin.produce().isPresent());
         assertEquals(FileNotFoundException.class.getSimpleName(), error.getClass().getSimpleName());
     }
@@ -114,14 +113,12 @@ class OPALPluginTest {
                 + "}");
 
         plugin.consume(emptyCGCoordinate.toString());
-        assertTrue(plugin.produce().isPresent());
-        var graph = plugin.produce().get();
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(graph));
-        assertTrue(cg.isCallGraphEmpty());
+        assertFalse(plugin.produce().isPresent());
+        assertEquals(EmptyCallGraphException.class, plugin.getPluginError().getClass());
     }
 
     @Test
-    public void testShouldNotFaceClassReadingError() throws JSONException, IOException {
+    public void testShouldNotFaceClassReadingError() throws JSONException {
 
         JSONObject coordinateJSON1 = new JSONObject("{\n" +
                 "    \"groupId\": \"com.zarbosoft\",\n" +
@@ -133,7 +130,7 @@ class OPALPluginTest {
         plugin.consume(coordinateJSON1.toString());
 
         assertTrue(plugin.produce().isPresent());
-        assertFalse(new ExtendedRevisionCallGraph(new JSONObject(plugin.produce().get()))
+        assertFalse(new ExtendedRevisionJavaCallGraph(new JSONObject(plugin.produce().get()))
                 .isCallGraphEmpty());
     }
 

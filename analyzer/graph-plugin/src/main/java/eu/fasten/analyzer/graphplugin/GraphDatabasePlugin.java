@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.graphplugin;
 
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.plugins.GraphDBConnector;
@@ -85,6 +86,11 @@ public class GraphDatabasePlugin extends Plugin {
             this.pluginError = null;
             var json = new JSONObject(record);
             if (json.has("payload")) {
+		if (json.get("payload").toString().isEmpty()) {
+			logger.error("Empty payload");
+			setPluginError(new RuntimeException("Empty payload"));
+			return;
+		}
                 json = json.getJSONObject("payload");
             }
             final var path = json.optString("dir");
@@ -118,9 +124,9 @@ public class GraphDatabasePlugin extends Plugin {
 
             final String groupId;
             final String artifactId;
-            if (gidGraph.getProduct().contains(":")) {
-                groupId = gidGraph.getProduct().split(":")[0];
-                artifactId = gidGraph.getProduct().split(":")[1];
+            if (gidGraph.getProduct().contains(Constants.mvnCoordinateSeparator)) {
+                groupId = gidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[0];
+                artifactId = gidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[1];
             } else {
                 final var productParts = gidGraph.getProduct().split("\\.");
                 groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));

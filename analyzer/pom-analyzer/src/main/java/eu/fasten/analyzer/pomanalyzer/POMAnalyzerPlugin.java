@@ -19,13 +19,16 @@
 package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
+import eu.fasten.core.maven.data.DependencyData;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
@@ -59,8 +62,9 @@ public class POMAnalyzerPlugin extends Plugin {
         private String commitTag = null;
         private String sourcesUrl = null;
         private String packagingType = null;
+        private String projectName = null;
+        private String parentCoordinate = null;
         private boolean restartTransaction = false;
-        private final int transactionRestartLimit = 3;
         private boolean processedRecord = false;
 
         @Override
@@ -74,8 +78,8 @@ public class POMAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public void setDBConnection(DSLContext dslContext) {
-            POMAnalyzer.dslContext = dslContext;
+        public void setDBConnection(Map<String, DSLContext> dslContexts) {
+            POMAnalyzer.dslContext = dslContexts.get(Constants.mvnForge);
         }
 
         @Override
@@ -90,6 +94,8 @@ public class POMAnalyzerPlugin extends Plugin {
             commitTag = null;
             sourcesUrl = null;
             packagingType = null;
+            projectName = null;
+            parentCoordinate = null;
             this.processedRecord = false;
             this.restartTransaction = false;
             logger.info("Consumed: " + record);
@@ -104,18 +110,29 @@ public class POMAnalyzerPlugin extends Plugin {
             group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
             version = payload.getString("version").replaceAll("[\\n\\t ]", "");
             date = payload.optLong("date", -1L);
-            final var product = group + ":" + artifact + ":" + version;
+            final var product = group + Constants.mvnCoordinateSeparator + artifact
+                    + Constants.mvnCoordinateSeparator + version;
             var dataExtractor = new DataExtractor();
-            repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
-            logger.info("Extracted repository URL " + repoUrl + " from " + product);
-            dependencyData = dataExtractor.extractDependencyData(group, artifact, version);
-            logger.info("Extracted dependency information from " + product);
-            commitTag = dataExtractor.extractCommitTag(group, artifact, version);
-            logger.info("Extracted commit tag from " + product);
-            sourcesUrl = dataExtractor.generateMavenSourcesLink(group, artifact, version);
-            logger.info("Generated link to Maven sources for " + product);
-            packagingType = dataExtractor.extractPackagingType(group, artifact, version);
-            logger.info("Extracted packaging type from " + product);
+            try {
+                repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
+                logger.info("Extracted repository URL " + repoUrl + " from " + product);
+                dependencyData = dataExtractor.extractDependencyData(group, artifact, version);
+                logger.info("Extracted dependency information from " + product);
+                commitTag = dataExtractor.extractCommitTag(group, artifact, version);
+                logger.info("Extracted commit tag from " + product);
+                sourcesUrl = dataExtractor.generateMavenSourcesLink(group, artifact, version);
+                logger.info("Generated link to Maven sources for " + product);
+                packagingType = dataExtractor.extractPackagingType(group, artifact, version);
+                logger.info("Extracted packaging type from " + product);
+                projectName = dataExtractor.extractProjectName(group, artifact, version);
+                logger.info("Extracted project name from " + product);
+                parentCoordinate = dataExtractor.extractParentCoordinate(group, artifact, version);
+                logger.info("Extracted parent coordinate from " + product);
+            } catch (RuntimeException e) {
+                logger.error("Error extracting data for " + product, e);
+                this.pluginError = e;
+                return;
+            }
             int transactionRestartCount = 0;
             do {
                 try {
@@ -124,9 +141,9 @@ public class POMAnalyzerPlugin extends Plugin {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(group + "." + artifact, version, repoUrl,
-                                    commitTag, sourcesUrl, packagingType, dependencyData,
-                                    metadataDao);
+                            id = saveToDatabase(group + Constants.mvnCoordinateSeparator + artifact,
+                                    version, repoUrl, commitTag, sourcesUrl, packagingType, date,
+                                    projectName, parentCoordinate, dependencyData, metadataDao);
                         } catch (RuntimeException e) {
                             logger.error("Error saving data to the database: '" + product + "'", e);
                             processedRecord = false;
@@ -150,7 +167,7 @@ public class POMAnalyzerPlugin extends Plugin {
                 }
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
-                    && transactionRestartCount < transactionRestartLimit);
+                    && transactionRestartCount < Constants.transactionRestartLimit);
         }
 
         /**
@@ -162,30 +179,51 @@ public class POMAnalyzerPlugin extends Plugin {
          * @param commitTag      Commit tag of the version of the artifact in the repository
          * @param sourcesUrl     Link to Maven sources Jar file
          * @param packagingType  Packaging type of the artifact
+         * @param timestamp      Timestamp of the package
+         * @param projectName    Project name to which artifact belongs
+         * @param parentCoordinate Coordinate of the parent POM
          * @param dependencyData Dependency information from POM
          * @param metadataDao    Metadata Database Access Object
          * @return ID of the package version in the database
          */
         public long saveToDatabase(String product, String version, String repoUrl, String commitTag,
-                                   String sourcesUrl, String packagingType,
+                                   String sourcesUrl, String packagingType, long timestamp,
+                                   String projectName, String parentCoordinate,
                                    DependencyData dependencyData, MetadataDao metadataDao) {
-            final var packageId = metadataDao.insertPackage(product, "mvn", null, repoUrl, null);
+            final var packageId = metadataDao.insertPackage(product, Constants.mvnForge,
+                    projectName, repoUrl, null);
             var packageVersionMetadata = new JSONObject();
             packageVersionMetadata.put("dependencyManagement",
                     (dependencyData.dependencyManagement != null)
                             ? dependencyData.dependencyManagement.toJSON() : null);
-            packageVersionMetadata.put("commitTag", commitTag);
-            packageVersionMetadata.put("sourcesUrl", sourcesUrl);
-            packageVersionMetadata.put("packagingType", packagingType);
+            packageVersionMetadata.put("commitTag", (commitTag != null) ? commitTag : "");
+            packageVersionMetadata.put("sourcesUrl", (sourcesUrl != null) ? sourcesUrl : "");
+            packageVersionMetadata.put("packagingType", (packagingType != null)
+                    ? packagingType : "");
+            packageVersionMetadata.put("parentCoordinate", (parentCoordinate != null)
+                    ? parentCoordinate : "");
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    "OPAL", version, null, packageVersionMetadata);
-            for (var dependency : dependencyData.dependencies) {
-                var depProduct = dependency.groupId + "." + dependency.artifactId;
-                final var depId = metadataDao.insertPackage(depProduct, "mvn", null, null, null);
+                    Constants.opalGenerator, version, null, this.getProperTimestamp(timestamp),
+                    packageVersionMetadata);
+            for (var dep : dependencyData.dependencies) {
+                var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
+                final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge);
                 metadataDao.insertDependency(packageVersionId, depId,
-                        dependency.getVersionConstraints(), dependency.toJSON());
+                        dep.getVersionConstraints(), null, null, null, dep.toJSON());
             }
             return packageVersionId;
+        }
+
+        private Timestamp getProperTimestamp(long timestamp) {
+            if (timestamp == -1) {
+                return null;
+            } else {
+                if (timestamp / (1000L * 60 * 60 * 24 * 365) < 1L) {
+                    return new Timestamp(timestamp * 1000);
+                } else {
+                    return new Timestamp(timestamp);
+                }
+            }
         }
 
         @Override
@@ -199,7 +237,10 @@ public class POMAnalyzerPlugin extends Plugin {
             json.put("commitTag", (commitTag != null) ? commitTag : "");
             json.put("sourcesUrl", sourcesUrl);
             json.put("packagingType", packagingType);
+            json.put("projectName", (projectName != null) ? projectName : "");
+            json.put("parentCoordinate", (parentCoordinate != null) ? parentCoordinate : "");
             json.put("dependencyData", dependencyData.toJSON());
+            json.put("forge", Constants.mvnForge);
             return Optional.of(json.toString());
         }
 
@@ -225,7 +266,7 @@ public class POMAnalyzerPlugin extends Plugin {
 
         @Override
         public String version() {
-            return "0.0.1";
+            return "0.1.2";
         }
 
         @Override

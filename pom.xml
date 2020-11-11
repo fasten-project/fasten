@@ -180,6 +180,21 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                  <filesets>
+                    <fileset>
+                      <directory>docker</directory>
+                      <includes>
+                        <include>**/*.jar</include>
+                      </includes>
+                      <followSymlinks>false</followSymlinks>
+                    </fileset>
+                  </filesets>
+                </configuration>
+              </plugin>
         </plugins>
     </build>
 

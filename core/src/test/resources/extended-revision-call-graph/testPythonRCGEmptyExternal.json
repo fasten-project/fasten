@@ -1,0 +1,74 @@
+{
+    "product": "foo",
+    "forge": "PyPI",
+    "nodes": 5,
+    "generator": "PyCG",
+    "depset": [
+        {"product": "a", "forge": "PyPI", "constraints": ["[1.2..1.5]","[2.3..]"]},
+        {"product": "b", "forge": "PyPI", "constraints": ["[2.0.1]"]}
+    ],
+    "version": "3.10.0.7",
+    "modules": {
+        "internal": {
+            "/module.name/": {
+                "sourceFile": "module/name.py",
+                "namespaces": {
+                    "0": {
+                        "namespace": "/module.name/",
+                        "metadata": {
+                            "first": 1,
+                            "last": 12
+                        }
+                    },
+                    "1": {
+                        "namespace": "/module.name/Cls",
+                        "metadata": {
+                            "first": 4,
+                            "last": 11,
+                            "superClasses": ["/other.module/Parent", "//external//external.package.SomeClass"]
+                        }
+                    },
+                    "2": {
+                        "namespace": "/module.name/Cls.func()",
+                        "metadata": {
+                            "first": 9,
+                            "last": 11
+                        }
+                    }
+                }
+            },
+            "/other.module/": {
+                "sourceFile": "other/module.py",
+                "namespaces": {
+                    "3": {
+                        "namespace": "/other.module/",
+                        "metadata": {
+                            "first": 1,
+                            "last": 12
+                        }
+                    }
+                }
+            }
+        },
+        "external": {
+            "external": {
+                "sourceFile": "",
+                "namespaces": {
+                    "4": {
+                        "namespace": "//external//external.package.method",
+                        "metadata": {}
+                    }
+                }
+            }
+        }
+    },
+    "graph": {
+        "internalCalls": [
+            ["0", "1", {}],
+            ["0", "2", {}]
+        ],
+        "externalCalls": [],
+        "resolvedCalls": []
+    },
+    "timestamp": 123
+}
