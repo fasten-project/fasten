@@ -164,7 +164,7 @@ public class Main implements Runnable {
                 generate(artifact, commands.computations.main, commands.computations.genAlgorithm,
                         !this.output.isEmpty());
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Call graph couldn't be generated for Maven coordinate: {}", artifact.getCoordinate(), e);
             }
 
         } else if (commands.computations.mode.equals("FILE")) {
@@ -172,7 +172,7 @@ public class Main implements Runnable {
                 generate(getArtifactFile(), commands.computations.main,
                         commands.computations.genAlgorithm, !this.output.isEmpty());
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
         }
     }
@@ -185,14 +185,14 @@ public class Main implements Runnable {
             try {
                 merge(getArtifactCoordinate(), getDependenciesCoordinates());
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Call graph couldn't be merge for coord: {}", getArtifactCoordinate().getCoordinate(), e);
             }
 
         } else if (commands.computations.mode.equals("FILE")) {
             try {
                 merge(getArtifactFile(), getDependenciesFiles()).toJSON();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
         }
     }
