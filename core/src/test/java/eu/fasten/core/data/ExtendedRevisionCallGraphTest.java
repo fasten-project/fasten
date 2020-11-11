@@ -53,11 +53,6 @@ class ExtendedRevisionCallGraphTest {
     }
 
     @Test
-    void toJSONString(){
-//        assertEquals(graph.toJSONString(), graph.toJSON().toString());
-    }
-
-    @Test
     void toJSON() throws FileNotFoundException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("extended-revision-call-graph/testRCG.json"))
