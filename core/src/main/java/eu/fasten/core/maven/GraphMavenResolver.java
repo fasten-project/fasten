@@ -28,6 +28,7 @@ import eu.fasten.core.maven.data.graph.DependencyEdge;
 import eu.fasten.core.maven.data.graph.DependencyNode;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.jgrapht.Graph;
+import org.jgrapht.graph.EdgeReversedGraph;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -164,6 +165,8 @@ public class GraphMavenResolver implements Runnable {
         if (dependencyGraph == null) {
             buildDependencyGraph(dbContext);
         }
+		// Constant memory footprint
+		//var reverseGraph = new EdgeReversedGraph(dependencyGraph);
         var reverseGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
         return this.resolveDependencySetUsingGraph(groupId, artifactId, version, timestamp,
                 scopes, dbContext, reverseGraph, filterOptional, filterScopes, filterExclusions);

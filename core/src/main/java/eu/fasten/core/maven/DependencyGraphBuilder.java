@@ -26,7 +26,10 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.graph.DependencyEdge;
 import eu.fasten.core.maven.data.graph.DependencyNode;
+import org.jgrapht.util.SupplierUtil;
 import org.jgrapht.Graph;
+import org.jgrapht.opt.graph.fastutil.FastutilMapGraph;
+import org.jgrapht.graph.DefaultGraphType;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
@@ -80,7 +83,9 @@ public class DependencyGraphBuilder {
 
     private Graph<DependencyNode, DependencyEdge> buildDependencyGraphWithPagination(DSLContext dbContext) {
         logger.info("Obtaining dependency data and generating global dependency graph");
-        var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+		var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+        // Smaller footprint, slightly slower unless vertices/edges cache hash codes
+        //var dependencyGraph = new FastutilMapGraph<DependencyNode, DependencyEdge>(null, SupplierUtil.createSupplier(DependencyEdge.class), new DefaultGraphType.Builder().directed().allowSelfLoops(true).allowMultipleEdges(false).weighted(false).build(), false);
         long lastFetchedArtifact = 0;
         final var pageSize = 65536;
         var fetchNext = true;
@@ -189,6 +194,7 @@ public class DependencyGraphBuilder {
             }
         }
         logger.info("Successfully generated ecosystem-wide dependency graph");
+
         return dependencyGraph;
     }
 
@@ -256,7 +262,9 @@ public class DependencyGraphBuilder {
         }
         dependenciesResult = null;
         logger.info("Generating global dependency graph");
-        var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+		var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+        // Smaller footprint, slightly slower unless vertices/edges cache hash codes
+        //var dependencyGraph = new FastutilMapGraph<DependencyNode, DependencyEdge>(null, SupplierUtil.createSupplier(DependencyEdge.class), new DefaultGraphType.Builder().directed().allowSelfLoops(true).allowMultipleEdges(false).weighted(false).build(), false);
         for (var entry : timestampedArtifacts.entrySet()) {
             dependencyGraph.addVertex(new DependencyNode(entry.getKey(), entry.getValue()));
         }
@@ -317,7 +325,9 @@ public class DependencyGraphBuilder {
 
         startTs = System.currentTimeMillis();
         logger.info("Indexing dependency pairs");
-        var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+		var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+        // Smaller footprint, slightly slower unless vertices/edges cache hash codes
+        //var dependencyGraph = new FastutilMapGraph<DependencyNode, DependencyEdge>(null, SupplierUtil.createSupplier(DependencyEdge.class), new DefaultGraphType.Builder().directed().allowSelfLoops(true).allowMultipleEdges(false).weighted(false).build(), false);
 
         var timestampedArtifacts = dependenciesResult.stream().parallel().collect(
                 Collectors.toConcurrentMap(
