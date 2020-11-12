@@ -44,7 +44,9 @@ public class LocalMerger {
     private static final Logger logger = LoggerFactory.getLogger(LocalMerger.class);
 
     private final ExtendedRevisionCallGraph artifact;
-    private final List<ExtendedRevisionCallGraph> dependencies;
+    private final Map<String, Set<String>> universalParents;
+    private final Map<String, Set<String>> universalChildren;
+    private final Map<String, List<ExtendedRevisionCallGraph>> typeDictionary;
 
     /**
      * Creates instance of local merger.
@@ -55,8 +57,12 @@ public class LocalMerger {
     public LocalMerger(final ExtendedRevisionCallGraph artifact,
                        final List<ExtendedRevisionCallGraph> dependencies) {
         this.artifact = artifact;
-        this.dependencies = dependencies;
-        this.dependencies.add(artifact);
+        dependencies.add(artifact);
+
+        final var UCH = createUniversalCHA(dependencies);
+        this.universalParents = UCH.getLeft();
+        this.universalChildren = UCH.getRight();
+        this.typeDictionary = createTypeDictionary(dependencies);
     }
 
     /**
@@ -133,12 +139,8 @@ public class LocalMerger {
      * @return merged call graph
      */
     public ExtendedRevisionCallGraph mergeWithCHA() {
-        final var UCH = createUniversalCHA();
-        final var universalParents = UCH.getLeft();
-        final var universalChildren = UCH.getRight();
-        final var typeDictionary = createTypeDictionary();
-
         final var result = new CGHA(artifact);
+
         final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
         final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
 
@@ -153,20 +155,17 @@ public class LocalMerger {
 
             if (externalNodeIdToTypeMap.containsKey(targetKey)) {
                 final var type = externalNodeIdToTypeMap.get(targetKey);
-                resolve(universalParents, universalChildren, typeDictionary, result, arc,
-                        targetKey, type, externalTypeToId.get(type).toString(), false);
+                resolve(result, arc, targetKey, type, externalTypeToId.get(type).toString(), false);
 
             } else if (externalNodeIdToTypeMap.containsKey(sourceKey)) {
                 final var type = externalNodeIdToTypeMap.get(sourceKey);
-                resolve(universalParents, universalChildren, typeDictionary, result, arc,
-                        sourceKey, type, externalTypeToId.get(type).toString(), true);
+                resolve(result, arc, sourceKey, type, externalTypeToId.get(type).toString(), true);
             } else {
                 final var type = internalNodeIdToTypeMap.get(sourceKey);
                 final var typeUri = internalTypeToId.get(type).toString();
                 final var call = new Call(arc.getKey(), arc.getValue(),
                         type.getMethods().get(sourceKey));
-                resolveInitsAndConstructors(result, call, typeDictionary, universalParents, typeUri,
-                        false);
+                resolveInitsAndConstructors(result, call, typeUri, false);
             }
         });
         return buildRCG(artifact, result);
@@ -175,20 +174,14 @@ public class LocalMerger {
     /**
      * Resolve an external call.
      *
-     * @param universalParents  universal CHA with parents nodes
-     * @param universalChildren universal CHA with child nodes
-     * @param typeDictionary    type dictionary
-     * @param result            call graph with resolved calls
-     * @param arc               source, target, and metadata
-     * @param nodeKey           node id
-     * @param type              type information
-     * @param typeUri           type uri
-     * @param isCallback        true, if the call is a callback
+     * @param result     call graph with resolved calls
+     * @param arc        source, target, and metadata
+     * @param nodeKey    node id
+     * @param type       type information
+     * @param typeUri    type uri
+     * @param isCallback true, if the call is a callback
      */
-    private void resolve(final Map<String, Set<String>> universalParents,
-                         final Map<String, Set<String>> universalChildren,
-                         final Map<String, List<ExtendedRevisionCallGraph>> typeDictionary,
-                         final CGHA result,
+    private void resolve(final CGHA result,
                          final Map.Entry<List<Integer>, Map<Object, Object>> arc,
                          final Integer nodeKey,
                          final ExtendedRevisionCallGraph.Type type,
@@ -197,8 +190,7 @@ public class LocalMerger {
 
         var call = new Call(arc.getKey(), arc.getValue(), type.getMethods().get(nodeKey));
         if (call.isConstructor()) {
-            resolveInitsAndConstructors(result, call, typeDictionary, universalParents, typeUri,
-                    isCallback);
+            resolveInitsAndConstructors(result, call, typeUri, isCallback);
         }
 
         for (final var entry : arc.getValue().entrySet()) {
@@ -220,8 +212,7 @@ public class LocalMerger {
                     }
                 }
             } else if (callSite.get("type").equals("invokespecial")) {
-                resolveInitsAndConstructors(result, call, typeDictionary, universalParents, typeUri,
-                        isCallback);
+                resolveInitsAndConstructors(result, call, typeUri, isCallback);
 
             } else if (callSite.get("type").equals("invokedynamic")) {
                 logger.warn("OPAL didn't rewrite the invokedynamic");
@@ -289,22 +280,18 @@ public class LocalMerger {
      * That <init> method first invokes either another <init> method in the same class,
      * or an <init> method in its superclass. This process continues all the way up to Object.
      *
-     * @param result           call graph with resolved calls
-     * @param call             call information
-     * @param typeFinder       type dictionary
-     * @param universalParents universal CHA with parent nodes
-     * @param constructorType  type uri
-     * @param isCallback       true, if the call is a constructor
+     * @param result          call graph with resolved calls
+     * @param call            call information
+     * @param constructorType type uri
+     * @param isCallback      true, if the call is a constructor
      */
     private void resolveInitsAndConstructors(final CGHA result, final Call call,
-                                             final Map<String, List<ExtendedRevisionCallGraph>> typeFinder,
-                                             final Map<String, Set<String>> universalParents,
                                              final String constructorType, boolean isCallback) {
 
         final var typeList = universalParents.get(constructorType);
         if (typeList != null) {
             for (final var superTypeUri : typeList) {
-                for (final var dep : typeFinder.getOrDefault(superTypeUri, new ArrayList<>())) {
+                for (final var dep : typeDictionary.getOrDefault(superTypeUri, new ArrayList<>())) {
 
                     resolveIfDefined(result, call, dep.getClassHierarchy()
                                     .get(ExtendedRevisionCallGraph.Scope.internalTypes)
@@ -330,9 +317,11 @@ public class LocalMerger {
      * Create a map with types as keys and a list of {@link ExtendedRevisionCallGraph} that
      * contain this type as values.
      *
+     * @param dependencies dependencies including the artifact to resolve
      * @return type dictionary
      */
-    private Map<String, List<ExtendedRevisionCallGraph>> createTypeDictionary() {
+    private Map<String, List<ExtendedRevisionCallGraph>> createTypeDictionary(
+            final List<ExtendedRevisionCallGraph> dependencies) {
 
         Map<String, List<ExtendedRevisionCallGraph>> result = new HashMap<>();
 
@@ -353,9 +342,11 @@ public class LocalMerger {
     /**
      * Create a universal CHA for all dependencies including the artifact to resolve.
      *
+     * @param dependencies dependencies including the artifact to resolve
      * @return universal CHA
      */
-    private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA() {
+    private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA(
+            final List<ExtendedRevisionCallGraph> dependencies) {
         final var allPackages = new ArrayList<>(dependencies);
 
         final var result = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
