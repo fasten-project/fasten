@@ -20,8 +20,20 @@ package eu.fasten.core.merge;
 
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,4 +88,85 @@ public class CallGraphUtils {
         writer.close();
     }
 
+    public static Map<String, List<Pair<String, String>>> convertToNodePairs(
+            final ExtendedRevisionCallGraph ercg) {
+
+        final Map<String, List<Pair<String, String>>> result = new HashMap<>();
+        final var methods = ercg.mapOfAllMethods();
+        final var types = ercg.nodeIDtoTypeNameMap();
+
+        result.put("internalTypes", getEdges(ercg.getGraph().getInternalCalls(), methods, types));
+
+        result.put("externalTypes", getEdges(ercg.getGraph().getExternalCalls(), methods, types));
+
+        result.put("resolvedTypes", getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
+
+        return result;
+    }
+
+    private static List<Pair<String, String>> getEdges(
+            final Map<List<Integer>, Map<Object, Object>> calls,
+            final Map<Integer,
+                    ExtendedRevisionCallGraph.Node> methods,
+            final Map<Integer, String> types) {
+
+        final List<Pair<String, String>> result = new ArrayList<>();
+
+        for (final var exCall : calls.entrySet()) {
+            result.add(MutablePair.of(decode(types.get(exCall.getKey().get(0))) + "." +
+                            decode(methods.get(exCall.getKey().get(0)).getSignature()),
+                    decode(types.get(exCall.getKey().get(1))) + "." + decode(methods.get(exCall.getKey().get(1)).getSignature())));
+        }
+        return result;
+    }
+
+    private static String decode(final String methodSignature) {
+        String result = methodSignature;
+        while (result.contains("%")) {
+            result = URLDecoder.decode(result, StandardCharsets.UTF_8);
+        }
+        return result;
+    }
+
+    public static String toStringEdges(List<Pair<String, String>> pairs) {
+
+        StringBuilder result = new StringBuilder();
+        if (pairs != null) {
+
+            for (final var edge : pairs.stream().sorted().collect(Collectors.toList())) {
+                result.append(getStringEdge(edge));
+            }
+        }
+        return result.toString();
+    }
+
+    public static String getStringEdge(final Pair<String, String> edge) {
+        return edge.getLeft() + " '->" +
+                "'\n" + edge.getRight() + "\n\n";
+    }
+
+    public static String convertToCSV(final String[] data) {
+        return Stream.of(data)
+                .map(CallGraphUtils::escapeSpecialCharacters)
+                .collect(Collectors.joining(","));
+    }
+
+    public static void writeToCSV(final List<String[]> data,
+                                  final String resutPath) throws IOException {
+        File csvOutputFile = new File(resutPath);
+        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
+            data.stream()
+                    .map(CallGraphUtils::convertToCSV)
+                    .forEach(pw::println);
+        }
+    }
+
+    public static String escapeSpecialCharacters(String data) {
+        String escapedData = data.replaceAll("\\R", " ");
+        if (data.contains(",") || data.contains("\"") || data.contains("'")) {
+            data = data.replace("\"", "\"\"");
+            escapedData = "\"" + data + "\"";
+        }
+        return escapedData;
+    }
 }

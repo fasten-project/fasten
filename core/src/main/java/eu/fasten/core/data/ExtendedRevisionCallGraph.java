@@ -269,6 +269,26 @@ public class ExtendedRevisionCallGraph {
         return result;
     }
 
+    public Map<Integer, String> nodeIDtoTypeNameMap() {
+        final Map<Integer, String> result = new HashMap<>();
+        for (final var aClass : classHierarchy.get(Scope.internalTypes).entrySet()) {
+            for (final var nodeEntry : aClass.getValue().methods.entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+            }
+        }
+        for (final var aClass : classHierarchy.get(Scope.externalTypes).entrySet()) {
+            for (final var nodeEntry : aClass.getValue().methods.entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+            }
+        }
+        for (final var aClass : classHierarchy.get(Scope.resolvedTypes).entrySet()) {
+            for (final var nodeEntry : aClass.getValue().methods.entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+            }
+        }
+        return result;
+    }
+
     /**
      * Checks whether this {@link ExtendedRevisionCallGraph} is empty, e.g. has no calls.
      *
@@ -644,7 +664,7 @@ public class ExtendedRevisionCallGraph {
         }
 
         public String changeSignature(final String methodName) {
-            return signature.replace( getMethodName() + "(",methodName +"(");
+            return signature.replace(getMethodName() + "(", methodName + "(");
         }
 
         @Override
@@ -745,7 +765,7 @@ public class ExtendedRevisionCallGraph {
                 final var node = new Node(uri, metadata);
                 this.methods.put(Integer.parseInt(methodKey), node);
                 if (!metadata.isEmpty()) {
-                    if ((Boolean) metadata.get("defined")){
+                    if ((Boolean) metadata.get("defined")) {
                         definedMethods.put(node.getSignature(), node);
                     }
                 }
