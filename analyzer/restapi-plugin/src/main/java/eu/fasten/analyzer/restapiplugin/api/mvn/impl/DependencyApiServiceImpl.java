@@ -1,19 +1,21 @@
 package eu.fasten.analyzer.restapiplugin.api.mvn.impl;
 
-import eu.fasten.analyzer.restapiplugin.RestAPIPlugin;
+import eu.fasten.analyzer.restapiplugin.api.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.api.mvn.DependencyApiService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 
-import javax.ws.rs.core.Response;
-
+@Service
 public class DependencyApiServiceImpl implements DependencyApiService {
 
     @Override
-    public Response getPackageDependencies(String package_name,
-                                           String package_version,
-                                           short offset,
-                                           short limit) {
-        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageDependencies(
+    public ResponseEntity<String> getPackageDependencies(String package_name,
+                                                         String package_version,
+                                                         short offset,
+                                                         short limit) {
+        String result = KnowledgeBaseConnector.kbDao.getPackageDependencies(
                 package_name, package_version, offset, limit);
-        return Response.status(200).entity(result).build();
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

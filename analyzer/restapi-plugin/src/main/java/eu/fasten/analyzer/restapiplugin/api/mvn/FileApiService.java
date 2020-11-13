@@ -1,11 +1,11 @@
 package eu.fasten.analyzer.restapiplugin.api.mvn;
 
-import javax.ws.rs.core.Response;
+import org.springframework.http.ResponseEntity;
 
 public interface FileApiService {
 
-    Response getPackageFiles(String package_name,
-                             String package_version,
-                             short offset,
-                             short limit);
+    ResponseEntity<String> getPackageFiles(String package_name,
+                                           String package_version,
+                                           short offset,
+                                           short limit);
 }

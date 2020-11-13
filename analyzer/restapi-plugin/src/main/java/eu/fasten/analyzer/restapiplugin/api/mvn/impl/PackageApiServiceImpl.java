@@ -1,47 +1,49 @@
 package eu.fasten.analyzer.restapiplugin.api.mvn.impl;
 
-import eu.fasten.analyzer.restapiplugin.RestAPIPlugin;
+import eu.fasten.analyzer.restapiplugin.api.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.api.mvn.PackageApiService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 
-import javax.ws.rs.core.Response;
-
+@Service
 public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
-    public Response getPackageVersions(String package_name,
-                                       short offset,
-                                       short limit) {
-        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageVersions(package_name, offset, limit);
-        return Response.status(200).entity(result).build();
+    public ResponseEntity<String> getPackageVersions(String package_name,
+                                                     short offset,
+                                                     short limit) {
+        String result = KnowledgeBaseConnector.kbDao.getPackageVersions(package_name, offset, limit);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @Override
-    public Response getPackageVersion(String package_name,
-                                      String package_version,
-                                      short offset,
-                                      short limit) {
-        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageVersion(
+    public ResponseEntity<String> getPackageVersion(String package_name,
+                                                    String package_version,
+                                                    short offset,
+                                                    short limit) {
+        String result = KnowledgeBaseConnector.kbDao.getPackageVersion(
                 package_name, package_version, offset, limit);
-        return Response.status(200).entity(result).build();
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @Override
-    public Response getPackageMetadata(String package_name,
-                                       String package_version,
-                                       short offset,
-                                       short limit) {
-        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageMetadata(
+    public ResponseEntity<String> getPackageMetadata(String package_name,
+                                                     String package_version,
+                                                     short offset,
+                                                     short limit) {
+        String result = KnowledgeBaseConnector.kbDao.getPackageMetadata(
                 package_name, package_version, offset, limit);
-        return Response.status(200).entity(result).build();
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @Override
-    public Response getPackageCallgraph(String package_name,
-                                        String package_version,
-                                        short offset,
-                                        short limit) {
-        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageCallgraph(
+    public ResponseEntity<String> getPackageCallgraph(String package_name,
+                                                      String package_version,
+                                                      short offset,
+                                                      short limit) {
+        String result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
                 package_name, package_version, offset, limit);
-        return Response.status(200).entity(result).build();
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

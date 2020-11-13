@@ -1,30 +1,32 @@
 package eu.fasten.analyzer.restapiplugin.api.mvn.impl;
 
-import eu.fasten.analyzer.restapiplugin.RestAPIPlugin;
+import eu.fasten.analyzer.restapiplugin.api.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.api.mvn.CallableApiService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 
-import javax.ws.rs.core.Response;
-
+@Service
 public class CallableApiServiceImpl implements CallableApiService {
 
     @Override
-    public Response getPackageCallables(String package_name,
-                                        String package_version,
-                                        short offset,
-                                        short limit) {
-        String result = RestAPIPlugin.RestAPIExtension.kbDao.getPackageCallables(
+    public ResponseEntity<String> getPackageCallables(String package_name,
+                                                      String package_version,
+                                                      short offset,
+                                                      short limit) {
+        String result = KnowledgeBaseConnector.kbDao.getPackageCallables(
                 package_name, package_version, offset, limit);
-        return Response.status(200).entity(result).build();
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @Override
-    public Response getCallableMetadata(String package_name,
-                                        String package_version,
-                                        String fasten_uri,
-                                        short offset,
-                                        short limit) {
-        String result = RestAPIPlugin.RestAPIExtension.kbDao.getCallableMetadata(
+    public ResponseEntity<String> getCallableMetadata(String package_name,
+                                                      String package_version,
+                                                      String fasten_uri,
+                                                      short offset,
+                                                      short limit) {
+        String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
                 package_name, package_version, fasten_uri, offset, limit);
-        return Response.status(200).entity(result).build();
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

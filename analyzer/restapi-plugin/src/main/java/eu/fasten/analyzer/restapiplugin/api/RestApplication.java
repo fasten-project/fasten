@@ -1,30 +1,17 @@
 package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.api.mvn.*;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import javax.ws.rs.core.Application;
-import java.util.HashSet;
-import java.util.Set;
+@SpringBootApplication
+public class RestApplication {
 
-//@ApplicationPath("/") // Set in the plugin class
-public class RestApplication extends Application {
-
-    private final Set<Class<?>> resources = new HashSet<>();
-
+    /**
+     * Default page size (pagination is always enabled).
+     */
     public static final String DEFAULT_PAGE_SIZE = "10";
 
-    public RestApplication() {
-        resources.add(PackageApi.class);
-        resources.add(DependencyApi.class);
-        resources.add(ModuleApi.class);
-        resources.add(BinaryModuleApi.class);
-        resources.add(CallableApi.class);
-        resources.add(EdgeApi.class);
-        resources.add(FileApi.class);
-    }
-
-    @Override
-    public Set<Class<?>> getClasses() {
-        return resources;
+    public static void main(String[] args) {
+        SpringApplication.run(RestApplication.class, args);
     }
 }
