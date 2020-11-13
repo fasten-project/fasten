@@ -51,11 +51,10 @@ public class JCGTest {
             }
         }
         CallGraphUtils.writeToCSV(buildOverallCsv(result), "src/test/resources/merge/jcgEdges.csv");
-
     }
 
-    public static ExtendedRevisionCallGraph getRCG(final File file, final String product,
-                                                   final String version) throws OPALException {
+    private static ExtendedRevisionCallGraph getRCG(final File file, final String product,
+                                                    final String version) throws OPALException {
         var opalCG = new CallGraphConstructor(file, "", "RTA");
         var cg = new PartialCallGraph(opalCG);
         return ExtendedRevisionCallGraph.extendedBuilder()
@@ -68,8 +67,8 @@ public class JCGTest {
                 .build();
     }
 
-    public static Map<String, List<Pair<String, String>>> compareMergeOPAL(final List<ExtendedRevisionCallGraph> merges,
-                                                                           ExtendedRevisionCallGraph opal) {
+    private static Map<String, List<Pair<String, String>>> compareMergeOPAL(final List<ExtendedRevisionCallGraph> merges,
+                                                                            ExtendedRevisionCallGraph opal) {
         final var mergeInternals =
                 augmentInternals(merges).stream().sorted().collect(Collectors.toList());
         final var mergeExternals =
@@ -91,8 +90,8 @@ public class JCGTest {
 
     }
 
-    public static ArrayList<Pair<String, String>> diff(final List<Pair<String, String>> firstEdges,
-                                                       final List<Pair<String, String>> secondEdges) {
+    private static ArrayList<Pair<String, String>> diff(final List<Pair<String, String>> firstEdges,
+                                                        final List<Pair<String, String>> secondEdges) {
         final var temp1 = new ArrayList<>(firstEdges);
         final var temp2 = new ArrayList<>(secondEdges);
         temp1.removeAll(temp2);
@@ -119,7 +118,6 @@ public class JCGTest {
             internals.addAll(CallGraphUtils.convertToNodePairs(rcg)
                     .get("resolvedTypes"));
         }
-
         return internals;
     }
 

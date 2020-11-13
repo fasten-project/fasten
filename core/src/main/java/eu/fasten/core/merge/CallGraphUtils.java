@@ -88,6 +88,12 @@ public class CallGraphUtils {
         writer.close();
     }
 
+    /**
+     * Converts {@link ExtendedRevisionCallGraph} graph into the list of node pairs.
+     *
+     * @param ercg call graph
+     * @return list of node pairs
+     */
     public static Map<String, List<Pair<String, String>>> convertToNodePairs(
             final ExtendedRevisionCallGraph ercg) {
 
@@ -104,10 +110,17 @@ public class CallGraphUtils {
         return result;
     }
 
+    /**
+     * Get edges of an {@link ExtendedRevisionCallGraph}.
+     *
+     * @param calls   source, target of a call and metadata
+     * @param methods node information
+     * @param types   types information
+     * @return edges list
+     */
     private static List<Pair<String, String>> getEdges(
             final Map<List<Integer>, Map<Object, Object>> calls,
-            final Map<Integer,
-                    ExtendedRevisionCallGraph.Node> methods,
+            final Map<Integer, ExtendedRevisionCallGraph.Node> methods,
             final Map<Integer, String> types) {
 
         final List<Pair<String, String>> result = new ArrayList<>();
@@ -120,6 +133,12 @@ public class CallGraphUtils {
         return result;
     }
 
+    /**
+     * Decodes method signature.
+     *
+     * @param methodSignature method signature
+     * @return decoded method signature
+     */
     private static String decode(final String methodSignature) {
         String result = methodSignature;
         while (result.contains("%")) {
@@ -128,11 +147,15 @@ public class CallGraphUtils {
         return result;
     }
 
+    /**
+     * Convert pairs of edges to a String.
+     *
+     * @param pairs edges
+     * @return String representation of edges
+     */
     public static String toStringEdges(List<Pair<String, String>> pairs) {
-
         StringBuilder result = new StringBuilder();
         if (pairs != null) {
-
             for (final var edge : pairs.stream().sorted().collect(Collectors.toList())) {
                 result.append(getStringEdge(edge));
             }
@@ -140,20 +163,38 @@ public class CallGraphUtils {
         return result.toString();
     }
 
+    /**
+     * Converts a pair of edges to a String representation.
+     *
+     * @param edge edge
+     * @return String representation of an edge
+     */
     public static String getStringEdge(final Pair<String, String> edge) {
-        return edge.getLeft() + " '->" +
-                "'\n" + edge.getRight() + "\n\n";
+        return edge.getLeft() + " '->" + "'\n" + edge.getRight() + "\n\n";
     }
 
+    /**
+     * Convert data to a CSV file.
+     *
+     * @param data data to convert
+     * @return data in CSV format
+     */
     public static String convertToCSV(final String[] data) {
         return Stream.of(data)
                 .map(CallGraphUtils::escapeSpecialCharacters)
                 .collect(Collectors.joining(","));
     }
 
+    /**
+     * Write data into CSV file.
+     *
+     * @param data       data to write
+     * @param resultPath path to write to
+     * @throws IOException occurs if write is unsuccessful
+     */
     public static void writeToCSV(final List<String[]> data,
-                                  final String resutPath) throws IOException {
-        File csvOutputFile = new File(resutPath);
+                                  final String resultPath) throws IOException {
+        File csvOutputFile = new File(resultPath);
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             data.stream()
                     .map(CallGraphUtils::convertToCSV)
@@ -161,6 +202,12 @@ public class CallGraphUtils {
         }
     }
 
+    /**
+     * Escape special characters in a string.
+     *
+     * @param data data to escape characters in
+     * @return escaped String
+     */
     public static String escapeSpecialCharacters(String data) {
         String escapedData = data.replaceAll("\\R", " ");
         if (data.contains(",") || data.contains("\"") || data.contains("'")) {
