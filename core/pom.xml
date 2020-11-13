@@ -100,6 +100,11 @@
             <version>3.1.4</version>
             <type>pom</type>
         </dependency>
+        <dependency>
+            <groupId>de.skuzzle</groupId>
+            <artifactId>semantic-version</artifactId>
+            <version>2.1.0</version>
+        </dependency>
 
         <!-- Integration tests -->
         <dependency>

@@ -155,7 +155,9 @@ public class MavenResolver implements Runnable {
             var errors = new HashMap<Dependency, Throwable>();
             for (var coordinate : coordinates) {
                 Set<Dependency> dependencySet;
-                var artifact = new Dependency(coordinate);
+                // TODO fix
+                //var artifact = new Dependency(coordinate);
+                var artifact = new Dependency("foo", "bar", "1");
                 total++;
                 try {
                     if (onlineMode) {
@@ -412,7 +414,9 @@ public class MavenResolver implements Runnable {
             logger.error("Could not parse JSON for package version's metadata", e);
             return null;
         }
-        return new Dependency(parentCoordinate);
+
+        var coordParts = parentCoordinate.split(":");
+        return new Dependency(coordParts[0], coordParts[1], coordParts[2]);
     }
 
     /**
@@ -563,7 +567,8 @@ public class MavenResolver implements Runnable {
             logger.debug("Maven resolution output parsing finished with exit code " + exitValue);
 
             while ((bufferStr = stdInput.readLine()) != null) {
-                dependencySet.add(new Dependency(bufferStr));
+                // TODO: sdfda
+                //dependencySet.add(new Dependency(bufferStr));
             }
 
             if (timestamp != -1) {

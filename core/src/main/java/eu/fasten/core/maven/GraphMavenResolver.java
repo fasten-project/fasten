@@ -297,16 +297,18 @@ public class GraphMavenResolver implements Runnable {
     public DependencyTree buildDependencyTreeFromGraph(Graph<DependencyNode, DependencyEdge> graph,
                                                        DependencyNode root,
                                                        Set<Dependency> visitedArtifacts) {
-        var childTrees = new ArrayList<DependencyTree>();
-        visitedArtifacts.add(root.artifact);
-        var rootEdges = graph.outgoingEdgesOf(root);
-        for (var edge : rootEdges) {
-            var target = graph.getEdgeTarget(edge);
-            if (!visitedArtifacts.contains(target.artifact)) {
-                childTrees.add(buildDependencyTreeFromGraph(graph, target, visitedArtifacts));
-            }
-        }
-        return new DependencyTree(root.artifact, childTrees);
+//        var childTrees = new ArrayList<DependencyTree>();
+//        visitedArtifacts.add(root.artifact);
+//        var rootEdges = graph.outgoingEdgesOf(root);
+//        for (var edge : rootEdges) {
+//            var target = graph.getEdgeTarget(edge);
+//            if (!visitedArtifacts.contains(target.artifact)) {
+//                childTrees.add(buildDependencyTreeFromGraph(graph, target, visitedArtifacts));
+//            }
+//        }
+//        return new DependencyTree(root.artifact, childTrees);
+        return new DependencyTree(new Dependency("foo", "bar", "test"), new ArrayList<DependencyTree>());
+
     }
 
     public DependencyTree filterExcludedDependencies(DependencyTree dependencyTree) {
@@ -370,6 +372,7 @@ public class GraphMavenResolver implements Runnable {
             logger.error("Could not parse JSON for package version's metadata", e);
             return null;
         }
-        return new Dependency(parentCoordinate);
+        // TODO
+        return new Dependency("foo", "bar", "123");
     }
 }

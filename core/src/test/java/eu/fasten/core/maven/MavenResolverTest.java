@@ -199,42 +199,42 @@ public class MavenResolverTest {
 
     @Test
     public void filterOptionalDependenciesTest() {
-        var noOptionalDependenciesTree = new DependencyTree(new Dependency("junit:junit:4.12"),
-                List.of(new DependencyTree(new Dependency("org.hamcrest:hamcrest-core:1.2"), emptyList()))
+        var noOptionalDependenciesTree = new DependencyTree(new Dependency("junit", "junit", "4.12"),
+                List.of(new DependencyTree(new Dependency("org.hamcrest", "hamcrest-core", "1.2"), emptyList()))
         );
         assertEquals(noOptionalDependenciesTree, mavenResolver.filterOptionalDependencies(noOptionalDependenciesTree));
 
-        var optionalDependenciesTree = new DependencyTree(new Dependency("junit:junit:4.12"),
-                List.of(new DependencyTree(new Dependency("org.hamcrest:hamcrest-core:1.2"),
+        var optionalDependenciesTree = new DependencyTree(new Dependency("junit", "junit", "4.12"),
+                List.of(new DependencyTree(new Dependency("org.hamcrest", "hamcrest-core", "1.2"),
                         List.of(new DependencyTree(new Dependency("optional", "dependency", "1", emptyList(), "", true, "", ""),
-                                List.of(new DependencyTree(new Dependency("foo:bar:42"), emptyList())))))));
+                                List.of(new DependencyTree(new Dependency("foo", "bar", "42"), emptyList())))))));
         assertEquals(noOptionalDependenciesTree, mavenResolver.filterOptionalDependencies(optionalDependenciesTree));
     }
 
     @Test
     public void filterExcludedDependenciesTest() {
-        var noExcludedDependenciesTree = new DependencyTree(new Dependency("junit:junit:4.12"),
-                List.of(new DependencyTree(new Dependency("org.hamcrest:hamcrest-core:1.2"), emptyList()))
+        var noExcludedDependenciesTree = new DependencyTree(new Dependency("junit", "junit", "4.12"),
+                List.of(new DependencyTree(new Dependency("org.hamcrest", "hamcrest-core", "1.2"), emptyList()))
         );
         assertEquals(noExcludedDependenciesTree, mavenResolver.filterOptionalDependencies(noExcludedDependenciesTree));
 
         var excludedDependenciesTree = new DependencyTree(new Dependency("junit", "junit", "4.12", List.of(new Dependency.Exclusion("excluded", "dependency")), "", false, "", ""),
                 List.of(new DependencyTree(new Dependency("org.hamcrest", "hamcrest-core", "1.2"),
                         List.of(new DependencyTree(new Dependency("excluded", "dependency", "1"),
-                                List.of(new DependencyTree(new Dependency("foo:bar:42"), emptyList())))))));
+                                List.of(new DependencyTree(new Dependency("foo", "bar", "42"), emptyList())))))));
         assertEquals(noExcludedDependenciesTree, mavenResolver.filterExcludedDependencies(excludedDependenciesTree));
     }
 
     @Test
     public void filterTestDependenciesTest() {
-        var noOptionalDependenciesTree = new DependencyTree(new Dependency("junit:junit:4.12"),
-                List.of(new DependencyTree(new Dependency("org.hamcrest:hamcrest-core:1.2"), emptyList()))
+        var noOptionalDependenciesTree = new DependencyTree(new Dependency("junit", "junit", "4.12"),
+                List.of(new DependencyTree(new Dependency("org.hamcrest", "hamcrest-core", "1.2"), emptyList()))
         );
         assertEquals(noOptionalDependenciesTree, mavenResolver.filterDependencyTreeByScope(noOptionalDependenciesTree, List.of("runtime", "compile", "provided")));
-        var testDependenciesTree = new DependencyTree(new Dependency("junit:junit:4.12"),
-                List.of(new DependencyTree(new Dependency("org.hamcrest:hamcrest-core:1.2"),
+        var testDependenciesTree = new DependencyTree(new Dependency("junit", "junit", "4.12"),
+                List.of(new DependencyTree(new Dependency("org.hamcrest", "hamcrest-core", "1.2"),
                         List.of(new DependencyTree(new Dependency("optional", "dependency", "1", emptyList(), "test", false, "", ""),
-                                List.of(new DependencyTree(new Dependency("foo:bar:42"), emptyList())))))));
+                                List.of(new DependencyTree(new Dependency("foo", "bar", "42"), emptyList())))))));
         assertEquals(noOptionalDependenciesTree, mavenResolver.filterDependencyTreeByScope(testDependenciesTree, List.of("runtime", "compile", "provided")));
         assertEquals(testDependenciesTree, mavenResolver.filterDependencyTreeByScope(testDependenciesTree, List.of("runtime", "compile", "provided", "test")));
     }

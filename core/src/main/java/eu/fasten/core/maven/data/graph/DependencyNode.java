@@ -18,16 +18,16 @@
 
 package eu.fasten.core.maven.data.graph;
 
-import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.Revision;
 import java.sql.Timestamp;
 import java.util.Objects;
 
 public class DependencyNode {
 
-    public final Dependency artifact;
+    public final Revision artifact;
     public Timestamp releaseTimestamp;
 
-    public DependencyNode(Dependency artifact, Timestamp timestamp) {
+    public DependencyNode(Revision artifact, Timestamp timestamp) {
         this.artifact = artifact;
         this.releaseTimestamp = timestamp;
     }
