@@ -58,8 +58,7 @@ public class DependencyGraphBuilder {
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
 
-        return dbContext
-                .select(Packages.PACKAGES.PACKAGE_NAME,
+        return dbContext.select(Packages.PACKAGES.PACKAGE_NAME,
                         PackageVersions.PACKAGE_VERSIONS.VERSION,
                         Dependencies.DEPENDENCIES.METADATA,
                         PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
@@ -70,11 +69,12 @@ public class DependencyGraphBuilder {
                 .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
                 .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
                 .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNotNull())
-                .limit(10000)
+//                .limit(10000)
                 .fetch()
                 .stream()
                 .parallel()
                 .map(x -> {
+
                     if (x.component1().split(Constants.mvnCoordinateSeparator).length < 2) {
                         logger.warn("Skipping invalid coordinate: " + x.component1());
                         return null;
