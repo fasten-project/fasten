@@ -58,8 +58,7 @@ public class DependencyGraphBuilder {
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
 
-        return dbContext
-                .select(Packages.PACKAGES.PACKAGE_NAME,
+        return dbContext.select(Packages.PACKAGES.PACKAGE_NAME,
                         PackageVersions.PACKAGE_VERSIONS.VERSION,
                         Dependencies.DEPENDENCIES.METADATA,
                         PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
@@ -75,6 +74,18 @@ public class DependencyGraphBuilder {
                 .stream()
 //                .parallel()
                 .map(x -> {
+                    if (x.component1() == null) {
+                        throw new NullPointerException("package.package_name is null for " + x);
+                    }
+                    if (x.component2() == null) {
+                        throw new NullPointerException("package_version.version is null for " + x);
+                    }
+                    if (x.component3() == null) {
+                        throw new NullPointerException("dependency.metadata is null for " + x);
+                    }
+                    if (x.component4() == null) {
+                        throw new NullPointerException("package_version.created_at is null for " + x);
+                    }
                     var artifact = x.component1().split(":")[0];
                     var group = x.component1().split(":")[1];
                     return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2(), x.component4()),
