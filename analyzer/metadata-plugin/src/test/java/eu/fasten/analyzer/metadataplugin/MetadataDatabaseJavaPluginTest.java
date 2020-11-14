@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import org.jooq.DSLContext;
 import org.json.JSONException;
@@ -32,14 +32,14 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class MetadataDatabasePluginTest {
+public class MetadataDatabaseJavaPluginTest {
 
-    private MetadataDatabasePlugin.MetadataDBExtension metadataDBExtension;
+    private MetadataDatabaseJavaPlugin.MetadataDBJavaExtension metadataDBExtension;
 
     @BeforeEach
     public void setUp() {
         var dslContext = Mockito.mock(DSLContext.class);
-        metadataDBExtension = new MetadataDatabasePlugin.MetadataDBExtension();
+        metadataDBExtension = new MetadataDatabaseJavaPlugin.MetadataDBJavaExtension();
         metadataDBExtension.setTopic("fasten.OPAL.out");
         metadataDBExtension.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge, dslContext)));
     }
@@ -135,7 +135,7 @@ public class MetadataDatabasePluginTest {
                 "}");
         Mockito.when(metadataDao.insertModule(packageVersionId, "/internal.package/B", null,
                 internalModuleMetadata)).thenReturn(internalModuleId);
-        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao);
+        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionJavaCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), Constants.mvnForge);
         Mockito.verify(metadataDao).insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),
@@ -150,7 +150,7 @@ public class MetadataDatabasePluginTest {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject();
         assertThrows(JSONException.class, () -> metadataDBExtension
-                .saveToDatabase(new ExtendedRevisionCallGraph(json), metadataDao));
+                .saveToDatabase(new ExtendedRevisionJavaCallGraph(json), metadataDao));
     }
 
     @Test

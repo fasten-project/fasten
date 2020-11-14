@@ -25,9 +25,10 @@ import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Scope;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Type;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -51,7 +52,7 @@ public class PartialCallGraph {
 
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
-    private final Map<Scope, Map<FastenURI, Type>> classHierarchy;
+    private final Map<JavaScope, Map<FastenURI, JavaType>> classHierarchy;
     private final Graph graph;
     private final int nodeCount;
 
@@ -88,7 +89,7 @@ public class PartialCallGraph {
         }
     }
 
-    public Map<Scope, Map<FastenURI, Type>> getClassHierarchy() {
+    public Map<JavaScope, Map<FastenURI, JavaType>> getClassHierarchy() {
         return classHierarchy;
     }
 
@@ -110,7 +111,7 @@ public class PartialCallGraph {
      * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
      *                               Maven central it throws this exception.
      */
-    public static ExtendedRevisionCallGraph createExtendedRevisionCallGraph(
+    public static ExtendedRevisionJavaCallGraph createExtendedRevisionJavaCallGraph(
             final MavenCoordinate coordinate, final String mainClass,
             final String algorithm, final long timestamp)
             throws FileNotFoundException, OPALException {
@@ -124,7 +125,7 @@ public class PartialCallGraph {
 
             final var partialCallGraph = new PartialCallGraph(opalCG);
 
-            return new ExtendedRevisionCallGraph(Constants.mvnForge, coordinate.getProduct(),
+            return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
                     coordinate.getVersionConstraint(), timestamp,
                     partialCallGraph.getNodeCount(), Constants.opalGenerator,
                     partialCallGraph.getClassHierarchy(),

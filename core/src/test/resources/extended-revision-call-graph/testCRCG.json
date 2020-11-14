@@ -1,0 +1,98 @@
+{
+  "product": "myproduct",
+  "source": "mysource",
+  "nodes": 5,
+  "forge": "debian",
+  "generator": "cscout",
+  "version": "1.13.2-1",
+  "architecture": "amd64",
+  "release": "bullseye",
+  "functions": {
+    "internal": {
+      "binaries": {
+        "binary": {
+          "methods": {
+            "0": {
+              "metadata": {
+                "access": "public",
+                "defined": true,
+                "first": "77",
+                "last": "95"
+              },
+              "uri": "/binary;C/foo()",
+              "files": ["util.c"]
+            }
+          }
+        }
+      },
+      "static_functions": {
+        "methods": {
+          "1": {
+            "metadata": {
+              "access": "static",
+              "defined": true,
+              "first": "71",
+              "last": "235"
+            },
+            "uri": "/;./binary.c;bar()",
+            "files": ["binary.c"]
+          }
+        }
+      }
+    },
+    "external": {
+      "products": {
+        "libnfoo-dev": {
+          "methods": {
+            "2": {
+              "metadata": {
+                "access": "public",
+                "defined": false,
+                "first": "33",
+                "last": "39"
+              },
+              "uri": "//libfoo-dev/libfoo.a;C/buz()",
+              "files": ["/usr/include/libfoo/utils.h"]
+            }
+          }
+        }
+      },
+      "undefined": {
+        "methods": {
+          "3": {
+            "metadata": {
+              "access": "public",
+              "defined": true,
+              "first": "255",
+              "last": "266"
+            },
+            "uri": "///libc.so;C/fgets()",
+            "files": ["/usr/include/x86_64-linux-gnu/bits/stdio2.h"]
+          }
+        }
+      },
+      "static_functions": {
+        "libncursesw6-dev": {
+          "methods": {
+            "4": {
+              "metadata": {
+                "access": "static",
+                "defined": true,
+                "first": "105",
+                "last": "108"
+              },
+              "uri": "//libfoo-dev/;%2Fusr%2Finclude%2Flibfoo/client.h;bar()",
+              "files": ["/usr/include/libfoo/client.h"]
+            }
+          }
+        }
+      }
+    }
+  },
+  "graph": {
+    "externalCalls": [["0","3",{}]],
+    "internalCalls": [["0","1",{}]],
+    "resolvedCalls": [["1","2",{}]]
+  },
+  "timestamp": 1576731656
+}

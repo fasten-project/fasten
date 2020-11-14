@@ -32,19 +32,19 @@ import org.json.JSONTokener;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class ExtendedRevisionCallGraphTest {
+class ExtendedRevisionPythonCallGraphTest {
 
-    private static ExtendedRevisionCallGraph graph;
+    private static ExtendedRevisionPythonCallGraph graph;
 
     @BeforeAll
     static void setUp() throws IOException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCG.json"))
+                .getResource("extended-revision-call-graph/testPythonRCG.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        graph = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+        graph = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
     }
 
     @Test
@@ -55,65 +55,58 @@ class ExtendedRevisionCallGraphTest {
     @Test
     void toJSON() throws FileNotFoundException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCG.json"))
+                .getResource("extended-revision-call-graph/testPythonRCG.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
         JSONObject jsonGraph = new JSONObject(tokener);
 
-        assertEquals(jsonGraph.getJSONObject("cha").getJSONObject("externalTypes").toString(),
-                graph.toJSON().getJSONObject("cha").getJSONObject("externalTypes").toString());
+        System.out.println("HAAHAHAHAHAAAHAHAH " + jsonGraph.toString());
+
+        assertEquals(jsonGraph.getJSONObject("modules").getJSONObject("internal").toString(),
+                graph.toJSON().getJSONObject("modules").getJSONObject("internal").toString());
+
+        assertEquals(jsonGraph.getJSONObject("modules").getJSONObject("external").toString(),
+                graph.toJSON().getJSONObject("modules").getJSONObject("external").toString());
 
         assertEquals(jsonGraph.getJSONObject("graph").toMap(),
                 graph.toJSON().getJSONObject("graph").toMap());
-
-        assertEquals(jsonGraph.getJSONObject("cha").getJSONObject("internalTypes")
-                        .getJSONObject("/internal.package/B")
-                        .getJSONObject("methods").getJSONObject("3").toString(),
-                graph.toJSON().getJSONObject("cha").getJSONObject("internalTypes")
-                        .getJSONObject("/internal.package/B")
-                        .getJSONObject("methods").getJSONObject("3").toString());
-
-        assertEquals(jsonGraph.getJSONObject("cha").getJSONObject("internalTypes")
-                        .getJSONObject("/internal.package/B")
-                        .getJSONObject("methods").getJSONObject("4").toString(),
-                graph.toJSON().getJSONObject("cha").getJSONObject("internalTypes")
-                        .getJSONObject("/internal.package/B")
-                        .getJSONObject("methods").getJSONObject("4").toString());
     }
 
     @Test
     void toJSONFromCHA() {
         assertEquals(graph.classHierarchyToJSON(graph.getClassHierarchy()).toString(),
-                graph.toJSON().getJSONObject("cha").toString());
+                graph.toJSON().getJSONObject("modules").toString());
     }
 
     @Test
     void mapOfAllMethods() {
         var methodsMap = graph.mapOfAllMethods();
 
-        assertEquals(6, methodsMap.size());
+        assertEquals(5, methodsMap.size());
 
-        assertEquals("/external.package/A.someMethod()%2Fjava.lang%2FObject",
+        assertEquals("/module.name/",
+                methodsMap.get(0).getUri().toString());
+        assertEquals("/module.name/Cls",
                 methodsMap.get(1).getUri().toString());
-        assertEquals("/external.package/A.otherMethod()%2Fjava.lang%2FVoidType",
+        assertEquals("/module.name/Cls.func()",
                 methodsMap.get(2).getUri().toString());
-        assertEquals("/internal.package/B.internalMethod(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType",
+        assertEquals("/other.module/",
                 methodsMap.get(3).getUri().toString());
-        assertEquals("/internal.package/B.newInstance()%2Fjava.lang%2FObject",
+        assertEquals("//external//external.package.method",
                 methodsMap.get(4).getUri().toString());
     }
 
     @Test
     void isCallGraphEmptyEmptyInternal() throws IOException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyInternal.json"))
+                .getResource("extended-revision-call-graph/testPythonRCGEmptyInternal.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+        var cg = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -121,25 +114,12 @@ class ExtendedRevisionCallGraphTest {
     @Test
     void isCallGraphEmptyEmptyExternal() throws IOException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyExternal.json"))
+                .getResource("extended-revision-call-graph/testPythonRCGEmptyExternal.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(tokener));
-
-        assertFalse(cg.isCallGraphEmpty());
-    }
-
-    @Test
-    void isCallGraphEmptyEmptyResolved() throws IOException {
-        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyResolved.json"))
-                .getFile());
-
-        JSONTokener tokener = new JSONTokener(new FileReader(file));
-
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+        var cg = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -147,12 +127,12 @@ class ExtendedRevisionCallGraphTest {
     @Test
     void isCallGraphEmptyEmptyAll() throws IOException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyAll.json"))
+                .getResource("extended-revision-call-graph/testPythonRCGEmptyAll.json"))
                 .getFile());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+        var cg = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
 
         assertTrue(cg.isCallGraphEmpty());
     }
@@ -164,6 +144,6 @@ class ExtendedRevisionCallGraphTest {
 
     @Test
     void getCgGenerator() {
-        assertEquals("OPAL", graph.getCgGenerator());
+        assertEquals("PyCG", graph.getCgGenerator());
     }
 }

@@ -48,6 +48,12 @@ public class KafkaConnector {
         properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "1");
 
+        // Assign a static ID to the consumer based pods' unique name in K8s env.
+        if (System.getenv("POD_INSTANCE_ID") != null) {
+            System.out.println(String.format("Pod ID: %s", System.getenv("POD_INSTANCE_ID")));
+            properties.setProperty(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, System.getenv("POD_INSTANCE_ID"));
+        }
+
         // Gives more time to the consumer for processing the records so
         // that the broker will NOT kill the consumer.
         properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "200000");
