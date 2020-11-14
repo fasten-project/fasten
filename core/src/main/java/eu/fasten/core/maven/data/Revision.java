@@ -18,30 +18,22 @@
 
 package eu.fasten.core.maven.data;
 
-import com.github.zafarkhaja.semver.Version;
-import eu.fasten.core.maven.DependencyGraphBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import java.sql.Timestamp;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 /**
  * An artifact released in Maven Central.
  */
 public class Revision extends MavenProduct {
-    // From here: https://ihateregex.io/expr/semver/
-    public static final Pattern semverMatcher = Pattern.compile(
-            "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
-    public final Version version;
+
+    public final DefaultArtifactVersion version;
     public final Timestamp createdAt;
-    private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
     public Revision(final String groupId, final String artifactId, final String version, final Timestamp createdAt){
         super(groupId, artifactId);
 
-        this.version = Version.valueOf(version);
+        this.version = new DefaultArtifactVersion(version);
         this.createdAt = createdAt;
     }
 
@@ -51,12 +43,16 @@ public class Revision extends MavenProduct {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         Revision revision = (Revision) o;
-        return version.equals(revision.version) &&
-                createdAt.equals(revision.createdAt);
+        return version.equals(revision.version) && createdAt.equals(revision.createdAt);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(this.artifactId, this.groupId, version, createdAt);
+    }
+
+    @Override
+    public String toString() {
+        return groupId + ":" + artifactId + ":" + version;
     }
 }

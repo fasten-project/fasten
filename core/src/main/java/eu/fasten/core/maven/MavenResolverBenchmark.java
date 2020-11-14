@@ -2,7 +2,7 @@ package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.Revision;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +95,7 @@ public class MavenResolverBenchmark implements Runnable {
             var version = coordinate[2];
             try {
                 dbCount++;
-                Set<Dependency> dbDependencySet;
+                Set<Revision> dbDependencySet;
                 if (useGraph) {
                     dbDependencySet = graphResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
                 } else {
@@ -118,10 +118,10 @@ public class MavenResolverBenchmark implements Runnable {
                 logger.info("Artifact: " + line);
                 logger.info("##################################################");
                 logger.info("Database resolution dependencies:");
-                dbDependencySet.forEach(d -> logger.info("\t" + d.toFullCanonicalForm()));
+                dbDependencySet.forEach(d -> logger.info("\t" + d.toString()));
                 logger.info("##################################################");
                 logger.info("Online resolution dependencies:");
-                onlineDependencySet.forEach(d -> logger.info("\t" + d.toFullCanonicalForm()));
+                onlineDependencySet.forEach(d -> logger.info("\t" + d.toString()));
                 logger.info("##################################################");
                 logger.info("Current progress");
                 logger.info("Successful match rate is " + result / (float) artifactCount + " for " + artifactCount + " artifacts");

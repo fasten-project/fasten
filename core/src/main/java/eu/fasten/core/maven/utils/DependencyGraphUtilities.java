@@ -1,14 +1,14 @@
 package eu.fasten.core.maven.utils;
 
-import eu.fasten.core.maven.data.graph.DependencyEdge;
-import eu.fasten.core.maven.data.graph.DependencyNode;
+import eu.fasten.core.maven.data.DependencyEdge;
+import eu.fasten.core.maven.data.Revision;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 
 public class DependencyGraphUtilities {
 
-    public static Graph<DependencyNode, DependencyEdge> invertDependencyGraph(Graph<DependencyNode, DependencyEdge> dependencyGraph) {
-        var graph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+    public static Graph<Revision, DependencyEdge> invertDependencyGraph(Graph<Revision, DependencyEdge> dependencyGraph) {
+        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         for (var node : dependencyGraph.vertexSet()) {
             graph.addVertex(node);
         }
@@ -20,9 +20,9 @@ public class DependencyGraphUtilities {
         return graph;
     }
 
-    public static Graph<DependencyNode, DependencyEdge> cloneDependencyGraph(
-            Graph<DependencyNode, DependencyEdge> dependencyGraph) {
-        var graph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
+    public static Graph<Revision, DependencyEdge> cloneDependencyGraph(
+            Graph<Revision, DependencyEdge> dependencyGraph) {
+        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         for (var node : dependencyGraph.vertexSet()) {
             graph.addVertex(node);
         }

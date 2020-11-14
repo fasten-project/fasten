@@ -23,6 +23,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
+import eu.fasten.core.maven.data.Revision;
 import org.jooq.JSONB;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -86,7 +87,7 @@ public class MavenResolverTest {
             }
         }
         var dbContext = DSL.using(new MockConnection(new DataProvider()));
-        var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.2"));
+        var expected = Set.of(new Revision("org.hamcrest", "hamcrest-core", "1.2", new Timestamp(-1)));
         var actual = mavenResolver.resolveFullDependencySet("junit", "junit", "4.12", 1307318400000L, List.of("compile", "runtime", "provided"), dbContext);
         assertEquals(expected, actual);
     }
@@ -192,7 +193,7 @@ public class MavenResolverTest {
 
     @Test
     public void resolveFullDependencySetOnlineTest() throws FileNotFoundException {
-        var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.3"));
+        var expected = Set.of(new Revision("org.hamcrest", "hamcrest-core", "1.3", new Timestamp(-1)));
         try {
             var actual = mavenResolver.resolveFullDependencySetOnline("junit", "junit", "4.12", -1, null);
             assertEquals(expected, actual);
@@ -259,8 +260,8 @@ public class MavenResolverTest {
             }
         }
         var dbContext = DSL.using(new MockConnection(new DataProvider()));
-        var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.2"));
-        var actual = mavenResolver.filterDependenciesByTimestamp(Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.3")), new Timestamp(1307318400000L), dbContext);
+        var expected = Set.of(new Revision("org.hamcrest", "hamcrest-core", "1.2", new Timestamp(-1)));
+        var actual = mavenResolver.filterDependenciesByTimestamp(Set.of(new Revision("org.hamcrest", "hamcrest-core", "1.3", new Timestamp(-1))), new Timestamp(1307318400000L), dbContext);
         assertEquals(expected, actual);
     }
 

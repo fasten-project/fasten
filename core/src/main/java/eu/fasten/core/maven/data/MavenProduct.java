@@ -25,8 +25,8 @@ import java.util.Objects;
  * A versionless Maven artifact
  */
 public class MavenProduct {
-    public String groupId;
-    public String artifactId;
+    public final String groupId;
+    public final String artifactId;
 
     public MavenProduct(final String groupId, final String artifactId) {
         this.groupId = groupId;

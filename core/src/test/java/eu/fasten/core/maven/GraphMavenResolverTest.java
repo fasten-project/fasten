@@ -20,8 +20,7 @@ package eu.fasten.core.maven;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
-import eu.fasten.core.maven.data.graph.DependencyEdge;
-import eu.fasten.core.maven.data.graph.DependencyNode;
+import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.Revision;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,11 +42,11 @@ public class GraphMavenResolverTest {
 
     @Test
     public void buildDependencyTreeFromGraphTest() {
-        var graph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
-        var nodeA = new DependencyNode(new Revision("a", "a", "1", new Timestamp(1)), new Timestamp(1));
-        var nodeB = new DependencyNode(new Revision("b", "b", "2", new Timestamp(2)), new Timestamp(2));
-        var nodeC = new DependencyNode(new Revision("c","c", "3", new Timestamp(3)), new Timestamp(3));
-        var nodeD = new DependencyNode(new Revision("d", "d", "4", new Timestamp(4)), new Timestamp(4));
+        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        var nodeA = new Revision("a", "a", "1", new Timestamp(1));
+        var nodeB = new Revision("b", "b", "2", new Timestamp(2));
+        var nodeC = new Revision("c","c", "3", new Timestamp(3));
+        var nodeD = new Revision("d", "d", "4", new Timestamp(4));
 
         long id = 0;
         var edgeAB = new DependencyEdge(id++, "", false, emptyList());
@@ -72,16 +71,16 @@ public class GraphMavenResolverTest {
 
     @Test
     public void filterDependencyGraphByTimestampTest() {
-        var expected = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
-        var nodeA = new DependencyNode(new Revision("a", "a", "1", new Timestamp(-1)), new Timestamp(-1));
-        var nodeB = new DependencyNode(new Revision("b", "b", "2", new Timestamp(1)), new Timestamp(1));
+        var expected = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        var nodeA = new Revision("a", "a", "1", new Timestamp(-1));
+        var nodeB = new Revision("b", "b", "2", new Timestamp(1));
         var edgeAB = new DependencyEdge(0, "", false, emptyList());
         expected.addVertex(nodeA);
         expected.addVertex(nodeB);
         expected.addEdge(nodeA, nodeB, edgeAB);
-        var graph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
-        var nodeB2 = new DependencyNode(new Revision("b", "b", "2", new Timestamp(2)), new Timestamp(2));
-        var nodeC = new DependencyNode(new Revision("c","c", "3", new Timestamp(3)), new Timestamp(3));
+        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        var nodeB2 = new Revision("b", "b", "2", new Timestamp(2));
+        var nodeC = new Revision("c","c", "3", new Timestamp(3));
         var edgeAB2 = new DependencyEdge(1, "", false, emptyList());
         var edgeB2C = new DependencyEdge(2, "", false, emptyList());
         graph.addVertex(nodeA);

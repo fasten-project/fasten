@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.maven.data.graph;
+package eu.fasten.core.maven.data;
 
-import eu.fasten.core.maven.data.Dependency;
 import java.util.List;
 import java.util.Objects;
 

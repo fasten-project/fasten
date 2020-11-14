@@ -25,6 +25,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
+import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import org.jooq.DSLContext;
 import org.json.JSONException;
@@ -118,7 +119,7 @@ public class MavenResolver implements Runnable {
             }
         }
         if (artifact != null && group != null && version != null) {
-            Set<Dependency> dependencySet;
+            Set<Revision> dependencySet;
             try {
                 if (!onlineMode) {
                     dependencySet = this.resolveFullDependencySet(group, artifact, version,
@@ -138,7 +139,7 @@ public class MavenResolver implements Runnable {
             logger.info("--------------------------------------------------");
             logger.info("Found " + dependencySet.size() + " (transitive) dependencies"
                     + (dependencySet.size() > 0 ? ":" : "."));
-            dependencySet.forEach(d -> logger.info(d.toCanonicalForm()));
+            dependencySet.forEach(d -> logger.info(d.toString()));
             logger.info("--------------------------------------------------");
         } else if (file != null) {
             List<String> coordinates;
@@ -155,7 +156,7 @@ public class MavenResolver implements Runnable {
             float total = 0;
             var errors = new HashMap<Dependency, Throwable>();
             for (var coordinate : coordinates) {
-                Set<Dependency> dependencySet;
+                Set<Revision> dependencySet;
                 // TODO fix
                 //var artifact = new Dependency(coordinate);
                 var artifact = new Dependency("foo", "bar", "1");
@@ -175,7 +176,7 @@ public class MavenResolver implements Runnable {
                     logger.info("--------------------------------------------------");
                     logger.info("Found " + dependencySet.size() + " (transitive) dependencies"
                             + (dependencySet.size() > 0 ? ":" : "."));
-                    dependencySet.forEach(d -> logger.info(d.toCanonicalForm()));
+                    dependencySet.forEach(d -> logger.info(d.toString()));
                     logger.info("--------------------------------------------------");
                 } catch (Exception e) {
                     logger.error("Error resolving " + artifact.toMavenCoordinate(), e);
@@ -208,7 +209,7 @@ public class MavenResolver implements Runnable {
      * @param dbContext  Database connection context
      * @return Set of dependencies including transitive dependencies
      */
-    public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
+    public Set<Revision> resolveFullDependencySet(String groupId, String artifactId,
                                                     String version, long timestamp,
                                                     List<String> scopes, DSLContext dbContext) {
         var parents = new HashSet<Dependency>();
@@ -219,7 +220,7 @@ public class MavenResolver implements Runnable {
             parent = this.getParentArtifact(parent.getGroupId(), parent.getArtifactId(),
                     parent.getVersion(), dbContext);
         }
-        var dependencySet = new HashSet<Dependency>();
+        var dependencySet = new HashSet<Revision>();
         for (var parentArtifact : parents) {
             var dependencyTree = buildFullDependencyTree(parentArtifact.getGroupId(),
                     parentArtifact.getArtifactId(), parentArtifact.getVersion(),
@@ -228,7 +229,7 @@ public class MavenResolver implements Runnable {
             dependencyTree = filterDependencyTreeByScope(dependencyTree, scopes);
             dependencyTree = filterExcludedDependencies(dependencyTree);
             var currentDependencySet = collectDependencyTree(dependencyTree);
-            currentDependencySet.remove(new Dependency(groupId, artifactId, version));
+            currentDependencySet.remove(new Revision(groupId, artifactId, version, new Timestamp(-1)));
             if (timestamp != -1) {
                 currentDependencySet = filterDependenciesByTimestamp(currentDependencySet,
                         new Timestamp(timestamp), dbContext);
@@ -247,8 +248,8 @@ public class MavenResolver implements Runnable {
      * @param dbContext  Database connection context
      * @return Set of dependencies including transitive dependencies
      */
-    public Set<Dependency> resolveFullDependencySet(String groupId, String artifactId,
-                                                    String version, DSLContext dbContext) {
+    public Set<Revision> resolveFullDependencySet(String groupId, String artifactId,
+                                                  String version, DSLContext dbContext) {
         return resolveFullDependencySet(groupId, artifactId, version, -1,
                 Arrays.asList(Dependency.SCOPES), dbContext);
     }
@@ -364,8 +365,8 @@ public class MavenResolver implements Runnable {
      * @param rootDependencyTree Root of the Dependency tree to transform
      * @return A set of all dependencies from the given dependency tree
      */
-    public Set<Dependency> collectDependencyTree(DependencyTree rootDependencyTree) {
-        var dependencySet = new HashSet<Dependency>();
+    public Set<Revision> collectDependencyTree(DependencyTree rootDependencyTree) {
+        var dependencySet = new HashSet<Revision>();
         var packages = new HashSet<String>();
         Queue<DependencyTree> queue = new LinkedList<>();
         queue.add(rootDependencyTree);
@@ -375,7 +376,7 @@ public class MavenResolver implements Runnable {
                     + tree.artifact.artifactId;
             if (!packages.contains(artifactPackage)) {
                 packages.add(artifactPackage);
-                dependencySet.add(tree.artifact);
+                dependencySet.add(new Revision(tree.artifact.groupId, tree.artifact.artifactId, tree.artifact.getVersion(), new Timestamp(-1)));
             }
             queue.addAll(tree.dependencies);
         }
@@ -457,9 +458,9 @@ public class MavenResolver implements Runnable {
      * @return same dependency set as given one
      * but with dependency versions released no later than the given timestamp
      */
-    public Set<Dependency> filterDependenciesByTimestamp(Set<Dependency> dependencies,
+    public Set<Revision> filterDependenciesByTimestamp(Set<Revision> dependencies,
                                                          Timestamp timestamp, DSLContext context) {
-        var filteredDependencies = new HashSet<Dependency>(dependencies.size());
+        var filteredDependencies = new HashSet<Revision>(dependencies.size());
         for (var dependency : dependencies) {
             var packageName = dependency.groupId + Constants.mvnCoordinateSeparator + dependency.artifactId;
             var result = context.select(PackageVersions.PACKAGE_VERSIONS.VERSION)
@@ -480,7 +481,7 @@ public class MavenResolver implements Runnable {
                 filteredDependencies.add(dependency);
             } else {
                 filteredDependencies.add(
-                        new Dependency(dependency.groupId, dependency.artifactId, suitableVersion)
+                        new Revision(dependency.groupId, dependency.artifactId, suitableVersion, new Timestamp(-1))
                 );
             }
         }
@@ -499,9 +500,9 @@ public class MavenResolver implements Runnable {
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
      * @throws NoSuchElementException if pom file was not retrieved
      */
-    public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version,
+    public Set<Revision> resolveFullDependencySetOnline(String group, String artifact, String version,
                                                           long timestamp, DSLContext dbContext) throws FileNotFoundException {
-        Set<Dependency> dependencySet = new HashSet<>();
+        Set<Revision> dependencySet = new HashSet<>();
 
         logger.debug("Downloading artifact's POM file");
 
@@ -601,7 +602,7 @@ public class MavenResolver implements Runnable {
      * @param version  Version of the artifact to resolve
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
      */
-    public Set<Dependency> resolveFullDependencySetOnline(String group, String artifact, String version) throws FileNotFoundException {
+    public Set<Revision> resolveFullDependencySetOnline(String group, String artifact, String version) throws FileNotFoundException {
         return resolveFullDependencySetOnline(artifact, group, version, -1, null);
     }
 }

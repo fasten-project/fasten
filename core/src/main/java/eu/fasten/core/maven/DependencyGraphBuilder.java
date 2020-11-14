@@ -18,43 +18,32 @@
 
 package eu.fasten.core.maven;
 
-import com.github.zafarkhaja.semver.Version;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.data.graph.DependencyEdge;
-import eu.fasten.core.maven.data.graph.DependencyNode;
-import org.jgrapht.util.SupplierUtil;
+import eu.fasten.core.maven.data.DependencyEdge;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
-import org.jgrapht.opt.graph.fastutil.FastutilMapGraph;
-import org.jgrapht.graph.DefaultGraphType;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class DependencyGraphBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
-
-    private final boolean usePagination;
-
-    public DependencyGraphBuilder() {
-        this(false);
-    }
-
-    public DependencyGraphBuilder(boolean usePagination) {
-        this.usePagination = usePagination;
-    }
 
     public static void main(String[] args) throws SQLException {
         var tsStart = System.currentTimeMillis();
@@ -64,7 +53,7 @@ public class DependencyGraphBuilder {
         var tsEnd = System.currentTimeMillis();
         System.out.println("____________________________________________________________________");
         System.out.println("Graph has " + graph.vertexSet().size() + " nodes and "
-                + graph.edgeSet().size() + " edges (" + (tsEnd - tsStart) +" ms)");
+                + graph.edgeSet().size() + " edges (" + (tsEnd - tsStart) + " ms)");
     }
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
@@ -91,62 +80,82 @@ public class DependencyGraphBuilder {
                     return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2(), x.component4()),
                             Dependency.fromJSON(new JSONObject(x.component3().data())));
                 }).collect(Collectors.toConcurrentMap(
-                  x -> x.getKey(),
-                  x -> List.of(x.getValue()),
-                 (x, y) -> {var z = new ArrayList<Dependency>(); z.addAll(x); z.addAll(y); return z;}
+                        AbstractMap.SimpleEntry::getKey,
+                        x -> List.of(x.getValue()),
+                        (x, y) -> {
+                            var z = new ArrayList<Dependency>();
+                            z.addAll(x);
+                            z.addAll(y);
+                            return z;
+                        }
                 ));
     }
 
-
-    /**
-     * Find all revisions that match a product in the set of revisions
-     */
-    public List<Revision> findByProduct(Set<Revision> revisions, MavenProduct product) {
-        // TODO This does too many linear scans; we need some other data structure to store the revision set
-        return revisions.stream().filter(x -> ((MavenProduct) x).equals(product)).collect(Collectors.toList());
-    }
-
-    public static List<Revision> findMatchingRevisions(List<Revision> revisions,
+    public List<Revision> findMatchingRevisions(List<Revision> revisions,
                                                        List<Dependency.VersionConstraint> constraints) {
+        return revisions.parallelStream().filter(r -> {
+            for (var constraint : constraints) {
+                if (checkVersionLowerBound(constraint, r.version) && checkVersionUpperBound(constraint, r.version)) {
+                    return true;
+                }
+            }
+            return false;
+        }).collect(Collectors.toList());
+    }
 
-        // TODO Unify constraints into a single semver expression
-        var semver1 = constraints.get(0).toSemVer();
+    private static boolean checkVersionLowerBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+        if (constraint.isLowerHardRequirement) {
+            return version.compareTo(new DefaultArtifactVersion(constraint.lowerBound)) >= 0;
+        } else {
+            return version.compareTo(new DefaultArtifactVersion(constraint.lowerBound)) > 0;
+        }
+    }
 
-        revisions.stream().filter(x -> semver1.interpret(x.version)).collect(Collectors.toList());
-
-        return revisions;
+    private static boolean checkVersionUpperBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+        if (constraint.isUpperHardRequirement) {
+            return version.compareTo(new DefaultArtifactVersion(constraint.upperBound)) <= 0;
+        } else {
+            return version.compareTo(new DefaultArtifactVersion(constraint.upperBound)) < 0;
+        }
     }
 
 
-    public Graph<DependencyNode, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
+    public Graph<Revision, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
         var dependencies = getDependencyList(dbContext);
+
+        var productRevisionMap = new HashMap<String, List<Revision>>();
+        for (var revision : dependencies.keySet()) {
+            var product = revision.groupId + ":" + revision.artifactId;
+            if (productRevisionMap.containsKey(product)) {
+                var revisions = productRevisionMap.get(product);
+                productRevisionMap.remove(product);
+                revisions.add(revision);
+                productRevisionMap.put(product, revisions);
+            } else {
+                productRevisionMap.put(product, List.of(revision));
+            }
+        }
 
         long startTs;
 
         startTs = System.currentTimeMillis();
         logger.info("Indexing dependency pairs");
 
-        var dependencyGraph = new DefaultDirectedGraph<DependencyNode, DependencyEdge>(DependencyEdge.class);
-        dependencies.keySet().forEach(x -> new DependencyNode(x, x.createdAt));
+        var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
 
         long idx = 0;
         for (var entry : dependencies.entrySet()) {
-            var source = new DependencyNode(entry.getKey(), entry.getKey().createdAt);
-
+            var source = entry.getKey();
             for (var dependency : entry.getValue()) {
-                var potentialRevisions = findByProduct(dependencies.keySet(),
-                        new MavenProduct(dependency.getGroupId(), dependency.artifactId));
-
-                var matching= findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
-                for (var m : matching) {
-                    var target = new DependencyNode(m, m.createdAt);
+                var potentialRevisions = productRevisionMap.get(dependency.groupId + ":" + dependency.artifactId);
+                var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
+                for (var target : matchingRevisions) {
                     var edge = new DependencyEdge(idx++, dependency.scope, dependency.optional, dependency.exclusions);
                     dependencyGraph.addEdge(source, target, edge);
                 }
-
             }
         }
-        logger.info(String.format("Created graph: %d ms",  System.currentTimeMillis() - startTs));
+        logger.info(String.format("Created graph: %d ms", System.currentTimeMillis() - startTs));
         logger.info("Successfully generated ecosystem-wide dependency graph");
         return dependencyGraph;
     }
