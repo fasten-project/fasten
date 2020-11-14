@@ -159,13 +159,4 @@ public class DependencyTest {
         assertEquals(spec, String.join(",", dependency.getVersionConstraints()));
     }
 
-    @Test
-    public void toSemVerTest() {
-        var spec = "[1.0,2.0)";
-        var vc = new Dependency.VersionConstraint(spec).toSemVer();
-
-        assertTrue(vc.interpret(Version.valueOf("1.2.0")));
-        assertTrue(vc.interpret(Version.valueOf("1.2.2")));
-        assertFalse(vc.interpret(Version.valueOf("2.1.0-foo")));
-    }
 }

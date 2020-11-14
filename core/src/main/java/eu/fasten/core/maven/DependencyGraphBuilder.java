@@ -70,16 +70,29 @@ public class DependencyGraphBuilder {
                 .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
                 .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
                 .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNotNull())
-//                .limit(10000)
+                .limit(10000)
                 .fetch()
                 .stream()
-//                .parallel()
+                .parallel()
                 .map(x -> {
-                    var artifact = x.component1().split(":")[0];
-                    var group = x.component1().split(":")[1];
-                    return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2(), x.component4()),
-                            Dependency.fromJSON(new JSONObject(x.component3().data())));
-                }).collect(Collectors.toConcurrentMap(
+                    if (x.component1().split(Constants.mvnCoordinateSeparator).length < 2) {
+                        logger.warn("Skipping invalid coordinate: " + x.component1());
+                        return null;
+                    }
+
+                    var artifact = x.component1().split(Constants.mvnCoordinateSeparator)[0];
+                    var group = x.component1().split(Constants.mvnCoordinateSeparator)[1];
+
+                    if (x.component3() != null) {
+                        return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2(), x.component4()),
+                                Dependency.fromJSON(new JSONObject(x.component3().data())));
+                    } else {
+                        return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2(), x.component4()),
+                                Dependency.empty);
+                    }
+                }).
+                filter(x -> x != null).
+                collect(Collectors.toConcurrentMap(
                         AbstractMap.SimpleEntry::getKey,
                         x -> List.of(x.getValue()),
                         (x, y) -> {
@@ -119,13 +132,16 @@ public class DependencyGraphBuilder {
         }
     }
 
-
     public Graph<Revision, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
+        var startTs = System.currentTimeMillis();
+
         var dependencies = getDependencyList(dbContext);
+        logger.info(String.format("Retrieved %d package versions: %d ms", dependencies.size(),
+                System.currentTimeMillis() - startTs));
 
         var productRevisionMap = new HashMap<String, List<Revision>>();
         for (var revision : dependencies.keySet()) {
-            var product = revision.groupId + ":" + revision.artifactId;
+            var product = revision.groupId + Constants.mvnCoordinateSeparator + revision.artifactId;
             if (productRevisionMap.containsKey(product)) {
                 var revisions = productRevisionMap.get(product);
                 productRevisionMap.remove(product);
@@ -135,8 +151,6 @@ public class DependencyGraphBuilder {
                 productRevisionMap.put(product, List.of(revision));
             }
         }
-
-        long startTs;
 
         startTs = System.currentTimeMillis();
         logger.info("Indexing dependency pairs");

@@ -36,6 +36,7 @@ import org.json.JSONObject;
  * {@class MavenProduct} that matches the dependency's qualifiers.
  */
 public class Dependency extends MavenProduct {
+    public static final Dependency empty = new Dependency("", "", "");
 
     public final List<VersionConstraint> versionConstraints;
     public final List<Exclusion> exclusions;
@@ -430,40 +431,7 @@ public class Dependency extends MavenProduct {
             }
             return versionConstraints;
         }
-
-        public Expression toSemVer() {
-            if (this.lowerBound == "" && this.upperBound == "")
-                return ExpressionParser.newInstance().parse("*");
-
-            var semVersionStr = "";
-
-            if (this.lowerBound != "") {
-                if (this.isLowerHardRequirement) {
-                    semVersionStr += ">=" + this.lowerBound;
-                } else {
-                    semVersionStr += ">" + this.lowerBound;
-                }
-
-                if (this.upperBound != "") {
-                    semVersionStr += " & ";
-
-                    if (this.isUpperHardRequirement) {
-                        semVersionStr += "<=" + this.upperBound;
-                    } else {
-                        semVersionStr += "<" + this.upperBound;
-                    }
-                }
-            } else {
-                if (this.upperBound != "") {
-                    throw new RuntimeException("Upper bound specified with no lower bound");
-                } else {
-                    semVersionStr = "*";
-                }
-            }
-            return ExpressionParser.newInstance().parse(semVersionStr);
-        }
     }
-
 
     public static class Exclusion {
 
