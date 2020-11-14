@@ -19,6 +19,8 @@
 package eu.fasten.core.maven.data;
 
 
+import eu.fasten.core.data.Constants;
+
 import java.util.Objects;
 
 /**
@@ -45,5 +47,10 @@ public class MavenProduct {
     @Override
     public int hashCode() {
         return Objects.hash(groupId, artifactId);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s%s%s", groupId, Constants.mvnCoordinateSeparator, artifactId);
     }
 }

@@ -18,7 +18,10 @@
 
 package eu.fasten.core.maven.data;
 
+import eu.fasten.core.data.Constants;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+
+import java.lang.management.ManagementFactory;
 import java.sql.Timestamp;
 import java.util.Objects;
 
@@ -37,6 +40,10 @@ public class Revision extends MavenProduct {
         this.createdAt = createdAt;
     }
 
+    public MavenProduct product() {
+        return new MavenProduct(this.groupId, this.artifactId);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -53,6 +60,7 @@ public class Revision extends MavenProduct {
 
     @Override
     public String toString() {
-        return groupId + ":" + artifactId + ":" + version;
+        return String.format("%s%s%s%s", groupId, Constants.mvnCoordinateSeparator,
+                artifactId, Constants.mvnCoordinateSeparator, version);
     }
 }

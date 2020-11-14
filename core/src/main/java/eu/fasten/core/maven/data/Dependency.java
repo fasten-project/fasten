@@ -95,6 +95,8 @@ public class Dependency extends MavenProduct {
         this(groupId, artifactId, version, new ArrayList<>(), "", false, "", "");
     }
 
+    public MavenProduct product() { return new MavenProduct(groupId, artifactId); }
+
     /**
      * Turns list of version constraints into string array of specifications.
      *
