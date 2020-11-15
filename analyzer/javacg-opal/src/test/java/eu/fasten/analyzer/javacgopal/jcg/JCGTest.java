@@ -3,7 +3,9 @@ package eu.fasten.analyzer.javacgopal.jcg;
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.merge.CallGraphUtils;
 import eu.fasten.core.merge.LocalMerger;
 import java.io.File;
@@ -31,18 +33,17 @@ public class JCGTest {
                     final var packag = Objects.requireNonNull(bin.listFiles())[0];
                     final var thisTest = JCGTest.getRCG(packag, testCase.getName(), "");
 
-                    List<ExtendedRevisionCallGraph> rcgs = new ArrayList<>();
+                    List<ExtendedRevisionJavaCallGraph> rcgs = new ArrayList<>();
                     for (final var classfile : Objects.requireNonNull(packag.listFiles())) {
                         if (testCase.getName().equals("Lambda3")) {
                             System.out.println();
                         }
-                        rcgs.add(JCGTest.getRCG(classfile,
-                                classfile.getName()
-                                        .replace("$", "")
-                                        .replace(" ", ""), ""));
+                        rcgs.add(JCGTest.getRCG(classfile, classfile.getName()
+                                .replace("$", "")
+                                .replace(" ", ""), ""));
                     }
 
-                    List<ExtendedRevisionCallGraph> mergedRCGs = new ArrayList<>();
+                    List<ExtendedRevisionJavaCallGraph> mergedRCGs = new ArrayList<>();
                     for (final var rcg : rcgs) {
                         mergedRCGs.add(new LocalMerger(rcg, rcgs).mergeWithCHA());
                     }
@@ -53,11 +54,11 @@ public class JCGTest {
         CallGraphUtils.writeToCSV(buildOverallCsv(result), "src/test/resources/merge/jcgEdges.csv");
     }
 
-    private static ExtendedRevisionCallGraph getRCG(final File file, final String product,
-                                                    final String version) throws OPALException {
+    private static ExtendedRevisionJavaCallGraph getRCG(final File file, final String product,
+                                                        final String version) throws OPALException {
         var opalCG = new CallGraphConstructor(file, "", "RTA");
         var cg = new PartialCallGraph(opalCG);
-        return ExtendedRevisionCallGraph.extendedBuilder()
+        return new ExtendedBuilderJava()
                 .graph(cg.getGraph())
                 .forge("mvn")
                 .product(product)
@@ -67,8 +68,8 @@ public class JCGTest {
                 .build();
     }
 
-    private static Map<String, List<Pair<String, String>>> compareMergeOPAL(final List<ExtendedRevisionCallGraph> merges,
-                                                                            ExtendedRevisionCallGraph opal) {
+    private static Map<String, List<Pair<String, String>>> compareMergeOPAL(final List<ExtendedRevisionJavaCallGraph> merges,
+                                                                            ExtendedRevisionJavaCallGraph opal) {
         final var mergeInternals =
                 augmentInternals(merges).stream().sorted().collect(Collectors.toList());
         final var mergeExternals =
@@ -99,7 +100,7 @@ public class JCGTest {
     }
 
     private static List<Pair<String, String>> augmentExternals(
-            final List<ExtendedRevisionCallGraph> rcgs) {
+            final List<ExtendedRevisionJavaCallGraph> rcgs) {
         List<Pair<String, String>> externals = new ArrayList<>();
         for (final var rcg : rcgs) {
             externals = CallGraphUtils.convertToNodePairs(rcg)
@@ -110,7 +111,7 @@ public class JCGTest {
     }
 
     private static List<Pair<String, String>> augmentInternals(
-            final List<ExtendedRevisionCallGraph> rcgs) {
+            final List<ExtendedRevisionJavaCallGraph> rcgs) {
         List<Pair<String, String>> internals = new ArrayList<>();
         for (final var rcg : rcgs) {
             internals = CallGraphUtils.convertToNodePairs(rcg)

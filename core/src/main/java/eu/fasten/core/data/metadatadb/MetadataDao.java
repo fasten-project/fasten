@@ -126,11 +126,12 @@ public class MetadataDao {
     /**
      * Inserts a record in 'package_versions' table in the database.
      *
-     * @param packageId   ID of the package (references 'packages.id')
-     * @param cgGenerator Tool used to generate this callgraph
-     * @param version     Version of the package
-     * @param createdAt   Timestamp when the package version was created
-     * @param metadata    Metadata of the package version
+     * @param packageId    ID of the package (references 'packages.id')
+     * @param cgGenerator  Tool used to generate this callgraph
+     * @param version      Version of the package
+     * @param architecture Architecture of the package
+     * @param createdAt    Timestamp when the package version was created
+     * @param metadata     Metadata of the package version
      * @return ID of the new record
      */
     public long insertPackageVersion(long packageId, String cgGenerator, String version,
@@ -328,6 +329,43 @@ public class MetadataDao {
                         Modules.MODULES.as("excluded").METADATA))
                 .returning(Modules.MODULES.ID).fetchOne();
         return resultRecord.getValue(Modules.MODULES.ID);
+    }
+
+    /**
+     * Inserts a record in 'modules' table in the database.
+     *
+     * @param packageVersionId ID of the package version where the module belongs
+     *                         (references 'package_versions.id')
+     * @param namespace        Namespace of the module
+     * @param createdAt        Timestamp when the module was created
+     * @param metadata         Metadata of the module
+     * @return ID of the new record
+     */
+    public long insertModule(long packageVersionId, String namespace,
+                             Timestamp createdAt, JSONObject metadata,
+                             boolean addDuplicates) {
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
+        var resultRecord = context.insertInto(Modules.MODULES,
+                Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE,
+                Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)
+                .values(packageVersionId, namespace, createdAt, metadataJsonb)
+                // FIXME
+                /* .set(Modules.MODULES.CREATED_AT, Modules.MODULES.as("excluded").CREATED_AT) */
+                // .set(Modules.MODULES.METADATA, JsonbDSL.concat(Modules.MODULES.METADATA,
+                        /* Modules.MODULES.as("excluded").METADATA)) */
+                .returning(Modules.MODULES.ID).fetchOne();
+        return resultRecord.getValue(Modules.MODULES.ID);
+    }
+
+    public long getModuleContent(long fileId) {
+        var res = context.select(ModuleContents.MODULE_CONTENTS.MODULE_ID)
+            .from(ModuleContents.MODULE_CONTENTS)
+            .where(ModuleContents.MODULE_CONTENTS.FILE_ID.equal(fileId))
+            .fetchOne();
+        if (res == null) {
+            return -1L;
+        }
+        return res.getValue(ModuleContents.MODULE_CONTENTS.MODULE_ID);
     }
 
     /**

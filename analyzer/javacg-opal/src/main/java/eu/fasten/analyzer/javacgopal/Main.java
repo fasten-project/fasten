@@ -22,7 +22,8 @@ import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.merge.LocalMerger;
 import eu.fasten.core.merge.CallGraphUtils;
 import java.io.File;
@@ -207,12 +208,12 @@ public class Main implements Runnable {
      * @return a revision call graph with resolved class hierarchy and calls
      * @throws IOException thrown in case file related exceptions occur, e.g FileNotFoundException
      */
-    public <T> ExtendedRevisionCallGraph merge(final T artifact,
+    public <T> ExtendedRevisionJavaCallGraph merge(final T artifact,
                                                final List<T> dependencies)
             throws IOException, OPALException {
         final long startTime = System.currentTimeMillis();
-        final ExtendedRevisionCallGraph result;
-        final var deps = new ArrayList<ExtendedRevisionCallGraph>();
+        final ExtendedRevisionJavaCallGraph result;
+        final var deps = new ArrayList<ExtendedRevisionJavaCallGraph>();
         for (final var dep : dependencies) {
             deps.add(generate(dep, "", commands.computations.genAlgorithm, true));
         }
@@ -222,7 +223,7 @@ public class Main implements Runnable {
         result = new LocalMerger(art, deps).mergeWithCHA();
         if (result != null) {
             logger.info("Resolved {} nodes, {} calls in {} seconds",
-                    result.getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.resolvedTypes).size(),
+                    result.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
                     result.getGraph().getResolvedCalls().size(),
                     new DecimalFormat("#0.000")
                             .format((System.currentTimeMillis() - startTime) / 1000d));
@@ -248,11 +249,11 @@ public class Main implements Runnable {
      * @return generated revision call graph
      * @throws IOException file related exceptions, e.g. FileNotFoundException
      */
-    public <T> ExtendedRevisionCallGraph generate(final T artifact,
+    public <T> ExtendedRevisionJavaCallGraph generate(final T artifact,
                                                   final String mainClass,
                                                   final String algorithm, final boolean writeToFile)
             throws IOException, OPALException {
-        final ExtendedRevisionCallGraph revisionCallGraph;
+        final ExtendedRevisionJavaCallGraph revisionCallGraph;
 
         final long startTime = System.currentTimeMillis();
 
@@ -261,7 +262,7 @@ public class Main implements Runnable {
             final var cg = new PartialCallGraph(
                     new CallGraphConstructor((File) artifact, mainClass, algorithm));
             revisionCallGraph =
-                    ExtendedRevisionCallGraph.extendedBuilder().graph(cg.getGraph())
+                    ExtendedRevisionJavaCallGraph.extendedBuilder().graph(cg.getGraph())
                             .product(cleanUpFileName((File) artifact))
                             .version("").timestamp(0).cgGenerator("").forge("")
                             .classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount())
@@ -269,7 +270,7 @@ public class Main implements Runnable {
 
         } else {
             revisionCallGraph = PartialCallGraph
-                    .createExtendedRevisionCallGraph((MavenCoordinate) artifact, mainClass,
+                    .createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact, mainClass,
                             algorithm, Long.parseLong(this.commands.computations.timestamp));
         }
 

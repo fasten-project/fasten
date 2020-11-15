@@ -18,8 +18,8 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
+import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.data.Constants;
-import eu.fasten.server.connectors.PostgresConnector;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
@@ -54,17 +54,43 @@ public class Main implements Runnable {
             defaultValue = "postgres")
     String dbUser;
 
+    @CommandLine.Option(names = {"-l", "--language"},
+            paramLabel = "LANGUAGE",
+            description = "Language of the callgraph",
+            defaultValue = "java")
+    String language;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }
 
+    public MetadataDBExtension getMetadataDBExtension() {
+        if (language.equals("java"))
+            return new MetadataDatabaseJavaPlugin.MetadataDBJavaExtension();
+        else if (language.equals("c"))
+            return new MetadataDatabaseCPlugin.MetadataDBCExtension();
+        else if (language.equals("python"))
+            return new MetadataDatabasePythonPlugin.MetadataDBPythonExtension();
+        return null;
+    }
+
+    public String getForge() {
+        if (language.equals("java"))
+            return Constants.mvnForge;
+        else if (language.equals("c"))
+            return Constants.debianForge;
+        else if (language.equals("python"))
+            return Constants.pypiForge;
+        return null;
+    }
+
     @Override
     public void run() {
-        var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
+        var metadataPlugin = getMetadataDBExtension();
         try {
-            metadataPlugin.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge,
-                    PostgresConnector.getDSLContext(dbUrl, dbUser))));
+            metadataPlugin.setDBConnection(new HashMap<>(Map.of(getForge(),
+                                           PostgresConnector.getDSLContext(dbUrl, dbUser))));
         } catch (IllegalArgumentException | SQLException e) {
             logger.error("Could not connect to the database", e);
             return;

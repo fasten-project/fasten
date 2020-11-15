@@ -25,7 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
@@ -74,15 +76,15 @@ class PartialCallGraphTest {
         var cha = singleCallCG.getClassHierarchy();
 
         assertNotNull(cha);
-        assertNotNull(cha.get(ExtendedRevisionCallGraph.Scope.internalTypes));
-        assertEquals(1, cha.get(ExtendedRevisionCallGraph.Scope.internalTypes).size());
-        assertEquals(1, cha.get(ExtendedRevisionCallGraph.Scope.externalTypes).size());
-        assertEquals(0, cha.get(ExtendedRevisionCallGraph.Scope.resolvedTypes).size());
+        assertNotNull(cha.get(JavaScope.internalTypes));
+        assertEquals(1, cha.get(JavaScope.internalTypes).size());
+        assertEquals(1, cha.get(JavaScope.externalTypes).size());
+        assertEquals(0, cha.get(JavaScope.resolvedTypes).size());
 
         // -------
         // Check internal types
         // -------
-        var SSTTInternalType = cha.get(ExtendedRevisionCallGraph.Scope.internalTypes)
+        var SSTTInternalType = cha.get(JavaScope.internalTypes)
                 .get(FastenURI.create("/name.space/SingleSourceToTarget"));
 
         // Check filename
@@ -106,7 +108,7 @@ class PartialCallGraphTest {
         // -------
         // Check external types
         // -------
-        var SSTTExternalType = cha.get(ExtendedRevisionCallGraph.Scope.externalTypes)
+        var SSTTExternalType = cha.get(JavaScope.externalTypes)
                 .get(FastenURI.create("/java.lang/Object"));
 
         // Check super interfaces and classes
@@ -181,9 +183,9 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void createExtendedRevisionCallGraph() throws FileNotFoundException, OPALException {
+    void createExtendedRevisionJavaCallGraph() throws FileNotFoundException, OPALException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
-        var cg = PartialCallGraph.createExtendedRevisionCallGraph(coordinate,
+        var cg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
                 "", "CHA", 1574072773);
         assertNotNull(cg);
         Assertions.assertEquals(Constants.mvnForge, cg.forge);

@@ -20,6 +20,8 @@ package eu.fasten.core.merge;
 
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
@@ -127,12 +129,12 @@ public class Merger implements Runnable {
                     break;
 
                 case "LOCAL":
-                    ExtendedRevisionCallGraph artFile;
-                    var depFiles = new ArrayList<ExtendedRevisionCallGraph>();
+                    ExtendedRevisionJavaCallGraph artFile;
+                    var depFiles = new ArrayList<ExtendedRevisionJavaCallGraph>();
 
                     try {
                         var tokener = new JSONTokener(new FileReader(artifact));
-                        artFile = new ExtendedRevisionCallGraph(new JSONObject(tokener));
+                        artFile = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
                     } catch (FileNotFoundException e) {
                         logger.error("Incorrect file path for the artifact", e);
                         return;
@@ -141,7 +143,7 @@ public class Merger implements Runnable {
                     for (var dep : dependencies) {
                         try {
                             var tokener = new JSONTokener(new FileReader(dep));
-                            depFiles.add(new ExtendedRevisionCallGraph(new JSONObject(tokener)));
+                            depFiles.add(new ExtendedRevisionJavaCallGraph(new JSONObject(tokener)));
                         } catch (FileNotFoundException e) {
                             logger.error("Incorrect file path for a dependency");
                         }
@@ -150,7 +152,7 @@ public class Merger implements Runnable {
                     var localMerger = new LocalMerger(artFile, depFiles);
                     var mergedERCG = localMerger.mergeWithCHA();
                     logger.info("Resolved {} nodes, {} calls in {} seconds",
-                            mergedERCG.getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.resolvedTypes).size(),
+                            mergedERCG.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
                             mergedERCG.getGraph().getResolvedCalls().size(),
                             new DecimalFormat("#0.000")
                                     .format((System.currentTimeMillis() - startTime) / 1000d));

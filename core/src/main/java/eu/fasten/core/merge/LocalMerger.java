@@ -20,8 +20,14 @@ package eu.fasten.core.merge;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.JavaNode;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,10 +49,10 @@ public class LocalMerger {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalMerger.class);
 
-    private final ExtendedRevisionCallGraph artifact;
+    private final ExtendedRevisionJavaCallGraph artifact;
     private final Map<String, Set<String>> universalParents;
     private final Map<String, Set<String>> universalChildren;
-    private final Map<String, List<ExtendedRevisionCallGraph>> typeDictionary;
+    private final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary;
 
     /**
      * Creates instance of local merger.
@@ -54,8 +60,8 @@ public class LocalMerger {
      * @param artifact     artifact to resolve
      * @param dependencies dependencies of the artifact
      */
-    public LocalMerger(final ExtendedRevisionCallGraph artifact,
-                       final List<ExtendedRevisionCallGraph> dependencies) {
+    public LocalMerger(final ExtendedRevisionJavaCallGraph artifact,
+                       final List<ExtendedRevisionJavaCallGraph> dependencies) {
         this.artifact = artifact;
         dependencies.add(artifact);
 
@@ -71,7 +77,7 @@ public class LocalMerger {
     public static class CGHA {
 
         private final Map<List<Integer>, Map<Object, Object>> graph;
-        private final BiMap<String, ExtendedRevisionCallGraph.Type> CHA;
+        private final BiMap<String, JavaType> CHA;
         private int nodeCount;
 
         /**
@@ -79,10 +85,10 @@ public class LocalMerger {
          *
          * @param toResolve call graph
          */
-        public CGHA(final ExtendedRevisionCallGraph toResolve) {
+        public CGHA(final ExtendedRevisionJavaCallGraph toResolve) {
             this.graph = toResolve.getGraph().getResolvedCalls();
             var classHierarchy = HashBiMap.create(toResolve.getClassHierarchy()
-                    .getOrDefault(ExtendedRevisionCallGraph.Scope.resolvedTypes, HashBiMap.create()));
+                    .getOrDefault(JavaScope.resolvedTypes, HashBiMap.create()));
             this.CHA = HashBiMap.create();
             classHierarchy.forEach((key, value) -> this.CHA.put(key.toString(), value));
             this.nodeCount = toResolve.getNodeCount();
@@ -93,8 +99,8 @@ public class LocalMerger {
          *
          * @return CHA hashmap
          */
-        private HashMap<FastenURI, ExtendedRevisionCallGraph.Type> toHashMap() {
-            var result = new HashMap<FastenURI, ExtendedRevisionCallGraph.Type>();
+        private HashMap<FastenURI, JavaType> toHashMap() {
+            var result = new HashMap<FastenURI, JavaType>();
             this.CHA.forEach((key, value) -> result.put(FastenURI.create(key), value));
             return result;
         }
@@ -107,7 +113,7 @@ public class LocalMerger {
 
         private final List<Integer> indices;
         private final Map<Object, Object> metadata;
-        private final ExtendedRevisionCallGraph.Node target;
+        private final JavaNode target;
 
         /**
          * Create Call object from indices, metadata and target node.
@@ -117,7 +123,7 @@ public class LocalMerger {
          * @param target   target node
          */
         public Call(final List<Integer> indices, Map<Object, Object> metadata,
-                    final ExtendedRevisionCallGraph.Node target) {
+                    final JavaNode target) {
             this.indices = indices;
             this.metadata = metadata;
             this.target = target;
@@ -138,16 +144,16 @@ public class LocalMerger {
      *
      * @return merged call graph
      */
-    public ExtendedRevisionCallGraph mergeWithCHA() {
+    public ExtendedRevisionJavaCallGraph mergeWithCHA() {
         final var result = new CGHA(artifact);
 
         final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
         final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
 
         final var externalTypeToId = HashBiMap.create(artifact.getClassHierarchy()
-                .get(ExtendedRevisionCallGraph.Scope.externalTypes)).inverse();
+                .get(JavaScope.externalTypes)).inverse();
         final var internalTypeToId = HashBiMap.create(artifact.getClassHierarchy()
-                .get(ExtendedRevisionCallGraph.Scope.internalTypes)).inverse();
+                .get(JavaScope.internalTypes)).inverse();
 
         artifact.getGraph().getExternalCalls().entrySet().parallelStream().forEach(arc -> {
             final var targetKey = arc.getKey().get(1);
@@ -184,7 +190,7 @@ public class LocalMerger {
     private void resolve(final CGHA result,
                          final Map.Entry<List<Integer>, Map<Object, Object>> arc,
                          final Integer nodeKey,
-                         final ExtendedRevisionCallGraph.Type type,
+                         final JavaType type,
                          final String typeUri,
                          final boolean isCallback) {
 
@@ -205,7 +211,7 @@ public class LocalMerger {
                                 .getOrDefault(depTypeUri, new ArrayList<>())) {
 
                             resolveToDynamics(result, call, dep.getClassHierarchy()
-                                            .get(ExtendedRevisionCallGraph.Scope.internalTypes)
+                                            .get(JavaScope.internalTypes)
                                             .get(FastenURI.create(depTypeUri)),
                                     dep.product + "$" + dep.version, depTypeUri, isCallback);
                         }
@@ -220,7 +226,7 @@ public class LocalMerger {
                 for (final var dep : typeDictionary
                         .getOrDefault(receiverTypeUri, new ArrayList<>())) {
                     resolveIfDefined(result, call, dep.getClassHierarchy()
-                                    .get(ExtendedRevisionCallGraph.Scope.internalTypes)
+                                    .get(JavaScope.internalTypes)
                                     .get(FastenURI.create(receiverTypeUri)),
                             dep.product + "$" + dep.version, receiverTypeUri, isCallback);
                 }
@@ -234,19 +240,18 @@ public class LocalMerger {
      * @param cgha       call graph with resolved calls
      * @param call       new call
      * @param product    product name
-     * @param type       dependency {@link ExtendedRevisionCallGraph.Type}
+     * @param type       dependency {@link JavaType}
      * @param depTypeUri dependency type uri
      * @param isCallback true if the call is a callback
      */
     private void resolveToDynamics(final CGHA cgha, final Call call,
-                                   final ExtendedRevisionCallGraph.Type type,
+                                   final JavaType type,
                                    final String product, final String depTypeUri,
                                    boolean isCallback) {
-        final var node = type.getDefinedMethods().get(call.target.getSignature());
-        if (node != null) {
-            addEdge(cgha, new Call(call.indices, call.metadata, node),
-                    product, type, depTypeUri, isCallback);
-        }
+        final var node = type.getDefined(call.target.getSignature());
+        node.ifPresent(integerJavaNodeEntry ->
+                addEdge(cgha, new Call(call.indices, call.metadata, integerJavaNodeEntry.getValue()),
+                        product, type, depTypeUri, isCallback));
     }
 
     /**
@@ -255,19 +260,17 @@ public class LocalMerger {
      * @param cgha       call graph with resolved calls
      * @param call       new call
      * @param product    product name
-     * @param type       dependency {@link ExtendedRevisionCallGraph.Type}
+     * @param type       dependency {@link JavaType}
      * @param depTypeUri dependency type uri
      * @param isCallback true if the call is a callback
      */
     private void resolveIfDefined(final CGHA cgha, final Call call,
-                                  final ExtendedRevisionCallGraph.Type type,
+                                  final JavaType type,
                                   final String product, final String depTypeUri,
                                   boolean isCallback) {
-        final var node = type.getDefinedMethods().get(call.target.getSignature());
-        if (node != null) {
-            addEdge(cgha, new Call(call.indices, call.metadata, node),
-                    product, type, depTypeUri, isCallback);
-        }
+        final var node = type.getDefined(call.target.getSignature());
+        node.ifPresent(integerJavaNodeEntry -> addEdge(cgha, new Call(call.indices, call.metadata, integerJavaNodeEntry.getValue()),
+                product, type, depTypeUri, isCallback));
     }
 
     /**
@@ -294,18 +297,18 @@ public class LocalMerger {
                 for (final var dep : typeDictionary.getOrDefault(superTypeUri, new ArrayList<>())) {
 
                     resolveIfDefined(result, call, dep.getClassHierarchy()
-                                    .get(ExtendedRevisionCallGraph.Scope.internalTypes)
+                                    .get(JavaScope.internalTypes)
                                     .get(FastenURI.create(superTypeUri)),
                             dep.product + "$" + dep.version, superTypeUri, isCallback);
 
                     final var callToInit =
                             new Call(Arrays.asList(call.indices.get(0), result.nodeCount),
-                                    call.metadata, new ExtendedRevisionCallGraph.Node(
+                                    call.metadata, new JavaNode(
                                     call.target.changeName(call.target.getClassName(), "<clinit>"),
                                     call.target.getMetadata()));
 
                     resolveIfDefined(result, callToInit, dep.getClassHierarchy()
-                                    .get(ExtendedRevisionCallGraph.Scope.internalTypes)
+                                    .get(JavaScope.internalTypes)
                                     .get(FastenURI.create(superTypeUri)),
                             dep.product + "$" + dep.version, superTypeUri, isCallback);
                 }
@@ -320,14 +323,14 @@ public class LocalMerger {
      * @param dependencies dependencies including the artifact to resolve
      * @return type dictionary
      */
-    private Map<String, List<ExtendedRevisionCallGraph>> createTypeDictionary(
-            final List<ExtendedRevisionCallGraph> dependencies) {
+    private Map<String, List<ExtendedRevisionJavaCallGraph>> createTypeDictionary(
+            final List<ExtendedRevisionJavaCallGraph> dependencies) {
 
-        Map<String, List<ExtendedRevisionCallGraph>> result = new HashMap<>();
+        Map<String, List<ExtendedRevisionJavaCallGraph>> result = new HashMap<>();
 
         for (final var rcg : dependencies) {
             for (final var type : rcg
-                    .getClassHierarchy().get(ExtendedRevisionCallGraph.Scope.internalTypes)
+                    .getClassHierarchy().get(JavaScope.internalTypes)
                     .entrySet()) {
                 result.merge(type.getKey().toString(),
                         new ArrayList<>(Collections.singletonList(rcg)), (old, nieuw) -> {
@@ -346,13 +349,13 @@ public class LocalMerger {
      * @return universal CHA
      */
     private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA(
-            final List<ExtendedRevisionCallGraph> dependencies) {
+            final List<ExtendedRevisionJavaCallGraph> dependencies) {
         final var allPackages = new ArrayList<>(dependencies);
 
         final var result = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
         for (final var aPackage : allPackages) {
             for (final var type : aPackage.getClassHierarchy()
-                    .get(ExtendedRevisionCallGraph.Scope.internalTypes).entrySet()) {
+                    .get(JavaScope.internalTypes).entrySet()) {
                 if (!result.containsVertex(type.getKey().toString())) {
                     result.addVertex(type.getKey().toString());
                 }
@@ -437,13 +440,13 @@ public class LocalMerger {
      * @param cgha       call graph with resolved calls
      * @param call       new call
      * @param product    product name
-     * @param depType    dependency {@link ExtendedRevisionCallGraph.Type}
+     * @param depType    dependency {@link JavaType}
      * @param depTypeUri dependency type uri
      * @param isCallback true if the call is a callback
      */
     private synchronized void addEdge(final CGHA cgha, final Call call,
                                       final String product,
-                                      final ExtendedRevisionCallGraph.Type depType,
+                                      final JavaType depType,
                                       final String depTypeUri, boolean isCallback) {
         final int addedKey = addToCHA(cgha, call.target, product, depType, depTypeUri);
         if (addedKey == cgha.nodeCount) {
@@ -462,23 +465,23 @@ public class LocalMerger {
      * @param cgha       call graph with resolved calls
      * @param target     target Node
      * @param product    product name
-     * @param depType    dependency {@link ExtendedRevisionCallGraph.Type}
+     * @param depType    dependency {@link JavaType}
      * @param depTypeUri dependency type uri
      * @return id of a node in the CHA
      */
     private static int addToCHA(final CGHA cgha,
-                                final ExtendedRevisionCallGraph.Node target,
+                                final JavaNode target,
                                 final String product,
-                                final ExtendedRevisionCallGraph.Type depType,
+                                final JavaType depType,
                                 final String depTypeUri) {
         final var keyType = depTypeUri
                 .replaceFirst("/", Matcher.quoteReplacement("//" + product + "/"));
         final var type = cgha.CHA.getOrDefault(keyType,
-                new ExtendedRevisionCallGraph.Type(depType.getSourceFileName(), HashBiMap.create(),
-                        depType.getDefinedMethods(), depType.getSuperClasses(),
-                        depType.getSuperInterfaces(), depType.getAccess(), depType.isFinal()));
+                new JavaType(depType.getSourceFileName(), HashBiMap.create(),
+                        depType.getSuperClasses(), depType.getSuperInterfaces(),
+                        depType.getAccess(), depType.isFinal()));
         final var index = type.addMethod(
-                new ExtendedRevisionCallGraph.Node(target.getUri(),
+                new JavaNode(target.getUri(),
                         target.getMetadata()),
                 cgha.nodeCount);
         cgha.CHA.put(keyType, type);
@@ -493,17 +496,17 @@ public class LocalMerger {
      * @param result   resolved calls
      * @return full call graph
      */
-    private static ExtendedRevisionCallGraph buildRCG(final ExtendedRevisionCallGraph artifact,
-                                                      final CGHA result) {
+    private static ExtendedRevisionJavaCallGraph buildRCG(final ExtendedRevisionJavaCallGraph artifact,
+                                                          final CGHA result) {
         final var cha = new HashMap<>(artifact.getClassHierarchy());
-        cha.put(ExtendedRevisionCallGraph.Scope.resolvedTypes, result.toHashMap());
-        return ExtendedRevisionCallGraph.extendedBuilder().forge(artifact.forge)
+        cha.put(JavaScope.resolvedTypes, result.toHashMap());
+        return new ExtendedBuilderJava().forge(artifact.forge)
                 .cgGenerator(artifact.getCgGenerator())
                 .classHierarchy(cha)
                 .product(artifact.product)
                 .timestamp(artifact.timestamp)
                 .version(artifact.version)
-                .graph(new ExtendedRevisionCallGraph.Graph(artifact.getGraph().getInternalCalls(),
+                .graph(new Graph(artifact.getGraph().getInternalCalls(),
                         artifact.getGraph().getExternalCalls(),
                         result.graph))
                 .nodeCount(result.nodeCount)

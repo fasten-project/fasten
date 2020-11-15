@@ -19,6 +19,8 @@
 package eu.fasten.core.merge;
 
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JavaNode;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -55,8 +57,8 @@ public class CallGraphUtils {
      * @throws IOException throws IOException.
      */
     public static void diffInFile(final String resultPath, final int graphNumber,
-                                  final ExtendedRevisionCallGraph firstGraph,
-                                  final ExtendedRevisionCallGraph secondGraph) throws IOException {
+                                  final ExtendedRevisionJavaCallGraph firstGraph,
+                                  final ExtendedRevisionJavaCallGraph secondGraph) throws IOException {
 
         final String graphPath =
                 resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
@@ -95,7 +97,7 @@ public class CallGraphUtils {
      * @return list of node pairs
      */
     public static Map<String, List<Pair<String, String>>> convertToNodePairs(
-            final ExtendedRevisionCallGraph ercg) {
+            final ExtendedRevisionJavaCallGraph ercg) {
 
         final Map<String, List<Pair<String, String>>> result = new HashMap<>();
         final var methods = ercg.mapOfAllMethods();
@@ -120,7 +122,7 @@ public class CallGraphUtils {
      */
     private static List<Pair<String, String>> getEdges(
             final Map<List<Integer>, Map<Object, Object>> calls,
-            final Map<Integer, ExtendedRevisionCallGraph.Node> methods,
+            final Map<Integer, JavaNode> methods,
             final Map<Integer, String> types) {
 
         final List<Pair<String, String>> result = new ArrayList<>();

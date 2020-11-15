@@ -25,8 +25,8 @@ import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.GraphDBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.connectors.KafkaConnector;
-import eu.fasten.server.connectors.PostgresConnector;
-import eu.fasten.server.connectors.RocksDBConnector;
+import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.dbconnectors.RocksDBConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
 
@@ -138,14 +138,13 @@ public class FastenServer implements Runnable {
 
         // Stop plugins that are not passed as parameters.
         jarPluginManager.getPlugins().stream()
-                .filter(x -> !plugins.contains(jarPluginManager
-                        .getExtensions(x.getPluginId()).get(0).getClass().getSimpleName()))
+                .filter(x -> !jarPluginManager.getExtensions(x.getPluginId()).stream().anyMatch(e -> plugins.contains(e.getClass().getSimpleName())))
                 .forEach(x -> {
                     jarPluginManager.stopPlugin(x.getPluginId());
                     jarPluginManager.unloadPlugin(x.getPluginId());
                 });
 
-        var plugins = jarPluginManager.getExtensions(FastenPlugin.class);
+        var fastenPlugins = jarPluginManager.getExtensions(FastenPlugin.class);
         var dbPlugins = jarPluginManager.getExtensions(DBConnector.class);
         var kafkaPlugins = jarPluginManager.getExtensions(KafkaPlugin.class);
         var graphDbPlugins = jarPluginManager.getExtensions(GraphDBConnector.class);
@@ -153,8 +152,9 @@ public class FastenServer implements Runnable {
 
         logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:"
                         + " {} total plugins",
-                kafkaPlugins.size(), dbPlugins.size(), graphDbPlugins.size(), plugins.size());
-        plugins.forEach(x -> logger.info("{}, {}, {}", x.getClass().getSimpleName(),
+                kafkaPlugins.size(), dbPlugins.size(), graphDbPlugins.size(), fastenPlugins.size());
+        fastenPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName()))
+                .forEach(x -> logger.info("{}, {}, {}", x.getClass().getSimpleName(),
                 x.version(), x.description()));
 
         makeDBConnection(dbPlugins);
@@ -165,7 +165,7 @@ public class FastenServer implements Runnable {
 
         kafkaServerPlugins.forEach(FastenServerPlugin::start);
 
-        waitForInterruption(kafkaServerPlugins);
+        //waitForInterruption(kafkaServerPlugins);
     }
 
     /**
@@ -208,7 +208,7 @@ public class FastenServer implements Runnable {
                     .forEach(x -> x.setTopic(pluginTopic.get(x.getClass().getSimpleName())));
         }
 
-        return kafkaPlugins.stream().map(k -> {
+        return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName())).map(k -> {
             var consumerProperties = KafkaConnector.kafkaConsumerProperties(
                     kafkaServers,
                     k.getClass().getCanonicalName());
