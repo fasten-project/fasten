@@ -21,7 +21,10 @@ import org.junit.jupiter.api.Test;
 
 public class JCGTest {
 
-    @Test
+    public static void main(String[] args) throws IOException, OPALException {
+        new JCGTest().testCFNE1();
+    }
+
     public void testCFNE1() throws OPALException, IOException {
         final var testCases = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("merge/jcg")).getPath());

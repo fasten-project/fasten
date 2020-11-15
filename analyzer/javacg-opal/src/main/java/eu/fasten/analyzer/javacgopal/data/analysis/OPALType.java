@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.Node;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -87,7 +88,7 @@ public class OPALType {
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link Type}.
+     * corresponding {@link JavaType}.
      *
      * @param projectHierarchy class hierarchy of the project
      * @param methods          methods belonging to this type
@@ -114,7 +115,7 @@ public class OPALType {
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link Type}.
+     * corresponding {@link JavaType}.
      *
      * @param type  OPAL type
      * @param klass object type
@@ -144,15 +145,15 @@ public class OPALType {
      * @return A Map in which the unique id of each method in the artifact is the key and the
      * {@link FastenURI} of the method is the value.
      */
-    public static Pair<Map<String, Node>, BiMap<Integer, Node>> getMethodMaps(final Map<Method,
+    public static Pair<Map<String, JavaNode>, BiMap<Integer, JavaNode>> getMethodMaps(final Map<Method,
             Integer> methods) {
-        final BiMap<Integer, Node> nodes = HashBiMap.create();
-        final Map<String, Node> defs = new HashMap<>();
+        final BiMap<Integer, JavaNode> nodes = HashBiMap.create();
+        final Map<String, JavaNode> defs = new HashMap<>();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
             final var defined = method.instructionsOption().isDefined();
-            final var node = new Node(getUri(method), Map.of("first",
+            final var node = new JavaNode(getUri(method), Map.of("first",
                     getFirstLine(method),
                     "last", getLastLine(method),
                     "defined", defined,
