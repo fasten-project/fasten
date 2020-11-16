@@ -161,7 +161,7 @@ public class MavenCoordinate {
          */
         public File downloadArtifact(final MavenCoordinate mavenCoordinate)
                 throws FileNotFoundException {
-            logger.debug("Downloading JAR for " + mavenCoordinate);
+            logger.debug("Downloading JAR for " + mavenCoordinate.getCoordinate());
             var found = false;
             Optional<File> jar = Optional.empty();
             var repos = mavenCoordinate.getMavenRepos();

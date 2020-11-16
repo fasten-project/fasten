@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 import eu.fasten.analyzer.qualityanalyzer.data.QAConstants;
 import eu.fasten.core.data.Constants;
-import eu.fasten.server.connectors.PostgresConnector;
+import eu.fasten.core.dbconnectors.PostgresConnector;
 
 import org.jooq.DSLContext;
 import org.json.JSONObject;
@@ -99,7 +99,7 @@ public class Main implements Runnable {
 
         Set<String> forges = dbUrls.keySet();
 
-        List<String> goodForges = Arrays.asList(Constants.mvnForge, Constants.cForge, Constants.pyForge);
+        List<String> goodForges = Arrays.asList(Constants.mvnForge, Constants.debianForge, Constants.pypiForge);
 
         for(String forge: forges) {
             if(!goodForges.contains(forge)) {

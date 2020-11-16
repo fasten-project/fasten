@@ -38,6 +38,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @CommandLine.Command(name = "MavenResolver")
 public class MavenResolver implements Runnable {
@@ -521,7 +522,14 @@ public class MavenResolver implements Runnable {
                     "-DoutputFile=" + outputFile.getAbsolutePath()
             };
             var process = new ProcessBuilder(cmd).start();
-            var exitValue = process.waitFor();
+            final var timeoutSeconds = 30;
+            var completed = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
+            if (!completed) {
+                MavenUtilities.forceDeleteFile(pom);
+                throw new RuntimeException("Maven resolution process timed out after "
+                        + timeoutSeconds + " seconds");
+            }
+            var exitValue = process.exitValue();
 
             var stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
             var stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
