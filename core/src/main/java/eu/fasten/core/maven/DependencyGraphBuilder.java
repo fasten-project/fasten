@@ -34,11 +34,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class DependencyGraphBuilder {
@@ -102,10 +98,10 @@ public class DependencyGraphBuilder {
 
     public List<Revision> findMatchingRevisions(List<Revision> revisions,
                                                 List<Dependency.VersionConstraint> constraints) {
+        if (revisions == null) {
+            return Collections.emptyList();
+        }
         return revisions.stream().filter(r -> {
-            if (r == null) {
-                return false;
-            }
             for (var constraint : constraints) {
                 if (checkVersionLowerBound(constraint, r.version) && checkVersionUpperBound(constraint, r.version)) {
                     return true;
