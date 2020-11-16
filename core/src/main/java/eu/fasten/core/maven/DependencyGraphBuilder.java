@@ -103,6 +103,9 @@ public class DependencyGraphBuilder {
     public List<Revision> findMatchingRevisions(List<Revision> revisions,
                                                 List<Dependency.VersionConstraint> constraints) {
         return revisions.stream().filter(r -> {
+            if (r == null) {
+                return false;
+            }
             for (var constraint : constraints) {
                 if (checkVersionLowerBound(constraint, r.version) && checkVersionUpperBound(constraint, r.version)) {
                     return true;
