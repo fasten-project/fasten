@@ -164,6 +164,7 @@ public class DependencyGraphBuilder {
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
                 for (var target : matchingRevisions) {
                     var edge = new DependencyEdge(idx++, dependency.scope, dependency.optional, dependency.exclusions);
+                    logger.info("Adding edge to the dependency graph ({} -> {})", source.toString(), target.toString());
                     dependencyGraph.addEdge(source, target, edge);
                 }
             }
