@@ -34,12 +34,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class DependencyGraphBuilder {
@@ -161,20 +156,25 @@ public class DependencyGraphBuilder {
 
         logger.info("Adding dependency graph edges");
         long idx = 0;
+        var edgelessNodes = new HashSet<String>();
         for (var entry : dependencies.entrySet()) {
             var source = entry.getKey();
             for (var dependency : entry.getValue()) {
                 if (dependency.equals(Dependency.empty)) {
+                    edgelessNodes.add(dependency.toMavenCoordinate());
                     continue;
                 }
                 var potentialRevisions = productRevisionMap.get(dependency.product());
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
+                logger.debug("{} matched for {}", dependency.getVersion(), String.join("; ",
+                        matchingRevisions.stream().map(Revision::toString).collect(Collectors.toSet())));
                 for (var target : matchingRevisions) {
                     var edge = new DependencyEdge(idx++, dependency.scope, dependency.optional, dependency.exclusions);
                     dependencyGraph.addEdge(source, target, edge);
                 }
             }
         }
+        logger.debug("{} nodes do not have any edges/dependencies", edgelessNodes.size());
         logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
         logger.info("Successfully generated ecosystem-wide dependency graph");
         return dependencyGraph;
