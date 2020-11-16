@@ -172,7 +172,7 @@ public class Main implements Runnable {
             try {
                 generate(getArtifactFile(), commands.computations.main,
                         commands.computations.genAlgorithm, !this.output.isEmpty());
-            } catch (IOException e | OPALException e) {
+            } catch (IOException | OPALException e) {
                 logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
         }
