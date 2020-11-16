@@ -24,7 +24,6 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.DependencyEdge;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
@@ -37,9 +36,9 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class DependencyGraphBuilder {
@@ -58,11 +57,10 @@ public class DependencyGraphBuilder {
     }
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
-
         return dbContext.select(Packages.PACKAGES.PACKAGE_NAME,
-                        PackageVersions.PACKAGE_VERSIONS.VERSION,
-                        Dependencies.DEPENDENCIES.METADATA,
-                        PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
+                PackageVersions.PACKAGE_VERSIONS.VERSION,
+                Dependencies.DEPENDENCIES.METADATA,
+                PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
                 .from(Packages.PACKAGES)
                 .rightJoin(PackageVersions.PACKAGE_VERSIONS)
                 .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
@@ -70,11 +68,9 @@ public class DependencyGraphBuilder {
                 .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
                 .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
                 .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNotNull())
-                .limit(100000)
                 .fetch()
                 .parallelStream()
                 .map(x -> {
-
                     if (x.component1().split(Constants.mvnCoordinateSeparator).length < 2) {
                         logger.warn("Skipping invalid coordinate: " + x.component1());
                         return null;
@@ -91,17 +87,21 @@ public class DependencyGraphBuilder {
                         return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2(), x.component4()),
                                 Dependency.empty);
                     }
-                }).
-                filter(x -> x != null).
-                collect(Collectors.toConcurrentMap(
+                }).filter(Objects::nonNull)
+                .collect(Collectors.toConcurrentMap(
                         AbstractMap.SimpleEntry::getKey,
                         x -> List.of(x.getValue()),
-                        (x, y) -> { var z = new ArrayList<Dependency>(); z.addAll(x); z.addAll(y); return z; }
+                        (x, y) -> {
+                            var z = new ArrayList<Dependency>();
+                            z.addAll(x);
+                            z.addAll(y);
+                            return z;
+                        }
                 ));
     }
 
     public List<Revision> findMatchingRevisions(List<Revision> revisions,
-                                                       List<Dependency.VersionConstraint> constraints) {
+                                                List<Dependency.VersionConstraint> constraints) {
         return revisions.stream().filter(r -> {
             for (var constraint : constraints) {
                 if (checkVersionLowerBound(constraint, r.version) && checkVersionUpperBound(constraint, r.version)) {
@@ -112,7 +112,7 @@ public class DependencyGraphBuilder {
         }).collect(Collectors.toList());
     }
 
-    private static boolean checkVersionLowerBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+    private boolean checkVersionLowerBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
         if (constraint.isLowerHardRequirement) {
             return version.compareTo(new DefaultArtifactVersion(constraint.lowerBound)) >= 0;
         } else {
@@ -120,7 +120,7 @@ public class DependencyGraphBuilder {
         }
     }
 
-    private static boolean checkVersionUpperBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+    private boolean checkVersionUpperBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
         if (constraint.isUpperHardRequirement) {
             return version.compareTo(new DefaultArtifactVersion(constraint.upperBound)) <= 0;
         } else {
@@ -137,9 +137,14 @@ public class DependencyGraphBuilder {
 
         startTs = System.currentTimeMillis();
         var productRevisionMap = dependencies.keySet().stream().collect(Collectors.toMap(
-                x -> x.product(),
-                x -> List.of(x),
-                (x, y) -> { var z = new ArrayList<Revision>(); z.addAll(x); z.addAll(y);return z; })
+                Revision::product,
+                List::of,
+                (x, y) -> {
+                    var z = new ArrayList<Revision>();
+                    z.addAll(x);
+                    z.addAll(y);
+                    return z;
+                })
         );
         logger.info(String.format("Indexed %d products: %dms", productRevisionMap.size(),
                 System.currentTimeMillis() - startTs));
@@ -153,9 +158,11 @@ public class DependencyGraphBuilder {
         for (var entry : dependencies.entrySet()) {
             var source = entry.getKey();
             for (var dependency : entry.getValue()) {
+                if (dependency.equals(Dependency.empty)) {
+                    continue;
+                }
                 var potentialRevisions = productRevisionMap.get(dependency.product());
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
-                logger.debug("%d revisions match constraint ");
                 for (var target : matchingRevisions) {
                     var edge = new DependencyEdge(idx++, dependency.scope, dependency.optional, dependency.exclusions);
                     dependencyGraph.addEdge(source, target, edge);
