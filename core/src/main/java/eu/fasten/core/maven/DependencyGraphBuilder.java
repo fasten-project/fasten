@@ -153,6 +153,8 @@ public class DependencyGraphBuilder {
 
         var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
 
+        dependencies.keySet().parallelStream().forEach(dependencyGraph::addVertex);
+        
         long idx = 0;
         for (var entry : dependencies.entrySet()) {
             var source = entry.getKey();
