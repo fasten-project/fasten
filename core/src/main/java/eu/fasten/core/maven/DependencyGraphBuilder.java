@@ -111,6 +111,9 @@ public class DependencyGraphBuilder {
     }
 
     private boolean checkVersionLowerBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+        if (new DefaultArtifactVersion(constraint.lowerBound).equals(version)) {
+            return true;
+        }
         if (constraint.isLowerHardRequirement) {
             return version.compareTo(new DefaultArtifactVersion(constraint.lowerBound)) >= 0;
         } else {
@@ -119,6 +122,9 @@ public class DependencyGraphBuilder {
     }
 
     private boolean checkVersionUpperBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+        if (new DefaultArtifactVersion(constraint.upperBound).equals(version)) {
+            return true;
+        }
         if (constraint.isUpperHardRequirement) {
             return version.compareTo(new DefaultArtifactVersion(constraint.upperBound)) <= 0;
         } else {
@@ -156,27 +162,20 @@ public class DependencyGraphBuilder {
 
         logger.info("Adding dependency graph edges");
         long idx = 0;
-        var edgelessNodes = new HashSet<String>();
         for (var entry : dependencies.entrySet()) {
             var source = entry.getKey();
             for (var dependency : entry.getValue()) {
                 if (dependency.equals(Dependency.empty)) {
-                    edgelessNodes.add(dependency.toMavenCoordinate());
                     continue;
                 }
                 var potentialRevisions = productRevisionMap.get(dependency.product());
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
-                if (matchingRevisions.isEmpty()) {
-                    logger.debug("No revision version matched the constraint {}. Potential revision versions are {}", dependency.getVersion(), String.join("; ",
-                            potentialRevisions.stream().map(r -> r.version.toString()).collect(Collectors.toSet())));
-                }
                 for (var target : matchingRevisions) {
                     var edge = new DependencyEdge(idx++, dependency.scope, dependency.optional, dependency.exclusions);
                     dependencyGraph.addEdge(source, target, edge);
                 }
             }
         }
-        logger.debug("{} nodes do not have any edges/dependencies", edgelessNodes.size());
         logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
         logger.info("Successfully generated ecosystem-wide dependency graph");
         return dependencyGraph;
