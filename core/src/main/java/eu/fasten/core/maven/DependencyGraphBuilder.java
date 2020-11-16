@@ -34,7 +34,12 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class DependencyGraphBuilder {
@@ -47,9 +52,9 @@ public class DependencyGraphBuilder {
         var graphBuilder = new DependencyGraphBuilder();
         var graph = graphBuilder.buildDependencyGraph(dbContext);
         var tsEnd = System.currentTimeMillis();
-        System.out.println("____________________________________________________________________");
-        System.out.println("Graph has " + graph.vertexSet().size() + " nodes and "
-                + graph.edgeSet().size() + " edges (" + (tsEnd - tsStart) + " ms)");
+        logger.info("____________________________________________________________________");
+        logger.info("Graph has {} nodes and {} edges ({} ms)", graph.vertexSet().size(),
+                graph.edgeSet().size(), tsEnd - tsStart);
     }
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
@@ -68,7 +73,7 @@ public class DependencyGraphBuilder {
                 .parallelStream()
                 .map(x -> {
                     if (x.component1().split(Constants.mvnCoordinateSeparator).length < 2) {
-                        logger.warn("Skipping invalid coordinate: " + x.component1());
+                        logger.warn("Skipping invalid coordinate: {}", x.component1());
                         return null;
                     }
 
@@ -79,7 +84,6 @@ public class DependencyGraphBuilder {
                         return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2(), x.component4()),
                                 Dependency.fromJSON(new JSONObject(x.component3().data())));
                     } else {
-                        logger.debug(String.format("Package %s:%s has no dependencies", x.component1(), x.component2()));
                         return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2(), x.component4()),
                                 Dependency.empty);
                     }
@@ -131,8 +135,7 @@ public class DependencyGraphBuilder {
         var startTs = System.currentTimeMillis();
 
         var dependencies = getDependencyList(dbContext);
-        logger.info(String.format("Retrieved %d package versions: %d ms", dependencies.size(),
-                System.currentTimeMillis() - startTs));
+        logger.info("Retrieved {} package versions: {}} ms", dependencies.size(), System.currentTimeMillis() - startTs);
 
         startTs = System.currentTimeMillis();
         var productRevisionMap = dependencies.keySet().stream().collect(Collectors.toMap(
@@ -145,16 +148,18 @@ public class DependencyGraphBuilder {
                     return z;
                 })
         );
-        logger.info(String.format("Indexed %d products: %dms", productRevisionMap.size(),
-                System.currentTimeMillis() - startTs));
+        logger.info("Indexed {} products: {} ms", productRevisionMap.size(),
+                System.currentTimeMillis() - startTs);
 
         startTs = System.currentTimeMillis();
         logger.info("Creating dependency graph");
 
         var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
 
-        dependencies.keySet().parallelStream().forEach(dependencyGraph::addVertex);
-        
+        logger.info("Adding dependency graph nodes");
+        dependencies.keySet().forEach(dependencyGraph::addVertex);
+
+        logger.info("Adding dependency graph edges");
         long idx = 0;
         for (var entry : dependencies.entrySet()) {
             var source = entry.getKey();
@@ -166,12 +171,11 @@ public class DependencyGraphBuilder {
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
                 for (var target : matchingRevisions) {
                     var edge = new DependencyEdge(idx++, dependency.scope, dependency.optional, dependency.exclusions);
-                    logger.info("Adding edge to the dependency graph ({} -> {})", source.toString(), target.toString());
                     dependencyGraph.addEdge(source, target, edge);
                 }
             }
         }
-        logger.info(String.format("Created graph: %d ms", System.currentTimeMillis() - startTs));
+        logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
         logger.info("Successfully generated ecosystem-wide dependency graph");
         return dependencyGraph;
     }
