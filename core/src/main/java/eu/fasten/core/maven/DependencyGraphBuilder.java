@@ -166,8 +166,10 @@ public class DependencyGraphBuilder {
                 }
                 var potentialRevisions = productRevisionMap.get(dependency.product());
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
-                logger.debug("{} matched for {}", dependency.getVersion(), String.join("; ",
-                        matchingRevisions.stream().map(Revision::toString).collect(Collectors.toSet())));
+                if (matchingRevisions.isEmpty()) {
+                    logger.debug("No revision version matched the constraint {}. Potential revision versions are {}", dependency.getVersion(), String.join("; ",
+                            potentialRevisions.stream().map(r -> r.version.toString()).collect(Collectors.toSet())));
+                }
                 for (var target : matchingRevisions) {
                     var edge = new DependencyEdge(idx++, dependency.scope, dependency.optional, dependency.exclusions);
                     dependencyGraph.addEdge(source, target, edge);
