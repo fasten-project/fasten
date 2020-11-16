@@ -48,7 +48,7 @@ public class Revision extends MavenProduct {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         Revision revision = (Revision) o;
-        return version.equals(revision.version) && createdAt.equals(revision.createdAt);
+        return version.equals(revision.version);
     }
 
     @Override
