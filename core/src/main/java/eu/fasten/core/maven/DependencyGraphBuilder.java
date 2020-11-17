@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class DependencyGraphBuilder {
 
@@ -173,7 +172,6 @@ public class DependencyGraphBuilder {
         dependencies.keySet().forEach(dependencyGraph::addVertex);
 
         logger.info("Adding dependency graph edges");
-        var idx = new AtomicInteger(0);
 
         var graphEdges = dependencies.entrySet().parallelStream().map(e -> {
             var source = e.getKey();
@@ -185,14 +183,20 @@ public class DependencyGraphBuilder {
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
                 var edges = new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
                 for (var target : matchingRevisions) {
-                    var edge = new DependencyEdge(idx.getAndIncrement(), dependency.scope, dependency.optional, dependency.exclusions);
+                    var edge = new DependencyEdge(0, dependency.scope, dependency.optional, dependency.exclusions);
                     edges.add(new ImmutableTriple<>(source, target, edge));
                 }
                 return edges;
             }
             return new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
         }).flatMap(Collection::stream).collect(Collectors.toList());
-        graphEdges.forEach(e -> dependencyGraph.addEdge(e.getLeft(), e.getMiddle(), e.getRight()));
+
+        var idx = new AtomicLong(0);
+        graphEdges.forEach(e -> {
+            var edge = new DependencyEdge(idx.getAndIncrement(), e.getRight().scope,
+                    e.getRight().optional, e.getRight().exclusions);
+            dependencyGraph.addEdge(e.getLeft(), e.getMiddle(), edge);
+        });
 
         logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
         logger.info("Successfully generated ecosystem-wide dependency graph");
