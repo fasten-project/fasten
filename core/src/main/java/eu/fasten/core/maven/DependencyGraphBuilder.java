@@ -26,6 +26,8 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.DependencyEdge;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -35,7 +37,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DependencyGraphBuilder {
 
@@ -100,7 +105,7 @@ public class DependencyGraphBuilder {
         if (revisions == null) {
             return Collections.emptyList();
         }
-        return revisions.parallelStream().filter(r -> {
+        return revisions.stream().filter(r -> {
             for (var constraint : constraints) {
                 if ((constraint.toString().startsWith("[") || constraint.toString().startsWith("("))
                         && (constraint.toString().endsWith("]") || constraint.toString().endsWith(")"))) {
@@ -168,21 +173,27 @@ public class DependencyGraphBuilder {
         dependencies.keySet().forEach(dependencyGraph::addVertex);
 
         logger.info("Adding dependency graph edges");
-        long idx = 0;
-        for (var entry : dependencies.entrySet()) {
-            var source = entry.getKey();
-            for (var dependency : entry.getValue()) {
+        var idx = new AtomicInteger(0);
+
+        var graphEdges = dependencies.entrySet().parallelStream().map(e -> {
+            var source = e.getKey();
+            for (var dependency : e.getValue()) {
                 if (dependency.equals(Dependency.empty)) {
-                    continue;
+                    return new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
                 }
                 var potentialRevisions = productRevisionMap.get(dependency.product());
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
+                var edges = new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
                 for (var target : matchingRevisions) {
-                    var edge = new DependencyEdge(idx++, dependency.scope, dependency.optional, dependency.exclusions);
-                    dependencyGraph.addEdge(source, target, edge);
+                    var edge = new DependencyEdge(idx.getAndIncrement(), dependency.scope, dependency.optional, dependency.exclusions);
+                    edges.add(new ImmutableTriple<>(source, target, edge));
                 }
+                return edges;
             }
-        }
+            return new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
+        }).flatMap(Collection::stream).collect(Collectors.toList());
+        graphEdges.forEach(e -> dependencyGraph.addEdge(e.getLeft(), e.getMiddle(), e.getRight()));
+
         logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
         logger.info("Successfully generated ecosystem-wide dependency graph");
         return dependencyGraph;
