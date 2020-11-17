@@ -72,15 +72,15 @@ public class DependencyGraphBuilder {
                         return null;
                     }
 
-                    var artifact = x.component1().split(Constants.mvnCoordinateSeparator)[0];
-                    var group = x.component1().split(Constants.mvnCoordinateSeparator)[1];
+                    var artifact = x.component1().split(Constants.mvnCoordinateSeparator)[0].replaceAll("[\\n\\t ]", "");
+                    var group = x.component1().split(Constants.mvnCoordinateSeparator)[1].replaceAll("[\\n\\t ]", "");
 
                     if (x.component3() != null) {
-                        return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2(), x.component4()),
-                                Dependency.fromJSON(new JSONObject(x.component3().data())));
+                        return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2().replaceAll("[\\n\\t ]", ""),
+                                x.component4()), Dependency.fromJSON(new JSONObject(x.component3().data())));
                     } else {
-                        return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2(), x.component4()),
-                                Dependency.empty);
+                        return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2().replaceAll("[\\n\\t ]", ""),
+                                x.component4()), Dependency.empty);
                     }
                 }).filter(Objects::nonNull)
                 .collect(Collectors.toConcurrentMap(
