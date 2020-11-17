@@ -179,12 +179,12 @@ public class DependencyGraphBuilder {
         logger.info("Adding dependency graph edges");
 
         var idx = new AtomicLong(0);
-        var graphEdges = dependencies.entrySet().parallelStream().map(e -> {
+        dependencies.entrySet().parallelStream().map(e -> {
             var source = e.getKey();
             var edges = new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
             for (var dependency : e.getValue()) {
                 if (dependency.equals(Dependency.empty)) {
-                    return new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
+                    continue;
                 }
                 var potentialRevisions = productRevisionMap.get(dependency.product());
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
@@ -195,8 +195,7 @@ public class DependencyGraphBuilder {
                 return edges;
             }
             return new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
-        }).flatMap(Collection::stream).collect(Collectors.toList());
-        graphEdges.forEach(e -> dependencyGraph.addEdge(e.getLeft(), e.getMiddle(), e.getRight()));
+        }).flatMap(Collection::stream).forEach(e -> dependencyGraph.addEdge(e.getLeft(), e.getMiddle(), e.getRight()));
 
         logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
         logger.info("Successfully generated ecosystem-wide dependency graph");
