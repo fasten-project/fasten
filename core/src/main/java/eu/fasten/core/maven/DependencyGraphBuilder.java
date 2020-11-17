@@ -52,7 +52,7 @@ public class DependencyGraphBuilder {
 
     public static void main(String[] args) throws SQLException {
         var tsStart = System.currentTimeMillis();
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
+        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5433/fasten_java", "fastenro");
         var graphBuilder = new DependencyGraphBuilder();
         var graph = graphBuilder.buildDependencyGraph(dbContext);
         var tsEnd = System.currentTimeMillis();
@@ -192,9 +192,8 @@ public class DependencyGraphBuilder {
                     var edge = new DependencyEdge(idx.getAndIncrement(), dependency.scope, dependency.optional, dependency.exclusions);
                     edges.add(new ImmutableTriple<>(source, target, edge));
                 }
-                return edges;
             }
-            return new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
+            return edges;
         }).flatMap(Collection::stream).forEach(e -> dependencyGraph.addEdge(e.getLeft(), e.getMiddle(), e.getRight()));
 
         logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
