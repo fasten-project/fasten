@@ -11,7 +11,7 @@
 </p>
 <br/>
 
-The FASTEN Rest API Plugin is a tool to expose canned queries from the [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema).
+This plugin exposes canned queries for the [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema) through a REST server.
 <!-- It can be used both as a standalone tool and as a part of FASTEN server. -->
 
 ## Design
