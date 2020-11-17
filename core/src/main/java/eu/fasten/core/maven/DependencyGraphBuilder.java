@@ -155,7 +155,7 @@ public class DependencyGraphBuilder {
         logger.info("Retrieved {} package versions: {} ms", dependencies.size(), System.currentTimeMillis() - startTs);
 
         startTs = System.currentTimeMillis();
-        var productRevisionMap = dependencies.keySet().stream().collect(Collectors.toConcurrentMap(
+        var productRevisionMap = dependencies.keySet().parallelStream().collect(Collectors.toConcurrentMap(
                 Revision::product,
                 List::of,
                 (x, y) -> {
