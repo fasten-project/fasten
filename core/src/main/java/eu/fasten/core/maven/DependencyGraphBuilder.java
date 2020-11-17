@@ -100,7 +100,7 @@ public class DependencyGraphBuilder {
         if (revisions == null) {
             return Collections.emptyList();
         }
-        return revisions.stream().filter(r -> {
+        return revisions.parallelStream().filter(r -> {
             for (var constraint : constraints) {
                 if (checkVersionLowerBound(constraint, r.version) && checkVersionUpperBound(constraint, r.version)) {
                     return true;
@@ -139,7 +139,7 @@ public class DependencyGraphBuilder {
         logger.info("Retrieved {} package versions: {} ms", dependencies.size(), System.currentTimeMillis() - startTs);
 
         startTs = System.currentTimeMillis();
-        var productRevisionMap = dependencies.keySet().stream().collect(Collectors.toMap(
+        var productRevisionMap = dependencies.keySet().stream().collect(Collectors.toConcurrentMap(
                 Revision::product,
                 List::of,
                 (x, y) -> {
