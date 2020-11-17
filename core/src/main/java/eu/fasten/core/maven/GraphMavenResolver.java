@@ -298,6 +298,7 @@ public class GraphMavenResolver implements Runnable {
     public DependencyTree buildDependencyTreeFromGraph(Graph<Revision, DependencyEdge> graph,
                                                        Revision root,
                                                        Set<Revision> visitedArtifacts) {
+        // TODO: Maven should pick the highest version available
         var childTrees = new ArrayList<DependencyTree>();
         visitedArtifacts.add(root);
         var rootEdges = graph.outgoingEdgesOf(root);

@@ -102,8 +102,15 @@ public class DependencyGraphBuilder {
         }
         return revisions.parallelStream().filter(r -> {
             for (var constraint : constraints) {
-                if (checkVersionLowerBound(constraint, r.version) && checkVersionUpperBound(constraint, r.version)) {
-                    return true;
+                if ((constraint.toString().startsWith("[") || constraint.toString().startsWith("("))
+                        && (constraint.toString().endsWith("]") || constraint.toString().endsWith(")"))) {
+                    if (checkVersionLowerBound(constraint, r.version) && checkVersionUpperBound(constraint, r.version)) {
+                        return true;
+                    }
+                } else {
+                    if (constraint.lowerBound.equals(constraint.upperBound) && new DefaultArtifactVersion(constraint.lowerBound).equals(r.version)) {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -111,7 +118,7 @@ public class DependencyGraphBuilder {
     }
 
     private boolean checkVersionLowerBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
-        if (new DefaultArtifactVersion(constraint.lowerBound).equals(version)) {
+        if (constraint.lowerBound.isEmpty()) {
             return true;
         }
         if (constraint.isLowerHardRequirement) {
@@ -122,7 +129,7 @@ public class DependencyGraphBuilder {
     }
 
     private boolean checkVersionUpperBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
-        if (new DefaultArtifactVersion(constraint.upperBound).equals(version)) {
+        if (constraint.upperBound.isEmpty()) {
             return true;
         }
         if (constraint.isUpperHardRequirement) {
