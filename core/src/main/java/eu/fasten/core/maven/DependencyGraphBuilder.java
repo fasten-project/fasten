@@ -36,8 +36,13 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -173,30 +178,24 @@ public class DependencyGraphBuilder {
 
         logger.info("Adding dependency graph edges");
 
-        var graphEdges = dependencies.entrySet().parallelStream().map(e -> {
+        var idx = new AtomicLong(0);
+        dependencies.entrySet().parallelStream().map(e -> {
             var source = e.getKey();
+            var edges = new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
             for (var dependency : e.getValue()) {
                 if (dependency.equals(Dependency.empty)) {
                     return new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
                 }
                 var potentialRevisions = productRevisionMap.get(dependency.product());
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
-                var edges = new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
                 for (var target : matchingRevisions) {
-                    var edge = new DependencyEdge(0, dependency.scope, dependency.optional, dependency.exclusions);
+                    var edge = new DependencyEdge(idx.getAndIncrement(), dependency.scope, dependency.optional, dependency.exclusions);
                     edges.add(new ImmutableTriple<>(source, target, edge));
                 }
                 return edges;
             }
             return new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
-        }).flatMap(Collection::stream).collect(Collectors.toList());
-
-        var idx = new AtomicLong(0);
-        graphEdges.forEach(e -> {
-            var edge = new DependencyEdge(idx.getAndIncrement(), e.getRight().scope,
-                    e.getRight().optional, e.getRight().exclusions);
-            dependencyGraph.addEdge(e.getLeft(), e.getMiddle(), edge);
-        });
+        }).flatMap(Collection::stream).forEach(e -> dependencyGraph.addEdge(e.getLeft(), e.getMiddle(), e.getRight()));
 
         logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
         logger.info("Successfully generated ecosystem-wide dependency graph");
