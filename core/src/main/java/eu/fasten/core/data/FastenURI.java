@@ -357,4 +357,8 @@ public class FastenURI implements Serializable {
 	public FastenURI canonicalize() {
 		return this;
 	}
+
+	public FastenURI decanonicalize() {
+		return this;
+	}
 }

@@ -338,6 +338,21 @@ public class FastenJavaURI extends FastenURI {
         return FastenJavaURI.create(u.getRawEntity());
     }
 
+    public FastenJavaURI derelativize(final FastenURI u) {
+        if (u.rawNamespace == null) {
+            return FastenJavaURI.create("/" + this.rawNamespace + "/" + u.rawEntity);
+        }
+        return FastenJavaURI.create(u.toString());
+    }
+
+    public FastenJavaURI decanonicalize() {
+        final FastenJavaURI[] derelativizedArgs = new FastenJavaURI[args.length];
+
+        for (int i = 0; i < args.length; i++) derelativizedArgs[i] = derelativize(args[i]);
+        final FastenJavaURI derelativizedReturnType = derelativize(returnType);
+        return FastenJavaURI.create(rawForge, rawProduct, rawVersion, rawNamespace, className, functionOrAttributeName, derelativizedArgs, derelativizedReturnType);
+    }
+
     public FastenJavaURI resolve(final FastenJavaURI u) {
         // Standard resolution will work; might be more efficient
         return create(this.uri.resolve(u.uri).toString());

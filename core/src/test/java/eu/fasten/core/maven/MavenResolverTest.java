@@ -190,16 +190,16 @@ public class MavenResolverTest {
         assertEquals(expected, actual);
     }
 
-    @Test
-    public void resolveFullDependencySetOnlineTest() throws FileNotFoundException {
-        var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.3"));
-        try {
-            var actual = mavenResolver.resolveFullDependencySetOnline("junit", "junit", "4.12", -1, null);
-            assertEquals(expected, actual);
-        } catch (RuntimeException e) {
-            e.printStackTrace(System.err);
-        }
-    }
+//    @Test
+//    public void resolveFullDependencySetOnlineTest() throws FileNotFoundException {
+//        var expected = Set.of(new Dependency("org.hamcrest", "hamcrest-core", "1.3"));
+//        try {
+//            var actual = mavenResolver.resolveFullDependencySetOnline("junit", "junit", "4.12", -1, null);
+//            assertEquals(expected, actual);
+//        } catch (RuntimeException e) {
+//            e.printStackTrace(System.err);
+//        }
+//    }
 
     @Test
     public void filterOptionalDependenciesTest() {

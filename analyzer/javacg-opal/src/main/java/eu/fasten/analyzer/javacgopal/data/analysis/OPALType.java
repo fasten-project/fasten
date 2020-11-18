@@ -24,12 +24,15 @@ import com.google.common.collect.Lists;
 import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.Node;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
@@ -85,7 +88,7 @@ public class OPALType {
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link Type}.
+     * corresponding {@link JavaType}.
      *
      * @param projectHierarchy class hierarchy of the project
      * @param methods          methods belonging to this type
@@ -112,7 +115,7 @@ public class OPALType {
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link Type}.
+     * corresponding {@link JavaType}.
      *
      * @param type  OPAL type
      * @param klass object type
@@ -126,10 +129,41 @@ public class OPALType {
             superClassesURIs = new LinkedList<>();
         }
 
+        final var methodsMap = getMethodMaps(type.getMethods());
         return Map.of(OPALMethod.getTypeURI(klass),
                 new JavaType(type.getSourceFileName(), toURIMethods(type.getMethods()),
                         superClassesURIs, toURIInterfaces(type.getSuperInterfaces()),
                         type.access, type.isFinal));
+    }
+
+    /**
+     * Converts a {@link Map} of {@link Method} to a Map of {@link FastenURI}. And also
+     * shifts the keys and values.
+     *
+     * @param methods {@link Method} are keys and their unique id in the artifact are
+     *                values.
+     * @return A Map in which the unique id of each method in the artifact is the key and the
+     * {@link FastenURI} of the method is the value.
+     */
+    public static Pair<Map<String, JavaNode>, BiMap<Integer, JavaNode>> getMethodMaps(final Map<Method,
+            Integer> methods) {
+        final BiMap<Integer, JavaNode> nodes = HashBiMap.create();
+        final Map<String, JavaNode> defs = new HashMap<>();
+
+        for (final var entry : methods.entrySet()) {
+            final var method = entry.getKey();
+            final var defined = method.instructionsOption().isDefined();
+            final var node = new JavaNode(getUri(method), Map.of("first",
+                    getFirstLine(method),
+                    "last", getLastLine(method),
+                    "defined", defined,
+                    "access", getAccessModifier(method)));
+            if (defined) {
+                defs.put(node.getSignature(), node);
+            }
+            nodes.put(entry.getValue(), node);
+        }
+        return MutablePair.of(defs, nodes);
     }
 
     /**
