@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.restapiplugin.api.mvn;
+package eu.fasten.analyzer.restapiplugin.mvn.api;
 
 import org.springframework.http.ResponseEntity;
 

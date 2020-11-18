@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.restapiplugin.api;
+package eu.fasten.analyzer.restapiplugin.mvn;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;

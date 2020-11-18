@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.restapiplugin.api;
+package eu.fasten.analyzer.restapiplugin.mvn;
 
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.server.connectors.PostgresConnector;

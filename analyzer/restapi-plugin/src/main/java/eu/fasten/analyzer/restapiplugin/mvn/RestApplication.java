@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.restapiplugin.api;
+package eu.fasten.analyzer.restapiplugin.mvn;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

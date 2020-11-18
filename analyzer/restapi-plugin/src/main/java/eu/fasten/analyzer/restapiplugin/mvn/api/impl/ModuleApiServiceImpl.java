@@ -1,7 +1,7 @@
-package eu.fasten.analyzer.restapiplugin.api.mvn.impl;
+package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
-import eu.fasten.analyzer.restapiplugin.api.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.api.mvn.ModuleApiService;
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.api.ModuleApiService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;

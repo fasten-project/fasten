@@ -1,6 +1,6 @@
-package eu.fasten.analyzer.restapiplugin.api.mvn;
+package eu.fasten.analyzer.restapiplugin.mvn.api;
 
-import eu.fasten.analyzer.restapiplugin.api.RestApplication;
+import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
