@@ -21,6 +21,8 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.data.exceptions.EmptyCallGraphException;
+import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -91,9 +93,9 @@ public class OPALPlugin extends Plugin {
                 logger.info("Call graph successfully generated for {}!",
                         mavenCoordinate.getCoordinate());
 
-            } catch (Exception e) {
-                setPluginError(e);
+            } catch (OPALException | EmptyCallGraphException | MissingArtifactException e) {
                 logger.error("", e);
+                setPluginError(e);
             }
         }
 
