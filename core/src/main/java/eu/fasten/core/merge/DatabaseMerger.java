@@ -54,32 +54,33 @@ public class DatabaseMerger {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseMerger.class);
 
-    private final DirectedGraph callGraphData;
+//    private final DirectedGraph callGraphData;
     private final Map<String, Set<String>> universalParents;
     private final Map<String, Set<String>> universalChildren;
     private final Map<String, Map<String, Set<Long>>> typeDictionary;
-    private final Map<Long, Node> typeMap;
-    private final List<Arc> arcs;
+    private final DSLContext dbContext;
+    private final RocksDao rocksDao;
+//    private final Map<Long, Node> typeMap;
+//    private final List<Arc> arcs;
 
     /**
      * Create instance of database merger.
      *
-     * @param artifact     artifact to resolve
-     * @param dependencies dependencies of the artifact
+     * @param dependencySet dependencies present in the resolution
      * @param dbContext    DSL context
      * @param rocksDao     rocks DAO
      */
-    public DatabaseMerger(final String artifact, final List<String> dependencies,
+    public DatabaseMerger(final List<String> dependencySet,
                           final DSLContext dbContext, final RocksDao rocksDao) {
-        final var dependenciesIds = getDependenciesIds(artifact, dependencies, dbContext);
+        this.dbContext = dbContext;
+        this.rocksDao = rocksDao;
+        final var dependenciesIds = getDependenciesIds(dependencySet, dbContext);
         final var universalCHA = createUniversalCHA(dependenciesIds, dbContext, rocksDao);
 
         this.universalParents = universalCHA.getLeft();
         this.universalChildren = universalCHA.getRight();
         this.typeDictionary = createTypeDictionary(dependenciesIds, dbContext, rocksDao);
-        this.callGraphData = fetchCallGraphData(artifact, dbContext, rocksDao);
-        this.typeMap = createTypeMap(callGraphData, dbContext);
-        this.arcs = getArcs(callGraphData, dbContext);
+
     }
 
     /**
@@ -145,7 +146,12 @@ public class DatabaseMerger {
      *
      * @return merged call graph
      */
-    public DirectedGraph mergeWithCHA() {
+    public DirectedGraph mergeWithCHA(final String artifact) {
+
+        final var callGraphData = fetchCallGraphData(artifact, dbContext, rocksDao);
+        final var typeMap = createTypeMap(callGraphData, dbContext);
+        final var arcs = getArcs(callGraphData, dbContext);
+
         var result = new ArrayImmutableDirectedGraph.Builder();
 
         final long startTime = System.currentTimeMillis();
@@ -485,11 +491,9 @@ public class DatabaseMerger {
      * @param dbContext DSL context
      * @return set of IDs of dependencies
      */
-    private Set<Long> getDependenciesIds(final String artifact,
-                                         final List<String> dependencies,
+    private Set<Long> getDependenciesIds(final List<String> dependencySet,
                                          final DSLContext dbContext) {
-        var coordinates = new HashSet<>(dependencies);
-        coordinates.add(artifact);
+        var coordinates = new HashSet<>(dependencySet);
 
         Condition depCondition = null;
 

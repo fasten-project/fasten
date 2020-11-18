@@ -191,8 +191,9 @@ public class Benchmark implements Runnable {
     }
 
     private DirectedGraph getDatabaseCallGraph() {
-        var databaseMerger = new DatabaseMerger(artifact, dependencies, dbContext, rocksDao);
-        return databaseMerger.mergeWithCHA();
+        final var depSet = dependencies;
+        var databaseMerger = new DatabaseMerger(depSet, dbContext, rocksDao);
+        return databaseMerger.mergeWithCHA(artifact);
     }
 
     private Map<Long, String> getMethodsMap(final DSLContext dslContext, final LongSet nodes) {

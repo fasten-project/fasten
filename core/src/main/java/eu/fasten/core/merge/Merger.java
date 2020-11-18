@@ -116,8 +116,10 @@ public class Merger implements Runnable {
                         return;
                     }
 
-                    var databaseMerger = new DatabaseMerger(artifact, dependencies, dbContext, rocksDao);
-                    var mergedDirectedGraph = databaseMerger.mergeWithCHA();
+                    final var depSet = dependencies;
+                    depSet.add(artifact);
+                    var databaseMerger = new DatabaseMerger(depSet, dbContext, rocksDao);
+                    var mergedDirectedGraph = databaseMerger.mergeWithCHA(artifact);
                     logger.info("Resolved {} nodes, {} calls in {} seconds",
                             mergedDirectedGraph.numNodes(),
                             mergedDirectedGraph.numArcs(),
