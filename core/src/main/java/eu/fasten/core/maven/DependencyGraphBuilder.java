@@ -188,6 +188,9 @@ public class DependencyGraphBuilder {
                 }
                 var potentialRevisions = productRevisionMap.get(dependency.product());
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
+                if (matchingRevisions.isEmpty()) {
+                    logger.warn("Could not find any versions that would satisfy {} for {}", dependency.getVersion(), dependency.product());
+                }
                 for (var target : matchingRevisions) {
                     var edge = new DependencyEdge(idx.getAndIncrement(), dependency.scope, dependency.optional, dependency.exclusions);
                     edges.add(new ImmutableTriple<>(source, target, edge));
