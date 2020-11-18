@@ -219,8 +219,10 @@ public class Main implements Runnable {
         }
         final var art = generate(artifact, this.commands.computations.main,
                 commands.computations.genAlgorithm, true);
+        deps.add(art);
+        final var merger = new LocalMerger(deps);
+        result = merger.mergeWithCHA(art);
 
-        result = new LocalMerger(art, deps).mergeWithCHA();
         if (result != null) {
             logger.info("Resolved {} nodes, {} calls in {} seconds",
                     result.getClassHierarchy().get(JavaScope.resolvedTypes).size(),

@@ -47,8 +47,9 @@ public class JCGTest {
                     }
 
                     List<ExtendedRevisionJavaCallGraph> mergedRCGs = new ArrayList<>();
+                    final var merger = new LocalMerger(rcgs);
                     for (final var rcg : rcgs) {
-                        mergedRCGs.add(new LocalMerger(rcg, rcgs).mergeWithCHA());
+                        mergedRCGs.add(merger.mergeWithCHA(rcg));
                     }
                     result.put(testCase.getName(), JCGTest.compareMergeOPAL(rcgs, thisTest));
                 }

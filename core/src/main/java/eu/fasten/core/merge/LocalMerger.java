@@ -49,7 +49,6 @@ public class LocalMerger {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalMerger.class);
 
-    private final ExtendedRevisionJavaCallGraph artifact;
     private final Map<String, Set<String>> universalParents;
     private final Map<String, Set<String>> universalChildren;
     private final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary;
@@ -57,18 +56,14 @@ public class LocalMerger {
     /**
      * Creates instance of local merger.
      *
-     * @param artifact     artifact to resolve
-     * @param dependencies dependencies of the artifact
+     * @param dependencySet all artifacts present in a resolution
      */
-    public LocalMerger(final ExtendedRevisionJavaCallGraph artifact,
-                       final List<ExtendedRevisionJavaCallGraph> dependencies) {
-        this.artifact = artifact;
-        dependencies.add(artifact);
+    public LocalMerger(final List<ExtendedRevisionJavaCallGraph> dependencySet) {
 
-        final var UCH = createUniversalCHA(dependencies);
+        final var UCH = createUniversalCHA(dependencySet);
         this.universalParents = UCH.getLeft();
         this.universalChildren = UCH.getRight();
-        this.typeDictionary = createTypeDictionary(dependencies);
+        this.typeDictionary = createTypeDictionary(dependencySet);
     }
 
     /**
@@ -144,7 +139,7 @@ public class LocalMerger {
      *
      * @return merged call graph
      */
-    public ExtendedRevisionJavaCallGraph mergeWithCHA() {
+    public ExtendedRevisionJavaCallGraph mergeWithCHA(final ExtendedRevisionJavaCallGraph artifact) {
         final var result = new CGHA(artifact);
 
         final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
