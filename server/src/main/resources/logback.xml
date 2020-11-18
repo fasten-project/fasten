@@ -6,7 +6,7 @@
             <onMismatch>ACCEPT</onMismatch>
         </filter>
         <encoder>
-            <pattern>[%date{ISO8601}] [%-5level] [%thread] [%component] [%logger{1}] - %msg%n</pattern>
+            <pattern>[%date{ISO8601}] [%-5level] [%thread] [%logger{1}] - %msg%n</pattern>
         </encoder>
     </appender>
     <appender name="STDOUT-ERROR" class="ch.qos.logback.core.ConsoleAppender">
@@ -16,7 +16,7 @@
             <onMismatch>DENY</onMismatch>
         </filter>
         <encoder>
-            <pattern>[%date{ISO8601}] [%-5level] [OPAL] [%thread] [%component] [%logger{1}] - %msg%n%xEx{full}%n</pattern>
+            <pattern>[%date{ISO8601}] [%-5level] [%thread] [%logger{1}] - %msg%n%xEx{full}%n</pattern>
         </encoder>
         <target>System.err</target>
     </appender>
