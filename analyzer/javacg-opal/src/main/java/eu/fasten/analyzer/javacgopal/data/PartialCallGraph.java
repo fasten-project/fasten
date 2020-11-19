@@ -67,10 +67,8 @@ public class PartialCallGraph {
         this.graph = new Graph();
 
         try {
-            logger.info("Creating internal CHA");
             final var cha = createInternalCHA(constructor.getProject());
 
-            logger.info("Creating graph with external CHA");
             createGraphWithExternalCHA(constructor.getCallGraph(), cha);
 
             this.nodeCount = cha.getNodeCount();
@@ -120,8 +118,6 @@ public class PartialCallGraph {
         File file = null;
         try {
             file = new MavenCoordinate.MavenResolver().downloadArtifact(coordinate);
-
-            logger.info("OPAL is analysing the artifact");
             final var opalCG = new CallGraphConstructor(file, mainClass, algorithm);
 
             final var partialCallGraph = new PartialCallGraph(opalCG);

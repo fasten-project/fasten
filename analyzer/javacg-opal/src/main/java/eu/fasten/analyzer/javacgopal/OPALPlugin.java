@@ -64,16 +64,17 @@ public class OPALPlugin extends Plugin {
             pluginError = null;
             outputPath = null;
             graph = null;
-            try {
-                var kafkaConsumedJson = new JSONObject(kafkaRecord);
-                if (kafkaConsumedJson.has("payload")) {
-                    kafkaConsumedJson = kafkaConsumedJson.getJSONObject("payload");
-                }
-                final var mavenCoordinate = new MavenCoordinate(kafkaConsumedJson);
 
+            var kafkaConsumedJson = new JSONObject(kafkaRecord);
+            if (kafkaConsumedJson.has("payload")) {
+                kafkaConsumedJson = kafkaConsumedJson.getJSONObject("payload");
+            }
+            final var mavenCoordinate = new MavenCoordinate(kafkaConsumedJson);
+
+            long startTime = System.nanoTime();
+            try {
                 // Generate CG and measure construction duration.
-                logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
-                long startTime = System.nanoTime();
+                logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
                         "", "CHA", kafkaConsumedJson.optLong("date", -1));
                 long endTime = System.nanoTime();
@@ -94,11 +95,19 @@ public class OPALPlugin extends Plugin {
                         + firstLetter + File.separator
                         + artifactId + File.separator + product + ".json";
 
-                logger.info("Call graph successfully generated for {}!",
-                        mavenCoordinate.getCoordinate());
+                logger.info("[CG-GENERATION] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
 
-            } catch (OPALException | EmptyCallGraphException | MissingArtifactException e) {
-                logger.error("", e);
+            } catch (OPALException | EmptyCallGraphException e) {
+                long endTime = System.nanoTime();
+                long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
+
+                logger.error("[CG-GENERATION] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
+                setPluginError(e);
+            } catch (MissingArtifactException e) {
+                long endTime = System.nanoTime();
+                long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
+
+                logger.error("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
                 setPluginError(e);
             }
         }

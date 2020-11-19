@@ -168,6 +168,8 @@ public class MavenCoordinate {
             var repos = mavenCoordinate.getMavenRepos();
             for (int i = 0; i < repos.size(); i++) {
 
+                long startTime = System.nanoTime();
+
                 try {
                     if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
                         found = true;
@@ -176,31 +178,38 @@ public class MavenCoordinate {
                     }
                 } catch (MissingArtifactException e) {
                     found = false;
-                    logger.warn("Artifact couldn't be retrieved for repo" + repos.get(i), e);
+
+                    long duration = computeDurationInMs(startTime);
+                    logger.warn("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + repos.get(i), e);
                 }
 
                 if (jar.isPresent()) {
+                    long duration = computeDurationInMs(startTime);
+                    logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + repos.get(i));
                     return jar.get();
                 } else if (found && i == repos.size() - 1) {
-                    throw new RuntimeException();
+                    throw new MissingArtifactException("Artifact couldn't be retrieved for repo: " + repos.get(i), null);
                 } else if (found) {
                     continue;
                 }
 
                 for (var s : defaultPackaging) {
-
+                    startTime = System.nanoTime();
                     try {
                         found = true;
                         jar = httpGetFile(mavenCoordinate.toProductUrl(repos.get(i), s));
                     } catch (MissingArtifactException e) {
                         found = false;
-                        logger.warn("Artifact couldn't be retrieved for repo" + repos.get(i), e);
+
+                        long duration = computeDurationInMs(startTime);
+                        logger.warn("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + repos.get(i), e);
                     }
 
-                    if (jar.isPresent()) {
+                    if (jar.isPresent()) {long duration = computeDurationInMs(startTime);
+                        logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + repos.get(i));
                         return jar.get();
                     } else if (found && i == repos.size() - 1) {
-                        throw new RuntimeException();
+                        throw new MissingArtifactException("Artifact couldn't be retrieved for repo: " + repos.get(i), null);
                     } else if (found) {
                         break;
                     }
@@ -231,6 +240,11 @@ public class MavenCoordinate {
                     if (tempFile != null) {tempFile.toFile().delete();}
                     throw new MissingArtifactException(e.getMessage(), e.getCause());
             }
+        }
+
+        private long computeDurationInMs(long startTime) {
+            long endTime = System.nanoTime();
+            return (endTime - startTime) / 1000000; // Compute duration in ms.
         }
     }
 }
