@@ -1,19 +1,15 @@
 package eu.fasten.analyzer.javacgopal.data;
 
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.Objects;
-import org.json.JSONObject;
-import org.json.JSONTokener;
-import org.junit.jupiter.api.Assertions;
+import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,25 +25,40 @@ class JSONUtilsTest {
     }
 
     @Test
-    void toJSONString() {
+    void toJSONString() throws IOException {
 
         logger.debug("Start serialization ...");
-        var startMem = Runtime.getRuntime().freeMemory();
-        long startTime = System.currentTimeMillis();
-        final var ser1 = JSONUtils.toJSONString(graph);
-        logger.debug("Direct String serialization time : {}",
-            System.currentTimeMillis() - startTime);
-        logger.debug("Direct String Serialization memory : {}",
-            startMem - Runtime.getRuntime().freeMemory());
 
-        startTime = System.currentTimeMillis();
-        startMem = Runtime.getRuntime().freeMemory();
-        final var ser2 = graph.toJSON().toString();
-        logger.debug("Json object Serialization time : {}", System.currentTimeMillis() - startTime);
-        logger.debug("Json object Serialization memory : {}",
-            startMem - Runtime.getRuntime().freeMemory());
+        final var ser1 = AvgConsumption(true,20, 20);
+        final var ser2 = AvgConsumption(false,20, 20);
 
-//        Assertions.assertEquals(ser1, ser2);
+        JSONAssert.assertEquals(ser1, ser2, JSONCompareMode.LENIENT);
 
+    }
+
+    private String AvgConsumption(boolean directSerializer, final int warmUp,
+                                      final int iterations) {
+        String result = "";
+        final var times = new ArrayList<Long>();
+        final var mems = new ArrayList<Long>();
+        for (int i = 0; i < warmUp+iterations; i++) {
+            if (i>warmUp) {
+                var startMem = Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory();
+                long startTime = System.currentTimeMillis();
+                if (directSerializer) {
+                result = JSONUtils.toJSONString(graph);
+                }else {
+                    result = graph.toJSON().toString();
+                }
+                var endMem = Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory();
+                mems.add(endMem-startMem);
+                times.add(System.currentTimeMillis() - startTime);
+            }
+        }
+        logger.debug("Direct Serializer: " + directSerializer + " avg time : {}",
+            times.stream().mapToDouble(a -> a).average().getAsDouble());
+        logger.debug("Direct Serializer: " + directSerializer + " avg memory : {}",
+            mems.stream().mapToDouble(a -> a).average().getAsDouble());
+        return result;
     }
 }
