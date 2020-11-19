@@ -71,9 +71,13 @@ public class OPALPlugin extends Plugin {
                 }
                 final var mavenCoordinate = new MavenCoordinate(kafkaConsumedJson);
 
+                // Generate CG and measure construction duration.
                 logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
+                long startTime = System.nanoTime();
                 this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
                         "", "CHA", kafkaConsumedJson.optLong("date", -1));
+                long endTime = System.nanoTime();
+                long duration = (endTime - startTime) / 1000000; // Compute duration in ms. 
 
                 if (this.graph.isCallGraphEmpty()) {
                     throw new EmptyCallGraphException();

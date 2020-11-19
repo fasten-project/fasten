@@ -21,6 +21,7 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.merge.CallGraphMerger;
@@ -164,7 +165,7 @@ public class Main implements Runnable {
             try {
                 generate(artifact, commands.computations.main, commands.computations.genAlgorithm,
                         !this.output.isEmpty());
-            } catch (IOException | OPALException e) {
+            } catch (IOException | OPALException | MissingArtifactException e) {
                 logger.error("Call graph couldn't be generated for Maven coordinate: {}", artifact.getCoordinate(), e);
             }
 
@@ -172,7 +173,7 @@ public class Main implements Runnable {
             try {
                 generate(getArtifactFile(), commands.computations.main,
                         commands.computations.genAlgorithm, !this.output.isEmpty());
-            } catch (IOException | OPALException e) {
+            } catch (IOException | OPALException | MissingArtifactException e) {
                 logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
         }
@@ -185,14 +186,14 @@ public class Main implements Runnable {
         if (commands.computations.mode.equals("COORD")) {
             try {
                 merge(getArtifactCoordinate(), getDependenciesCoordinates());
-            } catch (IOException | OPALException e) {
+            } catch (IOException | OPALException | MissingArtifactException e) {
                 logger.error("Call graph couldn't be merge for coord: {}", getArtifactCoordinate().getCoordinate(), e);
             }
 
         } else if (commands.computations.mode.equals("FILE")) {
             try {
                 merge(getArtifactFile(), getDependenciesFiles()).toJSON();
-            } catch (IOException | OPALException e) {
+            } catch (IOException | OPALException | MissingArtifactException e) {
                 logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
         }
@@ -209,7 +210,7 @@ public class Main implements Runnable {
      */
     public <T> ExtendedRevisionJavaCallGraph merge(final T artifact,
                                                final List<T> dependencies)
-            throws IOException, OPALException {
+            throws IOException, OPALException, MissingArtifactException {
 
         final ExtendedRevisionJavaCallGraph result;
         final var deps = new ArrayList<ExtendedRevisionJavaCallGraph>();
@@ -246,7 +247,7 @@ public class Main implements Runnable {
     public <T> ExtendedRevisionJavaCallGraph generate(final T artifact,
                                                   final String mainClass,
                                                   final String algorithm, final boolean writeToFile)
-            throws IOException, OPALException {
+            throws MissingArtifactException, OPALException, IOException {
         final ExtendedRevisionJavaCallGraph revisionCallGraph;
 
         final long startTime = System.currentTimeMillis();
