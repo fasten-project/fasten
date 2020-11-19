@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
@@ -183,7 +184,7 @@ class PartialCallGraphTest {
     }
 
     @Test
-    void createExtendedRevisionJavaCallGraph() throws FileNotFoundException, OPALException {
+    void createExtendedRevisionJavaCallGraph() throws MissingArtifactException, OPALException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
         var cg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
                 "", "CHA", 1574072773);

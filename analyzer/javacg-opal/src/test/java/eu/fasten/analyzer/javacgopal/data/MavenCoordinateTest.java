@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
+
+import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import org.junit.jupiter.api.Test;
 
 class MavenCoordinateTest {
@@ -81,7 +83,7 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>());
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(FileNotFoundException.class, () -> resolver.downloadArtifact(coordinate));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate));
     }
 
     @Test
@@ -90,7 +92,7 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(FileNotFoundException.class, () -> resolver.downloadArtifact(coordinate));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate));
     }
 
     @Test
@@ -99,11 +101,11 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(FileNotFoundException.class, () -> resolver.downloadArtifact(coordinate));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate));
     }
 
     @Test
-    void downloadJarWrongPackaging() throws FileNotFoundException {
+    void downloadJarWrongPackaging() throws MissingArtifactException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.30", "wrongPackagingType");
         var resolver = new MavenCoordinate.MavenResolver();
 
