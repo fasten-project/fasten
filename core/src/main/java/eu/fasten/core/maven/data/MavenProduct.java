@@ -27,10 +27,19 @@ import java.util.Objects;
  * A versionless Maven artifact
  */
 public class MavenProduct {
+
+    public final long id;
     public final String groupId;
     public final String artifactId;
 
     public MavenProduct(final String groupId, final String artifactId) {
+        this.id = 0;
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+    }
+
+    public MavenProduct(long id, String groupId, String artifactId) {
+        this.id = id;
         this.groupId = groupId;
         this.artifactId = artifactId;
     }

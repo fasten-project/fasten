@@ -31,8 +31,16 @@ public class Revision extends MavenProduct {
     public final DefaultArtifactVersion version;
     public final Timestamp createdAt;
 
-    public Revision(final String groupId, final String artifactId, final String version, final Timestamp createdAt){
+    public Revision(final String groupId, final String artifactId, final String version, final Timestamp createdAt) {
         super(groupId, artifactId);
+
+        this.version = new DefaultArtifactVersion(version);
+        this.createdAt = createdAt;
+    }
+
+    public Revision(final long id, final String groupId, final String artifactId,
+                    final String version, final Timestamp createdAt) {
+        super(id, groupId, artifactId);
 
         this.version = new DefaultArtifactVersion(version);
         this.createdAt = createdAt;
@@ -53,7 +61,7 @@ public class Revision extends MavenProduct {
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.artifactId, this.groupId, version, createdAt);
+        return Objects.hash(this.artifactId, this.groupId, version);
     }
 
     @Override

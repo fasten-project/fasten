@@ -62,7 +62,8 @@ public class DependencyGraphBuilder {
     }
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
-        return dbContext.select(Packages.PACKAGES.PACKAGE_NAME,
+        return dbContext.select(PackageVersions.PACKAGE_VERSIONS.ID,
+                Packages.PACKAGES.PACKAGE_NAME,
                 PackageVersions.PACKAGE_VERSIONS.VERSION,
                 Dependencies.DEPENDENCIES.METADATA,
                 PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
@@ -76,20 +77,20 @@ public class DependencyGraphBuilder {
                 .fetch()
                 .parallelStream()
                 .map(x -> {
-                    if (x.component1().split(Constants.mvnCoordinateSeparator).length < 2) {
-                        logger.warn("Skipping invalid coordinate: {}", x.component1());
+                    if (x.component2().split(Constants.mvnCoordinateSeparator).length < 2) {
+                        logger.warn("Skipping invalid coordinate: {}", x.component2());
                         return null;
                     }
 
-                    var artifact = x.component1().split(Constants.mvnCoordinateSeparator)[0].replaceAll("[\\n\\t ]", "");
-                    var group = x.component1().split(Constants.mvnCoordinateSeparator)[1].replaceAll("[\\n\\t ]", "");
+                    var artifact = x.component2().split(Constants.mvnCoordinateSeparator)[0].replaceAll("[\\n\\t ]", "");
+                    var group = x.component2().split(Constants.mvnCoordinateSeparator)[1].replaceAll("[\\n\\t ]", "");
 
-                    if (x.component3() != null) {
-                        return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2().replaceAll("[\\n\\t ]", ""),
-                                x.component4()), Dependency.fromJSON(new JSONObject(x.component3().data())));
+                    if (x.component4() != null) {
+                        return new AbstractMap.SimpleEntry<>(new Revision(x.component1(), artifact, group, x.component3().replaceAll("[\\n\\t ]", ""),
+                                x.component5()), Dependency.fromJSON(new JSONObject(x.component4().data())));
                     } else {
-                        return new AbstractMap.SimpleEntry<>(new Revision(artifact, group, x.component2().replaceAll("[\\n\\t ]", ""),
-                                x.component4()), Dependency.empty);
+                        return new AbstractMap.SimpleEntry<>(new Revision(x.component1(), artifact, group, x.component3().replaceAll("[\\n\\t ]", ""),
+                                x.component5()), Dependency.empty);
                     }
                 }).filter(Objects::nonNull)
                 .collect(Collectors.toConcurrentMap(

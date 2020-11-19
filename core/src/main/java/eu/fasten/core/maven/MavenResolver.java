@@ -27,6 +27,7 @@ import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.MavenUtilities;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -576,8 +577,12 @@ public class MavenResolver implements Runnable {
             logger.debug("Maven resolution output parsing finished with exit code " + exitValue);
 
             while ((bufferStr = stdInput.readLine()) != null) {
-                // TODO: sdfda
-                //dependencySet.add(new Dependency(bufferStr));
+                var coordinates = bufferStr.split(Constants.mvnCoordinateSeparator);
+                try {
+                    dependencySet.add(new Revision(coordinates[0], coordinates[1], coordinates[3], new Timestamp(-1)));
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    logger.error("Error parsing {} to a Maven coordinate", bufferStr, e);
+                }
             }
 
             if (timestamp != -1) {

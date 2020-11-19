@@ -21,11 +21,6 @@ package eu.fasten.core.maven.data;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import com.github.zafarkhaja.semver.Parser;
-import com.github.zafarkhaja.semver.Version;
-import com.github.zafarkhaja.semver.expr.Expression;
-import com.github.zafarkhaja.semver.expr.ExpressionParser;
 import eu.fasten.core.data.Constants;
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
@@ -95,7 +90,9 @@ public class Dependency extends MavenProduct {
         this(groupId, artifactId, version, new ArrayList<>(), "", false, "", "");
     }
 
-    public MavenProduct product() { return new MavenProduct(groupId, artifactId); }
+    public MavenProduct product() {
+        return new MavenProduct(groupId, artifactId);
+    }
 
     /**
      * Turns list of version constraints into string array of specifications.
@@ -208,7 +205,9 @@ public class Dependency extends MavenProduct {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        if (!super.equals(o)) {return false;}
+        if (!super.equals(o)) {
+            return false;
+        }
         Dependency that = (Dependency) o;
         if (!artifactId.equals(that.artifactId)) {
             return false;
@@ -221,8 +220,7 @@ public class Dependency extends MavenProduct {
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.groupId, this.artifactId, this.classifier,
-                this.exclusions, this.scope, this.versionConstraints, this.optional);
+        return Objects.hash(this.groupId, this.artifactId, this.getVersion());
     }
 
     @Override
