@@ -169,7 +169,7 @@ public class DependencyGraphBuilder {
     public Graph<Revision, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
         var startTs = System.currentTimeMillis();
 
-        if (graphPath != null && new File(graphPath).exists()) {
+        if (graphPath != null) {
             logger.info("Found serialized dependency graph in {}", graphPath);
             logger.info("Deserializing and constructing graph now");
             try {
