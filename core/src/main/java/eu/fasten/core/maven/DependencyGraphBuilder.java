@@ -34,7 +34,6 @@ import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.File;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,7 +59,7 @@ public class DependencyGraphBuilder {
 
     public static void main(String[] args) throws Exception {
         var tsStart = System.currentTimeMillis();
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/postgres", "postgres");
+        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
         String path = null;
         if (args.length > 0 && args[0] != null) {
             path = args[0];
