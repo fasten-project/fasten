@@ -60,9 +60,9 @@ public class DependencyGraphBuilder {
 
     public static void main(String[] args) throws Exception {
         var tsStart = System.currentTimeMillis();
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
+        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/postgres", "postgres");
         String path = null;
-        if (args.length > 1 && args[0] != null) {
+        if (args.length > 0 && args[0] != null) {
             path = args[0];
         }
         var graphBuilder = new DependencyGraphBuilder(path);
@@ -169,7 +169,7 @@ public class DependencyGraphBuilder {
     public Graph<Revision, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
         var startTs = System.currentTimeMillis();
 
-        if (graphPath != null && new File(graphPath).exists()) {
+        if (graphPath != null) {
             logger.info("Found serialized dependency graph in {}", graphPath);
             logger.info("Deserializing and constructing graph now");
             try {
@@ -178,6 +178,9 @@ public class DependencyGraphBuilder {
                 logger.error("Error deserializing the graph", e);
                 logger.info("Dependency graph will be build from scratch due to unsuccessful deserialization");
             }
+        } else {
+            logger.info("Path to serialized graph have not been provided.\n" +
+                    "Building the dependency graph from scratch.");
         }
 
         var dependencies = getDependencyList(dbContext);
