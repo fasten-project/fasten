@@ -112,6 +112,7 @@ public final class DependencyGraphUtilities {
      * @throws Exception When the files that hold the serialized graph cannot be opened.
      */
     public static Graph<Revision, DependencyEdge> deserializeDependencyGraph(String path) throws Exception {
+        var startTs = System.currentTimeMillis();
         var kryo = setupKryo();
 
         var nodesInput = new Input(new FileInputStream(path + ".nodes"));
@@ -125,6 +126,7 @@ public final class DependencyGraphUtilities {
         nodes.forEach(dependencyGraph::addVertex);
         edges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
 
+        logger.info("Deserialized graph at {} in {} ms", path, System.currentTimeMillis() - startTs);
         return dependencyGraph;
     }
 
@@ -139,7 +141,7 @@ public final class DependencyGraphUtilities {
             logger.info("Found serialized dependency graph at {}. Deserializing.", path);
             return Optional.of(DependencyGraphUtilities.deserializeDependencyGraph(path));
         } else {
-            logger.warn("Graph at {} is incomplete");
+            logger.warn("Graph at {} is incomplete", path);
             return Optional.empty();
         }
     }
