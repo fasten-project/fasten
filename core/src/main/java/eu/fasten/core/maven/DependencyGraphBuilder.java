@@ -30,6 +30,7 @@ import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.concurrent.AsSynchronizedGraph;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -169,7 +170,8 @@ public class DependencyGraphBuilder {
         startTs = System.currentTimeMillis();
         logger.info("Creating dependency graph");
 
-        var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        var dependencyGraph = new AsSynchronizedGraph(
+                new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class));
 
         logger.info("Adding dependency graph nodes");
         dependencies.keySet().forEach(dependencyGraph::addVertex);
