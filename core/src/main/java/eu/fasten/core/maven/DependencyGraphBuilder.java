@@ -170,15 +170,13 @@ public class DependencyGraphBuilder {
         startTs = System.currentTimeMillis();
         logger.info("Creating dependency graph");
 
-        var dependencyGraph = new AsSynchronizedGraph(
-                new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class));
+        var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
 
         logger.info("Adding dependency graph nodes");
         dependencies.keySet().forEach(dependencyGraph::addVertex);
 
-        logger.info("Adding dependency graph edges");
-
-        dependencies.entrySet().parallelStream().map(e -> {
+        logger.info("Generating graph edges");
+        var allEdges = dependencies.entrySet().parallelStream().map(e -> {
             var source = e.getKey();
             var edges = new ArrayList<DependencyEdge>();
             for (var dependency : e.getValue()) {
@@ -193,10 +191,12 @@ public class DependencyGraphBuilder {
                 }
             }
             return edges;
-        }).flatMap(Collection::stream).forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
+        }).flatMap(Collection::stream).collect(Collectors.toList());
+
+        logger.info("Generated {} edges. Adding to graph", allEdges.size());
+        allEdges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
 
         logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
-        logger.info("Successfully generated ecosystem-wide dependency graph");
         return dependencyGraph;
     }
 }
