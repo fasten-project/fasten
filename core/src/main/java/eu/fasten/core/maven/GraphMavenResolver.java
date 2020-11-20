@@ -36,18 +36,22 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
 @CommandLine.Command(name = "GraphMavenResolver")
 public class GraphMavenResolver implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(GraphMavenResolver.class);
+
+    @CommandLine.Option(names = {"-p", "--serializedPath"},
+            paramLabel = "PATH",
+            description = "Path to load a serialized Maven dep graph from")
+    protected String serializedPath;
+
+    @CommandLine.Option(names = {"--repl"},
+            paramLabel = "REPL",
+            description = "Start a REPL loop")
+    protected boolean repl;
 
     @CommandLine.Option(names = {"-a", "--artifactId"},
             paramLabel = "ARTIFACT",
@@ -114,6 +118,18 @@ public class GraphMavenResolver implements Runnable {
 
     @Override
     public void run() {
+
+        if (serializedPath != null) {
+            try {
+                var optdependencyGraph = DependencyGraphUtilities.loadDependencyGraph(serializedPath);
+                if (optdependencyGraph.isPresent()) {
+                    dependencyGraph = optdependencyGraph.get();
+                }
+            } catch (Exception e) {
+                logger.warn("Could not load serialized dependency graph from {}", serializedPath);
+            }
+        }
+
         if (artifact != null && group != null && version != null) {
             DSLContext dbContext;
             try {
@@ -139,10 +155,30 @@ public class GraphMavenResolver implements Runnable {
                     + (artifactSet.size() > 0 ? ":" : "."));
             artifactSet.forEach(d -> logger.info(d.toString()));
             logger.info("--------------------------------------------------");
-        } else {
-            logger.error("You need to specify Maven coordinate by providing its "
-                    + "artifactId ('-a'), groupId ('-g') and version ('-v'). "
-                    + "Optional timestamp (-t) can also be provided.");
+        }
+
+        if (repl) { repl(); }
+    }
+
+    public void repl() {
+        System.out.println("Query format: group:artifact:version<:ts>");
+        try (var scanner = new Scanner(System.in)) {
+            while(true) {
+                System.out.println("> ");
+                var input = scanner.nextLine();
+
+                if (input.equals("quit")) {break;}
+                var parts = input.split(":");
+
+                if (parts.length < 3 || parts[2] == null) {
+                    System.out.println("Wrong input: " + input);
+                    continue;
+                }
+
+                for (var rev : resolveFullDependencySet(parts[0], parts[1], parts[2], null)) {
+                    System.out.println(rev.toString());
+                }
+            }
         }
     }
 
