@@ -24,14 +24,16 @@ import java.util.Objects;
 
 public class DependencyEdge implements Serializable {
 
-    public final long id;
+    public final Revision source;
+    public final Revision target;
     public final String scope;
     public final boolean optional;
     public final List<Dependency.Exclusion> exclusions;
 
-    public DependencyEdge(long id, String scope, boolean optional,
+    public DependencyEdge(Revision source, Revision target, String scope, boolean optional,
                           List<Dependency.Exclusion> exclusions) {
-        this.id = id;
+        this.source = source;
+        this.target = target;
         this.scope = scope;
         this.optional = optional;
         this.exclusions = exclusions;
@@ -46,10 +48,13 @@ public class DependencyEdge implements Serializable {
             return false;
         }
         DependencyEdge that = (DependencyEdge) o;
-        if (id != that.id) {
+        if (optional != that.optional) {
             return false;
         }
-        if (optional != that.optional) {
+        if (!Objects.equals(source, that.source)) {
+            return false;
+        }
+        if (!Objects.equals(target, that.target)) {
             return false;
         }
         if (!Objects.equals(scope, that.scope)) {
@@ -60,7 +65,8 @@ public class DependencyEdge implements Serializable {
 
     @Override
     public int hashCode() {
-        int result = (int) (id ^ (id >>> 32));
+        int result = source != null ? source.hashCode() : 0;
+        result = 31 * result + (target != null ? target.hashCode() : 0);
         result = 31 * result + (scope != null ? scope.hashCode() : 0);
         result = 31 * result + (optional ? 1 : 0);
         result = 31 * result + (exclusions != null ? exclusions.hashCode() : 0);
@@ -70,7 +76,8 @@ public class DependencyEdge implements Serializable {
     @Override
     public String toString() {
         return "DependencyEdge{" +
-                "id=" + id +
+                "source=" + source +
+                ", target=" + target +
                 ", scope='" + scope + '\'' +
                 ", optional=" + optional +
                 ", exclusions=" + exclusions +

@@ -103,8 +103,7 @@ public class DependencyGraphUtilities {
         var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
 
         nodes.forEach(dependencyGraph::addVertex);
-        // TODO: Fix this when DependencyEdge contains source and target nodes
-        //edges.forEach(e -> dependencyGraph.addEdge(e.source, e.target));
+        edges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
 
         return dependencyGraph;
     }

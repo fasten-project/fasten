@@ -47,11 +47,9 @@ public class GraphMavenResolverTest {
         var nodeB = new Revision("b", "b", "2", new Timestamp(2));
         var nodeC = new Revision("c","c", "3", new Timestamp(3));
         var nodeD = new Revision("d", "d", "4", new Timestamp(4));
-
-        long id = 0;
-        var edgeAB = new DependencyEdge(id++, "", false, emptyList());
-        var edgeAC = new DependencyEdge(id++, "", false, emptyList());
-        var edgeBD = new DependencyEdge(id, "", false, emptyList());
+        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptyList());
+        var edgeAC = new DependencyEdge(nodeA, nodeC, "", false, emptyList());
+        var edgeBD = new DependencyEdge(nodeB, nodeD, "", false, emptyList());
         assertTrue(graph.addVertex(nodeA));
         assertTrue(graph.addVertex(nodeB));
         assertTrue(graph.addVertex(nodeC));
@@ -74,15 +72,15 @@ public class GraphMavenResolverTest {
         var expected = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         var nodeA = new Revision("a", "a", "1", new Timestamp(-1));
         var nodeB = new Revision("b", "b", "2", new Timestamp(1));
-        var edgeAB = new DependencyEdge(0, "", false, emptyList());
+        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptyList());
         expected.addVertex(nodeA);
         expected.addVertex(nodeB);
         expected.addEdge(nodeA, nodeB, edgeAB);
         var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         var nodeB2 = new Revision("b", "b", "2", new Timestamp(2));
         var nodeC = new Revision("c","c", "3", new Timestamp(3));
-        var edgeAB2 = new DependencyEdge(1, "", false, emptyList());
-        var edgeB2C = new DependencyEdge(2, "", false, emptyList());
+        var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "", false, emptyList());
+        var edgeB2C = new DependencyEdge(nodeB2, nodeC, "", false, emptyList());
         graph.addVertex(nodeA);
         graph.addVertex(nodeB);
         graph.addEdge(nodeA, nodeB, edgeAB);

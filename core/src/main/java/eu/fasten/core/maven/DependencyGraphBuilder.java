@@ -27,8 +27,6 @@ import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -36,19 +34,38 @@ import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.io.File;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class DependencyGraphBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
+    public final String graphPath;
+
+    public DependencyGraphBuilder(String graphPath) {
+        this.graphPath = graphPath;
+    }
+
+    public DependencyGraphBuilder() {
+        this.graphPath = null;
+    }
+
     public static void main(String[] args) throws Exception {
         var tsStart = System.currentTimeMillis();
         var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
-        var graphBuilder = new DependencyGraphBuilder();
+        String path = null;
+        if (args.length > 1 && args[0] != null) {
+            path = args[0];
+        }
+        var graphBuilder = new DependencyGraphBuilder(path);
         var graph = graphBuilder.buildDependencyGraph(dbContext);
         var tsEnd = System.currentTimeMillis();
         logger.info("____________________________________________________________________");
@@ -57,7 +74,7 @@ public class DependencyGraphBuilder {
 
         tsStart = System.currentTimeMillis();
         logger.info("Serializing graph");
-        DependencyGraphUtilities.serializeDependencyGraph(graph, "mavengraph.bin");
+        DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "mavengraph.bin" : path);
         logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
     }
 
@@ -152,6 +169,17 @@ public class DependencyGraphBuilder {
     public Graph<Revision, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
         var startTs = System.currentTimeMillis();
 
+        if (graphPath != null && new File(graphPath).exists()) {
+            logger.info("Found serialized dependency graph in {}", graphPath);
+            logger.info("Deserializing and constructing graph now");
+            try {
+                return DependencyGraphUtilities.loadDependencyGraph(graphPath);
+            } catch (Exception e) {
+                logger.error("Error deserializing the graph", e);
+                logger.info("Dependency graph will be build from scratch due to unsuccessful deserialization");
+            }
+        }
+
         var dependencies = getDependencyList(dbContext);
         logger.info("Retrieved {} package versions: {} ms", dependencies.size(), System.currentTimeMillis() - startTs);
 
@@ -179,10 +207,9 @@ public class DependencyGraphBuilder {
 
         logger.info("Adding dependency graph edges");
 
-        var idx = new AtomicLong(0);
         dependencies.entrySet().parallelStream().map(e -> {
             var source = e.getKey();
-            var edges = new ArrayList<Triple<Revision, Revision, DependencyEdge>>();
+            var edges = new ArrayList<DependencyEdge>();
             for (var dependency : e.getValue()) {
                 if (dependency.equals(Dependency.empty)) {
                     continue;
@@ -190,12 +217,12 @@ public class DependencyGraphBuilder {
                 var potentialRevisions = productRevisionMap.get(dependency.product());
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
                 for (var target : matchingRevisions) {
-                    var edge = new DependencyEdge(idx.getAndIncrement(), dependency.scope, dependency.optional, dependency.exclusions);
-                    edges.add(new ImmutableTriple<>(source, target, edge));
+                    var edge = new DependencyEdge(source, target, dependency.scope, dependency.optional, dependency.exclusions);
+                    edges.add(edge);
                 }
             }
             return edges;
-        }).flatMap(Collection::stream).forEach(e -> dependencyGraph.addEdge(e.getLeft(), e.getMiddle(), e.getRight()));
+        }).flatMap(Collection::stream).forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
 
         logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
         logger.info("Successfully generated ecosystem-wide dependency graph");
