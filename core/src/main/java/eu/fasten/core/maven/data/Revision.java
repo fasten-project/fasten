@@ -20,13 +20,15 @@ package eu.fasten.core.maven.data;
 
 import eu.fasten.core.data.Constants;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Objects;
 
 /**
  * An artifact released in Maven Central.
  */
-public class Revision extends MavenProduct {
+public class Revision extends MavenProduct implements Serializable {
 
     public final DefaultArtifactVersion version;
     public final Timestamp createdAt;

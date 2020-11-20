@@ -18,10 +18,11 @@
 
 package eu.fasten.core.maven.data;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
-public class DependencyEdge {
+public class DependencyEdge implements Serializable {
 
     public final long id;
     public final String scope;

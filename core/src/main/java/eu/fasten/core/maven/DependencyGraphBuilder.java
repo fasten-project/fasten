@@ -26,6 +26,7 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.DependencyEdge;
+import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
@@ -35,14 +36,8 @@ import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.sql.SQLException;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -50,7 +45,7 @@ public class DependencyGraphBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws Exception {
         var tsStart = System.currentTimeMillis();
         var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
         var graphBuilder = new DependencyGraphBuilder();
@@ -59,6 +54,11 @@ public class DependencyGraphBuilder {
         logger.info("____________________________________________________________________");
         logger.info("Graph has {} nodes and {} edges ({} ms)", graph.vertexSet().size(),
                 graph.edgeSet().size(), tsEnd - tsStart);
+
+        tsStart = System.currentTimeMillis();
+        logger.info("Serializing graph");
+        DependencyGraphUtilities.serializeDependencyGraph(graph, "mavengraph.bin");
+        logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
     }
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
@@ -74,6 +74,7 @@ public class DependencyGraphBuilder {
                 .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
                 .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
                 .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNotNull())
+                .limit(1000000)
                 .fetch()
                 .parallelStream()
                 .map(x -> {
