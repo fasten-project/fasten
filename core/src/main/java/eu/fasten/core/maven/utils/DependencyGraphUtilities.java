@@ -104,7 +104,7 @@ public class DependencyGraphUtilities {
 
         nodes.forEach(dependencyGraph::addVertex);
         // TODO: Fix this when DependencyEdge contains source and target nodes
-        //nodes.forEach(e -> dependencyGraph.addEdge(e.source, e.target));
+        //edges.forEach(e -> dependencyGraph.addEdge(e.source, e.target));
 
         return dependencyGraph;
     }

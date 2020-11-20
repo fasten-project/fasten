@@ -74,7 +74,6 @@ public class DependencyGraphBuilder {
                 .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
                 .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
                 .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNotNull())
-                .limit(1000000)
                 .fetch()
                 .parallelStream()
                 .map(x -> {
