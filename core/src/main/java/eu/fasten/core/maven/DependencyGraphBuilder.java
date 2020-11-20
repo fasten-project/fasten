@@ -34,6 +34,7 @@ import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,34 +48,14 @@ public class DependencyGraphBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
-    public final String graphPath;
-
-    public DependencyGraphBuilder(String graphPath) {
-        this.graphPath = graphPath;
-    }
-
-    public DependencyGraphBuilder() {
-        this.graphPath = null;
-    }
-
     public static void main(String[] args) throws Exception {
-        var tsStart = System.currentTimeMillis();
         var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
-        String path = null;
-        if (args.length > 0 && args[0] != null) {
-            path = args[0];
-        }
-        var graphBuilder = new DependencyGraphBuilder(path);
-        var graph = graphBuilder.buildDependencyGraph(dbContext);
-        var tsEnd = System.currentTimeMillis();
-        logger.info("____________________________________________________________________");
-        logger.info("Graph has {} nodes and {} edges ({} ms)", graph.vertexSet().size(),
-                graph.edgeSet().size(), tsEnd - tsStart);
 
-        tsStart = System.currentTimeMillis();
-        logger.info("Serializing graph");
-        DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "mavengraph.bin" : path);
-        logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
+        String path = "";
+        if (args.length > 0 && args[0] != null) {  path = args[0]; }
+
+        DependencyGraphUtilities.loadDependencyGraph(path).orElse(
+                DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, path));
     }
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
@@ -167,20 +148,6 @@ public class DependencyGraphBuilder {
 
     public Graph<Revision, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
         var startTs = System.currentTimeMillis();
-
-        if (graphPath != null) {
-            logger.info("Found serialized dependency graph in {}", graphPath);
-            logger.info("Deserializing and constructing graph now");
-            try {
-                return DependencyGraphUtilities.loadDependencyGraph(graphPath);
-            } catch (Exception e) {
-                logger.error("Error deserializing the graph", e);
-                logger.info("Dependency graph will be build from scratch due to unsuccessful deserialization");
-            }
-        } else {
-            logger.info("Path to serialized graph have not been provided.\n" +
-                    "Building the dependency graph from scratch.");
-        }
 
         var dependencies = getDependencyList(dbContext);
         logger.info("Retrieved {} package versions: {} ms", dependencies.size(), System.currentTimeMillis() - startTs);

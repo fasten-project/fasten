@@ -21,16 +21,27 @@ package eu.fasten.core.maven.utils;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import eu.fasten.core.maven.DependencyGraphBuilder;
 import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.Revision;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jooq.DSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.Optional;
 import java.util.Set;
 
-public class DependencyGraphUtilities {
+/**
+ * Utility functions to construct and (de-)serialize Maven dependency graphs
+ */
+public final class DependencyGraphUtilities {
+
+    private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
     public static Graph<Revision, DependencyEdge> invertDependencyGraph(Graph<Revision, DependencyEdge> dependencyGraph) {
         var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
@@ -78,6 +89,10 @@ public class DependencyGraphUtilities {
         return kryo;
     }
 
+    /**
+     * Serialize a Maven dependency graph to a file. Independently serializes nodes and edges.
+     * @throws Exception When the files that hold the serialized data cannot be created.
+     */
     public static void serializeDependencyGraph(Graph<Revision, DependencyEdge> graph, String path) throws Exception {
         var kryo = setupKryo();
 
@@ -91,7 +106,12 @@ public class DependencyGraphUtilities {
         edges.close();
     }
 
-    public static Graph<Revision, DependencyEdge> loadDependencyGraph(String path) throws Exception {
+    /**
+     * Deserialize a Maven dependency graph from the indicated file.
+     *
+     * @throws Exception When the files that hold the serialized graph cannot be opened.
+     */
+    public static Graph<Revision, DependencyEdge> deserializeDependencyGraph(String path) throws Exception {
         var kryo = setupKryo();
 
         var nodesInput = new Input(new FileInputStream(path + ".nodes"));
@@ -106,5 +126,43 @@ public class DependencyGraphUtilities {
         edges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
 
         return dependencyGraph;
+    }
+
+    /**
+     * Load a dependency graph from a path. Both the nodes and edges files need to be present.
+     *
+     * @throws Exception When deserialization fails.
+     */
+    public static Optional<Graph<Revision, DependencyEdge>> loadDependencyGraph(String path) throws Exception {
+        if ((new File(path + ".nodes")).exists() &&
+                (new File(path + ".edges")).exists()){
+            logger.info("Found serialized dependency graph at {}. Deserializing.", path);
+            return Optional.of(DependencyGraphUtilities.deserializeDependencyGraph(path));
+        } else {
+            logger.warn("Graph at {} is incomplete");
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Builds a new Maven dependency graph by connecting to the database and then serializes it to the provided path.
+     *
+     * @throws Exception When serialization fails.
+     */
+    public static Graph<Revision, DependencyEdge> buildDependencyGraphFromScratch(DSLContext dbContext, String path)
+            throws Exception {
+        var tsStart = System.currentTimeMillis();
+        var graphBuilder = new DependencyGraphBuilder();
+        var graph = graphBuilder.buildDependencyGraph(dbContext);
+        var tsEnd = System.currentTimeMillis();
+        logger.info("Graph has {} nodes and {} edges ({} ms)", graph.vertexSet().size(),
+                graph.edgeSet().size(), tsEnd - tsStart);
+
+        tsStart = System.currentTimeMillis();
+        logger.info("Serializing graph");
+        DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "mavengraph.bin" : path);
+        logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
+
+        return graph;
     }
 }
