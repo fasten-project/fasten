@@ -30,8 +30,10 @@ import java.util.Objects;
  */
 public class Revision extends MavenProduct implements Serializable {
 
-    public final DefaultArtifactVersion version;
-    public final Timestamp createdAt;
+    public DefaultArtifactVersion version;
+    public Timestamp createdAt;
+
+    public Revision() {}
 
     public Revision(final String groupId, final String artifactId, final String version, final Timestamp createdAt) {
         super(groupId, artifactId);

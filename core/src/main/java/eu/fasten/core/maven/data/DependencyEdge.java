@@ -24,11 +24,13 @@ import java.util.Objects;
 
 public class DependencyEdge implements Serializable {
 
-    public final Revision source;
-    public final Revision target;
-    public final String scope;
-    public final boolean optional;
-    public final List<Dependency.Exclusion> exclusions;
+    public Revision source;
+    public Revision target;
+    public String scope;
+    public boolean optional;
+    public List<Dependency.Exclusion> exclusions;
+
+    public DependencyEdge(){}
 
     public DependencyEdge(Revision source, Revision target, String scope, boolean optional,
                           List<Dependency.Exclusion> exclusions) {

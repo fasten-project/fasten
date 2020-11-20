@@ -28,9 +28,11 @@ import java.util.Objects;
  */
 public class MavenProduct {
 
-    public final long id;
-    public final String groupId;
-    public final String artifactId;
+    public long id;
+    public String groupId;
+    public String artifactId;
+
+    public MavenProduct(){}
 
     public MavenProduct(final String groupId, final String artifactId) {
         this.id = 0;

@@ -18,6 +18,7 @@
 
 package eu.fasten.core.maven.data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -433,10 +434,12 @@ public class Dependency extends MavenProduct {
         }
     }
 
-    public static class Exclusion {
+    public static class Exclusion implements Serializable {
 
-        public final String artifactId;
-        public final String groupId;
+        public String artifactId;
+        public String groupId;
+
+        public Exclusion() {}
 
         /**
          * Constructor for Exclusion object.

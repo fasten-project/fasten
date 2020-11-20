@@ -19,11 +19,13 @@
 package eu.fasten.core.maven.utils;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import eu.fasten.core.maven.DependencyGraphBuilder;
 import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.Revision;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jooq.DSLContext;
@@ -33,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -70,16 +73,37 @@ public final class DependencyGraphUtilities {
         return graph;
     }
 
+    private static class DefaultArtifactVersionSerializer extends Serializer<DefaultArtifactVersion> {
+
+        @Override
+        public void write (Kryo kryo, Output output, DefaultArtifactVersion object) {
+            output.writeString(object.toString());
+        }
+
+        @Override
+        public DefaultArtifactVersion read(Kryo kryo, Input input, Class<? extends DefaultArtifactVersion> type) {
+            var coord = input.readString();
+            try {
+                return type.getConstructor(String.class).newInstance(coord);
+            } catch (Exception e) {
+                logger.warn("Cannot deserialize DefaultArtifactVersion {}", coord);
+                return null;
+            }
+        }
+    }
+
     private static Kryo setupKryo() throws Exception {
         var kryo = new Kryo();
 
+        kryo.register(Set.class);
+        kryo.register(HashSet.class);
         kryo.register(Revision.class);
         kryo.register(DependencyEdge.class);
         kryo.register(Class.forName("eu.fasten.core.maven.data.Dependency$Exclusion"));
         kryo.register(java.sql.Timestamp.class);
         kryo.register(java.util.ArrayList.class);
         kryo.register(Class.forName("java.util.Collections$UnmodifiableSet"));
-        kryo.register(org.apache.maven.artifact.versioning.DefaultArtifactVersion.class);
+        kryo.register(org.apache.maven.artifact.versioning.DefaultArtifactVersion.class, new DefaultArtifactVersionSerializer());
         kryo.register(org.apache.maven.artifact.versioning.ComparableVersion.class);
         kryo.register(Class.forName("org.apache.maven.artifact.versioning.ComparableVersion$ListItem"));
         kryo.register(Class.forName("org.apache.maven.artifact.versioning.ComparableVersion$IntItem"));
@@ -118,15 +142,17 @@ public final class DependencyGraphUtilities {
         var nodesInput = new Input(new FileInputStream(path + ".nodes"));
         var edgesInput = new Input(new FileInputStream(path + ".edges"));
 
-        Set<Revision> nodes = kryo.readObject(nodesInput, Set.class);
-        Set<DependencyEdge> edges = kryo.readObject(edgesInput, Set.class);
+        Set<Revision> nodes = kryo.readObject(nodesInput, HashSet.class);
+        Set<DependencyEdge> edges = kryo.readObject(edgesInput, HashSet.class);
+
+        logger.debug("Loaded {} nodes and {} edges", nodes.size(), edges.size());
 
         var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
 
         nodes.forEach(dependencyGraph::addVertex);
         edges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
 
-        logger.info("Deserialized graph at {} in {} ms", path, System.currentTimeMillis() - startTs);
+        logger.info("Deserialized graph at {}: {} ms", path, System.currentTimeMillis() - startTs);
         return dependencyGraph;
     }
 
@@ -161,7 +187,7 @@ public final class DependencyGraphUtilities {
                 graph.edgeSet().size(), tsEnd - tsStart);
 
         tsStart = System.currentTimeMillis();
-        logger.info("Serializing graph");
+        logger.info("Serializing graph to {}", path);
         DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "mavengraph.bin" : path);
         logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
 

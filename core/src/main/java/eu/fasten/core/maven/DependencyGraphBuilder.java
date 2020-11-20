@@ -30,7 +30,6 @@ import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
-import org.jgrapht.graph.concurrent.AsSynchronizedGraph;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -52,11 +51,12 @@ public class DependencyGraphBuilder {
     public static void main(String[] args) throws Exception {
         var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
 
-        String path = "";
+        String path = "mavengraph";
         if (args.length > 0 && args[0] != null) {  path = args[0]; }
 
-        DependencyGraphUtilities.loadDependencyGraph(path).orElse(
-                DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, path));
+        if (!DependencyGraphUtilities.loadDependencyGraph(path).isPresent()) {
+            DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, path);
+        }
     }
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
@@ -164,7 +164,7 @@ public class DependencyGraphBuilder {
                     return z;
                 })
         );
-        logger.info("Indexed {} products: {} ms", productRevisionMap.size(),
+        logger.debug("Indexed {} products: {} ms", productRevisionMap.size(),
                 System.currentTimeMillis() - startTs);
 
         startTs = System.currentTimeMillis();
@@ -176,6 +176,7 @@ public class DependencyGraphBuilder {
         dependencies.keySet().forEach(dependencyGraph::addVertex);
 
         logger.info("Generating graph edges");
+        var startGenEdgesTs = System.currentTimeMillis();
         var allEdges = dependencies.entrySet().parallelStream().map(e -> {
             var source = e.getKey();
             var edges = new ArrayList<DependencyEdge>();
@@ -192,11 +193,13 @@ public class DependencyGraphBuilder {
             }
             return edges;
         }).flatMap(Collection::stream).collect(Collectors.toList());
+        logger.debug("Generated {} edges: {} ms.", allEdges.size(), System.currentTimeMillis() - startGenEdgesTs);
 
-        logger.info("Generated {} edges. Adding to graph", allEdges.size());
+        var startAddEdgesTs = System.currentTimeMillis();
         allEdges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
+        logger.debug("Added {} edges to the graph: {} ms.", allEdges.size(), System.currentTimeMillis() - startAddEdgesTs);
 
-        logger.info("Created graph: {} ms", System.currentTimeMillis() - startTs);
+        logger.info("Maven dependency graph generated: {} ms", System.currentTimeMillis() - startTs);
         return dependencyGraph;
     }
 }
