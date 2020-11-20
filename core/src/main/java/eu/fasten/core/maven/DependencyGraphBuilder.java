@@ -61,10 +61,10 @@ public class DependencyGraphBuilder {
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
         return dbContext.select(PackageVersions.PACKAGE_VERSIONS.ID,
-                Packages.PACKAGES.PACKAGE_NAME,
-                PackageVersions.PACKAGE_VERSIONS.VERSION,
-                Dependencies.DEPENDENCIES.METADATA,
-                PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
+                    Packages.PACKAGES.PACKAGE_NAME,
+                    PackageVersions.PACKAGE_VERSIONS.VERSION,
+                    Dependencies.DEPENDENCIES.METADATA,
+                    PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
                 .from(Packages.PACKAGES)
                 .rightJoin(PackageVersions.PACKAGE_VERSIONS)
                 .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
@@ -84,10 +84,12 @@ public class DependencyGraphBuilder {
                     var group = x.component2().split(Constants.mvnCoordinateSeparator)[1].replaceAll("[\\n\\t ]", "");
 
                     if (x.component4() != null) {
-                        return new AbstractMap.SimpleEntry<>(new Revision(x.component1(), artifact, group, x.component3().replaceAll("[\\n\\t ]", ""),
+                        return new AbstractMap.SimpleEntry<>(new Revision(x.component1(), artifact, group,
+                                x.component3().replaceAll("[\\n\\t ]", ""),
                                 x.component5()), Dependency.fromJSON(new JSONObject(x.component4().data())));
                     } else {
-                        return new AbstractMap.SimpleEntry<>(new Revision(x.component1(), artifact, group, x.component3().replaceAll("[\\n\\t ]", ""),
+                        return new AbstractMap.SimpleEntry<>(new Revision(x.component1(), artifact, group,
+                                x.component3().replaceAll("[\\n\\t ]", ""),
                                 x.component5()), Dependency.empty);
                     }
                 }).filter(Objects::nonNull)
@@ -112,11 +114,13 @@ public class DependencyGraphBuilder {
             for (var constraint : constraints) {
                 if ((constraint.toString().startsWith("[") || constraint.toString().startsWith("("))
                         && (constraint.toString().endsWith("]") || constraint.toString().endsWith(")"))) {
-                    if (checkVersionLowerBound(constraint, r.version) && checkVersionUpperBound(constraint, r.version)) {
+                    if (checkVersionLowerBound(constraint, r.version) &&
+                            checkVersionUpperBound(constraint, r.version)) {
                         return true;
                     }
                 } else {
-                    if (constraint.lowerBound.equals(constraint.upperBound) && new DefaultArtifactVersion(constraint.lowerBound).equals(r.version)) {
+                    if (constraint.lowerBound.equals(constraint.upperBound) &&
+                            new DefaultArtifactVersion(constraint.lowerBound).equals(r.version)) {
                         return true;
                     }
                 }
@@ -148,12 +152,14 @@ public class DependencyGraphBuilder {
     }
 
     public Graph<Revision, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
-        var startTs = System.currentTimeMillis();
+        var startTs  = System.currentTimeMillis();
+        var startDepRet =  System.currentTimeMillis();
 
         var dependencies = getDependencyList(dbContext);
-        logger.info("Retrieved {} package versions: {} ms", dependencies.size(), System.currentTimeMillis() - startTs);
+        logger.info("Retrieved {} package versions: {} ms", dependencies.size(),
+                System.currentTimeMillis() - startDepRet);
 
-        startTs = System.currentTimeMillis();
+        var startIdx = System.currentTimeMillis();
         var productRevisionMap = dependencies.keySet().stream().collect(Collectors.toConcurrentMap(
                 Revision::product,
                 List::of,
@@ -164,12 +170,9 @@ public class DependencyGraphBuilder {
                     return z;
                 })
         );
-        logger.debug("Indexed {} products: {} ms", productRevisionMap.size(),
-                System.currentTimeMillis() - startTs);
+        logger.debug("Indexed {} products: {} ms", productRevisionMap.size(), System.currentTimeMillis() - startIdx);
 
-        startTs = System.currentTimeMillis();
         logger.info("Creating dependency graph");
-
         var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
 
         logger.info("Adding dependency graph nodes");
@@ -187,17 +190,19 @@ public class DependencyGraphBuilder {
                 var potentialRevisions = productRevisionMap.get(dependency.product());
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
                 for (var target : matchingRevisions) {
-                    var edge = new DependencyEdge(source, target, dependency.scope, dependency.optional, dependency.exclusions);
+                    var edge = new DependencyEdge(source, target, dependency.scope, dependency.optional,
+                            dependency.exclusions);
                     edges.add(edge);
                 }
             }
             return edges;
         }).flatMap(Collection::stream).collect(Collectors.toList());
-        logger.debug("Generated {} edges: {} ms.", allEdges.size(), System.currentTimeMillis() - startGenEdgesTs);
+        logger.debug("Generated {} edges: {} ms", allEdges.size(), System.currentTimeMillis() - startGenEdgesTs);
 
         var startAddEdgesTs = System.currentTimeMillis();
         allEdges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
-        logger.debug("Added {} edges to the graph: {} ms.", allEdges.size(), System.currentTimeMillis() - startAddEdgesTs);
+        logger.debug("Added {} edges to the graph: {} ms", allEdges.size(),
+                System.currentTimeMillis() - startAddEdgesTs);
 
         logger.info("Maven dependency graph generated: {} ms", System.currentTimeMillis() - startTs);
         return dependencyGraph;

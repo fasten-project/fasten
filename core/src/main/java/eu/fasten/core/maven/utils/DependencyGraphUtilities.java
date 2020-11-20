@@ -46,7 +46,8 @@ public final class DependencyGraphUtilities {
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
-    public static Graph<Revision, DependencyEdge> invertDependencyGraph(Graph<Revision, DependencyEdge> dependencyGraph) {
+    public static Graph<Revision, DependencyEdge> invertDependencyGraph(Graph<Revision,
+            DependencyEdge> dependencyGraph) {
         var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         for (var node : dependencyGraph.vertexSet()) {
             graph.addVertex(node);
@@ -103,7 +104,8 @@ public final class DependencyGraphUtilities {
         kryo.register(java.sql.Timestamp.class);
         kryo.register(java.util.ArrayList.class);
         kryo.register(Class.forName("java.util.Collections$UnmodifiableSet"));
-        kryo.register(org.apache.maven.artifact.versioning.DefaultArtifactVersion.class, new DefaultArtifactVersionSerializer());
+        kryo.register(org.apache.maven.artifact.versioning.DefaultArtifactVersion.class,
+                new DefaultArtifactVersionSerializer());
         kryo.register(org.apache.maven.artifact.versioning.ComparableVersion.class);
         kryo.register(Class.forName("org.apache.maven.artifact.versioning.ComparableVersion$ListItem"));
         kryo.register(Class.forName("org.apache.maven.artifact.versioning.ComparableVersion$IntItem"));
