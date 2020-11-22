@@ -39,6 +39,7 @@ import picocli.CommandLine;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "GraphMavenResolver")
 public class GraphMavenResolver implements Runnable {
@@ -132,14 +133,16 @@ public class GraphMavenResolver implements Runnable {
             }
         }
 
+        DSLContext dbContext;
+        try {
+            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
+        } catch (SQLException e) {
+            logger.error("Could not connect to the database", e);
+            return;
+        }
+
         if (artifact != null && group != null && version != null) {
-            DSLContext dbContext;
-            try {
-                dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
-            } catch (SQLException e) {
-                logger.error("Could not connect to the database", e);
-                return;
-            }
+
             Set<Revision> artifactSet;
             if (reverseResolution) {
                 artifactSet = this.resolveFullDependentsSet(group, artifact, version, timestamp,
@@ -165,11 +168,11 @@ public class GraphMavenResolver implements Runnable {
                 return;
             }
 
-            repl();
+            repl(dbContext);
         }
     }
 
-    public void repl() {
+    public void repl(DSLContext db) {
         System.out.println("Query format: group:artifact:version<:ts>");
         try (var scanner = new Scanner(System.in)) {
             while(true) {
@@ -184,7 +187,20 @@ public class GraphMavenResolver implements Runnable {
                     continue;
                 }
 
-                for (var rev : resolveDependencies(parts[0], parts[1], parts[2], true)) {
+                Set allDeps = new HashSet<Revision>();
+                try {
+                    var parent = getParentArtifact(parts[0], parts[1], parts[2], db);
+                    if (parent != null) {
+                        allDeps = resolveDependencies(parent, true);
+                    }
+                } catch (Exception e) {
+                    System.err.println(e.getMessage());
+                    continue;
+                }
+
+                allDeps.addAll(resolveDependencies(parts[0], parts[1], parts[2], true));
+
+                for (var rev : allDeps) {
                     System.out.println(rev.toString());
                 }
             }
@@ -217,6 +233,12 @@ public class GraphMavenResolver implements Runnable {
         }
         return result;
     }
+
+    public Set<Revision> resolveDependencies(Revision r, boolean transitive) {
+        return resolveDependencies(r.groupId, r.artifactId, r.version.toString(), transitive);
+    }
+
+
 
     public void buildDependencyGraph(DSLContext dbContext) {
         dependencyGraph = new DependencyGraphBuilder().buildDependencyGraph(dbContext);
