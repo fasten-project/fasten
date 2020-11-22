@@ -28,12 +28,14 @@ import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.jgrapht.Graph;
+import org.jgrapht.Graphs;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
@@ -157,14 +159,21 @@ public class GraphMavenResolver implements Runnable {
             logger.info("--------------------------------------------------");
         }
 
-        if (repl) { repl(); }
+        if (repl) {
+            if (dependencyGraph == null) {
+                logger.warn("REPL mode only works with an initilized graph");
+                return;
+            }
+
+            repl();
+        }
     }
 
     public void repl() {
         System.out.println("Query format: group:artifact:version<:ts>");
         try (var scanner = new Scanner(System.in)) {
             while(true) {
-                System.out.println("> ");
+                System.out.print("> ");
                 var input = scanner.nextLine();
 
                 if (input.equals("quit")) {break;}
@@ -175,11 +184,38 @@ public class GraphMavenResolver implements Runnable {
                     continue;
                 }
 
-                for (var rev : resolveFullDependencySet(parts[0], parts[1], parts[2], null)) {
+                for (var rev : resolveDependencies(parts[0], parts[1], parts[2], true)) {
                     System.out.println(rev.toString());
                 }
             }
         }
+    }
+
+    /**
+     * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}
+     * @return The (transitive) dependency set
+     */
+    public Set<Revision> resolveDependencies(String groupId, String artifactId,
+                                             String version, boolean transitive) {
+
+        var workQueue = new ArrayDeque<>(Graphs.successorListOf(dependencyGraph,
+                new Revision(groupId, artifactId, version, new Timestamp(-1))));
+        var result = new HashSet<>(workQueue);
+
+        if (!transitive) { return new HashSet<>(workQueue); }
+
+        boolean notEmpty = !workQueue.isEmpty();
+        while(notEmpty) {
+            var rev = workQueue.poll();
+            if (rev != null)
+                result.add(rev);
+
+            for (var dependency : Graphs.successorListOf(dependencyGraph, rev))
+                workQueue.add(dependency);
+
+            notEmpty = !workQueue.isEmpty();
+        }
+        return result;
     }
 
     public void buildDependencyGraph(DSLContext dbContext) {
