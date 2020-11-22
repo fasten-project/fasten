@@ -113,6 +113,7 @@ public class GraphMavenResolver implements Runnable {
     boolean filterExclusions;
 
     private static Graph<Revision, DependencyEdge> dependencyGraph;
+    private static Graph<Revision, DependencyEdge> dependentGraph;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new GraphMavenResolver()).execute(args);
@@ -127,6 +128,7 @@ public class GraphMavenResolver implements Runnable {
                 var optdependencyGraph = DependencyGraphUtilities.loadDependencyGraph(serializedPath);
                 if (optdependencyGraph.isPresent()) {
                     dependencyGraph = optdependencyGraph.get();
+                    dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
                 }
             } catch (Exception e) {
                 logger.warn("Could not load serialized dependency graph from {}", serializedPath);
@@ -173,7 +175,8 @@ public class GraphMavenResolver implements Runnable {
     }
 
     public void repl(DSLContext db) {
-        System.out.println("Query format: group:artifact:version<:ts>");
+        System.out.println("Query format: [!]group:artifact:version<:ts>");
+        System.out.println("! at the beginning means search for dependents (default dependencies)");
         try (var scanner = new Scanner(System.in)) {
             while (true) {
                 System.out.print("> ");
@@ -189,19 +192,15 @@ public class GraphMavenResolver implements Runnable {
                     continue;
                 }
 
-                Set allDeps = new HashSet<Revision>();
-                try {
-                    var parent = getParentArtifact(parts[0], parts[1], parts[2], db);
-                    if (parent != null) {
-                        allDeps = resolveDependencies(parent, true);
-                    }
-                } catch (Exception e) {
-                    System.err.println(e.getMessage());
+                Set<Revision> revisions;
+                if (parts[0].startsWith("!")) {
+                    parts[0] = parts[0].substring(1, parts[0].length());
+                    revisions = resolveDependents(parts[0], parts[1], parts[2], db, true);
+                } else {
+                    revisions = resolveDependencies(parts[0], parts[1], parts[2], db, true);
                 }
 
-                allDeps.addAll(resolveDependencies(parts[0], parts[1], parts[2], true));
-
-                for (var rev : allDeps) {
+                for (var rev : revisions) {
                     System.out.println(rev.toString());
                 }
             }
@@ -215,9 +214,53 @@ public class GraphMavenResolver implements Runnable {
      * @return The (transitive) dependency set
      */
     public Set<Revision> resolveDependencies(String groupId, String artifactId,
-                                             String version, boolean transitive) {
+                                             String version, DSLContext db, boolean transitive) {
+        Set allDeps = new HashSet<Revision>();
+        try {
+            var parent = getParentArtifact(groupId, artifactId, version, db);
+            if (parent != null) {
+                allDeps = resolveDependencies(parent, db, true);
+            }
+        } catch (Exception e) {
+            logger.warn("Parent for revision {}:{}:{} not found: {}",  groupId, artifactId, version, e.getMessage());
+        }
 
-        var workQueue = new ArrayDeque<>(Graphs.successorListOf(dependencyGraph,
+        allDeps.addAll(revisionGraphBFS(dependencyGraph, groupId, artifactId, version, transitive));
+
+        return allDeps;
+    }
+
+    /**
+     * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}
+     *
+     * @return The (transitive) dependency set
+     */
+    public Set<Revision> resolveDependencies(Revision r, DSLContext db, boolean transitive) {
+        return resolveDependencies(r.groupId, r.artifactId, r.version.toString(), db, transitive);
+    }
+
+    /**
+     * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}, as specified
+     * by the provided revision details.
+     */
+    public Set<Revision> resolveDependents(String groupId, String artifactId,
+                                             String version, DSLContext db, boolean transitive) {
+        return revisionGraphBFS(dependentGraph, groupId, artifactId, version, transitive);
+    }
+
+    /**
+     * Performs a BFS on the dependent graph to resolve all nodes that depend on the provided {@link Revision}
+     *
+     * @return The (transitive) dependent set
+     */
+    public Set<Revision> resolveDependents(Revision r, DSLContext db , boolean transitive) {
+        return revisionGraphBFS(dependentGraph, r.groupId, r.artifactId, r.version.toString(), transitive);
+    }
+
+    public Set<Revision> revisionGraphBFS(Graph<Revision, DependencyEdge> graph, String groupId, String artifactId,
+                       String version, boolean transitive) {
+
+        var workQueue = new ArrayDeque<>(Graphs.successorListOf(graph,
                 new Revision(groupId, artifactId, version, new Timestamp(-1))));
         var result = new HashSet<>(workQueue);
 
@@ -231,23 +274,13 @@ public class GraphMavenResolver implements Runnable {
             if (rev != null)
                 result.add(rev);
 
-            for (var dependency : Graphs.successorListOf(dependencyGraph, rev))
+            for (var dependency : Graphs.successorListOf(graph, rev))
                 workQueue.add(dependency);
 
             notEmpty = !workQueue.isEmpty();
         }
         return result;
     }
-
-    /**
-     * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}
-     *
-     * @return The (transitive) dependency set
-     */
-    public Set<Revision> resolveDependencies(Revision r, boolean transitive) {
-        return resolveDependencies(r.groupId, r.artifactId, r.version.toString(), transitive);
-    }
-
 
     public void buildDependencyGraph(DSLContext dbContext) {
         dependencyGraph = new DependencyGraphBuilder().buildDependencyGraph(dbContext);

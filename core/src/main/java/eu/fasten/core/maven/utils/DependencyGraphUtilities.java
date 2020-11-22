@@ -44,10 +44,12 @@ import java.util.Set;
  */
 public final class DependencyGraphUtilities {
 
-    private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
+    private static final Logger logger = LoggerFactory.getLogger(DependencyGraphUtilities.class);
 
     public static Graph<Revision, DependencyEdge> invertDependencyGraph(Graph<Revision,
             DependencyEdge> dependencyGraph) {
+        logger.debug("Calculating graph transpose");
+        var startTs = System.currentTimeMillis();
         var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         for (var node : dependencyGraph.vertexSet()) {
             graph.addVertex(node);
@@ -57,6 +59,7 @@ public final class DependencyGraphUtilities {
             var target = dependencyGraph.getEdgeTarget(edge);
             graph.addEdge(target, source, edge);    // Reverse edges
         }
+        logger.info("Graph transposed: {} ms", System.currentTimeMillis() - startTs);
         return graph;
     }
 
