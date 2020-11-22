@@ -164,7 +164,7 @@ public class GraphMavenResolver implements Runnable {
 
         if (repl) {
             if (dependencyGraph == null) {
-                logger.warn("REPL mode only works with an initilized graph");
+                logger.warn("REPL mode only works with an initialized graph");
                 return;
             }
 
@@ -175,11 +175,13 @@ public class GraphMavenResolver implements Runnable {
     public void repl(DSLContext db) {
         System.out.println("Query format: group:artifact:version<:ts>");
         try (var scanner = new Scanner(System.in)) {
-            while(true) {
+            while (true) {
                 System.out.print("> ");
                 var input = scanner.nextLine();
 
-                if (input.equals("quit")) {break;}
+                if (input.equals("quit")) {
+                    break;
+                }
                 var parts = input.split(":");
 
                 if (parts.length < 3 || parts[2] == null) {
@@ -195,7 +197,6 @@ public class GraphMavenResolver implements Runnable {
                     }
                 } catch (Exception e) {
                     System.err.println(e.getMessage());
-                    continue;
                 }
 
                 allDeps.addAll(resolveDependencies(parts[0], parts[1], parts[2], true));
@@ -208,7 +209,9 @@ public class GraphMavenResolver implements Runnable {
     }
 
     /**
-     * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}
+     * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}, as specified
+     * by the provided revision details.
+     *
      * @return The (transitive) dependency set
      */
     public Set<Revision> resolveDependencies(String groupId, String artifactId,
@@ -218,10 +221,12 @@ public class GraphMavenResolver implements Runnable {
                 new Revision(groupId, artifactId, version, new Timestamp(-1))));
         var result = new HashSet<>(workQueue);
 
-        if (!transitive) { return new HashSet<>(workQueue); }
+        if (!transitive) {
+            return new HashSet<>(workQueue);
+        }
 
         boolean notEmpty = !workQueue.isEmpty();
-        while(notEmpty) {
+        while (notEmpty) {
             var rev = workQueue.poll();
             if (rev != null)
                 result.add(rev);
@@ -234,10 +239,14 @@ public class GraphMavenResolver implements Runnable {
         return result;
     }
 
+    /**
+     * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}
+     *
+     * @return The (transitive) dependency set
+     */
     public Set<Revision> resolveDependencies(Revision r, boolean transitive) {
         return resolveDependencies(r.groupId, r.artifactId, r.version.toString(), transitive);
     }
-
 
 
     public void buildDependencyGraph(DSLContext dbContext) {
@@ -245,37 +254,37 @@ public class GraphMavenResolver implements Runnable {
     }
 
     public Set<Revision> resolveFullDependentsSet(String groupId, String artifactId,
-                                                    String version, DSLContext dbContext) {
+                                                  String version, DSLContext dbContext) {
         return this.resolveFullDependentsSet(groupId, artifactId, version, -1,
                 Arrays.asList(Dependency.SCOPES), dbContext, false, false, false);
     }
 
     public Set<Revision> resolveFullDependentsSet(String groupId, String artifactId,
-                                                    String version, long timestamp,
-                                                    List<String> scopes, DSLContext dbContext,
-                                                    boolean filterOptional, boolean filterScopes,
-                                                    boolean filterExclusions) {
+                                                  String version, long timestamp,
+                                                  List<String> scopes, DSLContext dbContext,
+                                                  boolean filterOptional, boolean filterScopes,
+                                                  boolean filterExclusions) {
         if (dependencyGraph == null) {
             buildDependencyGraph(dbContext);
         }
-		// Constant memory footprint
-		//var reverseGraph = new EdgeReversedGraph(dependencyGraph);
+        // Constant memory footprint
+        //var reverseGraph = new EdgeReversedGraph(dependencyGraph);
         var reverseGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
         return this.resolveDependencySetUsingGraph(groupId, artifactId, version, timestamp,
                 scopes, dbContext, reverseGraph, filterOptional, filterScopes, filterExclusions);
     }
 
     public Set<Revision> resolveFullDependencySet(String groupId, String artifactId,
-                                                    String version, DSLContext dbContext) {
+                                                  String version, DSLContext dbContext) {
         return resolveFullDependencySet(groupId, artifactId, version, -1,
                 Arrays.asList(Dependency.SCOPES), dbContext, false, false, false);
     }
 
     public Set<Revision> resolveFullDependencySet(String groupId, String artifactId,
-                                                    String version, long timestamp,
-                                                    List<String> scopes, DSLContext dbContext,
-                                                    boolean filterOptional, boolean filterScopes,
-                                                    boolean filterExclusions) {
+                                                  String version, long timestamp,
+                                                  List<String> scopes, DSLContext dbContext,
+                                                  boolean filterOptional, boolean filterScopes,
+                                                  boolean filterExclusions) {
         if (dependencyGraph == null) {
             buildDependencyGraph(dbContext);
         }
@@ -285,11 +294,11 @@ public class GraphMavenResolver implements Runnable {
     }
 
     public Set<Revision> resolveDependencySetUsingGraph(String groupId, String artifactId,
-                                                          String version, long timestamp,
-                                                          List<String> scopes, DSLContext dbContext,
-                                                          Graph<Revision, DependencyEdge> dependencyGraph,
-                                                          boolean filterOptional, boolean filterScopes,
-                                                          boolean filterExclusions) {
+                                                        String version, long timestamp,
+                                                        List<String> scopes, DSLContext dbContext,
+                                                        Graph<Revision, DependencyEdge> dependencyGraph,
+                                                        boolean filterOptional, boolean filterScopes,
+                                                        boolean filterExclusions) {
         var parents = new HashSet<Revision>();
         parents.add(new Revision(groupId, artifactId, version, new Timestamp(-1)));
         var parent = this.getParentArtifact(groupId, artifactId, version, dbContext);
@@ -444,7 +453,7 @@ public class GraphMavenResolver implements Runnable {
     }
 
     public Revision getParentArtifact(String groupId, String artifactId, String version,
-                                        DSLContext context) {
+                                      DSLContext context) {
         var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
         var result = context.select(PackageVersions.PACKAGE_VERSIONS.METADATA)
                 .from(PackageVersions.PACKAGE_VERSIONS)
