@@ -27,6 +27,7 @@ import eu.fasten.core.maven.data.DependencyTree;
 import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
+import org.apache.commons.math3.util.Pair;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jooq.DSLContext;
@@ -287,35 +288,38 @@ public class GraphMavenResolver implements Runnable {
 
         var successors = Graphs.successorListOf(graph, new Revision(groupId, artifactId, version,
                 new Timestamp(timestamp)));
-        var workQueue = new ArrayDeque<>(filterSuccessorsByTimestamp(successors, timestamp));
+        var workQueue = new ArrayDeque<>(
+                filterSuccessorsByTimestamp(successors, timestamp).stream().
+                        map(x -> new Pair<>(x, 1)).collect(Collectors.toList()));
 
         logger.debug("Obtaining first level dependencies: {} items, {} ms", workQueue.size(),
                 System.currentTimeMillis() - startTS);
-        var result = new HashSet<>(workQueue);
+        var result = new HashSet<>(workQueue.stream().map(x -> x.getFirst()).collect(Collectors.toList()));
 
         if (!transitive) {
-            return new HashSet<>(workQueue);
+            return result;
         }
 
         boolean notEmpty = !workQueue.isEmpty();
         while (notEmpty) {
             var rev = workQueue.poll();
             if (rev != null)
-                result.add(rev);
+                result.add(rev.getFirst());
 
             var startDeps = System.currentTimeMillis();
-            var dependencies = filterSuccessorsByTimestamp(Graphs.successorListOf(graph, rev), timestamp);
+            var dependencies = filterSuccessorsByTimestamp(Graphs.successorListOf(graph, rev.getFirst()), timestamp);
             for (var dependency : dependencies)
-                workQueue.add(dependency);
+                if (!result.contains(dependency))
+                    workQueue.add(new Pair<>(dependency, rev.getSecond() + 1));
 
-            logger.debug("Obtained dependencies for {}:{}:{}: {} deps, queue {} items, {} ms",
-                    rev.groupId, rev.artifactId, rev.version,
-                    dependencies.size(), workQueue.size(), System.currentTimeMillis() - startDeps);
+            logger.debug("Obtained dependencies for {}:{}:{}: deps: {}, depth: {}, queue: {} items, time: {} ms",
+                    rev.getFirst().groupId, rev.getFirst().artifactId, rev.getFirst().version,
+                    dependencies.size(), rev.getSecond() + 1, workQueue.size(), System.currentTimeMillis() - startDeps);
 
             notEmpty = !workQueue.isEmpty();
         }
 
-        logger.debug("Obtained dependencies for {}:{}:{}: {} ms", groupId, artifactId, version,
+        logger.debug("Obtained {} dependencies for {}:{}:{}: {} ms", result.size(), groupId, artifactId, version,
                 System.currentTimeMillis() - startTS);
         return result;
     }
