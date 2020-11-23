@@ -181,7 +181,7 @@ public class GraphMavenResolver implements Runnable {
                 System.out.print("> ");
                 var input = scanner.nextLine();
 
-                if (input.equals("quit")) {
+                if (input.equals("quit") || input.equals("exit")) {
                     break;
                 }
                 var parts = input.split(":");
@@ -296,9 +296,12 @@ public class GraphMavenResolver implements Runnable {
             return result;
         }
 
+        var depthRevisions = new ArrayList<>(workQueue);
+
         while (!workQueue.isEmpty()) {
             var rev = workQueue.poll();
             result.add(rev.getFirst());
+            depthRevisions.add(rev);
             var startDeps = System.currentTimeMillis();
             var nonOptionalSuccessors = filterOptionalSuccessors(graph.outgoingEdgesOf(rev.getFirst()));
             var dependencies = filterSuccessorsByTimestamp(nonOptionalSuccessors, timestamp);
@@ -314,7 +317,7 @@ public class GraphMavenResolver implements Runnable {
 
         logger.debug("Obtained {} dependencies for {}:{}:{}: {} ms", result.size(), groupId, artifactId, version,
                 System.currentTimeMillis() - startTS);
-        return result;
+        return filterDuplicateProducts(depthRevisions);
     }
 
     public List<Revision> filterSuccessorsByTimestamp(List<Revision> successors, long timestamp) {
@@ -348,6 +351,19 @@ public class GraphMavenResolver implements Runnable {
                 .filter(edge -> !edge.optional)
                 .map(edge -> edge.target)
                 .collect(Collectors.toList());
+    }
+
+    public Set<Revision> filterDuplicateProducts(List<Pair<Revision, Integer>> depthRevisions) {
+        return depthRevisions.stream().collect(Collectors.toMap(
+                x -> x.getFirst().product(),
+                y -> y,
+                (x, y) -> {
+                    if (x.getSecond() < y.getSecond()) {
+                        return x;
+                    } else {
+                        return y;
+                    }
+                })).values().stream().map(Pair::getFirst).collect(Collectors.toSet());
     }
 
     public void buildDependencyGraph(DSLContext dbContext) {

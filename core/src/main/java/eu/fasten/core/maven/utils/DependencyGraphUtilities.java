@@ -80,7 +80,7 @@ public final class DependencyGraphUtilities {
     private static class DefaultArtifactVersionSerializer extends Serializer<DefaultArtifactVersion> {
 
         @Override
-        public void write (Kryo kryo, Output output, DefaultArtifactVersion object) {
+        public void write(Kryo kryo, Output output, DefaultArtifactVersion object) {
             output.writeString(object.toString());
         }
 
@@ -120,6 +120,7 @@ public final class DependencyGraphUtilities {
 
     /**
      * Serialize a Maven dependency graph to a file. Independently serializes nodes and edges.
+     *
      * @throws Exception When the files that hold the serialized data cannot be created.
      */
     public static void serializeDependencyGraph(Graph<Revision, DependencyEdge> graph, String path) throws Exception {
@@ -168,7 +169,7 @@ public final class DependencyGraphUtilities {
      */
     public static Optional<Graph<Revision, DependencyEdge>> loadDependencyGraph(String path) throws Exception {
         if ((new File(path + ".nodes")).exists() &&
-                (new File(path + ".edges")).exists()){
+                (new File(path + ".edges")).exists()) {
             logger.info("Found serialized dependency graph at {}. Deserializing.", path);
             return Optional.of(DependencyGraphUtilities.deserializeDependencyGraph(path));
         } else {

@@ -22,6 +22,7 @@ import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyTree;
 import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.Revision;
+import org.apache.commons.math3.util.Pair;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -113,7 +114,7 @@ public class GraphMavenResolverTest {
 
     @Test
     public void filterDependencyGraphByOptionalTest() {
-        var nodeA = new Revision("a", "a", "1", new Timestamp(-1));
+        var nodeA = new Revision("a", "a", "1", new Timestamp(1));
         var nodeB = new Revision("b", "b", "2", new Timestamp(1));
         var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptyList());
         var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
@@ -131,5 +132,21 @@ public class GraphMavenResolverTest {
         var expected = List.of(nodeB);
         var actual = graphMavenResolver.filterOptionalSuccessors(graph.outgoingEdgesOf(nodeA));
         assertEquals(expected, actual);
+    }
+
+    @Test
+    public void filterDuplicateProducts() {
+        var depthRevision = List.of(
+                new Pair<>(new Revision("a", "a", "1", new Timestamp(1)), 1),
+                new Pair<>(new Revision("a", "a", "2", new Timestamp(1)), 2),
+                new Pair<>(new Revision("b", "b", "2", new Timestamp(1)), 2),
+                new Pair<>(new Revision("b", "b", "1", new Timestamp(1)), 3)
+        );
+        var expected = List.of(
+                new Revision("a", "a", "1", new Timestamp(1)),
+                new Revision("b", "b", "2", new Timestamp(1))
+        );
+        var actual = graphMavenResolver.filterDuplicateProducts(depthRevision);
+        assertEquals(new HashSet<>(expected), new HashSet<>(actual));
     }
 }
