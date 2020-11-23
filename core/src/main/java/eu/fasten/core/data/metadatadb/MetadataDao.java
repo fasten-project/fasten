@@ -785,6 +785,27 @@ public class MetadataDao {
                 .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equalIgnoreCase(version));
     }
 
+    public String getPackageLastVersion(String packageName) {
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+
+        // Building and executing the query
+        Result<Record> queryResult = this.context
+                .select(p.fields())
+                .select(pv.VERSION)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
+                .orderBy(pv.CREATED_AT.sortDesc())
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON();
+    }
+
     public String getPackageVersion(String packageName, String packageVersion, short offset, short limit) {
         return getPackageInfo(packageName, packageVersion, false, offset, limit);
     }

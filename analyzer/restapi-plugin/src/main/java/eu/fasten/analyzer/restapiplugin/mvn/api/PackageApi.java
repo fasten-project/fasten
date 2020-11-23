@@ -15,6 +15,11 @@ public class PackageApi {
     @Autowired
     PackageApiService service;
 
+    @GetMapping(value = "/{pkg}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> getPackageLastVersion(@PathVariable("pkg") String package_name) {
+        return service.getPackageLastVersion(package_name);
+    }
+
     @GetMapping(value = "/{pkg}/versions", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageVersions(@PathVariable("pkg") String package_name,
                                               @RequestParam(required = false, defaultValue = "0") short offset,

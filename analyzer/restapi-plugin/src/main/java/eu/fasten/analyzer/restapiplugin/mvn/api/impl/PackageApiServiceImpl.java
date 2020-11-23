@@ -10,6 +10,12 @@ import org.springframework.stereotype.Service;
 public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
+    public ResponseEntity<String> getPackageLastVersion(String package_name) {
+        String result = KnowledgeBaseConnector.kbDao.getPackageLastVersion(package_name);
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @Override
     public ResponseEntity<String> getPackageVersions(String package_name,
                                                      short offset,
                                                      short limit) {
