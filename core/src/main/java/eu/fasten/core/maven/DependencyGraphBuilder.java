@@ -52,19 +52,21 @@ public class DependencyGraphBuilder {
         var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
 
         String path = "mavengraph";
-        if (args.length > 0 && args[0] != null) {  path = args[0]; }
+        if (args.length > 0 && args[0] != null) {
+            path = args[0];
+        }
 
-        if (!DependencyGraphUtilities.loadDependencyGraph(path).isPresent()) {
+        if (DependencyGraphUtilities.loadDependencyGraph(path).isEmpty()) {
             DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, path);
         }
     }
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
         return dbContext.select(PackageVersions.PACKAGE_VERSIONS.ID,
-                    Packages.PACKAGES.PACKAGE_NAME,
-                    PackageVersions.PACKAGE_VERSIONS.VERSION,
-                    Dependencies.DEPENDENCIES.METADATA,
-                    PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
+                Packages.PACKAGES.PACKAGE_NAME,
+                PackageVersions.PACKAGE_VERSIONS.VERSION,
+                Dependencies.DEPENDENCIES.METADATA,
+                PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
                 .from(Packages.PACKAGES)
                 .rightJoin(PackageVersions.PACKAGE_VERSIONS)
                 .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
@@ -152,8 +154,8 @@ public class DependencyGraphBuilder {
     }
 
     public Graph<Revision, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
-        var startTs  = System.currentTimeMillis();
-        var startDepRet =  System.currentTimeMillis();
+        var startTs = System.currentTimeMillis();
+        var startDepRet = System.currentTimeMillis();
 
         var dependencies = getDependencyList(dbContext);
         logger.info("Retrieved {} package versions: {} ms", dependencies.size(),
