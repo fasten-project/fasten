@@ -22,10 +22,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.DependencyTree;
-import eu.fasten.core.maven.data.DependencyEdge;
-import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.*;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.apache.commons.math3.util.Pair;
 import org.jgrapht.Graph;
@@ -49,7 +46,7 @@ public class GraphMavenResolver implements Runnable {
 
     @CommandLine.Option(names = {"-p", "--serializedPath"},
             paramLabel = "PATH",
-            description = "Path to load a serialized Maven dep graph from")
+            description = "Path to load a serialized Maven dependency graph from")
     protected String serializedPath;
 
     @CommandLine.Option(names = {"--repl"},
@@ -198,7 +195,7 @@ public class GraphMavenResolver implements Runnable {
                 if (parts.length > 3 && parts[4] != null) {
                     try {
                         timestamp = Long.parseLong(parts[4]);
-                    } catch (NumberFormatException nfe){
+                    } catch (NumberFormatException nfe) {
                         System.err.println("Error parsing the provided timestamp");
                         continue;
                     }
@@ -230,19 +227,19 @@ public class GraphMavenResolver implements Runnable {
 
         if (timestamp == -1) {
             var ts = getCreatedAt(groupId, artifactId, version, db);
-            if (ts > 0){
+            if (ts > 0) {
                 timestamp = ts;
             }
         }
 
-        Set allDeps = new HashSet<Revision>();
+        Set<Revision> allDeps = new HashSet<>();
         try {
             var parent = getParentArtifact(groupId, artifactId, version, db);
             if (parent != null) {
-                allDeps = resolveDependencies(parent, db, true);
+                allDeps = resolveDependencies(parent, db, transitive);
             }
         } catch (Exception e) {
-            logger.warn("Parent for revision {}:{}:{} not found: {}",  groupId, artifactId, version, e.getMessage());
+            logger.warn("Parent for revision {}:{}:{} not found: {}", groupId, artifactId, version, e.getMessage());
         }
 
         allDeps.addAll(revisionGraphBFS(dependencyGraph, groupId, artifactId, version, timestamp, transitive));
@@ -265,7 +262,7 @@ public class GraphMavenResolver implements Runnable {
      * by the provided revision details.
      */
     public Set<Revision> resolveDependents(String groupId, String artifactId,
-                                             String version, long timestamp, DSLContext db, boolean transitive) {
+                                           String version, long timestamp, DSLContext db, boolean transitive) {
         return revisionGraphBFS(dependentGraph, groupId, artifactId, version, timestamp, transitive);
     }
 
@@ -280,7 +277,7 @@ public class GraphMavenResolver implements Runnable {
     }
 
     public Set<Revision> revisionGraphBFS(Graph<Revision, DependencyEdge> graph, String groupId, String artifactId,
-                       String version, long timestamp, boolean transitive) {
+                                          String version, long timestamp, boolean transitive) {
 
         assert (timestamp > 0);
         var startTS = System.currentTimeMillis();
@@ -288,24 +285,20 @@ public class GraphMavenResolver implements Runnable {
 
         var successors = Graphs.successorListOf(graph, new Revision(groupId, artifactId, version,
                 new Timestamp(timestamp)));
-        var workQueue = new ArrayDeque<>(
-                filterSuccessorsByTimestamp(successors, timestamp).stream().
-                        map(x -> new Pair<>(x, 1)).collect(Collectors.toList()));
+        var workQueue = filterSuccessorsByTimestamp(successors, timestamp).stream().
+                map(x -> new Pair<>(x, 1)).collect(Collectors.toCollection(ArrayDeque::new));
 
         logger.debug("Obtaining first level dependencies: {} items, {} ms", workQueue.size(),
                 System.currentTimeMillis() - startTS);
-        var result = new HashSet<>(workQueue.stream().map(x -> x.getFirst()).collect(Collectors.toList()));
+        var result = workQueue.stream().map(Pair::getFirst).collect(Collectors.toCollection(HashSet::new));
 
         if (!transitive) {
             return result;
         }
 
-        boolean notEmpty = !workQueue.isEmpty();
-        while (notEmpty) {
+        while (!workQueue.isEmpty()) {
             var rev = workQueue.poll();
-            if (rev != null)
-                result.add(rev.getFirst());
-
+            result.add(rev.getFirst());
             var startDeps = System.currentTimeMillis();
             var dependencies = filterSuccessorsByTimestamp(Graphs.successorListOf(graph, rev.getFirst()), timestamp);
             for (var dependency : dependencies)
@@ -315,8 +308,6 @@ public class GraphMavenResolver implements Runnable {
             logger.debug("Obtained dependencies for {}:{}:{}: deps: {}, depth: {}, queue: {} items, time: {} ms",
                     rev.getFirst().groupId, rev.getFirst().artifactId, rev.getFirst().version,
                     dependencies.size(), rev.getSecond() + 1, workQueue.size(), System.currentTimeMillis() - startDeps);
-
-            notEmpty = !workQueue.isEmpty();
         }
 
         logger.debug("Obtained {} dependencies for {}:{}:{}: {} ms", result.size(), groupId, artifactId, version,
@@ -326,26 +317,28 @@ public class GraphMavenResolver implements Runnable {
 
     public List<Revision> filterSuccessorsByTimestamp(List<Revision> successors, long timestamp) {
         return successors.stream().collect(Collectors.toMap(
-                x -> x,
-                x -> List.of(x),
-                (x, y) -> { var z = new ArrayList<Revision>(); z.addAll(x); z.addAll(y); return z; })).
-                entrySet().stream().
-                map(e -> {
+                x -> new MavenProduct(x.groupId, x.artifactId),
+                List::of,
+                (x, y) -> {
+                    var z = new ArrayList<Revision>();
+                    z.addAll(x);
+                    z.addAll(y);
+                    return z;
+                })).values().stream()
+                .map(revisions -> {
                     var latestTimestamp = -1L;
                     Revision latest = null;
-                    for (var r : e.getValue()) {
-                        if (r.createdAt.getTime() < timestamp && r.createdAt.getTime() > latestTimestamp) {
+                    for (var r : revisions) {
+                        if (r.createdAt.getTime() <= timestamp && r.createdAt.getTime() > latestTimestamp) {
                             latestTimestamp = r.createdAt.getTime();
                             latest = r;
                         }
                     }
-                    if (e.getValue().size() > 1)
+                    if (revisions.size() > 1)
                         logger.debug("Ignoring {} revisions for dependency {}, selected: {}, timestamp: {}",
-                                e.getValue().size() - 1, e.getValue().get(0).product(), latest, timestamp);
+                                revisions.size() - 1, revisions.get(0).product(), latest, timestamp);
                     return latest;
-                }).
-                filter(x -> x != null).
-                collect(Collectors.toList());
+                }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     public void buildDependencyGraph(DSLContext dbContext) {
@@ -571,7 +564,7 @@ public class GraphMavenResolver implements Runnable {
                                       DSLContext context) {
         var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
         var result = context.select(PackageVersions.PACKAGE_VERSIONS.METADATA,
-                    PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
+                PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
                 .from(PackageVersions.PACKAGE_VERSIONS)
                 .join(Packages.PACKAGES)
                 .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
