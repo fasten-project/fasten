@@ -26,6 +26,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.sql.Timestamp;
+import java.util.HashSet;
 import java.util.List;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -90,5 +91,23 @@ public class GraphMavenResolverTest {
         graph.addEdge(nodeB2, nodeC, edgeB2C);
         var actual = graphMavenResolver.filterDependencyGraphByTimestamp(graph, new Timestamp(1));
         assertEquals(expected, actual);
+    }
+
+    @Test
+    public void filterSuccessorsByTimestampTest() {
+        var successors = List.of(
+                new Revision("a", "a", "1", new Timestamp(1)),
+                new Revision("a", "a", "2", new Timestamp(2)),
+                new Revision("a", "a", "3", new Timestamp(3)),
+                new Revision("b", "b", "2", new Timestamp(2)),
+                new Revision("b", "b", "3", new Timestamp(3)),
+                new Revision("b", "b", "4", new Timestamp(4))
+        );
+        var expected = List.of(
+                new Revision("a", "a", "3", new Timestamp(3)),
+                new Revision("b", "b", "3", new Timestamp(3))
+        );
+        var actual = graphMavenResolver.filterSuccessorsByTimestamp(successors, 3);
+        assertEquals(new HashSet<>(expected), new HashSet<>(actual));
     }
 }

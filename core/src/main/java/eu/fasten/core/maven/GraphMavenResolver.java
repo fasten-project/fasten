@@ -317,7 +317,7 @@ public class GraphMavenResolver implements Runnable {
 
     public List<Revision> filterSuccessorsByTimestamp(List<Revision> successors, long timestamp) {
         return successors.stream().collect(Collectors.toMap(
-                x -> new MavenProduct(x.groupId, x.artifactId),
+                Revision::product,
                 List::of,
                 (x, y) -> {
                     var z = new ArrayList<Revision>();
