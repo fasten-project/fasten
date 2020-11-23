@@ -54,21 +54,18 @@ public class DatabaseMerger {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseMerger.class);
 
-//    private final DirectedGraph callGraphData;
     private final Map<String, Set<String>> universalParents;
     private final Map<String, Set<String>> universalChildren;
     private final Map<String, Map<String, Set<Long>>> typeDictionary;
     private final DSLContext dbContext;
     private final RocksDao rocksDao;
-//    private final Map<Long, Node> typeMap;
-//    private final List<Arc> arcs;
 
     /**
-     * Create instance of database merger.
+     * Create instance of database merger from package names.
      *
      * @param dependencySet dependencies present in the resolution
-     * @param dbContext    DSL context
-     * @param rocksDao     rocks DAO
+     * @param dbContext     DSL context
+     * @param rocksDao      rocks DAO
      */
     public DatabaseMerger(final List<String> dependencySet,
                           final DSLContext dbContext, final RocksDao rocksDao) {
@@ -81,6 +78,25 @@ public class DatabaseMerger {
         this.universalChildren = universalCHA.getRight();
         this.typeDictionary = createTypeDictionary(dependenciesIds, dbContext, rocksDao);
 
+    }
+
+    /**
+     * Create instance of database merger from package versions ids.
+     *
+     * @param dependencySet dependencies present in the resolution
+     * @param dbContext     DSL context
+     * @param rocksDao      rocks DAO
+     */
+    public DatabaseMerger(final Set<Long> dependencySet,
+                          final DSLContext dbContext, final RocksDao rocksDao) {
+        this.dbContext = dbContext;
+        this.rocksDao = rocksDao;
+
+        final var universalCHA = createUniversalCHA(dependencySet, dbContext, rocksDao);
+
+        this.universalParents = universalCHA.getLeft();
+        this.universalChildren = universalCHA.getRight();
+        this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
     }
 
     /**
