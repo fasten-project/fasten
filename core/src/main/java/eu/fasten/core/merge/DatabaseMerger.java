@@ -160,11 +160,22 @@ public class DatabaseMerger {
     /**
      * Merges a call graph with its dependencies using CHA algorithm.
      *
+     * @param artifact artifact to resolve
      * @return merged call graph
      */
     public DirectedGraph mergeWithCHA(final String artifact) {
+        return mergeWithCHA(getPackageVersionId(artifact));
+    }
 
-        final var callGraphData = fetchCallGraphData(artifact, dbContext, rocksDao);
+    /**
+     * Merges a call graph with its dependencies using CHA algorithm.
+     *
+     * @param artifactId package version id of an artifact to resolve
+     * @return merged call graph
+     */
+    public DirectedGraph mergeWithCHA(final long artifactId) {
+
+        final var callGraphData = fetchCallGraphData(artifactId, rocksDao);
         final var typeMap = createTypeMap(callGraphData, dbContext);
         final var arcs = getArcs(callGraphData, dbContext);
 
@@ -296,25 +307,10 @@ public class DatabaseMerger {
     /**
      * Retrieve a call graph from a graph database given a maven coordinate.
      *
-     * @param dbContext DSL context
-     * @param rocksDao  rocks DAO
+     * @param rocksDao rocks DAO
      * @return call graph
      */
-    private DirectedGraph fetchCallGraphData(final String artifact, final DSLContext dbContext,
-                                             final RocksDao rocksDao) {
-        var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
-        var version = artifact.split(":")[2];
-
-        var artifactId = dbContext
-                .select(PackageVersions.PACKAGE_VERSIONS.ID)
-                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
-                .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                .fetchOne()
-                .component1();
-
+    private DirectedGraph fetchCallGraphData(final long artifactId, final RocksDao rocksDao) {
         DirectedGraph callGraphData = null;
         try {
             callGraphData = rocksDao.getGraphData(artifactId);
@@ -323,6 +319,27 @@ public class DatabaseMerger {
         }
 
         return callGraphData;
+    }
+
+    /**
+     * Get package version id for an artifact.
+     *
+     * @param artifact artifact in format groupId:artifactId:version
+     * @return package version id
+     */
+    private long getPackageVersionId(final String artifact) {
+        var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
+        var version = artifact.split(":")[2];
+
+        return dbContext
+                .select(PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
+                .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                .fetchOne()
+                .component1();
     }
 
     /**
