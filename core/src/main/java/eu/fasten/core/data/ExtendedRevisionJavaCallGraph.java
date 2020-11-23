@@ -24,7 +24,7 @@ import org.json.JSONObject;
 import org.json.JSONException;
 
 /**
- * For each class in the revision, class hierarchy keeps a {@link Type} that is accessible by
+ * For each class in the revision, class hierarchy keeps a {@link JavaType} that is accessible by
  * the {@link FastenURI} of the class as a key.
  *
  * @implNote each method in the revision has a unique id in this CHA.
@@ -54,7 +54,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
-     *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
+     *                       <code> Map<{@link FastenURI}, {@link JavaType}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     public ExtendedRevisionJavaCallGraph(final String forge, final String product, final String version,
@@ -126,6 +126,50 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         }
         for (final var aClass : this.getClassHierarchy().get(JavaScope.resolvedTypes).entrySet()) {
             result.putAll(aClass.getValue().getMethods());
+        }
+        return result;
+    }
+
+    public Map<Integer, JavaType> externalNodeIdToTypeMap() {
+        final Map<Integer, JavaType> result = new HashMap<>();
+        this.classHierarchy.get(JavaScope.externalTypes).values().parallelStream().forEach(type -> {
+            for (final var key : type.getMethods().keySet()) {
+                synchronized (result) {
+                    result.put(key, type);
+                }
+            }
+        });
+        return result;
+    }
+
+    public Map<Integer, JavaType> internalNodeIdToTypeMap() {
+        final Map<Integer, JavaType> result = new HashMap<>();
+        this.classHierarchy.get(JavaScope.internalTypes).values().parallelStream().forEach(type -> {
+            for (final var key : type.getMethods().keySet()) {
+                synchronized (result) {
+                    result.put(key, type);
+                }
+            }
+        });
+        return result;
+    }
+
+    public Map<Integer, String> nodeIDtoTypeNameMap() {
+        final Map<Integer, String> result = new HashMap<>();
+        for (final var aClass : classHierarchy.get(JavaScope.internalTypes).entrySet()) {
+            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+            }
+        }
+        for (final var aClass : classHierarchy.get(JavaScope.externalTypes).entrySet()) {
+            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+            }
+        }
+        for (final var aClass : classHierarchy.get(JavaScope.resolvedTypes).entrySet()) {
+            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+            }
         }
         return result;
     }

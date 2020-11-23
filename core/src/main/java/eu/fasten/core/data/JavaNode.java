@@ -24,6 +24,11 @@ import org.apache.commons.lang3.StringUtils;
 public class JavaNode extends Node {
 
     /**
+     * Method signature.
+     */
+    final private String signature;
+
+    /**
      * Creates {@link JavaNode} from a FastenURI and metadata.
      *
      * @param uri      FastenURI corresponding to this JavaNode
@@ -31,6 +36,16 @@ public class JavaNode extends Node {
      */
     public JavaNode(final FastenURI uri, final Map<String, Object> metadata) {
         super(uri, metadata);
+        this.signature = StringUtils.substringAfter(FastenJavaURI.create(uri.toString()).decanonicalize().getEntity(), ".");
+    }
+
+    /**
+     * Get method signature.
+     *
+     * @return method signature
+     */
+    public String getSignature() {
+        return signature;
     }
 
     /**
@@ -61,5 +76,15 @@ public class JavaNode extends Node {
     public FastenURI changeName(final String className, final String methodName) {
         final var uri = this.getUri().toString().replace("/" + getClassName() + ".", "/" + className + ".");
         return FastenURI.create(uri.replace("." + getMethodName() + "(", "." + methodName + "("));
+    }
+
+    /**
+     * Change method signature.
+     *
+     * @param methodName new method name
+     * @return method signature with changed name
+     */
+    public String changeSignature(final String methodName) {
+        return signature.replace(getMethodName() + "(", methodName + "(");
     }
 }
