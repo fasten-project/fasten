@@ -46,6 +46,24 @@ Can be used for all core Maven archived projects (jar, war, zip) as well as clas
 -a abbot:costello:1.4.0 -d abbot:abbot:1.4.0 -m COORD -ma CHA -o /some/path/to/result/file.json
 ```
 
+## Docker
+The OPAL plug-in is published as a Docker image. To run its Docker image, follow below steps:
+
+- First login with your GitHub credentials:
+```bash
+docker login docker.pkg.github.com -u $GITHUB_USER -p $GITHUB_TOKEN
+```
+Replace `$GITHUB_USER` and `$GITHUB_TOKEN` with your GitHub username and GitHub token, respectively.
+
+- Pull the plug-in's Docker image:
+```bash
+docker pull docker.pkg.github.com/fasten-project/fasten/fasten.opal.plugin:latest
+```
+- Run the Docker image as follows:
+```bash
+docker run -it docker.pkg.github.com/fasten-project/fasten/fasten.opal.plugin -a abbot:costello:1.4.0 -g -ga CHA -m COORD -o cg.json
+```
+
 ## Join the community
 
 The FASTEN software package management efficiency relies on an open community contributing to open technologies. Related research projects, R&D engineers, early users and open source contributors are welcome to join the [FASTEN community](https://www.fasten-project.eu/view/Main/Community), to try the tools, to participate in physical and remote worshops and to share our efforts using the project [community page](https://www.fasten-project.eu/view/Main/Community) and the social media buttons below.  
