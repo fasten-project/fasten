@@ -803,7 +803,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     public String getPackageVersion(String packageName, String packageVersion, short offset, short limit) {
@@ -844,7 +844,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     /**
@@ -881,7 +881,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     /**
@@ -913,7 +913,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     public String getPackageModules(String packageName,
@@ -970,7 +970,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     public String getModuleFiles(String packageName,
@@ -1012,7 +1012,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, short offset, short limit) {
@@ -1067,7 +1067,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     // TODO Test with real DB data
@@ -1098,7 +1098,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     public String getPackageCallables(String packageName, String packageVersion, short offset, short limit) {
@@ -1166,7 +1166,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     public String getPackageFiles(String packageName, String packageVersion, short offset, short limit) {
@@ -1199,7 +1199,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     public String getPackageCallgraph(String packageName, String packageVersion, short offset, short limit) {
@@ -1258,7 +1258,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON();
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
     /**
