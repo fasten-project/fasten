@@ -300,11 +300,13 @@ public class GraphMavenResolver implements Runnable {
             var rev = workQueue.poll();
             result.add(rev.getFirst());
             var startDeps = System.currentTimeMillis();
-            var dependencies = filterSuccessorsByTimestamp(Graphs.successorListOf(graph, rev.getFirst()), timestamp);
-            for (var dependency : dependencies)
-                if (!result.contains(dependency))
+            var nonOptionalSuccessors = filterOptionalSuccessors(graph.outgoingEdgesOf(rev.getFirst()));
+            var dependencies = filterSuccessorsByTimestamp(nonOptionalSuccessors, timestamp);
+            for (var dependency : dependencies) {
+                if (!result.contains(dependency)) {
                     workQueue.add(new Pair<>(dependency, rev.getSecond() + 1));
-
+                }
+            }
             logger.debug("Obtained dependencies for {}:{}:{}: deps: {}, depth: {}, queue: {} items, time: {} ms",
                     rev.getFirst().groupId, rev.getFirst().artifactId, rev.getFirst().version,
                     dependencies.size(), rev.getSecond() + 1, workQueue.size(), System.currentTimeMillis() - startDeps);
@@ -339,6 +341,13 @@ public class GraphMavenResolver implements Runnable {
                                 revisions.size() - 1, revisions.get(0).product(), latest, timestamp);
                     return latest;
                 }).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    public List<Revision> filterOptionalSuccessors(Set<DependencyEdge> outgoingEdges) {
+        return outgoingEdges.stream()
+                .filter(edge -> !edge.optional)
+                .map(edge -> edge.target)
+                .collect(Collectors.toList());
     }
 
     public void buildDependencyGraph(DSLContext dbContext) {

@@ -46,7 +46,7 @@ public class GraphMavenResolverTest {
         var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         var nodeA = new Revision("a", "a", "1", new Timestamp(1));
         var nodeB = new Revision("b", "b", "2", new Timestamp(2));
-        var nodeC = new Revision("c","c", "3", new Timestamp(3));
+        var nodeC = new Revision("c", "c", "3", new Timestamp(3));
         var nodeD = new Revision("d", "d", "4", new Timestamp(4));
         var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptyList());
         var edgeAC = new DependencyEdge(nodeA, nodeC, "", false, emptyList());
@@ -79,7 +79,7 @@ public class GraphMavenResolverTest {
         expected.addEdge(nodeA, nodeB, edgeAB);
         var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         var nodeB2 = new Revision("b", "b", "2", new Timestamp(2));
-        var nodeC = new Revision("c","c", "3", new Timestamp(3));
+        var nodeC = new Revision("c", "c", "3", new Timestamp(3));
         var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "", false, emptyList());
         var edgeB2C = new DependencyEdge(nodeB2, nodeC, "", false, emptyList());
         graph.addVertex(nodeA);
@@ -109,5 +109,27 @@ public class GraphMavenResolverTest {
         );
         var actual = graphMavenResolver.filterSuccessorsByTimestamp(successors, 3);
         assertEquals(new HashSet<>(expected), new HashSet<>(actual));
+    }
+
+    @Test
+    public void filterDependencyGraphByOptionalTest() {
+        var nodeA = new Revision("a", "a", "1", new Timestamp(-1));
+        var nodeB = new Revision("b", "b", "2", new Timestamp(1));
+        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptyList());
+        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        var nodeB2 = new Revision("b", "b", "2", new Timestamp(2));
+        var nodeC = new Revision("c", "c", "3", new Timestamp(3));
+        var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "", true, emptyList());
+        var edgeB2C = new DependencyEdge(nodeB2, nodeC, "", false, emptyList());
+        graph.addVertex(nodeA);
+        graph.addVertex(nodeB);
+        graph.addEdge(nodeA, nodeB, edgeAB);
+        graph.addVertex(nodeB2);
+        graph.addEdge(nodeA, nodeB2, edgeAB2);
+        graph.addVertex(nodeC);
+        graph.addEdge(nodeB2, nodeC, edgeB2C);
+        var expected = List.of(nodeB);
+        var actual = graphMavenResolver.filterOptionalSuccessors(graph.outgoingEdgesOf(nodeA));
+        assertEquals(expected, actual);
     }
 }
