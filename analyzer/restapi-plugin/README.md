@@ -18,11 +18,14 @@ This plugin exposes canned queries for the [Metadata Database](https://github.co
 
 - [Endpoints details and current status](https://github.com/fasten-project/fasten/wiki/API-endpoints-for-Maven-projects)
 
-## Arguments
-- `-h` `--help` Show this help message and exit.
-- `-p` `--port` REST server port.
-- `-d` `--db` `--database` KnowledgeBase URL.
-- `-u` `--user` `--username` KnowledgeBase username.
+## Configuration
+
+The [server configuration file](src/main/resources/application.properties) has the following properties:
+
+- Serlvet context path
+- REST server port
+- KnowledgeBase username
+- KnowledgeBase URL
 
 ## Usage
 
@@ -32,11 +35,12 @@ This plugin exposes canned queries for the [Metadata Database](https://github.co
     export KB_ADDR=...
     ssh -f ${KB_USER}@${KB_ADDR} -L 5433:${KB_ADDR}:5432 -N
     ```
-1. Launch the REST server (example from the root directory and with port `9090`):
+1. Edit the [server configuration file](src/main/resources/application.properties).
+1. Launch the REST server (example from the root directory):
     ```bash
-    PGPASSWORD=... mvn clean install exec:java \
-      -f analyzer/restapi-plugin/pom.xml \
-      -Dexec.args='--port 9090 --database jdbc:postgresql://localhost:5433/<DB_NAME> --username <KB_USER>'
+    PGPASSWORD=... mvn clean install \
+      -Dmaven.test.skip=true spring-boot:run \
+      -f analyzer/restapi-plugin/pom.xml
     ```
 
 <!-- TODO ### Requirements  -->
