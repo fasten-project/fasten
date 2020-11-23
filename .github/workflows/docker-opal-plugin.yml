@@ -38,7 +38,7 @@ jobs:
       - name: Build jar
         run:  mvn clean install -pl analyzer/javacg-opal -P main -am
       - name: Build image
-        run: cd docker/ && docker build -t fasten-opal-plugin -f opal/Dockerfile .
+        run: cd docker/ && docker build -t fasten.opal.plugin -f opal/Dockerfile .
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - name: Push image
