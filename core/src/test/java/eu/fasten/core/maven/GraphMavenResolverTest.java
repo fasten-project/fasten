@@ -146,7 +146,7 @@ public class GraphMavenResolverTest {
                 new Revision("a", "a", "1", new Timestamp(1)),
                 new Revision("b", "b", "2", new Timestamp(1))
         );
-        var actual = graphMavenResolver.filterDuplicateProducts(depthRevision);
+        var actual = graphMavenResolver.resolveConflicts(depthRevision);
         assertEquals(new HashSet<>(expected), new HashSet<>(actual));
     }
 }

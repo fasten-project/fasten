@@ -175,41 +175,48 @@ public class GraphMavenResolver implements Runnable {
     public void repl(DSLContext db) {
         System.out.println("Query format: [!]group:artifact:version<:ts>");
         System.out.println("! at the beginning means search for dependents (default: dependencies)");
-        System.out.println("ts: Use the provide timestamp for resolution (default: use the artifact release timestamp)");
+        System.out.println("ts: Use the provided timestamp for resolution (default: the artifact release timestamp)");
         try (var scanner = new Scanner(System.in)) {
             while (true) {
                 System.out.print("> ");
                 var input = scanner.nextLine();
 
-                if (input.equals("quit") || input.equals("exit")) {
-                    break;
-                }
+                if (input.equals("")) continue;
+                if (input.equals("quit") || input.equals("exit")) break;
+
                 var parts = input.split(":");
 
                 if (parts.length < 3 || parts[2] == null) {
-                    System.out.println("Wrong input: " + input);
+                    System.out.println("Wrong input: " + input + ". Format is: [!]group:artifact:version<:ts>");
                     continue;
                 }
 
                 var timestamp = -1L;
-                if (parts.length > 3 && parts[4] != null) {
+                if (parts.length > 3 && parts[3] != null) {
                     try {
-                        timestamp = Long.parseLong(parts[4]);
+                        timestamp = Long.parseLong(parts[3]);
                     } catch (NumberFormatException nfe) {
                         System.err.println("Error parsing the provided timestamp");
                         continue;
                     }
                 }
 
-                Set<Revision> revisions;
-                if (parts[0].startsWith("!")) {
-                    parts[0] = parts[0].substring(1);
-                    revisions = resolveDependents(parts[0], parts[1], parts[2], timestamp, db, true);
-                } else {
-                    revisions = resolveDependencies(parts[0], parts[1], parts[2], timestamp, db, true);
+                Set<Revision> revisions = new HashSet<>();
+                try {
+
+                    if (parts[0].startsWith("!")) {
+                        parts[0] = parts[0].substring(1);
+                        revisions = resolveDependents(parts[0], parts[1], parts[2], timestamp, db, true);
+                    } else {
+                        revisions = resolveDependencies(parts[0], parts[1], parts[2], timestamp, db, true);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error retrieving revisions: " + e.getMessage());
+                    continue;
                 }
 
-                for (var rev : revisions) {
+                for (var rev : revisions.stream().sorted(Comparator.comparing(x -> x.toString())).
+                        collect(Collectors.toList())) {
                     System.out.println(rev.toString());
                 }
             }
@@ -302,7 +309,7 @@ public class GraphMavenResolver implements Runnable {
             var rev = workQueue.poll();
             result.add(rev.getFirst());
             depthRevisions.add(rev);
-            var startDeps = System.currentTimeMillis();
+
             var nonOptionalSuccessors = filterOptionalSuccessors(graph.outgoingEdgesOf(rev.getFirst()));
             var dependencies = filterSuccessorsByTimestamp(nonOptionalSuccessors, timestamp);
             for (var dependency : dependencies) {
@@ -310,16 +317,29 @@ public class GraphMavenResolver implements Runnable {
                     workQueue.add(new Pair<>(dependency, rev.getSecond() + 1));
                 }
             }
-            logger.debug("Obtained dependencies for {}:{}:{}: deps: {}, depth: {}, queue: {} items, time: {} ms",
+            logger.debug("Dependencies for {}:{}:{}: deps: {}, depth: {}, queue: {} items",
                     rev.getFirst().groupId, rev.getFirst().artifactId, rev.getFirst().version,
-                    dependencies.size(), rev.getSecond() + 1, workQueue.size(), System.currentTimeMillis() - startDeps);
+                    dependencies.size(), rev.getSecond() + 1, workQueue.size());
         }
+        logger.debug("Before conflict resolution: {} dependencies", depthRevisions.size());
 
+        var conflictsResolved = resolveConflicts(depthRevisions);
+
+        logger.debug("After conflict resolution: {} dependencies", conflictsResolved.size());
         logger.debug("Obtained {} dependencies for {}:{}:{}: {} ms", result.size(), groupId, artifactId, version,
                 System.currentTimeMillis() - startTS);
-        return filterDuplicateProducts(depthRevisions);
+
+        return conflictsResolved;
     }
 
+    /**
+     * Given a set of n successors for a revision r which are different revisions of the same product, select the
+     * revisions that are closest to the release timestamp of r.
+     *
+     * This is used to filter out
+     *
+     * @return A list of unique revisions per unique product in the input list.
+     */
     public List<Revision> filterSuccessorsByTimestamp(List<Revision> successors, long timestamp) {
         return successors.stream().collect(Collectors.toMap(
                 Revision::product,
@@ -340,7 +360,7 @@ public class GraphMavenResolver implements Runnable {
                         }
                     }
                     if (revisions.size() > 1)
-                        logger.debug("Ignoring {} revisions for dependency {}, selected: {}, timestamp: {}",
+                        logger.debug("Ignored {} revisions for dependency {}, selected: {}, timestamp: {}",
                                 revisions.size() - 1, revisions.get(0).product(), latest, timestamp);
                     return latest;
                 }).filter(Objects::nonNull).collect(Collectors.toList());
@@ -353,14 +373,23 @@ public class GraphMavenResolver implements Runnable {
                 .collect(Collectors.toList());
     }
 
-    public Set<Revision> filterDuplicateProducts(List<Pair<Revision, Integer>> depthRevisions) {
+    /**
+     * Resolve conflicts (duplicate products with different versions) by picking revisions that are closer to the root.
+     */
+    public Set<Revision> resolveConflicts(List<Pair<Revision, Integer>> depthRevisions) {
         return depthRevisions.stream().collect(Collectors.toMap(
                 x -> x.getFirst().product(),
                 y -> y,
                 (x, y) -> {
+                    if (x.getFirst().equals(y.getFirst())) return x;
+
                     if (x.getSecond() < y.getSecond()) {
+                        logger.debug("Conflict resolution. Select: {}, distance: {}. Ignore: {}, distance: {}",
+                                x.getFirst(), x.getSecond(), y.getFirst(), y.getSecond());
                         return x;
                     } else {
+                        logger.debug("Conflict resolution. Select: {}, distance: {}. Ignore: {}, distance: {}",
+                                y.getFirst(), y.getSecond(), x.getFirst(), x.getSecond());
                         return y;
                     }
                 })).values().stream().map(Pair::getFirst).collect(Collectors.toSet());
