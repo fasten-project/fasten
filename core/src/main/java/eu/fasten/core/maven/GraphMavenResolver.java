@@ -37,6 +37,7 @@ import picocli.CommandLine;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "GraphMavenResolver")
@@ -243,13 +244,13 @@ public class GraphMavenResolver implements Runnable {
         try {
             var parent = getParentArtifact(groupId, artifactId, version, db);
             if (parent != null) {
-                allDeps = resolveDependencies(parent, db, transitive);
+                allDeps = resolveDependencies(parent, db, false);
             }
         } catch (Exception e) {
             logger.warn("Parent for revision {}:{}:{} not found: {}", groupId, artifactId, version, e.getMessage());
         }
 
-        allDeps.addAll(revisionGraphBFS(dependencyGraph, groupId, artifactId, version, timestamp, transitive));
+        allDeps.addAll(resolveConflicts(revisionGraphBFS(dependencyGraph, groupId, artifactId, version, timestamp, transitive, false)));
 
         return allDeps;
     }
@@ -270,7 +271,8 @@ public class GraphMavenResolver implements Runnable {
      */
     public Set<Revision> resolveDependents(String groupId, String artifactId,
                                            String version, long timestamp, DSLContext db, boolean transitive) {
-        return revisionGraphBFS(dependentGraph, groupId, artifactId, version, timestamp, transitive);
+        return revisionGraphBFS(dependentGraph, groupId, artifactId, version, timestamp, transitive, true).stream().
+                map(x -> x.getFirst()).collect(Collectors.toSet());
     }
 
     /**
@@ -280,11 +282,12 @@ public class GraphMavenResolver implements Runnable {
      */
     public Set<Revision> resolveDependents(Revision r, DSLContext db, boolean transitive) {
         return revisionGraphBFS(dependentGraph, r.groupId, r.artifactId, r.version.toString(),
-                r.createdAt.getTime(), transitive);
+                r.createdAt.getTime(), transitive, true).stream().map(x -> x.getFirst()).collect(Collectors.toSet());
     }
 
-    public Set<Revision> revisionGraphBFS(Graph<Revision, DependencyEdge> graph, String groupId, String artifactId,
-                                          String version, long timestamp, boolean transitive) {
+    public Set<Pair<Revision, Integer>> revisionGraphBFS(Graph<Revision, DependencyEdge> graph,
+                                                         String groupId, String artifactId, String version,
+                                                         long timestamp, boolean transitive, boolean dependents) {
 
         assert (timestamp > 0);
         var startTS = System.currentTimeMillis();
@@ -292,15 +295,15 @@ public class GraphMavenResolver implements Runnable {
 
         var successors = Graphs.successorListOf(graph, new Revision(groupId, artifactId, version,
                 new Timestamp(timestamp)));
-        var workQueue = filterSuccessorsByTimestamp(successors, timestamp).stream().
+        var workQueue = filterSuccessorsByTimestamp(successors, timestamp, dependents).stream().
                 map(x -> new Pair<>(x, 1)).collect(Collectors.toCollection(ArrayDeque::new));
 
-        logger.debug("Obtaining first level dependencies: {} items, {} ms", workQueue.size(),
+        logger.debug("Obtaining first level successors: {} items, {} ms", workQueue.size(),
                 System.currentTimeMillis() - startTS);
-        var result = workQueue.stream().map(Pair::getFirst).collect(Collectors.toCollection(HashSet::new));
+        var result = workQueue.stream().map(Pair::getFirst).collect(Collectors.toSet());
 
         if (!transitive) {
-            return result;
+            return result.stream().map(x -> new Pair<>(x,1)).collect(Collectors.toSet());
         }
 
         var depthRevisions = new ArrayList<>(workQueue);
@@ -311,36 +314,28 @@ public class GraphMavenResolver implements Runnable {
             depthRevisions.add(rev);
 
             var nonOptionalSuccessors = filterOptionalSuccessors(graph.outgoingEdgesOf(rev.getFirst()));
-            var dependencies = filterSuccessorsByTimestamp(nonOptionalSuccessors, timestamp);
+            var dependencies = filterSuccessorsByTimestamp(nonOptionalSuccessors, timestamp, dependents);
             for (var dependency : dependencies) {
                 if (!result.contains(dependency)) {
                     workQueue.add(new Pair<>(dependency, rev.getSecond() + 1));
                 }
             }
-            logger.debug("Dependencies for {}:{}:{}: deps: {}, depth: {}, queue: {} items",
+            logger.debug("Successors for {}:{}:{}: deps: {}, depth: {}, queue: {} items",
                     rev.getFirst().groupId, rev.getFirst().artifactId, rev.getFirst().version,
                     dependencies.size(), rev.getSecond() + 1, workQueue.size());
         }
-        logger.debug("Before conflict resolution: {} dependencies", depthRevisions.size());
+        logger.debug("BFS finished: {} successors", depthRevisions.size());
+        return new HashSet(depthRevisions);
 
-        var conflictsResolved = resolveConflicts(depthRevisions);
-
-        logger.debug("After conflict resolution: {} dependencies", conflictsResolved.size());
-        logger.debug("Obtained {} dependencies for {}:{}:{}: {} ms", result.size(), groupId, artifactId, version,
-                System.currentTimeMillis() - startTS);
-
-        return conflictsResolved;
     }
 
     /**
      * Given a set of n successors for a revision r which are different revisions of the same product, select the
      * revisions that are closest to the release timestamp of r.
      *
-     * This is used to filter out
-     *
      * @return A list of unique revisions per unique product in the input list.
      */
-    public List<Revision> filterSuccessorsByTimestamp(List<Revision> successors, long timestamp) {
+    public List<Revision> filterSuccessorsByTimestamp(List<Revision> successors, long timestamp, boolean dependents) {
         return successors.stream().collect(Collectors.toMap(
                 Revision::product,
                 List::of,
@@ -351,12 +346,25 @@ public class GraphMavenResolver implements Runnable {
                     return z;
                 })).values().stream()
                 .map(revisions -> {
-                    var latestTimestamp = -1L;
+                    var latestTimestamp = 0L;
+                    if (!dependents) {
+                        latestTimestamp = -1L;
+                    } else {
+                        latestTimestamp = Long.MAX_VALUE;
+                    }
+
                     Revision latest = null;
                     for (var r : revisions) {
-                        if (r.createdAt.getTime() <= timestamp && r.createdAt.getTime() > latestTimestamp) {
-                            latestTimestamp = r.createdAt.getTime();
-                            latest = r;
+                        if (!dependents) {
+                            if (r.createdAt.getTime() <= timestamp && r.createdAt.getTime() > latestTimestamp) {
+                                latestTimestamp = r.createdAt.getTime();
+                                latest = r;
+                            }
+                        } else {
+                            if (r.createdAt.getTime() >= timestamp && r.createdAt.getTime() < latestTimestamp) {
+                                latestTimestamp = r.createdAt.getTime();
+                                latest = r;
+                            }
                         }
                     }
                     if (revisions.size() > 1)
@@ -376,7 +384,7 @@ public class GraphMavenResolver implements Runnable {
     /**
      * Resolve conflicts (duplicate products with different versions) by picking revisions that are closer to the root.
      */
-    public Set<Revision> resolveConflicts(List<Pair<Revision, Integer>> depthRevisions) {
+    public Set<Revision> resolveConflicts(Set<Pair<Revision, Integer>> depthRevisions) {
         return depthRevisions.stream().collect(Collectors.toMap(
                 x -> x.getFirst().product(),
                 y -> y,

@@ -108,7 +108,7 @@ public class GraphMavenResolverTest {
                 new Revision("a", "a", "3", new Timestamp(3)),
                 new Revision("b", "b", "3", new Timestamp(3))
         );
-        var actual = graphMavenResolver.filterSuccessorsByTimestamp(successors, 3);
+        var actual = graphMavenResolver.filterSuccessorsByTimestamp(successors, 3, false);
         assertEquals(new HashSet<>(expected), new HashSet<>(actual));
     }
 
@@ -146,7 +146,7 @@ public class GraphMavenResolverTest {
                 new Revision("a", "a", "1", new Timestamp(1)),
                 new Revision("b", "b", "2", new Timestamp(1))
         );
-        var actual = graphMavenResolver.resolveConflicts(depthRevision);
+        var actual = graphMavenResolver.resolveConflicts(new HashSet<>(depthRevision));
         assertEquals(new HashSet<>(expected), new HashSet<>(actual));
     }
 }
