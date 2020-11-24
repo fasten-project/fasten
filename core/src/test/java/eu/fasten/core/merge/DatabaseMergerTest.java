@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
@@ -27,7 +28,8 @@ import org.mockito.Mockito;
 import org.rocksdb.RocksDBException;
 
 public class DatabaseMergerTest {
-    
+
+    @Test
     public void mergeWithCHATest() throws RocksDBException {
         var connection = new MockConnection(new MockProvider());
         var context = DSL.using(connection, SQLDialect.POSTGRES);
@@ -118,13 +120,13 @@ public class DatabaseMergerTest {
                 Result<Record3<Long, Long, ReceiverRecord[]>> result = context.newResult(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS);
                 result.add(context
                         .newRecord(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS)
-                        .values((long) 101, (long) 101, null));
+                        .values((long) 101, (long) 101, new ReceiverRecord[] {new ReceiverRecord(100, ReceiverType.static_, "/java.util/Collections")}));
                 result.add(context
                         .newRecord(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS)
-                        .values((long) 101, (long) 105, null));
+                        .values((long) 101, (long) 105, new ReceiverRecord[] {new ReceiverRecord(100, ReceiverType.static_, "/java.util/Collections")}));
                 result.add(context
                         .newRecord(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS)
-                        .values((long) 106, (long) 104, null));
+                        .values((long) 106, (long) 104, new ReceiverRecord[] {new ReceiverRecord(100, ReceiverType.static_, "/java.util/Collections")}));
                 mock[0] = new MockResult(3, result);
             } else if (sql.startsWith(internalCallablesQuery)) {
                 Result<Record2<String, Long>> result = context.newResult(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID);
@@ -161,6 +163,9 @@ public class DatabaseMergerTest {
                 result.add(context
                         .newRecord(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
                         .values((long) 105, "/java.util/Collections.unmodifiableMap(Map)Map"));
+                result.add(context
+                        .newRecord(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
+                        .values((long) 106, "/java.util/Collections.unmodifiableMap(Map)Map"));
                 mock[0] = new MockResult(5, result);
             }
 
