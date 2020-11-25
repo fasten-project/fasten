@@ -22,6 +22,7 @@ public class CallGraphAnalysisExample {
 	public static void main(final String args[]) throws JSAPException, IllegalArgumentException, SQLException, RocksDBException {
 		final SimpleJSAP jsap = new SimpleJSAP(CallGraphAnalysisExample.class.getName(), "Analyzes a revision call graph", new Parameter[] {
 				new FlaggedOption("postgres", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'p', "postgres", "The URI of the Postgres server."),
+				new FlaggedOption("db", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'd', "db", "The Postgres database."),
 				new FlaggedOption("rocksdb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'r', "rocksdb", "The path to the RocksDB graph database."),
 				new UnflaggedOption("group", JSAP.STRING_PARSER, JSAP.NOT_REQUIRED, "The Maven group of the revision."),
 				new UnflaggedOption("product", JSAP.STRING_PARSER, JSAP.NOT_REQUIRED, "The product associated with the revision."),
@@ -35,7 +36,7 @@ public class CallGraphAnalysisExample {
 		final String version = jsapResult.getString("version");
 
 		// Connect to the Postgres database (you'll need to set the password as a system variable)
-		final var context = PostgresConnector.getDSLContext(jsapResult.getString("db"), "fastenro");
+		final var context = PostgresConnector.getDSLContext(jsapResult.getString("postgres"), jsapResult.getString("db"));
 		// Connect to the graph database
 		final var rocksDao = new eu.fasten.core.data.graphdb.RocksDao(jsapResult.getString("rocksdb"), true);
 
