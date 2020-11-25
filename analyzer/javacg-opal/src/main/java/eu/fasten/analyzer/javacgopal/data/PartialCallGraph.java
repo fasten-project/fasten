@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
+import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
@@ -66,10 +67,8 @@ public class PartialCallGraph {
         this.graph = new Graph();
 
         try {
-            logger.info("Creating internal CHA");
             final var cha = createInternalCHA(constructor.getProject());
 
-            logger.info("Creating graph with external CHA");
             createGraphWithExternalCHA(constructor.getCallGraph(), cha);
 
             this.nodeCount = cha.getNodeCount();
@@ -114,13 +113,11 @@ public class PartialCallGraph {
     public static ExtendedRevisionJavaCallGraph createExtendedRevisionJavaCallGraph(
             final MavenCoordinate coordinate, final String mainClass,
             final String algorithm, final long timestamp)
-            throws FileNotFoundException, OPALException {
+            throws MissingArtifactException, OPALException {
 
         File file = null;
         try {
             file = new MavenCoordinate.MavenResolver().downloadArtifact(coordinate);
-
-            logger.info("OPAL is analysing the artifact");
             final var opalCG = new CallGraphConstructor(file, mainClass, algorithm);
 
             final var partialCallGraph = new PartialCallGraph(opalCG);
