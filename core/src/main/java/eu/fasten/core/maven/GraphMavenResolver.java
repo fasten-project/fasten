@@ -29,6 +29,7 @@ import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.apache.commons.math3.util.Pair;
+import org.apache.kafka.common.protocol.types.Field;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jooq.DSLContext;
@@ -287,8 +288,8 @@ public class GraphMavenResolver implements Runnable {
     }
 
     public Set<Revision> revisionGraphBFS(Graph<Revision, DependencyEdge> graph,
-                                                         String groupId, String artifactId, String version,
-                                                         long timestamp, boolean transitive, boolean dependents) {
+                                          String groupId, String artifactId, String version,
+                                          long timestamp, boolean transitive, boolean dependents) {
 
         assert (timestamp > 0);
         var startTS = System.currentTimeMillis();
@@ -340,8 +341,9 @@ public class GraphMavenResolver implements Runnable {
                 }
             }
             outgoingEdges.forEach(e -> descendantsMap.put(e.target, e.source));
-            var nonOptionalSuccessors = filterOptionalSuccessors(outgoingEdges);
-            var dependencies = filterSuccessorsByTimestamp(nonOptionalSuccessors, timestamp, dependents);
+            var filteredSuccessors = filterSuccessorsByScope(filterOptionalSuccessors(outgoingEdges), scopes)
+                    .stream().map(e -> e.target).collect(Collectors.toList());
+            var dependencies = filterSuccessorsByTimestamp(filteredSuccessors, timestamp, dependents);
             for (var dependency : dependencies) {
                 if (!result.contains(dependency)) {
                     workQueue.add(new Pair<>(dependency, rev.getSecond() + 1));
@@ -423,11 +425,20 @@ public class GraphMavenResolver implements Runnable {
                 }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
-    public List<Revision> filterOptionalSuccessors(Set<DependencyEdge> outgoingEdges) {
+    public Set<DependencyEdge> filterOptionalSuccessors(Set<DependencyEdge> outgoingEdges) {
         return outgoingEdges.stream()
                 .filter(edge -> !edge.optional)
-                .map(edge -> edge.target)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
+    }
+
+    public Set<DependencyEdge> filterSuccessorsByScope(Set<DependencyEdge> outgoingEdges, List<String> allowedScopes) {
+        return outgoingEdges.stream()
+                .filter(edge -> {
+                    if (edge.scope == null || edge.scope.isEmpty()) {
+                        edge.scope = "compile";
+                    }
+                    return allowedScopes.contains(edge.scope);
+                }).collect(Collectors.toSet());
     }
 
     /**
