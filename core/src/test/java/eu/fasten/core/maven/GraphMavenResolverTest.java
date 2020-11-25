@@ -18,19 +18,13 @@
 
 package eu.fasten.core.maven;
 
-import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.DependencyTree;
-import eu.fasten.core.maven.data.DependencyEdge;
-import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.*;
 import org.apache.commons.math3.util.Pair;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.sql.Timestamp;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.*;
@@ -200,5 +194,29 @@ public class GraphMavenResolverTest {
         assertFalse(graphMavenResolver.isDescendantOf(E, C, descendants));
         assertFalse(graphMavenResolver.isDescendantOf(B, D, descendants));
         assertFalse(graphMavenResolver.isDescendantOf(B, D, descendants));
+    }
+
+    @Test
+    public void filterExclusionsTest() {
+        // A -> B -> C:1
+        //  \-> D -> E -> C:2
+        //      D excludes C
+        Map<Revision, Revision> descendants = new HashMap<>();
+        var A = new Revision("a", "a", "a", null);
+        var B = new Revision("b", "b", "b", null);
+        var C1 = new Revision("c", "c", "c1", null);
+        var C2 = new Revision("c", "c", "c2", null);
+        var D = new Revision("d", "d", "d", null);
+        var E = new Revision("e", "e", "e", null);
+        descendants.put(B, A);
+        descendants.put(C1, B);
+        descendants.put(D, A);
+        descendants.put(E, D);
+        descendants.put(C2, E);
+        var exclusions = List.of(new Pair<>(D, new MavenProduct("c", "c")));
+        var dependencies = Set.of(A, B, C1, C2, D);
+        var expected = Set.of(A, B, C1, D);
+        var actual = graphMavenResolver.filterDependenciesByExclusions(dependencies, exclusions, descendants);
+        assertEquals(expected, actual);
     }
 }

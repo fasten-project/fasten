@@ -29,7 +29,6 @@ import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.apache.commons.math3.util.Pair;
-import org.apache.kafka.common.protocol.types.Field;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jooq.DSLContext;
@@ -40,7 +39,19 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "GraphMavenResolver")
@@ -316,15 +327,7 @@ public class GraphMavenResolver implements Runnable {
         var result = workQueue.stream().map(Pair::getFirst).collect(Collectors.toSet());
 
         if (!transitive) {
-            var finalSet = new HashSet<>(result);
-            for (var dep : result) {
-                for (var excludeProduct : excludeProducts) {
-                    if (dep.product().equals(excludeProduct.getSecond()) && isDescendantOf(dep, excludeProduct.getFirst(), descendantsMap)) {
-                        finalSet.remove(dep);
-                    }
-                }
-            }
-            return finalSet;
+            return filterDependenciesByExclusions(result, excludeProducts, descendantsMap);
         }
 
         var depthRevisions = new ArrayList<>(workQueue);
@@ -356,28 +359,35 @@ public class GraphMavenResolver implements Runnable {
         logger.debug("BFS finished: {} successors", depthRevisions.size());
 
         var depSet = resolveConflicts(new HashSet<>(depthRevisions));
-        var finalSet = new HashSet<>(depSet);
-        for (var dep : depSet) {
-            for (var excludeProduct : excludeProducts) {
-                if (dep.product().equals(excludeProduct.getSecond()) && isDescendantOf(dep, excludeProduct.getFirst(), descendantsMap)) {
+        return filterDependenciesByExclusions(depSet, excludeProducts, descendantsMap);
+    }
+
+    public Set<Revision> filterDependenciesByExclusions(Set<Revision> dependencies, List<Pair<Revision, MavenProduct>> exclusions, Map<Revision, Revision> descendentsMap) {
+        var finalSet = new HashSet<>(dependencies);
+        var dependenciesByProduct = dependencies.stream().collect(Collectors.toMap(
+                Revision::product,
+                List::of,
+                (x, y) -> {
+                    var z = new ArrayList<Revision>();
+                    z.addAll(x);
+                    z.addAll(y);
+                    return z;
+                }));
+        for (var excludeProduct : exclusions) {
+            for (var dep : dependenciesByProduct.get(excludeProduct.getSecond())) {
+                if (dep.product().equals(excludeProduct.getSecond()) && isDescendantOf(dep, excludeProduct.getFirst(), descendentsMap)) {
                     finalSet.remove(dep);
                 }
             }
         }
-
         return finalSet;
     }
 
     public boolean isDescendantOf(Revision child, Revision parent, Map<Revision, Revision> descendants) {
-        while (true) {
+        while (child != null && !Objects.equals(child, parent)) {
             child = descendants.get(child);
-            if (child == null) {
-                return false;
-            }
-            if (child.equals(parent)) {
-                return true;
-            }
         }
+        return Objects.equals(child, parent);
     }
 
     /**
