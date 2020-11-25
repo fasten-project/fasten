@@ -19,6 +19,7 @@
 package eu.fasten.core.data;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -110,7 +111,7 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	@Override
 	default Set<long[]> getAllEdges(final Long sourceVertex, final Long targetVertex) {
 		final long[] edge = getEdge(sourceVertex, targetVertex);
-		return edge == null ? null : ObjectSets.singleton(edge);
+		return edge == null ? Collections.emptySet() : ObjectSets.singleton(edge);
 	}
 
 	@Override
