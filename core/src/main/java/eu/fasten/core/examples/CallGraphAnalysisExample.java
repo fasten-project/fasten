@@ -1,6 +1,7 @@
 package eu.fasten.core.examples;
 
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.jgrapht.alg.scoring.HarmonicCentrality;
@@ -18,8 +19,12 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
+import it.unimi.dsi.fastutil.longs.LongArrays;
+import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandom;
+
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
@@ -28,7 +33,7 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 public class CallGraphAnalysisExample {
 
 	private static String getCallableName(final long id, final DSLContext context) {
-		return context.select(Callables.CALLABLES.FASTEN_URI).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(id)).fetchOne().component1();
+		return FastenURI.create(context.select(Callables.CALLABLES.FASTEN_URI).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(id)).fetchOne().component1()).getPath();
 	}
 
 	public static void main(final String args[]) throws JSAPException, IllegalArgumentException, SQLException, RocksDBException {
@@ -62,6 +67,32 @@ public class CallGraphAnalysisExample {
 		final DirectedGraph graph = rocksDao.getGraphData(id);
 		if (graph == null) throw new IllegalArgumentException("The requested revision (group=" + group + ", product=" + product + ", version=" + version + ", id=" + id + ") is not in the RocksDB database");
 
+		// Find node with highest outdegree
+		long bestDegree = 0;
+		long bestDNode = -1;
+		for (final long v : graph.nodes()) {
+			final long d = graph.outDegreeOf(v);
+			if (d > bestDegree) {
+				bestDegree = d;
+				bestDNode = v;
+			}
+		}
+
+		System.out.println("The callable with highest outdegree (" + bestDegree + ") is " + getCallableName(bestDNode, context) + " (id=" + bestDNode + ")");
+
+		// Find node with highest indegre
+		bestDegree = 0;
+		bestDNode = -1;
+		for (final long v : graph.nodes()) {
+			final long d = graph.inDegreeOf(v);
+			if (d > bestDegree) {
+				bestDegree = d;
+				bestDNode = v;
+			}
+		}
+
+		System.out.println("The callable with highest indegree (" + bestDegree + ") is " + getCallableName(bestDNode, context) + " (id=" + bestDNode + ")");
+
 		// Now we compute PageRank
 		final PageRank<Long, long[]> pageRank = new PageRank<>(graph);
 
@@ -76,42 +107,84 @@ public class CallGraphAnalysisExample {
 			}
 		}
 
-		System.out.println("The callable with highest PageRank is " + getCallableName(bestPRNode, context) + " (id=" + bestPRNode + ")");
+		System.out.println("The callable with highest PageRank (" + bestPR + ") is " + getCallableName(bestPRNode, context) + " (id=" + bestPRNode + ")");
 
-		// Now we compute harmonic centrality
-		final HarmonicCentrality<Long, long[]> harmonicCentrality = new HarmonicCentrality<>(graph);
-		final Map<Long, Double> harmonicCentralityScores = harmonicCentrality.getScores();
+		// Now we compute positive harmonic centrality (outgoing paths)
+		final HarmonicCentrality<Long, long[]> positiveHarmonicCentrality = new HarmonicCentrality<>(graph, false, false);
+		final Map<Long, Double> positiveHarmonicCentralityScores = positiveHarmonicCentrality.getScores();
 
 		// Find node with highest harmonic centrality
 		double bestH = 0;
 		long bestHNode = -1;
 		for (final long v : graph.nodes()) {
-			final double h = harmonicCentralityScores.get(v);
+			final double h = positiveHarmonicCentralityScores.get(v);
 			if (h > bestH) {
 				bestH = h;
 				bestHNode = v;
 			}
 		}
 
-		System.out.println("The callable with highest PageRank is " + getCallableName(bestHNode, context) + " (id=" + bestHNode + ")");
+		System.out.println("The callable with highest positive harmonic centrality (" + bestH + ") is " + getCallableName(bestHNode, context) + " (id=" + bestHNode + ")");
 
-		// Now we find reachable nodes in a radius of 3, starting from the first enumerated vertex node
-		long v = graph.nodes().iterator().nextLong();
-		System.out.println("Finding nodes reachable within distance 3 from " + getCallableName(v, context) + " (id=" + v + ")");
-		final ClosestFirstIterator<Long, long[]> reachable = new ClosestFirstIterator<>(graph, v, 3);
-		reachable.forEachRemaining((x) -> {
-			System.out.println("Found node " + x + " at distance " + reachable.getShortestPathLength(x));
-		});
-
-		// Now we find coreachable nodes in a radius of 3, starting from the first enumerated vertex node.
-		// Note that we're using JGraphT methods here.
 		final EdgeReversedGraph<Long, long[]> transpose = new EdgeReversedGraph<>(graph);
-		v = transpose.vertexSet().iterator().next().longValue();
-		System.out.println("Finding nodes coreachable within distance 3 from " + getCallableName(v, context) + " (id=" + v + ")");
-		final ClosestFirstIterator<Long, long[]> coreachable = new ClosestFirstIterator<>(transpose, v, 3);
-		reachable.forEachRemaining((x) -> {
-			System.out.println("Found node " + x + " at distance " +  coreachable.getShortestPathLength(x));
-		});
+
+		// Now we compute PageRank on the transpose
+		final PageRank<Long, long[]> transposePageRank = new PageRank<>(transpose);
+
+		// Find node with highest transpose PageRank
+		bestPR = 0;
+		bestPRNode = -1;
+		for (final long v : graph.nodes()) {
+			final double pr = transposePageRank.getVertexScore(v);
+			if (pr > bestPR) {
+				bestPR = pr;
+				bestPRNode = v;
+			}
+		}
+
+		System.out.println("The callable with highest transpose PageRank (" + bestPR + ") is " + getCallableName(bestPRNode, context) + " (id=" + bestPRNode + ")");
+
+		// Now we compute negative harmonic centrality (incoming paths)
+		final HarmonicCentrality<Long, long[]> negativeHarmonicCentrality = new HarmonicCentrality<>(graph, true, false);
+		final Map<Long, Double> negativeHarmonicCentralityScores = negativeHarmonicCentrality.getScores();
+
+		// Find node with highest harmonic centrality
+		bestH = 0;
+		bestHNode = -1;
+		for (final long v : graph.nodes()) {
+			final double h = negativeHarmonicCentralityScores.get(v);
+			if (h > bestH) {
+				bestH = h;
+				bestHNode = v;
+			}
+		}
+
+		System.out.println("The callable with highest negative harmonic centrality (" + bestH + ") is " + getCallableName(bestHNode, context) + " (id=" + bestHNode + ")");
+
+		// We choose 10 random nodes (very inefficient, should be a Knuth-Yates shuffle)
+		final long[] node = Arrays.copyOf(LongArrays.shuffle(graph.nodes().toLongArray(), new XoRoShiRo128PlusPlusRandom(0)), 10);
+
+		for(long v: node) {
+			System.out.println();
+			System.out.println();
+			System.out.println("========= " + getCallableName(v, context) + " (id=" + v + ")" + " =========");
+			System.out.println();
+			// Now we find reachable nodes in a radius of 3
+			System.out.println("Finding nodes reachable within distance 3 from " + getCallableName(v, context) + " (id=" + v + ")");
+			final ClosestFirstIterator<Long, long[]> reachable = new ClosestFirstIterator<>(graph, v, 3);
+			reachable.forEachRemaining((x) -> {
+				System.out.println("\tFound node " + getCallableName(x, context) + " (id=" + x + ") at distance " + reachable.getShortestPathLength(x));
+			});
+
+			System.out.println();
+			// Now we find coreachable nodes in a radius of 3
+			// Note that we're using JGraphT methods here.
+			System.out.println("Finding nodes coreachable within distance 3 from " + getCallableName(v, context) + " (id=" + v + ")");
+			final ClosestFirstIterator<Long, long[]> coreachable = new ClosestFirstIterator<>(transpose, v, 3);
+			coreachable.forEachRemaining((x) -> {
+				System.out.println("\tFound node " + getCallableName(x, context) + " (id=" + x + ") at distance " +  coreachable.getShortestPathLength(x));
+			});
+		}
 
 		context.close();
 		rocksDao.close();
