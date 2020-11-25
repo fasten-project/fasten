@@ -1,5 +1,3 @@
-package eu.fasten.core.data;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,8 +16,19 @@ package eu.fasten.core.data;
  * limitations under the License.
  */
 
+package eu.fasten.core.data;
+
+import java.util.Collection;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import org.jgrapht.GraphType;
+import org.jgrapht.graph.DefaultGraphType;
+
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSets;
 
 /**
  * A directed graph with internal and external nodes, providing both successors and predecessors
@@ -28,9 +37,14 @@ import it.unimi.dsi.fastutil.longs.LongSet;
  * <p>
  * Nodes in the graph are given by 64-bit (long) arbitrary identifiers. The set of nodes can be
  * recovered with {@link #nodes()}, and the set of external nodes with {@link #externalNodes()}.
+ *
+ * <p>
+ * This class implements the read-only methods of JGraphT's {@link Graph} interface. Arcs are
+ * represented as two-elements arrays of longs containing the source and the target of the arc.
+ * Mutation methods will throw an {@link UnsupportedOperationException}.
  */
 
-public interface DirectedGraph {
+public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	/**
 	 * The number of nodes in the graph.
 	 *
@@ -92,4 +106,168 @@ public interface DirectedGraph {
 	 * @return whether <code>node</code> is external.
 	 */
 	public boolean isExternal(final long node);
+
+	@Override
+	default Set<long[]> getAllEdges(final Long sourceVertex, final Long targetVertex) {
+		final long[] edge = getEdge(sourceVertex, targetVertex);
+		return edge == null ? null : ObjectSets.singleton(edge);
+	}
+
+	@Override
+	default long[] getEdge(final Long sourceVertex, final Long targetVertex) {
+		return successors(sourceVertex).contains(targetVertex.longValue()) ? new long[] { sourceVertex,
+				targetVertex } : null;
+	}
+
+	@Override
+	default Supplier<Long> getVertexSupplier() {
+		return null;
+	}
+
+	@Override
+	default Supplier<long[]> getEdgeSupplier() {
+		return null;
+	}
+
+	@Override
+	default long[] addEdge(final Long sourceVertex, final Long targetVertex) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	default boolean addEdge(final Long sourceVertex, final Long targetVertex, final long[] e) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	default Long addVertex() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	default boolean addVertex(final Long v) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	default boolean containsEdge(final Long sourceVertex, final Long targetVertex) {
+		return successors(sourceVertex).contains(targetVertex.longValue());
+	}
+
+	@Override
+	default boolean containsEdge(final long[] e) {
+		return successors(e[0]).contains(e[1]);
+	}
+
+	@Override
+	default boolean containsVertex(final Long v) {
+		return nodes().contains(v.longValue());
+	}
+
+	@Override
+	default Set<long[]> edgeSet() {
+		final ObjectOpenHashSet<long[]> s = new ObjectOpenHashSet<>();
+		for (final Long x : vertexSet()) s.addAll(outgoingEdgesOf(x));
+		return s;
+	}
+
+	@Override
+	default int degreeOf(final Long vertex) {
+		return inDegreeOf(vertex) + outDegreeOf(vertex);
+	}
+
+	@Override
+	default Set<long[]> edgesOf(final Long vertex) {
+		final Set<long[]> s = outgoingEdgesOf(vertex);
+		for (final long[] e : incomingEdgesOf(vertex)) if (e[0] != e[1]) s.add(e);
+		return s;
+	}
+
+	@Override
+	default int inDegreeOf(final Long vertex) {
+		return predecessors(vertex).size();
+	}
+
+	@Override
+	default Set<long[]> incomingEdgesOf(final Long vertex) {
+		final long y = vertex;
+		final ObjectOpenHashSet<long[]> s = new ObjectOpenHashSet<>();
+		for (final long x : predecessors(y)) s.add(new long[] { x, y });
+		return s;
+	}
+
+	@Override
+	default int outDegreeOf(final Long vertex) {
+		return successors(vertex).size();
+	}
+
+	@Override
+	default Set<long[]> outgoingEdgesOf(final Long vertex) {
+		final long x = vertex;
+		final ObjectOpenHashSet<long[]> s = new ObjectOpenHashSet<>();
+		for (final long y : successors(x)) s.add(new long[] { x, y });
+		return s;
+	}
+
+	@Override
+	default boolean removeAllEdges(final Collection<? extends long[]> edges) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	default Set<long[]> removeAllEdges(final Long sourceVertex, final Long targetVertex) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	default boolean removeAllVertices(final Collection<? extends Long> vertices) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	default long[] removeEdge(final Long sourceVertex, final Long targetVertex) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	default boolean removeEdge(final long[] e) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	default boolean removeVertex(final Long v) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	default Set<Long> vertexSet() {
+		return nodes();
+	}
+
+	@Override
+	default Long getEdgeSource(final long[] e) {
+		return e[0];
+	}
+
+	@Override
+	default Long getEdgeTarget(final long[] e) {
+		return e[1];
+	}
+
+	@Override
+	default GraphType getType() {
+		return new DefaultGraphType.Builder().directed().weighted(false).modifiable(false).allowMultipleEdges(false).allowSelfLoops(true).build();
+
+	}
+
+	@Override
+	default double getEdgeWeight(final long[] e) {
+		return DEFAULT_EDGE_WEIGHT;
+	}
+
+	@Override
+	default void setEdgeWeight(final long[] e, final double weight) {
+		if (weight == 1) return;
+		throw new UnsupportedOperationException();
+	}
 }
