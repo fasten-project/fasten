@@ -98,9 +98,9 @@ public class CallGraphAnalysisExample {
 		// Now we find reachable nodes in a radius of 3, starting from the first enumerated vertex node
 		long v = graph.nodes().iterator().nextLong();
 		System.out.println("Finding nodes reachable within distance 3 from " + getCallableName(v, context) + " (id=" + v + ")");
-		ClosestFirstIterator<Long, long[]> closestFirstIterator = new ClosestFirstIterator<>(graph, v, 3);
-		closestFirstIterator.forEachRemaining((x) -> {
-			System.out.println("Found node " + x + " at distance " + closestFirstIterator.getShortestPathLength(x));
+		final ClosestFirstIterator<Long, long[]> reachable = new ClosestFirstIterator<>(graph, v, 3);
+		reachable.forEachRemaining((x) -> {
+			System.out.println("Found node " + x + " at distance " + reachable.getShortestPathLength(x));
 		});
 
 		// Now we find coreachable nodes in a radius of 3, starting from the first enumerated vertex node.
@@ -108,9 +108,9 @@ public class CallGraphAnalysisExample {
 		final EdgeReversedGraph<Long, long[]> transpose = new EdgeReversedGraph<>(graph);
 		v = transpose.vertexSet().iterator().next().longValue();
 		System.out.println("Finding nodes coreachable within distance 3 from " + getCallableName(v, context) + " (id=" + v + ")");
-		closestFirstIterator = new ClosestFirstIterator<>(transpose, v, 3);
-		closestFirstIterator.forEachRemaining((x) -> {
-			System.out.println("Found node " + x + " at distance " + closestFirstIterator.getShortestPathLength(x));
+		final ClosestFirstIterator<Long, long[]> coreachable = new ClosestFirstIterator<>(transpose, v, 3);
+		reachable.forEachRemaining((x) -> {
+			System.out.println("Found node " + x + " at distance " +  coreachable.getShortestPathLength(x));
 		});
 
 		context.close();
