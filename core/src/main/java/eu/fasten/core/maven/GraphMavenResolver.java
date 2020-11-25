@@ -33,11 +33,19 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
-
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.*;
-import java.util.function.BiFunction;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "GraphMavenResolver")
@@ -202,7 +210,7 @@ public class GraphMavenResolver implements Runnable {
                     }
                 }
 
-                Set<Revision> revisions = new HashSet<>();
+                Set<Revision> revisions;
                 try {
 
                     if (parts[0].startsWith("!")) {
@@ -216,7 +224,7 @@ public class GraphMavenResolver implements Runnable {
                     continue;
                 }
 
-                for (var rev : revisions.stream().sorted(Comparator.comparing(x -> x.toString())).
+                for (var rev : revisions.stream().sorted(Comparator.comparing(Revision::toString)).
                         collect(Collectors.toList())) {
                     System.out.println(rev.toString());
                 }
@@ -272,7 +280,7 @@ public class GraphMavenResolver implements Runnable {
     public Set<Revision> resolveDependents(String groupId, String artifactId,
                                            String version, long timestamp, DSLContext db, boolean transitive) {
         return revisionGraphBFS(dependentGraph, groupId, artifactId, version, timestamp, transitive, true).stream().
-                map(x -> x.getFirst()).collect(Collectors.toSet());
+                map(Pair::getFirst).collect(Collectors.toSet());
     }
 
     /**
@@ -282,7 +290,7 @@ public class GraphMavenResolver implements Runnable {
      */
     public Set<Revision> resolveDependents(Revision r, DSLContext db, boolean transitive) {
         return revisionGraphBFS(dependentGraph, r.groupId, r.artifactId, r.version.toString(),
-                r.createdAt.getTime(), transitive, true).stream().map(x -> x.getFirst()).collect(Collectors.toSet());
+                r.createdAt.getTime(), transitive, true).stream().map(Pair::getFirst).collect(Collectors.toSet());
     }
 
     public Set<Pair<Revision, Integer>> revisionGraphBFS(Graph<Revision, DependencyEdge> graph,
@@ -303,7 +311,7 @@ public class GraphMavenResolver implements Runnable {
         var result = workQueue.stream().map(Pair::getFirst).collect(Collectors.toSet());
 
         if (!transitive) {
-            return result.stream().map(x -> new Pair<>(x,1)).collect(Collectors.toSet());
+            return result.stream().map(x -> new Pair<>(x, 1)).collect(Collectors.toSet());
         }
 
         var depthRevisions = new ArrayList<>(workQueue);
@@ -325,7 +333,7 @@ public class GraphMavenResolver implements Runnable {
                     dependencies.size(), rev.getSecond() + 1, workQueue.size());
         }
         logger.debug("BFS finished: {} successors", depthRevisions.size());
-        return new HashSet(depthRevisions);
+        return new HashSet<>(depthRevisions);
 
     }
 
