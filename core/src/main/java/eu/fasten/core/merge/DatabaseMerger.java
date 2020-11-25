@@ -262,7 +262,8 @@ public class DatabaseMerger {
                         new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                     addEdge(result, arc.source, target, isCallback);
                 }
-                var superSignature = node.signature.replace("<init>", "<clinit>");
+ 
+                var superSignature = "<clinit>()/java.lang/VoidType";
                 for (final var target : typeDictionary.getOrDefault(superTypeUri,
                         new HashMap<>()).getOrDefault(superSignature, new HashSet<>())) {
                     addEdge(result, arc.source, target, isCallback);
