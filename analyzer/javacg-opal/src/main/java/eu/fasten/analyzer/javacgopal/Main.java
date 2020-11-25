@@ -59,7 +59,7 @@ public class Main implements Runnable {
     List<String> repos;
 
     static class Commands {
-        @CommandLine.ArgGroup(exclusive = false)
+        @CommandLine.ArgGroup(exclusive = false, multiplicity = "1")
         Computations computations;
     }
 
