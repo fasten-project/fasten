@@ -22,7 +22,11 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.data.*;
+import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.DependencyEdge;
+import eu.fasten.core.maven.data.DependencyTree;
+import eu.fasten.core.maven.data.MavenProduct;
+import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.apache.commons.math3.util.Pair;
 import org.jgrapht.Graph;
@@ -35,17 +39,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "GraphMavenResolver")
@@ -258,7 +252,7 @@ public class GraphMavenResolver implements Runnable {
             logger.warn("Parent for revision {}:{}:{} not found: {}", groupId, artifactId, version, e.getMessage());
         }
 
-        allDeps.addAll(resolveConflicts(revisionGraphBFS(dependencyGraph, groupId, artifactId, version, timestamp, transitive, false)));
+        allDeps.addAll(revisionGraphBFS(dependencyGraph, groupId, artifactId, version, timestamp, transitive, false));
 
         return allDeps;
     }
@@ -279,8 +273,7 @@ public class GraphMavenResolver implements Runnable {
      */
     public Set<Revision> resolveDependents(String groupId, String artifactId,
                                            String version, long timestamp, DSLContext db, boolean transitive) {
-        return revisionGraphBFS(dependentGraph, groupId, artifactId, version, timestamp, transitive, true).stream().
-                map(Pair::getFirst).collect(Collectors.toSet());
+        return revisionGraphBFS(dependentGraph, groupId, artifactId, version, timestamp, transitive, true);
     }
 
     /**
@@ -290,16 +283,27 @@ public class GraphMavenResolver implements Runnable {
      */
     public Set<Revision> resolveDependents(Revision r, DSLContext db, boolean transitive) {
         return revisionGraphBFS(dependentGraph, r.groupId, r.artifactId, r.version.toString(),
-                r.createdAt.getTime(), transitive, true).stream().map(Pair::getFirst).collect(Collectors.toSet());
+                r.createdAt.getTime(), transitive, true);
     }
 
-    public Set<Pair<Revision, Integer>> revisionGraphBFS(Graph<Revision, DependencyEdge> graph,
+    public Set<Revision> revisionGraphBFS(Graph<Revision, DependencyEdge> graph,
                                                          String groupId, String artifactId, String version,
                                                          long timestamp, boolean transitive, boolean dependents) {
 
         assert (timestamp > 0);
         var startTS = System.currentTimeMillis();
         logger.debug("BFS from root: {}:{}:{}", groupId, artifactId, version);
+
+        var excludeProducts = new ArrayList<Pair<Revision, MavenProduct>>();
+        var edges = graph.outgoingEdgesOf(new Revision(groupId, artifactId, version, new Timestamp(timestamp)));
+        for (var exclusionEdge : edges.stream().filter(e -> !e.exclusions.isEmpty()).collect(Collectors.toList())) {
+            for (var exclusion : exclusionEdge.exclusions) {
+                var product = new MavenProduct(exclusion.groupId, exclusion.artifactId);
+                excludeProducts.add(new Pair<>(exclusionEdge.source, product));
+            }
+        }
+        var descendantsMap = new HashMap<Revision, Revision>();
+        edges.forEach(e -> descendantsMap.put(e.target, e.target));
 
         var successors = Graphs.successorListOf(graph, new Revision(groupId, artifactId, version,
                 new Timestamp(timestamp)));
@@ -311,7 +315,15 @@ public class GraphMavenResolver implements Runnable {
         var result = workQueue.stream().map(Pair::getFirst).collect(Collectors.toSet());
 
         if (!transitive) {
-            return result.stream().map(x -> new Pair<>(x, 1)).collect(Collectors.toSet());
+            var finalSet = new HashSet<>(result);
+            for (var dep : result) {
+                for (var excludeProduct : excludeProducts) {
+                    if (dep.product().equals(excludeProduct.getSecond()) && isDescendantOf(dep, excludeProduct.getFirst(), descendantsMap)) {
+                        finalSet.remove(dep);
+                    }
+                }
+            }
+            return finalSet;
         }
 
         var depthRevisions = new ArrayList<>(workQueue);
@@ -320,8 +332,15 @@ public class GraphMavenResolver implements Runnable {
             var rev = workQueue.poll();
             result.add(rev.getFirst());
             depthRevisions.add(rev);
-
-            var nonOptionalSuccessors = filterOptionalSuccessors(graph.outgoingEdgesOf(rev.getFirst()));
+            var outgoingEdges = graph.outgoingEdgesOf(rev.getFirst());
+            for (var exclusionEdge : outgoingEdges.stream().filter(e -> !e.exclusions.isEmpty()).collect(Collectors.toList())) {
+                for (var exclusion : exclusionEdge.exclusions) {
+                    var product = new MavenProduct(exclusion.groupId, exclusion.artifactId);
+                    excludeProducts.add(new Pair<>(exclusionEdge.source, product));
+                }
+            }
+            outgoingEdges.forEach(e -> descendantsMap.put(e.target, e.source));
+            var nonOptionalSuccessors = filterOptionalSuccessors(outgoingEdges);
             var dependencies = filterSuccessorsByTimestamp(nonOptionalSuccessors, timestamp, dependents);
             for (var dependency : dependencies) {
                 if (!result.contains(dependency)) {
@@ -333,8 +352,30 @@ public class GraphMavenResolver implements Runnable {
                     dependencies.size(), rev.getSecond() + 1, workQueue.size());
         }
         logger.debug("BFS finished: {} successors", depthRevisions.size());
-        return new HashSet<>(depthRevisions);
 
+        var depSet = resolveConflicts(new HashSet<>(depthRevisions));
+        var finalSet = new HashSet<>(depSet);
+        for (var dep : depSet) {
+            for (var excludeProduct : excludeProducts) {
+                if (dep.product().equals(excludeProduct.getSecond()) && isDescendantOf(dep, excludeProduct.getFirst(), descendantsMap)) {
+                    finalSet.remove(dep);
+                }
+            }
+        }
+
+        return finalSet;
+    }
+
+    public boolean isDescendantOf(Revision child, Revision parent, Map<Revision, Revision> descendants) {
+        while (true) {
+            child = descendants.get(child);
+            if (child == null) {
+                return false;
+            }
+            if (child.equals(parent)) {
+                return true;
+            }
+        }
     }
 
     /**

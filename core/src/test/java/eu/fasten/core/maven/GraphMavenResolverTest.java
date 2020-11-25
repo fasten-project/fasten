@@ -27,11 +27,12 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import static java.util.Collections.emptyList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GraphMavenResolverTest {
 
@@ -148,5 +149,33 @@ public class GraphMavenResolverTest {
         );
         var actual = graphMavenResolver.resolveConflicts(new HashSet<>(depthRevision));
         assertEquals(new HashSet<>(expected), new HashSet<>(actual));
+    }
+
+    @Test
+    public void descendantTest() {
+        // A -> B -> C
+        //  \-> D -> E
+        Map<Revision, Revision> descendants = new HashMap<>();
+        var A = new Revision("a", "a", "a", null);
+        var B = new Revision("b", "b", "b", null);
+        var C = new Revision("c", "c", "c", null);
+        var D = new Revision("d", "d", "d", null);
+        var E = new Revision("e", "e", "e", null);
+        descendants.put(B, A);
+        descendants.put(C, B);
+        descendants.put(D, A);
+        descendants.put(E, D);
+        assertTrue(graphMavenResolver.isDescendantOf(B, A, descendants));
+        assertTrue(graphMavenResolver.isDescendantOf(C, B, descendants));
+        assertTrue(graphMavenResolver.isDescendantOf(C, A, descendants));
+        assertTrue(graphMavenResolver.isDescendantOf(D, A, descendants));
+        assertTrue(graphMavenResolver.isDescendantOf(E, A, descendants));
+        assertTrue(graphMavenResolver.isDescendantOf(E, D, descendants));
+        assertFalse(graphMavenResolver.isDescendantOf(E, B, descendants));
+        assertFalse(graphMavenResolver.isDescendantOf(C, D, descendants));
+        assertFalse(graphMavenResolver.isDescendantOf(C, E, descendants));
+        assertFalse(graphMavenResolver.isDescendantOf(E, C, descendants));
+        assertFalse(graphMavenResolver.isDescendantOf(B, D, descendants));
+        assertFalse(graphMavenResolver.isDescendantOf(B, D, descendants));
     }
 }
