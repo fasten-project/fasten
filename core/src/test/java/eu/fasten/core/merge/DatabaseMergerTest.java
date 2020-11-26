@@ -1,25 +1,24 @@
 package eu.fasten.core.merge;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.HashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArraySet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.Set;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record2;
@@ -31,87 +30,127 @@ import org.jooq.tools.jdbc.MockConnection;
 import org.jooq.tools.jdbc.MockDataProvider;
 import org.jooq.tools.jdbc.MockExecuteContext;
 import org.jooq.tools.jdbc.MockResult;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.rocksdb.RocksDBException;
 
 public class DatabaseMergerTest {
 
+    private final static long MAIN_INIT = 0;
+    private final static long MAIN_MAIN_METHOD = 1;
+    private final static long FOO_CLINIT = 100;
+    private final static long FOO_INIT = 101;
+    private final static long FOO_FOO_METHOD = 102;
+    private final static long FOO_STATIC_METHOD = 103;
+    private final static long BAR_INIT = 200;
+    private final static long BAR_SUPER_METHOD = 201;
+    private final static long BAZ_INIT = 300;
+    private final static long BAZ_SUPER_METHOD = 301;
+
+    private static Map<Pair<Long, Long>, ReceiverRecord[]> arcs;
+    private static Map<Long, String> typeDictionary;
+    private static Map<Long, String> typeMap;
+    private static Map<String, String> universalCHA;
+
+    @BeforeAll
+    static void setUp() {
+        typeMap = Map.of(
+                MAIN_INIT, "/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+                MAIN_MAIN_METHOD, "/test.group/Main.main(%2Fjava.lang%2FString%5B%5D)%2Fjava.lang%2FVoidType",
+                (long) 2, "/java.lang/Object.%3Cinit%3E()VoidType",
+                (long) 3, "/test.group/Baz.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType",
+                (long) 4, "/test.group/Bar.superMethod()%2Fjava.lang%2FVoidType",
+                (long) 5, "/test.group/Bar.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType",
+                (long) 6, "/test.group/Foo.staticMethod()%2Fjava.lang%2FIntegerType",
+                (long) 7, "/test.group/Foo.%3Cinit%3E(%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType"
+        );
+
+        typeDictionary = Map.of(
+                MAIN_INIT, "/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+                MAIN_MAIN_METHOD, "/test.group/Main.main(%2Fjava.lang%2FString%5B%5D)%2Fjava.lang%2FVoidType",
+                FOO_CLINIT, "/test.group/Foo.%3Cclinit%3E()%2Fjava.lang%2FVoidType",
+                FOO_INIT, "/test.group/Foo.%3Cinit%3E(%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType",
+                FOO_FOO_METHOD, "/test.group/Foo.fooMethod()%2Fjava.lang%2FVoidType",
+                FOO_STATIC_METHOD, "/test.group/Foo.staticMethod()%2Fjava.lang%2FIntegerType",
+                BAR_INIT, "/test.group/Bar.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType",
+                BAR_SUPER_METHOD, "/test.group/Bar.superMethod()%2Fjava.lang%2FVoidType",
+                BAZ_INIT, "/test.group/Baz.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType",
+                BAZ_SUPER_METHOD, "/test.group/Baz.superMethod()%2Fjava.lang%2FVoidType"
+        );
+
+        universalCHA = Map.of(
+                "/test.group/Main", "{\"superInterfaces\": [],\"superClasses\":[\"/java.lang/Object\"]}",
+                "/test.group/Foo", "{\"superInterfaces\": [],\"superClasses\":[\"/java.lang/Object\"]}",
+                "/test.group/Bar", "{\"superInterfaces\": [],\"superClasses\":[\"/java.lang/Object\"]}",
+                "/test.group/Baz", "{\"superInterfaces\": [],\"superClasses\":[\"/test.group/Bar\"]}"
+        );
+
+        arcs = Map.of(
+                Pair.of(MAIN_INIT, MAIN_INIT), new ReceiverRecord[0],
+                Pair.of(MAIN_INIT, (long) 2), new ReceiverRecord[]{
+                        new ReceiverRecord(6, ReceiverType.special, "/java.lang/Object")
+                },
+                Pair.of(MAIN_MAIN_METHOD, (long) 3), new ReceiverRecord[]{
+                        new ReceiverRecord(8, ReceiverType.special, "/test.group/Baz")
+                },
+                Pair.of(MAIN_MAIN_METHOD, (long) 4), new ReceiverRecord[]{
+                        new ReceiverRecord(9, ReceiverType.virtual, "/test.group/Bar"),
+                        new ReceiverRecord(12, ReceiverType.interface_, "/test.group/Bar")
+                },
+                Pair.of(MAIN_MAIN_METHOD, (long) 5), new ReceiverRecord[]{
+                        new ReceiverRecord(11, ReceiverType.special, "/test.group/Bar")
+                },
+                Pair.of(MAIN_MAIN_METHOD, (long) 6), new ReceiverRecord[]{
+                        new ReceiverRecord(14, ReceiverType.static_, "/test.group/Foo")
+                },
+                Pair.of(MAIN_MAIN_METHOD, (long) 7), new ReceiverRecord[]{
+                        new ReceiverRecord(15, ReceiverType.special, "/test.group/Foo")
+                }
+        );
+    }
+
     @Test
-    public void mergeWithCHATest() throws RocksDBException, FileNotFoundException {
-        var artifact = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("merge/artifactERCG.json"))
-                .getFile());
-        var foo = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("merge/FooERCG.json"))
-                .getFile());
-        var bar = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("merge/BarERCG.json"))
-                .getFile());
-        var baz = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("merge/BazERCG.json"))
-                .getFile());
-
-        var deps = new ArrayList<ExtendedRevisionJavaCallGraph>();
-        var tokener = new JSONTokener(new FileReader(artifact));
-        var artifactERCG = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
-
-        tokener = new JSONTokener(new FileReader(foo));
-        deps.add(new ExtendedRevisionJavaCallGraph(new JSONObject(tokener)));
-        tokener = new JSONTokener(new FileReader(bar));
-        deps.add(new ExtendedRevisionJavaCallGraph(new JSONObject(tokener)));
-        tokener = new JSONTokener(new FileReader(baz));
-        deps.add(new ExtendedRevisionJavaCallGraph(new JSONObject(tokener)));
-
-        var connection = new MockConnection(new MockProvider(artifactERCG, deps));
+    public void mergeWithCHATest() throws RocksDBException {
+        var connection = new MockConnection(new MockProvider());
         var context = DSL.using(connection, SQLDialect.POSTGRES);
 
-        var directedGraph = createMockDirectedGraph(artifactERCG);
+        var directedGraph = createMockDirectedGraph();
 
         var rocksDao = Mockito.mock(RocksDao.class);
         Mockito.when(rocksDao.getGraphData(42)).thenReturn(directedGraph);
 
-        var merger = new DatabaseMerger(new HashSet<>(), context, rocksDao);
+        var merger = new DatabaseMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
+                context, rocksDao);
 
         var mergedGraph = merger.mergeWithCHA(42);
 
-        var map = new HashMap<>(artifactERCG.mapOfAllMethods());
-        for (var dep : deps) {
-            map.putAll(dep.mapOfAllMethods());
-        }
-        for (var source : mergedGraph.nodes()) {
-            for (var target : mergedGraph.successors(source)) {
-                System.out.println("(" + source + ")" + map.get(source.intValue()).getUri() + " -> " + "(" + target + ")" + map.get(target.intValue()).getUri());
-            }
-        }
-
         assertNotNull(mergedGraph);
 
-//        assertEquals(mergedGraph.successors(constructorSource),
-//                LongArrayList.wrap(new long[]{constructorTargetInit, constructorTargetClinit}));
+        assertEquals(mergedGraph.nodes(), new LongArraySet(new long[]{
+                MAIN_INIT, MAIN_MAIN_METHOD, FOO_CLINIT, FOO_INIT, FOO_STATIC_METHOD,
+                BAR_INIT, BAR_SUPER_METHOD, BAZ_INIT, BAZ_SUPER_METHOD}));
+
+        assertEquals(mergedGraph.successors(MAIN_INIT), LongArrayList.wrap(new long[]{MAIN_INIT}));
+
+        assertEquals(new HashSet<>(mergedGraph.successors(MAIN_MAIN_METHOD)),
+                Set.of(FOO_CLINIT, FOO_INIT, FOO_STATIC_METHOD, BAR_INIT, BAR_SUPER_METHOD,
+                        BAZ_INIT, BAZ_SUPER_METHOD));
     }
 
-    private DirectedGraph createMockDirectedGraph(ExtendedRevisionJavaCallGraph artifact) {
+    private DirectedGraph createMockDirectedGraph() {
         var directedGraph = new ArrayImmutableDirectedGraph.Builder();
-        for (var type : artifact.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
-            for (var method : type.getValue().getMethods().keySet()) {
-                directedGraph.addInternalNode(method);
-            }
-        }
-        for (var type : artifact.getClassHierarchy().get(JavaScope.externalTypes).entrySet()) {
-            for (var method : type.getValue().getMethods().keySet()) {
-                directedGraph.addExternalNode(method);
-            }
-        }
+        directedGraph.addInternalNode(MAIN_INIT);
+        directedGraph.addInternalNode(MAIN_MAIN_METHOD);
+        typeMap.keySet().stream()
+                .filter(n -> n != MAIN_INIT && n != MAIN_MAIN_METHOD)
+                .forEach(directedGraph::addExternalNode);
 
-        for (var call : artifact.getGraph().getInternalCalls().keySet()) {
-            directedGraph.addArc(call.get(0), call.get(1));
-        }
-        for (var call : artifact.getGraph().getExternalCalls().keySet()) {
-            directedGraph.addArc(call.get(0), call.get(1));
-        }
+        directedGraph.addArc(MAIN_INIT, MAIN_INIT);
+        directedGraph.addArc(MAIN_INIT, 2);
+        typeMap.keySet().stream()
+                .filter(n -> n != MAIN_INIT && n != MAIN_MAIN_METHOD)
+                .forEach(n -> directedGraph.addArc(MAIN_MAIN_METHOD, n));
 
         return directedGraph.build();
     }
@@ -119,21 +158,16 @@ public class DatabaseMergerTest {
     private static class MockProvider implements MockDataProvider {
 
         private final DSLContext context;
-        private final ExtendedRevisionJavaCallGraph artifact;
-        private final List<ExtendedRevisionJavaCallGraph> deps;
 
         private final String modulesIdsQuery;
         private final String universalCHAQuery;
         private final String arcsQuery;
         private final String typeDictionaryQuery;
         private final String typeMapQuery;
+        private final String dependenciesQuery;
 
-        public MockProvider(ExtendedRevisionJavaCallGraph artifact,
-                            List<ExtendedRevisionJavaCallGraph> deps) {
+        public MockProvider() {
             this.context = DSL.using(SQLDialect.POSTGRES);
-
-            this.artifact = artifact;
-            this.deps = deps;
 
             this.modulesIdsQuery = context
                     .select(Callables.CALLABLES.MODULE_ID)
@@ -155,6 +189,10 @@ public class DatabaseMergerTest {
                     .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
                     .from(Callables.CALLABLES)
                     .getSQL();
+            this.dependenciesQuery = context
+                    .select(PackageVersions.PACKAGE_VERSIONS.ID)
+                    .from(PackageVersions.PACKAGE_VERSIONS)
+                    .getSQL();
         }
 
         @Override
@@ -165,6 +203,9 @@ public class DatabaseMergerTest {
 
             if (sql.startsWith(modulesIdsQuery)) {
                 mock[0] = new MockResult(0, context.newResult(Callables.CALLABLES.MODULE_ID));
+
+            } else if (sql.startsWith(dependenciesQuery)) {
+                mock[0] = new MockResult(0, context.newResult(PackageVersions.PACKAGE_VERSIONS.ID));
 
             } else if (sql.startsWith(universalCHAQuery)) {
                 mock[0] = createUniversalCHA();
@@ -184,88 +225,43 @@ public class DatabaseMergerTest {
 
         private MockResult createUniversalCHA() {
             Result<Record2<String, JSONB>> result = context.newResult(Modules.MODULES.NAMESPACE, Modules.MODULES.METADATA);
-            var uris = new HashSet<String>();
-            for (var node : artifact.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
-                if (uris.add(node.getKey().toString())) {
-                    result.add(context
-                            .newRecord(Modules.MODULES.NAMESPACE, Modules.MODULES.METADATA)
-                            .values(node.getKey().toString(), JSONB.valueOf(node.getValue().toJSON().toString())));
-                }
-            }
-            for (var dep : deps) {
-                for (var node : dep.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
-                    if (uris.add(node.getKey().toString())) {
-                        result.add(context
-                                .newRecord(Modules.MODULES.NAMESPACE, Modules.MODULES.METADATA)
-                                .values(node.getKey().toString(), JSONB.valueOf(node.getValue().toJSON().toString())));
-                    }
-                }
+            for (var type : universalCHA.entrySet()) {
+                result.add(context
+                        .newRecord(Modules.MODULES.NAMESPACE, Modules.MODULES.METADATA)
+                        .values(type.getKey(), JSONB.valueOf(type.getValue())));
             }
             return new MockResult(result.size(), result);
         }
 
         private MockResult createArcs() {
             Result<Record3<Long, Long, ReceiverRecord[]>> result = context.newResult(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS);
-            for (var arc : artifact.getGraph().getExternalCalls().entrySet()) {
-                var receivers = new ArrayList<ReceiverRecord>();
-                for (var receiver : arc.getValue().entrySet()) {
-                    var rcvr = (HashMap<Object, Object>) receiver.getValue();
-                    receivers.add(new ReceiverRecord((Integer) rcvr.get("line"), getReceiverType((String) rcvr.get("type")), (String) rcvr.get("receiver")));
-                }
+            for (var arc : arcs.entrySet()) {
                 result.add(context
                         .newRecord(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS)
-                        .values(arc.getKey().get(0).longValue(), arc.getKey().get(1).longValue(),
-                                receivers.toArray(ReceiverRecord[]::new)));
+                        .values(arc.getKey().getLeft(), arc.getKey().getRight(), arc.getValue()));
             }
             return new MockResult(result.size(), result);
         }
 
         private MockResult createTypeDictionary() {
             Result<Record2<String, Long>> result = context.newResult(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID);
-            for (var type : artifact.internalNodeIdToTypeMap().values()) {
-                for (var node : type.getMethods().entrySet()) {
-                    result.add(context
-                            .newRecord(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID)
-                            .values(node.getValue().getUri().toString(), node.getKey().longValue()));
-                }
-            }
-            for (var dep : deps) {
-                for (var type : dep.internalNodeIdToTypeMap().values()) {
-                    for (var node : type.getMethods().entrySet()) {
-                        result.add(context
-                                .newRecord(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID)
-                                .values(node.getValue().getUri().toString(), node.getKey().longValue()));
-                    }
-                }
+            for (var node : typeDictionary.entrySet()) {
+                result.add(context
+                        .newRecord(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID)
+                        .values(node.getValue(), node.getKey()));
             }
             return new MockResult(result.size(), result);
         }
 
         private MockResult createTypeMap() {
             Result<Record2<Long, String>> result = context.newResult(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI);
-            for (var node : artifact.mapOfAllMethods().entrySet()) {
+            for (var node : typeMap.entrySet()) {
                 result.add(context
                         .newRecord(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
-                        .values(node.getKey().longValue(), node.getValue().getUri().toString()));
+                        .values(node.getKey(), node.getValue()));
             }
+            System.out.println(result);
             return new MockResult(result.size(), result);
-        }
-
-        private ReceiverType getReceiverType(String type) {
-            switch (type) {
-                case "invokestatic":
-                    return ReceiverType.static_;
-                case "invokespecial":
-                    return ReceiverType.special;
-                case "invokevirtual":
-                    return ReceiverType.virtual;
-                case "invokedynamic":
-                    return ReceiverType.dynamic;
-                case "invokeinterface":
-                    return ReceiverType.interface_;
-                default:
-                    return null;
-            }
         }
     }
 }
