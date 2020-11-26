@@ -24,7 +24,7 @@ import org.json.JSONObject;
 import org.json.JSONException;
 
 /**
- * For each class in the revision, class hierarchy keeps a {@link Type} that is accessible by
+ * For each class in the revision, class hierarchy keeps a {@link JavaType} that is accessible by
  * the {@link FastenURI} of the class as a key.
  *
  * @implNote each method in the revision has a unique id in this CHA.
@@ -33,6 +33,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     static {
         classHierarchyJSONKey = "cha";
     }
+
 
     /**
      * Creates {@link ExtendedRevisionJavaCallGraph} with the given builder.
@@ -54,7 +55,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
-     *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
+     *                       <code> Map<{@link FastenURI}, {@link JavaType}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     public ExtendedRevisionJavaCallGraph(final String forge, final String product, final String version,
@@ -63,6 +64,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
                                      final Graph graph) {
         super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
     }
+
 
     /**
      * Creates {@link ExtendedRevisionCallGraph} for the given JSONObject.
@@ -81,6 +83,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     public static ExtendedBuilderJava extendedBuilder() {
         return new ExtendedBuilderJava();
     }
+
+
 
     /**
      * Creates a class hierarchy for the given JSONObject.
@@ -167,6 +171,65 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         final String groupId = this.product.split(Constants.mvnCoordinateSeparator)[0];
         final String artifactId = this.product.split(Constants.mvnCoordinateSeparator)[1];
         return artifactId + "_" + groupId + "_" + this.version;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ExtendedRevisionCallGraph<?> that = (ExtendedRevisionCallGraph<?>) o;
+
+        if (nodeCount != that.nodeCount) {
+            return false;
+        }
+        if (timestamp != that.timestamp) {
+            return false;
+        }
+        if (classHierarchy != null ? !classHierarchy.equals(that.classHierarchy) :
+            that.classHierarchy != null) {
+            return false;
+        }
+        if (graph != null ? !graph.equals(that.graph) : that.graph != null) {
+            return false;
+        }
+        if (forge != null ? !forge.equals(that.forge) : that.forge != null) {
+            return false;
+        }
+        if (product != null ? !product.equals(that.product) : that.product != null) {
+            return false;
+        }
+        if (version != null ? !version.equals(that.version) : that.version != null) {
+            return false;
+        }
+        if (uri != null ? !uri.equals(that.uri) : that.uri != null) {
+            return false;
+        }
+        if (forgelessUri != null ? !forgelessUri.equals(that.forgelessUri) :
+            that.forgelessUri != null) {
+            return false;
+        }
+        return cgGenerator != null ? cgGenerator.equals(that.cgGenerator) :
+            that.cgGenerator == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = classHierarchy != null ? classHierarchy.hashCode() : 0;
+        result = 31 * result + nodeCount;
+        result = 31 * result + (graph != null ? graph.hashCode() : 0);
+        result = 31 * result + (forge != null ? forge.hashCode() : 0);
+        result = 31 * result + (product != null ? product.hashCode() : 0);
+        result = 31 * result + (version != null ? version.hashCode() : 0);
+        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
+        result = 31 * result + (uri != null ? uri.hashCode() : 0);
+        result = 31 * result + (forgelessUri != null ? forgelessUri.hashCode() : 0);
+        result = 31 * result + (cgGenerator != null ? cgGenerator.hashCode() : 0);
+        return result;
     }
 
 }

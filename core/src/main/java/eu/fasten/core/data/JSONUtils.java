@@ -7,14 +7,14 @@ import java.util.Map;
 public class JSONUtils {
 
     public static String toJSONString(final ExtendedRevisionJavaCallGraph erjcg) {
-        var result = new StringBuilder();
+        var result = new StringBuilder("{");
         appendArtifactInformation(erjcg, result);
         appendCha(result, erjcg.classHierarchy);
         appendGraph(result, erjcg.graph);
         if (erjcg.timestamp >= 0) {
             appendKeyValue(result, "timestamp", erjcg.timestamp, true);
         }
-        curlyBracket(result);
+        result.append("}");
         return result.toString();
     }
 

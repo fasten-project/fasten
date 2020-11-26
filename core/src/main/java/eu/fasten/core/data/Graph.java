@@ -195,4 +195,35 @@ public class Graph {
         result.put("resolvedCalls", resolvedCallsJSON);
         return result;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Graph graph = (Graph) o;
+
+        if (internalCalls != null ? !internalCalls.equals(graph.internalCalls) :
+            graph.internalCalls != null) {
+            return false;
+        }
+        if (externalCalls != null ? !externalCalls.equals(graph.externalCalls) :
+            graph.externalCalls != null) {
+            return false;
+        }
+        return resolvedCalls != null ? resolvedCalls.equals(graph.resolvedCalls) :
+            graph.resolvedCalls == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = internalCalls != null ? internalCalls.hashCode() : 0;
+        result = 31 * result + (externalCalls != null ? externalCalls.hashCode() : 0);
+        result = 31 * result + (resolvedCalls != null ? resolvedCalls.hashCode() : 0);
+        return result;
+    }
 }

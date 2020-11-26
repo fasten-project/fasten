@@ -48,6 +48,49 @@ public class JavaType {
      */
     private final LinkedList<FastenURI> superClasses;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        JavaType javaType = (JavaType) o;
+
+        if (isFinal != javaType.isFinal) {
+            return false;
+        }
+        if (sourceFileName != null ? !sourceFileName.equals(javaType.sourceFileName) :
+            javaType.sourceFileName != null) {
+            return false;
+        }
+        if (methods != null ? !methods.equals(javaType.methods) : javaType.methods != null) {
+            return false;
+        }
+        if (superClasses != null ? !superClasses.equals(javaType.superClasses) :
+            javaType.superClasses != null) {
+            return false;
+        }
+        if (superInterfaces != null ? !superInterfaces.equals(javaType.superInterfaces) :
+            javaType.superInterfaces != null) {
+            return false;
+        }
+        return access != null ? access.equals(javaType.access) : javaType.access == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = sourceFileName != null ? sourceFileName.hashCode() : 0;
+        result = 31 * result + (methods != null ? methods.hashCode() : 0);
+        result = 31 * result + (superClasses != null ? superClasses.hashCode() : 0);
+        result = 31 * result + (superInterfaces != null ? superInterfaces.hashCode() : 0);
+        result = 31 * result + (access != null ? access.hashCode() : 0);
+        result = 31 * result + (isFinal ? 1 : 0);
+        return result;
+    }
+
     /**
      * Interfaces that this type or its super classes implement.
      */
