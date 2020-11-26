@@ -74,7 +74,7 @@ public class OPALPlugin extends Plugin {
             long startTime = System.nanoTime();
             try {
                 // Generate CG and measure construction duration.
-                logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
+                logger.info("[CG-GENERATION] [UNPROCESSED] [-1i] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
                         "", "CHA", kafkaConsumedJson.optLong("date", -1));
                 long endTime = System.nanoTime();
@@ -95,19 +95,19 @@ public class OPALPlugin extends Plugin {
                         + firstLetter + File.separator
                         + artifactId + File.separator + product + ".json";
 
-                logger.info("[CG-GENERATION] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
+                logger.info("[CG-GENERATION] [SUCCESS] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
 
             } catch (OPALException | EmptyCallGraphException e) {
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
 
-                logger.error("[CG-GENERATION] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
+                logger.error("[CG-GENERATION] [FAILED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
                 setPluginError(e);
             } catch (MissingArtifactException e) {
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
 
-                logger.error("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
+                logger.error("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
                 setPluginError(e);
             }
         }

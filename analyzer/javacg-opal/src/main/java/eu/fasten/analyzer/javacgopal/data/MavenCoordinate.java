@@ -180,12 +180,12 @@ public class MavenCoordinate {
                     found = false;
 
                     long duration = computeDurationInMs(startTime);
-                    logger.warn("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + repos.get(i), e);
+                    logger.warn("[ARTIFACT-DOWNLOAD] [UNPROCESSED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + repos.get(i), e);
                 }
 
                 if (jar.isPresent()) {
                     long duration = computeDurationInMs(startTime);
-                    logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + repos.get(i));
+                    logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + repos.get(i));
                     return jar.get();
                 } else if (found && i == repos.size() - 1) {
                     throw new MissingArtifactException("Artifact couldn't be retrieved for repo: " + repos.get(i), null);
@@ -202,11 +202,11 @@ public class MavenCoordinate {
                         found = false;
 
                         long duration = computeDurationInMs(startTime);
-                        logger.warn("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + repos.get(i), e);
+                        logger.warn("[ARTIFACT-DOWNLOAD] [UNPROCESSED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + repos.get(i), e);
                     }
 
                     if (jar.isPresent()) {long duration = computeDurationInMs(startTime);
-                        logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + repos.get(i));
+                        logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + repos.get(i));
                         return jar.get();
                     } else if (found && i == repos.size() - 1) {
                         throw new MissingArtifactException("Artifact couldn't be retrieved for repo: " + repos.get(i), null);
