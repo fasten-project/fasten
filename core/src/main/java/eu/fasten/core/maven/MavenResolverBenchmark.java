@@ -3,6 +3,7 @@ package eu.fasten.core.maven;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +45,9 @@ public class MavenResolverBenchmark implements Runnable {
             description = "Skip first line of the file")
     boolean skipFirstLine;
 
-    @CommandLine.Option(names = {"-g", "--graph"},
-            description = "Use resolution based on global dependency graph")
-    boolean useGraph;
+    @CommandLine.Option(names = {"-p", "--graph-path"},
+            description = "Path to where the serialized graph is stored")
+    String graphPath;
 
     /**
      * NB! Before running main() make sure to run POM Analyzer on the same coordinates as benchmark
@@ -78,8 +79,16 @@ public class MavenResolverBenchmark implements Runnable {
         logger.info("Starting benchmark - " + new Date());
         var mavenResolver = new MavenResolver();
         var graphResolver = new GraphMavenResolver();
-        if (useGraph) {
-            graphResolver.buildDependencyGraph(dbContext);
+        if (graphPath != null) {
+            try {
+                var optDependencyGraph = DependencyGraphUtilities.loadDependencyGraph(graphPath);
+                if (optDependencyGraph.isPresent()) {
+                    GraphMavenResolver.dependencyGraph = optDependencyGraph.get();
+                    GraphMavenResolver.dependentGraph = DependencyGraphUtilities.invertDependencyGraph(GraphMavenResolver.dependencyGraph);
+                }
+            } catch (Exception e) {
+                logger.warn("Could not load serialized dependency graph from {}\n", graphPath, e);
+            }
         }
         var artifactCount = 0;
         var dbCount = 0;
@@ -96,11 +105,7 @@ public class MavenResolverBenchmark implements Runnable {
             try {
                 dbCount++;
                 Set<Revision> dbDependencySet;
-                if (useGraph) {
-                    dbDependencySet = graphResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
-                } else {
-                    dbDependencySet = mavenResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
-                }
+                dbDependencySet = graphResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
                 dbResolutionSuccess++;
                 onlineCount++;
                 var onlineDependencySet = mavenResolver.resolveFullDependencySetOnline(artifactId, groupId, version);

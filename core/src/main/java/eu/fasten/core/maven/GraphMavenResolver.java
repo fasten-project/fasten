@@ -125,8 +125,8 @@ public class GraphMavenResolver implements Runnable {
             description = "Filter out excluded dependencies")
     boolean filterExclusions;
 
-    private static Graph<Revision, DependencyEdge> dependencyGraph;
-    private static Graph<Revision, DependencyEdge> dependentGraph;
+    static Graph<Revision, DependencyEdge> dependencyGraph;
+    static Graph<Revision, DependencyEdge> dependentGraph;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new GraphMavenResolver()).execute(args);
