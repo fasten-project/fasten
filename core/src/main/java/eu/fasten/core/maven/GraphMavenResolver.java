@@ -316,7 +316,7 @@ public class GraphMavenResolver implements Runnable {
             }
         }
         var descendantsMap = new HashMap<Revision, Revision>();
-        edges.forEach(e -> descendantsMap.put(e.target, e.target));
+        edges.forEach(e -> descendantsMap.put(e.target, e.source));
 
         var successors = Graphs.successorListOf(graph, new Revision(groupId, artifactId, version,
                 new Timestamp(timestamp)));
