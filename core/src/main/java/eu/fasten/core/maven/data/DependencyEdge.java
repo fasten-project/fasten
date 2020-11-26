@@ -30,6 +30,8 @@ public class DependencyEdge implements Serializable {
     public boolean optional;
     public List<Dependency.Exclusion> exclusions;
 
+    public DependencyEdge() {}
+
     public DependencyEdge(Revision source, Revision target, String scope, boolean optional,
                           List<Dependency.Exclusion> exclusions) {
         this.source = source;
