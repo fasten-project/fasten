@@ -70,6 +70,17 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	public LongList successors(final long node);
 
 	/**
+	 * The number of successors of a given node.
+	 *
+	 * @param node a node in the graph.
+	 * @return the number of its successors.
+	 * @throws IllegalArgumentException if <code>node</code> is not a node of the graph.
+	 */
+	public default int outdegree(final long node) {
+		return successors(node).size();
+	}
+
+	/**
 	 * The list of predecessors of a given node.
 	 *
 	 * @param node a node in the graph.
@@ -77,6 +88,17 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	 * @throws IllegalArgumentException if <code>node</code> is not a node of the graph.
 	 */
 	public LongList predecessors(final long node);
+
+	/**
+	 * The number of predecessors of a given node.
+	 *
+	 * @param node a node in the graph.
+	 * @return the number of its predecessors.
+	 * @throws IllegalArgumentException if <code>node</code> is not a node of the graph.
+	 */
+	public default int indegree(final long node) {
+		return predecessors(node).size();
+	}
 
 	/**
 	 * The set of nodes of the graph.
