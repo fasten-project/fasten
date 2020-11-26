@@ -227,6 +227,7 @@ public class GraphMavenResolver implements Runnable {
                     }
                 } catch (Exception e) {
                     System.err.println("Error retrieving revisions: " + e.getMessage());
+                    e.printStackTrace(System.err);
                     continue;
                 }
 
@@ -359,6 +360,8 @@ public class GraphMavenResolver implements Runnable {
         logger.debug("BFS finished: {} successors", depthRevisions.size());
 
         var depSet = resolveConflicts(new HashSet<>(depthRevisions));
+
+        logger.debug("Resolved version conflicts, now filtering exclusions");
         return filterDependenciesByExclusions(depSet, excludeProducts, descendantsMap);
     }
 
