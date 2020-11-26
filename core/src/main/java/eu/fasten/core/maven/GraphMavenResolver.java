@@ -144,7 +144,7 @@ public class GraphMavenResolver implements Runnable {
                     dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
                 }
             } catch (Exception e) {
-                logger.warn("Could not load serialized dependency graph from {}", serializedPath);
+                logger.warn("Could not load serialized dependency graph from {}\n{}", serializedPath, e);
             }
         }
 
