@@ -377,6 +377,9 @@ public class GraphMavenResolver implements Runnable {
                     return z;
                 }));
         for (var excludeProduct : exclusions) {
+            if (!dependenciesByProduct.containsKey(excludeProduct.getSecond())) {
+                continue;
+            }
             for (var dep : dependenciesByProduct.get(excludeProduct.getSecond())) {
                 if (dep.product().equals(excludeProduct.getSecond()) && isDescendantOf(dep, excludeProduct.getFirst(), descendentsMap)) {
                     finalSet.remove(dep);
