@@ -23,6 +23,7 @@ import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
@@ -70,7 +71,7 @@ public class Revision extends MavenProduct implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("%s%s%s%s%s", groupId, Constants.mvnCoordinateSeparator,
-                artifactId, Constants.mvnCoordinateSeparator, version);
+        return String.format("%s%s%s%s%s (%s)", groupId, Constants.mvnCoordinateSeparator,
+                artifactId, Constants.mvnCoordinateSeparator, version, createdAt);
     }
 }

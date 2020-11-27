@@ -37,6 +37,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayDeque;
@@ -58,41 +59,9 @@ public class GraphMavenResolver implements Runnable {
 
     @CommandLine.Option(names = {"-p", "--serializedPath"},
             paramLabel = "PATH",
-            description = "Path to load a serialized Maven dependency graph from")
+            description = "Path to load a serialized Maven dependency graph from",
+            required = true)
     protected String serializedPath;
-
-    @CommandLine.Option(names = {"--repl"},
-            paramLabel = "REPL",
-            description = "Start a REPL loop")
-    protected boolean repl;
-
-    @CommandLine.Option(names = {"-a", "--artifactId"},
-            paramLabel = "ARTIFACT",
-            description = "artifactId of the Maven coordinate")
-    protected String artifact;
-
-    @CommandLine.Option(names = {"-g", "--groupId"},
-            paramLabel = "GROUP",
-            description = "groupId of the Maven coordinate")
-    protected String group;
-
-    @CommandLine.Option(names = {"-v", "--version"},
-            paramLabel = "VERSION",
-            description = "version of the Maven coordinate")
-    protected String version;
-
-    @CommandLine.Option(names = {"-t", "--timestamp"},
-            paramLabel = "TS",
-            description = "Timestamp for resolution",
-            defaultValue = "-1")
-    protected long timestamp;
-
-    @CommandLine.Option(names = {"-s", "--scopes"},
-            paramLabel = "SCOPES",
-            description = "List of scopes to use for resolution (separated by \",\")",
-            defaultValue = Constants.defaultMavenResolutionScopes,
-            split = ",")
-    protected List<String> scopes;
 
     @CommandLine.Option(names = {"-d", "--database"},
             paramLabel = "DB_URL",
@@ -106,12 +75,19 @@ public class GraphMavenResolver implements Runnable {
             defaultValue = "postgres")
     protected String dbUser;
 
-    @CommandLine.Option(names = {"-r", "--reverse"},
-            description = "Use reverse resolution (resolve dependents instead of dependencies)")
-    boolean reverseResolution;
-
     static Graph<Revision, DependencyEdge> dependencyGraph;
     static Graph<Revision, DependencyEdge> dependentGraph;
+
+    static List<String> scopes = new ArrayList<>();
+
+    static {
+        scopes.add("compile");
+        scopes.add("provided");
+        scopes.add("test");
+        scopes.add("runtime");
+        scopes.add("system");
+        scopes.add("import");
+    }
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new GraphMavenResolver()).execute(args);
@@ -121,16 +97,14 @@ public class GraphMavenResolver implements Runnable {
     @Override
     public void run() {
 
-        if (serializedPath != null) {
-            try {
-                var optDependencyGraph = DependencyGraphUtilities.loadDependencyGraph(serializedPath);
-                if (optDependencyGraph.isPresent()) {
-                    dependencyGraph = optDependencyGraph.get();
-                    dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
-                }
-            } catch (Exception e) {
-                logger.warn("Could not load serialized dependency graph from {}\n", serializedPath, e);
+        try {
+            var optDependencyGraph = DependencyGraphUtilities.loadDependencyGraph(serializedPath);
+            if (optDependencyGraph.isPresent()) {
+                dependencyGraph = optDependencyGraph.get();
+                dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
             }
+        } catch (Exception e) {
+            logger.warn("Could not load serialized dependency graph from {}\n", serializedPath, e);
         }
 
         DSLContext dbContext;
@@ -141,35 +115,7 @@ public class GraphMavenResolver implements Runnable {
             return;
         }
 
-        if (artifact != null && group != null && version != null) {
-
-            Set<Revision> artifactSet;
-            if (reverseResolution) {
-                artifactSet = this.resolveDependents(group, artifact, version, timestamp,
-                        dbContext, true);
-            } else {
-                artifactSet = this.resolveDependencies(group, artifact, version, timestamp,
-                        dbContext, true);
-            }
-            logger.info("--------------------------------------------------");
-            logger.info("Maven coordinate:");
-            logger.info(group + Constants.mvnCoordinateSeparator + artifact
-                    + Constants.mvnCoordinateSeparator + version);
-            logger.info("--------------------------------------------------");
-            logger.info("Found " + artifactSet.size() + " (transitive) dependencies"
-                    + (artifactSet.size() > 0 ? ":" : "."));
-            artifactSet.forEach(d -> logger.info(d.toString()));
-            logger.info("--------------------------------------------------");
-        }
-
-        if (repl) {
-            if (dependencyGraph == null) {
-                logger.warn("REPL mode only works with an initialized graph");
-                return;
-            }
-
-            repl(dbContext);
-        }
+        repl(dbContext);
     }
 
     public void repl(DSLContext db) {
@@ -202,11 +148,12 @@ public class GraphMavenResolver implements Runnable {
                 }
 
                 Set<Revision> revisions;
+                var startTS = System.currentTimeMillis();
                 try {
 
                     if (parts[0].startsWith("!")) {
                         parts[0] = parts[0].substring(1);
-                        revisions = resolveDependents(parts[0], parts[1], parts[2], timestamp, db, true);
+                        revisions = resolveDependents(parts[0], parts[1], parts[2], timestamp, true);
                     } else {
                         revisions = resolveDependencies(parts[0], parts[1], parts[2], timestamp, db, true);
                     }
@@ -220,6 +167,7 @@ public class GraphMavenResolver implements Runnable {
                         collect(Collectors.toList())) {
                     System.out.println(rev.toString());
                 }
+                System.err.println(revisions.size() + " revisions, " + (System.currentTimeMillis() - startTS) + " ms");
             }
         }
     }
@@ -230,8 +178,8 @@ public class GraphMavenResolver implements Runnable {
      *
      * @return The (transitive) dependency set
      */
-    public Set<Revision> resolveDependencies(String groupId, String artifactId,
-                                             String version, long timestamp, DSLContext db, boolean transitive) {
+    public Set<Revision> resolveDependencies(String groupId, String artifactId, String version, long timestamp,
+                                             DSLContext db, boolean transitive) {
 
         if (timestamp == -1) {
             var ts = getCreatedAt(groupId, artifactId, version, db);
@@ -255,7 +203,7 @@ public class GraphMavenResolver implements Runnable {
             logger.warn("Parent for revision {}:{}:{} not found: {}", groupId, artifactId, version, e.getMessage());
         }
 
-        resultTriples.add(revisionGraphBFS(dependencyGraph, groupId, artifactId, version, timestamp, transitive, false));
+        resultTriples.add(dependencyBFS(groupId, artifactId, version, timestamp, transitive));
         for (var triple : resultTriples) {
             allDeps.addAll(triple.getLeft());
             exclusions.addAll(triple.getMiddle());
@@ -266,7 +214,9 @@ public class GraphMavenResolver implements Runnable {
     }
 
     /**
-     * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}
+     * Resolves the dependencies of the provided {@link Revision}, according to the Maven dependency resolution
+     * rules. The timestamp of the provided revision is used to determine the nodes to be included in the dependency
+     * set. The first
      *
      * @return The (transitive) dependency set
      */
@@ -275,37 +225,15 @@ public class GraphMavenResolver implements Runnable {
                 r.createdAt.getTime(), db, transitive);
     }
 
-    /**
-     * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}, as specified
-     * by the provided revision details.
-     */
-    public Set<Revision> resolveDependents(String groupId, String artifactId, String version,
-                                           long timestamp, DSLContext db, boolean transitive) {
-        var triple = revisionGraphBFS(dependentGraph, groupId, artifactId, version, timestamp, transitive, true);
-        return triple.getLeft();
-    }
-
-    /**
-     * Performs a BFS on the dependent graph to resolve all nodes that depend on the provided {@link Revision}
-     *
-     * @return The (transitive) dependent set
-     */
-    public Triple<Set<Revision>, List<Pair<Revision, MavenProduct>>, Map<Revision, Revision>>
-    resolveDependents(Revision r, boolean transitive) {
-        return revisionGraphBFS(dependentGraph, r.groupId, r.artifactId, r.version.toString(),
-                r.createdAt.getTime(), transitive, true);
-    }
 
     public Triple<Set<Revision>, List<Pair<Revision, MavenProduct>>, Map<Revision, Revision>>
-    revisionGraphBFS(Graph<Revision, DependencyEdge> graph,
-                     String groupId, String artifactId, String version,
-                     long timestamp, boolean transitive, boolean dependents) {
+    dependencyBFS(String groupId, String artifactId, String version, long timestamp, boolean transitive) {
         assert (timestamp > 0);
         var startTS = System.currentTimeMillis();
         logger.debug("BFS from root: {}:{}:{}", groupId, artifactId, version);
 
         var excludeProducts = new ArrayList<Pair<Revision, MavenProduct>>();
-        var edges = graph.outgoingEdgesOf(new Revision(groupId, artifactId, version, new Timestamp(timestamp)));
+        var edges = dependencyGraph.outgoingEdgesOf(new Revision(groupId, artifactId, version, new Timestamp(timestamp)));
         for (var exclusionEdge : edges.stream().filter(e -> !e.exclusions.isEmpty()).collect(Collectors.toList())) {
             for (var exclusion : exclusionEdge.exclusions) {
                 var product = new MavenProduct(exclusion.groupId, exclusion.artifactId);
@@ -315,9 +243,8 @@ public class GraphMavenResolver implements Runnable {
         var descendantsMap = new HashMap<Revision, Revision>();
         edges.forEach(e -> descendantsMap.put(e.target, e.source));
 
-        var successors = Graphs.successorListOf(graph, new Revision(groupId, artifactId, version,
-                new Timestamp(timestamp)));
-        var workQueue = filterSuccessorsByTimestamp(successors, timestamp, dependents).stream().
+        var successors = Graphs.successorListOf(dependencyGraph, new Revision(groupId, artifactId, version, new Timestamp(timestamp)));
+        var workQueue = filterDependenciesByTimestamp(successors, timestamp).stream().
                 map(x -> new Pair<>(x, 1)).collect(Collectors.toCollection(ArrayDeque::new));
 
         logger.debug("Obtaining first level successors: {} items, {} ms", workQueue.size(),
@@ -334,7 +261,7 @@ public class GraphMavenResolver implements Runnable {
             var rev = workQueue.poll();
             result.add(rev.getFirst());
             depthRevisions.add(rev);
-            var outgoingEdges = graph.outgoingEdgesOf(rev.getFirst());
+            var outgoingEdges = dependencyGraph.outgoingEdgesOf(rev.getFirst());
             for (var exclusionEdge : outgoingEdges.stream().filter(e -> !e.exclusions.isEmpty()).collect(Collectors.toList())) {
                 for (var exclusion : exclusionEdge.exclusions) {
                     var product = new MavenProduct(exclusion.groupId, exclusion.artifactId);
@@ -344,7 +271,7 @@ public class GraphMavenResolver implements Runnable {
             outgoingEdges.forEach(e -> descendantsMap.put(e.target, e.source));
             var filteredSuccessors = filterSuccessorsByScope(filterOptionalSuccessors(outgoingEdges), scopes)
                     .stream().map(e -> e.target).collect(Collectors.toList());
-            var dependencies = filterSuccessorsByTimestamp(filteredSuccessors, timestamp, dependents);
+            var dependencies = filterDependenciesByTimestamp(filteredSuccessors, timestamp);
             for (var dependency : dependencies) {
                 if (!result.contains(dependency)) {
                     workQueue.add(new Pair<>(dependency, rev.getSecond() + 1));
@@ -362,23 +289,69 @@ public class GraphMavenResolver implements Runnable {
         return new ImmutableTriple<>(depSet, excludeProducts, descendantsMap);
     }
 
-    public Set<Revision> filterDependenciesByExclusions(Set<Revision> dependencies, List<Pair<Revision, MavenProduct>> exclusions, Map<Revision, Revision> descendentsMap) {
+    /**
+     * Resolves the dependents of the provided {@link Revision}, as specified by the provided revision details. The
+     * provided timestamp determines which nodes will be ignored when traversing dependent nodes. Effectively, the
+     * returned dependent set only includes nodes that where released AFTER the provided timestamp.
+     */
+    public Set<Revision> resolveDependents(String groupId, String artifactId, String version, long timestamp,
+                                           boolean transitive) {
+        return dependentBFS(groupId, artifactId, version, timestamp, transitive);
+    }
+
+    /**
+     * Resolves the dependents of the provided {@link Revision}. The release timestamp of the provided revision is
+     * used to determine which nodes will be ignored when traversing dependent nodes. Effectively, the returned
+     * dependent set only includes nodes that where released AFTER the provided revision.
+     */
+    public Set<Revision> resolveDependents(Revision r, boolean transitive) {
+        return dependentBFS(r.groupId, r.artifactId, r.version.toString(), r.createdAt.getTime(), transitive);
+    }
+
+    /**
+     * Performs a Breadth-First Search on the {@param dependentGraph} to determine the revisions that depend on
+     * the revision indicated by the first 3 parameters, at the indicated {@param timestamp}.
+     *
+     * @param timestamp  - The cut-off timestamp. The returned dependents have been released after the provided timestamp
+     * @param transitive - Whether the BFS should recurse into the graph
+     */
+    public Set<Revision> dependentBFS(String groupId, String artifactId, String version, long timestamp,
+                                      boolean transitive) {
+        var workQueue = new ArrayDeque<>(filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph,
+                new Revision(groupId, artifactId, version, new Timestamp(timestamp))), timestamp));
+
+        var result = new HashSet<>(workQueue);
+
+        if (!transitive) {
+            return new HashSet<>(workQueue);
+        }
+
+        while (!workQueue.isEmpty()) {
+            var rev = workQueue.poll();
+            if (rev != null)
+                result.add(rev);
+
+            var dependents = filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, rev), timestamp);
+            for (var dependent : dependents) {
+                if (!result.contains(dependent)) {
+                    workQueue.add(dependent);
+                }
+            }
+        }
+        return result;
+    }
+
+    public Set<Revision> filterDependenciesByExclusions(Set<Revision> dependencies,
+                                                        List<Pair<Revision, MavenProduct>> exclusions,
+                                                        Map<Revision, Revision> descendantsMap) {
         var finalSet = new HashSet<>(dependencies);
-        var dependenciesByProduct = dependencies.stream().collect(Collectors.toMap(
-                Revision::product,
-                List::of,
-                (x, y) -> {
-                    var z = new ArrayList<Revision>();
-                    z.addAll(x);
-                    z.addAll(y);
-                    return z;
-                }));
+        var dependenciesByProduct = dependencies.stream().collect(Collectors.groupingBy(Revision::product));
         for (var excludeProduct : exclusions) {
             if (!dependenciesByProduct.containsKey(excludeProduct.getSecond())) {
                 continue;
             }
             for (var dep : dependenciesByProduct.get(excludeProduct.getSecond())) {
-                if (dep.product().equals(excludeProduct.getSecond()) && isDescendantOf(dep, excludeProduct.getFirst(), descendentsMap)) {
+                if (dep.product().equals(excludeProduct.getSecond()) && isDescendantOf(dep, excludeProduct.getFirst(), descendantsMap)) {
                     finalSet.remove(dep);
                 }
             }
@@ -399,52 +372,42 @@ public class GraphMavenResolver implements Runnable {
      *
      * @return A list of unique revisions per unique product in the input list.
      */
-    public List<Revision> filterSuccessorsByTimestamp(List<Revision> successors, long timestamp, boolean dependents) {
-        return successors.stream().collect(Collectors.toMap(
-                Revision::product,
-                List::of,
-                (x, y) -> {
-                    var z = new ArrayList<Revision>();
-                    z.addAll(x);
-                    z.addAll(y);
-                    return z;
-                })).values().stream()
-                .map(revisions -> {
-                    var latestTimestamp = 0L;
-                    if (!dependents) {
-                        latestTimestamp = -1L;
-                    } else {
-                        latestTimestamp = Long.MAX_VALUE;
-                    }
+    protected List<Revision> filterDependenciesByTimestamp(List<Revision> successors, long timestamp) {
+        return successors.stream().
+                collect(Collectors.groupingBy(Revision::product)).
+                values().stream().
+                map(revisions -> {
+                    var latestTimestamp = -1L;
 
                     Revision latest = null;
                     for (var r : revisions) {
-                        if (!dependents) {
-                            if (r.createdAt.getTime() <= timestamp && r.createdAt.getTime() > latestTimestamp) {
-                                latestTimestamp = r.createdAt.getTime();
-                                latest = r;
-                            }
-                        } else {
-                            if (r.createdAt.getTime() >= timestamp && r.createdAt.getTime() < latestTimestamp) {
-                                latestTimestamp = r.createdAt.getTime();
-                                latest = r;
-                            }
+                        if (r.createdAt.getTime() <= timestamp && r.createdAt.getTime() > latestTimestamp) {
+                            latestTimestamp = r.createdAt.getTime();
+                            latest = r;
                         }
                     }
                     if (revisions.size() > 1)
-                        logger.debug("Ignored {} revisions for dependency {}, selected: {}, timestamp: {}",
+                        logger.debug("Ignored {} revisions for product {}, selected: {}, timestamp: {}",
                                 revisions.size() - 1, revisions.get(0).product(), latest, timestamp);
                     return latest;
-                }).filter(Objects::nonNull).collect(Collectors.toList());
+                }).
+                filter(Objects::nonNull).
+                collect(Collectors.toList());
     }
 
-    public Set<DependencyEdge> filterOptionalSuccessors(Set<DependencyEdge> outgoingEdges) {
+    protected List<Revision> filterDependentsByTimestamp(List<Revision> successors, long timestamp) {
+        return successors.stream().
+                filter(revision -> revision.createdAt.getTime() >= timestamp).
+                collect(Collectors.toList());
+    }
+
+    protected Set<DependencyEdge> filterOptionalSuccessors(Set<DependencyEdge> outgoingEdges) {
         return outgoingEdges.stream()
                 .filter(edge -> !edge.optional)
                 .collect(Collectors.toSet());
     }
 
-    public Set<DependencyEdge> filterSuccessorsByScope(Set<DependencyEdge> outgoingEdges, List<String> allowedScopes) {
+    protected Set<DependencyEdge> filterSuccessorsByScope(Set<DependencyEdge> outgoingEdges, List<String> allowedScopes) {
         return outgoingEdges.stream()
                 .filter(edge -> {
                     if (edge.scope == null || edge.scope.isEmpty()) {
@@ -457,7 +420,7 @@ public class GraphMavenResolver implements Runnable {
     /**
      * Resolve conflicts (duplicate products with different versions) by picking revisions that are closer to the root.
      */
-    public Set<Revision> resolveConflicts(Set<Pair<Revision, Integer>> depthRevisions) {
+    protected Set<Revision> resolveConflicts(Set<Pair<Revision, Integer>> depthRevisions) {
         return depthRevisions.stream().collect(Collectors.toMap(
                 x -> x.getFirst().product(),
                 y -> y,
@@ -489,7 +452,7 @@ public class GraphMavenResolver implements Runnable {
         }
     }
 
-    public long getCreatedAt(String groupId, String artifactId, String version, DSLContext context) {
+    private long getCreatedAt(String groupId, String artifactId, String version, DSLContext context) {
         var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
         var result = context.select(PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
                 .from(PackageVersions.PACKAGE_VERSIONS)
@@ -505,8 +468,8 @@ public class GraphMavenResolver implements Runnable {
         return result.component1().getTime();
     }
 
-    public Revision getParentArtifact(String groupId, String artifactId, String version,
-                                      DSLContext context) {
+    private Revision getParentArtifact(String groupId, String artifactId, String version,
+                                       DSLContext context) {
         var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
         var result = context.select(PackageVersions.PACKAGE_VERSIONS.METADATA,
                 PackageVersions.PACKAGE_VERSIONS.CREATED_AT)

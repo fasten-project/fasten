@@ -52,7 +52,7 @@ public class GraphMavenResolverTest {
                 new Revision("a", "a", "3", new Timestamp(3)),
                 new Revision("b", "b", "3", new Timestamp(3))
         );
-        var actual = graphMavenResolver.filterSuccessorsByTimestamp(successors, 3, false);
+        var actual = graphMavenResolver.filterDependenciesByTimestamp(successors, 3);
         assertEquals(new HashSet<>(expected), new HashSet<>(actual));
     }
 
