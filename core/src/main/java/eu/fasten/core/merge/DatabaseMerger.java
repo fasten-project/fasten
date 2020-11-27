@@ -18,6 +18,7 @@
 
 package eu.fasten.core.merge;
 
+import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
@@ -45,6 +46,8 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.JSONB;
+import org.jooq.Record2;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -169,6 +172,45 @@ public class DatabaseMerger {
             depGraphs.add(mergeWithCHA(dep));
         }
         return augmentGraphs(depGraphs);
+    }
+
+
+    /**
+     * Fetches metadata of the nodes of first arg from database in the specified batch size.
+     *
+     * @param dg DirectedGraph to search for its callable's metadata in the database.
+     * @param batchSize the size of the batch for querying the database.
+     * @return Map of callable ids and their corresponding metadata in the form of
+     * JSONObject.
+     */
+    public Map<Long, JSONObject> getCallablesMetadata(final DirectedGraph dg,
+                                                               final int batchSize) {
+        final Map<Long, JSONObject> result = new HashMap<>();
+        int batchCounter = 0;
+        final List<Long> batch = new ArrayList<>();
+
+        for (final var node : dg.nodes()) {
+
+            batch.add(node);
+            batchCounter++;
+
+            if (batchCounter < batchSize){
+                continue;
+            }else {
+                final var metadata = dbContext
+                    .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
+                    .from(Callables.CALLABLES)
+                    .where(Callables.CALLABLES.ID.equal(node))
+                    .fetch();
+                for (final var callable : metadata) {
+                    result.put(callable.value1(), new JSONObject(callable.value2().data()));
+                }
+                batch.clear();
+                batchCounter = 0;
+            }
+        }
+
+        return result;
     }
 
     /**
