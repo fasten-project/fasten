@@ -2,6 +2,7 @@ package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Revision;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
@@ -10,10 +11,7 @@ import picocli.CommandLine;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This class is a benchmark for MavenResolver to compare database and online resolution
@@ -78,6 +76,7 @@ public class MavenResolverBenchmark implements Runnable {
         logger.info("Starting benchmark - " + new Date());
         var mavenResolver = new MavenResolver();
         var graphResolver = new GraphMavenResolver();
+        graphResolver.scopes = Arrays.asList(Dependency.SCOPES);
         graphResolver.buildDependencyGraph(dbContext, graphPath);
         var artifactCount = 0;
         var dbCount = 0;
