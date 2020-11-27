@@ -197,7 +197,7 @@ public class Main implements Runnable {
 
         } else if (commands.computations.mode.equals("FILE")) {
             try {
-                merge(getArtifactFile(), getDependenciesFiles()).toJSON();
+                merge_all(getArtifactFile(), getDependenciesFiles());
             } catch (IOException | OPALException | MissingArtifactException e) {
                 logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
@@ -214,7 +214,7 @@ public class Main implements Runnable {
      * @throws IOException thrown in case file related exceptions occur, e.g FileNotFoundException
      */
     public <T> ExtendedRevisionJavaCallGraph merge(final T artifact,
-                                               final List<T> dependencies)
+                                                   final List<T> dependencies)
             throws IOException, OPALException, MissingArtifactException {
         final long startTime = System.currentTimeMillis();
         final ExtendedRevisionJavaCallGraph result;
@@ -245,6 +245,35 @@ public class Main implements Runnable {
         return result;
     }
 
+    public void merge_all(final File artifact,
+                          final List<File> dependencies)
+            throws IOException, OPALException, MissingArtifactException {
+        final long startTime = System.currentTimeMillis();
+        final var deps = new ArrayList<ExtendedRevisionJavaCallGraph>();
+        for (final var dep : dependencies) {
+            deps.add(generate(dep, "", commands.computations.genAlgorithm, true));
+        }
+        final var art = generate(artifact, this.commands.computations.main,
+                commands.computations.genAlgorithm, true);
+        deps.add(art);
+        final var merger = new LocalMerger(deps);
+        for (ExtendedRevisionJavaCallGraph cg : deps) {
+            ExtendedRevisionJavaCallGraph result = merger.mergeWithCHA(cg);
+            if (result != null) {
+                logger.info("Resolved {} nodes, {} calls in {} seconds",
+                        result.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
+                        result.getGraph().getResolvedCalls().size(),
+                        new DecimalFormat("#0.000")
+                                .format((System.currentTimeMillis() - startTime) / 1000d));
+
+                if (!this.output.isEmpty()) {
+                    CallGraphUtils.writeToFile(this.output, result.toJSON(),
+                            "/" + result.product + "_merged.json");
+                }
+            }
+        }
+    }
+
     /**
      * Generate a revision call graph for a given coordinate using a specified algorithm. In case
      * the artifact is an application a main class can be specified. If left empty a library entry
@@ -259,8 +288,8 @@ public class Main implements Runnable {
      * @throws IOException file related exceptions, e.g. FileNotFoundException
      */
     public <T> ExtendedRevisionJavaCallGraph generate(final T artifact,
-                                                  final String mainClass,
-                                                  final String algorithm, final boolean writeToFile)
+                                                      final String mainClass,
+                                                      final String algorithm, final boolean writeToFile)
             throws MissingArtifactException, OPALException, IOException {
         final ExtendedRevisionJavaCallGraph revisionCallGraph;
 
@@ -287,7 +316,7 @@ public class Main implements Runnable {
                 .format((System.currentTimeMillis() - startTime) / 1000d));
 
         if (writeToFile) {
-            CallGraphUtils.writeToFile(this.output, revisionCallGraph.toJSON(), "");
+            CallGraphUtils.writeToFile(this.output, revisionCallGraph.toJSON(), "/"+revisionCallGraph.product+".json");
         }
         return revisionCallGraph;
     }
