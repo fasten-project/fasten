@@ -127,9 +127,11 @@ public class DatabaseMergerTest {
 
         assertNotNull(mergedGraph);
 
-        assertEquals(mergedGraph.nodes(), new LongArraySet(new long[]{
-                MAIN_INIT, MAIN_MAIN_METHOD, FOO_CLINIT, FOO_INIT, FOO_STATIC_METHOD,
-                BAR_INIT, BAR_SUPER_METHOD, BAZ_INIT, BAZ_SUPER_METHOD}));
+        assertEquals(new LongArraySet(new long[]{MAIN_INIT, MAIN_MAIN_METHOD, FOO_CLINIT, FOO_INIT,
+                FOO_STATIC_METHOD, BAR_INIT, BAR_SUPER_METHOD, BAZ_INIT, BAZ_SUPER_METHOD}),
+                mergedGraph.nodes());
+        assertEquals(new LongArraySet(new long[]{FOO_CLINIT, FOO_INIT, FOO_STATIC_METHOD, BAR_INIT,
+                BAR_SUPER_METHOD, BAZ_INIT, BAZ_SUPER_METHOD}), mergedGraph.externalNodes());
 
         assertEquals(mergedGraph.successors(MAIN_INIT), LongArrayList.wrap(new long[]{MAIN_INIT}));
 
