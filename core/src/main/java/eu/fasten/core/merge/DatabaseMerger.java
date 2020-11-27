@@ -59,6 +59,7 @@ public class DatabaseMerger {
     private final Map<String, Map<String, Set<Long>>> typeDictionary;
     private final DSLContext dbContext;
     private final RocksDao rocksDao;
+    private final Set<Long> dependencySet;
 
     /**
      * Create instance of database merger from package names.
@@ -71,12 +72,12 @@ public class DatabaseMerger {
                           final DSLContext dbContext, final RocksDao rocksDao) {
         this.dbContext = dbContext;
         this.rocksDao = rocksDao;
-        final var dependenciesIds = getDependenciesIds(dependencySet, dbContext);
-        final var universalCHA = createUniversalCHA(dependenciesIds, dbContext, rocksDao);
+        this.dependencySet = getDependenciesIds(dependencySet, dbContext);
+        final var universalCHA = createUniversalCHA(this.dependencySet, dbContext, rocksDao);
 
         this.universalParents = universalCHA.getLeft();
         this.universalChildren = universalCHA.getRight();
-        this.typeDictionary = createTypeDictionary(dependenciesIds, dbContext, rocksDao);
+        this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
 
     }
 
@@ -91,7 +92,7 @@ public class DatabaseMerger {
                           final DSLContext dbContext, final RocksDao rocksDao) {
         this.dbContext = dbContext;
         this.rocksDao = rocksDao;
-
+        this.dependencySet = dependencySet;
         final var universalCHA = createUniversalCHA(dependencySet, dbContext, rocksDao);
 
         this.universalParents = universalCHA.getLeft();
@@ -155,6 +156,46 @@ public class DatabaseMerger {
         public String getUri() {
             return typeUri + "." + signature;
         }
+    }
+
+    public DirectedGraph mergeAllDeps(){
+        List<DirectedGraph> depGraphs = new ArrayList<>();
+        for(final var dep : this.dependencySet){
+            depGraphs.add(mergeWithCHA(dep));
+        }
+        return augmentGraphs(depGraphs);
+    }
+
+    private DirectedGraph augmentGraphs(final List<DirectedGraph> depGraphs) {
+        var result = new ArrayImmutableDirectedGraph.Builder();
+
+        for (final var depGraph : depGraphs) {
+            for (final var node : depGraph.nodes()) {
+                if (depGraph.isInternal(node)) {
+                    result.addInternalNode(node);
+                }else {
+                    result.addExternalNode(node);
+                }
+                for (final var predecessor : depGraph.predecessors(node)) {
+                    if (depGraph.isInternal(predecessor)) {
+                        result.addInternalNode(predecessor);
+                    }else {
+                        result.addExternalNode(predecessor);
+                    }
+                    result.addArc(node, predecessor);
+                }
+                for (final var successor : depGraph.successors(node)) {
+                    if (depGraph.isInternal(successor)) {
+                        result.addInternalNode(successor);
+                    }else {
+                        result.addExternalNode(successor);
+                    }
+                    result.addArc(successor, node);
+                }
+
+            }
+        }
+        return result.build();
     }
 
     /**
