@@ -8,6 +8,7 @@ import eu.fasten.core.data.metadatadb.codegen.Indexes;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.Public;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 
 import java.util.Arrays;
 import java.util.List;
@@ -20,7 +21,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row3;
+import org.jooq.Row4;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -42,7 +43,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Edges extends TableImpl<EdgesRecord> {
 
-    private static final long serialVersionUID = 906422015;
+    private static final long serialVersionUID = 932813204;
 
     /**
      * The reference instance of <code>public.edges</code>
@@ -68,9 +69,14 @@ public class Edges extends TableImpl<EdgesRecord> {
     public final TableField<EdgesRecord, Long> TARGET_ID = createField(DSL.name("target_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
+     * The column <code>public.edges.receivers</code>.
+     */
+    public final TableField<EdgesRecord, ReceiverRecord[]> RECEIVERS = createField(DSL.name("receivers"), eu.fasten.core.data.metadatadb.codegen.udt.Receiver.RECEIVER.getDataType().getArrayDataType(), this, "");
+
+    /**
      * The column <code>public.edges.metadata</code>.
      */
-    public final TableField<EdgesRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB.nullable(false), this, "");
+    public final TableField<EdgesRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB, this, "");
 
     /**
      * Create a <code>public.edges</code> table reference
@@ -160,11 +166,11 @@ public class Edges extends TableImpl<EdgesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row3 type methods
+    // Row4 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row3<Long, Long, JSONB> fieldsRow() {
-        return (Row3) super.fieldsRow();
+    public Row4<Long, Long, ReceiverRecord[], JSONB> fieldsRow() {
+        return (Row4) super.fieldsRow();
     }
 }

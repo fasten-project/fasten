@@ -22,7 +22,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row6;
+import org.jooq.Row8;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Callables extends TableImpl<CallablesRecord> {
 
-    private static final long serialVersionUID = 1871877023;
+    private static final long serialVersionUID = 1823202810;
 
     /**
      * The reference instance of <code>public.callables</code>
@@ -83,6 +83,16 @@ public class Callables extends TableImpl<CallablesRecord> {
      * The column <code>public.callables.created_at</code>.
      */
     public final TableField<CallablesRecord, Timestamp> CREATED_AT = createField(DSL.name("created_at"), org.jooq.impl.SQLDataType.TIMESTAMP, this, "");
+
+    /**
+     * The column <code>public.callables.line_start</code>.
+     */
+    public final TableField<CallablesRecord, Integer> LINE_START = createField(DSL.name("line_start"), org.jooq.impl.SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>public.callables.line_end</code>.
+     */
+    public final TableField<CallablesRecord, Integer> LINE_END = createField(DSL.name("line_end"), org.jooq.impl.SQLDataType.INTEGER, this, "");
 
     /**
      * The column <code>public.callables.metadata</code>.
@@ -183,11 +193,11 @@ public class Callables extends TableImpl<CallablesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row6 type methods
+    // Row8 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row6<Long, Long, String, Boolean, Timestamp, JSONB> fieldsRow() {
-        return (Row6) super.fieldsRow();
+    public Row8<Long, Long, String, Boolean, Timestamp, Integer, Integer, JSONB> fieldsRow() {
+        return (Row8) super.fieldsRow();
     }
 }

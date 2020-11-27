@@ -13,7 +13,7 @@
 
     <groupId>eu.fasten.analyzer</groupId>
     <artifactId>repo-cloner-plugin</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>repo-cloner-plugin</name>
@@ -107,7 +107,7 @@
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
                                         <Plugin-Class>eu.fasten.analyzer.repoclonerplugin.RepoClonerPlugin</Plugin-Class>
                                         <Plugin-Id>repo-cloner-plugin</Plugin-Id>
-                                        <Plugin-Version>0.1.1</Plugin-Version>
+                                        <Plugin-Version>0.1.2</Plugin-Version>
                                         <Plugin-Description>Repository Cloning Plugin
                                         </Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>

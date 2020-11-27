@@ -38,7 +38,7 @@ public class FastenCURITest {
 
         fastenCURI = new FastenCURI("fasten://debian!recsplit$0.1/;%2Ftmp%2F/dir;var");
         assertEquals("fasten", fastenCURI.getScheme());
-        assertEquals("debian", fastenCURI.getForge());
+        assertEquals(Constants.debianForge, fastenCURI.getForge());
         assertEquals("recsplit", fastenCURI.getProduct());
         assertEquals("0.1", fastenCURI.getVersion());
         assertNull(fastenCURI.getBinary());

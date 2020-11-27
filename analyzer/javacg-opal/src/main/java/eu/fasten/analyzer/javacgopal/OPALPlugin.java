@@ -21,8 +21,10 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.data.exceptions.EmptyCallGraphException;
+import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.util.ArrayList;
@@ -49,7 +51,7 @@ public class OPALPlugin extends Plugin {
 
         private String consumeTopic = "fasten.maven.pkg";
         private Throwable pluginError;
-        private ExtendedRevisionCallGraph graph;
+        private ExtendedRevisionJavaCallGraph graph;
         private String outputPath;
 
         @Override
@@ -62,16 +64,21 @@ public class OPALPlugin extends Plugin {
             pluginError = null;
             outputPath = null;
             graph = null;
-            try {
-                var kafkaConsumedJson = new JSONObject(kafkaRecord);
-                if (kafkaConsumedJson.has("payload")) {
-                    kafkaConsumedJson = kafkaConsumedJson.getJSONObject("payload");
-                }
-                final var mavenCoordinate = new MavenCoordinate(kafkaConsumedJson);
 
-                logger.info("Generating call graph for {}", mavenCoordinate.getCoordinate());
-                this.graph = PartialCallGraph.createExtendedRevisionCallGraph(mavenCoordinate,
+            var kafkaConsumedJson = new JSONObject(kafkaRecord);
+            if (kafkaConsumedJson.has("payload")) {
+                kafkaConsumedJson = kafkaConsumedJson.getJSONObject("payload");
+            }
+            final var mavenCoordinate = new MavenCoordinate(kafkaConsumedJson);
+
+            long startTime = System.nanoTime();
+            try {
+                // Generate CG and measure construction duration.
+                logger.info("[CG-GENERATION] [UNPROCESSED] [-1i] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
+                this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
                         "", "CHA", kafkaConsumedJson.optLong("date", -1));
+                long endTime = System.nanoTime();
+                long duration = (endTime - startTime) / 1000000; // Compute duration in ms. 
 
                 if (this.graph.isCallGraphEmpty()) {
                     throw new EmptyCallGraphException();
@@ -88,12 +95,20 @@ public class OPALPlugin extends Plugin {
                         + firstLetter + File.separator
                         + artifactId + File.separator + product + ".json";
 
-                logger.info("Call graph successfully generated for {}!",
-                        mavenCoordinate.getCoordinate());
+                logger.info("[CG-GENERATION] [SUCCESS] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
 
-            } catch (Throwable e) {
+            } catch (OPALException | EmptyCallGraphException e) {
+                long endTime = System.nanoTime();
+                long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
+
+                logger.error("[CG-GENERATION] [FAILED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
                 setPluginError(e);
-                logger.error("", e);
+            } catch (MissingArtifactException e) {
+                long endTime = System.nanoTime();
+                long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
+
+                logger.error("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
+                setPluginError(e);
             }
         }
 

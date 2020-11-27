@@ -1,5 +1,3 @@
-package eu.fasten.core.data;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,17 +16,20 @@ package eu.fasten.core.data;
  * limitations under the License.
  */
 
+package eu.fasten.core.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+
 public class ArrayImmutableDirectedGraphTest {
-    @Test
+
+	@Test
     public void testSmall() {
         final ArrayImmutableDirectedGraph.Builder builder = new ArrayImmutableDirectedGraph.Builder();
         builder.addInternalNode(12);
@@ -41,10 +42,10 @@ public class ArrayImmutableDirectedGraphTest {
         builder.addInternalNode(34);
         builder.addExternalNode(56);
         builder.addExternalNode(78);
-        builder.addArc(12, 34);
-        builder.addArc(12, 56);
-        builder.addArc(56, 12);
         builder.addArc(56, 78);
+        builder.addArc(12, 34);
+        builder.addArc(56, 12);
+        builder.addArc(12, 56);
         builder.addArc(56, 34);
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             builder.addArc(56, 78);
@@ -65,6 +66,7 @@ public class ArrayImmutableDirectedGraphTest {
         assertEquals(new LongOpenHashSet(new long[]{12, 56}), new LongOpenHashSet(graph.predecessors(34)));
         assertEquals(new LongOpenHashSet(new long[]{12}), new LongOpenHashSet(graph.predecessors(56)));
         assertEquals(new LongOpenHashSet(new long[]{56}), new LongOpenHashSet(graph.predecessors(78)));
+
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             graph.successors(1);
         });
@@ -83,4 +85,16 @@ public class ArrayImmutableDirectedGraphTest {
         assertFalse(graph.isInternal(78));
 
     }
+
+	@Test
+	public void testNoPred() {
+		final ArrayImmutableDirectedGraph.Builder builder = new ArrayImmutableDirectedGraph.Builder();
+		builder.addInternalNode(12);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			builder.addInternalNode(12);
+		});
+		builder.addInternalNode(34);
+		final ArrayImmutableDirectedGraph graph = builder.build();
+		assertEquals(2, graph.numNodes());
+	}
 }

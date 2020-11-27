@@ -14,8 +14,15 @@ CREATE TABLE package_versions
     package_id   BIGINT NOT NULL REFERENCES packages (id),
     version      TEXT   NOT NULL,
     cg_generator TEXT   NOT NULL,
+    architecture TEXT,
     created_at   TIMESTAMP,
     metadata     JSONB
+);
+
+CREATE TABLE virtual_implementations
+(
+    virtual_package_version_id BIGINT NOT NULL REFERENCES package_versions (id),
+    package_version_id         BIGINT NOT NULL REFERENCES package_versions (id)
 );
 
 CREATE TABLE dependencies
@@ -23,6 +30,9 @@ CREATE TABLE dependencies
     package_version_id BIGINT NOT NULL REFERENCES package_versions (id),
     dependency_id      BIGINT NOT NULL REFERENCES packages (id),
     version_range      TEXT[] NOT NULL,
+    architecture       TEXT[],
+    dependency_type    TEXT[],
+    alternative_group  BIGINT,
     metadata           JSONB
 );
 
@@ -73,14 +83,26 @@ CREATE TABLE callables
     fasten_uri       TEXT    NOT NULL,
     is_internal_call BOOLEAN NOT NULL,
     created_at       TIMESTAMP,
+    line_start       INTEGER,
+    line_end         INTEGER,
     metadata         JSONB
+);
+
+CREATE TYPE RECEIVER_TYPE AS ENUM ('static', 'dynamic', 'virtual', 'interface', 'special');
+
+CREATE TYPE RECEIVER AS
+(
+    line         INTEGER,
+    type         RECEIVER_TYPE,
+    receiver_uri TEXT
 );
 
 CREATE TABLE edges
 (
-    source_id BIGINT NOT NULL REFERENCES callables (id),
-    target_id BIGINT NOT NULL REFERENCES callables (id),
-    metadata  JSONB  NOT NULL
+    source_id BIGINT     NOT NULL REFERENCES callables (id),
+    target_id BIGINT     NOT NULL REFERENCES callables (id),
+    receivers RECEIVER[] NOT NULL,
+    metadata  JSONB
 );
 
 -- CREATE INDEX CONCURRENTLY package_versions_package_id ON package_versions USING btree (package_id);
@@ -104,6 +126,10 @@ ALTER TABLE packages
 CREATE UNIQUE INDEX CONCURRENTLY unique_package_version_generator ON package_versions USING btree (package_id, version, cg_generator);
 ALTER TABLE package_versions
     ADD CONSTRAINT unique_package_version_generator UNIQUE USING INDEX unique_package_version_generator;
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_virtual_implementation ON virtual_implementations USING btree (virtual_package_version_id, package_version_id);
+ALTER TABLE virtual_implementations
+    ADD CONSTRAINT unique_virtual_implementation UNIQUE USING INDEX unique_virtual_implementation;
 
 CREATE UNIQUE INDEX CONCURRENTLY unique_version_dependency_range ON dependencies USING btree (package_version_id, dependency_id, version_range);
 ALTER TABLE dependencies

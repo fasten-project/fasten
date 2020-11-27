@@ -14,6 +14,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.BinaryModuleContentsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.BinaryModulesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
@@ -24,6 +25,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.ModuleContentsRecor
 import eu.fasten.core.data.metadatadb.codegen.tables.records.ModulesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.VirtualImplementationsRecord;
 
 import javax.annotation.processing.Generated;
 
@@ -78,6 +80,7 @@ public class Keys {
     public static final UniqueKey<PackageVersionsRecord> UNIQUE_PACKAGE_VERSION_GENERATOR = UniqueKeys0.UNIQUE_PACKAGE_VERSION_GENERATOR;
     public static final UniqueKey<PackagesRecord> PACKAGES_PKEY = UniqueKeys0.PACKAGES_PKEY;
     public static final UniqueKey<PackagesRecord> UNIQUE_PACKAGE_FORGE = UniqueKeys0.UNIQUE_PACKAGE_FORGE;
+    public static final UniqueKey<VirtualImplementationsRecord> UNIQUE_VIRTUAL_IMPLEMENTATION = UniqueKeys0.UNIQUE_VIRTUAL_IMPLEMENTATION;
 
     // -------------------------------------------------------------------------
     // FOREIGN KEY definitions
@@ -96,6 +99,8 @@ public class Keys {
     public static final ForeignKey<ModuleContentsRecord, FilesRecord> MODULE_CONTENTS__MODULE_CONTENTS_FILE_ID_FKEY = ForeignKeys0.MODULE_CONTENTS__MODULE_CONTENTS_FILE_ID_FKEY;
     public static final ForeignKey<ModulesRecord, PackageVersionsRecord> MODULES__MODULES_PACKAGE_VERSION_ID_FKEY = ForeignKeys0.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY;
     public static final ForeignKey<PackageVersionsRecord, PackagesRecord> PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY = ForeignKeys0.PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY;
+    public static final ForeignKey<VirtualImplementationsRecord, PackageVersionsRecord> VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_VIRTUAL_PACKAGE_VERSION_ID_FKEY = ForeignKeys0.VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_VIRTUAL_PACKAGE_VERSION_ID_FKEY;
+    public static final ForeignKey<VirtualImplementationsRecord, PackageVersionsRecord> VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_PACKAGE_VERSION_ID_FKEY = ForeignKeys0.VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_PACKAGE_VERSION_ID_FKEY;
 
     // -------------------------------------------------------------------------
     // [#1459] distribute members to avoid static initialisers > 64kb
@@ -127,6 +132,7 @@ public class Keys {
         public static final UniqueKey<PackageVersionsRecord> UNIQUE_PACKAGE_VERSION_GENERATOR = Internal.createUniqueKey(PackageVersions.PACKAGE_VERSIONS, "unique_package_version_generator", PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR);
         public static final UniqueKey<PackagesRecord> PACKAGES_PKEY = Internal.createUniqueKey(Packages.PACKAGES, "packages_pkey", Packages.PACKAGES.ID);
         public static final UniqueKey<PackagesRecord> UNIQUE_PACKAGE_FORGE = Internal.createUniqueKey(Packages.PACKAGES, "unique_package_forge", Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.FORGE);
+        public static final UniqueKey<VirtualImplementationsRecord> UNIQUE_VIRTUAL_IMPLEMENTATION = Internal.createUniqueKey(VirtualImplementations.VIRTUAL_IMPLEMENTATIONS, "unique_virtual_implementation", VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.VIRTUAL_PACKAGE_VERSION_ID, VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.PACKAGE_VERSION_ID);
     }
 
     private static class ForeignKeys0 {
@@ -143,5 +149,7 @@ public class Keys {
         public static final ForeignKey<ModuleContentsRecord, FilesRecord> MODULE_CONTENTS__MODULE_CONTENTS_FILE_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.FILES_PKEY, ModuleContents.MODULE_CONTENTS, "module_contents__module_contents_file_id_fkey", ModuleContents.MODULE_CONTENTS.FILE_ID);
         public static final ForeignKey<ModulesRecord, PackageVersionsRecord> MODULES__MODULES_PACKAGE_VERSION_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGE_VERSIONS_PKEY, Modules.MODULES, "modules__modules_package_version_id_fkey", Modules.MODULES.PACKAGE_VERSION_ID);
         public static final ForeignKey<PackageVersionsRecord, PackagesRecord> PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGES_PKEY, PackageVersions.PACKAGE_VERSIONS, "package_versions__package_versions_package_id_fkey", PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID);
+        public static final ForeignKey<VirtualImplementationsRecord, PackageVersionsRecord> VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_VIRTUAL_PACKAGE_VERSION_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGE_VERSIONS_PKEY, VirtualImplementations.VIRTUAL_IMPLEMENTATIONS, "virtual_implementations__virtual_implementations_virtual_package_version_id_fkey", VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.VIRTUAL_PACKAGE_VERSION_ID);
+        public static final ForeignKey<VirtualImplementationsRecord, PackageVersionsRecord> VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_PACKAGE_VERSION_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGE_VERSIONS_PKEY, VirtualImplementations.VIRTUAL_IMPLEMENTATIONS, "virtual_implementations__virtual_implementations_package_version_id_fkey", VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.PACKAGE_VERSION_ID);
     }
 }

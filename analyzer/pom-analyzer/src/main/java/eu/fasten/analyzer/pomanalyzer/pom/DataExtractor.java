@@ -18,33 +18,27 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom;
 
-import eu.fasten.analyzer.pomanalyzer.pom.data.Dependency;
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyData;
-import eu.fasten.analyzer.pomanalyzer.pom.data.DependencyManagement;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.DependencyData;
+import eu.fasten.core.maven.data.DependencyManagement;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
-import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import eu.fasten.core.data.Constants;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -65,9 +59,7 @@ public class DataExtractor {
     private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
 
     public DataExtractor() {
-        this.mavenRepos = System.getenv(Constants.mvnRepoEnvVariable) != null
-                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
-                : Collections.singletonList("https://repo.maven.apache.org/maven2/");
+        this.mavenRepos = MavenUtilities.getRepos();
     }
 
     public DataExtractor(List<String> mavenRepos) {
@@ -166,6 +158,52 @@ public class DataExtractor {
                     + Constants.mvnCoordinateSeparator + version);
         }
         return name;
+    }
+
+    /**
+     * Extracts Maven coordinate of the parent from POM of certain Maven coordinate.
+     *
+     * @param groupId    groupId of the coordinate
+     * @param artifactId artifactId of the coordinate
+     * @param version    version of the coordinate
+     * @return Parent coordinate as String in the form of "groupId:artifactId:version"
+     */
+    public String extractParentCoordinate(String groupId, String artifactId, String version) {
+        String parent = null;
+        try {
+            var pom = getPomRootElement(groupId, artifactId, version);
+            updateResolutionMetadata(groupId, artifactId, version, pom);
+            var properties = this.resolutionMetadata.getRight().getLeft();
+            var parentNode = pom.selectSingleNode("./*[local-name()='parent']");
+            if (parentNode != null) {
+                var parentGroupNode = parentNode
+                        .selectSingleNode("./*[local-name()='groupId']");
+                var parentArtifactNode = parentNode
+                        .selectSingleNode("./*[local-name()='artifactId']");
+                var parentVersionNode = parentNode
+                        .selectSingleNode("./*[local-name()='version']");
+                if (parentGroupNode != null && parentArtifactNode != null
+                        && parentVersionNode != null) {
+                    var parentGroup = replacePropertyReferences(parentGroupNode.getText(),
+                            properties, pom);
+                    var parentArtifact = replacePropertyReferences(parentArtifactNode.getText(),
+                            properties, pom);
+                    var parentVersion = replacePropertyReferences(parentVersionNode.getText(),
+                            properties, pom);
+                    parent = parentGroup + Constants.mvnCoordinateSeparator + parentArtifact
+                            + Constants.mvnCoordinateSeparator + parentVersion;
+                }
+            }
+        } catch (DocumentException e) {
+            logger.error("Error parsing POM file for: "
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
+        } catch (FileNotFoundException e) {
+            logger.error("Error downloading POM file for: "
+                    + groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version);
+        }
+        return parent;
     }
 
     /**
@@ -295,7 +333,7 @@ public class DataExtractor {
                 (groupId + Constants.mvnCoordinateSeparator + artifactId
                         + Constants.mvnCoordinateSeparator + version).equals(this.mavenCoordinate)
                         ? new ByteArrayInputStream(this.pomContents.getBytes())
-                        : new ByteArrayInputStream(this.downloadPom(artifactId, groupId, version)
+                        : new ByteArrayInputStream(this.downloadPom(groupId, artifactId, version)
                         .orElseThrow(FileNotFoundException::new).getBytes());
         return new SAXReader().read(pomByteStream).getRootElement();
     }
@@ -411,8 +449,8 @@ public class DataExtractor {
                         if (parentDep.artifactId.equals(dependency.artifactId)
                                 && parentDep.groupId.equals(dependency.groupId)) {
                             resolvedDependencies.add(new Dependency(
-                                    dependency.artifactId,
                                     dependency.groupId,
+                                    dependency.artifactId,
                                     parentDep.versionConstraints,
                                     dependency.exclusions,
                                     dependency.scope,
@@ -426,8 +464,8 @@ public class DataExtractor {
                 }
                 if (!resolved) {
                     resolvedDependencies.add(new Dependency(
-                            dependency.artifactId,
                             dependency.groupId,
+                            dependency.artifactId,
                             replacePropertyReferences("${project.version}", properties, pom),
                             dependency.exclusions,
                             dependency.scope,
@@ -444,8 +482,8 @@ public class DataExtractor {
                     version = value;
                 }
                 resolvedDependencies.add(new Dependency(
-                        dependency.artifactId,
                         dependency.groupId,
+                        dependency.artifactId,
                         version,
                         dependency.exclusions,
                         dependency.scope,
@@ -480,9 +518,9 @@ public class DataExtractor {
                     resolvedExclusionArtifact = replacePropertyReferences(
                             exclusion.artifactId, properties, pom);
                 }
-                resolvedExclusions.set(j, new Dependency.Exclusion(
-                        resolvedExclusionArtifact, resolvedExclusionGroup
-                ));
+                resolvedExclusions.set(j,
+                        new Dependency.Exclusion(resolvedExclusionGroup, resolvedExclusionArtifact)
+                );
             }
             var resolvedScope = dep.scope;
             if (dep.scope.contains("$")) {
@@ -497,8 +535,8 @@ public class DataExtractor {
                 resolvedClassifier = replacePropertyReferences(dep.classifier, properties, pom);
             }
             resolvedDependencies.set(i, new Dependency(
-                    resolvedArtifact,
                     resolvedGroup,
+                    resolvedArtifact,
                     dep.versionConstraints,
                     resolvedExclusions,
                     resolvedScope,
@@ -548,7 +586,7 @@ public class DataExtractor {
                     .selectSingleNode("./*[local-name() ='version']").getText();
             try {
                 var parentPom = new SAXReader().read(new ByteArrayInputStream(
-                        this.downloadPom(parentArtifact, parentGroup, parentVersion)
+                        this.downloadPom(parentGroup, parentArtifact, parentVersion)
                                 .orElseThrow(FileNotFoundException::new).getBytes())).getRootElement();
                 var parentMetadata = this.extractDependencyResolutionMetadata(parentPom);
                 var parentProperties = parentMetadata.getLeft();
@@ -602,10 +640,12 @@ public class DataExtractor {
                                 .selectSingleNode("./*[local-name()='artifactId']");
                         var exclusionGroupNode = exclusionNode
                                 .selectSingleNode("./*[local-name()='groupId']");
-                        exclusions.add(new Dependency.Exclusion(
-                                exclusionArtifactNode.getText(),
-                                exclusionGroupNode.getText()
-                        ));
+                        if (exclusionArtifactNode != null && exclusionGroupNode != null) {
+                            exclusions.add(new Dependency.Exclusion(
+                                    exclusionGroupNode.getText(),
+                                    exclusionArtifactNode.getText()
+                            ));
+                        }
                     }
                 }
                 var scopeNode = dependencyNode
@@ -622,66 +662,35 @@ public class DataExtractor {
                 } else {
                     version = null;
                 }
-                dependencies.add(new Dependency(
-                        artifactNode.getText(),
-                        groupNode.getText(),
-                        version,
-                        exclusions,
-                        (scopeNode != null) ? scopeNode.getText() : "",
-                        (optionalNode != null) && Boolean.parseBoolean(
-                                optionalNode.getText()
-                        ),
-                        (typeNode != null) ? typeNode.getText() : "",
-                        (classifierNode != null) ? classifierNode.getText() : ""
-                ));
+                if (groupNode != null && artifactNode != null) {
+                    dependencies.add(new Dependency(
+                            groupNode.getText(),
+                            artifactNode.getText(),
+                            version,
+                            exclusions,
+                            (scopeNode != null) ? scopeNode.getText() : "",
+                            (optionalNode != null)
+                                    && Boolean.parseBoolean(optionalNode.getText()),
+                            (typeNode != null) ? typeNode.getText() : "",
+                            (classifierNode != null) ? classifierNode.getText() : ""
+                    ));
+                }
             }
         }
         return dependencies;
     }
 
-    private Optional<String> downloadPom(String artifactId, String groupId, String version) {
-        for (var repo : this.mavenRepos) {
-            var pomUrl = this.getPomUrl(artifactId, groupId, version, repo);
-            Optional<String> pom;
-            try {
-                pom = httpGetToFile(pomUrl).flatMap(DataExtractor::fileToString);
-            } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
-                continue;
-            }
-            if (pom.isPresent()) {
-                this.mavenCoordinate = groupId + Constants.mvnCoordinateSeparator + artifactId
-                        + Constants.mvnCoordinateSeparator + version;
-                this.pomContents = pom.get();
-                return pom;
-            }
+    private Optional<String> downloadPom(String groupId, String artifactId, String version) {
+        var pom = MavenUtilities.downloadPom(groupId, artifactId, version, this.mavenRepos).flatMap(DataExtractor::fileToString);
+
+        if (pom.isPresent()) {
+            this.mavenCoordinate = groupId + Constants.mvnCoordinateSeparator + artifactId
+                    + Constants.mvnCoordinateSeparator + version;
+            this.pomContents = pom.get();
+            return pom;
         }
+
         return Optional.empty();
-    }
-
-    private String getPomUrl(String artifactId, String groupId, String version, String repo) {
-        return repo + groupId.replace('.', '/') + "/" + artifactId + "/" + version
-                + "/" + artifactId + "-" + version + ".pom";
-    }
-
-    /**
-     * Utility function that stores the contents of GET request to a temporary file.
-     */
-    private static Optional<File> httpGetToFile(String url)
-            throws FileNotFoundException, UnknownHostException, MalformedURLException {
-        logger.debug("HTTP GET: " + url);
-        try {
-            final var tempFile = Files.createTempFile("fasten", ".pom");
-            final InputStream in = new URL(url).openStream();
-            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            in.close();
-            return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-        } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
-            logger.error("Could not find URL: {}", e.getMessage(), e);
-            throw e;
-        } catch (IOException e) {
-            logger.error("Error getting file from URL: " + url, e);
-            return Optional.empty();
-        }
     }
 
     /**

@@ -21,9 +21,11 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.merge.CallGraphMerger;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.merge.LocalMerger;
 import eu.fasten.core.merge.CallGraphUtils;
 import java.io.File;
 import java.io.IOException;
@@ -164,16 +166,16 @@ public class Main implements Runnable {
             try {
                 generate(artifact, commands.computations.main, commands.computations.genAlgorithm,
                         !this.output.isEmpty());
-            } catch (IOException | OPALException e) {
-                e.printStackTrace();
+            } catch (IOException | OPALException | MissingArtifactException e) {
+                logger.error("Call graph couldn't be generated for Maven coordinate: {}", artifact.getCoordinate(), e);
             }
 
         } else if (commands.computations.mode.equals("FILE")) {
             try {
                 generate(getArtifactFile(), commands.computations.main,
                         commands.computations.genAlgorithm, !this.output.isEmpty());
-            } catch (IOException | OPALException e) {
-                e.printStackTrace();
+            } catch (IOException | OPALException | MissingArtifactException e) {
+                logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
         }
     }
@@ -185,15 +187,15 @@ public class Main implements Runnable {
         if (commands.computations.mode.equals("COORD")) {
             try {
                 merge(getArtifactCoordinate(), getDependenciesCoordinates());
-            } catch (IOException | OPALException e) {
-                e.printStackTrace();
+            } catch (IOException | OPALException | MissingArtifactException e) {
+                logger.error("Call graph couldn't be merge for coord: {}", getArtifactCoordinate().getCoordinate(), e);
             }
 
         } else if (commands.computations.mode.equals("FILE")) {
             try {
                 merge(getArtifactFile(), getDependenciesFiles()).toJSON();
-            } catch (IOException | OPALException e) {
-                e.printStackTrace();
+            } catch (IOException | OPALException | MissingArtifactException e) {
+                logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
         }
     }
@@ -207,24 +209,32 @@ public class Main implements Runnable {
      * @return a revision call graph with resolved class hierarchy and calls
      * @throws IOException thrown in case file related exceptions occur, e.g FileNotFoundException
      */
-    public <T> ExtendedRevisionCallGraph merge(final T artifact,
+    public <T> ExtendedRevisionJavaCallGraph merge(final T artifact,
                                                final List<T> dependencies)
-            throws IOException, OPALException {
-
-        final ExtendedRevisionCallGraph result;
-        final var deps = new ArrayList<ExtendedRevisionCallGraph>();
+            throws IOException, OPALException, MissingArtifactException {
+        final long startTime = System.currentTimeMillis();
+        final ExtendedRevisionJavaCallGraph result;
+        final var deps = new ArrayList<ExtendedRevisionJavaCallGraph>();
         for (final var dep : dependencies) {
             deps.add(generate(dep, "", commands.computations.genAlgorithm, true));
         }
         final var art = generate(artifact, this.commands.computations.main,
                 commands.computations.genAlgorithm, true);
+        deps.add(art);
+        final var merger = new LocalMerger(deps);
+        result = merger.mergeWithCHA(art);
 
-        result = CallGraphMerger.mergeCallGraph(art, deps,
-                commands.computations.tools.merge.mergeAlgorithm);
+        if (result != null) {
+            logger.info("Resolved {} nodes, {} calls in {} seconds",
+                    result.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
+                    result.getGraph().getResolvedCalls().size(),
+                    new DecimalFormat("#0.000")
+                            .format((System.currentTimeMillis() - startTime) / 1000d));
 
-        if (!this.output.isEmpty() && result != null) {
-            CallGraphUtils.writeToFile(this.output, result.toJSON(),
-                    "_" + result.product + "_merged");
+            if (!this.output.isEmpty()) {
+                CallGraphUtils.writeToFile(this.output, result.toJSON(),
+                        "_" + result.product + "_merged");
+            }
         }
 
         return result;
@@ -243,11 +253,11 @@ public class Main implements Runnable {
      * @return generated revision call graph
      * @throws IOException file related exceptions, e.g. FileNotFoundException
      */
-    public <T> ExtendedRevisionCallGraph generate(final T artifact,
+    public <T> ExtendedRevisionJavaCallGraph generate(final T artifact,
                                                   final String mainClass,
                                                   final String algorithm, final boolean writeToFile)
-            throws IOException, OPALException {
-        final ExtendedRevisionCallGraph revisionCallGraph;
+            throws MissingArtifactException, OPALException, IOException {
+        final ExtendedRevisionJavaCallGraph revisionCallGraph;
 
         final long startTime = System.currentTimeMillis();
 
@@ -256,7 +266,7 @@ public class Main implements Runnable {
             final var cg = new PartialCallGraph(
                     new CallGraphConstructor((File) artifact, mainClass, algorithm));
             revisionCallGraph =
-                    ExtendedRevisionCallGraph.extendedBuilder().graph(cg.getGraph())
+                    ExtendedRevisionJavaCallGraph.extendedBuilder().graph(cg.getGraph())
                             .product(cleanUpFileName((File) artifact))
                             .version("").timestamp(0).cgGenerator("").forge("")
                             .classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount())
@@ -264,7 +274,7 @@ public class Main implements Runnable {
 
         } else {
             revisionCallGraph = PartialCallGraph
-                    .createExtendedRevisionCallGraph((MavenCoordinate) artifact, mainClass,
+                    .createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact, mainClass,
                             algorithm, Long.parseLong(this.commands.computations.timestamp));
         }
 
