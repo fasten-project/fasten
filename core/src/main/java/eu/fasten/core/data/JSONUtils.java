@@ -5,7 +5,14 @@ import java.util.List;
 import java.util.Map;
 
 public class JSONUtils {
-
+    /**
+     * Converts an {@link ExtendedRevisionJavaCallGraph} object to its corresponding JSON String
+     * without any object creation in between. It creates a {@link StringBuilder) in the beginning
+     * and only appends to it in order to decrease the memory and time consumption.
+     *
+     * @param erjcg and object of java revision call graph to be converted to JSON String.
+     * @return the corresponding JSON String.
+     */
     public static String toJSONString(final ExtendedRevisionJavaCallGraph erjcg) {
         var result = new StringBuilder("{");
         appendArtifactInformation(erjcg, result);
@@ -18,6 +25,12 @@ public class JSONUtils {
         return result.toString();
     }
 
+    /**
+     * Appends general information of the revision to the beginning of the StringBuilder.
+     *
+     * @param erjcg  the object to extract the information from.
+     * @param result the StringBuilder to append the information.
+     */
     private static void appendArtifactInformation(ExtendedRevisionJavaCallGraph erjcg,
                                                   final StringBuilder result) {
         appendKeyValue(result, "product", erjcg.product);
@@ -27,26 +40,38 @@ public class JSONUtils {
         appendKeyValue(result, "version", erjcg.version);
     }
 
+    /**
+     * Appends graph information of the revision to the StringBuilder.
+     *
+     * @param graph  the graph object to extract the information from.
+     * @param result the StringBuilder to append the information.
+     */
     private static void appendGraph(StringBuilder result, final Graph graph) {
         result.append("\"graph\":{\"internalCalls\":[");
         for (final var entry : graph.getInternalCalls().entrySet()) {
-            appendCalls(result, entry);
+            appendCall(result, entry);
         }
         removeLastIfNotEmpty(result, graph.getInternalCalls().size());
         result.append("],\"externalCalls\":[");
         for (final var entry : graph.getExternalCalls().entrySet()) {
-            appendCalls(result, entry);
+            appendCall(result, entry);
         }
         removeLastIfNotEmpty(result, graph.getExternalCalls().size());
         result.append("],\"resolvedCalls\":[");
         for (final var entry : graph.getResolvedCalls().entrySet()) {
-            appendCalls(result, entry);
+            appendCall(result, entry);
         }
         removeLastIfNotEmpty(result, graph.getResolvedCalls().size());
         result.append("]},");
 
     }
 
+    /**
+     * Removes the last character of StringBuilder if the second parameter is not zero.
+     * This method helps to remove extra "," from the end of multiple element lists.
+     * @param result the StringBuilder to remove from.
+     * @param size if the size of the list is zero there is no "," to be removed.
+     */
     private static void removeLastIfNotEmpty(StringBuilder result,
                                              int size) {
         if (size != 0) {
@@ -54,16 +79,28 @@ public class JSONUtils {
         }
     }
 
-    private static void appendCalls(StringBuilder result,
-                                    final Map.Entry<List<Integer>, Map<Object, Object>> entry) {
+    /**
+     * Appends call information of the specified call to the StringBuilder.
+     *
+     * @param entry the call Map Entry to extract the information from.
+     * @param result the StringBuilder to append the information.
+     */
+    private static void appendCall(StringBuilder result,
+                                   final Map.Entry<List<Integer>, Map<Object, Object>> entry) {
         result.append("[").append(qoute(entry.getKey().get(0).toString())).append(",");
         result.append(qoute(entry.getKey().get(1).toString())).append(",{");
-        toCallableMetadataJson(result, entry.getValue());
+        appendCallableMetadataJson(result, entry.getValue());
         result.append("}],");
     }
 
-    private static void toCallableMetadataJson(StringBuilder result,
-                                               final Map<Object, Object> metadata) {
+    /**
+     * Appends metadata information of the callable to the StringBuilder.
+     *
+     * @param metadata of the call Map to extract the information from.
+     * @param result the StringBuilder to append the information.
+     */
+    private static void appendCallableMetadataJson(StringBuilder result,
+                                                   final Map<Object, Object> metadata) {
         for (final var entry : metadata.entrySet()) {
             final var callSite = (HashMap<String, Object>) entry.getValue();
             result.append(qoute(entry.getKey().toString())).append(":{");
@@ -73,6 +110,12 @@ public class JSONUtils {
         removeLastIfNotEmpty(result, metadata.size());
     }
 
+    /**
+     * Appends cha information of the cha to the StringBuilder.
+     *
+     * @param cha    the cha Map to extract the information from.
+     * @param result the StringBuilder to append information.
+     */
     private static void appendCha(StringBuilder result, final Map<JavaScope,
         Map<FastenURI, JavaType>> cha) {
         result.append("\"cha\":{\"externalTypes\":{");
@@ -97,6 +140,13 @@ public class JSONUtils {
 
     }
 
+    /**
+     * Appends {@link JavaType} information of the specified type to the StringBuilder.
+     *
+     * @param key    the type key which is the String form of {@link FastenURI} of the type
+     * @param type   the JavaType to extract the information from.
+     * @param result the StringBuilder to append the information.
+     */
     private static void appendType(StringBuilder result, final String key,
                                    final JavaType type) {
         result.append(qoute(key)).append(":{");
@@ -114,14 +164,26 @@ public class JSONUtils {
 
     }
 
-    public static void appendSupers(StringBuilder result, final List<?> list) {
-        for (final var fastenURI : list) {
+    /**
+     * Appends information of the super types to the StringBuilder.
+     *
+     * @param supers the list of types to extract the information.
+     * @param result the StringBuilder to append the information.
+     */
+    public static void appendSupers(StringBuilder result, final List<?> supers) {
+        for (final var fastenURI : supers) {
             result.append(qoute(fastenURI.toString())).append(",");
         }
-        removeLastIfNotEmpty(result, list.size());
+        removeLastIfNotEmpty(result, supers.size());
 
     }
 
+    /**
+     * Appends methods of a type to the StringBuilder.
+     *
+     * @param methods Map of nodes to extract the information.
+     * @param result the StringBuilder to append the information.
+     */
     private static void appendMethods(StringBuilder result,
                                       final Map<Integer, JavaNode> methods) {
         for (final var entry : methods.entrySet()) {
@@ -137,6 +199,12 @@ public class JSONUtils {
 
     }
 
+    /**
+     * Appends metadata of a node to the StringBuilder.
+     *
+     * @param map Map of metadata to extract the information.
+     * @param result the StringBuilder to append the information.
+     */
     private static void appendMetadata(StringBuilder result, final Map<?, ?> map) {
         for (final var entry : map.entrySet()) {
             if (entry.getValue() instanceof String) {
@@ -151,19 +219,36 @@ public class JSONUtils {
         removeLastIfNotEmpty(result, map.size());
     }
 
+    /**
+     * Qoutes a given String.
+     *
+     * @param s String to be qouted.
+     * @return qouted String.
+     */
     private static String qoute(final String s) {
         return "\"" + s + "\"";
     }
 
-    private static void curlyBracket(StringBuilder result) {
-        result.insert(0, "{").append("}");
-    }
-
+    /**
+     * Appends a key value to a given StringBuilder assuming it is not the last key value in a
+     * list of key values and the value is a Number.
+     *
+     * @param result StringBuilder to append to the key value.
+     * @param key key String.
+     * @param value Number value.
+     */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final Number value) {
         appendKeyValue(result, key, value, false);
     }
 
+    /**
+     * Appends a key value to a given StringBuilder assuming the value is a Number.
+     *
+     * @param result StringBuilder to append to the key value.
+     * @param key key String.
+     * @param value Number value.
+     */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final Number value, final boolean lastKey) {
         result.append(qoute(key)).append(":").append(value);
@@ -172,11 +257,26 @@ public class JSONUtils {
         }
     }
 
+    /**
+     * Appends a key value to a given StringBuilder assuming it is not the last key value in a
+     * list of key values and the value is a String.
+     *
+     * @param result StringBuilder to append to the key value.
+     * @param key String key.
+     * @param value String value.
+     */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final String value) {
         appendKeyValue(result, key, value, false);
     }
 
+    /**
+     * Appends a key value to a given StringBuilder assuming the value is a String.
+     *
+     * @param result StringBuilder to append to the key value.
+     * @param key String key.
+     * @param value String value.
+     */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final String value, final boolean lastKey) {
         result.append(qoute(key)).append(":").append(qoute(value));
