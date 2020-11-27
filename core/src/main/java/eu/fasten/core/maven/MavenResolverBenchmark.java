@@ -3,7 +3,6 @@ package eu.fasten.core.maven;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,17 +78,7 @@ public class MavenResolverBenchmark implements Runnable {
         logger.info("Starting benchmark - " + new Date());
         var mavenResolver = new MavenResolver();
         var graphResolver = new GraphMavenResolver();
-        if (graphPath != null) {
-            try {
-                var optDependencyGraph = DependencyGraphUtilities.loadDependencyGraph(graphPath);
-                if (optDependencyGraph.isPresent()) {
-                    GraphMavenResolver.dependencyGraph = optDependencyGraph.get();
-                    GraphMavenResolver.dependentGraph = DependencyGraphUtilities.invertDependencyGraph(GraphMavenResolver.dependencyGraph);
-                }
-            } catch (Exception e) {
-                logger.warn("Could not load serialized dependency graph from {}\n", graphPath, e);
-            }
-        }
+        graphResolver.buildDependencyGraph(dbContext, graphPath);
         var artifactCount = 0;
         var dbCount = 0;
         var onlineCount = 0;
@@ -105,7 +94,7 @@ public class MavenResolverBenchmark implements Runnable {
             try {
                 dbCount++;
                 Set<Revision> dbDependencySet;
-                dbDependencySet = graphResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
+                dbDependencySet = graphResolver.resolveDependencies(groupId, artifactId, version, -1, dbContext, true);
                 dbResolutionSuccess++;
                 onlineCount++;
                 var onlineDependencySet = mavenResolver.resolveFullDependencySetOnline(artifactId, groupId, version);

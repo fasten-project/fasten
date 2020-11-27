@@ -22,12 +22,12 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyEdge;
-import eu.fasten.core.maven.data.DependencyTree;
 import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
@@ -41,15 +41,12 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -113,18 +110,6 @@ public class GraphMavenResolver implements Runnable {
             description = "Use reverse resolution (resolve dependents instead of dependencies)")
     boolean reverseResolution;
 
-    @CommandLine.Option(names = {"-fo", "--filter-optional"},
-            description = "Filter out optional dependencies")
-    boolean filterOptional;
-
-    @CommandLine.Option(names = {"-fs", "--filter-scopes"},
-            description = "Filter out dependencies by scope")
-    boolean filterScopes;
-
-    @CommandLine.Option(names = {"-fe", "--filter-exclusions"},
-            description = "Filter out excluded dependencies")
-    boolean filterExclusions;
-
     static Graph<Revision, DependencyEdge> dependencyGraph;
     static Graph<Revision, DependencyEdge> dependentGraph;
 
@@ -160,11 +145,11 @@ public class GraphMavenResolver implements Runnable {
 
             Set<Revision> artifactSet;
             if (reverseResolution) {
-                artifactSet = this.resolveFullDependentsSet(group, artifact, version, timestamp,
-                        scopes, dbContext, filterOptional, filterScopes, filterExclusions);
+                artifactSet = this.resolveDependents(group, artifact, version, timestamp,
+                        dbContext, true);
             } else {
-                artifactSet = this.resolveFullDependencySet(group, artifact, version, timestamp,
-                        scopes, dbContext, filterOptional, filterScopes, filterExclusions);
+                artifactSet = this.resolveDependencies(group, artifact, version, timestamp,
+                        dbContext, true);
             }
             logger.info("--------------------------------------------------");
             logger.info("Maven coordinate:");
@@ -255,7 +240,12 @@ public class GraphMavenResolver implements Runnable {
             }
         }
 
+        var resultTriples = new ArrayList<Triple<Set<Revision>, List<Pair<Revision, MavenProduct>>, Map<Revision, Revision>>>();
+
         Set<Revision> allDeps = new HashSet<>();
+        var exclusions = new ArrayList<Pair<Revision, MavenProduct>>();
+        var descendants = new HashMap<Revision, Revision>();
+
         try {
             var parent = getParentArtifact(groupId, artifactId, version, db);
             if (parent != null) {
@@ -265,9 +255,14 @@ public class GraphMavenResolver implements Runnable {
             logger.warn("Parent for revision {}:{}:{} not found: {}", groupId, artifactId, version, e.getMessage());
         }
 
-        allDeps.addAll(revisionGraphBFS(dependencyGraph, groupId, artifactId, version, timestamp, transitive, false));
+        resultTriples.add(revisionGraphBFS(dependencyGraph, groupId, artifactId, version, timestamp, transitive, false));
+        for (var triple : resultTriples) {
+            allDeps.addAll(triple.getLeft());
+            exclusions.addAll(triple.getMiddle());
+            descendants.putAll(triple.getRight());
+        }
 
-        return allDeps;
+        return filterDependenciesByExclusions(allDeps, exclusions, descendants);
     }
 
     /**
@@ -284,9 +279,10 @@ public class GraphMavenResolver implements Runnable {
      * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}, as specified
      * by the provided revision details.
      */
-    public Set<Revision> resolveDependents(String groupId, String artifactId,
-                                           String version, long timestamp, DSLContext db, boolean transitive) {
-        return revisionGraphBFS(dependentGraph, groupId, artifactId, version, timestamp, transitive, true);
+    public Set<Revision> resolveDependents(String groupId, String artifactId, String version,
+                                           long timestamp, DSLContext db, boolean transitive) {
+        var triple = revisionGraphBFS(dependentGraph, groupId, artifactId, version, timestamp, transitive, true);
+        return triple.getLeft();
     }
 
     /**
@@ -294,15 +290,16 @@ public class GraphMavenResolver implements Runnable {
      *
      * @return The (transitive) dependent set
      */
-    public Set<Revision> resolveDependents(Revision r, DSLContext db, boolean transitive) {
+    public Triple<Set<Revision>, List<Pair<Revision, MavenProduct>>, Map<Revision, Revision>>
+    resolveDependents(Revision r, boolean transitive) {
         return revisionGraphBFS(dependentGraph, r.groupId, r.artifactId, r.version.toString(),
                 r.createdAt.getTime(), transitive, true);
     }
 
-    public Set<Revision> revisionGraphBFS(Graph<Revision, DependencyEdge> graph,
-                                          String groupId, String artifactId, String version,
-                                          long timestamp, boolean transitive, boolean dependents) {
-
+    public Triple<Set<Revision>, List<Pair<Revision, MavenProduct>>, Map<Revision, Revision>>
+    revisionGraphBFS(Graph<Revision, DependencyEdge> graph,
+                     String groupId, String artifactId, String version,
+                     long timestamp, boolean transitive, boolean dependents) {
         assert (timestamp > 0);
         var startTS = System.currentTimeMillis();
         logger.debug("BFS from root: {}:{}:{}", groupId, artifactId, version);
@@ -328,7 +325,7 @@ public class GraphMavenResolver implements Runnable {
         var result = workQueue.stream().map(Pair::getFirst).collect(Collectors.toSet());
 
         if (!transitive) {
-            return filterDependenciesByExclusions(result, excludeProducts, descendantsMap);
+            return new ImmutableTriple<>(result, excludeProducts, descendantsMap);
         }
 
         var depthRevisions = new ArrayList<>(workQueue);
@@ -362,7 +359,7 @@ public class GraphMavenResolver implements Runnable {
         var depSet = resolveConflicts(new HashSet<>(depthRevisions));
 
         logger.debug("Resolved version conflicts, now filtering exclusions");
-        return filterDependenciesByExclusions(depSet, excludeProducts, descendantsMap);
+        return new ImmutableTriple<>(depSet, excludeProducts, descendantsMap);
     }
 
     public Set<Revision> filterDependenciesByExclusions(Set<Revision> dependencies, List<Pair<Revision, MavenProduct>> exclusions, Map<Revision, Revision> descendentsMap) {
@@ -479,207 +476,17 @@ public class GraphMavenResolver implements Runnable {
                 })).values().stream().map(Pair::getFirst).collect(Collectors.toSet());
     }
 
-    public void buildDependencyGraph(DSLContext dbContext) {
-        dependencyGraph = new DependencyGraphBuilder().buildDependencyGraph(dbContext);
-    }
-
-    public Set<Revision> resolveFullDependentsSet(String groupId, String artifactId,
-                                                  String version, DSLContext dbContext) {
-        return this.resolveFullDependentsSet(groupId, artifactId, version, -1,
-                Arrays.asList(Dependency.SCOPES), dbContext, false, false, false);
-    }
-
-    public Set<Revision> resolveFullDependentsSet(String groupId, String artifactId,
-                                                  String version, long timestamp,
-                                                  List<String> scopes, DSLContext dbContext,
-                                                  boolean filterOptional, boolean filterScopes,
-                                                  boolean filterExclusions) {
-        if (dependencyGraph == null) {
-            buildDependencyGraph(dbContext);
-        }
-        // Constant memory footprint
-        //var reverseGraph = new EdgeReversedGraph(dependencyGraph);
-        var reverseGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
-        return this.resolveDependencySetUsingGraph(groupId, artifactId, version, timestamp,
-                scopes, dbContext, reverseGraph, filterOptional, filterScopes, filterExclusions);
-    }
-
-    public Set<Revision> resolveFullDependencySet(String groupId, String artifactId,
-                                                  String version, DSLContext dbContext) {
-        return resolveFullDependencySet(groupId, artifactId, version, -1,
-                Arrays.asList(Dependency.SCOPES), dbContext, false, false, false);
-    }
-
-    public Set<Revision> resolveFullDependencySet(String groupId, String artifactId,
-                                                  String version, long timestamp,
-                                                  List<String> scopes, DSLContext dbContext,
-                                                  boolean filterOptional, boolean filterScopes,
-                                                  boolean filterExclusions) {
-        if (dependencyGraph == null) {
-            buildDependencyGraph(dbContext);
-        }
-        var graph = DependencyGraphUtilities.cloneDependencyGraph(dependencyGraph);
-        return this.resolveDependencySetUsingGraph(groupId, artifactId, version, timestamp,
-                scopes, dbContext, graph, filterOptional, filterScopes, filterExclusions);
-    }
-
-    public Set<Revision> resolveDependencySetUsingGraph(String groupId, String artifactId,
-                                                        String version, long timestamp,
-                                                        List<String> scopes, DSLContext dbContext,
-                                                        Graph<Revision, DependencyEdge> dependencyGraph,
-                                                        boolean filterOptional, boolean filterScopes,
-                                                        boolean filterExclusions) {
-        var parents = new HashSet<Revision>();
-        parents.add(new Revision(groupId, artifactId, version, new Timestamp(-1)));
-        var parent = this.getParentArtifact(groupId, artifactId, version, dbContext);
-        while (parent != null) {
-            parents.add(parent);
-            parent = this.getParentArtifact(parent.groupId, parent.artifactId, parent.version.toString(), dbContext);
-        }
-        var dependencySet = new HashSet<Revision>();
-        for (var artifact : parents) {
-            var graph = dependencyGraph;
-            if (filterOptional) {
-                graph = filterOptionalDependencies(dependencyGraph);
+    public void buildDependencyGraph(DSLContext dbContext, String serializedGraphPath) {
+        try {
+            var graphOpt = DependencyGraphUtilities.loadDependencyGraph(serializedGraphPath);
+            if (graphOpt.isEmpty()) {
+                dependencyGraph = DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedGraphPath);
+            } else {
+                dependencyGraph = graphOpt.get();
             }
-            if (timestamp != -1) {
-                graph = filterDependencyGraphByTimestamp(graph, new Timestamp(timestamp));
-            }
-            if (filterScopes) {
-                graph = filterDependencyGraphByScope(graph, scopes);
-            }
-            var rootNode = findNodeByArtifact(artifact, graph);
-            var dependencyTree = buildDependencyTreeFromGraph(graph, rootNode);
-            if (filterExclusions) {
-                dependencyTree = filterExcludedDependencies(dependencyTree);
-            }
-            var currentDependencySet = collectDependencyTree(dependencyTree);
-            dependencySet.addAll(currentDependencySet);
+        } catch (Exception e) {
+            logger.error("Could not build the dependency graph", e);
         }
-        dependencySet.removeAll(parents);
-        return dependencySet;
-    }
-
-    private Revision findNodeByArtifact(Revision artifact, Graph<Revision, DependencyEdge> graph) {
-        for (var node : graph.vertexSet()) {
-            if (node.equals(artifact)) {
-                return node;
-            }
-        }
-        throw new RuntimeException("Could not find resolution artifact's node in the dependency graph: " + artifact);
-    }
-
-    /**
-     * Filters dependency graph removing edges
-     * which point to artifacts released later than the provided timestamp.
-     *
-     * @param timestamp Timestamp for filtering
-     * @return Filtered dependency graph
-     */
-    public Graph<Revision, DependencyEdge> filterDependencyGraphByTimestamp(
-            Graph<Revision, DependencyEdge> dependencyGraph, Timestamp timestamp) {
-        var graph = DependencyGraphUtilities.cloneDependencyGraph(dependencyGraph);
-        for (var node : dependencyGraph.vertexSet()) {
-            if (node.createdAt.after(timestamp)
-                    && !node.createdAt.equals(new Timestamp(-1))) {
-                dependencyGraph.edgeSet().stream().filter(e -> {
-                    if (graph.containsEdge(e)) {
-                        return graph.getEdgeTarget(e).equals(node) || graph.getEdgeSource(e).equals(node);
-                    }
-                    return false;
-                }).forEach(graph::removeEdge);
-                graph.removeVertex(node);
-            }
-        }
-        return graph;
-    }
-
-    public Graph<Revision, DependencyEdge> filterOptionalDependencies(
-            Graph<Revision, DependencyEdge> dependencyGraph) {
-        var graph = DependencyGraphUtilities.cloneDependencyGraph(dependencyGraph);
-        for (var edge : dependencyGraph.edgeSet()) {
-            if (edge.optional) {
-                graph.removeVertex(dependencyGraph.getEdgeTarget(edge));
-                graph.removeEdge(edge);
-            }
-        }
-        return graph;
-    }
-
-    public Graph<Revision, DependencyEdge> filterDependencyGraphByScope(
-            Graph<Revision, DependencyEdge> dependencyGraph,
-            List<String> scopes) {
-        var graph = DependencyGraphUtilities.cloneDependencyGraph(dependencyGraph);
-        for (var edge : dependencyGraph.edgeSet()) {
-            var dependencyScope = edge.scope;
-            if (dependencyScope == null || dependencyScope.isEmpty()) {
-                dependencyScope = "compile";
-            }
-            if (!scopes.contains(dependencyScope)) {
-                graph.removeVertex(dependencyGraph.getEdgeTarget(edge));
-                graph.removeEdge(edge);
-            }
-        }
-        return graph;
-    }
-
-    public DependencyTree buildDependencyTreeFromGraph(Graph<Revision, DependencyEdge> graph,
-                                                       Revision root) {
-        return this.buildDependencyTreeFromGraph(graph, root, new HashSet<>());
-    }
-
-    public DependencyTree buildDependencyTreeFromGraph(Graph<Revision, DependencyEdge> graph,
-                                                       Revision root,
-                                                       Set<Revision> visitedArtifacts) {
-        // TODO: Maven should pick the highest version available
-        var childTrees = new ArrayList<DependencyTree>();
-        visitedArtifacts.add(root);
-        var rootEdges = graph.outgoingEdgesOf(root);
-        for (var edge : rootEdges) {
-            var target = graph.getEdgeTarget(edge);
-            if (!visitedArtifacts.contains(target)) {
-                childTrees.add(buildDependencyTreeFromGraph(graph, target, visitedArtifacts));
-            }
-        }
-        return new DependencyTree(new Dependency(root.groupId, root.artifactId, root.version.toString()), childTrees);
-
-    }
-
-    public DependencyTree filterExcludedDependencies(DependencyTree dependencyTree) {
-        return filterExcludedDependenciesRecursively(dependencyTree, new HashSet<>());
-    }
-
-    private DependencyTree filterExcludedDependenciesRecursively(
-            DependencyTree dependencyTree, Set<Dependency.Exclusion> exclusions) {
-        if (dependencyTree.artifact != null) {
-            exclusions.addAll(dependencyTree.artifact.exclusions);
-        }
-        var filteredDependencies = new ArrayList<DependencyTree>();
-        for (var childTree : dependencyTree.dependencies) {
-            if (!exclusions.contains(new Dependency.Exclusion(childTree.artifact.groupId,
-                    childTree.artifact.artifactId))) {
-                filteredDependencies.add(filterExcludedDependenciesRecursively(childTree, exclusions));
-            }
-        }
-        return new DependencyTree(dependencyTree.artifact, filteredDependencies);
-    }
-
-    public Set<Revision> collectDependencyTree(DependencyTree rootDependencyTree) {
-        var dependencySet = new HashSet<Revision>();
-        var packages = new HashSet<String>();
-        Queue<DependencyTree> queue = new LinkedList<>();
-        queue.add(rootDependencyTree);
-        while (!queue.isEmpty()) {
-            DependencyTree tree = queue.poll();
-            var artifactPackage = tree.artifact.groupId + Constants.mvnCoordinateSeparator
-                    + tree.artifact.artifactId;
-            if (!packages.contains(artifactPackage)) {
-                packages.add(artifactPackage);
-                dependencySet.add(new Revision(tree.artifact.groupId, tree.artifact.groupId, tree.artifact.getVersion(), new Timestamp(-1)));
-            }
-            queue.addAll(tree.dependencies);
-        }
-        return dependencySet;
     }
 
     public long getCreatedAt(String groupId, String artifactId, String version, DSLContext context) {
