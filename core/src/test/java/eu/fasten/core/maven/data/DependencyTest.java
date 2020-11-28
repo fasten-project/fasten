@@ -18,9 +18,6 @@
 
 package eu.fasten.core.maven.data;
 
-import com.github.zafarkhaja.semver.Parser;
-import com.github.zafarkhaja.semver.Version;
-import com.github.zafarkhaja.semver.expr.ExpressionParser;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
@@ -40,9 +37,9 @@ public class DependencyTest {
 
     @Test
     public void equalsTest() {
-//        Assertions.assertEquals(new Dependency("junit:junit:4.12"), new Dependency("junit", "junit", "4.12", new ArrayList<>(), "compile", false, "jar", ""));
-//        Assertions.assertEquals(new Dependency("junit:junit:4.12"), new Dependency("junit", "junit", "4.12", new ArrayList<>(), "", false, "jar", ""));
-//        Assertions.assertEquals(new Dependency("junit:junit:4.12"), new Dependency("junit", "junit", "4.12", new ArrayList<>(), "compile", false, "", ""));
+        Assertions.assertEquals(new Dependency("junit", "junit", "4.12"), new Dependency("junit", "junit", "4.12", new ArrayList<>(), "compile", false, "jar", ""));
+        Assertions.assertEquals(new Dependency("junit", "junit", "4.12"), new Dependency("junit", "junit", "4.12", new ArrayList<>(), "", false, "jar", ""));
+        Assertions.assertEquals(new Dependency("junit", "junit", "4.12"), new Dependency("junit", "junit", "4.12", new ArrayList<>(), "compile", false, "", ""));
     }
 
     @Test
