@@ -18,18 +18,22 @@
 
 package eu.fasten.core.maven.data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import eu.fasten.core.data.Constants;
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class Dependency {
+/**
+ * A dependency declaration. Denotes a Revision's will to use the functionality of the
+ * {@class MavenProduct} that matches the dependency's qualifiers.
+ */
+public class Dependency extends MavenProduct {
+    public static final Dependency empty = new Dependency("", "", "");
 
-    public final String artifactId;
-    public final String groupId;
     public final List<VersionConstraint> versionConstraints;
     public final List<Exclusion> exclusions;
     public final String scope;
@@ -67,8 +71,7 @@ public class Dependency {
                       final List<VersionConstraint> versionConstraints,
                       final List<Exclusion> exclusions, final String scope, final boolean optional,
                       final String type, final String classifier) {
-        this.groupId = groupId;
-        this.artifactId = artifactId;
+        super(groupId, artifactId);
         this.versionConstraints = versionConstraints;
         this.exclusions = exclusions;
         this.scope = scope.toLowerCase();
@@ -88,81 +91,8 @@ public class Dependency {
         this(groupId, artifactId, version, new ArrayList<>(), "", false, "", "");
     }
 
-    /**
-     * Constructor for Dependency object.
-     * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
-     * <p>
-     * Allowed format:
-     * group:artifact:type[:classifier]:version:scope:pathname [(optional)]
-     *
-     * @param mavenCoordinate the string of coordinate parameters concatenated by a separator.
-     * @throws IllegalArgumentException if the coordinate is wrongly formatted.
-     */
-    public Dependency(String mavenCoordinate) {
-        boolean optional1;
-
-        // Used to separate the coordinate itself and the optional tag.
-        // Some coordinates may have format artifact:group:type:version:scope (optional),
-        // which means that they are optional.
-        var splitBySpace = mavenCoordinate.split(" ");
-
-        var optional = false;
-        if (splitBySpace.length > 1 && splitBySpace[1].equals("(optional)")) {
-            optional = true;
-        }
-
-        var coordinates = splitBySpace[0].split(Constants.mvnCoordinateSeparator);
-        var sep = Constants.mvnCoordinateSeparator;
-
-        if (coordinates.length > 7 || coordinates.length < 3) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Maven coordinate must be in form of " +
-                                    "group%1$sartifact%1$stype[%1$sclassifier]%1$sversion%1$sscope[%1$spathname] [(optional)] or group:artifact:version, " +
-                                    "but was %2$s",
-                            sep,
-                            mavenCoordinate.isBlank() ? "[empty]" : mavenCoordinate
-                    )
-            );
-        }
-
-        optional1 = optional;
-        this.groupId = coordinates[0];
-        this.artifactId = coordinates[1];
-        this.exclusions = new ArrayList<>();
-
-        if (coordinates.length == 3) {
-            this.type = "";
-            this.classifier = "";
-            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[2]);
-            this.scope = "";
-        } else if (coordinates.length == 4) {
-            this.type = "";
-            this.classifier = "";
-            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[2]);
-            this.scope = coordinates[3];
-        } else if (coordinates.length == 5) {
-            this.type = coordinates[2];
-            this.classifier = "";
-            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[3]);
-            this.scope = coordinates[4];
-        } else if (coordinates.length == 6) {
-            this.type = coordinates[2];
-            this.classifier = coordinates[3];
-            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[4]);
-            this.scope = coordinates[5];
-        } else {
-            this.type = coordinates[2];
-            this.classifier = coordinates[3];
-            optional1 = coordinates[4].equals("optional");
-            this.versionConstraints = VersionConstraint.resolveMultipleVersionConstraints(coordinates[5]);
-            this.scope = coordinates[6];
-        }
-        this.optional = optional1;
-        if (!scope.isEmpty() && !Arrays.asList(SCOPES).contains(scope)) {
-            throw new IllegalArgumentException("Invalid scope of the dependency '"
-                    + mavenCoordinate + "': " + scope);
-        }
+    public MavenProduct product() {
+        return new MavenProduct(groupId, artifactId);
     }
 
     /**
@@ -276,6 +206,9 @@ public class Dependency {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
+        if (!super.equals(o)) {
+            return false;
+        }
         Dependency that = (Dependency) o;
         if (!artifactId.equals(that.artifactId)) {
             return false;
@@ -288,7 +221,7 @@ public class Dependency {
 
     @Override
     public int hashCode() {
-        return this.toMavenCoordinate().hashCode();
+        return Objects.hash(this.groupId, this.artifactId, this.getVersion());
     }
 
     @Override
@@ -501,11 +434,12 @@ public class Dependency {
         }
     }
 
+    public static class Exclusion implements Serializable {
 
-    public static class Exclusion {
+        public String artifactId;
+        public String groupId;
 
-        public final String artifactId;
-        public final String groupId;
+        public Exclusion() {}
 
         /**
          * Constructor for Exclusion object.

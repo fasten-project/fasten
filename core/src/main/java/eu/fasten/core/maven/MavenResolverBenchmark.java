@@ -3,6 +3,7 @@ package eu.fasten.core.maven;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.Revision;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,10 +11,7 @@ import picocli.CommandLine;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This class is a benchmark for MavenResolver to compare database and online resolution
@@ -44,9 +42,9 @@ public class MavenResolverBenchmark implements Runnable {
             description = "Skip first line of the file")
     boolean skipFirstLine;
 
-    @CommandLine.Option(names = {"-g", "--graph"},
-            description = "Use resolution based on global dependency graph")
-    boolean useGraph;
+    @CommandLine.Option(names = {"-p", "--graph-path"},
+            description = "Path to where the serialized graph is stored")
+    String graphPath;
 
     /**
      * NB! Before running main() make sure to run POM Analyzer on the same coordinates as benchmark
@@ -78,9 +76,8 @@ public class MavenResolverBenchmark implements Runnable {
         logger.info("Starting benchmark - " + new Date());
         var mavenResolver = new MavenResolver();
         var graphResolver = new GraphMavenResolver();
-        if (useGraph) {
-            graphResolver.buildDependencyGraph(dbContext);
-        }
+        graphResolver.scopes = Arrays.asList(Dependency.SCOPES);
+        graphResolver.buildDependencyGraph(dbContext, graphPath);
         var artifactCount = 0;
         var dbCount = 0;
         var onlineCount = 0;
@@ -95,12 +92,8 @@ public class MavenResolverBenchmark implements Runnable {
             var version = coordinate[2];
             try {
                 dbCount++;
-                Set<Dependency> dbDependencySet;
-                if (useGraph) {
-                    dbDependencySet = graphResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
-                } else {
-                    dbDependencySet = mavenResolver.resolveFullDependencySet(groupId, artifactId, version, dbContext);
-                }
+                Set<Revision> dbDependencySet;
+                dbDependencySet = graphResolver.resolveDependencies(groupId, artifactId, version, -1, dbContext, true);
                 dbResolutionSuccess++;
                 onlineCount++;
                 var onlineDependencySet = mavenResolver.resolveFullDependencySetOnline(artifactId, groupId, version);
@@ -118,10 +111,10 @@ public class MavenResolverBenchmark implements Runnable {
                 logger.info("Artifact: " + line);
                 logger.info("##################################################");
                 logger.info("Database resolution dependencies:");
-                dbDependencySet.forEach(d -> logger.info("\t" + d.toFullCanonicalForm()));
+                dbDependencySet.forEach(d -> logger.info("\t" + d.toString()));
                 logger.info("##################################################");
                 logger.info("Online resolution dependencies:");
-                onlineDependencySet.forEach(d -> logger.info("\t" + d.toFullCanonicalForm()));
+                onlineDependencySet.forEach(d -> logger.info("\t" + d.toString()));
                 logger.info("##################################################");
                 logger.info("Current progress");
                 logger.info("Successful match rate is " + result / (float) artifactCount + " for " + artifactCount + " artifacts");
