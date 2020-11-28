@@ -38,9 +38,6 @@ public class JCGTest {
 
                     List<ExtendedRevisionJavaCallGraph> rcgs = new ArrayList<>();
                     for (final var classfile : Objects.requireNonNull(packag.listFiles())) {
-                        if (testCase.getName().equals("Lambda3")) {
-                            System.out.println();
-                        }
                         rcgs.add(JCGTest.getRCG(classfile, classfile.getName()
                                 .replace("$", "")
                                 .replace(" ", ""), ""));
