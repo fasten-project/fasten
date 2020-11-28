@@ -31,6 +31,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
+import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import org.json.JSONException;
@@ -160,81 +162,89 @@ public class MavenCoordinate {
          * @return A temporary file on the filesystem
          */
         public File downloadArtifact(final MavenCoordinate mavenCoordinate)
-                throws FileNotFoundException {
-            logger.debug("Downloading JAR for " + mavenCoordinate.getCoordinate());
+                throws MissingArtifactException {
             var found = false;
             Optional<File> jar = Optional.empty();
             var repos = mavenCoordinate.getMavenRepos();
             for (int i = 0; i < repos.size(); i++) {
+
+                long startTime = System.nanoTime();
+
                 try {
                     if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
                         found = true;
                         jar = httpGetFile(mavenCoordinate
                                 .toProductUrl(repos.get(i), mavenCoordinate.getPackaging()));
                     }
-                } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
+                } catch (MissingArtifactException e) {
                     found = false;
-                    logger.error("Could not find URL: {}", e.getMessage());
+
+                    long duration = computeDurationInMs(startTime);
+                    logger.warn("[ARTIFACT-DOWNLOAD] [UNPROCESSED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + repos.get(i), e);
                 }
+
                 if (jar.isPresent()) {
+                    long duration = computeDurationInMs(startTime);
+                    logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + repos.get(i));
                     return jar.get();
                 } else if (found && i == repos.size() - 1) {
-                    throw new RuntimeException();
+                    throw new MissingArtifactException("Artifact couldn't be retrieved for repo: " + repos.get(i), null);
                 } else if (found) {
                     continue;
                 }
 
                 for (var s : defaultPackaging) {
+                    startTime = System.nanoTime();
                     try {
                         found = true;
                         jar = httpGetFile(mavenCoordinate.toProductUrl(repos.get(i), s));
-                    } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
+                    } catch (MissingArtifactException e) {
                         found = false;
-                        logger.error("Could not find URL: {}", e.getMessage());
+
+                        long duration = computeDurationInMs(startTime);
+                        logger.warn("[ARTIFACT-DOWNLOAD] [UNPROCESSED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + repos.get(i), e);
                     }
-                    if (jar.isPresent()) {
+
+                    if (jar.isPresent()) {long duration = computeDurationInMs(startTime);
+                        logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + repos.get(i));
                         return jar.get();
                     } else if (found && i == repos.size() - 1) {
-                        throw new RuntimeException();
+                        throw new MissingArtifactException("Artifact couldn't be retrieved for repo: " + repos.get(i), null);
                     } else if (found) {
                         break;
                     }
                 }
             }
-            throw new FileNotFoundException(
+            throw new MissingArtifactException(
                     mavenCoordinate.toURL(mavenCoordinate.getMavenRepos().size() > 0
                             ? mavenCoordinate.getMavenRepos().get(0)
                             : "no repos specified") + " | "
-                            + mavenCoordinate.getPackaging());
+                            + mavenCoordinate.getPackaging(), null);
         }
 
         /**
          * Utility function that stores the contents of GET request to a temporary file.
          */
-        private static Optional<File> httpGetFile(final String url) throws FileNotFoundException,
-                MalformedURLException, UnknownHostException {
-	
+        private static Optional<File> httpGetFile(final String url) throws MissingArtifactException {
             Path tempFile = null;
-	    try {
-                logger.debug("HTTP GET: " + url);
+            try {
+                    final var packaging = url.substring(url.lastIndexOf("."));
+                    tempFile = Files.createTempFile("fasten", packaging);
 
-                final var packaging = url.substring(url.lastIndexOf("."));
-                tempFile = Files.createTempFile("fasten", packaging);
+                    final InputStream in = new URL(url).openStream();
+                    Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                    in.close();
 
-                final InputStream in = new URL(url).openStream();
-                Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-                in.close();
-
-                return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-            } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
-                logger.error("Couldn't find an artifact: {}", url);
-		        if (tempFile != null) {tempFile.toFile().delete();}
-                throw e;
+                    return Optional.of(new File(tempFile.toAbsolutePath().toString()));
             } catch (IOException e) {
-                logger.error("IO exception occurred while retrieving URL: {}", url);
-		        if (tempFile != null) {tempFile.toFile().delete();}
-                return Optional.empty();
+                    if (tempFile != null) {tempFile.toFile().delete();}
+                    throw new MissingArtifactException(e.getMessage(), e.getCause());
             }
+        }
+
+        private long computeDurationInMs(long startTime) {
+            long endTime = System.nanoTime();
+            return (endTime - startTime) / 1000000; // Compute duration in ms.
         }
     }
 }

@@ -210,7 +210,8 @@ public class JavaType {
     public Optional<Map.Entry<Integer, JavaNode>> getDefined(String signature) {
         return methods.entrySet()
                 .stream()
-                .filter(node -> node.getValue().getUri().getEntity().contains(signature))
+                .filter(node -> (Boolean) node.getValue().metadata.get("defined"))
+                .filter(node -> node.getValue().getSignature().equals(signature))
                 .findAny();
     }
 
