@@ -474,12 +474,18 @@ public class DatabaseMerger {
                 universalCHA.addVertex(callable.value1());
             }
 
-            var superClasses = new JSONObject(callable.value2().data())
-                    .getJSONArray("superClasses").toList();
-            var superInterfaces = new JSONObject(callable.value2().data())
-                    .getJSONArray("superInterfaces").toList();
-            addSuperTypes(universalCHA, callable.value1(), superClasses);
-            addSuperTypes(universalCHA, callable.value1(), superInterfaces);
+            try {
+                var superClasses = new JSONObject(callable.value2().data())
+                        .getJSONArray("superClasses").toList();
+                addSuperTypes(universalCHA, callable.value1(), superClasses);
+            } catch (NullPointerException ignore) {
+            }
+            try {
+                var superInterfaces = new JSONObject(callable.value2().data())
+                        .getJSONArray("superInterfaces").toList();
+                addSuperTypes(universalCHA, callable.value1(), superInterfaces);
+            } catch (NullPointerException ignore) {
+            }
         }
 
         final Map<String, Set<String>> universalParents = new HashMap<>();
