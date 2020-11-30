@@ -792,14 +792,14 @@ public class MetadataDao {
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
 
         // Building and executing the query
-        Result<Record> queryResult = this.context
+        Record queryResult = this.context
                 .select(p.fields())
                 .select(pv.VERSION)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
                 .orderBy(pv.CREATED_AT.sortDesc())
-                .fetch();
+                .fetchOne();
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
