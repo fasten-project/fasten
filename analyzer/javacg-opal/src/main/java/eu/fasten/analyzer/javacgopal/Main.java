@@ -245,8 +245,8 @@ public class Main implements Runnable {
         return result;
     }
 
-    public void merge_all(final File artifact,
-                          final List<File> dependencies)
+    public <T> void merge_all(final T artifact,
+                          final List<T> dependencies)
             throws IOException, OPALException, MissingArtifactException {
         final long startTime = System.currentTimeMillis();
         final var deps = new ArrayList<ExtendedRevisionJavaCallGraph>();
