@@ -43,6 +43,7 @@ public class KnowledgeBaseConnector {
             kbDao = new MetadataDao(PostgresConnector.getDSLContext(kbUrl, kbUser));
         } catch (SQLException e) {
             logger.error("Couldn't connect to the KnowledgeBase", e);
+            System.exit(1);
         }
         logger.info("...KnowledgeBase connection established successfully.");
     }
