@@ -60,17 +60,17 @@ public class Main implements Runnable {
     List<String> repos;
 
     static class Commands {
-        @CommandLine.ArgGroup(exclusive = false)
+        @CommandLine.ArgGroup(exclusive = false, multiplicity = "1")
         Computations computations;
     }
 
     static class Computations {
         @CommandLine.Option(names = {"-a", "--artifact"},
                 paramLabel = "ARTIFACT",
-                description = "Artifact, maven coordinate or file path")
+                description = "Artifact, Maven coordinate or file path")
         String artifact;
 
-        @CommandLine.Option(names = {"-m", "--mode"},
+        @CommandLine.Option(names = {"-i", "--input-type"},
                 paramLabel = "MODE",
                 description = "Input of algorithms are {FILE or COORD}",
                 defaultValue = "FILE")
@@ -87,7 +87,7 @@ public class Main implements Runnable {
                 defaultValue = "CHA")
         String genAlgorithm;
 
-        @CommandLine.ArgGroup()
+        @CommandLine.ArgGroup(multiplicity = "1")
         Tools tools;
 
         @CommandLine.Option(names = {"-t", "--timestamp"},
@@ -119,9 +119,10 @@ public class Main implements Runnable {
                 defaultValue = "CHA")
         String mergeAlgorithm;
 
-        @CommandLine.Option(names = {"-s", "--stitch"},
-                paramLabel = "STITCH",
-                description = "Stitch artifact CG to dependencies")
+        @CommandLine.Option(names = {"-m", "--merge"},
+                paramLabel = "MERGE",
+                description = "Merge artifact CG to dependencies",
+                required = true)
         boolean doMerge;
 
         @CommandLine.Option(names = {"-d", "--dependencies"},
