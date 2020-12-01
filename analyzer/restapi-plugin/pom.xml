@@ -25,7 +25,6 @@
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>

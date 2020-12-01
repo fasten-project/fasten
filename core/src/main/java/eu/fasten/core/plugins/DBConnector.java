@@ -20,16 +20,17 @@ package eu.fasten.core.plugins;
 
 import org.jooq.DSLContext;
 
+import java.util.Map;
+
 /**
  * A plug-in that needs to get access to a database should implement this interface.
  */
 public interface DBConnector extends FastenPlugin {
 
     /**
-     * This methods sets a DB connection for plug-ins.
+     * This methods sets DB connections for plug-ins.
      *
-     * @param dslContext A DSL context for JOOQ to query the database.
+     * @param dslContexts A set of DSL contexts for JOOQ to query the database.
      */
-    void setDBConnection(DSLContext dslContext);
-
+    void setDBConnection(Map<String, DSLContext> dslContexts);
 }

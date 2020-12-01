@@ -1,5 +1,3 @@
-package eu.fasten.core.data;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,11 +16,15 @@ package eu.fasten.core.data;
  * limitations under the License.
  */
 
+package eu.fasten.core.data;
+
+import java.io.Serializable;
 import java.util.Arrays;
 
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -50,9 +52,11 @@ import it.unimi.dsi.fastutil.longs.LongSet;
  * offsets in the array.
  */
 
-public class ArrayImmutableDirectedGraph implements DirectedGraph {
+public class ArrayImmutableDirectedGraph implements DirectedGraph, Serializable {
+	private static final long serialVersionUID = 0L;
+
 	public static class Builder {
-		private final Long2ObjectArrayMap<LongOpenHashSet> graph = new Long2ObjectArrayMap<>();
+		private final Long2ObjectOpenHashMap<LongOpenHashSet> graph = new Long2ObjectOpenHashMap<>();
 		private final LongOpenHashSet externalNodes = new LongOpenHashSet();
 		private int numArcs;
 
@@ -76,7 +80,28 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph {
 			numArcs++;
 		}
 
+		/**
+		 * Builds an {@link ArrayImmutableDirectedGraph} with sorted predecessor and successor lists.
+		 *
+		 * @return an {@link ArrayImmutableDirectedGraph} with sorted predecessor and successor lists.
+		 */
 		public ArrayImmutableDirectedGraph build() {
+			return build(true);
+		}
+
+		/**
+		 * Builds an {@link ArrayImmutableDirectedGraph} with possibly sorted predecessor and successor
+		 * lists.
+		 *
+		 * <p>
+		 * Sorted predecessor and successor lists takes an additional computational effort at construction
+		 * time, but they make it possible to obtain faster {@linkplain ImmutableGraphAdapter adapters}.
+		 *
+		 * @param sorted whether successor and predecessor lists should be sorted.
+		 * @return an {@link ArrayImmutableDirectedGraph}; predecessor and successor lists will be sorted
+		 *         depending on the value of {@code sorted}.
+		 */
+		public ArrayImmutableDirectedGraph build(final boolean sorted) {
 			final Long2ObjectArrayMap<LongArrayList> transpose = new Long2ObjectArrayMap<>();
 			for (final Entry<LongOpenHashSet> e : graph.long2ObjectEntrySet()) {
 				final long x = e.getLongKey();
@@ -99,16 +124,27 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph {
 				succpred[i++] = outdegree;
 				final LongIterator s = e.getValue().iterator();
 				for (int j = 0; j < outdegree; j++) succpred[i++] = s.nextLong();
+				if (sorted) Arrays.sort(succpred, offset + 1, i);
 
 				final LongArrayList pred = transpose.get(x);
-				final int indegree = pred.size();
+				final int indegree = pred == null ? 0 : pred.size();
 				succpred[offset] |= (long)indegree << 32;
-				final LongIterator p = pred.iterator();
-				for (int j = 0; j < indegree; j++) succpred[i++] = p.nextLong();
+				if (indegree != 0) {
+					final LongIterator p = pred.iterator();
+					for (int j = 0; j < indegree; j++) succpred[i++] = p.nextLong();
+				}
+				if (sorted) Arrays.sort(succpred, offset + 1 + outdegree, i);
 			}
 
 			return new ArrayImmutableDirectedGraph(GID2Offset, succpred, externalNodes);
 		}
+	}
+
+	// Constructor needed for kryo serialization
+	protected ArrayImmutableDirectedGraph() {
+		GID2Offset = null;
+		succpred = null;
+		externalNodes = null;
 	}
 
 	/** A map from node identifiers to offsets into {@link #succpred}. */

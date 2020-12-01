@@ -28,10 +28,8 @@ import org.jooq.*;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -130,23 +128,25 @@ public class MetadataDao {
     /**
      * Inserts a record in 'package_versions' table in the database.
      *
-     * @param packageId   ID of the package (references 'packages.id')
-     * @param cgGenerator Tool used to generate this callgraph
-     * @param version     Version of the package
-     * @param createdAt   Timestamp when the package version was created
-     * @param metadata    Metadata of the package version
+     * @param packageId    ID of the package (references 'packages.id')
+     * @param cgGenerator  Tool used to generate this callgraph
+     * @param version      Version of the package
+     * @param architecture Architecture of the package
+     * @param createdAt    Timestamp when the package version was created
+     * @param metadata     Metadata of the package version
      * @return ID of the new record
      */
     public long insertPackageVersion(long packageId, String cgGenerator, String version,
-                                     Timestamp createdAt, JSONObject metadata) {
+                                     String architecture, Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
                 PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID,
                 PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
                 PackageVersions.PACKAGE_VERSIONS.VERSION,
+                PackageVersions.PACKAGE_VERSIONS.ARCHITECTURE,
                 PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
                 PackageVersions.PACKAGE_VERSIONS.METADATA)
-                .values(packageId, cgGenerator, version, createdAt, metadataJsonb)
+                .values(packageId, cgGenerator, version, architecture, createdAt, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_PACKAGE_VERSION_GENERATOR).doUpdate()
                 .set(PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
                         PackageVersions.PACKAGE_VERSIONS.as("excluded").CREATED_AT)
@@ -160,27 +160,28 @@ public class MetadataDao {
     /**
      * Inserts multiple records in the 'package_versions' table in the database.
      *
-     * @param packageId    ID of the common package (references 'packages.id')
-     * @param cgGenerators List of code generators
-     * @param versions     List of versions
-     * @param createdAt    List of timestamps
-     * @param metadata     List of metadata objects
+     * @param packageId     ID of the common package (references 'packages.id')
+     * @param cgGenerators  List of code generators
+     * @param versions      List of versions
+     * @param architectures List of architectures
+     * @param createdAt     List of timestamps
+     * @param metadata      List of metadata objects
      * @return List of IDs of the new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public List<Long> insertPackageVersions(long packageId, List<String> cgGenerators,
-                                            List<String> versions, List<Timestamp> createdAt,
-                                            List<JSONObject> metadata)
+                                            List<String> versions, List<String> architectures,
+                                            List<Timestamp> createdAt, List<JSONObject> metadata)
             throws IllegalArgumentException {
         if (cgGenerators.size() != versions.size() || versions.size() != createdAt.size()
-                || createdAt.size() != metadata.size()) {
+                || createdAt.size() != metadata.size() || metadata.size() != architectures.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = cgGenerators.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
             long result = insertPackageVersion(packageId, cgGenerators.get(i), versions.get(i),
-                    createdAt.get(i), metadata.get(i));
+                    architectures.get(i), createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;
@@ -192,19 +193,34 @@ public class MetadataDao {
      * @param packageVersionId ID of the package version (references 'package_versions.id')
      * @param dependencyId     ID of the dependency package (references 'packages.id')
      * @param versionRanges    Ranges of valid versions
+     * @param architecture     Architectures of the dependency
+     * @param dependencyType   Types of the dependencies
+     * @param alternativeGroup Alternative dependencies group
      * @param metadata         Metadata of the dependency
      * @return ID of the package version (packageVersionId)
      */
     public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges,
-                                 JSONObject metadata) {
+                                 String[] architecture, String[] dependencyType,
+                                 Long alternativeGroup, JSONObject metadata) {
         var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
                 Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID,
                 Dependencies.DEPENDENCIES.VERSION_RANGE,
+                Dependencies.DEPENDENCIES.ARCHITECTURE,
+                Dependencies.DEPENDENCIES.DEPENDENCY_TYPE,
+                Dependencies.DEPENDENCIES.ALTERNATIVE_GROUP,
                 Dependencies.DEPENDENCIES.METADATA)
-                .values(packageVersionId, dependencyId, versionRanges,
-                        JSONB.valueOf(metadata.toString()))
+                .values(packageVersionId, dependencyId, versionRanges, architecture, dependencyType,
+                        alternativeGroup, JSONB.valueOf(metadata.toString()))
                 .onConflictOnConstraint(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE).doUpdate()
+                .set(Dependencies.DEPENDENCIES.VERSION_RANGE,
+                        Dependencies.DEPENDENCIES.as("excluded").VERSION_RANGE)
+                .set(Dependencies.DEPENDENCIES.ARCHITECTURE,
+                        Dependencies.DEPENDENCIES.as("excluded").ARCHITECTURE)
+                .set(Dependencies.DEPENDENCIES.DEPENDENCY_TYPE,
+                        Dependencies.DEPENDENCIES.as("excluded").DEPENDENCY_TYPE)
+                .set(Dependencies.DEPENDENCIES.ALTERNATIVE_GROUP,
+                        Dependencies.DEPENDENCIES.as("excluded").ALTERNATIVE_GROUP)
                 .set(Dependencies.DEPENDENCIES.METADATA,
                         JsonbDSL.concat(Dependencies.DEPENDENCIES.METADATA,
                                 Dependencies.DEPENDENCIES.as("excluded").METADATA))
@@ -213,27 +229,83 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts multiple 'dependencies' int the database for certain package.
+     * Inserts multiple 'dependencies' in the database for certain package.
      *
-     * @param packageVersionId ID of the package version
-     * @param dependenciesIds  List of IDs of dependencies
-     * @param versionRanges    List of version ranges
-     * @param metadata         List of metadata
+     * @param packageVersionId  ID of the package version
+     * @param dependenciesIds   List of IDs of dependencies
+     * @param versionRanges     List of version ranges
+     * @param architectures     List of architectures of the dependencies
+     * @param dependencyTypes   List of types of the dependencies
+     * @param alternativeGroups List of alternative dependencies group
+     * @param metadata          List of metadata
      * @return ID of the package (packageId)
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public long insertDependencies(long packageVersionId, List<Long> dependenciesIds,
-                                   List<String[]> versionRanges, List<JSONObject> metadata)
+                                   List<String[]> versionRanges, List<String[]> architectures,
+                                   List<String[]> dependencyTypes, List<Long> alternativeGroups,
+                                   List<JSONObject> metadata)
             throws IllegalArgumentException {
-        if (dependenciesIds.size() != versionRanges.size()) {
+        if (dependenciesIds.size() != versionRanges.size()
+                || versionRanges.size() != architectures.size()
+                || architectures.size() != dependencyTypes.size()
+                || dependencyTypes.size() != alternativeGroups.size()
+                || alternativeGroups.size() != metadata.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = dependenciesIds.size();
         for (int i = 0; i < length; i++) {
             insertDependency(packageVersionId, dependenciesIds.get(i), versionRanges.get(i),
+                    architectures.get(i), dependencyTypes.get(i), alternativeGroups.get(i),
                     metadata.get(i));
         }
         return packageVersionId;
+    }
+
+    /**
+     * Inserts a record in 'virtual_implementations' table in the database.
+     *
+     * @param virtualPackageVersionId ID of the virtual implementation of package version
+     *                                (references 'package_versions.id)
+     * @param packageVersionId        ID of the package version (references 'package_versions.id)
+     * @return ID of the virtual implementation of package version (= virtualPackageVersionId)
+     */
+    public long insertVirtualImplementation(long virtualPackageVersionId, long packageVersionId) {
+        var resultRecord = context.insertInto(VirtualImplementations.VIRTUAL_IMPLEMENTATIONS,
+                VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.VIRTUAL_PACKAGE_VERSION_ID,
+                VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.PACKAGE_VERSION_ID)
+                .values(virtualPackageVersionId, packageVersionId)
+                .onConflictOnConstraint(Keys.UNIQUE_VIRTUAL_IMPLEMENTATION).doUpdate()
+                .set(VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.PACKAGE_VERSION_ID,
+                        VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.PACKAGE_VERSION_ID)
+                .returning(VirtualImplementations.VIRTUAL_IMPLEMENTATIONS
+                        .VIRTUAL_PACKAGE_VERSION_ID)
+                .fetchOne();
+        return resultRecord.getValue(VirtualImplementations.VIRTUAL_IMPLEMENTATIONS
+                .VIRTUAL_PACKAGE_VERSION_ID);
+    }
+
+    /**
+     * Inserts multiple 'virtual_implementations' in the database.
+     *
+     * @param virtualPackageVersionIds List of IDs of virtual package versions
+     * @param packageVersionIds        List of IDs of package versions
+     * @return List of virtual package version IDs from the database
+     * @throws IllegalArgumentException if lists are not of the same size
+     */
+    public List<Long> insertVirtualImplementations(List<Long> virtualPackageVersionIds,
+                                                   List<Long> packageVersionIds) {
+        if (virtualPackageVersionIds.size() != packageVersionIds.size()) {
+            throw new IllegalArgumentException("Lists should have equal size");
+        }
+        int length = virtualPackageVersionIds.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertVirtualImplementation(virtualPackageVersionIds.get(i),
+                    packageVersionIds.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
     }
 
     /**
@@ -259,6 +331,43 @@ public class MetadataDao {
                         Modules.MODULES.as("excluded").METADATA))
                 .returning(Modules.MODULES.ID).fetchOne();
         return resultRecord.getValue(Modules.MODULES.ID);
+    }
+
+    /**
+     * Inserts a record in 'modules' table in the database.
+     *
+     * @param packageVersionId ID of the package version where the module belongs
+     *                         (references 'package_versions.id')
+     * @param namespace        Namespace of the module
+     * @param createdAt        Timestamp when the module was created
+     * @param metadata         Metadata of the module
+     * @return ID of the new record
+     */
+    public long insertModule(long packageVersionId, String namespace,
+                             Timestamp createdAt, JSONObject metadata,
+                             boolean addDuplicates) {
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
+        var resultRecord = context.insertInto(Modules.MODULES,
+                Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE,
+                Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)
+                .values(packageVersionId, namespace, createdAt, metadataJsonb)
+                // FIXME
+                /* .set(Modules.MODULES.CREATED_AT, Modules.MODULES.as("excluded").CREATED_AT) */
+                // .set(Modules.MODULES.METADATA, JsonbDSL.concat(Modules.MODULES.METADATA,
+                        /* Modules.MODULES.as("excluded").METADATA)) */
+                .returning(Modules.MODULES.ID).fetchOne();
+        return resultRecord.getValue(Modules.MODULES.ID);
+    }
+
+    public long getModuleContent(long fileId) {
+        var res = context.select(ModuleContents.MODULE_CONTENTS.MODULE_ID)
+            .from(ModuleContents.MODULE_CONTENTS)
+            .where(ModuleContents.MODULE_CONTENTS.FILE_ID.equal(fileId))
+            .fetchOne();
+        if (res == null) {
+            return -1L;
+        }
+        return res.getValue(ModuleContents.MODULE_CONTENTS.MODULE_ID);
     }
 
     /**
@@ -535,14 +644,14 @@ public class MetadataDao {
      * Updates a metadata in the 'callables' table in the database.
      * If the record doesn't exist, it will create a new one.
      *
-     * @param moduleId       ID of the module where the callable belongs (references 'modules.id')
-     * @param fastenUri      URI of the callable in FASTEN
+     * @param moduleId   ID of the module where the callable belongs (references 'modules.id')
+     * @param fastenUri  URI of the callable in FASTEN
      * @param isInternal 'true' if call is internal, 'false' if external
-     * @param metadata       Metadata of the callable
+     * @param metadata   Metadata of the callable
      * @return ID of the record
      */
     public long updateCallableMetadata(Long moduleId, String fastenUri, boolean isInternal,
-                               JSONObject metadata) {
+                                       JSONObject metadata) {
         var metadataJsonb = metadata != null
                 ? JSONB.valueOf(metadata.toString()) : JSONB.valueOf("{}");
         var resultRecord = context.insertInto(Callables.CALLABLES,
