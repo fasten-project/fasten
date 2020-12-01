@@ -74,7 +74,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.5.0</version>
                 <configuration>
-                    <mainClass>eu.fasten.analyzer.restapiplugin.Main</mainClass>
+                    <mainClass>eu.fasten.analyzer.restapiplugin.mvn.RestApplication</mainClass>
                 </configuration>
             </plugin>
 
@@ -111,7 +111,7 @@
                                         implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>eu.fasten.analyzer.restapiplugin.Main</mainClass> <!-- FIXME -->
+                                    <mainClass>eu.fasten.analyzer.restapiplugin.mvn.RestApplication</mainClass>
                                 </transformer>
                             </transformers>
                             <!-- Note that this works when maven is ran in the root directory of the project  -->
