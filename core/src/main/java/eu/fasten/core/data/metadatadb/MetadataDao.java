@@ -908,6 +908,7 @@ public class MetadataDao {
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
                 .orderBy(pv.CREATED_AT.sortDesc())
+                .limit(1)
                 .fetchOne();
 
         // Returning the result
