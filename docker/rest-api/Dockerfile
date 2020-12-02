@@ -1,7 +1,7 @@
 FROM openjdk:11-jre-slim
 
 WORKDIR /app
-COPY ./target/restapi*.jar ./rest-api.jar
+COPY ./*.jar ./rest-api.jar
 
 ENTRYPOINT ["java", "-jar", "/app/rest-api.jar"]
 
