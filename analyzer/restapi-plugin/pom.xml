@@ -61,7 +61,12 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.3.6.RELEASE</version>
+                <configuration>
+                    <mainClass>eu.fasten.analyzer.restapiplugin.mvn.RestApplication</mainClass>
+                </configuration>
             </plugin>
+
+
 
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
