@@ -659,18 +659,14 @@ public class DatabaseMerger {
      */
     private void cloneNodesAndArcs(final ArrayImmutableDirectedGraph.Builder result,
                                    final DirectedGraph callGraphData) {
-        for (var node : callGraphData.nodes()) {
-            if (callGraphData.isInternal(node)) {
-                result.addInternalNode(node);
-            } else {
-                result.addExternalNode(node);
-            }
+        var internalNodes = callGraphData.nodes();
+        internalNodes.removeAll(callGraphData.externalNodes());
+        for (var node : internalNodes) {
+            result.addInternalNode(node);
         }
-        for (var source : callGraphData.nodes()) {
+        for (var source : internalNodes) {
             for (var target : callGraphData.successors(source)) {
-                if (callGraphData.isInternal(target)
-                        && callGraphData.isInternal(source)
-                        && !source.equals(target)) {
+                if (callGraphData.isInternal(target) && !source.equals(target)) {
                     result.addArc(source, target);
                 }
             }
