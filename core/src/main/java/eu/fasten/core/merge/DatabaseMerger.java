@@ -54,33 +54,50 @@ public class DatabaseMerger {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseMerger.class);
 
-//    private final DirectedGraph callGraphData;
     private final Map<String, Set<String>> universalParents;
     private final Map<String, Set<String>> universalChildren;
     private final Map<String, Map<String, Set<Long>>> typeDictionary;
     private final DSLContext dbContext;
     private final RocksDao rocksDao;
-//    private final Map<Long, Node> typeMap;
-//    private final List<Arc> arcs;
+    private final Set<Long> dependencySet;
 
     /**
-     * Create instance of database merger.
+     * Create instance of database merger from package names.
      *
      * @param dependencySet dependencies present in the resolution
-     * @param dbContext    DSL context
-     * @param rocksDao     rocks DAO
+     * @param dbContext     DSL context
+     * @param rocksDao      rocks DAO
      */
     public DatabaseMerger(final List<String> dependencySet,
                           final DSLContext dbContext, final RocksDao rocksDao) {
         this.dbContext = dbContext;
         this.rocksDao = rocksDao;
-        final var dependenciesIds = getDependenciesIds(dependencySet, dbContext);
-        final var universalCHA = createUniversalCHA(dependenciesIds, dbContext, rocksDao);
+        this.dependencySet = getDependenciesIds(dependencySet, dbContext);
+        final var universalCHA = createUniversalCHA(this.dependencySet, dbContext, rocksDao);
 
         this.universalParents = universalCHA.getLeft();
         this.universalChildren = universalCHA.getRight();
-        this.typeDictionary = createTypeDictionary(dependenciesIds, dbContext, rocksDao);
+        this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
 
+    }
+
+    /**
+     * Create instance of database merger from package versions ids.
+     *
+     * @param dependencySet dependencies present in the resolution
+     * @param dbContext     DSL context
+     * @param rocksDao      rocks DAO
+     */
+    public DatabaseMerger(final Set<Long> dependencySet,
+                          final DSLContext dbContext, final RocksDao rocksDao) {
+        this.dbContext = dbContext;
+        this.rocksDao = rocksDao;
+        this.dependencySet = dependencySet;
+        final var universalCHA = createUniversalCHA(dependencySet, dbContext, rocksDao);
+
+        this.universalParents = universalCHA.getLeft();
+        this.universalChildren = universalCHA.getRight();
+        this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
     }
 
     /**
@@ -142,13 +159,59 @@ public class DatabaseMerger {
     }
 
     /**
-     * Merges a call graph with its dependencies using CHA algorithm.
+     * Create fully merged for the entire dependency set.
      *
      * @return merged call graph
      */
-    public DirectedGraph mergeWithCHA(final String artifact) {
+    public DirectedGraph mergeAllDeps() {
+        List<DirectedGraph> depGraphs = new ArrayList<>();
+        for (final var dep : this.dependencySet) {
+            depGraphs.add(mergeWithCHA(dep));
+        }
+        return augmentGraphs(depGraphs);
+    }
 
-        final var callGraphData = fetchCallGraphData(artifact, dbContext, rocksDao);
+    /**
+     * Fetches metadata of the nodes of first arg from database.
+     *
+     * @param graph DirectedGraph to search for its callable's metadata in the database.
+     * @return Map of callable ids and their corresponding metadata in the form of
+     * JSONObject.
+     */
+    public Map<Long, JSONObject> getCallablesMetadata(final DirectedGraph graph) {
+        final Map<Long, JSONObject> result = new HashMap<>();
+
+        final var metadata = dbContext
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.in(graph.nodes()))
+                .fetch();
+        for (final var callable : metadata) {
+            result.put(callable.value1(), new JSONObject(callable.value2().data()));
+        }
+
+        return result;
+    }
+
+    /**
+     * Merges a call graph with its dependencies using CHA algorithm.
+     *
+     * @param artifact artifact to resolve
+     * @return merged call graph
+     */
+    public DirectedGraph mergeWithCHA(final String artifact) {
+        return mergeWithCHA(getPackageVersionId(artifact));
+    }
+
+    /**
+     * Merges a call graph with its dependencies using CHA algorithm.
+     *
+     * @param artifactId package version id of an artifact to resolve
+     * @return merged call graph
+     */
+    public DirectedGraph mergeWithCHA(final long artifactId) {
+
+        final var callGraphData = fetchCallGraphData(artifactId, rocksDao);
         final var typeMap = createTypeMap(callGraphData, dbContext);
         final var arcs = getArcs(callGraphData, dbContext);
 
@@ -157,9 +220,9 @@ public class DatabaseMerger {
         final long startTime = System.currentTimeMillis();
         for (final var arc : arcs) {
             if (callGraphData.isExternal(arc.target)) {
-                resolve(result, arc, typeMap.get(arc.target), false);
+                resolve(result, callGraphData, arc, typeMap.get(arc.target), false);
             } else {
-                resolve(result, arc, typeMap.get(arc.source), callGraphData.isExternal(arc.source));
+                resolve(result, callGraphData, arc, typeMap.get(arc.source), callGraphData.isExternal(arc.source));
             }
         }
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
@@ -170,17 +233,19 @@ public class DatabaseMerger {
     /**
      * Resolve an external call.
      *
-     * @param result     graph with resolved calls
-     * @param arc        source, target and receivers information
-     * @param node       type and method information
-     * @param isCallback true, if a given arc is a callback
+     * @param result        graph with resolved calls
+     * @param callGraphData graph for the artifact to resolve
+     * @param arc           source, target and receivers information
+     * @param node          type and method information
+     * @param isCallback    true, if a given arc is a callback
      */
     private void resolve(final ArrayImmutableDirectedGraph.Builder result,
+                         final DirectedGraph callGraphData,
                          final Arc arc,
                          final Node node,
                          final boolean isCallback) {
         if (node.isConstructor()) {
-            resolveInitsAndConstructors(result, arc, node, isCallback);
+            resolveInitsAndConstructors(result, callGraphData, arc, node, isCallback);
         }
 
         for (var entry : arc.receivers) {
@@ -194,13 +259,13 @@ public class DatabaseMerger {
                         for (final var depTypeUri : types) {
                             for (final var target : typeDictionary.getOrDefault(depTypeUri,
                                     new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
-                                addEdge(result, arc.source, target, isCallback);
+                                addEdge(result, callGraphData, arc.source, target, isCallback);
                             }
                         }
                     }
                     break;
                 case "special":
-                    resolveInitsAndConstructors(result, arc, node, isCallback);
+                    resolveInitsAndConstructors(result, callGraphData, arc, node, isCallback);
                     break;
                 case "dynamic":
                     logger.warn("OPAL didn't rewrite the dynamic");
@@ -208,7 +273,7 @@ public class DatabaseMerger {
                 default:
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
-                        addEdge(result, arc.source, target, isCallback);
+                        addEdge(result, callGraphData, arc.source, target, isCallback);
                     }
                     break;
             }
@@ -219,12 +284,14 @@ public class DatabaseMerger {
     /**
      * Resolves constructors.
      *
-     * @param result     {@link DirectedGraph} with resolved calls
-     * @param arc        source, target and receivers information
-     * @param node       type and method information
-     * @param isCallback true, if a given arc is a callback
+     * @param result        {@link DirectedGraph} with resolved calls
+     * @param callGraphData graph for the artifact to resolve
+     * @param arc           source, target and receivers information
+     * @param node          type and method information
+     * @param isCallback    true, if a given arc is a callback
      */
     private void resolveInitsAndConstructors(final ArrayImmutableDirectedGraph.Builder result,
+                                             final DirectedGraph callGraphData,
                                              final Arc arc,
                                              final Node node,
                                              final boolean isCallback) {
@@ -233,12 +300,13 @@ public class DatabaseMerger {
             for (final var superTypeUri : typeList) {
                 for (final var target : typeDictionary.getOrDefault(superTypeUri,
                         new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
-                    addEdge(result, arc.source, target, isCallback);
+                    addEdge(result, callGraphData, arc.source, target, isCallback);
                 }
-                var superSignature = node.signature.replace("<init>", "<clinit>");
+
+                var superSignature = "<clinit>()/java.lang/VoidType";
                 for (final var target : typeDictionary.getOrDefault(superTypeUri,
                         new HashMap<>()).getOrDefault(superSignature, new HashSet<>())) {
-                    addEdge(result, arc.source, target, isCallback);
+                    addEdge(result, callGraphData, arc.source, target, isCallback);
                 }
             }
         }
@@ -280,25 +348,10 @@ public class DatabaseMerger {
     /**
      * Retrieve a call graph from a graph database given a maven coordinate.
      *
-     * @param dbContext DSL context
-     * @param rocksDao  rocks DAO
+     * @param rocksDao rocks DAO
      * @return call graph
      */
-    private DirectedGraph fetchCallGraphData(final String artifact, final DSLContext dbContext,
-                                             final RocksDao rocksDao) {
-        var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
-        var version = artifact.split(":")[2];
-
-        var artifactId = dbContext
-                .select(PackageVersions.PACKAGE_VERSIONS.ID)
-                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
-                .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                .fetchOne()
-                .component1();
-
+    private DirectedGraph fetchCallGraphData(final long artifactId, final RocksDao rocksDao) {
         DirectedGraph callGraphData = null;
         try {
             callGraphData = rocksDao.getGraphData(artifactId);
@@ -307,6 +360,27 @@ public class DatabaseMerger {
         }
 
         return callGraphData;
+    }
+
+    /**
+     * Get package version id for an artifact.
+     *
+     * @param artifact artifact in format groupId:artifactId:version
+     * @return package version id
+     */
+    private long getPackageVersionId(final String artifact) {
+        var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
+        var version = artifact.split(":")[2];
+
+        return dbContext
+                .select(PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
+                .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                .fetchOne()
+                .component1();
     }
 
     /**
@@ -400,12 +474,18 @@ public class DatabaseMerger {
                 universalCHA.addVertex(callable.value1());
             }
 
-            var superClasses = new JSONObject(callable.value2().data())
-                    .getJSONArray("superClasses").toList();
-            var superInterfaces = new JSONObject(callable.value2().data())
-                    .getJSONArray("superInterfaces").toList();
-            addSuperTypes(universalCHA, callable.value1(), superClasses);
-            addSuperTypes(universalCHA, callable.value1(), superInterfaces);
+            try {
+                var superClasses = new JSONObject(callable.value2().data())
+                        .getJSONArray("superClasses").toList();
+                addSuperTypes(universalCHA, callable.value1(), superClasses);
+            } catch (NullPointerException ignore) {
+            }
+            try {
+                var superInterfaces = new JSONObject(callable.value2().data())
+                        .getJSONArray("superInterfaces").toList();
+                addSuperTypes(universalCHA, callable.value1(), superInterfaces);
+            } catch (NullPointerException ignore) {
+            }
         }
 
         final Map<String, Set<String>> universalParents = new HashMap<>();
@@ -541,21 +621,52 @@ public class DatabaseMerger {
     }
 
     /**
+     * Augment generated merged call graphs.
+     *
+     * @param depGraphs merged call graphs
+     * @return augmented graph
+     */
+    private DirectedGraph augmentGraphs(final List<DirectedGraph> depGraphs) {
+        var result = new ArrayImmutableDirectedGraph.Builder();
+
+        for (final var depGraph : depGraphs) {
+            for (final var node : depGraph.nodes()) {
+                for (final var successor : depGraph.successors(node)) {
+                    addEdge(result, depGraph, node, successor, false);
+                }
+            }
+        }
+        return result.build();
+    }
+
+    /**
      * Add a resolved edge to the {@link DirectedGraph}.
      *
-     * @param result     graph with resolved calls
-     * @param source     source callable ID
-     * @param target     target callable ID
-     * @param isCallback true, if a given arc is a callback
+     * @param result        graph with resolved calls
+     * @param source        source callable ID
+     * @param callGraphData graph for the artifact to resolve
+     * @param target        target callable ID
+     * @param isCallback    true, if a given arc is a callback
      */
     private void addEdge(final ArrayImmutableDirectedGraph.Builder result,
+                         final DirectedGraph callGraphData,
                          final Long source, final Long target, final boolean isCallback) {
         try {
-            result.addExternalNode(source);
+            if (new HashSet<>(callGraphData.nodes()).contains(source)
+                    && callGraphData.isInternal(source)) {
+                result.addInternalNode(source);
+            } else {
+                result.addExternalNode(source);
+            }
         } catch (IllegalArgumentException ignored) {
         }
         try {
-            result.addExternalNode(target);
+            if (new HashSet<>(callGraphData.nodes()).contains(target)
+                    && callGraphData.isInternal(target)) {
+                result.addInternalNode(target);
+            } else {
+                result.addExternalNode(target);
+            }
         } catch (IllegalArgumentException ignored) {
         }
         try {

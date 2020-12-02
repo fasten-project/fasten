@@ -23,6 +23,7 @@ import com.google.common.collect.HashBiMap;
 import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaNode;
@@ -299,7 +300,9 @@ public class LocalMerger {
                     final var callToInit =
                             new Call(Arrays.asList(call.indices.get(0), result.nodeCount),
                                     call.metadata, new JavaNode(
-                                    call.target.changeName(call.target.getClassName(), "<clinit>"),
+                                    FastenURI.create("/" + call.target.getUri().getNamespace()
+                                            + "/" + call.target.getClassName()
+                                            + ".%3Cclinit%3E()" + FastenJavaURI.pctEncodeArg("/java.lang/VoidType")),
                                     call.target.getMetadata()));
 
                     resolveIfDefined(result, callToInit, dep.getClassHierarchy()
