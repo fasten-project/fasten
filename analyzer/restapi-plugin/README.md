@@ -45,6 +45,14 @@ The [server configuration file](src/main/resources/application.properties) has t
 
 <!-- TODO ### Requirements  -->
 
+## Postman workspace
+
+You can find a
+[Postman workspace](https://learning.postman.com/docs/getting-started/importing-and-exporting-data)
+configuration
+[here](endpoints.postman_collection.json)
+.
+
 ## Join the community
 
 The FASTEN software package management efficiency relies on an open community contributing to open technologies. Related research projects, R&D engineers, early users and open source contributors are welcome to join the [FASTEN community](https://www.fasten-project.eu/view/Main/Community), to try the tools, to participate in physical and remote worshops and to share our efforts using the project [community page](https://www.fasten-project.eu/view/Main/Community) and the social media buttons below.  
