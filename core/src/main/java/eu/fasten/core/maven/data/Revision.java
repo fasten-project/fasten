@@ -20,6 +20,7 @@ package eu.fasten.core.maven.data;
 
 import eu.fasten.core.data.Constants;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.json.JSONObject;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -73,5 +74,15 @@ public class Revision extends MavenProduct implements Serializable {
     public String toString() {
         return String.format("%s%s%s%s%s (%s)", groupId, Constants.mvnCoordinateSeparator,
                 artifactId, Constants.mvnCoordinateSeparator, version, createdAt);
+    }
+
+    public JSONObject toJSON() {
+        var json = new JSONObject();
+        json.put("id", id);
+        json.put("groupId", groupId);
+        json.put("artifactId", artifactId);
+        json.put("version", version);
+        json.put("createdAt", createdAt.getTime());
+        return json;
     }
 }

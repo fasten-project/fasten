@@ -2,6 +2,8 @@ package eu.fasten.analyzer.restapiplugin.mvn;
 
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.GraphMavenResolver;
+import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +23,16 @@ public class KnowledgeBaseConnector {
     public static MetadataDao kbDao;
 
     /**
+     * Dependency graph resolver for Maven
+     */
+    public static GraphMavenResolver graphResolver;
+
+    /**
+     * Database connection context
+     */
+    public static DSLContext dbContext;
+
+    /**
      * KnowledgeBase username, retrieved from the server configuration file.
      */
     @Value("${kb.user}")
@@ -33,18 +45,37 @@ public class KnowledgeBaseConnector {
     private String kbUrl;
 
     /**
+     * Path to the serialized dependency graph
+     */
+    @Value("${kb.depgraph.path}")
+    private String depGraphPath;
+
+    /**
      * Connects to the KnowledgeBase before starting the REST server.
      */
     @PostConstruct
     public void connectToKnowledgeBase() {
-
         logger.info("Establishing connection to the KnowledgeBase at " + kbUrl + ", user " + kbUser + "...");
         try {
-            kbDao = new MetadataDao(PostgresConnector.getDSLContext(kbUrl, kbUser));
+            dbContext = PostgresConnector.getDSLContext(kbUrl, kbUser);
+            kbDao = new MetadataDao(dbContext);
         } catch (SQLException e) {
             logger.error("Couldn't connect to the KnowledgeBase", e);
             System.exit(1);
         }
         logger.info("...KnowledgeBase connection established successfully.");
+    }
+
+    @PostConstruct
+    public void retrieveDependencyGraph() {
+        logger.info("Constructing dependency graph from " + depGraphPath);
+        try {
+            graphResolver = new GraphMavenResolver();
+            graphResolver.buildDependencyGraph(PostgresConnector.getDSLContext(kbUrl, kbUser), depGraphPath);
+        } catch (Exception e) {
+            logger.error("Couldn't construct dependency graph", e);
+            System.exit(1);
+        }
+        logger.info("Successfully constructed dependency graph");
     }
 }
