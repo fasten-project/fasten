@@ -666,7 +666,7 @@ public class DatabaseMerger {
         }
         for (var source : internalNodes) {
             for (var target : callGraphData.successors(source)) {
-                if (callGraphData.isInternal(target) && !source.equals(target)) {
+                if (callGraphData.isInternal(target)) {
                     result.addArc(source, target);
                 }
             }
