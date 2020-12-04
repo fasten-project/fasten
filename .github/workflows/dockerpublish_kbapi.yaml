@@ -36,7 +36,7 @@ jobs:
       - name: Build REST API jar
         run: cd analyzer/restapi-plugin && mvn clean install spring-boot:repackage
       - name: Build image
-        run: docker build -t fasten.restapi.snapshot .
+        run: cd analyzer/restapi-plugin && docker build -t fasten.restapi.snapshot .
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - name: Push image
