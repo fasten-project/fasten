@@ -22,19 +22,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.util.Map;
 
-import org.jgrapht.alg.scoring.HarmonicCentrality;
 import org.junit.jupiter.api.Test;
 
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongListIterator;
-import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandomGenerator;
 import it.unimi.dsi.webgraph.ImmutableGraph;
 import it.unimi.dsi.webgraph.LazyIntIterator;
-import it.unimi.dsi.webgraph.algo.HyperBall;
 
 public class ImmutableGraphAdapterTest {
 
@@ -102,12 +98,13 @@ public class ImmutableGraphAdapterTest {
 	public void testRandom() throws IOException {
         final ArrayImmutableDirectedGraph.Builder builder = new ArrayImmutableDirectedGraph.Builder();
         final XoRoShiRo128PlusPlusRandomGenerator random = new XoRoShiRo128PlusPlusRandomGenerator(0);
-		final long[] node = new long[1000];
-		for (int i = 0; i < 1000; i++) builder.addInternalNode(node[i] = random.nextLong());
+		final int n = 200;
+		final long[] node = new long[n];
+		for (int i = 0; i < n; i++) builder.addInternalNode(node[i] = random.nextLong());
 
-		for (int i = 0; i < 200000; i++) {
+		for (int i = 0; i < 20 * n; i++) {
 			try {
-				builder.addArc(node[random.nextInt(1000)], node[random.nextInt(1000)]);
+				builder.addArc(node[random.nextInt(n)], node[random.nextInt(n)]);
 			} catch (final IllegalArgumentException ignoreDuplicateArcs) {
 			}
 		}
@@ -125,16 +122,5 @@ public class ImmutableGraphAdapterTest {
 		assertSorted(immutableGraph.transpose());
 		immutableGraph = new ImmutableGraphAdapter(directedGraph, false);
 		assertSame(directedGraph, immutableGraph);
-
-		// Compute harmonic centrality
-		final HyperBall hyperBall = new HyperBall(immutableGraph, immutableGraph.transpose(), 12, null, 0, 0, 0, false, false, true, null, 0);
-		hyperBall.run();
-		final HarmonicCentrality<Long, LongLongPair> harmonicCentrality = new HarmonicCentrality<>(directedGraph, false, false);
-		final Map<Long, Double> scores = harmonicCentrality.getScores();
-		for (final long id : directedGraph.nodes()) {
-			final double exact = scores.get(id);
-			final double approx = hyperBall.sumOfInverseDistances[immutableGraph.id2Node(id)];
-			assertTrue(Math.abs(exact - approx) / exact < 0.005);
-		}
 	}
 }
