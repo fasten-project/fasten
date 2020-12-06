@@ -21,10 +21,9 @@ package eu.fasten.core.data;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
-
 import org.junit.jupiter.api.Test;
 
+import eu.fasten.core.data.ImmutableGraphAdapter.TransposeAdapter;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongListIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -79,10 +78,13 @@ public class ImmutableGraphAdapterTest {
 		}
 
 		assertEquals(g.nodes(), s);
-		final ImmutableGraph t = a.transpose();
+		final TransposeAdapter t = a.transpose();
+		assertTrue(t.hasCopiableIterators());
+		assertTrue(t.randomAccess());
 
 		for (int x = 0; x < n; x++) {
 			final long id = a.node2Id(x);
+			assertEquals(id, t.node2Id(x));
 			s.add(id);
 			final LongListIterator iterator = g.predecessors(id).iterator();
 			final LazyIntIterator predecessors = t.successors(x);
@@ -95,7 +97,7 @@ public class ImmutableGraphAdapterTest {
 	}
 
 	@Test
-	public void testRandom() throws IOException {
+	public void testRandom() {
         final ArrayImmutableDirectedGraph.Builder builder = new ArrayImmutableDirectedGraph.Builder();
         final XoRoShiRo128PlusPlusRandomGenerator random = new XoRoShiRo128PlusPlusRandomGenerator(0);
 		final int n = 200;
@@ -111,6 +113,8 @@ public class ImmutableGraphAdapterTest {
 
 		ArrayImmutableDirectedGraph directedGraph = builder.build(true);
 		ImmutableGraphAdapter immutableGraph = new ImmutableGraphAdapter(directedGraph, false);
+		assertTrue(immutableGraph.hasCopiableIterators());
+		assertTrue(immutableGraph.randomAccess());
 		assertSorted(directedGraph);
 		assertSorted(immutableGraph);
 		assertSorted(immutableGraph.transpose());

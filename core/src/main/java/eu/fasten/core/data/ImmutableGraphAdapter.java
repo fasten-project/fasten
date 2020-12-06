@@ -220,7 +220,7 @@ public class ImmutableGraphAdapter extends ImmutableGraph {
 		return this;
 	}
 
-	public ImmutableGraph transpose() {
+	public TransposeAdapter transpose() {
 		return transpose;
 	}
 }
