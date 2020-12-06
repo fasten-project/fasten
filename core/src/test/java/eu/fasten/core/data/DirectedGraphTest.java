@@ -1,7 +1,9 @@
 package eu.fasten.core.data;
 
-import static org.junit.Assert.assertArrayEquals;
+import static it.unimi.dsi.fastutil.longs.LongLongPair.of;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -22,17 +24,14 @@ import static org.junit.Assert.assertNull;
  */
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import it.unimi.dsi.fastutil.longs.LongArrays;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 public class DirectedGraphTest {
 	@Test
@@ -66,28 +65,23 @@ public class DirectedGraphTest {
 		final ArrayImmutableDirectedGraph graph = builder.build();
 		assertEquals(4, graph.numNodes());
 		assertEquals(6, graph.numArcs());
-		assertEquals(new LongOpenHashSet(new long[] { 34, 56 }), new LongOpenHashSet(graph.successors(12)));
-		assertEquals(new LongOpenHashSet(new long[] { 12, 34, 78, 56 }), new LongOpenHashSet(graph.successors(56)));
-		assertEquals(new LongOpenHashSet(new long[] { 56, 78 }), graph.externalNodes());
-		assertEquals(new LongOpenHashSet(new long[] { 56 }), new LongOpenHashSet(graph.predecessors(12)));
-		assertEquals(new LongOpenHashSet(new long[] { 12, 56 }), new LongOpenHashSet(graph.predecessors(34)));
-		assertEquals(new LongOpenHashSet(new long[] { 12, 56 }), new LongOpenHashSet(graph.predecessors(56)));
-		assertEquals(new LongOpenHashSet(new long[] { 56 }), new LongOpenHashSet(graph.predecessors(78)));
+		assertEquals(LongOpenHashSet.of(34, 56), new LongOpenHashSet(graph.successors(12)));
+		assertEquals(LongOpenHashSet.of(12, 34, 78, 56), new LongOpenHashSet(graph.successors(56)));
+		assertEquals(LongOpenHashSet.of(56, 78), graph.externalNodes());
+		assertEquals(LongOpenHashSet.of(56), new LongOpenHashSet(graph.predecessors(12)));
+		assertEquals(LongOpenHashSet.of(12, 56), new LongOpenHashSet(graph.predecessors(34)));
+		assertEquals(LongOpenHashSet.of(12, 56), new LongOpenHashSet(graph.predecessors(56)));
+		assertEquals(LongOpenHashSet.of(56), new LongOpenHashSet(graph.predecessors(78)));
 
-		assertEquals(new ObjectOpenCustomHashSet<>(new long[][] { { 12, 34 }, { 12,
-				56 } }, LongArrays.HASH_STRATEGY), new ObjectOpenCustomHashSet<>(graph.outgoingEdgesOf(12L), LongArrays.HASH_STRATEGY));
-		assertEquals(new ObjectOpenCustomHashSet<>(new long[][] { { 56, 12 }, { 56, 34 }, { 56, 56 }, { 56,
-				78 } }, LongArrays.HASH_STRATEGY), new ObjectOpenCustomHashSet<>(graph.outgoingEdgesOf(56L), LongArrays.HASH_STRATEGY));
-		assertEquals(new ObjectOpenCustomHashSet<>(new long[][] { { 56,
-				12 } }, LongArrays.HASH_STRATEGY), new ObjectOpenCustomHashSet<>(graph.incomingEdgesOf(12L), LongArrays.HASH_STRATEGY));
-		assertEquals(new ObjectOpenCustomHashSet<>(new long[][] { { 12, 34 }, { 56,
-				34 } }, LongArrays.HASH_STRATEGY), new ObjectOpenCustomHashSet<>(graph.incomingEdgesOf(34L), LongArrays.HASH_STRATEGY));
-		assertEquals(new ObjectOpenCustomHashSet<>(new long[][] { { 12, 56 }, { 56,
-				56 } }, LongArrays.HASH_STRATEGY), new ObjectOpenCustomHashSet<>(graph.incomingEdgesOf(56L), LongArrays.HASH_STRATEGY));
-		assertEquals(new ObjectOpenCustomHashSet<>(new long[][] { { 56, 12 }, { 56, 34 }, { 56, 78 }, { 12, 56 }, { 56,
-				56 } }, LongArrays.HASH_STRATEGY), new ObjectOpenCustomHashSet<>(graph.edgesOf(56L), LongArrays.HASH_STRATEGY));
-		assertEquals(new ObjectOpenCustomHashSet<>(new long[][] { { 56,
-				78 } }, LongArrays.HASH_STRATEGY), new ObjectOpenCustomHashSet<>(graph.incomingEdgesOf(78L), LongArrays.HASH_STRATEGY));
+		assertEquals(ObjectOpenHashSet.of(of(12, 34), of(12, 56)), new ObjectOpenHashSet<>(graph.outgoingEdgesOf(12L)));
+
+		assertEquals(ObjectOpenHashSet.of(of(56, 12), of(56, 34), of(56, 56), of(56, 78)), graph.outgoingEdgesOf(56L));
+		assertEquals(ObjectOpenHashSet.of(of(56, 12)), graph.incomingEdgesOf(12L));
+		assertEquals(ObjectOpenHashSet.of(of(12, 34), of(56, 34)), graph.incomingEdgesOf(34L));
+		assertEquals(ObjectOpenHashSet.of(of(12, 56), of(56, 56)), graph.incomingEdgesOf(56L));
+		assertEquals(ObjectOpenHashSet.of(of(56, 12), of(56, 34), of(56, 78), of(12, 56), of(56, 56)), graph.edgesOf(56L));
+
+		assertEquals(ObjectOpenHashSet.of(of(56, 78)), graph.incomingEdgesOf(78L));
 
 		assertEquals(2, graph.outDegreeOf(12L));
 		assertEquals(4, graph.outDegreeOf(56L));
@@ -95,34 +89,32 @@ public class DirectedGraphTest {
 		assertEquals(6, graph.degreeOf(56L));
 
 		for (final long x : graph.vertexSet()) for (final long y : graph.successors(x)) {
-			assertEquals(new ObjectOpenCustomHashSet<>(new long[][] { { x,
-					y } }, LongArrays.HASH_STRATEGY), new ObjectOpenCustomHashSet<>(graph.getAllEdges(x, y), LongArrays.HASH_STRATEGY));
-			assertArrayEquals(new long[] { x, y }, graph.getEdge(x, y));
+			assertEquals(ObjectOpenHashSet.of(of(x, y)), graph.getAllEdges(x, y));
+			assertEquals(of(x, y), graph.getEdge(x, y));
 			assertTrue(graph.containsEdge(x, y));
-			assertTrue(graph.containsEdge(new long[] { x, y }));
+			assertTrue(graph.containsEdge(of(x, y)));
 		}
 
 		assertNull(graph.getEdge(12L, 78L));
 		assertEquals(Collections.emptySet(), graph.getAllEdges(12L, 78L));
 		assertFalse(graph.containsEdge(12L, 78L));
-		assertFalse(graph.containsEdge(new long[] { 12L, 78L }));
-		assertEquals(12, graph.getEdgeSource(new long[] { 12L, 78L }));
-		assertEquals(78, graph.getEdgeTarget(new long[] { 12L, 78L }));
+		assertFalse(graph.containsEdge(of(12L, 78L)));
+		assertEquals(12, graph.getEdgeSource(of(12L, 78L)));
+		assertEquals(78, graph.getEdgeTarget(of(12L, 78L)));
 
 		for (final long y : graph.vertexSet()) for (final long x : graph.predecessors(y)) {
-			assertEquals(new ObjectOpenCustomHashSet<>(new long[][] { { x,
-					y } }, LongArrays.HASH_STRATEGY), new ObjectOpenCustomHashSet<>(graph.getAllEdges(x, y), LongArrays.HASH_STRATEGY));
-			assertArrayEquals(new long[] { x, y }, graph.getEdge(x, y));
+			assertEquals(ObjectOpenHashSet.of(of(x, y)), new ObjectOpenHashSet<>(graph.getAllEdges(x, y)));
+			assertEquals(of(x, y), graph.getEdge(x, y));
 			assertTrue(graph.containsEdge(x, y));
-			assertTrue(graph.containsEdge(new long[] { x, y }));
+			assertTrue(graph.containsEdge(of(x, y)));
 		}
 
-		assertEquals(new LongOpenHashSet(new long[] { 12, 34, 78, 56 }), new LongOpenHashSet(graph.successors(56)));
-		assertEquals(new LongOpenHashSet(new long[] { 56, 78 }), graph.externalNodes());
-		assertEquals(new LongOpenHashSet(new long[] { 56 }), new LongOpenHashSet(graph.predecessors(12)));
-		assertEquals(new LongOpenHashSet(new long[] { 12, 56 }), new LongOpenHashSet(graph.predecessors(34)));
-		assertEquals(new LongOpenHashSet(new long[] { 12, 56 }), new LongOpenHashSet(graph.predecessors(56)));
-		assertEquals(new LongOpenHashSet(new long[] { 56 }), new LongOpenHashSet(graph.predecessors(78)));
+		assertEquals(LongOpenHashSet.of(12, 34, 78, 56), new LongOpenHashSet(graph.successors(56)));
+		assertEquals(LongOpenHashSet.of(56, 78), graph.externalNodes());
+		assertEquals(LongOpenHashSet.of(56), new LongOpenHashSet(graph.predecessors(12)));
+		assertEquals(LongOpenHashSet.of(12, 56), new LongOpenHashSet(graph.predecessors(34)));
+		assertEquals(LongOpenHashSet.of(12, 56), new LongOpenHashSet(graph.predecessors(56)));
+		assertEquals(LongOpenHashSet.of(56), new LongOpenHashSet(graph.predecessors(78)));
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			graph.successors(1);
@@ -131,7 +123,7 @@ public class DirectedGraphTest {
 			graph.predecessors(1);
 		});
 
-		assertEquals(new LongOpenHashSet(new long[] { 12, 34, 56, 78 }), graph.nodes());
+		assertEquals(LongOpenHashSet.of(12, 34, 56, 78), graph.nodes());
 		assertTrue(graph.isInternal(12));
 		assertTrue(graph.isInternal(34));
 		assertTrue(graph.isExternal(56));
@@ -141,8 +133,6 @@ public class DirectedGraphTest {
 		assertFalse(graph.isInternal(56));
 		assertFalse(graph.isInternal(78));
 
-		assertEquals(new ObjectOpenCustomHashSet<>(new long[][] { { 12, 34 }, { 12, 56 }, { 56, 12 }, { 56, 78 },
-				{ 56, 34 },
-				{ 56, 56 } }, LongArrays.HASH_STRATEGY), new ObjectOpenCustomHashSet<>(graph.edgeSet(), LongArrays.HASH_STRATEGY));
+		assertEquals(ObjectOpenHashSet.of(of(12, 34), of(12, 56), of(56, 12), of(56, 78), of(56, 34), of(56, 56)), graph.edgeSet());
 	}
 }

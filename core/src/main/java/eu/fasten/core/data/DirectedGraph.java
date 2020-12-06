@@ -27,6 +27,7 @@ import org.jgrapht.GraphType;
 import org.jgrapht.graph.DefaultGraphType;
 
 import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSets;
@@ -45,7 +46,7 @@ import it.unimi.dsi.fastutil.objects.ObjectSets;
  * Mutation methods will throw an {@link UnsupportedOperationException}.
  */
 
-public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
+public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair> {
 	/**
 	 * The number of nodes in the graph.
 	 *
@@ -131,15 +132,14 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	public boolean isExternal(final long node);
 
 	@Override
-	default Set<long[]> getAllEdges(final Long sourceVertex, final Long targetVertex) {
-		final long[] edge = getEdge(sourceVertex, targetVertex);
+	default Set<LongLongPair> getAllEdges(final Long sourceVertex, final Long targetVertex) {
+		final LongLongPair edge = getEdge(sourceVertex, targetVertex);
 		return edge == null ? Collections.emptySet() : ObjectSets.singleton(edge);
 	}
 
 	@Override
-	default long[] getEdge(final Long sourceVertex, final Long targetVertex) {
-		return successors(sourceVertex).contains(targetVertex.longValue()) ? new long[] { sourceVertex,
-				targetVertex } : null;
+	default LongLongPair getEdge(final Long sourceVertex, final Long targetVertex) {
+		return successors(sourceVertex).contains(targetVertex.longValue()) ? LongLongPair.of(sourceVertex, targetVertex) : null;
 	}
 
 	@Override
@@ -148,17 +148,17 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	}
 
 	@Override
-	default Supplier<long[]> getEdgeSupplier() {
+	default Supplier<LongLongPair> getEdgeSupplier() {
 		return null;
 	}
 
 	@Override
-	default long[] addEdge(final Long sourceVertex, final Long targetVertex) {
+	default LongLongPair addEdge(final Long sourceVertex, final Long targetVertex) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	default boolean addEdge(final Long sourceVertex, final Long targetVertex, final long[] e) {
+	default boolean addEdge(final Long sourceVertex, final Long targetVertex, final LongLongPair e) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -178,8 +178,8 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	}
 
 	@Override
-	default boolean containsEdge(final long[] e) {
-		return successors(e[0]).contains(e[1]);
+	default boolean containsEdge(final LongLongPair e) {
+		return successors(e.leftLong()).contains(e.rightLong());
 	}
 
 	@Override
@@ -188,8 +188,8 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	}
 
 	@Override
-	default Set<long[]> edgeSet() {
-		final ObjectOpenHashSet<long[]> s = new ObjectOpenHashSet<>();
+	default Set<LongLongPair> edgeSet() {
+		final ObjectOpenHashSet<LongLongPair> s = new ObjectOpenHashSet<>();
 		for (final Long x : vertexSet()) s.addAll(outgoingEdgesOf(x));
 		return s;
 	}
@@ -200,9 +200,9 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	}
 
 	@Override
-	default Set<long[]> edgesOf(final Long vertex) {
-		final Set<long[]> s = outgoingEdgesOf(vertex);
-		for (final long[] e : incomingEdgesOf(vertex)) if (e[0] != e[1]) s.add(e);
+	default Set<LongLongPair> edgesOf(final Long vertex) {
+		final Set<LongLongPair> s = outgoingEdgesOf(vertex);
+		for (final LongLongPair e : incomingEdgesOf(vertex)) if (e.leftLong() != e.rightLong()) s.add(e);
 		return s;
 	}
 
@@ -212,10 +212,10 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	}
 
 	@Override
-	default Set<long[]> incomingEdgesOf(final Long vertex) {
+	default Set<LongLongPair> incomingEdgesOf(final Long vertex) {
 		final long y = vertex;
-		final ObjectOpenHashSet<long[]> s = new ObjectOpenHashSet<>();
-		for (final long x : predecessors(y)) s.add(new long[] { x, y });
+		final ObjectOpenHashSet<LongLongPair> s = new ObjectOpenHashSet<>();
+		for (final long x : predecessors(y)) s.add(LongLongPair.of(x, y));
 		return s;
 	}
 
@@ -225,20 +225,20 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	}
 
 	@Override
-	default Set<long[]> outgoingEdgesOf(final Long vertex) {
+	default Set<LongLongPair> outgoingEdgesOf(final Long vertex) {
 		final long x = vertex;
-		final ObjectOpenHashSet<long[]> s = new ObjectOpenHashSet<>();
-		for (final long y : successors(x)) s.add(new long[] { x, y });
+		final ObjectOpenHashSet<LongLongPair> s = new ObjectOpenHashSet<>();
+		for (final long y : successors(x)) s.add(LongLongPair.of(x, y));
 		return s;
 	}
 
 	@Override
-	default boolean removeAllEdges(final Collection<? extends long[]> edges) {
+	default boolean removeAllEdges(final Collection<? extends LongLongPair> edges) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	default Set<long[]> removeAllEdges(final Long sourceVertex, final Long targetVertex) {
+	default Set<LongLongPair> removeAllEdges(final Long sourceVertex, final Long targetVertex) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -248,12 +248,12 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	}
 
 	@Override
-	default long[] removeEdge(final Long sourceVertex, final Long targetVertex) {
+	default LongLongPair removeEdge(final Long sourceVertex, final Long targetVertex) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	default boolean removeEdge(final long[] e) {
+	default boolean removeEdge(final LongLongPair e) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -268,13 +268,13 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	}
 
 	@Override
-	default Long getEdgeSource(final long[] e) {
-		return e[0];
+	default Long getEdgeSource(final LongLongPair e) {
+		return e.leftLong();
 	}
 
 	@Override
-	default Long getEdgeTarget(final long[] e) {
-		return e[1];
+	default Long getEdgeTarget(final LongLongPair e) {
+		return e.rightLong();
 	}
 
 	@Override
@@ -284,12 +284,12 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, long[]> {
 	}
 
 	@Override
-	default double getEdgeWeight(final long[] e) {
+	default double getEdgeWeight(final LongLongPair e) {
 		return DEFAULT_EDGE_WEIGHT;
 	}
 
 	@Override
-	default void setEdgeWeight(final long[] e, final double weight) {
+	default void setEdgeWeight(final LongLongPair e, final double weight) {
 		if (weight == 1) return;
 		throw new UnsupportedOperationException();
 	}

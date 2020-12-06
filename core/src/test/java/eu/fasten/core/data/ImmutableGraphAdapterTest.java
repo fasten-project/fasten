@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongListIterator;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandomGenerator;
 import it.unimi.dsi.webgraph.ImmutableGraph;
@@ -101,12 +102,12 @@ public class ImmutableGraphAdapterTest {
 	public void testRandom() throws IOException {
         final ArrayImmutableDirectedGraph.Builder builder = new ArrayImmutableDirectedGraph.Builder();
         final XoRoShiRo128PlusPlusRandomGenerator random = new XoRoShiRo128PlusPlusRandomGenerator(0);
-		final long[] node = new long[100];
-		for (int i = 0; i < 100; i++) builder.addInternalNode(node[i] = random.nextLong());
+		final long[] node = new long[1000];
+		for (int i = 0; i < 1000; i++) builder.addInternalNode(node[i] = random.nextLong());
 
 		for (int i = 0; i < 200000; i++) {
 			try {
-				builder.addArc(node[random.nextInt(100)], node[random.nextInt(100)]);
+				builder.addArc(node[random.nextInt(1000)], node[random.nextInt(1000)]);
 			} catch (final IllegalArgumentException ignoreDuplicateArcs) {
 			}
 		}
@@ -128,7 +129,7 @@ public class ImmutableGraphAdapterTest {
 		// Compute harmonic centrality
 		final HyperBall hyperBall = new HyperBall(immutableGraph, immutableGraph.transpose(), 12, null, 0, 0, 0, false, false, true, null, 0);
 		hyperBall.run();
-		final HarmonicCentrality<Long, long[]> harmonicCentrality = new HarmonicCentrality<>(directedGraph, false, false);
+		final HarmonicCentrality<Long, LongLongPair> harmonicCentrality = new HarmonicCentrality<>(directedGraph, false, false);
 		final Map<Long, Double> scores = harmonicCentrality.getScores();
 		for (final long id : directedGraph.nodes()) {
 			final double exact = scores.get(id);

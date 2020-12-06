@@ -45,6 +45,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import it.unimi.dsi.fastutil.longs.LongArrays;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandom;
 
 public class CallGraphAnalysisExample {
@@ -111,7 +112,7 @@ public class CallGraphAnalysisExample {
 		System.out.println("The callable with highest indegree (" + bestDegree + ") is " + getCallableName(bestDNode, context) + " (id=" + bestDNode + ")");
 
 		// Now we compute PageRank
-		final PageRank<Long, long[]> pageRank = new PageRank<>(graph);
+		final PageRank<Long, LongLongPair> pageRank = new PageRank<>(graph);
 
 		// Find node with highest PageRank
 		double bestPR = -1;
@@ -127,10 +128,10 @@ public class CallGraphAnalysisExample {
 		System.out.println("The callable with highest PageRank (" + bestPR + ") is " + getCallableName(bestPRNode, context) + " (id=" + bestPRNode + ")");
 
 		// We will need the transpose now. This is just a lightweight view.
-		final EdgeReversedGraph<Long, long[]> transpose = new EdgeReversedGraph<>(graph);
+		final EdgeReversedGraph<Long, LongLongPair> transpose = new EdgeReversedGraph<>(graph);
 
 		// Now we compute PageRank on the transpose
-		final PageRank<Long, long[]> transposePageRank = new PageRank<>(transpose);
+		final PageRank<Long, LongLongPair> transposePageRank = new PageRank<>(transpose);
 
 		// Find node with highest transpose PageRank
 		bestPR = -1;
@@ -146,7 +147,7 @@ public class CallGraphAnalysisExample {
 		System.out.println("The callable with highest transpose PageRank (" + bestPR + ") is " + getCallableName(bestPRNode, context) + " (id=" + bestPRNode + ")");
 
 		// Now we compute positive harmonic centrality (outgoing paths)
-		final HarmonicCentrality<Long, long[]> positiveHarmonicCentrality = new HarmonicCentrality<>(graph, false, false);
+		final HarmonicCentrality<Long, LongLongPair> positiveHarmonicCentrality = new HarmonicCentrality<>(graph, false, false);
 		final Map<Long, Double> positiveHarmonicCentralityScores = positiveHarmonicCentrality.getScores();
 
 		// Find node with highest positive harmonic centrality
@@ -163,7 +164,7 @@ public class CallGraphAnalysisExample {
 		System.out.println("The callable with highest positive harmonic centrality (" + bestH + ") is " + getCallableName(bestHNode, context) + " (id=" + bestHNode + ")");
 
 		// Now we compute negative harmonic centrality (incoming paths)
-		final HarmonicCentrality<Long, long[]> negativeHarmonicCentrality = new HarmonicCentrality<>(graph, true, false);
+		final HarmonicCentrality<Long, LongLongPair> negativeHarmonicCentrality = new HarmonicCentrality<>(graph, true, false);
 		final Map<Long, Double> negativeHarmonicCentralityScores = negativeHarmonicCentrality.getScores();
 
 		// Find node with highest harmonic centrality
@@ -191,7 +192,7 @@ public class CallGraphAnalysisExample {
 			System.out.println();
 			// Now we find reachable nodes in a radius of 3
 			System.out.println("Finding nodes reachable within distance 3 from " + getCallableName(v, context) + " (id=" + v + ")");
-			final ClosestFirstIterator<Long, long[]> reachable = new ClosestFirstIterator<>(graph, v, 3);
+			final ClosestFirstIterator<Long, LongLongPair> reachable = new ClosestFirstIterator<>(graph, v, 3);
 			reachable.forEachRemaining((x) -> {
 				System.out.println("\tFound node " + getCallableName(x, context) + " (id=" + x + ") at distance " + reachable.getShortestPathLength(x));
 			});
@@ -200,7 +201,7 @@ public class CallGraphAnalysisExample {
 			// Now we find coreachable nodes in a radius of 3
 			// Note that we're using JGraphT methods here.
 			System.out.println("Finding nodes coreachable within distance 3 from " + getCallableName(v, context) + " (id=" + v + ")");
-			final ClosestFirstIterator<Long, long[]> coreachable = new ClosestFirstIterator<>(transpose, v, 3);
+			final ClosestFirstIterator<Long, LongLongPair> coreachable = new ClosestFirstIterator<>(transpose, v, 3);
 			coreachable.forEachRemaining((x) -> {
 				System.out.println("\tFound node " + getCallableName(x, context) + " (id=" + x + ") at distance " + coreachable.getShortestPathLength(x));
 			});

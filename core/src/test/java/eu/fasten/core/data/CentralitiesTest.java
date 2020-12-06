@@ -32,6 +32,7 @@ import org.jgrapht.alg.scoring.PageRank;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.law.rank.KatzParallelGaussSeidel;
 import it.unimi.dsi.law.rank.PageRankParallelGaussSeidel;
 import it.unimi.dsi.law.rank.PageRankParallelPowerSeries;
@@ -40,7 +41,7 @@ import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandomGenerator;
 import it.unimi.dsi.webgraph.algo.GeometricCentralities;
 import it.unimi.dsi.webgraph.algo.HyperBall;
 
-/** Tests multiple implementation of centrality on different adapters. */
+/** Tests multiple implementation of centrality measures on different adapters. */
 
 public class CentralitiesTest {
 
@@ -51,12 +52,13 @@ public class CentralitiesTest {
 	public static void beforeAll() {
         final ArrayImmutableDirectedGraph.Builder builder = new ArrayImmutableDirectedGraph.Builder();
         final XoRoShiRo128PlusPlusRandomGenerator random = new XoRoShiRo128PlusPlusRandomGenerator(0);
-		final long[] node = new long[1000];
-		for (int i = 0; i < 1000; i++) builder.addInternalNode(node[i] = random.nextLong());
+		final int n = 200;
+		final long[] node = new long[n];
+		for (int i = 0; i < n; i++) builder.addInternalNode(node[i] = random.nextLong());
 
-		for (int i = 0; i < 200000; i++) {
+		for (int i = 0; i < 200 * 10; i++) {
 			try {
-				builder.addArc(node[random.nextInt(100)], node[random.nextInt(100)]);
+				builder.addArc(node[random.nextInt(n)], node[random.nextInt(n)]);
 			} catch (final IllegalArgumentException ignoreDuplicateArcs) {
 			}
 		}
@@ -69,7 +71,7 @@ public class CentralitiesTest {
 	public void testHarmonic() throws IOException, InterruptedException {
 		final HyperBall hyperBall = new HyperBall(immutableGraph, immutableGraph.transpose(), 12, null, 0, 0, 0, false, false, true, null, 0);
 		hyperBall.run();
-		final HarmonicCentrality<Long, long[]> harmonicCentrality = new HarmonicCentrality<>(directedGraph, false, false);
+		final HarmonicCentrality<Long, LongLongPair> harmonicCentrality = new HarmonicCentrality<>(directedGraph, false, false);
 		final Map<Long, Double> scores = harmonicCentrality.getScores();
 		for (final long id : directedGraph.nodes()) {
 			final double exact = scores.get(id);
@@ -79,14 +81,14 @@ public class CentralitiesTest {
 
 		final GeometricCentralities geometricCentralities = new GeometricCentralities(immutableGraph);
 		geometricCentralities.compute();
-		for (final long id : directedGraph.nodes()) assertEquals(scores.get(id), geometricCentralities.harmonic[immutableGraph.id2Node(id)]);
+		for (final long id : directedGraph.nodes()) assertEquals(scores.get(id), geometricCentralities.harmonic[immutableGraph.id2Node(id)], 1E-9);
 	}
 
 	@Test
 	public void testCloseness() throws IOException, InterruptedException {
 		final HyperBall hyperBall = new HyperBall(immutableGraph, immutableGraph.transpose(), 13, null, 0, 0, 0, false, true, false, null, 0);
 		hyperBall.run();
-		final ClosenessCentrality<Long, long[]> harmonicCentrality = new ClosenessCentrality<>(directedGraph, false, false);
+		final ClosenessCentrality<Long, LongLongPair> harmonicCentrality = new ClosenessCentrality<>(directedGraph, false, false);
 		final Map<Long, Double> scores = harmonicCentrality.getScores();
 		for (final long id : directedGraph.nodes()) {
 			final double exact = scores.get(id);
@@ -100,14 +102,14 @@ public class CentralitiesTest {
 		geometricCentralities.compute();
 		for (final long id : directedGraph.nodes()) {
 			if (scores.get(id) != 0) { // Relative error not meaningful
-				assertEquals(scores.get(id), geometricCentralities.closeness[immutableGraph.id2Node(id)]);
+				assertEquals(scores.get(id), geometricCentralities.closeness[immutableGraph.id2Node(id)], 1E-9);
 			}
 		}
 	}
 
 	@Test
 	public void testPageRank() throws IOException {
-		final PageRank<Long, long[]> pageRank = new PageRank<>(directedGraph, 0.5, Integer.MAX_VALUE, 1E-9);
+		final PageRank<Long, LongLongPair> pageRank = new PageRank<>(directedGraph, 0.5, Integer.MAX_VALUE, 1E-9);
 		final Map<Long, Double> scores = pageRank.getScores();
 		final PageRankParallelPowerSeries pageRankParallelPowerSeries = new PageRankParallelPowerSeries(immutableGraph.transpose());
 		pageRankParallelPowerSeries.alpha = 0.5;
@@ -125,7 +127,7 @@ public class CentralitiesTest {
 
 	@Test
 	public void testKatz() throws IOException {
-		final AlphaCentrality<Long, long[]> alpha = new AlphaCentrality<>(directedGraph, 0.0001, 1, Integer.MAX_VALUE, 1E-9);
+		final AlphaCentrality<Long, LongLongPair> alpha = new AlphaCentrality<>(directedGraph, 0.0001, 1, Integer.MAX_VALUE, 1E-9);
 		final Map<Long, Double> scores = alpha.getScores();
 		final KatzParallelGaussSeidel katzParallelGaussSeidel = new KatzParallelGaussSeidel(immutableGraph.transpose());
 		katzParallelGaussSeidel.alpha = 0.0001;
@@ -136,7 +138,7 @@ public class CentralitiesTest {
 
 	@Test
 	public void testBetweenness() throws IOException, InterruptedException {
-		final BetweennessCentrality<Long, long[]> betweennessCentrality0 = new BetweennessCentrality<>(directedGraph);
+		final BetweennessCentrality<Long, LongLongPair> betweennessCentrality0 = new BetweennessCentrality<>(directedGraph);
 		final Map<Long, Double> scores = betweennessCentrality0.getScores();
 		final it.unimi.dsi.webgraph.algo.BetweennessCentrality betweennessCentrality1 = new it.unimi.dsi.webgraph.algo.BetweennessCentrality(immutableGraph);
 		betweennessCentrality1.compute();
