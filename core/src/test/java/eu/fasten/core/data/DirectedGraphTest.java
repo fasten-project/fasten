@@ -116,9 +116,16 @@ public class DirectedGraphTest {
 		assertEquals(LongOpenHashSet.of(12, 56), new LongOpenHashSet(graph.predecessors(56)));
 		assertEquals(LongOpenHashSet.of(56), new LongOpenHashSet(graph.predecessors(78)));
 
+		assertEquals(graph.getEdgeWeight(of(12, 34)), 1);
+
+		Assertions.assertThrows(UnsupportedOperationException.class, () -> {
+			graph.setEdgeWeight(of(12, 34), 2);
+		});
+
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			graph.successors(1);
 		});
+
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			graph.predecessors(1);
 		});
@@ -134,5 +141,29 @@ public class DirectedGraphTest {
 		assertFalse(graph.isInternal(78));
 
 		assertEquals(ObjectOpenHashSet.of(of(12, 34), of(12, 56), of(56, 12), of(56, 78), of(56, 34), of(56, 56)), graph.edgeSet());
+
+		final DirectedGraph transpose = graph.transpose();
+		assertEquals(graph.numNodes(), transpose.numNodes());
+		assertEquals(graph.numArcs(), transpose.numArcs());
+		assertEquals(graph.nodes(), transpose.nodes());
+		for (final long x : graph.nodes()) {
+			assertEquals(new LongOpenHashSet(graph.successors(x)), new LongOpenHashSet(transpose.predecessors(x)));
+			assertEquals(new LongOpenHashSet(graph.predecessors(x)), new LongOpenHashSet(transpose.successors(x)));
+			assertTrue(graph.isInternal(x) == transpose.isInternal(x));
+			assertTrue(graph.isExternal(x) == transpose.isExternal(x));
+		}
+
+		final DirectedGraph transposeTranspose = transpose.transpose();
+		assertEquals(transposeTranspose.numNodes(), transpose.numNodes());
+		assertEquals(transposeTranspose.numArcs(), transpose.numArcs());
+		assertEquals(transposeTranspose.nodes(), transpose.nodes());
+		for (final long x : transposeTranspose.nodes()) {
+			assertEquals(new LongOpenHashSet(transposeTranspose.successors(x)), new LongOpenHashSet(transpose.predecessors(x)));
+			assertEquals(new LongOpenHashSet(transposeTranspose.predecessors(x)), new LongOpenHashSet(transpose.successors(x)));
+			assertTrue(transposeTranspose.isInternal(x) == transpose.isInternal(x));
+			assertTrue(transposeTranspose.isExternal(x) == transpose.isExternal(x));
+		}
+
+		assertEquals(transposeTranspose.externalNodes(), transpose.externalNodes());
 	}
 }
