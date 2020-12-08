@@ -104,7 +104,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
     private JSONObject graphToJSON(DirectedGraph graph, boolean enrichEdges) {
         Map<Long, JSONObject> nodesMetadata = KnowledgeBaseConnector.kbDao.getCallablesMetadata(graph.nodes());
         Map<Pair<Long, Long>, JSONObject> edgesMetadata = new HashMap<>();
-        var edges = graph.edgeSet().stream().map(e -> new Pair<>(e[0], e[1])).collect(Collectors.toSet());
+        var edges = graph.edgeSet().stream().map(e -> new Pair<>(e.firstLong(), e.secondLong())).collect(Collectors.toSet());
         if (enrichEdges) {
             edgesMetadata = KnowledgeBaseConnector.kbDao.getEdgesMetadata(new ArrayList<>(edges));
         }

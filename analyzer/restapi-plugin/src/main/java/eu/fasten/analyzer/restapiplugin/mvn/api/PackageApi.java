@@ -66,14 +66,5 @@ public class PackageApi {
                                                @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
         return service.getPackageCallgraph(package_name, package_version, offset, limit);
     }
-
-    @GetMapping(value = "/{pkg}/{pkg_ver}/mergedcg", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getEnrichedCallgraph(@PathVariable("pkg") String package_name,
-                                               @PathVariable("pkg_ver") String package_version,
-                                                @RequestParam(required = false, defaultValue = "false") boolean enrich,
-                                               @RequestParam(required = false, defaultValue = "0") short offset,
-                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
-        return service.getMergedCallGraph(package_name, package_version, enrich, offset, limit);
-    }
 }
 
