@@ -19,12 +19,33 @@
 package eu.fasten.core.data.metadatadb;
 
 import com.github.t9t.jooq.json.JsonbDSL;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
-import eu.fasten.core.data.metadatadb.codegen.tables.*;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
+import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
-import org.jooq.*;
+import org.apache.commons.math3.util.Pair;
+import org.jooq.Condition;
+import org.jooq.DSLContext;
+import org.jooq.JSONB;
+import org.jooq.JSONFormat;
+import org.jooq.Query;
+import org.jooq.Record;
+import org.jooq.Record2;
+import org.jooq.Result;
+import org.jooq.SelectField;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +53,8 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.jooq.impl.DSL.*;
 
@@ -354,16 +377,16 @@ public class MetadataDao {
                 // FIXME
                 /* .set(Modules.MODULES.CREATED_AT, Modules.MODULES.as("excluded").CREATED_AT) */
                 // .set(Modules.MODULES.METADATA, JsonbDSL.concat(Modules.MODULES.METADATA,
-                        /* Modules.MODULES.as("excluded").METADATA)) */
+                /* Modules.MODULES.as("excluded").METADATA)) */
                 .returning(Modules.MODULES.ID).fetchOne();
         return resultRecord.getValue(Modules.MODULES.ID);
     }
 
     public long getModuleContent(long fileId) {
         var res = context.select(ModuleContents.MODULE_CONTENTS.MODULE_ID)
-            .from(ModuleContents.MODULE_CONTENTS)
-            .where(ModuleContents.MODULE_CONTENTS.FILE_ID.equal(fileId))
-            .fetchOne();
+                .from(ModuleContents.MODULE_CONTENTS)
+                .where(ModuleContents.MODULE_CONTENTS.FILE_ID.equal(fileId))
+                .fetchOne();
         if (res == null) {
             return -1L;
         }
@@ -960,10 +983,10 @@ public class MetadataDao {
     /**
      * Returns information about versions of a package, including potential vulnerabilities.
      *
-     * @param packageName   Name of the package of interest.
+     * @param packageName Name of the package of interest.
      * @param offset
      * @param limit
-     * @return              Package version information, including potential vulnerabilities.
+     * @return Package version information, including potential vulnerabilities.
      */
     public String getPackageVersions(String packageName, short offset, short limit) {
 
@@ -997,11 +1020,11 @@ public class MetadataDao {
     /**
      * Returns all dependencies of a given package version.
      *
-     * @param packageName       Name of the package whose dependencies are of interest.
-     * @param packageVersion    Version of the package whose dependencies are of interest.
+     * @param packageName    Name of the package whose dependencies are of interest.
+     * @param packageVersion Version of the package whose dependencies are of interest.
      * @param offset
      * @param limit
-     * @return                  All package version dependencies.
+     * @return All package version dependencies.
      */
     public String getPackageDependencies(String packageName, String packageVersion, short offset, short limit) {
 
@@ -1369,6 +1392,122 @@ public class MetadataDao {
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+    }
+
+    /**
+     * Retrieves an ID of certain package version.
+     *
+     * @param packageName Name of the package
+     * @param version     Version of the package
+     * @return ID of the package version
+     */
+    public Long getPackageVersionID(String packageName, String version) {
+        var record = context
+                .select(PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .where(packageVersionWhereClause(packageName, version))
+                .limit(1)
+                .fetchOne();
+        if (record == null) {
+            return null;
+        }
+        return record.value1();
+    }
+
+    /**
+     * Returns a Map (Maven Coordinate -> Package Version ID) for a list of artifacts.
+     *
+     * @param artifacts List of Maven coordinates
+     * @return HashMap from artifact to package version ID
+     */
+    public Map<String, Long> getPackageVersionIDs(List<String> artifacts) {
+        var packageNames = new ArrayList<String>(artifacts.size());
+        var versions = new ArrayList<String>(artifacts.size());
+        for (var coordinate : artifacts) {
+            var parts = coordinate.split(Constants.mvnCoordinateSeparator);
+            var packageName = parts[0] + Constants.mvnCoordinateSeparator + parts[1];
+            packageNames.add(packageName);
+            versions.add(parts[2]);
+        }
+        var whereClause = packageVersionWhereClause(packageNames.get(0), versions.get(0));
+        for (int i = 1; i < artifacts.size(); i++) {
+            whereClause = whereClause.or(packageVersionWhereClause(packageNames.get(i), versions.get(0)));
+        }
+        var queryResult = context
+                .select(Packages.PACKAGES.PACKAGE_NAME,
+                        PackageVersions.PACKAGE_VERSIONS.VERSION,
+                        PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(Packages.PACKAGES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(whereClause)
+                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                .fetch();
+        var map = new HashMap<String, Long>(queryResult.size());
+        for (var record : queryResult) {
+            var coordinate = record.value1() + Constants.mvnCoordinateSeparator + record.value2();
+            map.put(coordinate, record.value3());
+        }
+        return map;
+    }
+
+    /**
+     * Returns a Map (Callable ID -> JSON Metadata) for a list of callables.
+     *
+     * @param callableIds List of IDs of callables
+     * @return HashMap from ID to metadata of callables
+     */
+    public Map<Long, JSONObject> getCallablesMetadata(Set<Long> callableIds) {
+        var queryResult = context
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.LINE_START,
+                        Callables.CALLABLES.LINE_END, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.in(callableIds))
+                .fetch();
+        var metadataMap = new HashMap<Long, JSONObject>(queryResult.size());
+        for (var record : queryResult) {
+            var json = new JSONObject(record.value4().data());
+            json.put("line_start", record.value2());
+            json.put("line_end", record.value3());
+            metadataMap.put(record.value1(), json);
+        }
+        return metadataMap;
+    }
+
+    /**
+     * Returns a Map (Pair of IDs -> JSON Metadata) for a list of edges.
+     *
+     * @param edges List of pairs of IDs which constitute edges
+     * @return HashMap from Pair of IDs to metadata of the edge
+     */
+    public Map<Pair<Long, Long>, JSONObject> getEdgesMetadata(List<Pair<Long, Long>> edges) {
+        var whereClause = and(Edges.EDGES.SOURCE_ID.eq(edges.get(0).getFirst()))
+                .and(Edges.EDGES.TARGET_ID.eq(edges.get(0).getSecond()));
+        for (int i = 1; i < edges.size(); i++) {
+            whereClause = whereClause.or(
+                    and(Edges.EDGES.SOURCE_ID.eq(edges.get(i).getFirst()))
+                            .and(Edges.EDGES.TARGET_ID.eq(edges.get(i).getSecond()))
+            );
+        }
+        var queryResult = context
+                .select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS, Edges.EDGES.METADATA)
+                .from(Edges.EDGES)
+                .where(whereClause)
+                .fetch();
+        var metadataMap = new HashMap<Pair<Long, Long>, JSONObject>(queryResult.size());
+        for (var record : queryResult) {
+            var json = new JSONObject(record.value4().data());
+            var receiversJson = new JSONArray();
+            for (var receiver : record.value3()) {
+                var receiverJson = new JSONObject();
+                receiverJson.put("line", receiver.value1());
+                receiverJson.put("type", receiver.value2().getLiteral());
+                receiverJson.put("receiver_uri", receiver.value3());
+            }
+            json.put("receivers", receiversJson);
+            metadataMap.put(new Pair<>(record.value1(), record.value2()), json);
+        }
+        return metadataMap;
     }
 
     /**

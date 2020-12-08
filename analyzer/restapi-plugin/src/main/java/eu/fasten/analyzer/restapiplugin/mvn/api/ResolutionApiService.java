@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
 import org.springframework.http.ResponseEntity;
+import java.util.List;
 
 public interface ResolutionApiService {
 
@@ -26,4 +27,5 @@ public interface ResolutionApiService {
 
     ResponseEntity<String> resolveDependents(String package_name, String version, boolean transitive, long timestamp);
 
+    ResponseEntity<String> enrichArtifacts(List<String> mavenCoordinates, boolean enrichEdges, boolean stitch);
 }

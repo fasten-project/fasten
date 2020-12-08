@@ -18,8 +18,10 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn;
 
+import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.dbconnectors.RocksDBConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
@@ -39,6 +41,8 @@ public class KnowledgeBaseConnector {
      * KnowledgeBase data access object.
      */
     public static MetadataDao kbDao;
+
+    public static RocksDao graphDao;
 
     /**
      * Dependency graph resolver for Maven
@@ -68,6 +72,9 @@ public class KnowledgeBaseConnector {
     @Value("${kb.depgraph.path}")
     private String depGraphPath;
 
+    @Value("${kb.graphdb.path}")
+    private String graphdbPath;
+
     /**
      * Connects to the KnowledgeBase before starting the REST server.
      */
@@ -95,5 +102,17 @@ public class KnowledgeBaseConnector {
             System.exit(1);
         }
         logger.info("Successfully constructed dependency graph");
+    }
+
+    @PostConstruct
+    public void connectToGraphDB() {
+        logger.info("Establishing connection to the Graph Database at " + graphdbPath + "...");
+        try {
+            graphDao = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphdbPath);
+        } catch (RuntimeException e) {
+            logger.error("Couldn't connect to the Graph Database", e);
+            System.exit(1);
+        }
+        logger.info("...Graph database connection established successfully.");
     }
 }
