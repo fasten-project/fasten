@@ -131,6 +131,60 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair> {
 	 */
 	public boolean isExternal(final long node);
 
+	/**
+	 * Returns a transposed view of this directed graph.
+	 *
+	 * @return a transposed view of this directed graph.
+	 */
+	public default DirectedGraph transpose() {
+		return new DirectedGraph() {
+
+			@Override
+			public DirectedGraph transpose() {
+				return DirectedGraph.this;
+			}
+
+			@Override
+			public LongList successors(final long node) {
+				return DirectedGraph.this.predecessors(node);
+			}
+
+			@Override
+			public LongList predecessors(final long node) {
+				return DirectedGraph.this.successors(node);
+			}
+
+			@Override
+			public int numNodes() {
+				return DirectedGraph.this.numNodes();
+			}
+
+			@Override
+			public long numArcs() {
+				return DirectedGraph.this.numArcs();
+			}
+
+			@Override
+			public LongSet nodes() {
+				return DirectedGraph.this.nodes();
+			}
+
+			@Override
+			public boolean isInternal(final long node) {
+				return DirectedGraph.this.isInternal(node);
+			}
+
+			@Override
+			public boolean isExternal(final long node) {
+				return DirectedGraph.this.isExternal(node);
+			}
+
+			@Override
+			public LongSet externalNodes() {
+				return DirectedGraph.this.externalNodes();
+			}
+		};
+	}
 	@Override
 	default Set<LongLongPair> getAllEdges(final Long sourceVertex, final Long targetVertex) {
 		final LongLongPair edge = getEdge(sourceVertex, targetVertex);
