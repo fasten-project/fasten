@@ -26,7 +26,9 @@ public class CallGraphData implements DirectedGraph {
 	public final long[] LID2GID;
 	/** Inverse to {@link #LID2GID}: maps GIDs to LIDs. */
 	public final GOV3LongFunction GID2LID;
-	/** A cached copy of the set of external nodes (TODO: immutable? slower but safer). */
+	/** A cache copy of the set of nodes. */
+	private final LongOpenHashSet nodes;
+	/** A cached copy of the set of external nodes. */
 	private final LongOpenHashSet externalNodes;
 	/** The size in bytes of the RocksDB entry. */
 	public final int size;
@@ -41,6 +43,7 @@ public class CallGraphData implements DirectedGraph {
 		this.GID2LID = GID2LID;
 		this.externalNodes = new LongOpenHashSet(Arrays.copyOfRange(LID2GID, nInternal, LID2GID.length));
 		this.size = size;
+		this.nodes = new LongOpenHashSet(LID2GID);
 	}
 
 	@Override
@@ -75,8 +78,7 @@ public class CallGraphData implements DirectedGraph {
 
 	@Override
 	public LongSet nodes() {
-		// TODO maybe cache this
-		return new LongOpenHashSet(LID2GID);
+		return nodes;
 	}
 
 	@Override
