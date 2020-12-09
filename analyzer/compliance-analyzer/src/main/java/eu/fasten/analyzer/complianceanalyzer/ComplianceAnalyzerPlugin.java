@@ -10,6 +10,7 @@ import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Job;
+import io.kubernetes.client.openapi.models.V1ReplicationController;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.KubeConfig;
@@ -114,6 +115,9 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 // Connecting to the Kubernetes cluster
                 connectToCluster();
 
+                // Starting RabbitMQ
+                applyRabbitMQ();
+
                 // Starting the QMSTR Job
                 applyK8sJob();
 
@@ -140,26 +144,50 @@ public class ComplianceAnalyzerPlugin extends Plugin {
             }
         }
 
+        protected void applyRabbitMQ() throws IOException, ApiException {
+
+            try {
+
+                // Deploying the RabbitMQ ReplicationController
+                String replicationControllerFilePath = "/k8s/rabbitmq/replicationcontroller.yaml";
+                File replicationControllerFile = new File(ComplianceAnalyzerPlugin.class.getResource(replicationControllerFilePath).getPath());
+                V1ReplicationController replicationController = Yaml.loadAs(replicationControllerFile, V1ReplicationController.class);
+                V1ReplicationController deployedReplicationControllerMap = new CoreV1Api().createNamespacedReplicationController(K8S_NAMESPACE, replicationController, null, null, null);
+                logger.info("Deployed ReplicationController: " + deployedReplicationControllerMap);
+
+                // Deploying the RabbitMQ Service
+                String serviceFilePath = "/k8s/rabbitmq/service.yaml";
+                File serviceFile = new File(ComplianceAnalyzerPlugin.class.getResource(serviceFilePath).getPath());
+                V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
+                V1Service deployedService = new CoreV1Api().createNamespacedService(K8S_NAMESPACE, service, null, null, null);
+                logger.info("Deployed ReplicationController: " + deployedService);
+
+            } catch (ApiException e) {
+                throw new ApiException("Exception while deploying a RabbitMQ Kubernetes resource: " + e);
+            }
+
+        }
+
         protected void applyK8sJob() throws ApiException, IOException {
 
             try {
 
                 // Deploying the QMSTR ConfigMap
-                String configMapFilePath = "/k8s/master-config.yaml";
+                String configMapFilePath = "/k8s/qmstr/master-config.yaml";
                 File configMapFile = new File(ComplianceAnalyzerPlugin.class.getResource(configMapFilePath).getPath());
                 V1ConfigMap configMap = Yaml.loadAs(configMapFile, V1ConfigMap.class);
                 V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap(K8S_NAMESPACE, configMap, null, null, null);
                 logger.info("Deployed ConfigMap: " + deployedConfigMap);
 
                 // Deploying the QMSTR Service
-                String serviceFilePath = "/k8s/service.yaml";
+                String serviceFilePath = "/k8s/dgraph/service.yaml";
                 File serviceFile = new File(ComplianceAnalyzerPlugin.class.getResource(serviceFilePath).getPath());
                 V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
                 V1Service deployedService = new CoreV1Api().createNamespacedService(K8S_NAMESPACE, service, null, null, null);
                 logger.info("Deployed Service: " + deployedService);
 
                 // Patching the QMSTR Job
-                String jobFilePath = "/k8s/job.yaml";
+                String jobFilePath = "/k8s/qmstr/job.yaml";
                 String jobFileFullPath = ComplianceAnalyzerPlugin.class.getResource(jobFilePath).getPath();
                 Path jobFileSystemPath = Paths.get(jobFileFullPath);
                 Charset jobFileCharset = StandardCharsets.UTF_8;
@@ -175,9 +203,9 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 logger.info("Deployed Job: " + deployedJob);
 
             } catch (IOException e) {
-                throw new IOException("Exception while patching the QMSTR Job: " + e.getMessage());
+                throw new IOException("Exception while patching the QMSTR Job: " + e);
             } catch (ApiException e) {
-                throw new ApiException("Exception while deploying a Kubernetes object: " + e.getMessage());
+                throw new ApiException("Exception while deploying a QMSTR Kubernetes resource: " + e);
             }
 
         }

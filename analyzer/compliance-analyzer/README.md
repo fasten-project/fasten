@@ -31,6 +31,7 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
       -DclusterCredentials=path/to/cluster/credentials.json \
       clean install exec:java \
       -f analyzer/compliance-analyzer/pom.xml \
+      -Djdk.tls.client.protocols=TLSv1.2 \
       -Dexec.args="--repository analyzer/compliance-analyzer/dummyKafkaTopic.json"
     ```
    This demo simulates a Kafka topic consumption by reading the [`dummyKafkaTopic.json` file](dummyKafkaTopic.json).\
