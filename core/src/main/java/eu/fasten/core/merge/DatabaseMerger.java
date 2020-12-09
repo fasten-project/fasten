@@ -210,19 +210,24 @@ public class DatabaseMerger {
      * @return merged call graph
      */
     public DirectedGraph mergeWithCHA(final long artifactId) {
-
         final var callGraphData = fetchCallGraphData(artifactId, rocksDao);
         final var typeMap = createTypeMap(callGraphData, dbContext);
         final var arcs = getArcs(callGraphData, dbContext);
 
         var result = new ArrayImmutableDirectedGraph.Builder();
 
+        cloneNodesAndArcs(result, callGraphData);
+
         final long startTime = System.currentTimeMillis();
         for (final var arc : arcs) {
             if (callGraphData.isExternal(arc.target)) {
-                resolve(result, callGraphData, arc, typeMap.get(arc.target), false);
+                if (!resolve(result, callGraphData, arc, typeMap.get(arc.target), false)) {
+                    addEdge(result, callGraphData, arc.source, arc.target, false);
+                }
             } else {
-                resolve(result, callGraphData, arc, typeMap.get(arc.source), callGraphData.isExternal(arc.source));
+                if (!resolve(result, callGraphData, arc, typeMap.get(arc.source), callGraphData.isExternal(arc.source))) {
+                    addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
+                }
             }
         }
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
@@ -239,13 +244,14 @@ public class DatabaseMerger {
      * @param node          type and method information
      * @param isCallback    true, if a given arc is a callback
      */
-    private void resolve(final ArrayImmutableDirectedGraph.Builder result,
-                         final DirectedGraph callGraphData,
-                         final Arc arc,
-                         final Node node,
-                         final boolean isCallback) {
+    private boolean resolve(final ArrayImmutableDirectedGraph.Builder result,
+                            final DirectedGraph callGraphData,
+                            final Arc arc,
+                            final Node node,
+                            final boolean isCallback) {
+        var added = false;
         if (node.isConstructor()) {
-            resolveInitsAndConstructors(result, callGraphData, arc, node, isCallback);
+            added = resolveInitsAndConstructors(result, callGraphData, arc, node, isCallback);
         }
 
         for (var entry : arc.receivers) {
@@ -260,12 +266,13 @@ public class DatabaseMerger {
                             for (final var target : typeDictionary.getOrDefault(depTypeUri,
                                     new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                                 addEdge(result, callGraphData, arc.source, target, isCallback);
+                                added = true;
                             }
                         }
                     }
                     break;
                 case "special":
-                    resolveInitsAndConstructors(result, callGraphData, arc, node, isCallback);
+                    added = resolveInitsAndConstructors(result, callGraphData, arc, node, isCallback);
                     break;
                 case "dynamic":
                     logger.warn("OPAL didn't rewrite the dynamic");
@@ -274,11 +281,12 @@ public class DatabaseMerger {
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                         addEdge(result, callGraphData, arc.source, target, isCallback);
+                        added = true;
                     }
                     break;
             }
-
         }
+        return added;
     }
 
     /**
@@ -290,26 +298,30 @@ public class DatabaseMerger {
      * @param node          type and method information
      * @param isCallback    true, if a given arc is a callback
      */
-    private void resolveInitsAndConstructors(final ArrayImmutableDirectedGraph.Builder result,
-                                             final DirectedGraph callGraphData,
-                                             final Arc arc,
-                                             final Node node,
-                                             final boolean isCallback) {
+    private boolean resolveInitsAndConstructors(final ArrayImmutableDirectedGraph.Builder result,
+                                                final DirectedGraph callGraphData,
+                                                final Arc arc,
+                                                final Node node,
+                                                final boolean isCallback) {
+        var added = false;
         final var typeList = universalParents.get(node.typeUri);
         if (typeList != null) {
             for (final var superTypeUri : typeList) {
                 for (final var target : typeDictionary.getOrDefault(superTypeUri,
                         new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                     addEdge(result, callGraphData, arc.source, target, isCallback);
+                    added = true;
                 }
 
                 var superSignature = "<clinit>()/java.lang/VoidType";
                 for (final var target : typeDictionary.getOrDefault(superTypeUri,
                         new HashMap<>()).getOrDefault(superSignature, new HashSet<>())) {
                     addEdge(result, callGraphData, arc.source, target, isCallback);
+                    added = true;
                 }
             }
         }
+        return added;
     }
 
     /**
@@ -637,6 +649,28 @@ public class DatabaseMerger {
             }
         }
         return result.build();
+    }
+
+    /**
+     * Clone internal calls and internal arcs to the merged call graph.
+     *
+     * @param result        resulting merged call graph
+     * @param callGraphData initial call graph
+     */
+    private void cloneNodesAndArcs(final ArrayImmutableDirectedGraph.Builder result,
+                                   final DirectedGraph callGraphData) {
+        var internalNodes = callGraphData.nodes();
+        internalNodes.removeAll(callGraphData.externalNodes());
+        for (var node : internalNodes) {
+            result.addInternalNode(node);
+        }
+        for (var source : internalNodes) {
+            for (var target : callGraphData.successors(source)) {
+                if (callGraphData.isInternal(target)) {
+                    result.addArc(source, target);
+                }
+            }
+        }
     }
 
     /**

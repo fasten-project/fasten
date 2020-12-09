@@ -3,24 +3,28 @@ package eu.fasten.core.index;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.core.data.KnowledgeBase;
-import eu.fasten.core.data.KnowledgeBase.Node;
-import eu.fasten.core.data.RevisionCallGraph;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
 
+import eu.fasten.core.data.KnowledgeBase;
+import eu.fasten.core.data.KnowledgeBase.Node;
+import eu.fasten.core.data.RevisionCallGraph;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+
+@Disabled("No longer in use")
 public class IndexerTest {
 
     final String[] JSON_SPECS = {

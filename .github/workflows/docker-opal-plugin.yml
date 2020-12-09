@@ -4,7 +4,7 @@ on:
   push:
     # Publish `opal-plugin` as Docker `latest` image.
     branches:
-      - opal-gh-pkg
+      - develop
 
     # Publish `v1.2.3` tags as releases.
     tags:
@@ -13,7 +13,7 @@ on:
   # Run tests for any PRs.
   pull_request:
     branches:
-      - opal-gh-pkg
+      - develop
 
 env:
   # TODO: Change variable to your image's name.

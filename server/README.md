@@ -15,8 +15,7 @@ The FASTEN-server is a component necessary for running [FASTEN-specific plugins]
 
 ## Arguments
 - `-b` `--base_dir` Path to base directory to which data will be written;
-- `-d` `--database` Database URL for connection;
-    - `-du` `--user` Database user name;
+- `-d` `--database` Kay-value pairs of Database URLs for connection. Valid keys are `mvn`, `pypi`, `debian` for Java, Python and C, respectively. E.g.`mvn=jdbc:postgresql://postgres@localhost/dbname`;
 - `-gd` `--graphdb_dir` Path to directory with RocksDB database;
 - `-h` `--help` Show this help message and exit;
 - `-k` `--kafka_server` Kafka server to connect to. Use multiple times for clusters;
@@ -44,7 +43,7 @@ The FASTEN-server is a component necessary for running [FASTEN-specific plugins]
 
 #### Run a specific FASTEN-plugin that requires a database connection
 ```shell script
--p path/to/plugins/dir -pl POMAnalyzer -d jdbc:postgresql:javadb -du postgres
+-p path/to/plugins/dir -pl POMAnalyzer -d mvn=jdbc:postgresql://postgres@localhost/dbname
 ```
 
 #### Run a specific FASTEN-plugin that writes output to files

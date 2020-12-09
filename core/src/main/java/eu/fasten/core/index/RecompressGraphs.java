@@ -21,7 +21,6 @@ package eu.fasten.core.index;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,7 @@ public class RecompressGraphs {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RecompressGraphs.class);
 
-	public static void main(final String[] args) throws JSAPException, ClassNotFoundException, RocksDBException, IOException, ConfigurationException {
+	public static void main(final String[] args) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(RecompressGraphs.class.getName(),
 				"Extract properties files from a knowledge base.",
 				new Parameter[] {

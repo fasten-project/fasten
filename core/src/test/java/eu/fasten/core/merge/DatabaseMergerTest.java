@@ -1,5 +1,6 @@
 package eu.fasten.core.merge;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -128,16 +129,43 @@ public class DatabaseMergerTest {
         assertNotNull(mergedGraph);
 
         assertEquals(new LongArraySet(new long[]{MAIN_INIT, MAIN_MAIN_METHOD, FOO_CLINIT, FOO_INIT,
-                FOO_STATIC_METHOD, BAR_INIT, BAR_SUPER_METHOD, BAZ_INIT, BAZ_SUPER_METHOD}),
+                        FOO_STATIC_METHOD, BAR_INIT, BAR_SUPER_METHOD, BAZ_INIT, BAZ_SUPER_METHOD, 2}),
                 mergedGraph.nodes());
         assertEquals(new LongArraySet(new long[]{FOO_CLINIT, FOO_INIT, FOO_STATIC_METHOD, BAR_INIT,
-                BAR_SUPER_METHOD, BAZ_INIT, BAZ_SUPER_METHOD}), mergedGraph.externalNodes());
+                BAR_SUPER_METHOD, BAZ_INIT, BAZ_SUPER_METHOD, 2}), mergedGraph.externalNodes());
 
-        assertEquals(mergedGraph.successors(MAIN_INIT), LongArrayList.wrap(new long[]{MAIN_INIT}));
+        assertEquals(mergedGraph.successors(MAIN_INIT), LongArrayList.wrap(new long[]{MAIN_INIT, 2}));
 
         assertEquals(new HashSet<>(mergedGraph.successors(MAIN_MAIN_METHOD)),
                 Set.of(FOO_CLINIT, FOO_INIT, FOO_STATIC_METHOD, BAR_INIT, BAR_SUPER_METHOD,
                         BAZ_INIT, BAZ_SUPER_METHOD));
+    }
+
+    @Test
+    public void recursiveCallsTest() throws RocksDBException {
+        var connection = new MockConnection(new MockProvider());
+        var context = DSL.using(connection, SQLDialect.POSTGRES);
+
+        // random internal node with recursive call
+        final int nodeWithRecursiveCall = 3;
+
+        var directedGraph = new ArrayImmutableDirectedGraph.Builder();
+        directedGraph.addInternalNode(nodeWithRecursiveCall);
+        directedGraph.addArc(nodeWithRecursiveCall, nodeWithRecursiveCall);
+
+        var rocksDao = Mockito.mock(RocksDao.class);
+        Mockito.when(rocksDao.getGraphData(42)).thenReturn(directedGraph.build());
+
+        var merger = new DatabaseMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
+                context, rocksDao);
+
+        var mergedGraph = merger.mergeWithCHA(42);
+
+        assertNotNull(mergedGraph);
+
+        assertTrue(mergedGraph.nodes().contains(nodeWithRecursiveCall));
+        assertEquals(LongArrayList.wrap(new long[]{nodeWithRecursiveCall}),
+                mergedGraph.successors(nodeWithRecursiveCall));
     }
 
     private DirectedGraph createMockDirectedGraph() {
@@ -262,7 +290,6 @@ public class DatabaseMergerTest {
                         .newRecord(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
                         .values(node.getKey(), node.getValue()));
             }
-            System.out.println(result);
             return new MockResult(result.size(), result);
         }
     }
