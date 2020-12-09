@@ -48,7 +48,14 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(groupId,
                 artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
         var jsonArray = new JSONArray();
-        depSet.stream().map(Revision::toJSON).forEach(jsonArray::put);
+        depSet.stream().map(Revision::toJSON).peek(json -> {
+            var group = json.getString("groupId");
+            var artifact = json.getString("artifactId");
+            var ver = json.getString("version");
+            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+                    artifact.charAt(0), artifact, artifact, group, ver);
+            json.put("url", url);
+        }).forEach(jsonArray::put);
         return new ResponseEntity<>(jsonArray.toString(), HttpStatus.OK);
     }
 
@@ -59,7 +66,14 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         var depSet = KnowledgeBaseConnector.graphResolver.resolveDependents(groupId,
                 artifactId, version, timestamp, transitive);
         var jsonArray = new JSONArray();
-        depSet.stream().map(Revision::toJSON).forEach(jsonArray::put);
+        depSet.stream().map(Revision::toJSON).peek(json -> {
+            var group = json.getString("groupId");
+            var artifact = json.getString("artifactId");
+            var ver = json.getString("version");
+            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+                    artifact.charAt(0), artifact, artifact, group, ver);
+            json.put("url", url);
+        }).forEach(jsonArray::put);
         return new ResponseEntity<>(jsonArray.toString(), HttpStatus.OK);
     }
 
