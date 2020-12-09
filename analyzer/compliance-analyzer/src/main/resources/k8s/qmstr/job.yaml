@@ -26,9 +26,22 @@ spec:
               mountPath: /var/qmstr/buildroot/
         - name: dgraph
           image: dgraph/standalone:latest
+        - name: fasten-reporter
+          image: endocode/fasten-reporter-standalone
+          env:
+            - name: RABBITMQ_ADDRESS
+              value: "amqp://guest:guest@rabbitmq-service:5672/"
+            - name: DB_ADDRESS
+              value: "dgraph:9080"
         - name: qmstr-client
-          image: endocodeci/qmstr-client-mvn:sha-24bc6f4
-          command: [ "sh", "-c", "sleep 60 && mvn package -Dmaven.test.skip=true && qmstrctl analyze --verbose" ]
+          image: endocode/qmstr-client-mvn:fasten-reporter-curl
+          command: [ "sh", "-c", "sleep 60 && mvn package -Dmaven.test.skip=true && qmstrctl analyze --verbose && curl --location --request POST 'http://rabbitmq-service:15672/api/exchanges/%2f/amq.default/publish' \
+                                                                                                                  --header 'Authorization: Basic Z3Vlc3Q6Z3Vlc3Q=' \
+                                                                                                                  --header 'Content-Type: text/plain' \
+                                                                                                                  --data-raw '{\"properties\":{},
+                                                                                                                  \"routing_key\":\"fasten-reporter\",
+                                                                                                                  \"payload\":\"gooooo!!!!!\",
+                                                                                                                  \"payload_encoding\":\"string\"}'" ]
           env:
             - name: QMSTRADDRENV
               value: "localhost:50051"
@@ -63,6 +76,13 @@ spec:
           volumeMounts:
             - name: buildroot-volume
               mountPath: /home/configure/buildroot
+        - name: wait-for-rabbit
+          image: endocode/rabbit-poller
+          env:
+            - name: RABBIT_HOST
+              value: "rabbitmq-service"
+            - name: RABBIT_PORT
+              value: "5672"
       volumes:
         - name: buildroot-volume
           emptyDir: { }
