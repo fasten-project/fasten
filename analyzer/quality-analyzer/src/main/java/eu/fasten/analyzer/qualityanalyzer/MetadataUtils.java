@@ -41,6 +41,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+
 
 public class MetadataUtils {
 
@@ -108,7 +110,7 @@ public class MetadataUtils {
         String product = null;
         String version = null;
 
-        if (jsonRecord.has("input")) {
+        if (jsonRecord.has("payload")) {
             product = jsonRecord.getJSONObject("payload").getString("product");
             version = jsonRecord.getJSONObject("payload").getString("version");
         }
@@ -127,10 +129,14 @@ public class MetadataUtils {
         }
 
         String path = jsonRecord.getJSONObject("payload").getString("filename");
+        //Fix issue #21 from quality-analyzer repository
+        int index = StringUtils.ordinalIndexOf(path, "/", 5);
+        String filename = path.substring(index+1);
+
         int lineStart = Integer.parseInt(jsonRecord.getJSONObject("payload").getString("start_line"));
         int lineEnd = Integer.parseInt(jsonRecord.getJSONObject("payload").getString("end_line"));
 
-        Long fileId = getFileId(pckVersionId, path);//could return null
+        Long fileId = getFileId(pckVersionId, filename);//could return null
 
         if(fileId == null ) {
             logger.error("Could not fetch fileID for package version id = " + pckVersionId +
@@ -142,13 +148,15 @@ public class MetadataUtils {
 
         ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
 
+        //String name = jsonRecord.getJSONObject("payload").getString("name");
+
         if(!modulesId.isEmpty()) {
 
             for(Long moduleId : modulesId) {
                 callables.addAll(getCallablesInformation(moduleId, lineStart, lineEnd));
             }
 
-            logger.info("Found " + callables.size() + " methods for which startLine= " + lineStart + " and endLine= " + lineEnd);
+            logger.info("Found " + callables.size() + " methods for which startLine and endline are in [" + lineStart + ", " + lineEnd + "]");
 
         }
 
@@ -229,10 +237,10 @@ public class MetadataUtils {
      * @param filepath - path to the file
      * @return - Long value of fileId or -1 if the file cannot be found
      */
-    private Long getFileId(Long packageVersionId, String filepath) {
+    private Long getFileId(Long packageVersionId, String filename) {
         // For the demo, just cut out the filename, without the path
-        var splits = filepath.split("/");
-        var filename = splits[splits.length - 1];
+        //var splits = filepath.split("/");
+        //var filename = splits[splits.length - 1];
 
         FilesRecord fr = (FilesRecord) selectedContext.select()
                 .from(Files.FILES)
@@ -282,13 +290,15 @@ public class MetadataUtils {
         List<CallableHolder> calls = new ArrayList<>();
 
         // Get all the records with the moduleId given
-        //and line start and line end are as given
-        //we could use line start *or* line end
+        //and the average of line start and line end is between what we get from MDB
+
+        int average = (int) Math.floor((lineStart+lineEnd)/2);
+
         Result<Record> crs = selectedContext.select()
                 .from(Callables.CALLABLES)
                 .where(Callables.CALLABLES.MODULE_ID.equal(moduleId))
-                .and(Callables.CALLABLES.LINE_START.equal(lineStart))
-                .and(Callables.CALLABLES.LINE_END.equal(lineEnd))
+                .and(Callables.CALLABLES.LINE_START.le(average))
+                .and(Callables.CALLABLES.LINE_END.ge(average))
                 .fetch();
 
         for (Record cr : crs) {
