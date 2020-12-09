@@ -38,4 +38,10 @@ public interface ModuleApiService {
                                           String module_namespace,
                                           short offset,
                                           short limit);
+
+    ResponseEntity<String> getModuleCallables(String package_name,
+                                          String package_version,
+                                          String module_namespace,
+                                          short offset,
+                                          short limit);
 }

@@ -56,4 +56,13 @@ public class ModuleApi {
                                           @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
         return service.getModuleFiles(package_name, package_version, module_namespace, offset, limit);
     }
+
+    @GetMapping(value = "/{pkg}/{pkg_ver}/modules/{namespace}/callables", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> getModuleCallables(@PathVariable("pkg") String package_name,
+                                          @PathVariable("pkg_ver") String package_version,
+                                          @PathVariable("namespace") String module_namespace,
+                                          @RequestParam(required = false, defaultValue = "0") short offset,
+                                          @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+        return service.getModuleCallables(package_name, package_version, module_namespace, offset, limit);
+    }
 }

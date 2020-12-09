@@ -1148,6 +1148,36 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
+    public String getModuleCallables(String packageName,
+                                 String packageVersion,
+                                 String moduleNamespace,
+                                 short offset,
+                                 short limit) {
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(c.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .and(m.NAMESPACE.equalIgnoreCase(moduleNamespace))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+    }
+
     public String getPackageBinaryModules(String packageName, String packageVersion, short offset, short limit) {
         return getBinaryModuleInfo(packageName, packageVersion, null, false, offset, limit);
     }

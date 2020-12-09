@@ -58,4 +58,15 @@ public class ModuleApiServiceImpl implements ModuleApiService {
                 package_name, package_version, module_namespace, offset, limit);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
+
+    @Override
+    public ResponseEntity<String> getModuleCallables(String package_name,
+                                                 String package_version,
+                                                 String module_namespace,
+                                                 short offset,
+                                                 short limit) {
+        String result = KnowledgeBaseConnector.kbDao.getModuleCallables(
+                package_name, package_version, module_namespace, offset, limit);
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
 }
