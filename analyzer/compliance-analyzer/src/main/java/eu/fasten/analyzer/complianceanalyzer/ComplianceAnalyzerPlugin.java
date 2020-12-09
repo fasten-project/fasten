@@ -145,21 +145,21 @@ public class ComplianceAnalyzerPlugin extends Plugin {
             try {
 
                 // Deploying the QMSTR ConfigMap
-                String configMapFilePath = "/docker/master-config.yaml";
+                String configMapFilePath = "/k8s/master-config.yaml";
                 File configMapFile = new File(ComplianceAnalyzerPlugin.class.getResource(configMapFilePath).getPath());
                 V1ConfigMap configMap = Yaml.loadAs(configMapFile, V1ConfigMap.class);
                 V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap(K8S_NAMESPACE, configMap, null, null, null);
                 logger.info("Deployed ConfigMap: " + deployedConfigMap);
 
                 // Deploying the QMSTR Service
-                String serviceFilePath = "/docker/service.yaml";
+                String serviceFilePath = "/k8s/service.yaml";
                 File serviceFile = new File(ComplianceAnalyzerPlugin.class.getResource(serviceFilePath).getPath());
                 V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
                 V1Service deployedService = new CoreV1Api().createNamespacedService(K8S_NAMESPACE, service, null, null, null);
                 logger.info("Deployed Service: " + deployedService);
 
                 // Patching the QMSTR Job
-                String jobFilePath = "/docker/job.yaml";
+                String jobFilePath = "/k8s/job.yaml";
                 String jobFileFullPath = ComplianceAnalyzerPlugin.class.getResource(jobFilePath).getPath();
                 Path jobFileSystemPath = Paths.get(jobFileFullPath);
                 Charset jobFileCharset = StandardCharsets.UTF_8;
