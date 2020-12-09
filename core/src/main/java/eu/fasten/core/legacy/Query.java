@@ -16,12 +16,11 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.query;
+package eu.fasten.core.legacy;
 
 import java.util.Collection;
 
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.KnowledgeBase;
 
 public interface Query {
 	public Collection<FastenURI> execute(final KnowledgeBase kb);

@@ -1,4 +1,4 @@
-package eu.fasten.core.index;
+package eu.fasten.core.legacy;
 
 import java.io.File;
 
@@ -52,7 +52,6 @@ import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.RevisionCallGraph;
-import eu.fasten.core.data.KnowledgeBase;
 /** A sample in-memory indexer that reads, compresses and stores in memory
  *  graphs stored in JSON format and answers to impact queries.
  *

@@ -1,4 +1,4 @@
-package eu.fasten.core.index;
+package eu.fasten.core.legacy;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -50,7 +50,8 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
-import eu.fasten.core.data.KnowledgeBase;
+import eu.fasten.core.index.BVGraphSerializer;
+import eu.fasten.core.index.LayeredLabelPropagation;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.fastutil.io.BinIO;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;

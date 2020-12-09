@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.query;
+package eu.fasten.core.legacy;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -38,7 +38,6 @@ import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.KnowledgeBase;
 /** A sample in-memory indexer that reads, compresses and stores in memory
  *  graphs stored in JSON format and answers to impact queries.
  *

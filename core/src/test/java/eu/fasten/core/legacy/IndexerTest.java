@@ -1,4 +1,4 @@
-package eu.fasten.core.index;
+package eu.fasten.core.legacy;
 
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,9 +17,10 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
 
-import eu.fasten.core.data.KnowledgeBase;
-import eu.fasten.core.data.KnowledgeBase.Node;
 import eu.fasten.core.data.RevisionCallGraph;
+import eu.fasten.core.legacy.Indexer;
+import eu.fasten.core.legacy.KnowledgeBase;
+import eu.fasten.core.legacy.KnowledgeBase.Node;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
@@ -172,7 +173,7 @@ public class IndexerTest {
 
         for (int pass = 0; pass < 2; pass++) {
             for (final var entry : kb.callGraphs.long2ObjectEntrySet()) {
-                final eu.fasten.core.data.KnowledgeBase.CallGraph callGraph = entry.getValue();
+                final eu.fasten.core.legacy.KnowledgeBase.CallGraph callGraph = entry.getValue();
                 for (final long gid : callGraph.callGraphData().nodes())
                     if (!(callGraph.callGraphData().isExternal(gid))) {
                         final Node node = kb.new Node(gid, entry.getLongKey());

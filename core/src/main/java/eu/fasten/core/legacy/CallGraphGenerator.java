@@ -1,4 +1,4 @@
-package eu.fasten.core.index;
+package eu.fasten.core.legacy;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
