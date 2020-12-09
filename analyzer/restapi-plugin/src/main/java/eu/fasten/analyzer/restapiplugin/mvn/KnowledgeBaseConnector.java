@@ -75,6 +75,9 @@ public class KnowledgeBaseConnector {
     @Value("${kb.graphdb.path}")
     private String graphdbPath;
 
+    @Value("${lima.ercg.url}")
+    public static String limaUrl;
+
     /**
      * Connects to the KnowledgeBase before starting the REST server.
      */

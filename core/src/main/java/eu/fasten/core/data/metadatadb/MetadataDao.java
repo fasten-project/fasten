@@ -1302,6 +1302,18 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
     }
 
+    public String getArtifactName(long packageVersionId) {
+        var result = context
+                .select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION)
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.eq(packageVersionId))
+                .limit(1)
+                .fetchOne();
+        return result.value1() + Constants.mvnCoordinateSeparator + result.value2();
+    }
+
     public String getPackageFiles(String packageName, String packageVersion, short offset, short limit) {
 
         // SQL query
