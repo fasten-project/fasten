@@ -42,4 +42,7 @@ public interface PackageApiService {
                                                String package_version,
                                                short offset,
                                                short limit);
+
+    ResponseEntity<String> enrichArtifact(String package_name, String version, boolean stitch,
+                                          boolean enrichEdges, long timestamp);
 }

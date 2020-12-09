@@ -88,7 +88,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             if (graph == null) {
                 return new ResponseEntity<>("Could not stitch provided artifacts", HttpStatus.INTERNAL_SERVER_ERROR);
             }
-            json = graphToJSON(graph, enrichEdges);
+            json = directedGraphToEnrichedJSON(graph, enrichEdges);
         } else {
             for (var coordinate : mavenCoordinates) {
                 DirectedGraph graph;
@@ -109,13 +109,13 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
                 if (graph == null) {
                     return new ResponseEntity<>("Callgraph not found in the graph database", HttpStatus.NOT_FOUND);
                 }
-                json.put(coordinate, graphToJSON(graph, enrichEdges));
+                json.put(coordinate, directedGraphToEnrichedJSON(graph, enrichEdges));
             }
         }
         return new ResponseEntity<>(json.toString(), HttpStatus.OK);
     }
 
-    private JSONObject graphToJSON(DirectedGraph graph, boolean enrichEdges) {
+    protected static JSONObject directedGraphToEnrichedJSON(DirectedGraph graph, boolean enrichEdges) {
         Map<Long, JSONObject> nodesMetadata = KnowledgeBaseConnector.kbDao.getCallablesMetadata(graph.nodes());
         Map<Pair<Long, Long>, JSONObject> edgesMetadata = new HashMap<>();
         var edges = graph.edgeSet().stream().map(e -> new Pair<>(e.firstLong(), e.secondLong())).collect(Collectors.toSet());
