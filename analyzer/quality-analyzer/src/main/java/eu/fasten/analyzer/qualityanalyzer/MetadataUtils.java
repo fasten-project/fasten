@@ -109,8 +109,8 @@ public class MetadataUtils {
         String version = null;
 
         if (jsonRecord.has("input")) {
-            product = jsonRecord.getJSONObject("input").getString("product");
-            version = jsonRecord.getJSONObject("input").getString("version");
+            product = jsonRecord.getJSONObject("payload").getString("product");
+            version = jsonRecord.getJSONObject("payload").getString("version");
         }
 
         if( (product == null) || (version == null)) {
@@ -126,9 +126,9 @@ public class MetadataUtils {
             throw new IllegalStateException("Could not find package version id");
         }
 
-        String path = jsonRecord.getJSONObject("payload").getString("filepath");
-        int lineStart = Integer.parseInt(jsonRecord.getJSONObject("payload").getJSONObject("metrics").getString("start_line"));
-        int lineEnd = Integer.parseInt(jsonRecord.getJSONObject("payload").getJSONObject("metrics").getString("end_line"));
+        String path = jsonRecord.getJSONObject("payload").getString("filename");
+        int lineStart = Integer.parseInt(jsonRecord.getJSONObject("payload").getString("start_line"));
+        int lineEnd = Integer.parseInt(jsonRecord.getJSONObject("payload").getString("end_line"));
 
         Long fileId = getFileId(pckVersionId, path);//could return null
 
