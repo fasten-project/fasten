@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
 import org.springframework.http.ResponseEntity;
+import java.util.List;
 
 public interface CallableApiService {
 
@@ -32,4 +33,6 @@ public interface CallableApiService {
                                                String fasten_uri,
                                                short offset,
                                                short limit);
+
+    ResponseEntity<String> getCallables(List<Long> callableIds);
 }

@@ -1486,6 +1486,27 @@ public class MetadataDao {
         return metadataMap;
     }
 
+    public Map<Long, JSONObject> getCallables(List<Long> callableIds) {
+        var queryResult = context
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.MODULE_ID,
+                        Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.LINE_START,
+                        Callables.CALLABLES.LINE_END, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.in(callableIds))
+                .fetch();
+        var callablesMap = new HashMap<Long, JSONObject>(queryResult.size());
+        for (var record : queryResult) {
+            var json = new JSONObject(record.value7().data());
+            json.put("fasten_uri", record.value2());
+            json.put("module_id", record.value3());
+            json.put("is_internal_call", record.value4());
+            json.put("line_start", record.value5());
+            json.put("line_end", record.value6());
+            callablesMap.put(record.value1(), json);
+        }
+        return callablesMap;
+    }
+
     /**
      * Returns a Map (Pair of IDs -> JSON Metadata) for a list of edges.
      *

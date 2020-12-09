@@ -20,9 +20,11 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.api.CallableApiService;
+import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 @Service
 public class CallableApiServiceImpl implements CallableApiService {
@@ -46,5 +48,15 @@ public class CallableApiServiceImpl implements CallableApiService {
         String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
                 package_name, package_version, fasten_uri, offset, limit);
         return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<String> getCallables(List<Long> callableIds) {
+        var callablesMap = KnowledgeBaseConnector.kbDao.getCallables(callableIds);
+        var json = new JSONObject();
+        for (var id : callableIds) {
+            json.put(String.valueOf(id), callablesMap.get(id));
+        }
+        return new ResponseEntity<>(json.toString(), HttpStatus.OK);
     }
 }
