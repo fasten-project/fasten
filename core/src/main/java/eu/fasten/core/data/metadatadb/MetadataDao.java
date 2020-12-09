@@ -1471,16 +1471,13 @@ public class MetadataDao {
      */
     public Map<Long, JSONObject> getCallablesMetadata(Set<Long> callableIds) {
         var queryResult = context
-                .select(Callables.CALLABLES.ID, Callables.CALLABLES.LINE_START,
-                        Callables.CALLABLES.LINE_END, Callables.CALLABLES.METADATA)
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
                 .from(Callables.CALLABLES)
                 .where(Callables.CALLABLES.ID.in(callableIds))
                 .fetch();
         var metadataMap = new HashMap<Long, JSONObject>(queryResult.size());
         for (var record : queryResult) {
-            var json = new JSONObject(record.value4().data());
-            json.put("line_start", record.value2());
-            json.put("line_end", record.value3());
+            var json = new JSONObject(record.value2().data());
             metadataMap.put(record.value1(), json);
         }
         return metadataMap;
@@ -1496,12 +1493,13 @@ public class MetadataDao {
                 .fetch();
         var callablesMap = new HashMap<Long, JSONObject>(queryResult.size());
         for (var record : queryResult) {
-            var json = new JSONObject(record.value7().data());
+            var json = new JSONObject();
             json.put("fasten_uri", record.value2());
             json.put("module_id", record.value3());
             json.put("is_internal_call", record.value4());
             json.put("line_start", record.value5());
             json.put("line_end", record.value6());
+            json.put("metadata", new JSONObject(record.value7().data()));
             callablesMap.put(record.value1(), json);
         }
         return callablesMap;
