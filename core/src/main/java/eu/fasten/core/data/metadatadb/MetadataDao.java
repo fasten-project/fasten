@@ -35,6 +35,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
+import eu.fasten.core.utils.FastenUriUtils;
 import org.apache.commons.math3.util.Pair;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -55,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.*;
 
@@ -1569,6 +1571,26 @@ public class MetadataDao {
             metadataMap.put(new Pair<>(record.value1(), record.value2()), json);
         }
         return metadataMap;
+    }
+
+    public List<String> getFullFastenUris(List<Long> callableIds) {
+        var result = context
+                .select(Packages.PACKAGES.PACKAGE_NAME,
+                        PackageVersions.PACKAGE_VERSIONS.VERSION,
+                        Modules.MODULES.NAMESPACE,
+                        Callables.CALLABLES.FASTEN_URI)
+                .from(Packages.PACKAGES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
+                .join(Modules.MODULES)
+                .on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
+                .join(Callables.CALLABLES)
+                .on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
+                .where(Callables.CALLABLES.ID.in(callableIds))
+                .fetch();
+        return result.stream()
+                .map(r -> FastenUriUtils.generateFullFastenUri(r.value1(), r.value2(), r.value3(), r.value4()))
+                .collect(Collectors.toList());
     }
 
     /**
