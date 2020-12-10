@@ -1,4 +1,4 @@
-package eu.fasten.core.index;
+package eu.fasten.core.legacy;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -33,9 +33,8 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
-import eu.fasten.core.data.KnowledgeBase;
-import eu.fasten.core.data.KnowledgeBase.CallGraph;
-import eu.fasten.core.data.KnowledgeBase.CallGraphData;
+import eu.fasten.core.legacy.KnowledgeBase.CallGraph;
+import eu.fasten.core.legacy.KnowledgeBase.CallGraphData;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.stat.SummaryStats;

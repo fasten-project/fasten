@@ -1,4 +1,4 @@
-package eu.fasten.core.index;
+package eu.fasten.core.legacy;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import it.unimi.dsi.util.XoRoShiRo128PlusRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.junit.jupiter.api.Test;
+
+import eu.fasten.core.legacy.FenwickTree;
 
 
 public class FenwickTreeTest {
