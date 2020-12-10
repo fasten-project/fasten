@@ -132,9 +132,11 @@ public class MetadataUtils {
         //Fix issue #21 from quality-analyzer repository
         int index = StringUtils.ordinalIndexOf(path, "/", 5);
         String filename = path.substring(index+1);
+        
+        logger.info("Filename from RapidPlugin is " + filename);
 
-        int lineStart = Integer.parseInt(jsonRecord.getJSONObject("payload").getString("start_line"));
-        int lineEnd = Integer.parseInt(jsonRecord.getJSONObject("payload").getString("end_line"));
+        int lineStart = jsonRecord.getJSONObject("payload").getInt("start_line");
+        int lineEnd = jsonRecord.getJSONObject("payload").getInt("end_line");
 
         Long fileId = getFileId(pckVersionId, filename);//could return null
 
