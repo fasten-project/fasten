@@ -19,12 +19,11 @@
 package eu.fasten.server;
 
 import ch.qos.logback.classic.Level;
-import eu.fasten.core.plugins.KafkaPlugin;
-import eu.fasten.core.plugins.GraphDBConnector;
-import eu.fasten.core.plugins.FastenPlugin;
-import eu.fasten.core.plugins.DataWriter;
 import eu.fasten.core.plugins.DBConnector;
-
+import eu.fasten.core.plugins.DataWriter;
+import eu.fasten.core.plugins.FastenPlugin;
+import eu.fasten.core.plugins.GraphDBConnector;
+import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
