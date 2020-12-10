@@ -1593,6 +1593,31 @@ public class MetadataDao {
                 .collect(Collectors.toList());
     }
 
+    public Map<String, JSONObject> getCallablesMetadata(List<String> fastenUris) {
+        var result = context
+                .select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.FASTEN_URI.in(fastenUris))
+                .fetch();
+        var metadataMap = new HashMap<String, JSONObject>(result.size());
+        for (var record : result) {
+            metadataMap.put(record.value1(), new JSONObject(record.value2().data()));
+        }
+        return metadataMap;
+    }
+
+    public String getMavenCoordinate(long packageVersionId) {
+        var record = context
+                .select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION)
+                .from(Packages.PACKAGES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.eq(packageVersionId))
+                .limit(1)
+                .fetchOne();
+        return record.value1() + Constants.mvnCoordinateSeparator + record.value2();
+    }
+
     /**
      * Reconstructs the dependency network given a product and a timestamp.
      *

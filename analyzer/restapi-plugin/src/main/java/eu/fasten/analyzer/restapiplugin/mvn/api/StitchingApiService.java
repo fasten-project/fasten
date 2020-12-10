@@ -24,4 +24,10 @@ import java.util.List;
 public interface StitchingApiService {
 
     ResponseEntity<String> resolveCallablesToUris(List<Long> gidList);
+
+    ResponseEntity<String> getCallablesMetadata(List<String> fastenUris);
+
+    ResponseEntity<String> resolveMultipleDependencies(List<String> mavenCoordinates);
+
+    ResponseEntity<String> getDirectedGraph(long packageVersionId, boolean needStitching, long timestamp);
 }

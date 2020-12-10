@@ -35,4 +35,20 @@ public class StitchingApi {
         return service.resolveCallablesToUris(gidList);
     }
 
+    @PostMapping(value = "/metadata/callables", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> getCallablesMetadata(@RequestBody List<String> fastenUris) {
+        return service.getCallablesMetadata(fastenUris);
+    }
+
+    @PostMapping(value = "/resolve_dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> resolveMultipleDependencies(@RequestBody List<String> mavenCoordinates) {
+        return service.resolveMultipleDependencies(mavenCoordinates);
+    }
+
+    @GetMapping(value = "/integration/packages/{pkg_version_id}/directedgraph", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> getDirectedGraph(@PathVariable("pkg_version_id") long packageVersionId,
+                                            @RequestParam(required = false, defaultValue = "false") boolean needStitching,
+                                            @RequestParam(required = false, defaultValue = "-1") long timestamp) {
+        return service.getDirectedGraph(packageVersionId, needStitching, timestamp);
+    }
 }
