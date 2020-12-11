@@ -27,12 +27,17 @@ spec:
         - name: dgraph
           image: dgraph/standalone:latest
         - name: fasten-reporter
-          image: endocode/fasten-reporter-standalone
+          image: endocode/fasten-reporter-standalone:kafka
           env:
             - name: RABBITMQ_ADDRESS
               value: "amqp://guest:guest@rabbitmq-service:5672/"
             - name: DB_ADDRESS
               value: "dgraph:9080"
+            - name: REPORT_TOPIC_NAME
+              value: "fasten.qmstr.out"
+            - name: KAFKA_ADDRESS
+              value: "fasten-kafka-instance-0.fasten-kafka-instance-headless.default.svc.cluster.local:9092"
+
         - name: qmstr-client
           image: endocode/qmstr-client-mvn:fasten-reporter-curl
           command: [ "sh", "-c", "sleep 60 && mvn package -Dmaven.test.skip=true && qmstrctl analyze --verbose && curl --location --request POST 'http://rabbitmq-service:15672/api/exchanges/%2f/amq.default/publish' \
