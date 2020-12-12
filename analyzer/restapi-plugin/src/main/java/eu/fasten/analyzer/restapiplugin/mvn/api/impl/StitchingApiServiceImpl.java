@@ -74,7 +74,13 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             finalSet.addAll(deps);
         }
         var jsonArray = new JSONArray();
-        finalSet.stream().map(r -> r.id).forEach(jsonArray::put);
+        finalSet.stream().map(r -> {
+            var json = new JSONObject();
+            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+                    r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
+            json.put(String.valueOf(r.id), url);
+            return json;
+        }).forEach(jsonArray::put);
         return new ResponseEntity<>(jsonArray.toString(), HttpStatus.OK);
     }
 

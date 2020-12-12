@@ -39,30 +39,30 @@ public class ModuleApi {
         return service.getPackageModules(package_name, package_version, offset, limit);
     }
 
-    @GetMapping(value = "/{pkg}/{pkg_ver}/modules/{namespace}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/{pkg}/{pkg_ver}/modules/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getModuleMetadata(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
-                                             @PathVariable("namespace") String module_namespace,
+                                             @RequestBody String module_namespace,
                                              @RequestParam(required = false, defaultValue = "0") short offset,
                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
         return service.getModuleMetadata(package_name, package_version, module_namespace, offset, limit);
     }
 
-    @GetMapping(value = "/{pkg}/{pkg_ver}/modules/{namespace}/files", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/{pkg}/{pkg_ver}/modules/files", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getModuleFiles(@PathVariable("pkg") String package_name,
                                           @PathVariable("pkg_ver") String package_version,
-                                          @PathVariable("namespace") String module_namespace,
+                                          @RequestBody String module_namespace,
                                           @RequestParam(required = false, defaultValue = "0") short offset,
                                           @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
         return service.getModuleFiles(package_name, package_version, module_namespace, offset, limit);
     }
 
-    @GetMapping(value = "/{pkg}/{pkg_ver}/modules/{namespace}/callables", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/{pkg}/{pkg_ver}/modules/callables", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getModuleCallables(@PathVariable("pkg") String package_name,
-                                          @PathVariable("pkg_ver") String package_version,
-                                          @PathVariable("namespace") String module_namespace,
-                                          @RequestParam(required = false, defaultValue = "0") short offset,
-                                          @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                              @PathVariable("pkg_ver") String package_version,
+                                              @RequestBody String module_namespace,
+                                              @RequestParam(required = false, defaultValue = "0") short offset,
+                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
         return service.getModuleCallables(package_name, package_version, module_namespace, offset, limit);
     }
 }
