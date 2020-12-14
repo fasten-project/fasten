@@ -968,14 +968,14 @@ public class MetadataDao {
         }
 
         // Building and executing the query
-        Result<Record> queryResult = this.context
+        Record queryResult = this.context
                 .select(selectClause)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
                 .offset(offset)
-                .limit(limit)
-                .fetch();
+                .limit(1)
+                .fetchOne();
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
@@ -1100,7 +1100,7 @@ public class MetadataDao {
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .where(whereClause)
                 .offset(offset)
-                .limit(limit)
+                .limit(metadataOnly ? 1 : limit)
                 .fetch();
 
         // Returning the result
