@@ -19,11 +19,21 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
 
 ## Usage 
 
-<p align="center">
-    <img src="https://raw.githubusercontent.com/fullsushidev/qmstr/master/doc/static/img/qmstr-plugin.gif">
-</p>
+1. (Optional) Install [Kafka](https://github.com/bitnami/charts/tree/master/bitnami/kafka) in your cluster:
+    ```bash
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm install my-release bitnami/kafka
+    ```
+    -
+        This plugin sends the license report back to Kafka using
+        its default
+        Helm chart
+        address.
+        \
+        If you need to use your own Kafka instance,
+        please set its address
+        [here](https://github.com/fasten-project/fasten/blob/d42f3ec828d0e6c0663e7db566b0b18df2b0d5a7/analyzer/compliance-analyzer/src/main/resources/k8s/qmstr/job.yaml#L39).
 
-#### <!-- TODO ultimate goal -->
 1. Start the plugin specifying the path to the cluster credentials file as an environment variable:
     ```bash
     # Example: from the FASTEN root folder
@@ -34,9 +44,24 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
       -Djdk.tls.client.protocols=TLSv1.2 \
       -Dexec.args="--repository analyzer/compliance-analyzer/dummyKafkaTopic.json"
     ```
-   This demo simulates a Kafka topic consumption by reading the [`dummyKafkaTopic.json` file](dummyKafkaTopic.json).\
-   Upon topic consumption, the `compliance-analyzer` launches Quartermaster that will build the specified repository. 
+    -
+        This demo simulates a Kafka message consumption by reading the [`dummyKafkaTopic.json` file](dummyKafkaTopic.json).
+    -
+        Upon consuming the message, the plugin starts Quartermaster, that will build and analyze the specified repository.
 
+The plugin then generates a [`fasten.qmstr.*` Kafka message](https://github.com/fasten-project/fasten/wiki/Kafka-Topics#fastenqmstr).
+
+## Extra
+
+<details>
+<summary>Metadata visualization</summary>
+
+Here are the necessary steps needed to visualize the detected metadata stored in our graph database.
+
+<p align="center">
+    <img src="https://raw.githubusercontent.com/fullsushidev/qmstr/master/doc/static/img/qmstr-plugin.gif">
+</p>
+  
 1. Wait for the build and analysis phases to be over:
     ```bash
     kubectl logs --follow $(kubectl get pods --selector job-name=qmstr -o=name) qmstr-client
@@ -128,8 +153,8 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
         <img src="https://github.com/endocode/qmstr/blob/feature/self-contained-modules/deploy/img/graph.png?raw=true" alt="Generated Build Graph example"/>
     </p>
     The left part of the graph consists in the usual build graph, having in this case a single (Java) package node in green as the central node.
-    License and compliance information is on the right, having the analyzer node in pink right in the middle.
-
+    License and compliance information is on the right, having the analyzer node in pink right in the middle.  
+</details>
 
 ## Join the community
 
