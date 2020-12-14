@@ -150,7 +150,7 @@ Here are the necessary steps needed to visualize the detected metadata stored in
 
 1. The generated graph should look something like this:
     <p align="center">
-        <img src="https://github.com/endocode/qmstr/blob/feature/self-contained-modules/deploy/img/graph.png?raw=true" alt="Generated Build Graph example"/>
+        <img src="https://raw.githubusercontent.com/wiki/fasten-project/fasten/img/qmstr/build_graph.png" alt="Generated Build Graph example"/>
     </p>
     The left part of the graph consists in the usual build graph, having in this case a single (Java) package node in green as the central node.
     License and compliance information is on the right, having the analyzer node in pink right in the middle.  
