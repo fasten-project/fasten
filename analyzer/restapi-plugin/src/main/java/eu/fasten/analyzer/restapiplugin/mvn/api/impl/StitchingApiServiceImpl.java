@@ -50,11 +50,21 @@ public class StitchingApiServiceImpl implements StitchingApiService {
     }
 
     @Override
-    public ResponseEntity<String> getCallablesMetadata(List<String> fastenUris) {
+    public ResponseEntity<String> getCallablesMetadata(List<String> fastenUris, boolean allAttributes, List<String> attributes) {
         var metadataMap = KnowledgeBaseConnector.kbDao.getCallablesMetadata(fastenUris);
         var json = new JSONObject();
         for (var entry : metadataMap.entrySet()) {
-            json.put(entry.getKey(), entry.getValue());
+            var neededMetadata = new JSONObject();
+            if (allAttributes) {
+                for (var attribute : entry.getValue().keySet()) {
+                    if (attributes.contains(attribute)) {
+                        neededMetadata.put(attribute, entry.getValue().get(attribute));
+                    }
+                }
+            } else {
+                neededMetadata = entry.getValue();
+            }
+            json.put(entry.getKey(), neededMetadata);
         }
         var result = json.toString();
         result = result.replace("\\", "");

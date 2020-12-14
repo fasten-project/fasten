@@ -36,8 +36,10 @@ public class StitchingApi {
     }
 
     @PostMapping(value = "/metadata/callables", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getCallablesMetadata(@RequestBody List<String> fastenUris) {
-        return service.getCallablesMetadata(fastenUris);
+    ResponseEntity<String> getCallablesMetadata(@RequestBody List<String> fastenUris,
+                                                @RequestParam(required = false, defaultValue = "false") boolean allAttributes,
+                                                @RequestParam(required = false, defaultValue = "[]") List<String> attributes) {
+        return service.getCallablesMetadata(fastenUris, allAttributes, attributes);
     }
 
     @PostMapping(value = "/resolve_dependencies", produces = MediaType.APPLICATION_JSON_VALUE)

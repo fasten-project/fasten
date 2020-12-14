@@ -25,7 +25,7 @@ public interface StitchingApiService {
 
     ResponseEntity<String> resolveCallablesToUris(List<Long> gidList);
 
-    ResponseEntity<String> getCallablesMetadata(List<String> fastenUris);
+    ResponseEntity<String> getCallablesMetadata(List<String> fastenUris, boolean allAttributes, List<String> attributes);
 
     ResponseEntity<String> resolveMultipleDependencies(List<String> mavenCoordinates);
 
