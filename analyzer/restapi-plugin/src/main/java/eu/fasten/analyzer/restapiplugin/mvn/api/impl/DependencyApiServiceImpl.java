@@ -34,6 +34,7 @@ public class DependencyApiServiceImpl implements DependencyApiService {
                                                          short limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageDependencies(
                 package_name, package_version, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

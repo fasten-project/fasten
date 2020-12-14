@@ -44,7 +44,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         var fastenUris = KnowledgeBaseConnector.kbDao.getFullFastenUris(gidList);
         var json = new JSONArray();
         fastenUris.forEach(json::put);
-        return new ResponseEntity<>(json.toString(), HttpStatus.OK);
+        var result = json.toString();
+        result = result.replace("\\", "");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @Override
@@ -54,7 +56,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         for (var entry : metadataMap.entrySet()) {
             json.put(entry.getKey(), entry.getValue());
         }
-        return new ResponseEntity<>(json.toString(), HttpStatus.OK);
+        var result = json.toString();
+        result = result.replace("\\", "");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @Override
@@ -81,7 +85,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             json.put(String.valueOf(r.id), url);
             return json;
         }).forEach(jsonArray::put);
-        return new ResponseEntity<>(jsonArray.toString(), HttpStatus.OK);
+        var result = jsonArray.toString();
+        result = result.replace("\\", "");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @Override
@@ -115,6 +121,8 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         graph.edgeSet().stream().map(e -> new long[] {e.firstLong(), e.secondLong()}).forEach(edgesJson::put);
         json.put("nodes", nodesJson);
         json.put("edges", edgesJson);
-        return new ResponseEntity<>(json.toString(), HttpStatus.OK);
+        var result = json.toString();
+        result = result.replace("\\", "");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

@@ -37,6 +37,7 @@ public class PackageVersionApiServiceImpl implements PackageVersionApiService {
         var version = coordinate[2];
         String result = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
                 artifactId.charAt(0), artifactId, artifactId, groupId, version);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

@@ -56,7 +56,9 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
-        return new ResponseEntity<>(jsonArray.toString(), HttpStatus.OK);
+        var result = jsonArray.toString();
+        result = result.replace("\\", "");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @Override
@@ -74,7 +76,9 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
-        return new ResponseEntity<>(jsonArray.toString(), HttpStatus.OK);
+        var result = jsonArray.toString();
+        result = result.replace("\\", "");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @Override
@@ -112,7 +116,9 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
                 json.put(coordinate, directedGraphToEnrichedJSON(graph, enrichEdges));
             }
         }
-        return new ResponseEntity<>(json.toString(), HttpStatus.OK);
+        var result = json.toString();
+        result = result.replace("\\", "");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     protected static JSONObject directedGraphToEnrichedJSON(DirectedGraph graph, boolean enrichEdges) {

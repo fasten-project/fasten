@@ -34,6 +34,7 @@ public class ModuleApiServiceImpl implements ModuleApiService {
                                                     short limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageModules(
                 package_name, package_version, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -45,6 +46,7 @@ public class ModuleApiServiceImpl implements ModuleApiService {
                                                     short limit) {
         String result = KnowledgeBaseConnector.kbDao.getModuleMetadata(
                 package_name, package_version, module_namespace, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -56,6 +58,7 @@ public class ModuleApiServiceImpl implements ModuleApiService {
                                                  short limit) {
         String result = KnowledgeBaseConnector.kbDao.getModuleFiles(
                 package_name, package_version, module_namespace, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -67,6 +70,7 @@ public class ModuleApiServiceImpl implements ModuleApiService {
                                                  short limit) {
         String result = KnowledgeBaseConnector.kbDao.getModuleCallables(
                 package_name, package_version, module_namespace, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

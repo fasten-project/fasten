@@ -34,6 +34,7 @@ public class FileApiServiceImpl implements FileApiService {
                                                   short limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageFiles(
                 package_name, package_version, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

@@ -34,6 +34,7 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
                                                           short limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageBinaryModules(
                 package_name, package_version, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -45,6 +46,7 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
                                                           short limit) {
         String result = KnowledgeBaseConnector.kbDao.getBinaryModuleMetadata(
                 package_name, package_version, binary_module, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -56,6 +58,7 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
                                                        short limit) {
         String result = KnowledgeBaseConnector.kbDao.getBinaryModuleFiles(
                 package_name, package_version, binary_module, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

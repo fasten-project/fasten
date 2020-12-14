@@ -36,6 +36,7 @@ public class CallableApiServiceImpl implements CallableApiService {
                                                       short limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageCallables(
                 package_name, package_version, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -47,6 +48,7 @@ public class CallableApiServiceImpl implements CallableApiService {
                                                       short limit) {
         String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
                 package_name, package_version, fasten_uri, offset, limit);
+        result = result.replace("\\", "");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -57,6 +59,8 @@ public class CallableApiServiceImpl implements CallableApiService {
         for (var id : callableIds) {
             json.put(String.valueOf(id), callablesMap.get(id));
         }
-        return new ResponseEntity<>(json.toString(), HttpStatus.OK);
+        var result = json.toString();
+        result = result.replace("\\", "");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }
