@@ -57,9 +57,6 @@ public class MetadataUtils {
     }
 
     public void freeResource() {
-        for(String key: dslContexts.keySet()) {
-            dslContexts.get(key).close();
-        }
     }
 
     /**
@@ -68,7 +65,7 @@ public class MetadataUtils {
      * @param jsonRecord    Object that contains quality analysis metadata.
      * @return              id of the callable record
      */
-    public Long updateMetadataInDB(String forge, JSONObject jsonRecord) throws RuntimeException, IllegalStateException {
+    public Long updateMetadataInDB(String forge, JSONObject jsonRecord) throws RuntimeException {
 
         selectedContext = dslContexts.get(forge);
 

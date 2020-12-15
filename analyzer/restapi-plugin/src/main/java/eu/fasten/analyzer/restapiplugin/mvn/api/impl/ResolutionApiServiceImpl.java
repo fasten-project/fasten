@@ -57,7 +57,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             json.put("url", url);
         }).forEach(jsonArray::put);
         var result = jsonArray.toString();
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -77,7 +77,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             json.put("url", url);
         }).forEach(jsonArray::put);
         var result = jsonArray.toString();
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -117,7 +117,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             }
         }
         var result = json.toString();
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 

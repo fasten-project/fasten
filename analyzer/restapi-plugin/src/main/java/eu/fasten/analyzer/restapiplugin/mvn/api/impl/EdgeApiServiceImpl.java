@@ -34,7 +34,7 @@ public class EdgeApiServiceImpl implements EdgeApiService {
                                                   short limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageEdges(
                 package_name, package_version, offset, limit);
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

@@ -938,7 +938,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     public String getPackageVersion(String packageName, String packageVersion, short offset, short limit) {
@@ -979,7 +979,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).format(true).quoteNested(false));
     }
 
     /**
@@ -1016,7 +1016,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     /**
@@ -1048,7 +1048,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     public String getPackageModules(String packageName,
@@ -1105,7 +1105,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     public String getModuleFiles(String packageName,
@@ -1147,7 +1147,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     public String getModuleCallables(String packageName,
@@ -1177,7 +1177,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, short offset, short limit) {
@@ -1232,7 +1232,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     // TODO Test with real DB data
@@ -1263,7 +1263,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     public String getPackageCallables(String packageName, String packageVersion, short offset, short limit) {
@@ -1331,7 +1331,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     public String getArtifactName(long packageVersionId) {
@@ -1376,7 +1376,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     public String getPackageCallgraph(String packageName, String packageVersion, short offset, short limit) {
@@ -1435,7 +1435,7 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT));
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     /**
@@ -1649,7 +1649,7 @@ public class MetadataDao {
 
         logger.debug("Total rows: " + queryResult.size());
 
-        String result = queryResult.formatJSON();
+        String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
         return result;
     }
 
@@ -1685,7 +1685,7 @@ public class MetadataDao {
 
         logger.debug("Total rows: " + queryResult.size());
 
-        String result = queryResult.formatJSON();
+        String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
         return result;
     }
 
@@ -1708,7 +1708,7 @@ public class MetadataDao {
             String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
             logger.debug("id: " + id + "  / name: " + pkgName);
         }
-        String result = queryResult.formatJSON();
+        String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
         logger.debug("Query dummy result: " + result);
         return ("dummy getVulnerabilities query OK!");
     }
@@ -1733,7 +1733,7 @@ public class MetadataDao {
             String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
             logger.debug("id: " + id + "  / name: " + pkgName);
         }
-        String result = queryResult.formatJSON();
+        String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
         logger.debug("Query dummy result: " + result);
         return ("dummy updateImpact query OK!");
     }
@@ -1757,7 +1757,7 @@ public class MetadataDao {
             String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
             logger.debug("id: " + id + "  / name: " + pkgName);
         }
-        String result = queryResult.formatJSON();
+        String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
         logger.debug("Query dummy result: " + result);
         return ("dummy updateCg query OK!");
     }

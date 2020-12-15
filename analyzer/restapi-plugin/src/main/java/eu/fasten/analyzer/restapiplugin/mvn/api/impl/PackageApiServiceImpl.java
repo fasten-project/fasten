@@ -36,7 +36,7 @@ public class PackageApiServiceImpl implements PackageApiService {
     @Override
     public ResponseEntity<String> getPackageLastVersion(String package_name) {
         String result = KnowledgeBaseConnector.kbDao.getPackageLastVersion(package_name);
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -45,7 +45,7 @@ public class PackageApiServiceImpl implements PackageApiService {
                                                      short offset,
                                                      short limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersions(package_name, offset, limit);
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -57,6 +57,7 @@ public class PackageApiServiceImpl implements PackageApiService {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersion(
                 package_name, package_version, offset, limit);
         result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -67,7 +68,7 @@ public class PackageApiServiceImpl implements PackageApiService {
                                                      short limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageMetadata(
                 package_name, package_version, offset, limit);
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -78,7 +79,7 @@ public class PackageApiServiceImpl implements PackageApiService {
                                                       short limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
                 package_name, package_version, offset, limit);
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -112,7 +113,7 @@ public class PackageApiServiceImpl implements PackageApiService {
             json = ResolutionApiServiceImpl.directedGraphToEnrichedJSON(graph, enrichEdges);
         }
         var result = json.toString();
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

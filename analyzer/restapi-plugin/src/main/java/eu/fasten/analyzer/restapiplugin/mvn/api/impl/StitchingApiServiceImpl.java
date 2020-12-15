@@ -45,7 +45,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         var json = new JSONArray();
         fastenUris.forEach(json::put);
         var result = json.toString();
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -67,7 +67,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             json.put(entry.getKey(), neededMetadata);
         }
         var result = json.toString();
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -96,7 +96,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             return json;
         }).forEach(jsonArray::put);
         var result = jsonArray.toString();
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -132,7 +132,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         json.put("nodes", nodesJson);
         json.put("edges", edgesJson);
         var result = json.toString();
-        result = result.replace("\\", "");
+        result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

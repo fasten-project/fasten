@@ -126,7 +126,6 @@ public class Merger implements Runnable {
                             new DecimalFormat("#0.000")
                                     .format((System.currentTimeMillis() - startTime) / 1000d));
 
-                    dbContext.close();
                     rocksDao.close();
                     break;
 
