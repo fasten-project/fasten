@@ -134,6 +134,14 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         return result;
     }
 
+    /**
+     * Returns the BiMap of all resolved methods of this object.
+     * Note: external nodes are not considered resolved, since they don't have product and version.
+     * Also ids are local to rcg object and FastenUris may have multiple local ids because
+     * of multiple call-sites and the first one will be inserted in the map.
+     *
+     * @return a BiMap method ids and their corresponding fully qualified {@link FastenURI}
+     */
     public BiMap<Integer, String> mapOfFullURIStrings(){
         final BiMap<Integer, String> result = HashBiMap.create();
         for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
