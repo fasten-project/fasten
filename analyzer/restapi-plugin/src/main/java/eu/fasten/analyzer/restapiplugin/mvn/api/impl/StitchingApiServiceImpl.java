@@ -24,16 +24,14 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.DatabaseMerger;
+import eu.fasten.core.utils.FastenUriUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,12 +48,30 @@ public class StitchingApiServiceImpl implements StitchingApiService {
     }
 
     @Override
-    public ResponseEntity<String> getCallablesMetadata(List<String> fastenUris, boolean allAttributes, List<String> attributes) {
-        var metadataMap = KnowledgeBaseConnector.kbDao.getCallablesMetadata(fastenUris);
+    public ResponseEntity<String> getCallablesMetadata(List<String> fullFastenUris, boolean allAttributes, List<String> attributes) {
+        Map<String, List<String>> packageVersionUris;
+        try {
+            packageVersionUris = fullFastenUris.stream().map(FastenUriUtils::parseFullFastenUri).collect(Collectors.toMap(
+                    x -> x.getLeft() + "$" + x.getMiddle(),
+                    y -> List.of(y.getRight()),
+                    (x, y) -> {
+                        x.addAll(y);
+                        return x;
+                    }));
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+        var metadataMap = new HashMap<String, JSONObject>(fullFastenUris.size());
+        for (var artifact : packageVersionUris.keySet()) {
+            var packageName = artifact.split("\\$")[0];
+            var version = artifact.split("\\$")[1];
+            var partialUris = packageVersionUris.get(artifact);
+            metadataMap.putAll(KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(packageName, version, partialUris));
+        }
         var json = new JSONObject();
         for (var entry : metadataMap.entrySet()) {
             var neededMetadata = new JSONObject();
-            if (allAttributes) {
+            if (!allAttributes) {
                 for (var attribute : entry.getValue().keySet()) {
                     if (attributes.contains(attribute)) {
                         neededMetadata.put(attribute, entry.getValue().get(attribute));
@@ -128,7 +144,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         var nodesJson = new JSONArray();
         graph.nodes().stream().forEach(nodesJson::put);
         var edgesJson = new JSONArray();
-        graph.edgeSet().stream().map(e -> new long[] {e.firstLong(), e.secondLong()}).forEach(edgesJson::put);
+        graph.edgeSet().stream().map(e -> new long[]{e.firstLong(), e.secondLong()}).forEach(edgesJson::put);
         json.put("nodes", nodesJson);
         json.put("edges", edgesJson);
         var result = json.toString();

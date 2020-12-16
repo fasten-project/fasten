@@ -1151,10 +1151,10 @@ public class MetadataDao {
     }
 
     public String getModuleCallables(String packageName,
-                                 String packageVersion,
-                                 String moduleNamespace,
-                                 short offset,
-                                 short limit) {
+                                     String packageVersion,
+                                     String moduleNamespace,
+                                     short offset,
+                                     short limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1592,15 +1592,22 @@ public class MetadataDao {
                 .collect(Collectors.toList());
     }
 
-    public Map<String, JSONObject> getCallablesMetadata(List<String> fastenUris) {
+    public Map<String, JSONObject> getCallablesMetadataByUri(String packageName, String version, List<String> fastenUris) {
         var result = context
                 .select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.METADATA)
                 .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.FASTEN_URI.in(fastenUris))
+                .join(Modules.MODULES).on(Modules.MODULES.ID.eq(Callables.CALLABLES.MODULE_ID))
+                .join(PackageVersions.PACKAGE_VERSIONS).on(PackageVersions.PACKAGE_VERSIONS.ID.eq(Modules.MODULES.PACKAGE_VERSION_ID))
+                .join(Packages.PACKAGES).on(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
+                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName).and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
+                        .and("digest(callables.fasten_uri, 'sha1') in ("
+                                + fastenUris.stream()
+                                .map(u -> "digest('" + u + "', 'sha1')")
+                                .collect(Collectors.joining(",")) + ")"))
                 .fetch();
         var metadataMap = new HashMap<String, JSONObject>(result.size());
         for (var record : result) {
-            metadataMap.put(record.value1(), new JSONObject(record.value2().data()));
+            metadataMap.put(FastenUriUtils.generateFullFastenUri(packageName, version, record.value1()), new JSONObject(record.value2().data()));
         }
         return metadataMap;
     }
@@ -1614,6 +1621,9 @@ public class MetadataDao {
                 .where(PackageVersions.PACKAGE_VERSIONS.ID.eq(packageVersionId))
                 .limit(1)
                 .fetchOne();
+        if (record == null) {
+            return null;
+        }
         return record.value1() + Constants.mvnCoordinateSeparator + record.value2();
     }
 
