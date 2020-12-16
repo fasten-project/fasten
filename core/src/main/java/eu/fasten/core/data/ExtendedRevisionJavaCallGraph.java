@@ -18,6 +18,10 @@
 
 package eu.fasten.core.data;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import eu.fasten.core.utils.FastenUriUtils;
+import it.unimi.dsi.fastutil.ints.Int2CharArrayMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -131,6 +135,36 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         return result;
     }
 
+    public BiMap<Integer, String> mapOfFullURIStrings(){
+        final BiMap<Integer, String> result = HashBiMap.create();
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
+            result.putAll(toFullUriStrings(aClass.getValue().getMethods()));
+        }
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.resolvedTypes).entrySet()) {
+            result.putAll(toFullUriStrings(aClass.getKey(), aClass.getValue().getMethods()));
+        }
+        return result;
+    }
+
+    private BiMap<Integer, String> toFullUriStrings(final FastenURI type, final Map<Integer,
+        JavaNode> methods) {
+        final BiMap<Integer, String> result = HashBiMap.create();
+        for (final var nodeEntry : methods.entrySet()) {
+            result.put(nodeEntry.getKey(), FastenUriUtils.generateFullFastenUri(type.getProduct(),
+            type.getVersion(), nodeEntry.getValue().getUri().toString()));
+        }
+        return result;
+    }
+
+    private BiMap<Integer, String> toFullUriStrings(final Map<Integer, JavaNode> methods) {
+        final BiMap<Integer, String> result = HashBiMap.create();
+        for (final var nodeEntry : methods.entrySet()) {
+            result.put(nodeEntry.getKey(), FastenUriUtils.generateFullFastenUri(this.product,
+                this.version, nodeEntry.getValue().getUri().toString()));
+        }
+        return result;
+    }
+
     public Map<Integer, JavaType> externalNodeIdToTypeMap() {
         final Map<Integer, JavaType> result = new HashMap<>();
         this.classHierarchy.get(JavaScope.externalTypes).values().parallelStream().forEach(type -> {
@@ -232,4 +266,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
 
         return builder.build();
     }
+
+
 }

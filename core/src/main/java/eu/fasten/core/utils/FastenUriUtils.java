@@ -1,5 +1,8 @@
 package eu.fasten.core.utils;
 
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaNode;
+import java.util.Map;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import java.util.Arrays;
