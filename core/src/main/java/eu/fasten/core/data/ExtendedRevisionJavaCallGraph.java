@@ -18,6 +18,9 @@
 
 package eu.fasten.core.data;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import eu.fasten.core.utils.FastenUriUtils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -131,6 +134,47 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         return result;
     }
 
+    /**
+     * Returns the BiMap of all resolved methods of this object.
+     * Note: external nodes are not considered resolved, since they don't have product and version.
+     * Also ids are local to rcg object.
+     *
+     * @return a BiMap method ids and their corresponding fully qualified {@link FastenURI}
+     */
+    public BiMap<Integer, String> mapOfFullURIStrings(){
+        final BiMap<Integer, String> result = HashBiMap.create();
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
+            putMethodsOfType(result, aClass.getValue().getMethods());
+        }
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.resolvedTypes).entrySet()) {
+            putMethodsOfType(result, aClass.getKey(),
+                aClass.getValue().getMethods());
+        }
+        return result;
+    }
+
+    private void putMethodsOfType(final BiMap<Integer, String> result, final FastenURI type,
+                                  final Map<Integer, JavaNode> methods) {
+        for (final var nodeEntry : methods.entrySet()) {
+            final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, type.getProduct(),
+                type.getVersion(), nodeEntry.getValue().getUri().toString());
+            if (!result.inverse().containsKey(fullUri)) {
+                result.put(nodeEntry.getKey(), fullUri);
+            }
+        }
+    }
+
+    private void putMethodsOfType(final BiMap<Integer, String> result, final Map<Integer,
+        JavaNode> methods) {
+        for (final var nodeEntry : methods.entrySet()) {
+            final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, this.product,
+                this.version, nodeEntry.getValue().getUri().toString());
+            if (!result.inverse().containsKey(fullUri)) {
+                result.put(nodeEntry.getKey(), fullUri);
+            }
+        }
+    }
+
     public Map<Integer, JavaType> externalNodeIdToTypeMap() {
         final Map<Integer, JavaType> result = new HashMap<>();
         this.classHierarchy.get(JavaScope.externalTypes).values().parallelStream().forEach(type -> {
@@ -232,4 +276,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
 
         return builder.build();
     }
+
+
 }

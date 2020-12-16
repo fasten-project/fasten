@@ -472,8 +472,7 @@ public class LocalMerger {
                                 final String product,
                                 final JavaType depType,
                                 final String depTypeUri) {
-        final var keyType = depTypeUri
-                .replaceFirst("/", Matcher.quoteReplacement("//" + product + "/"));
+        final var keyType = "//" + product + depTypeUri;
         final var type = cgha.CHA.getOrDefault(keyType,
                 new JavaType(depType.getSourceFileName(), HashBiMap.create(),
                         depType.getSuperClasses(), depType.getSuperInterfaces(),
