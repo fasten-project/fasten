@@ -26,6 +26,7 @@ import java.util.Map;
 public final class ExtendedBuilderJava extends ExtendedBuilder<Map<JavaScope, Map<FastenURI, JavaType>>> {
 
     public ExtendedBuilderJava nodeCount(final int nodeCount) {
+        this.nodeCount = nodeCount;
         return this;
     }
 
