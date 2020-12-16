@@ -1,4 +1,4 @@
-package eu.fasten.core.index;
+package eu.fasten.core.legacy;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +21,6 @@ package eu.fasten.core.index;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +34,9 @@ import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.Switch;
 import com.martiansoftware.jsap.UnflaggedOption;
 
-import eu.fasten.core.data.KnowledgeBase;
-import eu.fasten.core.data.KnowledgeBase.CallGraph;
-import eu.fasten.core.data.KnowledgeBase.CallGraphData;
+import eu.fasten.core.index.LayeredLabelPropagation;
+import eu.fasten.core.legacy.KnowledgeBase.CallGraph;
+import eu.fasten.core.legacy.KnowledgeBase.CallGraphData;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unimi.dsi.util.Properties;
@@ -52,7 +51,7 @@ public class RecompressGraphs {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RecompressGraphs.class);
 
-	public static void main(final String[] args) throws JSAPException, ClassNotFoundException, RocksDBException, IOException, ConfigurationException {
+	public static void main(final String[] args) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(RecompressGraphs.class.getName(),
 				"Extract properties files from a knowledge base.",
 				new Parameter[] {

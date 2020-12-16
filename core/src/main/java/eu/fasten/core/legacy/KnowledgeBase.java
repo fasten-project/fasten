@@ -1,4 +1,4 @@
-package eu.fasten.core.data;
+package eu.fasten.core.legacy;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -52,6 +52,9 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.google.common.primitives.Longs;
 
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.index.BVGraphSerializer;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.HashCommon;

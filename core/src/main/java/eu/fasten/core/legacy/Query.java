@@ -16,17 +16,13 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.plugins;
+package eu.fasten.core.legacy;
 
-/**
- * A plug-in that needs to write to disk some data should implement this interface.
- */
-public interface DataWriter extends FastenPlugin {
+import java.util.Collection;
 
-    /**
-     * Sets base directory into which the data will be written.
-     *
-     * @param baseDir Path to base directory
-     */
-    void setBaseDir(String baseDir);
+import eu.fasten.core.data.FastenURI;
+
+public interface Query {
+	public Collection<FastenURI> execute(final KnowledgeBase kb);
 }
+

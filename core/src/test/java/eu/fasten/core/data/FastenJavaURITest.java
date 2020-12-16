@@ -79,11 +79,11 @@ public class FastenJavaURITest {
         assertEquals("org.apache.html.dom", fastenJavaURI.getNamespace());
         assertEquals("HTMLUListElementImpl", fastenJavaURI.getClassName());
         assertEquals("<init>", fastenJavaURI.getEntityName());
-        assertEquals("HTMLUListElementImpl", fastenJavaURI.getReturnType().toString()); // TODO
+		assertEquals("HTMLUListElementImpl", fastenJavaURI.getReturnType().toString());
         final FastenJavaURI[] args = fastenJavaURI.getArgs();
         assertEquals(2, args.length);
-        assertEquals("HTMLDocumentImpl", args[0].toString()); // TODO
-        assertEquals("//jdk/java.lang/String", args[1].toString()); // TODO
+		assertEquals("HTMLDocumentImpl", args[0].toString());
+		assertEquals("//jdk/java.lang/String", args[1].toString());
     }
 
     @Test
@@ -96,11 +96,11 @@ public class FastenJavaURITest {
         assertEquals("com.fasterxml.jackson.core.json.async", fastenJavaURI.getNamespace());
         assertEquals("NonBlockingJsonParserBase", fastenJavaURI.getClassName());
         assertEquals("_findName", fastenJavaURI.getEntityName());
-        assertEquals("//jdk/java.lang/String", fastenJavaURI.getReturnType().toString()); // TODO
+		assertEquals("//jdk/java.lang/String", fastenJavaURI.getReturnType().toString());
         final FastenJavaURI[] args = fastenJavaURI.getArgs();
         assertEquals(2, args.length);
-        assertEquals("//jdk/java.primitive/int", args[0].toString()); // TODO
-        assertEquals("//jdk/java.primitive/int", args[1].toString()); // TODO
+		assertEquals("//jdk/java.primitive/int", args[0].toString());
+		assertEquals("//jdk/java.primitive/int", args[1].toString());
     }
 
     @Test

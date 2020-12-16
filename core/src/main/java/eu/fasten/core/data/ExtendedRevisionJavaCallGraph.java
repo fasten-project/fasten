@@ -20,6 +20,7 @@ package eu.fasten.core.data;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import org.json.JSONObject;
 import org.json.JSONException;
 
@@ -213,4 +214,22 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         return artifactId + "_" + groupId + "_" + this.version;
     }
 
+    /**
+     * Converts an {@link ExtendedRevisionJavaCallGraph} into a {@link DirectedGraph} using as global
+     * identifiers the local identifiers.
+     *
+     * @param erjcg an {@link ExtendedRevisionJavaCallGraph}.
+     * @return a directed graph with internal nodes only, based on the local identifiers of
+     *         {@code erjcg}.
+     */
+    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
+        final var builder = new ArrayImmutableDirectedGraph.Builder();
+        for (final int x : erjcg.mapOfAllMethods().keySet()) builder.addInternalNode(x);
+
+        for (final List<Integer> l : erjcg.getGraph().getExternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+        for (final List<Integer> l : erjcg.getGraph().getInternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+        for (final List<Integer> l : erjcg.getGraph().getResolvedCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+
+        return builder.build();
+    }
 }

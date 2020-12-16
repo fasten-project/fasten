@@ -1,26 +1,7 @@
-package eu.fasten.core.index;
+package eu.fasten.core.legacy;
 
-import static eu.fasten.core.data.KnowledgeBase.gid;
-
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-import static eu.fasten.core.data.KnowledgeBase.index;
+import static eu.fasten.core.legacy.KnowledgeBase.gid;
+import static eu.fasten.core.legacy.KnowledgeBase.index;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,10 +19,9 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
-import eu.fasten.core.data.KnowledgeBase;
-import eu.fasten.core.data.KnowledgeBase.CallGraph;
-import eu.fasten.core.data.KnowledgeBase.CallGraphData;
-import eu.fasten.core.data.KnowledgeBase.Node;
+import eu.fasten.core.legacy.KnowledgeBase.CallGraph;
+import eu.fasten.core.legacy.KnowledgeBase.CallGraphData;
+import eu.fasten.core.legacy.KnowledgeBase.Node;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;

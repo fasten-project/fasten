@@ -238,10 +238,6 @@ public class CentralitiesTest {
 		dominantEigenvectorParallelPowerMethod.markovian = true;
 		dominantEigenvectorParallelPowerMethod.stepUntil(new SpectralRanking.NormStoppingCriterion(1E-7));
 		final Long2DoubleFunction seeley = Centralities.seelyCentralityParallel(directedGraph);
-		for (final long id : directedGraph.nodes()) {
-			System.err.println(dominantEigenvectorParallelPowerMethod.rank[immutableGraph.id2Node(id)] + " " + seeley.get(id));
-		}
-
 		for (final long id : directedGraph.nodes()) assertEquals(dominantEigenvectorParallelPowerMethod.rank[immutableGraph.id2Node(id)], seeley.get(id));
 	}
 
