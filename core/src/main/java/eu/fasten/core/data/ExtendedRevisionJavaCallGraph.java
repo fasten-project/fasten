@@ -137,8 +137,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     /**
      * Returns the BiMap of all resolved methods of this object.
      * Note: external nodes are not considered resolved, since they don't have product and version.
-     * Also ids are local to rcg object and FastenUris may have multiple local ids because
-     * of multiple call-sites and the first one will be inserted in the map.
+     * Also ids are local to rcg object.
      *
      * @return a BiMap method ids and their corresponding fully qualified {@link FastenURI}
      */
