@@ -1577,7 +1577,6 @@ public class MetadataDao {
         var result = context
                 .select(Packages.PACKAGES.PACKAGE_NAME,
                         PackageVersions.PACKAGE_VERSIONS.VERSION,
-                        Modules.MODULES.NAMESPACE,
                         Callables.CALLABLES.FASTEN_URI)
                 .from(Packages.PACKAGES)
                 .join(PackageVersions.PACKAGE_VERSIONS)
@@ -1589,7 +1588,7 @@ public class MetadataDao {
                 .where(Callables.CALLABLES.ID.in(callableIds))
                 .fetch();
         return result.stream()
-                .map(r -> FastenUriUtils.generateFullFastenUri(r.value1(), r.value2(), r.value3(), r.value4()))
+                .map(r -> FastenUriUtils.generateFullFastenUri(r.value1(), r.value2(), r.value3()))
                 .collect(Collectors.toList());
     }
 
