@@ -1,0 +1,131 @@
+{
+    "product": "importer",
+    "nodes": 6,
+    "forge": 'mvn',
+    "generator": "opal",
+    "version": "0.0.0",
+    "cha": {
+        "externalTypes": {
+            "/java.lang/Object": {
+                "access": "",
+                "methods": {"2": {
+                    "metadata": {},
+                    "uri": "/java.lang/Object.Object()VoidType"
+                }},
+                "final": false,
+                "superInterfaces": [],
+                "sourceFile": "",
+                "superClasses": []
+            },
+            "/merge.staticInitializer/Imported": {
+                "access": "",
+                "methods": {"3": {
+                    "metadata": {},
+                    "uri": "/merge.staticInitializer/Imported.Imported()%2Fjava.lang%2FVoidType"
+                }},
+                "final": false,
+                "superInterfaces": [],
+                "sourceFile": "",
+                "superClasses": []
+            }
+        },
+        "internalTypes": {"/merge.staticInitializer/Importer": {
+            "access": "public",
+            "methods": {
+                "0": {
+                    "metadata": {
+                        "access": "public",
+                        "last": 7,
+                        "defined": true,
+                        "first": 6
+                    },
+                    "uri": "/merge.staticInitializer/Importer.Importer()%2Fjava.lang%2FVoidType"
+                },
+                "1": {
+                    "metadata": {
+                        "access": "public",
+                        "last": 11,
+                        "defined": true,
+                        "first": 10
+                    },
+                    "uri": "/merge.staticInitializer/Importer.sourceMethod()%2Fjava.lang%2FVoidType"
+                }
+            },
+            "final": false,
+            "superInterfaces": [],
+            "sourceFile": "Importer.java",
+            "superClasses": ["/java.lang/Object"]
+        }},
+        "resolvedTypes": {"//imported$1.1.1/merge.staticInitializer/Imported": {
+            "access": "",
+            "methods": {
+                "4": {
+                    "metadata": {
+                        "access": "packagePrivate",
+                        "last": 20,
+                        "defined": true,
+                        "first": 17
+                    },
+                    "uri": "//imported$1.1.1/merge.staticInitializer/Imported.%3Cinit%3E()%2Fjava.lang%2FVoidType"
+                },
+                "5": {
+                    "metadata": {
+                        "access": "public",
+                        "last": 6,
+                        "defined": true,
+                        "first": 5
+                    },
+                    "uri": "//imported$1.1.1/merge.staticInitializer/Imported.Imported()%2Fjava.lang%2FVoidType"
+                }
+            },
+            "final": false,
+            "superInterfaces": [],
+            "sourceFile": "notFound",
+            "superClasses": []
+        }}
+    },
+    "graph": {
+        "internalCalls": [],
+        "externalCalls": [
+            [
+                "0",
+                "2",
+                {"1": {
+                    "receiver": "/java.lang/Object",
+                    "type": "invokespecial",
+                    "line": 6
+                }}
+            ],
+            [
+                "1",
+                "3",
+                {"4": {
+                    "receiver": "/merge.staticInitializer/Imported",
+                    "type": "invokespecial",
+                    "line": 10
+                }}
+            ]
+        ],
+        "resolvedCalls": [
+            [
+                "1",
+                "4",
+                {"4": {
+                    "receiver": "/merge.staticInitializer/Imported",
+                    "type": "invokespecial",
+                    "line": 10
+                }}
+            ],
+            [
+                "1",
+                "5",
+                {"4": {
+                    "receiver": "/merge.staticInitializer/Imported",
+                    "type": "invokespecial",
+                    "line": 10
+                }}
+            ]
+        ]
+    },
+    "timestamp": 0
+}

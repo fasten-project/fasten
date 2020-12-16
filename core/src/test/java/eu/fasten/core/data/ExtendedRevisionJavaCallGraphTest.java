@@ -166,4 +166,28 @@ class ExtendedRevisionJavaCallGraphTest {
     void getCgGenerator() {
         assertEquals("OPAL", graph.getCgGenerator());
     }
+
+//    @Test
+//    void mapOfFullURIStrings() throws FileNotFoundException {
+//        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+//                .getResource("merge/merged_cg_test.json"))
+//                .getFile());
+//        JSONTokener tokener = new JSONTokener(new FileReader(file));
+//        var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
+//        var mapURI = cg.mapOfFullURIStrings();
+//
+//        // Internal types
+//        assertEquals("fasten://merge.staticInitializer/Importer.Importer()%2Fjava.lang%2FVoidType",
+//                     mapURI.get(0));
+//        assertEquals("fasten://merge.staticInitializer/Importer.sourceMethod()%2Fjava.lang%2FVoidType",
+//                mapURI.get(1));
+//
+//        // Resolved types
+//        assertEquals("fasten://imported$1.1.1/merge.staticInitializer/Imported.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+//                mapURI.get(4));
+//        assertEquals("fasten://imported$1.1.1/merge.staticInitializer/Imported.Imported()%2Fjava.lang%2FVoidType",
+//                mapURI.get(5));
+//
+//    }
+    
 }
