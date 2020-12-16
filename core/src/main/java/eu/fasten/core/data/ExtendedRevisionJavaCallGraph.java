@@ -156,7 +156,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     private void putMethodsOfType(final BiMap<Integer, String> result, final FastenURI type,
                                   final Map<Integer, JavaNode> methods) {
         for (final var nodeEntry : methods.entrySet()) {
-            final var fullUri = FastenUriUtils.generateFullFastenUri(type.getProduct(),
+            final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, type.getProduct(),
                 type.getVersion(), nodeEntry.getValue().getUri().toString());
             if (!result.inverse().containsKey(fullUri)) {
                 result.put(nodeEntry.getKey(), fullUri);
@@ -167,7 +167,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     private void putMethodsOfType(final BiMap<Integer, String> result, final Map<Integer,
         JavaNode> methods) {
         for (final var nodeEntry : methods.entrySet()) {
-            final var fullUri = FastenUriUtils.generateFullFastenUri(this.product,
+            final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, this.product,
                 this.version, nodeEntry.getValue().getUri().toString());
             if (!result.inverse().containsKey(fullUri)) {
                 result.put(nodeEntry.getKey(), fullUri);
