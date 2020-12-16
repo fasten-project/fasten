@@ -1,16 +1,16 @@
 {
-    "product": "importer",
-    "nodes": 6,
-    "forge": 'mvn',
-    "generator": "opal",
-    "version": "0.0.0",
+    "product": "Importer",
+    "nodes": 8,
+    "forge": "mvn",
+    "generator": "OPAL",
+    "version": "1",
     "cha": {
         "externalTypes": {
             "/java.lang/Object": {
                 "access": "",
                 "methods": {"2": {
                     "metadata": {},
-                    "uri": "/java.lang/Object.Object()VoidType"
+                    "uri": "/java.lang/Object.%3Cinit%3E()VoidType"
                 }},
                 "final": false,
                 "superInterfaces": [],
@@ -21,7 +21,7 @@
                 "access": "",
                 "methods": {"3": {
                     "metadata": {},
-                    "uri": "/merge.staticInitializer/Imported.Imported()%2Fjava.lang%2FVoidType"
+                    "uri": "/merge.staticInitializer/Imported.%3Cinit%3E()%2Fjava.lang%2FVoidType"
                 }},
                 "final": false,
                 "superInterfaces": [],
@@ -39,7 +39,7 @@
                         "defined": true,
                         "first": 6
                     },
-                    "uri": "/merge.staticInitializer/Importer.Importer()%2Fjava.lang%2FVoidType"
+                    "uri": "/merge.staticInitializer/Importer.%3Cinit%3E()%2Fjava.lang%2FVoidType"
                 },
                 "1": {
                     "metadata": {
@@ -53,35 +53,35 @@
             },
             "final": false,
             "superInterfaces": [],
-            "sourceFile": "Importer.java",
+            "sourceFile": "merge/staticInitializer/Importer.java",
             "superClasses": ["/java.lang/Object"]
         }},
-        "resolvedTypes": {"//imported$1.1.1/merge.staticInitializer/Imported": {
-            "access": "",
+        "resolvedTypes": {"//Imported$0/merge.staticInitializer/Imported": {
+            "access": "public",
             "methods": {
                 "4": {
-                    "metadata": {
-                        "access": "packagePrivate",
-                        "last": 20,
-                        "defined": true,
-                        "first": 17
-                    },
-                    "uri": "//imported$1.1.1/merge.staticInitializer/Imported.%3Cinit%3E()%2Fjava.lang%2FVoidType"
-                },
-                "5": {
                     "metadata": {
                         "access": "public",
                         "last": 6,
                         "defined": true,
                         "first": 5
                     },
-                    "uri": "//imported$1.1.1/merge.staticInitializer/Imported.Imported()%2Fjava.lang%2FVoidType"
+                    "uri": "/merge.staticInitializer/Imported.%3Cinit%3E()%2Fjava.lang%2FVoidType"
+                },
+                "5": {
+                    "metadata": {
+                        "access": "packagePrivate",
+                        "last": 20,
+                        "defined": true,
+                        "first": 17
+                    },
+                    "uri": "/merge.staticInitializer/Imported.%3Cclinit%3E()%2Fjava.lang%2FVoidType"
                 }
             },
             "final": false,
             "superInterfaces": [],
-            "sourceFile": "notFound",
-            "superClasses": []
+            "sourceFile": "merge/staticInitializer/Imported.java",
+            "superClasses": ["/java.lang/Object"]
         }}
     },
     "graph": {
