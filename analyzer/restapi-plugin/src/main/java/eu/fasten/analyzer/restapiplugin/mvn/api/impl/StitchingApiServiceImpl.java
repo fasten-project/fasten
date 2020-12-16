@@ -52,8 +52,8 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         Map<String, List<String>> packageVersionUris;
         try {
             packageVersionUris = fullFastenUris.stream().map(FastenUriUtils::parseFullFastenUri).collect(Collectors.toMap(
-                    x -> x.getLeft() + "$" + x.getMiddle(),
-                    y -> List.of(y.getRight()),
+                    x -> x.get(0) + "!" + x.get(1) + "$" + x.get(2),
+                    y -> List.of(y.get(3)),
                     (x, y) -> {
                         x.addAll(y);
                         return x;
@@ -63,10 +63,12 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         }
         var metadataMap = new HashMap<String, JSONObject>(fullFastenUris.size());
         for (var artifact : packageVersionUris.keySet()) {
+            var forge = artifact.split("!")[0];
+            artifact = Arrays.stream(artifact.split("!")).skip(1).collect(Collectors.joining("!"));
             var packageName = artifact.split("\\$")[0];
             var version = artifact.split("\\$")[1];
             var partialUris = packageVersionUris.get(artifact);
-            metadataMap.putAll(KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(packageName, version, partialUris));
+            metadataMap.putAll(KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris));
         }
         var json = new JSONObject();
         for (var entry : metadataMap.entrySet()) {

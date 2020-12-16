@@ -1575,7 +1575,8 @@ public class MetadataDao {
 
     public List<String> getFullFastenUris(List<Long> callableIds) {
         var result = context
-                .select(Packages.PACKAGES.PACKAGE_NAME,
+                .select(Packages.PACKAGES.FORGE,
+                        Packages.PACKAGES.PACKAGE_NAME,
                         PackageVersions.PACKAGE_VERSIONS.VERSION,
                         Callables.CALLABLES.FASTEN_URI)
                 .from(Packages.PACKAGES)
@@ -1588,11 +1589,11 @@ public class MetadataDao {
                 .where(Callables.CALLABLES.ID.in(callableIds))
                 .fetch();
         return result.stream()
-                .map(r -> FastenUriUtils.generateFullFastenUri(r.value1(), r.value2(), r.value3()))
+                .map(r -> FastenUriUtils.generateFullFastenUri(r.value1(), r.value2(), r.value3(), r.value4()))
                 .collect(Collectors.toList());
     }
 
-    public Map<String, JSONObject> getCallablesMetadataByUri(String packageName, String version, List<String> fastenUris) {
+    public Map<String, JSONObject> getCallablesMetadataByUri(String forge, String packageName, String version, List<String> fastenUris) {
         var result = context
                 .select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.METADATA)
                 .from(Callables.CALLABLES)
@@ -1607,7 +1608,7 @@ public class MetadataDao {
                 .fetch();
         var metadataMap = new HashMap<String, JSONObject>(result.size());
         for (var record : result) {
-            metadataMap.put(FastenUriUtils.generateFullFastenUri(packageName, version, record.value1()), new JSONObject(record.value2().data()));
+            metadataMap.put(FastenUriUtils.generateFullFastenUri(forge, packageName, version, record.value1()), new JSONObject(record.value2().data()));
         }
         return metadataMap;
     }
