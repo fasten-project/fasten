@@ -29,9 +29,12 @@ import eu.fasten.core.merge.LocalMerger;
 import eu.fasten.core.merge.CallGraphUtils;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -233,8 +236,9 @@ public class Main implements Runnable {
                             .format((System.currentTimeMillis() - startTime) / 1000d));
 
             if (!this.output.isEmpty()) {
-                CallGraphUtils.writeToFile(this.output, result.toJSON(),
-                        "_" + result.product + "_merged");
+                CallGraphUtils.writeToFile(Paths.get(Paths.get(this.output).getParent().toString(),
+                        FilenameUtils.getBaseName(this.output) + "_" + result.product + "_merged" + "." +
+                                FilenameUtils.getExtension(this.output)).toString(), result.toJSON(), "");
             }
         }
 
