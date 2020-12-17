@@ -21,6 +21,9 @@ public class JSONUtils {
         if (erjcg.timestamp >= 0) {
             appendKeyValue(result, "timestamp", erjcg.timestamp, true);
         }
+        if (result.charAt(result.length()-1) == ',') {
+            result.setLength(result.length() - 1);
+        }
         result.append("}");
         return result.toString();
     }

@@ -1,6 +1,8 @@
 package eu.fasten.analyzer.javacgopal.data;
 
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.ExtendedBuilder;
+import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.merge.CallGraphMerger;
@@ -61,6 +63,18 @@ class JSONUtilsTest {
         final var ser2 = avgConsumption(graph, "jsonObject", "jsonObject", 20, 20);
         JSONAssert.assertEquals(ser1, ser2, JSONCompareMode.LENIENT);
 
+    }
+
+    @Test
+    void shouldNotHaveCommaInTheEnd(){
+        ExtendedBuilderJava builder = new ExtendedBuilderJava();
+        final var rcg =
+            builder.timestamp(-1).classHierarchy(graph.getClassHierarchy()).graph(graph.getGraph())
+                .forge(graph.forge).cgGenerator(graph.getCgGenerator()).version(graph.version).product(graph.product).build();
+        final var rcgString = JSONUtils.toJSONString(rcg);
+        Assertions.assertTrue(rcgString.endsWith("]}}"));
+        JSONAssert.assertEquals(rcg.toJSON().toString(), rcgString,
+            JSONCompareMode.STRICT);
     }
 
     @Test
@@ -154,4 +168,5 @@ class JSONUtilsTest {
         fw.flush();
         fw.close();
     }
+
 }
