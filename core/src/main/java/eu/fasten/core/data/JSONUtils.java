@@ -15,7 +15,7 @@ public class JSONUtils {
      */
     public static String toJSONString(final ExtendedRevisionJavaCallGraph erjcg) {
         var result = new StringBuilder("{");
-        appendArtifactInformation(erjcg, result);
+        appendArtifactInformation(result, erjcg);
         appendCha(result, erjcg.classHierarchy);
         appendGraph(result, erjcg.graph);
         if (erjcg.timestamp >= 0) {
@@ -31,8 +31,8 @@ public class JSONUtils {
      * @param erjcg  the object to extract the information from.
      * @param result the StringBuilder to append the information.
      */
-    private static void appendArtifactInformation(ExtendedRevisionJavaCallGraph erjcg,
-                                                  final StringBuilder result) {
+    private static void appendArtifactInformation(StringBuilder result,
+                                                  final ExtendedRevisionJavaCallGraph erjcg) {
         appendKeyValue(result, "product", erjcg.product);
         appendKeyValue(result, "nodes", erjcg.nodeCount);
         appendKeyValue(result, "forge", erjcg.forge);
