@@ -27,7 +27,7 @@ spec:
         - name: dgraph
           image: dgraph/standalone:latest
         - name: fasten-reporter
-          image: endocode/fasten-reporter-standalone:kafka
+          image: endocode/fasten-reporter-standalone:latest
           env:
             - name: RABBITMQ_ADDRESS
               value: "amqp://guest:guest@rabbitmq-service:5672/"
