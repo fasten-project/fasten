@@ -1298,7 +1298,7 @@ public class MetadataDao {
                 JOIN callables AS c ON m.id = c.module_id
             WHERE p.package_name = <packageName>
                 AND pv.version = <packageVersion>
-                [AND c.fasten_uri = <fastenURI>]
+                [AND digest(c.fasten_uri, 'sha1') = (digest(<fastenURI>, 'sha1')]
         */
 
         // Tables
@@ -1318,7 +1318,7 @@ public class MetadataDao {
         // Where clause
         Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
         if (metadataOnly) {
-            whereClause = whereClause.and(c.FASTEN_URI.equalIgnoreCase(fastenURI));
+            whereClause = whereClause.and("digest(callables.fasten_uri, 'sha1') = digest('" + fastenURI + "', 'sha1')");
         }
 
         // Building and executing the query
@@ -1347,6 +1347,9 @@ public class MetadataDao {
                 .where(PackageVersions.PACKAGE_VERSIONS.ID.eq(packageVersionId))
                 .limit(1)
                 .fetchOne();
+        if (result == null) {
+            return null;
+        }
         return result.value1() + Constants.mvnCoordinateSeparator + result.value2();
     }
 

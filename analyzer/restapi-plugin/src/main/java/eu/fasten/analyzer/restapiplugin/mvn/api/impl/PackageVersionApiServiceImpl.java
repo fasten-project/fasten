@@ -31,6 +31,9 @@ public class PackageVersionApiServiceImpl implements PackageVersionApiService {
     @Override
     public ResponseEntity<String> getERCGLink(long packageVersionId) {
         var artifact = KnowledgeBaseConnector.kbDao.getArtifactName(packageVersionId);
+        if (artifact == null) {
+            return new ResponseEntity<>("Package version not found", HttpStatus.NOT_FOUND);
+        }
         var coordinate = artifact.split(Constants.mvnCoordinateSeparator);
         var groupId = coordinate[0];
         var artifactId = coordinate[1];
