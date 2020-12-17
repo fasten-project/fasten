@@ -177,18 +177,18 @@ class ExtendedRevisionJavaCallGraphTest {
         var mapURI = cg.mapOfFullURIStrings();
 
         // Internal types
-        assertEquals("fasten://Importer$1/merge.staticInitializer/Importer.%3Cinit%3E()%2Fjava" +
+        assertEquals("fasten://mvn!Importer$1/merge.staticInitializer/Importer.%3Cinit%3E()%2Fjava" +
                 ".lang%2FVoidType",
                      mapURI.get(0));
-        assertEquals("fasten://Importer$1/merge.staticInitializer/Importer.sourceMethod()%2Fjava" +
+        assertEquals("fasten://mvn!Importer$1/merge.staticInitializer/Importer.sourceMethod()%2Fjava" +
                 ".lang%2FVoidType",
                 mapURI.get(1));
 
         // Resolved types
-        assertEquals("fasten://Imported$0/merge.staticInitializer/Imported.%3Cinit%3E()%2Fjava" +
+        assertEquals("fasten://mvn!Imported$0/merge.staticInitializer/Imported.%3Cinit%3E()%2Fjava" +
                 ".lang%2FVoidType",
                 mapURI.get(4));
-        assertEquals("fasten://Imported$0/merge.staticInitializer/Imported.%3Cclinit%3E()%2Fjava.lang%2FVoidType",
+        assertEquals("fasten://mvn!Imported$0/merge.staticInitializer/Imported.%3Cclinit%3E()%2Fjava.lang%2FVoidType",
                 mapURI.get(5));
 
     }
