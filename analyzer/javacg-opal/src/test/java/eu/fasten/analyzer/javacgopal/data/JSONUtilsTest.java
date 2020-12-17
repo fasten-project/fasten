@@ -61,7 +61,7 @@ class JSONUtilsTest {
 
         final var ser1 = avgConsumption(graph, "direct", "direct", 20, 20);
         final var ser2 = avgConsumption(graph, "jsonObject", "jsonObject", 20, 20);
-        JSONAssert.assertEquals(ser1, ser2, JSONCompareMode.LENIENT);
+        JSONAssert.assertEquals(ser1, ser2, JSONCompareMode.STRICT);
 
     }
 
@@ -82,7 +82,7 @@ class JSONUtilsTest {
 
         final var ser1 = avgConsumption(artifact, "direct", "direct", 20, 20);
         final var ser2 = avgConsumption(artifact, "jsonObject", "jsonObject", 20, 20);
-        JSONAssert.assertEquals(ser1, ser2, JSONCompareMode.LENIENT);
+        JSONAssert.assertEquals(ser1, ser2, JSONCompareMode.STRICT);
 
     }
 
@@ -101,7 +101,7 @@ class JSONUtilsTest {
             final var ser1 = avgConsumption(cg, "direct", "direct", 20, 20);
             final var ser2 = avgConsumption(cg, "jsonObject", "jsonObject", 20, 20);
 
-            JSONAssert.assertEquals(ser1, ser2, JSONCompareMode.LENIENT);
+            JSONAssert.assertEquals(ser1, ser2, JSONCompareMode.STRICT);
 
             logger.debug("Deserialization for: {}", coord.getCoordinate());
             final var s1 = new ExtendedRevisionJavaCallGraph(new JSONObject(ser1));
