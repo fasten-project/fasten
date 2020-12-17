@@ -36,6 +36,9 @@ public class PackageApiServiceImpl implements PackageApiService {
     @Override
     public ResponseEntity<String> getPackageLastVersion(String package_name) {
         String result = KnowledgeBaseConnector.kbDao.getPackageLastVersion(package_name);
+        if (result == null) {
+            return new ResponseEntity<>("Latest package version not found. Maybe this package is not in the database", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

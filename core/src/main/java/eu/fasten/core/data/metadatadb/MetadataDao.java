@@ -936,6 +936,10 @@ public class MetadataDao {
                 .limit(1)
                 .fetchOne();
 
+        if (queryResult == null) {
+            return null;
+        }
+
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
@@ -1606,6 +1610,9 @@ public class MetadataDao {
                                 .map(u -> "digest('" + u + "', 'sha1')")
                                 .collect(Collectors.joining(",")) + ")"))
                 .fetch();
+        if (result.isEmpty()) {
+            return null;
+        }
         var metadataMap = new HashMap<String, JSONObject>(result.size());
         for (var record : result) {
             metadataMap.put(FastenUriUtils.generateFullFastenUri(forge, packageName, version, record.value1()), new JSONObject(record.value2().data()));

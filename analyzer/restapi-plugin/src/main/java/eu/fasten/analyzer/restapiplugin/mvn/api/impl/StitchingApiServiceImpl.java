@@ -55,8 +55,10 @@ public class StitchingApiServiceImpl implements StitchingApiService {
                     x -> x.get(0) + "!" + x.get(1) + "$" + x.get(2),
                     y -> List.of(y.get(3)),
                     (x, y) -> {
-                        x.addAll(y);
-                        return x;
+                        var z = new ArrayList<String>();
+                        z.addAll(x);
+                        z.addAll(y);
+                        return z;
                     }));
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -64,11 +66,15 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         var metadataMap = new HashMap<String, JSONObject>(fullFastenUris.size());
         for (var artifact : packageVersionUris.keySet()) {
             var forge = artifact.split("!")[0];
-            artifact = Arrays.stream(artifact.split("!")).skip(1).collect(Collectors.joining("!"));
-            var packageName = artifact.split("\\$")[0];
-            var version = artifact.split("\\$")[1];
+            var forgelessArtifact = Arrays.stream(artifact.split("!")).skip(1).collect(Collectors.joining("!"));
+            var packageName = forgelessArtifact.split("\\$")[0];
+            var version = forgelessArtifact.split("\\$")[1];
             var partialUris = packageVersionUris.get(artifact);
-            metadataMap.putAll(KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris));
+            var uriMetadataMap = KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris);
+            if (uriMetadataMap == null) {
+                return new ResponseEntity<>("Could not find one the FASTEN URIs for " + artifact, HttpStatus.NOT_FOUND);
+            }
+            metadataMap.putAll(uriMetadataMap);
         }
         var json = new JSONObject();
         for (var entry : metadataMap.entrySet()) {
