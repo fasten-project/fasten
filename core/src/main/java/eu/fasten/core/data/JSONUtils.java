@@ -87,8 +87,8 @@ public class JSONUtils {
      */
     private static void appendCall(StringBuilder result,
                                    final Map.Entry<List<Integer>, Map<Object, Object>> entry) {
-        result.append("[").append(qoute(entry.getKey().get(0).toString())).append(",");
-        result.append(qoute(entry.getKey().get(1).toString())).append(",{");
+        result.append("[").append(quote(entry.getKey().get(0).toString())).append(",");
+        result.append(quote(entry.getKey().get(1).toString())).append(",{");
         appendCallableMetadataJson(result, entry.getValue());
         result.append("}],");
     }
@@ -103,7 +103,7 @@ public class JSONUtils {
                                                    final Map<Object, Object> metadata) {
         for (final var entry : metadata.entrySet()) {
             final var callSite = (HashMap<String, Object>) entry.getValue();
-            result.append(qoute(entry.getKey().toString())).append(":{");
+            result.append(quote(entry.getKey().toString())).append(":{");
             appendMetadata(result, callSite);
             result.append("},");
         }
@@ -149,7 +149,7 @@ public class JSONUtils {
      */
     private static void appendType(StringBuilder result, final String key,
                                    final JavaType type) {
-        result.append(qoute(key)).append(":{");
+        result.append(quote(key)).append(":{");
         appendKeyValue(result, "access", type.getAccess());
         result.append("\"methods\":{");
         appendMethods(result, type.getMethods());
@@ -172,7 +172,7 @@ public class JSONUtils {
      */
     public static void appendSupers(StringBuilder result, final List<?> supers) {
         for (final var fastenURI : supers) {
-            result.append(qoute(fastenURI.toString())).append(",");
+            result.append(quote(fastenURI.toString())).append(",");
         }
         removeLastIfNotEmpty(result, supers.size());
 
@@ -188,7 +188,7 @@ public class JSONUtils {
                                       final Map<Integer, JavaNode> methods) {
         for (final var entry : methods.entrySet()) {
 
-            result.append(qoute(entry.getKey().toString()));
+            result.append(quote(entry.getKey().toString()));
             result.append(":{\"metadata\":{");
             appendMetadata(result, entry.getValue().getMetadata());
             result.append("},");
@@ -220,12 +220,12 @@ public class JSONUtils {
     }
 
     /**
-     * Qoutes a given String.
+     * Quotes a given String.
      *
-     * @param s String to be qouted.
-     * @return qouted String.
+     * @param s String to be quoted.
+     * @return quoted String.
      */
-    private static String qoute(final String s) {
+    private static String quote(final String s) {
         return "\"" + s + "\"";
     }
 
@@ -251,7 +251,7 @@ public class JSONUtils {
      */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final Number value, final boolean lastKey) {
-        result.append(qoute(key)).append(":").append(value);
+        result.append(quote(key)).append(":").append(value);
         if (!lastKey) {
             result.append(",");
         }
@@ -279,7 +279,7 @@ public class JSONUtils {
      */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final String value, final boolean lastKey) {
-        result.append(qoute(key)).append(":").append(qoute(value));
+        result.append(quote(key)).append(":").append(quote(value));
         if (!lastKey) {
             result.append(",");
         }
