@@ -22,6 +22,8 @@ import org.springframework.http.ResponseEntity;
 
 public interface PackageApiService {
 
+    ResponseEntity<String> getAllPackages(int offset, int limit);
+
     ResponseEntity<String> getPackageLastVersion(String package_name);
 
     ResponseEntity<String> getPackageVersions(String package_name,

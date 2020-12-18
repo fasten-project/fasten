@@ -945,6 +945,16 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
+    public String getAllPackages(int offset, int limit) {
+        var result = context
+                .select(Packages.PACKAGES.fields())
+                .from(Packages.PACKAGES)
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
     public String getPackageVersion(String packageName, String packageVersion, int offset, int limit) {
         return getPackageInfo(packageName, packageVersion, false, offset, limit);
     }

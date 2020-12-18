@@ -34,6 +34,13 @@ import java.util.stream.Collectors;
 public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
+    public ResponseEntity<String> getAllPackages(int offset, int limit) {
+        var result = KnowledgeBaseConnector.kbDao.getAllPackages(offset, limit);
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @Override
     public ResponseEntity<String> getPackageLastVersion(String package_name) {
         String result = KnowledgeBaseConnector.kbDao.getPackageLastVersion(package_name);
         if (result == null) {

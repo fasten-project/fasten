@@ -31,6 +31,12 @@ public class PackageApi {
     @Autowired
     PackageApiService service;
 
+    @GetMapping(value = "/}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> getAllPackages(@RequestParam(required = false, defaultValue = "0") int offset,
+                                          @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
+        return service.getAllPackages(offset, limit);
+    }
+
     @GetMapping(value = "/{pkg}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageLastVersion(@PathVariable("pkg") String package_name) {
         return service.getPackageLastVersion(package_name);
