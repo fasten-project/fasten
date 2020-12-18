@@ -30,8 +30,8 @@ public class FileApiServiceImpl implements FileApiService {
     @Override
     public ResponseEntity<String> getPackageFiles(String package_name,
                                                   String package_version,
-                                                  short offset,
-                                                  short limit) {
+                                                  int offset,
+                                                  int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageFiles(
                 package_name, package_version, offset, limit);
         result = result.replace("\\/", "/");

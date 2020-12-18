@@ -38,32 +38,32 @@ public class PackageApi {
 
     @GetMapping(value = "/{pkg}/versions", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageVersions(@PathVariable("pkg") String package_name,
-                                              @RequestParam(required = false, defaultValue = "0") short offset,
-                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                              @RequestParam(required = false, defaultValue = "0") int offset,
+                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getPackageVersions(package_name, offset, limit);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageVersion(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
-                                             @RequestParam(required = false, defaultValue = "0") short offset,
-                                             @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                             @RequestParam(required = false, defaultValue = "0") int offset,
+                                             @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getPackageVersion(package_name, package_version, offset, limit);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageMetadata(@PathVariable("pkg") String package_name,
                                               @PathVariable("pkg_ver") String package_version,
-                                              @RequestParam(required = false, defaultValue = "0") short offset,
-                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                              @RequestParam(required = false, defaultValue = "0") int offset,
+                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getPackageMetadata(package_name, package_version, offset, limit);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/callgraph", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageCallgraph(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
-                                               @RequestParam(required = false, defaultValue = "0") short offset,
-                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                               @RequestParam(required = false, defaultValue = "0") int offset,
+                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getPackageCallgraph(package_name, package_version, offset, limit);
     }
 
@@ -74,6 +74,13 @@ public class PackageApi {
                                                @RequestParam(required = false, defaultValue = "false") boolean enrichEdges,
                                                @RequestParam(required = false, defaultValue = "-1") long timestamp) {
         return service.enrichArtifact(package_name, package_version, stitch, enrichEdges, timestamp);
+    }
+
+    @GetMapping(value = "/packages/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> searchPackageNames(@RequestParam("packageName") String packageName,
+                                              @RequestParam(required = false, defaultValue = "0") int offset,
+                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
+        return service.searchPackageNames(packageName, offset, limit);
     }
 }
 

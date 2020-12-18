@@ -34,8 +34,8 @@ public class EdgeApi {
     @GetMapping(value = "/{pkg}/{pkg_ver}/edges", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageEdges(@PathVariable("pkg") String package_name,
                                            @PathVariable("pkg_ver") String package_version,
-                                           @RequestParam(required = false, defaultValue = "0") short offset,
-                                           @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                           @RequestParam(required = false, defaultValue = "0") int offset,
+                                           @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getPackageEdges(package_name, package_version, offset, limit);
     }
 }

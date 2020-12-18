@@ -30,8 +30,8 @@ public class EdgeApiServiceImpl implements EdgeApiService {
     @Override
     public ResponseEntity<String> getPackageEdges(String package_name,
                                                   String package_version,
-                                                  short offset,
-                                                  short limit) {
+                                                  int offset,
+                                                  int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageEdges(
                 package_name, package_version, offset, limit);
         result = result.replace("\\/", "/");

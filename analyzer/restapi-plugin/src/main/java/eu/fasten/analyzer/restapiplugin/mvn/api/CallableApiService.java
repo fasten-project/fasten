@@ -25,14 +25,14 @@ public interface CallableApiService {
 
     ResponseEntity<String> getPackageCallables(String package_name,
                                                String package_version,
-                                               short offset,
-                                               short limit);
+                                               int offset,
+                                               int limit);
 
     ResponseEntity<String> getCallableMetadata(String package_name,
                                                String package_version,
                                                String fasten_uri,
-                                               short offset,
-                                               short limit);
+                                               int offset,
+                                               int limit);
 
     ResponseEntity<String> getCallables(List<Long> callableIds);
 }

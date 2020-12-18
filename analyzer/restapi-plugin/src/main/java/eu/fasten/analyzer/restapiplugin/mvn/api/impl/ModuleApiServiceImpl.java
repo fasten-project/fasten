@@ -30,8 +30,8 @@ public class ModuleApiServiceImpl implements ModuleApiService {
     @Override
     public ResponseEntity<String> getPackageModules(String package_name,
                                                     String package_version,
-                                                    short offset,
-                                                    short limit) {
+                                                    int offset,
+                                                    int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageModules(
                 package_name, package_version, offset, limit);
         result = result.replace("\\/", "/");
@@ -42,8 +42,8 @@ public class ModuleApiServiceImpl implements ModuleApiService {
     public ResponseEntity<String> getModuleMetadata(String package_name,
                                                     String package_version,
                                                     String module_namespace,
-                                                    short offset,
-                                                    short limit) {
+                                                    int offset,
+                                                    int limit) {
         String result = KnowledgeBaseConnector.kbDao.getModuleMetadata(
                 package_name, package_version, module_namespace, offset, limit);
         result = result.replace("\\/", "/");
@@ -54,8 +54,8 @@ public class ModuleApiServiceImpl implements ModuleApiService {
     public ResponseEntity<String> getModuleFiles(String package_name,
                                                  String package_version,
                                                  String module_namespace,
-                                                 short offset,
-                                                 short limit) {
+                                                 int offset,
+                                                 int limit) {
         String result = KnowledgeBaseConnector.kbDao.getModuleFiles(
                 package_name, package_version, module_namespace, offset, limit);
         result = result.replace("\\/", "/");
@@ -66,8 +66,8 @@ public class ModuleApiServiceImpl implements ModuleApiService {
     public ResponseEntity<String> getModuleCallables(String package_name,
                                                  String package_version,
                                                  String module_namespace,
-                                                 short offset,
-                                                 short limit) {
+                                                 int offset,
+                                                 int limit) {
         String result = KnowledgeBaseConnector.kbDao.getModuleCallables(
                 package_name, package_version, module_namespace, offset, limit);
         result = result.replace("\\/", "/");

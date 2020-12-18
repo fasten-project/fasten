@@ -45,8 +45,8 @@ public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
     public ResponseEntity<String> getPackageVersions(String package_name,
-                                                     short offset,
-                                                     short limit) {
+                                                     int offset,
+                                                     int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersions(package_name, offset, limit);
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -55,11 +55,13 @@ public class PackageApiServiceImpl implements PackageApiService {
     @Override
     public ResponseEntity<String> getPackageVersion(String package_name,
                                                     String package_version,
-                                                    short offset,
-                                                    short limit) {
+                                                    int offset,
+                                                    int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersion(
                 package_name, package_version, offset, limit);
-        result = result.replace("\\", "");
+        if (result == null) {
+            return new ResponseEntity<>("Package version not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -67,10 +69,13 @@ public class PackageApiServiceImpl implements PackageApiService {
     @Override
     public ResponseEntity<String> getPackageMetadata(String package_name,
                                                      String package_version,
-                                                     short offset,
-                                                     short limit) {
+                                                     int offset,
+                                                     int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageMetadata(
                 package_name, package_version, offset, limit);
+        if (result == null) {
+            return new ResponseEntity<>("Package version not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -78,8 +83,8 @@ public class PackageApiServiceImpl implements PackageApiService {
     @Override
     public ResponseEntity<String> getPackageCallgraph(String package_name,
                                                       String package_version,
-                                                      short offset,
-                                                      short limit) {
+                                                      int offset,
+                                                      int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
                 package_name, package_version, offset, limit);
         result = result.replace("\\/", "/");
@@ -116,6 +121,13 @@ public class PackageApiServiceImpl implements PackageApiService {
             json = ResolutionApiServiceImpl.directedGraphToEnrichedJSON(graph, enrichEdges);
         }
         var result = json.toString();
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<String> searchPackageNames(String packageName, int offset, int limit) {
+        var result = KnowledgeBaseConnector.kbDao.searchPackageNames(packageName, offset, limit);
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

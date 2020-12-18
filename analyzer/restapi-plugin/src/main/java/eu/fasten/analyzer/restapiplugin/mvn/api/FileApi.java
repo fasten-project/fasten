@@ -34,8 +34,8 @@ public class FileApi {
     @GetMapping(value = "/{pkg}/{pkg_ver}/files", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageFiles(@PathVariable("pkg") String package_name,
                                            @PathVariable("pkg_ver") String package_version,
-                                           @RequestParam(required = false, defaultValue = "0") short offset,
-                                           @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                           @RequestParam(required = false, defaultValue = "0") int offset,
+                                           @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getPackageFiles(package_name, package_version, offset, limit);
     }
 }

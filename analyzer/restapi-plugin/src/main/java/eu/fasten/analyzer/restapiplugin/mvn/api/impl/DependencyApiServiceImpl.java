@@ -30,8 +30,8 @@ public class DependencyApiServiceImpl implements DependencyApiService {
     @Override
     public ResponseEntity<String> getPackageDependencies(String package_name,
                                                          String package_version,
-                                                         short offset,
-                                                         short limit) {
+                                                         int offset,
+                                                         int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageDependencies(
                 package_name, package_version, offset, limit);
         result = result.replace("\\/", "/");

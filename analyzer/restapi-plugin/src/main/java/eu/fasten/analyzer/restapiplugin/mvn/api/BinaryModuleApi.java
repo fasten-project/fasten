@@ -34,8 +34,8 @@ public class BinaryModuleApi {
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageBinaryModules(@PathVariable("pkg") String package_name,
                                                    @PathVariable("pkg_ver") String package_version,
-                                                   @RequestParam(required = false, defaultValue = "0") short offset,
-                                                   @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                                   @RequestParam(required = false, defaultValue = "0") int offset,
+                                                   @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getPackageBinaryModules(package_name, package_version, offset, limit);
     }
 
@@ -43,8 +43,8 @@ public class BinaryModuleApi {
     ResponseEntity<String> getBinaryModuleMetadata(@PathVariable("pkg") String package_name,
                                                    @PathVariable("pkg_ver") String package_version,
                                                    @PathVariable("binary") String binary_module,
-                                                   @RequestParam(required = false, defaultValue = "0") short offset,
-                                                   @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                                   @RequestParam(required = false, defaultValue = "0") int offset,
+                                                   @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getBinaryModuleMetadata(package_name, package_version, binary_module, offset, limit);
     }
 
@@ -52,8 +52,8 @@ public class BinaryModuleApi {
     ResponseEntity<String> getBinaryModuleFiles(@PathVariable("pkg") String package_name,
                                                 @PathVariable("pkg_ver") String package_version,
                                                 @PathVariable("binary") String binary_module,
-                                                @RequestParam(required = false, defaultValue = "0") short offset,
-                                                @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                                @RequestParam(required = false, defaultValue = "0") int offset,
+                                                @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getBinaryModuleFiles(package_name, package_version, binary_module, offset, limit);
     }
 }

@@ -32,8 +32,8 @@ public class CallableApiServiceImpl implements CallableApiService {
     @Override
     public ResponseEntity<String> getPackageCallables(String package_name,
                                                       String package_version,
-                                                      short offset,
-                                                      short limit) {
+                                                      int offset,
+                                                      int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageCallables(
                 package_name, package_version, offset, limit);
         result = result.replace("\\/", "/");
@@ -44,8 +44,8 @@ public class CallableApiServiceImpl implements CallableApiService {
     public ResponseEntity<String> getCallableMetadata(String package_name,
                                                       String package_version,
                                                       String fasten_uri,
-                                                      short offset,
-                                                      short limit) {
+                                                      int offset,
+                                                      int limit) {
         String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
                 package_name, package_version, fasten_uri, offset, limit);
         result = result.replace("\\/", "/");

@@ -34,8 +34,8 @@ public class CallableApi {
     @GetMapping(value = "/mvn/packages/{pkg}/{pkg_ver}/callables", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageCallables(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
-                                               @RequestParam(required = false, defaultValue = "0") short offset,
-                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                               @RequestParam(required = false, defaultValue = "0") int offset,
+                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getPackageCallables(package_name, package_version, offset, limit);
     }
 
@@ -43,8 +43,8 @@ public class CallableApi {
     ResponseEntity<String> getCallableMetadata(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestBody String fasten_uri,
-                                               @RequestParam(required = false, defaultValue = "0") short offset,
-                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) short limit) {
+                                               @RequestParam(required = false, defaultValue = "0") int offset,
+                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getCallableMetadata(package_name, package_version, fasten_uri, offset, limit);
     }
 

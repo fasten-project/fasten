@@ -24,24 +24,24 @@ public interface ModuleApiService {
 
     ResponseEntity<String> getPackageModules(String package_name,
                                              String package_version,
-                                             short offset,
-                                             short limit);
+                                             int offset,
+                                             int limit);
 
     ResponseEntity<String> getModuleMetadata(String package_name,
                                              String package_version,
                                              String module_namespace,
-                                             short offset,
-                                             short limit);
+                                             int offset,
+                                             int limit);
 
     ResponseEntity<String> getModuleFiles(String package_name,
                                           String package_version,
                                           String module_namespace,
-                                          short offset,
-                                          short limit);
+                                          int offset,
+                                          int limit);
 
     ResponseEntity<String> getModuleCallables(String package_name,
                                           String package_version,
                                           String module_namespace,
-                                          short offset,
-                                          short limit);
+                                          int offset,
+                                          int limit);
 }

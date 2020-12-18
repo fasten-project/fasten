@@ -24,6 +24,6 @@ public interface FileApiService {
 
     ResponseEntity<String> getPackageFiles(String package_name,
                                            String package_version,
-                                           short offset,
-                                           short limit);
+                                           int offset,
+                                           int limit);
 }

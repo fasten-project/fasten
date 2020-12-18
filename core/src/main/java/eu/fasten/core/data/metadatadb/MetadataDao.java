@@ -945,19 +945,19 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getPackageVersion(String packageName, String packageVersion, short offset, short limit) {
+    public String getPackageVersion(String packageName, String packageVersion, int offset, int limit) {
         return getPackageInfo(packageName, packageVersion, false, offset, limit);
     }
 
-    public String getPackageMetadata(String packageName, String packageVersion, short offset, short limit) {
+    public String getPackageMetadata(String packageName, String packageVersion, int offset, int limit) {
         return getPackageInfo(packageName, packageVersion, true, offset, limit);
     }
 
     protected String getPackageInfo(String packageName,
                                     String packageVersion,
                                     boolean metadataOnly,
-                                    short offset,
-                                    short limit) {
+                                    int offset,
+                                    int limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -980,7 +980,9 @@ public class MetadataDao {
                 .offset(offset)
                 .limit(1)
                 .fetchOne();
-
+        if (queryResult == null) {
+            return null;
+        }
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).format(true).quoteNested(false));
@@ -994,7 +996,7 @@ public class MetadataDao {
      * @param limit
      * @return Package version information, including potential vulnerabilities.
      */
-    public String getPackageVersions(String packageName, short offset, short limit) {
+    public String getPackageVersions(String packageName, int offset, int limit) {
 
         // SQL query
         /*
@@ -1032,7 +1034,7 @@ public class MetadataDao {
      * @param limit
      * @return All package version dependencies.
      */
-    public String getPackageDependencies(String packageName, String packageVersion, short offset, short limit) {
+    public String getPackageDependencies(String packageName, String packageVersion, int offset, int limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1057,16 +1059,16 @@ public class MetadataDao {
 
     public String getPackageModules(String packageName,
                                     String packageVersion,
-                                    short offset,
-                                    short limit) {
+                                    int offset,
+                                    int limit) {
         return getModuleInfo(packageName, packageVersion, null, false, offset, limit);
     }
 
     public String getModuleMetadata(String packageName,
                                     String packageVersion,
                                     String moduleNamespace,
-                                    short offset,
-                                    short limit) {
+                                    int offset,
+                                    int limit) {
         return getModuleInfo(packageName, packageVersion, moduleNamespace, true, offset, limit);
     }
 
@@ -1074,8 +1076,8 @@ public class MetadataDao {
                                    String packageVersion,
                                    String moduleNamespace,
                                    boolean metadataOnly,
-                                   short offset,
-                                   short limit) {
+                                   int offset,
+                                   int limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1115,8 +1117,8 @@ public class MetadataDao {
     public String getModuleFiles(String packageName,
                                  String packageVersion,
                                  String moduleNamespace,
-                                 short offset,
-                                 short limit) {
+                                 int offset,
+                                 int limit) {
 
         // SQL query
         /*
@@ -1157,8 +1159,8 @@ public class MetadataDao {
     public String getModuleCallables(String packageName,
                                      String packageVersion,
                                      String moduleNamespace,
-                                     short offset,
-                                     short limit) {
+                                     int offset,
+                                     int limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1184,15 +1186,15 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getPackageBinaryModules(String packageName, String packageVersion, short offset, short limit) {
+    public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) {
         return getBinaryModuleInfo(packageName, packageVersion, null, false, offset, limit);
     }
 
     public String getBinaryModuleMetadata(String packageName,
                                           String packageVersion,
                                           String binaryModule,
-                                          short offset,
-                                          short limit) {
+                                          int offset,
+                                          int limit) {
         return getBinaryModuleInfo(packageName, packageVersion, binaryModule, true, offset, limit);
     }
 
@@ -1201,8 +1203,8 @@ public class MetadataDao {
                                          String packageVersion,
                                          String binaryModule,
                                          boolean metadataOnly,
-                                         short offset,
-                                         short limit) {
+                                         int offset,
+                                         int limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1243,8 +1245,8 @@ public class MetadataDao {
     public String getBinaryModuleFiles(String packageName,
                                        String packageVersion,
                                        String binaryModule,
-                                       short offset,
-                                       short limit) {
+                                       int offset,
+                                       int limit) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1270,15 +1272,15 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getPackageCallables(String packageName, String packageVersion, short offset, short limit) {
+    public String getPackageCallables(String packageName, String packageVersion, int offset, int limit) {
         return getCallablesInfo(packageName, packageVersion, null, false, offset, limit);
     }
 
     public String getCallableMetadata(String packageName,
                                       String packageVersion,
                                       String fastenURI,
-                                      short offset,
-                                      short limit) {
+                                      int offset,
+                                      int limit) {
         return getCallablesInfo(packageName, packageVersion, fastenURI, true, offset, limit);
     }
 
@@ -1286,8 +1288,8 @@ public class MetadataDao {
                                       String packageVersion,
                                       String fastenURI,
                                       boolean metadataOnly,
-                                      short offset,
-                                      short limit) {
+                                      int offset,
+                                      int limit) {
 
         // SQL query
         /*
@@ -1353,7 +1355,7 @@ public class MetadataDao {
         return result.value1() + Constants.mvnCoordinateSeparator + result.value2();
     }
 
-    public String getPackageFiles(String packageName, String packageVersion, short offset, short limit) {
+    public String getPackageFiles(String packageName, String packageVersion, int offset, int limit) {
 
         // SQL query
         /*
@@ -1386,19 +1388,19 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getPackageCallgraph(String packageName, String packageVersion, short offset, short limit) {
+    public String getPackageCallgraph(String packageName, String packageVersion, int offset, int limit) {
         return getEdgesInfo(packageName, packageVersion, true, offset, limit);
     }
 
-    public String getPackageEdges(String packageName, String packageVersion, short offset, short limit) {
+    public String getPackageEdges(String packageName, String packageVersion, int offset, int limit) {
         return getEdgesInfo(packageName, packageVersion, false, offset, limit);
     }
 
     protected String getEdgesInfo(String packageName,
                                   String packageVersion,
                                   boolean idsOnly,
-                                  short offset,
-                                  short limit) {
+                                  int offset,
+                                  int limit) {
 
         // SQL query
         /*
@@ -1638,6 +1640,18 @@ public class MetadataDao {
         return record.value1() + Constants.mvnCoordinateSeparator + record.value2();
     }
 
+    public String searchPackageNames(String searchName, int offset, int limit) {
+        var result = context
+                .select(Packages.PACKAGES.fields())
+                .from(Packages.PACKAGES)
+                .where(Packages.PACKAGES.PACKAGE_NAME.like("%" + searchName + "%"))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        logger.debug("Total rows: " + result.size());
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
     /**
      * Reconstructs the dependency network given a product and a timestamp.
      *
@@ -1668,9 +1682,7 @@ public class MetadataDao {
                         .fetch();
 
         logger.debug("Total rows: " + queryResult.size());
-
-        String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
-        return result;
+        return queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     /**
@@ -1704,9 +1716,7 @@ public class MetadataDao {
                         .fetch();
 
         logger.debug("Total rows: " + queryResult.size());
-
-        String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
-        return result;
+        return queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     /**

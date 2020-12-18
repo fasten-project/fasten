@@ -25,24 +25,26 @@ public interface PackageApiService {
     ResponseEntity<String> getPackageLastVersion(String package_name);
 
     ResponseEntity<String> getPackageVersions(String package_name,
-                                              short offset,
-                                              short limit);
+                                              int offset,
+                                              int limit);
 
     ResponseEntity<String> getPackageVersion(String package_name,
                                              String package_version,
-                                             short offset,
-                                             short limit);
+                                             int offset,
+                                             int limit);
 
     ResponseEntity<String> getPackageMetadata(String package_name,
                                               String package_version,
-                                              short offset,
-                                              short limit);
+                                              int offset,
+                                              int limit);
 
     ResponseEntity<String> getPackageCallgraph(String package_name,
                                                String package_version,
-                                               short offset,
-                                               short limit);
+                                               int offset,
+                                               int limit);
 
     ResponseEntity<String> enrichArtifact(String package_name, String version, boolean stitch,
                                           boolean enrichEdges, long timestamp);
+
+    ResponseEntity<String> searchPackageNames(String packageName, int offset, int limit);
 }
