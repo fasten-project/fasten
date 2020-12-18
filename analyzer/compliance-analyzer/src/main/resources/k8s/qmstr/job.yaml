@@ -76,7 +76,7 @@ spec:
             - name: buildroot-volume
               mountPath: /home/git/buildroot
         - name: pom-patch
-          image: endocodeci/pom-patch:sha-24bc6f4
+          image: endocodeci/pom-patch:sha-c47d6c5
           command: [ "python", "insert-build-plugin.py", "qmstr-maven-plugin.xml" ]
           volumeMounts:
             - name: buildroot-volume
