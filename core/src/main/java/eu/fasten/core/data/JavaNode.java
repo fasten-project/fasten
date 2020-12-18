@@ -78,7 +78,31 @@ public class JavaNode extends Node {
         return FastenURI.create(uri.replace("." + getMethodName() + "(", "." + methodName + "("));
     }
 
-    /**
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Node node = (Node) o;
+
+        if (uri != null ? !uri.equals(node.uri) : node.uri != null) {
+            return false;
+        }
+        return metadata != null ? metadata.equals(node.metadata) : node.metadata == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = uri != null ? uri.hashCode() : 0;
+        result = 31 * result + (metadata != null ? metadata.hashCode() : 0);
+        return result;
+    }
+  
+     /**
      * Change method signature.
      *
      * @param methodName new method name
