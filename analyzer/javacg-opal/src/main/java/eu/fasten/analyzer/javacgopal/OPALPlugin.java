@@ -25,6 +25,7 @@ import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.util.ArrayList;
@@ -115,7 +116,7 @@ public class OPALPlugin extends Plugin {
         @Override
         public Optional<String> produce() {
             if (this.graph != null && !this.graph.isCallGraphEmpty()) {
-                return Optional.of(graph.toJSON().toString());
+                return Optional.of(JSONUtils.toJSONString(graph));
             } else {
                 return Optional.empty();
             }

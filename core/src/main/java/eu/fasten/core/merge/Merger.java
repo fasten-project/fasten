@@ -21,6 +21,7 @@ package eu.fasten.core.merge;
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -161,7 +162,7 @@ public class Merger implements Runnable {
 
                     if (output != null) {
                         try {
-                            CallGraphUtils.writeToFile(output, mergedERCG.toJSON(), "");
+                            CallGraphUtils.writeToFile(output, JSONUtils.toJSONString(mergedERCG), "");
                         } catch (IOException e) {
                             logger.error("Unable to write to file");
                         }

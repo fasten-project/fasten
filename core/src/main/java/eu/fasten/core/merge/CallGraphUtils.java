@@ -20,6 +20,7 @@ package eu.fasten.core.merge;
 
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.JavaNode;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -63,8 +64,8 @@ public class CallGraphUtils {
         final String graphPath =
                 resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
 
-        writeToFile(graphPath, firstGraph.toJSON(), "_1.txt");
-        writeToFile(graphPath, secondGraph.toJSON(), "_2.txt");
+        writeToFile(graphPath, JSONUtils.toJSONString(firstGraph), "_1.txt");
+        writeToFile(graphPath, JSONUtils.toJSONString(secondGraph), "_2.txt");
 
         Runtime.getRuntime().exec(new String[]{"sh", "-c",
                 "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath
@@ -79,14 +80,14 @@ public class CallGraphUtils {
      * @param suffix the suffix to put at the end of the path, most of the time file name
      * @throws IOException throws if IO problems occur during writing in a file
      */
-    public static void writeToFile(final String path, final JSONObject graph, final String suffix)
+    public static void writeToFile(final String path, final String graph, final String suffix)
             throws IOException {
         if (!graph.isEmpty()) {
             logger.info("Writing graph to {}", path + suffix);
         }
         final BufferedWriter writer;
         writer = new BufferedWriter(new FileWriter(path + suffix));
-        writer.write(graph.toString(4));
+        writer.write(graph);
         writer.close();
     }
 
