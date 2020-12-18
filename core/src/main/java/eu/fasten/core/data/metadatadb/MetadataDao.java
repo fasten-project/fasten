@@ -1330,7 +1330,7 @@ public class MetadataDao {
         // Where clause
         Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
         if (metadataOnly) {
-            whereClause = whereClause.and("digest(callables.fasten_uri, 'sha1') = digest('" + fastenURI + "', 'sha1')");
+            whereClause = whereClause.and("digest(callables.fasten_uri, 'sha1') = digest(?, 'sha1')", fastenURI);
         }
 
         // Building and executing the query
@@ -1622,8 +1622,8 @@ public class MetadataDao {
                 .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName).and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
                         .and("digest(callables.fasten_uri, 'sha1') in ("
                                 + fastenUris.stream()
-                                .map(u -> "digest('" + u + "', 'sha1')")
-                                .collect(Collectors.joining(",")) + ")"))
+                                .map(u -> "digest(?, 'sha1')")
+                                .collect(Collectors.joining(",")) + ")", fastenUris.toArray()))
                 .fetch();
         if (result.isEmpty()) {
             return null;
