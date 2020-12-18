@@ -40,16 +40,7 @@ import picocli.CommandLine;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "GraphMavenResolver")
@@ -223,6 +214,23 @@ public class GraphMavenResolver implements Runnable {
     public Set<Revision> resolveDependencies(Revision r, DSLContext db, boolean transitive) {
         return resolveDependencies(r.groupId, r.artifactId, r.version.toString(),
                 r.createdAt.getTime(), db, transitive);
+    }
+
+    public Revision addVirtualNode(Set<Revision> directDependencies) {
+        var nodeGroup = String.valueOf(directDependencies.stream().reduce(0, (x, r) -> x + r.groupId.hashCode(), Integer::sum));
+        var nodeArtifact = String.valueOf(directDependencies.stream().reduce(0, (x, r) -> x + r.artifactId.hashCode(), Integer::sum));
+        var nodeVersion = String.valueOf(directDependencies.stream().reduce(0, (x, r) -> x + r.version.hashCode(), Integer::sum));
+        var node = new Revision(-1, nodeGroup, nodeArtifact, nodeVersion, new Timestamp(-1));
+        dependencyGraph.addVertex(node);
+        directDependencies.forEach(d -> dependencyGraph.addVertex(d));
+        directDependencies.forEach(d -> dependencyGraph.addEdge(node, d, new DependencyEdge(node, d, "compile", false, Collections.emptyList())));
+        return node;
+    }
+
+    public void removeVirtualNode(Revision virtualNode) {
+        var edges = dependencyGraph.outgoingEdgesOf(virtualNode);
+        edges.forEach(e -> dependencyGraph.removeEdge(e));
+        dependencyGraph.removeVertex(virtualNode);
     }
 
 

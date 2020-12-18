@@ -1642,12 +1642,7 @@ public class MetadataDao {
 
     public String searchPackageNames(String searchName, int offset, int limit) {
         var result = context
-                .select(Packages.PACKAGES.fields())
-                .from(Packages.PACKAGES)
-                .where(Packages.PACKAGES.PACKAGE_NAME.like("%" + searchName + "%"))
-                .offset(offset)
-                .limit(limit)
-                .fetch();
+                .fetch("select * from packages where package_name like ? offset ? limit ?", "%" + searchName + "%", offset, limit);
         logger.debug("Total rows: " + result.size());
         return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }

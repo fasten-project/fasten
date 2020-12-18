@@ -31,6 +31,7 @@ import org.rocksdb.RocksDBException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -97,22 +98,18 @@ public class StitchingApiServiceImpl implements StitchingApiService {
 
     @Override
     public ResponseEntity<String> resolveMultipleDependencies(List<String> mavenCoordinates) {
-        var depMap = new HashMap<String, Set<Revision>>(mavenCoordinates.size());
-        for (var coordinate : mavenCoordinates) {
-            var groupId = coordinate.split(Constants.mvnCoordinateSeparator)[0];
-            var artifactId = coordinate.split(Constants.mvnCoordinateSeparator)[1];
-            var version = coordinate.split(Constants.mvnCoordinateSeparator)[2];
-            var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(groupId,
-                    artifactId, version, -1, KnowledgeBaseConnector.dbContext, true);
-            depMap.put(coordinate, depSet);
-        }
-        var finalSet = new HashSet<Revision>();
-        // TODO: Use proper resolution to create a final dependency set
-        for (var deps : depMap.values()) {
-            finalSet.addAll(deps);
-        }
+        var revisions = mavenCoordinates.stream().map(c -> {
+            var groupId = c.split(Constants.mvnCoordinateSeparator)[0];
+            var artifactId = c.split(Constants.mvnCoordinateSeparator)[1];
+            var version = c.split(Constants.mvnCoordinateSeparator)[2];
+            var id = KnowledgeBaseConnector.kbDao.getPackageVersionID(groupId + Constants.mvnCoordinateSeparator + artifactId, version);
+            return new Revision(id, groupId, artifactId, version, new Timestamp(-1));
+        }).collect(Collectors.toSet());
+        var virtualNode = KnowledgeBaseConnector.graphResolver.addVirtualNode(revisions);
+        var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbContext, true);
+        KnowledgeBaseConnector.graphResolver.removeVirtualNode(virtualNode);
         var jsonArray = new JSONArray();
-        finalSet.stream().map(r -> {
+        depSet.stream().map(r -> {
             var json = new JSONObject();
             var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
                     r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
