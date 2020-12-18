@@ -1,16 +1,18 @@
 package eu.fasten.analyzer.javacgopal.data;
 
+import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.ExtendedBuilder;
 import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
-import eu.fasten.core.merge.CallGraphMerger;
+import eu.fasten.core.merge.LocalMerger;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.jooq.tools.csv.CSVReader;
@@ -32,7 +34,7 @@ class JSONUtilsTest {
     private int batchVolume = 20; //percentage of batch tests to be executed in the build
 
     @BeforeAll
-    static void setUp() throws IOException, OPALException {
+    static void setUp() throws IOException, OPALException, MissingArtifactException {
 
         var coordinate =
             new MavenCoordinate("com.github.shoothzj", "java-tool", "3.0.30.RELEASE", "jar");
@@ -48,8 +50,10 @@ class JSONUtilsTest {
             new MavenCoordinate("abbot", "abbot", "1.4.0", "jar");
         dependency = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
             "", "CHA", 1574072773);
-
-        CallGraphMerger.mergeCallGraph(artifact, List.of(dependency), "CHA");
+        final var deps = new ArrayList<>(Collections.singletonList(dependency));
+        deps.add(artifact);
+        final var merger = new LocalMerger(deps);
+        merger.mergeWithCHA(artifact);
 
         coords =
             readDataCSV(new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
@@ -87,7 +91,7 @@ class JSONUtilsTest {
     }
 
     @Test
-    void batchOfCGsTest() throws IOException, OPALException {
+    void batchOfCGsTest() throws IOException, OPALException, MissingArtifactException {
         final var coordsSize = (coords.size() * batchVolume)/100;
 
         logger.debug("Testing {} serialization", coordsSize);
