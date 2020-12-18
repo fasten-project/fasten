@@ -76,7 +76,7 @@ public class PackageApi {
         return service.enrichArtifact(package_name, package_version, stitch, enrichEdges, timestamp);
     }
 
-    @GetMapping(value = "/packages/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> searchPackageNames(@RequestParam("packageName") String packageName,
                                               @RequestParam(required = false, defaultValue = "0") int offset,
                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
