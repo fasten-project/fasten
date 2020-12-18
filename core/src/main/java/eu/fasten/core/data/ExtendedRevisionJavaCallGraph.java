@@ -18,8 +18,12 @@
 
 package eu.fasten.core.data;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import eu.fasten.core.utils.FastenUriUtils;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import org.json.JSONObject;
 import org.json.JSONException;
 
@@ -135,6 +139,91 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     }
 
     /**
+     * Returns the BiMap of all resolved methods of this object.
+     * Note: external nodes are not considered resolved, since they don't have product and version.
+     * Also ids are local to rcg object.
+     *
+     * @return a BiMap method ids and their corresponding fully qualified {@link FastenURI}
+     */
+    public BiMap<Integer, String> mapOfFullURIStrings(){
+        final BiMap<Integer, String> result = HashBiMap.create();
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
+            putMethodsOfType(result, aClass.getValue().getMethods());
+        }
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.resolvedTypes).entrySet()) {
+            putMethodsOfType(result, aClass.getKey(),
+                aClass.getValue().getMethods());
+        }
+        return result;
+    }
+
+    private void putMethodsOfType(final BiMap<Integer, String> result, final FastenURI type,
+                                  final Map<Integer, JavaNode> methods) {
+        for (final var nodeEntry : methods.entrySet()) {
+            final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, type.getProduct(),
+                type.getVersion(), nodeEntry.getValue().getUri().toString());
+            if (!result.inverse().containsKey(fullUri)) {
+                result.put(nodeEntry.getKey(), fullUri);
+            }
+        }
+    }
+
+    private void putMethodsOfType(final BiMap<Integer, String> result, final Map<Integer,
+        JavaNode> methods) {
+        for (final var nodeEntry : methods.entrySet()) {
+            final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, this.product,
+                this.version, nodeEntry.getValue().getUri().toString());
+            if (!result.inverse().containsKey(fullUri)) {
+                result.put(nodeEntry.getKey(), fullUri);
+            }
+        }
+    }
+
+    public Map<Integer, JavaType> externalNodeIdToTypeMap() {
+        final Map<Integer, JavaType> result = new HashMap<>();
+        this.classHierarchy.get(JavaScope.externalTypes).values().parallelStream().forEach(type -> {
+            for (final var key : type.getMethods().keySet()) {
+                synchronized (result) {
+                    result.put(key, type);
+                }
+            }
+        });
+        return result;
+    }
+
+    public Map<Integer, JavaType> internalNodeIdToTypeMap() {
+        final Map<Integer, JavaType> result = new HashMap<>();
+        this.classHierarchy.get(JavaScope.internalTypes).values().parallelStream().forEach(type -> {
+            for (final var key : type.getMethods().keySet()) {
+                synchronized (result) {
+                    result.put(key, type);
+                }
+            }
+        });
+        return result;
+    }
+
+    public Map<Integer, String> nodeIDtoTypeNameMap() {
+        final Map<Integer, String> result = new HashMap<>();
+        for (final var aClass : classHierarchy.get(JavaScope.internalTypes).entrySet()) {
+            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+            }
+        }
+        for (final var aClass : classHierarchy.get(JavaScope.externalTypes).entrySet()) {
+            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+            }
+        }
+        for (final var aClass : classHierarchy.get(JavaScope.resolvedTypes).entrySet()) {
+            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+            }
+        }
+        return result;
+    }
+
+    /**
      * Produces the JSON representation of class hierarchy.
      *
      * @param cha class hierarchy
@@ -231,5 +320,25 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         result = 31 * result + (cgGenerator != null ? cgGenerator.hashCode() : 0);
         return result;
     }
+
+    /**
+     * Converts an {@link ExtendedRevisionJavaCallGraph} into a {@link DirectedGraph} using as global
+     * identifiers the local identifiers.
+     *
+     * @param erjcg an {@link ExtendedRevisionJavaCallGraph}.
+     * @return a directed graph with internal nodes only, based on the local identifiers of
+     *         {@code erjcg}.
+     */
+    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
+        final var builder = new ArrayImmutableDirectedGraph.Builder();
+        for (final int x : erjcg.mapOfAllMethods().keySet()) builder.addInternalNode(x);
+
+        for (final List<Integer> l : erjcg.getGraph().getExternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+        for (final List<Integer> l : erjcg.getGraph().getInternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+        for (final List<Integer> l : erjcg.getGraph().getResolvedCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+
+        return builder.build();
+    }
+
 
 }

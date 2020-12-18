@@ -24,6 +24,7 @@
         <module>repo-cloner-plugin</module>
         <module>quality-analyzer</module>
         <module>restapi-plugin</module>
+        <module>vulnerability-consumer</module>
     </modules>
 
     <build>
@@ -59,5 +60,20 @@
             </plugin>
         </plugins>
     </build>
+<!--   Jacoco  reporting   -->
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.2</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/Main.*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 
 </project>

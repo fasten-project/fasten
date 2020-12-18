@@ -19,9 +19,23 @@
 package eu.fasten.core.merge;
 
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JavaNode;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,8 +57,8 @@ public class CallGraphUtils {
      * @throws IOException throws IOException.
      */
     public static void diffInFile(final String resultPath, final int graphNumber,
-                                  final ExtendedRevisionCallGraph firstGraph,
-                                  final ExtendedRevisionCallGraph secondGraph) throws IOException {
+                                  final ExtendedRevisionJavaCallGraph firstGraph,
+                                  final ExtendedRevisionJavaCallGraph secondGraph) throws IOException {
 
         final String graphPath =
                 resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
@@ -76,4 +90,132 @@ public class CallGraphUtils {
         writer.close();
     }
 
+    /**
+     * Converts {@link ExtendedRevisionCallGraph} graph into the list of node pairs.
+     *
+     * @param ercg call graph
+     * @return list of node pairs
+     */
+    public static Map<String, List<Pair<String, String>>> convertToNodePairs(
+            final ExtendedRevisionJavaCallGraph ercg) {
+
+        final Map<String, List<Pair<String, String>>> result = new HashMap<>();
+        final var methods = ercg.mapOfAllMethods();
+        final var types = ercg.nodeIDtoTypeNameMap();
+
+        result.put("internalTypes", getEdges(ercg.getGraph().getInternalCalls(), methods, types));
+
+        result.put("externalTypes", getEdges(ercg.getGraph().getExternalCalls(), methods, types));
+
+        result.put("resolvedTypes", getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
+
+        return result;
+    }
+
+    /**
+     * Get edges of an {@link ExtendedRevisionCallGraph}.
+     *
+     * @param calls   source, target of a call and metadata
+     * @param methods node information
+     * @param types   types information
+     * @return edges list
+     */
+    private static List<Pair<String, String>> getEdges(
+            final Map<List<Integer>, Map<Object, Object>> calls,
+            final Map<Integer, JavaNode> methods,
+            final Map<Integer, String> types) {
+
+        final List<Pair<String, String>> result = new ArrayList<>();
+
+        for (final var exCall : calls.entrySet()) {
+            result.add(MutablePair.of(decode(types.get(exCall.getKey().get(0))) + "." +
+                            decode(methods.get(exCall.getKey().get(0)).getSignature()),
+                    decode(types.get(exCall.getKey().get(1))) + "." + decode(methods.get(exCall.getKey().get(1)).getSignature())));
+        }
+        return result;
+    }
+
+    /**
+     * Decodes method signature.
+     *
+     * @param methodSignature method signature
+     * @return decoded method signature
+     */
+    private static String decode(final String methodSignature) {
+        String result = methodSignature;
+        while (result.contains("%")) {
+            result = URLDecoder.decode(result, StandardCharsets.UTF_8);
+        }
+        return result;
+    }
+
+    /**
+     * Convert pairs of edges to a String.
+     *
+     * @param pairs edges
+     * @return String representation of edges
+     */
+    public static String toStringEdges(List<Pair<String, String>> pairs) {
+        StringBuilder result = new StringBuilder();
+        if (pairs != null) {
+            for (final var edge : pairs.stream().sorted().collect(Collectors.toList())) {
+                result.append(getStringEdge(edge));
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * Converts a pair of edges to a String representation.
+     *
+     * @param edge edge
+     * @return String representation of an edge
+     */
+    public static String getStringEdge(final Pair<String, String> edge) {
+        return edge.getLeft() + " '->" + "'\n" + edge.getRight() + "\n\n";
+    }
+
+    /**
+     * Convert data to a CSV file.
+     *
+     * @param data data to convert
+     * @return data in CSV format
+     */
+    public static String convertToCSV(final String[] data) {
+        return Stream.of(data)
+                .map(CallGraphUtils::escapeSpecialCharacters)
+                .collect(Collectors.joining(","));
+    }
+
+    /**
+     * Write data into CSV file.
+     *
+     * @param data       data to write
+     * @param resultPath path to write to
+     * @throws IOException occurs if write is unsuccessful
+     */
+    public static void writeToCSV(final List<String[]> data,
+                                  final String resultPath) throws IOException {
+        File csvOutputFile = new File(resultPath);
+        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
+            data.stream()
+                    .map(CallGraphUtils::convertToCSV)
+                    .forEach(pw::println);
+        }
+    }
+
+    /**
+     * Escape special characters in a string.
+     *
+     * @param data data to escape characters in
+     * @return escaped String
+     */
+    public static String escapeSpecialCharacters(String data) {
+        String escapedData = data.replaceAll("\\R", " ");
+        if (data.contains(",") || data.contains("\"") || data.contains("'")) {
+            data = data.replace("\"", "\"\"");
+            escapedData = "\"" + data + "\"";
+        }
+        return escapedData;
+    }
 }

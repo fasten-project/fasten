@@ -49,9 +49,9 @@ import eu.fasten.core.data.ArrayImmutableDirectedGraph.Builder;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.GOV3LongFunction;
-import eu.fasten.core.data.KnowledgeBase;
 import eu.fasten.core.index.BVGraphSerializer;
 import eu.fasten.core.index.LayeredLabelPropagation;
+import eu.fasten.core.legacy.KnowledgeBase;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
@@ -128,7 +128,10 @@ public class RocksDao implements Closeable {
      */
     public void saveToRocksDb(final long index, List<Long> nodes, int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
-
+        if (this.getGraphData(index) != null) {
+            logger.info("Graph with index {} is already in the database", index);
+            return;
+        }
         var internalIds = new LongArrayList(numInternal);
         var externalIds = new LongArrayList(nodes.size() - numInternal);
         for (int i = 0; i < numInternal; i++) {
@@ -297,8 +300,7 @@ public class RocksDao implements Closeable {
      * @return the directed graph stored in the database
      * @throws RocksDBException if there was problem retrieving data from RocksDB
      */
-    public DirectedGraph getGraphData(final long index)
-            throws RocksDBException {
+    public DirectedGraph getGraphData(final long index) throws RocksDBException {
         try {
             final byte[] buffer = rocksDb.get(Longs.toByteArray(index));
             final Input input = new Input(buffer);
