@@ -20,6 +20,11 @@ public class Main implements Runnable {
             description = "Path to JSON file containing repository information")
     String repoInfoFilePath;
 
+    @CommandLine.Option(names = {"-n", "--ns", "--namespace"},
+            paramLabel = "ns",
+            description = "Kubernetes namespace to be used")
+    String namespace;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -27,7 +32,7 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var compliancePlugin = new ComplianceAnalyzerPlugin.CompliancePluginExtension();
+        var compliancePlugin = new ComplianceAnalyzerPlugin.CompliancePluginExtension(namespace);
 
         // Retrieving repository information
         var repoInfo = retrieveRepositoryInformation();
