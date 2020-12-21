@@ -47,7 +47,7 @@ public class StitchingApi {
         return service.resolveMultipleDependencies(mavenCoordinates);
     }
 
-    @GetMapping(value = "/integration/packages/{pkg_version_id}/directedgraph", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/__INTERNAL__/packages/{pkg_version_id}/directedgraph", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getDirectedGraph(@PathVariable("pkg_version_id") long packageVersionId,
                                             @RequestParam(required = false, defaultValue = "false") boolean needStitching,
                                             @RequestParam(required = false, defaultValue = "-1") long timestamp) {
