@@ -43,11 +43,12 @@ public class CallableApiServiceImpl implements CallableApiService {
     @Override
     public ResponseEntity<String> getCallableMetadata(String package_name,
                                                       String package_version,
-                                                      String fasten_uri,
-                                                      int offset,
-                                                      int limit) {
+                                                      String fasten_uri) {
         String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
-                package_name, package_version, fasten_uri, offset, limit);
+                package_name, package_version, fasten_uri);
+        if (result == null) {
+            return new ResponseEntity<>("Callable not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

@@ -44,7 +44,7 @@ public class PackageApiServiceImpl implements PackageApiService {
     public ResponseEntity<String> getPackageLastVersion(String package_name) {
         String result = KnowledgeBaseConnector.kbDao.getPackageLastVersion(package_name);
         if (result == null) {
-            return new ResponseEntity<>("Latest package version not found. Maybe this package is not in the database", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>("Latest package version not found", HttpStatus.NOT_FOUND);
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -61,11 +61,9 @@ public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
     public ResponseEntity<String> getPackageVersion(String package_name,
-                                                    String package_version,
-                                                    int offset,
-                                                    int limit) {
+                                                    String package_version) {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersion(
-                package_name, package_version, offset, limit);
+                package_name, package_version);
         if (result == null) {
             return new ResponseEntity<>("Package version not found", HttpStatus.NOT_FOUND);
         }
@@ -75,11 +73,9 @@ public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
     public ResponseEntity<String> getPackageMetadata(String package_name,
-                                                     String package_version,
-                                                     int offset,
-                                                     int limit) {
+                                                     String package_version) {
         String result = KnowledgeBaseConnector.kbDao.getPackageMetadata(
-                package_name, package_version, offset, limit);
+                package_name, package_version);
         if (result == null) {
             return new ResponseEntity<>("Package version not found", HttpStatus.NOT_FOUND);
         }
@@ -135,6 +131,16 @@ public class PackageApiServiceImpl implements PackageApiService {
     @Override
     public ResponseEntity<String> searchPackageNames(String packageName, int offset, int limit) {
         var result = KnowledgeBaseConnector.kbDao.searchPackageNames(packageName, offset, limit);
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<String> getERCGLink(String packageName, String version) {
+        var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+        var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
+        String result = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+                artifactId.charAt(0), artifactId, artifactId, groupId, version);
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

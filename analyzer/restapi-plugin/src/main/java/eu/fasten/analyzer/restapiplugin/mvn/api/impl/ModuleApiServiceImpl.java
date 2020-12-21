@@ -41,11 +41,12 @@ public class ModuleApiServiceImpl implements ModuleApiService {
     @Override
     public ResponseEntity<String> getModuleMetadata(String package_name,
                                                     String package_version,
-                                                    String module_namespace,
-                                                    int offset,
-                                                    int limit) {
+                                                    String module_namespace) {
         String result = KnowledgeBaseConnector.kbDao.getModuleMetadata(
-                package_name, package_version, module_namespace, offset, limit);
+                package_name, package_version, module_namespace);
+        if (result == null) {
+            return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

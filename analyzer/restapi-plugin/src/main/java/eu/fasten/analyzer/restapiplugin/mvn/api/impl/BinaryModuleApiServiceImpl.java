@@ -41,11 +41,12 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
     @Override
     public ResponseEntity<String> getBinaryModuleMetadata(String package_name,
                                                           String package_version,
-                                                          String binary_module,
-                                                          int offset,
-                                                          int limit) {
+                                                          String binary_module) {
         String result = KnowledgeBaseConnector.kbDao.getBinaryModuleMetadata(
-                package_name, package_version, binary_module, offset, limit);
+                package_name, package_version, binary_module);
+        if (result == null) {
+            return new ResponseEntity<>("Binary module not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

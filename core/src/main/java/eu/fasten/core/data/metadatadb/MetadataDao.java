@@ -955,19 +955,17 @@ public class MetadataDao {
         return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getPackageVersion(String packageName, String packageVersion, int offset, int limit) {
-        return getPackageInfo(packageName, packageVersion, false, offset, limit);
+    public String getPackageVersion(String packageName, String packageVersion) {
+        return getPackageInfo(packageName, packageVersion, false);
     }
 
-    public String getPackageMetadata(String packageName, String packageVersion, int offset, int limit) {
-        return getPackageInfo(packageName, packageVersion, true, offset, limit);
+    public String getPackageMetadata(String packageName, String packageVersion) {
+        return getPackageInfo(packageName, packageVersion, true);
     }
 
     protected String getPackageInfo(String packageName,
                                     String packageVersion,
-                                    boolean metadataOnly,
-                                    int offset,
-                                    int limit) {
+                                    boolean metadataOnly) {
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -987,7 +985,6 @@ public class MetadataDao {
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
-                .offset(offset)
                 .limit(1)
                 .fetchOne();
         if (queryResult == null) {
@@ -1071,42 +1068,16 @@ public class MetadataDao {
                                     String packageVersion,
                                     int offset,
                                     int limit) {
-        return getModuleInfo(packageName, packageVersion, null, false, offset, limit);
-    }
-
-    public String getModuleMetadata(String packageName,
-                                    String packageVersion,
-                                    String moduleNamespace,
-                                    int offset,
-                                    int limit) {
-        return getModuleInfo(packageName, packageVersion, moduleNamespace, true, offset, limit);
-    }
-
-    protected String getModuleInfo(String packageName,
-                                   String packageVersion,
-                                   String moduleNamespace,
-                                   boolean metadataOnly,
-                                   int offset,
-                                   int limit) {
-
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
 
         // Select clause
-        SelectField<?>[] selectClause;
-        if (metadataOnly) {
-            selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, m.NAMESPACE, m.METADATA};
-        } else {
-            selectClause = m.fields();
-        }
+        SelectField<?>[] selectClause = m.fields();
 
         // Where clause
         Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
-        if (metadataOnly) {
-            whereClause = whereClause.and(m.NAMESPACE.equalIgnoreCase(moduleNamespace));
-        }
 
         // Building and executing the query
         Result<Record> queryResult = context
@@ -1116,11 +1087,41 @@ public class MetadataDao {
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .where(whereClause)
                 .offset(offset)
-                .limit(metadataOnly ? 1 : limit)
+                .limit(limit)
                 .fetch();
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getModuleMetadata(String packageName,
+                                    String packageVersion,
+                                    String moduleNamespace) {
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+
+        // Select clause
+        SelectField<?>[] selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, m.NAMESPACE, m.METADATA};
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion).and(m.NAMESPACE.equalIgnoreCase(moduleNamespace));
+
+        // Building and executing the query
+        var queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .where(whereClause)
+                .limit(1)
+                .fetchOne();
+        if (queryResult == null) {
+            return null;
+        }
+        // Returning the result
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
@@ -1197,43 +1198,17 @@ public class MetadataDao {
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) {
-        return getBinaryModuleInfo(packageName, packageVersion, null, false, offset, limit);
-    }
-
-    public String getBinaryModuleMetadata(String packageName,
-                                          String packageVersion,
-                                          String binaryModule,
-                                          int offset,
-                                          int limit) {
-        return getBinaryModuleInfo(packageName, packageVersion, binaryModule, true, offset, limit);
-    }
-
-    // TODO Test with real DB data
-    protected String getBinaryModuleInfo(String packageName,
-                                         String packageVersion,
-                                         String binaryModule,
-                                         boolean metadataOnly,
-                                         int offset,
-                                         int limit) {
-
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         BinaryModules b = BinaryModules.BINARY_MODULES;
 
         // Select clause
-        SelectField<?>[] selectClause;
-        if (metadataOnly) {
-            selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, b.NAME, b.METADATA};
-        } else {
-            selectClause = b.fields();
-        }
+        SelectField<?>[] selectClause = b.fields();
 
         // Where clause
         Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
-        if (metadataOnly) {
-            whereClause = whereClause.and(b.NAME.equalIgnoreCase(binaryModule));
-        }
+
 
         // Building and executing the query
         Result<Record> queryResult = context
@@ -1246,6 +1221,37 @@ public class MetadataDao {
                 .limit(limit)
                 .fetch();
 
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getBinaryModuleMetadata(String packageName,
+                                          String packageVersion,
+                                          String binaryModule) {
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        BinaryModules b = BinaryModules.BINARY_MODULES;
+
+        // Select clause
+        SelectField<?>[] selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, b.NAME, b.METADATA};
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion).and(b.NAME.equalIgnoreCase(binaryModule));
+
+        // Building and executing the query
+        var queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(b).on(pv.ID.eq(b.PACKAGE_VERSION_ID))
+                .where(whereClause)
+                .limit(1)
+                .fetchOne();
+        if (queryResult == null) {
+            return null;
+        }
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
@@ -1283,36 +1289,6 @@ public class MetadataDao {
     }
 
     public String getPackageCallables(String packageName, String packageVersion, int offset, int limit) {
-        return getCallablesInfo(packageName, packageVersion, null, false, offset, limit);
-    }
-
-    public String getCallableMetadata(String packageName,
-                                      String packageVersion,
-                                      String fastenURI,
-                                      int offset,
-                                      int limit) {
-        return getCallablesInfo(packageName, packageVersion, fastenURI, true, offset, limit);
-    }
-
-    protected String getCallablesInfo(String packageName,
-                                      String packageVersion,
-                                      String fastenURI,
-                                      boolean metadataOnly,
-                                      int offset,
-                                      int limit) {
-
-        // SQL query
-        /*
-            SELECT {c.* | c.metadata}
-            FROM packages AS p
-                JOIN package_versions AS pv ON p.id = pv.package_id
-                JOIN modules AS m ON pv.id = m.package_version_id
-                JOIN callables AS c ON m.id = c.module_id
-            WHERE p.package_name = <packageName>
-                AND pv.version = <packageVersion>
-                [AND digest(c.fasten_uri, 'sha1') = (digest(<fastenURI>, 'sha1')]
-        */
-
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1320,18 +1296,10 @@ public class MetadataDao {
         Callables c = Callables.CALLABLES;
 
         // Select clause
-        SelectField<?>[] selectClause;
-        if (metadataOnly) {
-            selectClause = new SelectField[]{p.PACKAGE_NAME, c.FASTEN_URI, c.METADATA};
-        } else {
-            selectClause = c.fields();
-        }
+        SelectField<?>[] selectClause = c.fields();
 
         // Where clause
         Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
-        if (metadataOnly) {
-            whereClause = whereClause.and("digest(callables.fasten_uri, 'sha1') = digest(?, 'sha1')", fastenURI);
-        }
 
         // Building and executing the query
         Result<Record> queryResult = context
@@ -1345,6 +1313,39 @@ public class MetadataDao {
                 .limit(limit)
                 .fetch();
 
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getCallableMetadata(String packageName,
+                                      String packageVersion,
+                                      String fastenURI) {
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
+        // Select clause
+        SelectField<?>[] selectClause = new SelectField[]{p.PACKAGE_NAME, c.FASTEN_URI, c.METADATA};
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion).and("digest(callables.fasten_uri, 'sha1') = digest(?, 'sha1')", fastenURI);
+
+        // Building and executing the query
+        var queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .where(whereClause)
+                .limit(1)
+                .fetchOne();
+        if (queryResult == null) {
+            return null;
+        }
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));

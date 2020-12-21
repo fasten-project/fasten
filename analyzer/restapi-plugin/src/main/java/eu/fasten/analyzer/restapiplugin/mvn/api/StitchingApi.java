@@ -31,7 +31,7 @@ public class StitchingApi {
     StitchingApiService service;
 
     @PostMapping(value = "/callables", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> resolveDependencies(@RequestBody List<Long> gidList) {
+    ResponseEntity<String> resolveCallables(@RequestBody List<Long> gidList) {
         return service.resolveCallablesToUris(gidList);
     }
 

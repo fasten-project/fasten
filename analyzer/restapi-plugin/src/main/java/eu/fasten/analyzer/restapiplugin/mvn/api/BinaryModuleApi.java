@@ -42,10 +42,8 @@ public class BinaryModuleApi {
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules/{binary}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getBinaryModuleMetadata(@PathVariable("pkg") String package_name,
                                                    @PathVariable("pkg_ver") String package_version,
-                                                   @PathVariable("binary") String binary_module,
-                                                   @RequestParam(required = false, defaultValue = "0") int offset,
-                                                   @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getBinaryModuleMetadata(package_name, package_version, binary_module, offset, limit);
+                                                   @PathVariable("binary") String binary_module) {
+        return service.getBinaryModuleMetadata(package_name, package_version, binary_module);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules/{binary}/files", produces = MediaType.APPLICATION_JSON_VALUE)

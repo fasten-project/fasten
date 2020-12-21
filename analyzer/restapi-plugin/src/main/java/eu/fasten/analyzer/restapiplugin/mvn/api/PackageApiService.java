@@ -31,14 +31,10 @@ public interface PackageApiService {
                                               int limit);
 
     ResponseEntity<String> getPackageVersion(String package_name,
-                                             String package_version,
-                                             int offset,
-                                             int limit);
+                                             String package_version);
 
     ResponseEntity<String> getPackageMetadata(String package_name,
-                                              String package_version,
-                                              int offset,
-                                              int limit);
+                                              String package_version);
 
     ResponseEntity<String> getPackageCallgraph(String package_name,
                                                String package_version,
@@ -49,4 +45,6 @@ public interface PackageApiService {
                                           boolean enrichEdges, long timestamp);
 
     ResponseEntity<String> searchPackageNames(String packageName, int offset, int limit);
+
+    ResponseEntity<String> getERCGLink(String packageName, String version);
 }

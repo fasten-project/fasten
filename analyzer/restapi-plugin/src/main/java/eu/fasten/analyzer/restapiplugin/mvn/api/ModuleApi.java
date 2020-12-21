@@ -42,10 +42,8 @@ public class ModuleApi {
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getModuleMetadata(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
-                                             @RequestBody String module_namespace,
-                                             @RequestParam(required = false, defaultValue = "0") int offset,
-                                             @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getModuleMetadata(package_name, package_version, module_namespace, offset, limit);
+                                             @RequestBody String module_namespace) {
+        return service.getModuleMetadata(package_name, package_version, module_namespace);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/files", produces = MediaType.APPLICATION_JSON_VALUE)
