@@ -57,6 +57,11 @@ public class LocalMerger {
     private final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary;
     private final List<ExtendedRevisionJavaCallGraph> dependencySet;
     private final BiMap<Long, String> allUris;
+
+    public BiMap<Long, String> getAllUris() {
+        return this.allUris;
+    }
+
     /**
      * Creates instance of local merger.
      *
