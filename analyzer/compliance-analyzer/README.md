@@ -16,6 +16,7 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
 
 ## Arguments
 - `-r` `--repo` `--repository`                Path to JSON file containing repository information
+- `-n` `--ns` `--namespace`                   Kubernetes namespace to be used
 
 ## Usage 
 
@@ -33,6 +34,11 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
         If you need to use your own Kafka instance,
         please set its address
         [here](https://github.com/fasten-project/fasten/blob/d42f3ec828d0e6c0663e7db566b0b18df2b0d5a7/analyzer/compliance-analyzer/src/main/resources/k8s/qmstr/job.yaml#L39).
+
+1. (Optional) When using a custom Kubernetes namespace, make sure to create it first:
+    ```bash
+    kubectl create namespace myownnamespace
+    ```
 
 1. Start the plugin specifying the path to the cluster credentials file as an environment variable:
     ```bash

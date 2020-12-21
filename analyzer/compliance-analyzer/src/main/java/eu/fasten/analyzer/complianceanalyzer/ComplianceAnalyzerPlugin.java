@@ -12,6 +12,8 @@ import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1ReplicationController;
 import io.kubernetes.client.openapi.models.V1Service;
+import io.kubernetes.client.proto.Meta;
+import io.kubernetes.client.proto.V1;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
@@ -42,11 +44,6 @@ import java.util.Optional;
 public class ComplianceAnalyzerPlugin extends Plugin {
 
     /**
-     * Kubernetes namespace where our demo objects are going to be deployed in.
-     */
-    protected static final String K8S_NAMESPACE = "default";
-
-    /**
      * Name of the environment variable containing the cluster credentials file path.
      */
     protected static final String CLUSTER_CREDENTIALS_ENV = "clusterCredentials";
@@ -74,8 +71,14 @@ public class ComplianceAnalyzerPlugin extends Plugin {
          */
         protected final String repositoryUrlPlaceholder = "REPOSITORY_URL";
 
-        public CompliancePluginExtension() {
+        /**
+         * Kubernetes namespace to be used.
+         */
+        protected final String namespace;
+
+        public CompliancePluginExtension(String namespace) {
             this.clusterCredentialsFilePath = System.getProperty(CLUSTER_CREDENTIALS_ENV);
+            this.namespace = namespace;
         }
 
         @Override
@@ -152,14 +155,14 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 String replicationControllerFilePath = "/k8s/rabbitmq/replicationcontroller.yaml";
                 File replicationControllerFile = new File(ComplianceAnalyzerPlugin.class.getResource(replicationControllerFilePath).getPath());
                 V1ReplicationController replicationController = Yaml.loadAs(replicationControllerFile, V1ReplicationController.class);
-                V1ReplicationController deployedReplicationControllerMap = new CoreV1Api().createNamespacedReplicationController(K8S_NAMESPACE, replicationController, null, null, null);
+                V1ReplicationController deployedReplicationControllerMap = new CoreV1Api().createNamespacedReplicationController(namespace, replicationController, null, null, null);
                 logger.info("Deployed ReplicationController: " + deployedReplicationControllerMap);
 
                 // Deploying the RabbitMQ Service
                 String serviceFilePath = "/k8s/rabbitmq/service.yaml";
                 File serviceFile = new File(ComplianceAnalyzerPlugin.class.getResource(serviceFilePath).getPath());
                 V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
-                V1Service deployedService = new CoreV1Api().createNamespacedService(K8S_NAMESPACE, service, null, null, null);
+                V1Service deployedService = new CoreV1Api().createNamespacedService(namespace, service, null, null, null);
                 logger.info("Deployed ReplicationController: " + deployedService);
 
             } catch (ApiException e) {
@@ -176,14 +179,14 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 String configMapFilePath = "/k8s/qmstr/master-config.yaml";
                 File configMapFile = new File(ComplianceAnalyzerPlugin.class.getResource(configMapFilePath).getPath());
                 V1ConfigMap configMap = Yaml.loadAs(configMapFile, V1ConfigMap.class);
-                V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap(K8S_NAMESPACE, configMap, null, null, null);
+                V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap(namespace, configMap, null, null, null);
                 logger.info("Deployed ConfigMap: " + deployedConfigMap);
 
                 // Deploying the QMSTR Service
                 String serviceFilePath = "/k8s/dgraph/service.yaml";
                 File serviceFile = new File(ComplianceAnalyzerPlugin.class.getResource(serviceFilePath).getPath());
                 V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
-                V1Service deployedService = new CoreV1Api().createNamespacedService(K8S_NAMESPACE, service, null, null, null);
+                V1Service deployedService = new CoreV1Api().createNamespacedService(namespace, service, null, null, null);
                 logger.info("Deployed Service: " + deployedService);
 
                 // Patching the QMSTR Job
@@ -199,7 +202,7 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 Yaml.addModelMap("v1", "Job", V1Job.class);
                 File jobFile = new File(jobFileFullPath);
                 V1Job yamlJob = Yaml.loadAs(jobFile, V1Job.class);
-                V1Job deployedJob = new BatchV1Api().createNamespacedJob(K8S_NAMESPACE, yamlJob, null, null, null);
+                V1Job deployedJob = new BatchV1Api().createNamespacedJob(namespace, yamlJob, null, null, null);
                 logger.info("Deployed Job: " + deployedJob);
 
             } catch (IOException e) {
