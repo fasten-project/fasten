@@ -173,7 +173,9 @@ public class LocalMerger {
             }
         }
         for (final var node : uris.entrySet()) {
-            this.allUris.put(node.getKey() + offset, node.getValue());
+            if (!this.allUris.inverse().containsKey(node.getValue())) {
+                this.allUris.put(node.getKey() + offset, node.getValue());
+            }
         }
     }
 
