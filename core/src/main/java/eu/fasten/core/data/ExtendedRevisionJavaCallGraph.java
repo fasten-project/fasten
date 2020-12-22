@@ -38,6 +38,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         classHierarchyJSONKey = "cha";
     }
 
+
     /**
      * Creates {@link ExtendedRevisionJavaCallGraph} with the given builder.
      *
@@ -68,13 +69,14 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
     }
 
+
     /**
      * Creates {@link ExtendedRevisionCallGraph} for the given JSONObject.
      *
      * @param json JSONObject of a revision call graph.
      */
     public ExtendedRevisionJavaCallGraph(final JSONObject json) throws JSONException {
-        super(json);
+        super(json, ExtendedRevisionJavaCallGraph.class);
     }
 
     /**
@@ -85,6 +87,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     public static ExtendedBuilderJava extendedBuilder() {
         return new ExtendedBuilderJava();
     }
+
+
 
     /**
      * Creates a class hierarchy for the given JSONObject.
@@ -256,6 +260,65 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         final String groupId = this.product.split(Constants.mvnCoordinateSeparator)[0];
         final String artifactId = this.product.split(Constants.mvnCoordinateSeparator)[1];
         return artifactId + "_" + groupId + "_" + this.version;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ExtendedRevisionCallGraph<?> that = (ExtendedRevisionCallGraph<?>) o;
+
+        if (nodeCount != that.nodeCount) {
+            return false;
+        }
+        if (timestamp != that.timestamp) {
+            return false;
+        }
+        if (classHierarchy != null ? !classHierarchy.equals(that.classHierarchy) :
+            that.classHierarchy != null) {
+            return false;
+        }
+        if (graph != null ? !graph.equals(that.graph) : that.graph != null) {
+            return false;
+        }
+        if (forge != null ? !forge.equals(that.forge) : that.forge != null) {
+            return false;
+        }
+        if (product != null ? !product.equals(that.product) : that.product != null) {
+            return false;
+        }
+        if (version != null ? !version.equals(that.version) : that.version != null) {
+            return false;
+        }
+        if (uri != null ? !uri.equals(that.uri) : that.uri != null) {
+            return false;
+        }
+        if (forgelessUri != null ? !forgelessUri.equals(that.forgelessUri) :
+            that.forgelessUri != null) {
+            return false;
+        }
+        return cgGenerator != null ? cgGenerator.equals(that.cgGenerator) :
+            that.cgGenerator == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = classHierarchy != null ? classHierarchy.hashCode() : 0;
+        result = 31 * result + nodeCount;
+        result = 31 * result + (graph != null ? graph.hashCode() : 0);
+        result = 31 * result + (forge != null ? forge.hashCode() : 0);
+        result = 31 * result + (product != null ? product.hashCode() : 0);
+        result = 31 * result + (version != null ? version.hashCode() : 0);
+        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
+        result = 31 * result + (uri != null ? uri.hashCode() : 0);
+        result = 31 * result + (forgelessUri != null ? forgelessUri.hashCode() : 0);
+        result = 31 * result + (cgGenerator != null ? cgGenerator.hashCode() : 0);
+        return result;
     }
 
     /**

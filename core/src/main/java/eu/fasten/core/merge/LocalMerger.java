@@ -20,6 +20,8 @@ package eu.fasten.core.merge;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import eu.fasten.core.data.ArrayImmutableDirectedGraph;
+import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
@@ -53,6 +55,12 @@ public class LocalMerger {
     private final Map<String, Set<String>> universalParents;
     private final Map<String, Set<String>> universalChildren;
     private final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary;
+    private final List<ExtendedRevisionJavaCallGraph> dependencySet;
+    private final BiMap<Long, String> allUris;
+
+    public BiMap<Long, String> getAllUris() {
+        return this.allUris;
+    }
 
     /**
      * Creates instance of local merger.
@@ -65,6 +73,8 @@ public class LocalMerger {
         this.universalParents = UCH.getLeft();
         this.universalChildren = UCH.getRight();
         this.typeDictionary = createTypeDictionary(dependencySet);
+        this.dependencySet = dependencySet;
+        this.allUris = HashBiMap.create();
     }
 
     /**
@@ -132,6 +142,68 @@ public class LocalMerger {
          */
         public boolean isConstructor() {
             return target.getSignature().startsWith("<init>");
+        }
+    }
+
+    /**
+     * Create fully merged for the entire dependency set.
+     *
+     * @return merged call graph
+     */
+    public DirectedGraph mergeAllDeps() {
+        final var result = new ArrayImmutableDirectedGraph.Builder();
+        var offset = 0l;
+        for (final var dep : this.dependencySet) {
+            final var merged = mergeWithCHA(dep);
+            final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
+            addThisMergeToResult(result, directedMerge, merged.mapOfFullURIStrings(), offset);
+            offset = offset + directedMerge.nodes().size();
+        }
+        return result.build();
+    }
+
+    private void addThisMergeToResult(ArrayImmutableDirectedGraph.Builder result,
+                                      final DirectedGraph directedMerge,
+                                      final BiMap<Integer, String> uris,
+                                      final Long offset) {
+
+        for (final var node : directedMerge.nodes()) {
+            for (final var successor : directedMerge.successors(node)) {
+                addEdge(result, directedMerge, node + offset, successor + offset);
+            }
+        }
+        for (final var node : uris.entrySet()) {
+            if (!this.allUris.inverse().containsKey(node.getValue())) {
+                this.allUris.put(node.getKey() + offset, node.getValue());
+            }
+        }
+    }
+
+    private void addEdge(final ArrayImmutableDirectedGraph.Builder result,
+                         final DirectedGraph callGraphData,
+                         final Long source, final Long target) {
+
+        try {
+            if (new HashSet<>(callGraphData.nodes()).contains(source)
+                && callGraphData.isInternal(source)) {
+                result.addInternalNode(source);
+            } else {
+                result.addExternalNode(source);
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        try {
+            if (new HashSet<>(callGraphData.nodes()).contains(target)
+                && callGraphData.isInternal(target)) {
+                result.addInternalNode(target);
+            } else {
+                result.addExternalNode(target);
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        try {
+            result.addArc(source, target);
+        } catch (IllegalArgumentException ignored) {
         }
     }
 

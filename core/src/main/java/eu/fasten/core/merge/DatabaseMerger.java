@@ -210,6 +210,7 @@ public class DatabaseMerger {
      * @return merged call graph
      */
     public DirectedGraph mergeWithCHA(final long artifactId) {
+        final long totalTime = System.currentTimeMillis();
         final var callGraphData = fetchCallGraphData(artifactId, rocksDao);
         final var typeMap = createTypeMap(callGraphData, dbContext);
         final var arcs = getArcs(callGraphData, dbContext);
@@ -232,6 +233,8 @@ public class DatabaseMerger {
         }
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
+        logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - totalTime) / 1000d));
         return result.build();
     }
 

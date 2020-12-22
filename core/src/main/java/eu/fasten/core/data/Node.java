@@ -22,6 +22,7 @@ import java.util.Map;
 
 public abstract class Node {
 
+
     /**
      * FastenURI corresponding to this Node.
      */

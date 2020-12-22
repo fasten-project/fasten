@@ -11,7 +11,7 @@
 </p>
 <br/>
 
-The FASTEN OPAL is a tool for generating call graphs in FASTEN format using [OPAL](https://www.opal-project.de/) call graph generator version '3.0.0'. This tool can also merge the resulted call graphs with their dependencies. The OPAL can be used as a standalone tool for generating call graphs for libraries and application and as a part of the FASTEN server.
+The FASTEN OPAL plugin is a tool for generating call graphs in FASTEN format using [OPAL](https://www.opal-project.de/) call graph generator version '3.0.0'. This tool can also merge the resulted call graphs with their dependencies. The OPAL can be used as a standalone tool for generating call graphs for libraries and application and as a part of the FASTEN server.
 
 ## Arguments
 - `-a` `--artifact` Artifact, Maven coordinate, or a file path

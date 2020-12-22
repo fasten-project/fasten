@@ -18,6 +18,40 @@
 
     <name>javacg-opal</name>
 
+    <dependencies>
+        <dependency>
+            <groupId>eu.fasten</groupId>
+            <artifactId>core</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.opal-project</groupId>
+            <artifactId>bytecode-representation_2.12</artifactId>
+            <version>3.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.opal-project</groupId>
+            <artifactId>three-address-code_2.12</artifactId>
+            <version>3.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.opal-project</groupId>
+            <artifactId>abstract-interpretation-framework_2.12</artifactId>
+            <version>3.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shrinkwrap.resolver</groupId>
+            <artifactId>shrinkwrap-resolver-depchain</artifactId>
+            <version>3.1.4</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.skyscreamer</groupId>
+            <artifactId>jsonassert</artifactId>
+            <version>1.5.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
     <profiles>
         <!--  For server-compatible plug-ins  -->
         <profile>
@@ -51,6 +85,12 @@
                     <artifactId>shrinkwrap-resolver-depchain</artifactId>
                     <version>3.1.4</version>
                     <type>pom</type>
+                </dependency>
+                <dependency>
+                    <groupId>org.skyscreamer</groupId>
+                    <artifactId>jsonassert</artifactId>
+                    <version>1.5.0</version>
+                    <scope>test</scope>
                 </dependency>
             </dependencies>
         </profile>
@@ -98,6 +138,12 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-api</artifactId>
                     <version>1.7.30</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.skyscreamer</groupId>
+                    <artifactId>jsonassert</artifactId>
+                    <version>1.5.0</version>
+                    <scope>test</scope>
                 </dependency>
             </dependencies>
         </profile>
