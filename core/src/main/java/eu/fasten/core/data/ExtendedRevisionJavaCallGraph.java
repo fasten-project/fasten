@@ -76,7 +76,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * @param json JSONObject of a revision call graph.
      */
     public ExtendedRevisionJavaCallGraph(final JSONObject json) throws JSONException {
-        super(json);
+        super(json, ExtendedRevisionJavaCallGraph.class);
     }
 
     /**
