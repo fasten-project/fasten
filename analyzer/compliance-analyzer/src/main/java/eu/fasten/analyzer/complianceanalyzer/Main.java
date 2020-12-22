@@ -22,7 +22,8 @@ public class Main implements Runnable {
 
     @CommandLine.Option(names = {"-n", "--ns", "--namespace"},
             paramLabel = "ns",
-            description = "Kubernetes namespace to be used")
+            description = "Kubernetes namespace to be used",
+            defaultValue = "default")
     String namespace;
 
     public static void main(String[] args) {
