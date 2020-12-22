@@ -32,10 +32,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/mvn/packages")
 public class PackageApi {
 
-    @Autowired
-    PackageApiService service;
+    private final PackageApiService service;
 
-    @GetMapping(value = "/}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public PackageApi(PackageApiService service) {
+        this.service = service;
+    }
+
+    @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getAllPackages(@RequestParam(required = false, defaultValue = "0") int offset,
                                           @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         return service.getAllPackages(offset, limit);

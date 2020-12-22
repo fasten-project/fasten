@@ -28,8 +28,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/mvn/packages")
 public class DependencyApi {
 
-    @Autowired
-    DependencyApiService service;
+    private final DependencyApiService service;
+
+    public DependencyApi(DependencyApiService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/deps", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageDependencies(@PathVariable("pkg") String package_name,

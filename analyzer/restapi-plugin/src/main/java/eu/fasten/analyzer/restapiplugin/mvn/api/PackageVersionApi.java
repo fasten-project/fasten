@@ -30,8 +30,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/mvn/package_version")
 public class PackageVersionApi {
 
-    @Autowired
-    PackageVersionApiService service;
+    private final PackageVersionApiService service;
+
+    public PackageVersionApi(PackageVersionApiService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/{id}/ercg", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getERCGLink(@PathVariable("id") long packageVersionId) {

@@ -28,8 +28,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/mvn/packages")
 public class ModuleApi {
 
-    @Autowired
-    ModuleApiService service;
+    private final ModuleApiService service;
+
+    public ModuleApi(ModuleApiService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/modules", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageModules(@PathVariable("pkg") String package_name,

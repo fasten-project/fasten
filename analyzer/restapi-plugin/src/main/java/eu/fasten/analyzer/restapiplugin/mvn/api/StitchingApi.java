@@ -27,8 +27,11 @@ import java.util.List;
 @RestController
 public class StitchingApi {
 
-    @Autowired
-    StitchingApiService service;
+    private final StitchingApiService service;
+
+    public StitchingApi(StitchingApiService service) {
+        this.service = service;
+    }
 
     @PostMapping(value = "/callables", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> resolveCallables(@RequestBody List<Long> gidList) {

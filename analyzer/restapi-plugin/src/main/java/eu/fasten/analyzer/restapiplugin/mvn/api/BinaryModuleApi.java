@@ -28,8 +28,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/mvn/packages")
 public class BinaryModuleApi {
 
-    @Autowired
-    BinaryModuleApiService service;
+    private final BinaryModuleApiService service;
+
+    public BinaryModuleApi(BinaryModuleApiService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageBinaryModules(@PathVariable("pkg") String package_name,

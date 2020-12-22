@@ -28,8 +28,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/mvn/packages")
 public class FileApi {
 
-    @Autowired
-    FileApiService service;
+    private final FileApiService service;
+
+    public FileApi(FileApiService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/files", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageFiles(@PathVariable("pkg") String package_name,

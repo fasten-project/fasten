@@ -28,8 +28,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/mvn/packages")
 public class EdgeApi {
 
-    @Autowired
-    EdgeApiService service;
+    private final EdgeApiService service;
+
+    public EdgeApi(EdgeApiService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/edges", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageEdges(@PathVariable("pkg") String package_name,

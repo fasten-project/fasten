@@ -31,13 +31,15 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/resolve")
 public class ResolutionApi {
 
-    @Autowired
-    ResolutionApiService service;
+    private final ResolutionApiService service;
 
-    @GetMapping(value = "/{pkg}/{pkg_ver}/dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResolutionApi(ResolutionApiService service) {
+        this.service = service;
+    }
+
+    @GetMapping(value = "/{pkg}/{pkg_ver}/resolve/dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> resolveDependencies(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestParam(required = false, defaultValue = "true") boolean transitive,
@@ -45,7 +47,7 @@ public class ResolutionApi {
         return service.resolveDependencies(package_name, package_version, transitive, timestamp);
     }
 
-    @GetMapping(value = "/{pkg}/{pkg_ver}/dependents", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/{pkg}/{pkg_ver}/resolve/dependents", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> resolveDependents(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
                                              @RequestParam(required = false, defaultValue = "true") boolean transitive,
@@ -53,7 +55,7 @@ public class ResolutionApi {
         return service.resolveDependents(package_name, package_version, transitive, timestamp);
     }
 
-    @PostMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/resolve", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> enrichArtifacts(@RequestParam(required = false, defaultValue = "false") boolean enrichEdges,
                                            @RequestParam(required = false, defaultValue = "false") boolean stitch,
                                            @RequestBody List<String> mavenCoordinates) {

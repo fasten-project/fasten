@@ -28,8 +28,11 @@ import java.util.List;
 @RestController
 public class CallableApi {
 
-    @Autowired
-    CallableApiService service;
+    private final CallableApiService service;
+
+    public CallableApi(CallableApiService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/mvn/packages/{pkg}/{pkg_ver}/callables", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageCallables(@PathVariable("pkg") String package_name,
