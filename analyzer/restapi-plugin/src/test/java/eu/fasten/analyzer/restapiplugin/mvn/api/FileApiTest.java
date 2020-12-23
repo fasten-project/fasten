@@ -8,27 +8,27 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class EdgeApiTest {
+public class FileApiTest {
 
-    private EdgeApiService service;
-    private EdgeApi api;
+    private FileApiService service;
+    private FileApi api;
     private final int offset = 0;
     private final int limit = Integer.parseInt(RestApplication.DEFAULT_PAGE_SIZE);
 
     @BeforeEach
     void setUp() {
-        service = Mockito.mock(EdgeApiService.class);
-        api = new EdgeApi(service);
+        service = Mockito.mock(FileApiService.class);
+        api = new FileApi(service);
     }
 
     @Test
-    public void getPackageEdgesTest() {
+    public void getPackageFilesTest() {
         var packageName = "pkg name";
         var version = "pkg version";
-        var response = new ResponseEntity<>("package version edges", HttpStatus.OK);
-        Mockito.when(service.getPackageEdges(packageName, version, offset, limit)).thenReturn(response);
-        var result = api.getPackageEdges(packageName, version, offset, limit);
+        var response = new ResponseEntity<>("package version files", HttpStatus.OK);
+        Mockito.when(service.getPackageFiles(packageName, version, offset, limit)).thenReturn(response);
+        var result = api.getPackageFiles(packageName, version, offset, limit);
         assertEquals(response, result);
-        Mockito.verify(service).getPackageEdges(packageName, version, offset, limit);
+        Mockito.verify(service).getPackageFiles(packageName, version, offset, limit);
     }
 }
