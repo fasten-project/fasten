@@ -77,11 +77,11 @@ public class PackageApi {
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/enrich", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getPackageCallgraph(@PathVariable("pkg") String package_name,
-                                               @PathVariable("pkg_ver") String package_version,
-                                               @RequestParam(required = false, defaultValue = "false") boolean stitch,
-                                               @RequestParam(required = false, defaultValue = "false") boolean enrichEdges,
-                                               @RequestParam(required = false, defaultValue = "-1") long timestamp) {
+    ResponseEntity<String> enrichArtifact(@PathVariable("pkg") String package_name,
+                                          @PathVariable("pkg_ver") String package_version,
+                                          @RequestParam(required = false, defaultValue = "false") boolean stitch,
+                                          @RequestParam(required = false, defaultValue = "false") boolean enrichEdges,
+                                          @RequestParam(required = false, defaultValue = "-1") long timestamp) {
         return service.enrichArtifact(package_name, package_version, stitch, enrichEdges, timestamp);
     }
 
