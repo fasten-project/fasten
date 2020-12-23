@@ -39,7 +39,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.Graphs;
@@ -157,7 +156,7 @@ public class LocalMerger {
             final var merged = mergeWithCHA(dep);
             final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
             addThisMergeToResult(result, directedMerge, merged.mapOfFullURIStrings(), offset);
-            offset = offset + directedMerge.nodes().size();
+            offset = offset + allUris.size();
         }
         return result.build();
     }
@@ -169,13 +168,26 @@ public class LocalMerger {
 
         for (final var node : directedMerge.nodes()) {
             for (final var successor : directedMerge.successors(node)) {
-                addEdge(result, directedMerge, node + offset, successor + offset);
+                //check if they are not external edges
+                if (uris.containsKey(node.intValue())) {
+                    if (uris.containsKey(successor.intValue())) {
+                        final var updatedNode = updateNode(node, offset, uris);
+                        final var updatedSuccessor = updateNode(successor, offset, uris);
+                        addEdge(result, directedMerge, updatedNode, updatedSuccessor);
+                    }
+                }
             }
         }
-        for (final var node : uris.entrySet()) {
-            if (!this.allUris.inverse().containsKey(node.getValue())) {
-                this.allUris.put(node.getKey() + offset, node.getValue());
-            }
+    }
+
+    private Long updateNode(final Long node, final Long offset,
+                            final BiMap<Integer, String> uris) {
+        if (this.allUris.inverse().containsKey(uris.get(node.intValue()))) {
+            return this.allUris.inverse().get(uris.get(node.intValue()));
+        }else{
+            final var updatedNode = node + offset;
+            this.allUris.put(updatedNode, uris.get(node.intValue()));
+            return updatedNode;
         }
     }
 
