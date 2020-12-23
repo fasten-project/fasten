@@ -58,6 +58,6 @@ public abstract class Node {
      * @return entity
      */
     public String getEntity() {
-        return this.uri.getEntity();
+        return this.uri.getRawEntity();
     }
 }
