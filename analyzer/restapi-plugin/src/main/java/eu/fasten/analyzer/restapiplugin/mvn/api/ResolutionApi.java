@@ -56,9 +56,9 @@ public class ResolutionApi {
     }
 
     @PostMapping(value = "/resolve", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> enrichArtifacts(@RequestParam(required = false, defaultValue = "false") boolean enrichEdges,
-                                           @RequestParam(required = false, defaultValue = "false") boolean stitch,
-                                           @RequestBody List<String> mavenCoordinates) {
+    ResponseEntity<String> enrichArtifacts(@RequestBody List<String> mavenCoordinates,
+                                           @RequestParam(required = false, defaultValue = "false") boolean enrichEdges,
+                                           @RequestParam(required = false, defaultValue = "false") boolean stitch) {
         return service.enrichArtifacts(mavenCoordinates, enrichEdges, stitch);
     }
 }
