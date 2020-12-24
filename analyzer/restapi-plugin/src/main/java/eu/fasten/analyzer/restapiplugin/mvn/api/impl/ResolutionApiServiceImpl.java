@@ -121,7 +121,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    protected static JSONObject directedGraphToEnrichedJSON(DirectedGraph graph, boolean enrichEdges) {
+    private JSONObject directedGraphToEnrichedJSON(DirectedGraph graph, boolean enrichEdges) {
         Map<Long, JSONObject> nodesMetadata = KnowledgeBaseConnector.kbDao.getCallablesMetadata(graph.nodes());
         Map<Pair<Long, Long>, JSONObject> edgesMetadata = new HashMap<>();
         var edges = graph.edgeSet().stream().map(e -> new Pair<>(e.firstLong(), e.secondLong())).collect(Collectors.toSet());

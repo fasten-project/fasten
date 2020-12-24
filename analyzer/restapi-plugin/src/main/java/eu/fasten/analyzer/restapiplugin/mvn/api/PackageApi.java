@@ -76,15 +76,6 @@ public class PackageApi {
         return service.getPackageCallgraph(package_name, package_version, offset, limit);
     }
 
-    @GetMapping(value = "/{pkg}/{pkg_ver}/enrich", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> enrichArtifact(@PathVariable("pkg") String package_name,
-                                          @PathVariable("pkg_ver") String package_version,
-                                          @RequestParam(required = false, defaultValue = "false") boolean stitch,
-                                          @RequestParam(required = false, defaultValue = "false") boolean enrichEdges,
-                                          @RequestParam(required = false, defaultValue = "-1") long timestamp) {
-        return service.enrichArtifact(package_name, package_version, stitch, enrichEdges, timestamp);
-    }
-
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> searchPackageNames(@RequestParam("packageName") String packageName,
                                               @RequestParam(required = false, defaultValue = "0") int offset,

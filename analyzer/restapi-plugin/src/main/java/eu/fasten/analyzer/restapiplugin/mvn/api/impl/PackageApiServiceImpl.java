@@ -22,12 +22,17 @@ import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.api.PackageApiService;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.EnrichedGraph;
 import eu.fasten.core.merge.DatabaseMerger;
+import org.apache.commons.math3.util.Pair;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -90,40 +95,6 @@ public class PackageApiServiceImpl implements PackageApiService {
                                                       int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
                 package_name, package_version, offset, limit);
-        result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
-    }
-
-    @Override
-    public ResponseEntity<String> enrichArtifact(String package_name, String version, boolean stitch,
-                                                 boolean enrichEdges, long timestamp) {
-        var json = new JSONObject();
-        var packageVersionId = KnowledgeBaseConnector.kbDao.getPackageVersionID(package_name, version);
-        if (stitch) {
-            var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
-            var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
-            var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(groupId,
-                    artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, true);
-            var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
-            var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
-            var graph = databaseMerger.mergeWithCHA(packageVersionId);
-            if (graph == null) {
-                return new ResponseEntity<>("Could not stitch provided artifacts", HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-            json = ResolutionApiServiceImpl.directedGraphToEnrichedJSON(graph, enrichEdges);
-        } else {
-            DirectedGraph graph;
-            try {
-                graph = KnowledgeBaseConnector.graphDao.getGraphData(packageVersionId);
-            } catch (RocksDBException e) {
-                return new ResponseEntity<>("Could not retrieve the graph from the graph database", HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-            if (graph == null) {
-                return new ResponseEntity<>("Could not find the graph", HttpStatus.NOT_FOUND);
-            }
-            json = ResolutionApiServiceImpl.directedGraphToEnrichedJSON(graph, enrichEdges);
-        }
-        var result = json.toString();
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

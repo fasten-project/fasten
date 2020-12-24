@@ -41,9 +41,6 @@ public interface PackageApiService {
                                                int offset,
                                                int limit);
 
-    ResponseEntity<String> enrichArtifact(String package_name, String version, boolean stitch,
-                                          boolean enrichEdges, long timestamp);
-
     ResponseEntity<String> searchPackageNames(String packageName, int offset, int limit);
 
     ResponseEntity<String> getERCGLink(String packageName, String version);

@@ -84,20 +84,6 @@ class PackageApiTest {
     }
 
     @Test
-    void enrichArtifactTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var stitch = false;
-        var enrichEdges = true;
-        var timestamp = -1L;
-        var response = new ResponseEntity<>("enriched artifact", HttpStatus.OK);
-        Mockito.when(service.enrichArtifact(packageName, version, stitch, enrichEdges, timestamp)).thenReturn(response);
-        var result = api.enrichArtifact(packageName, version, stitch, enrichEdges, timestamp);
-        assertEquals(response, result);
-        Mockito.verify(service).enrichArtifact(packageName, version, stitch, enrichEdges, timestamp);
-    }
-
-    @Test
     void searchPackageNamesTest() {
         var packageName = "pkg name";
         var response = new ResponseEntity<>("matching packages", HttpStatus.OK);
