@@ -81,7 +81,7 @@ public class Revision extends MavenProduct implements Serializable {
         json.put("id", id);
         json.put("groupId", groupId);
         json.put("artifactId", artifactId);
-        json.put("version", version);
+        json.put("version", version.toString());
         json.put("createdAt", createdAt.getTime());
         return json;
     }
