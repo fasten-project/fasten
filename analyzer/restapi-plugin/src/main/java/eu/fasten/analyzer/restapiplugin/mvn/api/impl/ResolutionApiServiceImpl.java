@@ -21,6 +21,7 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.api.ResolutionApiService;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.data.Revision;
 import org.json.JSONArray;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,10 +37,12 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(groupId,
                 artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
         var jsonArray = new JSONArray();
-        depSet.stream().peek(r -> {
+        depSet.stream().map(Revision::toJSON).peek(json -> {
+            var group = json.getString("groupId");
+            var artifact = json.getString("artifactId");
+            var ver = json.getString("version");
             var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
-                    r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
-            var json = r.toJSON();
+                    artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
         var result = jsonArray.toString();
@@ -54,10 +57,12 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         var depSet = KnowledgeBaseConnector.graphResolver.resolveDependents(groupId,
                 artifactId, version, timestamp, transitive);
         var jsonArray = new JSONArray();
-        depSet.stream().peek(r -> {
+        depSet.stream().map(Revision::toJSON).peek(json -> {
+            var group = json.getString("groupId");
+            var artifact = json.getString("artifactId");
+            var ver = json.getString("version");
             var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
-                    r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
-            var json = r.toJSON();
+                    artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
         var result = jsonArray.toString();
