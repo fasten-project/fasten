@@ -34,7 +34,7 @@ public class ResolutionApi {
         this.service = service;
     }
 
-    @GetMapping(value = "/{pkg}/{pkg_ver}/resolve/dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/packages/{pkg}/{pkg_ver}/resolve/dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> resolveDependencies(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestParam(required = false, defaultValue = "true") boolean transitive,
@@ -42,7 +42,7 @@ public class ResolutionApi {
         return service.resolveDependencies(package_name, package_version, transitive, timestamp);
     }
 
-    @GetMapping(value = "/{pkg}/{pkg_ver}/resolve/dependents", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/packages/{pkg}/{pkg_ver}/resolve/dependents", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> resolveDependents(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
                                              @RequestParam(required = false, defaultValue = "true") boolean transitive,
