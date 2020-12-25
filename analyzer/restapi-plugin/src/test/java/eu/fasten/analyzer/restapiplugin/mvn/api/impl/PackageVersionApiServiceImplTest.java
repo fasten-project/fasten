@@ -28,30 +28,32 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class FileApiServiceImplTest {
+public class PackageVersionApiServiceImplTest {
 
-    private FileApiServiceImpl service;
+    private PackageVersionApiServiceImpl service;
     private MetadataDao kbDao;
-    private final int offset = 0;
-    private final int limit = Integer.parseInt(RestApplication.DEFAULT_PAGE_SIZE);
 
     @BeforeEach
     void setUp() {
-        service = new FileApiServiceImpl();
+        service = new PackageVersionApiServiceImpl();
         kbDao = Mockito.mock(MetadataDao.class);
         KnowledgeBaseConnector.kbDao = kbDao;
     }
 
     @Test
-    void getPackageFilesTest() {
-        var packageName = "pkg";
-        var version = "pkg ver";
-        var response = "files";
-        Mockito.when(kbDao.getPackageFiles(packageName, version, offset, limit)).thenReturn(response);
-        var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageFiles(packageName, version, offset, limit);
+    void getERCGLinkTest() {
+        var coordinate = "group:artifact:version";
+        var id = 42L;
+        Mockito.when(kbDao.getArtifactName(id)).thenReturn(coordinate);
+        KnowledgeBaseConnector.limaUrl = "http://lima.ewi.tudelft.nl";
+        var expected = new ResponseEntity<>("http://lima.ewi.tudelft.nl/mvn/a/artifact/artifact_group_version.json", HttpStatus.OK);
+        var result = service.getERCGLink(id);
         assertEquals(expected, result);
-        Mockito.verify(kbDao).getPackageFiles(packageName, version, offset, limit);
-    }
 
+        Mockito.when(kbDao.getArtifactName(id)).thenReturn(null);
+        result = service.getERCGLink(id);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(2)).getArtifactName(id);
+    }
 }

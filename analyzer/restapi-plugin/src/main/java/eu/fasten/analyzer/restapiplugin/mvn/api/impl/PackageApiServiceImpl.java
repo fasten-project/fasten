@@ -21,19 +21,9 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.api.PackageApiService;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.EnrichedGraph;
-import eu.fasten.core.merge.DatabaseMerger;
-import org.apache.commons.math3.util.Pair;
-import org.json.JSONObject;
-import org.rocksdb.RocksDBException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class PackageApiServiceImpl implements PackageApiService {

@@ -18,17 +18,12 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.List;
 
 @RestController
 public class ResolutionApi {
@@ -53,12 +48,5 @@ public class ResolutionApi {
                                              @RequestParam(required = false, defaultValue = "true") boolean transitive,
                                              @RequestParam(required = false, defaultValue = "-1") long timestamp) {
         return service.resolveDependents(package_name, package_version, transitive, timestamp);
-    }
-
-    @PostMapping(value = "/resolve", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> enrichArtifacts(@RequestBody List<String> mavenCoordinates,
-                                           @RequestParam(required = false, defaultValue = "false") boolean enrichEdges,
-                                           @RequestParam(required = false, defaultValue = "false") boolean stitch) {
-        return service.enrichArtifacts(mavenCoordinates, enrichEdges, stitch);
     }
 }

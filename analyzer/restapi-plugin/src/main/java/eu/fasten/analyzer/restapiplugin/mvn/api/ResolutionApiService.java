@@ -27,5 +27,4 @@ public interface ResolutionApiService {
 
     ResponseEntity<String> resolveDependents(String package_name, String version, boolean transitive, long timestamp);
 
-    ResponseEntity<String> enrichArtifacts(List<String> mavenCoordinates, boolean enrichEdges, boolean stitch);
 }

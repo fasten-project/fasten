@@ -41,8 +41,8 @@ public class StitchingApiServiceImpl implements StitchingApiService {
     @Override
     public ResponseEntity<String> resolveCallablesToUris(List<Long> gidList) {
         var fastenUris = KnowledgeBaseConnector.kbDao.getFullFastenUris(gidList);
-        var json = new JSONArray();
-        fastenUris.forEach(json::put);
+        var json = new JSONObject();
+        fastenUris.forEach((key, value) -> json.put(String.valueOf(key), value));
         var result = json.toString();
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);

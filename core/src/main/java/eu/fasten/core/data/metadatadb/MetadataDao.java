@@ -1593,12 +1593,13 @@ public class MetadataDao {
         return metadataMap;
     }
 
-    public List<String> getFullFastenUris(List<Long> callableIds) {
+    public Map<Long, String> getFullFastenUris(List<Long> callableIds) {
         var result = context
                 .select(Packages.PACKAGES.FORGE,
                         Packages.PACKAGES.PACKAGE_NAME,
                         PackageVersions.PACKAGE_VERSIONS.VERSION,
-                        Callables.CALLABLES.FASTEN_URI)
+                        Callables.CALLABLES.FASTEN_URI,
+                        Callables.CALLABLES.ID)
                 .from(Packages.PACKAGES)
                 .join(PackageVersions.PACKAGE_VERSIONS)
                 .on(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
@@ -1608,9 +1609,9 @@ public class MetadataDao {
                 .on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
                 .where(Callables.CALLABLES.ID.in(callableIds))
                 .fetch();
-        return result.stream()
-                .map(r -> FastenUriUtils.generateFullFastenUri(r.value1(), r.value2(), r.value3(), r.value4()))
-                .collect(Collectors.toList());
+        var map = new HashMap<Long, String>(result.size());
+        result.forEach(r -> map.put(r.value5(), FastenUriUtils.generateFullFastenUri(r.value1(), r.value2(), r.value3(), r.value4())));
+        return map;
     }
 
     public Map<String, JSONObject> getCallablesMetadataByUri(String forge, String packageName, String version, List<String> fastenUris) {
