@@ -35,7 +35,7 @@ public class PackageVersionApi {
         this.service = service;
     }
 
-    @GetMapping(value = "/{id}/ercg", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/{id}/rcg", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getERCGLink(@PathVariable("id") long packageVersionId) {
         return service.getERCGLink(packageVersionId);
     }
