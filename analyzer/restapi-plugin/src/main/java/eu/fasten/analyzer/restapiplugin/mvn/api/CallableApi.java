@@ -53,7 +53,7 @@ public class CallableApi {
         return service.getCallableMetadata(package_name, package_version, fasten_uri);
     }
 
-    @GetMapping(value = "/callables", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/callables", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getCallables(@RequestBody List<Long> callableIDs) {
         return service.getCallables(callableIDs);
     }

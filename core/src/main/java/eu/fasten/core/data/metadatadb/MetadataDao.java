@@ -1328,7 +1328,7 @@ public class MetadataDao {
         Callables c = Callables.CALLABLES;
 
         // Select clause
-        SelectField<?>[] selectClause = new SelectField[]{p.PACKAGE_NAME, c.FASTEN_URI, c.METADATA};
+        SelectField<?>[] selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, c.FASTEN_URI, c.METADATA};
 
         // Where clause
         Condition whereClause = packageVersionWhereClause(packageName, packageVersion).and("digest(callables.fasten_uri, 'sha1') = digest(?, 'sha1')", fastenURI);
