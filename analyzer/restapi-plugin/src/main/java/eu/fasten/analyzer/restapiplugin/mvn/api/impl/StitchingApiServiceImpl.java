@@ -111,7 +111,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         var jsonArray = new JSONArray();
         depSet.stream().map(r -> {
             var json = new JSONObject();
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
             json.put(String.valueOf(r.id), url);
             return json;

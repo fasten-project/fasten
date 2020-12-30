@@ -106,10 +106,10 @@ public class StitchingApiServiceImplTest {
         var deps = Set.of(new Revision(2, "depgroup", "departifact", "depversion", new Timestamp(-1)));
         Mockito.when(resolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbContext, true)).thenReturn(deps);
         var jsonArray = new JSONArray();
-        KnowledgeBaseConnector.limaUrl = "http://lima.ewi.tudelft.nl";
+        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl";
         deps.stream().map(r -> {
             var json = new JSONObject();
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
             json.put(String.valueOf(r.id), url);
             return json;

@@ -58,14 +58,14 @@ public class ResolutionApiServiceImplTest {
                 new Revision(3L, "g3", "a3", "v1", new Timestamp(-1))
         );
         Mockito.when(resolver.resolveDependencies(packageName.split(Constants.mvnCoordinateSeparator)[0], packageName.split(Constants.mvnCoordinateSeparator)[1], version, timestamp, KnowledgeBaseConnector.dbContext, transitive)).thenReturn(deps);
-        KnowledgeBaseConnector.limaUrl = "http://lima.ewi.tudelft.nl";
+        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl";
         var result = service.resolveDependencies(packageName, version, transitive, timestamp);
         var jsonArray = new JSONArray();
         deps.stream().map(Revision::toJSON).peek(json -> {
             var group = json.getString("groupId");
             var artifact = json.getString("artifactId");
             var ver = json.getString("version");
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
@@ -86,14 +86,14 @@ public class ResolutionApiServiceImplTest {
                 new Revision(3L, "g3", "a3", "v1", new Timestamp(-1))
         );
         Mockito.when(resolver.resolveDependents(packageName.split(Constants.mvnCoordinateSeparator)[0], packageName.split(Constants.mvnCoordinateSeparator)[1], version, timestamp, transitive)).thenReturn(dependents);
-        KnowledgeBaseConnector.limaUrl = "http://lima.ewi.tudelft.nl";
+        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl";
         var result = service.resolveDependents(packageName, version, transitive, timestamp);
         var jsonArray = new JSONArray();
         dependents.stream().map(Revision::toJSON).peek(json -> {
             var group = json.getString("groupId");
             var artifact = json.getString("artifactId");
             var ver = json.getString("version");
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);

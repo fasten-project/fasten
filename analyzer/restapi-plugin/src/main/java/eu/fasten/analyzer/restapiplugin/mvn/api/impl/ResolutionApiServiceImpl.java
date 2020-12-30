@@ -41,7 +41,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var group = json.getString("groupId");
             var artifact = json.getString("artifactId");
             var ver = json.getString("version");
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
@@ -61,7 +61,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var group = json.getString("groupId");
             var artifact = json.getString("artifactId");
             var ver = json.getString("version");
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);

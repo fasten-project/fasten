@@ -140,7 +140,7 @@ public class PackageApiServiceImplTest {
     void getERCGLinkTest() {
         var packageName = "group:artifact";
         var version = "version";
-        KnowledgeBaseConnector.limaUrl = "http://lima.ewi.tudelft.nl";
+        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl";
         var expected = new ResponseEntity<>("http://lima.ewi.tudelft.nl/mvn/a/artifact/artifact_group_version.json", HttpStatus.OK);
         var result = service.getERCGLink(packageName, version);
         assertEquals(expected, result);

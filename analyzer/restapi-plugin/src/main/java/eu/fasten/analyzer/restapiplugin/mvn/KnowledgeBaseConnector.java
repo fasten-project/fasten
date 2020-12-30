@@ -44,6 +44,8 @@ public class KnowledgeBaseConnector {
 
     public static RocksDao graphDao;
 
+    public static String rcgBaseUrl;
+
     /**
      * Dependency graph resolver for Maven
      */
@@ -75,8 +77,8 @@ public class KnowledgeBaseConnector {
     @Value("${kb.graphdb.path}")
     private String graphdbPath;
 
-    @Value("${lima.ercg.url}")
-    public static String limaUrl;
+    @Value("${lima.rcg.url}")
+    private String rcgUrl;
 
     /**
      * Connects to the KnowledgeBase before starting the REST server.
@@ -94,6 +96,19 @@ public class KnowledgeBaseConnector {
         logger.info("...KnowledgeBase connection established successfully.");
     }
 
+    /**
+     * Sets base URL for retrieving JSON RCGs.
+     */
+    @PostConstruct
+    public void setLimaUrl() {
+        KnowledgeBaseConnector.rcgBaseUrl = this.rcgUrl;
+        logger.info("RCG base URL successfully set");
+    }
+
+
+    /**
+     * Retrieves the dependency graph if possible, otherwise constructs the graph from database.
+     */
     @PostConstruct
     public void retrieveDependencyGraph() {
         logger.info("Constructing dependency graph from " + depGraphPath);
@@ -107,6 +122,9 @@ public class KnowledgeBaseConnector {
         logger.info("Successfully constructed dependency graph");
     }
 
+    /**
+     * Established read-only connection to the graph database.
+     */
     @PostConstruct
     public void connectToGraphDB() {
         logger.info("Establishing connection to the Graph Database at " + graphdbPath + "...");

@@ -100,7 +100,7 @@ public class PackageApiServiceImpl implements PackageApiService {
     public ResponseEntity<String> getERCGLink(String packageName, String version) {
         var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
-        String result = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.limaUrl,
+        String result = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                 artifactId.charAt(0), artifactId, artifactId, groupId, version);
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
