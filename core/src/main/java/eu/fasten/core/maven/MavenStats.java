@@ -16,8 +16,12 @@ public class MavenStats {
         System.out.println("Looking for 10 artifacts with the most dependencies...");
         var dependencies = new HashMap<Revision, Set<Revision>>(GraphMavenResolver.dependencyGraph.vertexSet().size());
         for (var revision : GraphMavenResolver.dependencyGraph.vertexSet()) {
-            var depSet = resolver.resolveDependencies(revision, dbContext, true);
-            dependencies.put(revision, depSet);
+            try {
+                var depSet = resolver.resolveDependencies(revision, dbContext, true);
+                dependencies.put(revision, depSet);
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+            }
         }
         var top10dependencies = new HashMap<Revision, Set<Revision>>(10);
         dependencies.entrySet().stream().sorted(Comparator.comparingInt(e -> -e.getValue().size())).limit(10).forEachOrdered(e -> top10dependencies.put(e.getKey(), e.getValue()));
@@ -30,8 +34,12 @@ public class MavenStats {
         System.out.println("Looking for 10 artifacts with the most dependents...");
         var dependents = new HashMap<Revision, Set<Revision>>(GraphMavenResolver.dependentGraph.vertexSet().size());
         for (var revision : GraphMavenResolver.dependentGraph.vertexSet()) {
-            var depSet = resolver.resolveDependents(revision, true);
-            dependents.put(revision, depSet);
+            try {
+                var depSet = resolver.resolveDependents(revision, true);
+                dependents.put(revision, depSet);
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+            }
         }
         var top10dependents = new HashMap<Revision, Set<Revision>>(10);
         dependents.entrySet().stream().sorted(Comparator.comparingInt(e -> -e.getValue().size())).limit(10).forEachOrdered(e -> top10dependents.put(e.getKey(), e.getValue()));
