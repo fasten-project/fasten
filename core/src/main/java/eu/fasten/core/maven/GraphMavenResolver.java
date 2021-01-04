@@ -360,8 +360,14 @@ public class GraphMavenResolver implements Runnable {
     }
 
     public boolean isDescendantOf(Revision child, Revision parent, Map<Revision, Revision> descendants) {
+        var visited = new HashSet<Revision>();
         while (child != null && !Objects.equals(child, parent)) {
-            child = descendants.get(child);
+            if (!visited.contains(child)) {
+                visited.add(child);
+                child = descendants.get(child);
+            } else {
+                break;
+            }
         }
         return Objects.equals(child, parent);
     }
