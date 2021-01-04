@@ -72,6 +72,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         this.plugin = plugin;
 
         // Override default consumer properties.
+        // 'putAll' will override or add k/v pairs.
         consumerProperties.putAll(this.plugin.getConsumerProperties());
 
         this.connection = new KafkaConsumer<>(consumerProperties);
