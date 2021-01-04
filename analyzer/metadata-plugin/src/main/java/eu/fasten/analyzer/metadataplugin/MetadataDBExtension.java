@@ -33,6 +33,7 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -47,11 +48,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.BatchUpdateException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
@@ -324,5 +321,15 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
     @Override
     public void freeResource() {
 
+    }
+
+    @Override
+    public Properties getConsumerProperties() {
+        Properties properties = new Properties();
+
+        // Set max poll interval to 15 minutes.
+        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "900000");
+
+        return properties;
     }
 }

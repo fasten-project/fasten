@@ -71,6 +71,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                              KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink) {
         this.plugin = plugin;
 
+        // Override default consumer properties.
+        consumerProperties.putAll(this.plugin.getConsumerProperties());
+
         this.connection = new KafkaConsumer<>(consumerProperties);
         this.producer = new KafkaProducer<>(producerProperties);
 

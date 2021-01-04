@@ -28,6 +28,9 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
+
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -239,6 +242,16 @@ public class RepoClonerPlugin extends Plugin {
 
         @Override
         public void freeResource() {
+        }
+
+        @Override
+        public Properties getConsumerProperties() {
+            Properties properties = new Properties();
+
+            // Set max poll interval to 30 minutes.
+            properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "1800000");
+
+            return properties;
         }
     }
 }

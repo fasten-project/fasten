@@ -24,6 +24,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.jooq.exception.DataAccessException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -34,10 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.sql.BatchUpdateException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.List;
-import java.util.Collections;
+import java.util.*;
 
 import org.jooq.DSLContext;
 
@@ -192,6 +190,16 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         public void setPluginError(Throwable throwable) {
             this.pluginError = throwable;
+        }
+
+        @Override
+        public Properties getConsumerProperties() {
+            Properties properties = new Properties();
+
+            // Set max poll interval to 15 minutes.
+            properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "3600000");
+
+            return properties;
         }
     }
 

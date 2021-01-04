@@ -27,10 +27,9 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -165,6 +164,23 @@ public class OPALPlugin extends Plugin {
         @Override
         public String version() {
             return "0.1.2";
+        }
+
+        @Override
+        public Properties getConsumerProperties() {
+            Properties properties = new Properties();
+
+            // Assign a static ID to the consumer based pods' unique name in K8s env.
+            if (System.getenv("POD_INSTANCE_ID") != null) {
+                logger.info(String.format("Pod ID: %s", System.getenv("POD_INSTANCE_ID")));
+                properties.setProperty(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, System.getenv("POD_INSTANCE_ID"));
+            }
+
+            // Proper configuration for OPAL consumption.
+            properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "10000");
+            properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "300000");
+            properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "3600000");
+            return properties;
         }
     }
 }

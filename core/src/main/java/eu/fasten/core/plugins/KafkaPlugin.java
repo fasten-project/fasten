@@ -20,6 +20,7 @@ package eu.fasten.core.plugins;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 
 public interface KafkaPlugin extends FastenPlugin {
     /**
@@ -63,4 +64,12 @@ public interface KafkaPlugin extends FastenPlugin {
      * @return relative path to the output file
      */
     String getOutputPath();
+
+
+    /**
+     * This properties can be used to override the default Kafka consumer properties.
+     *
+     * @return consumer properties.
+     */
+    Properties getConsumerProperties();
 }
