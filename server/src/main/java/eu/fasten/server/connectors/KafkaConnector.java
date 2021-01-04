@@ -56,8 +56,8 @@ public class KafkaConnector {
 
         // Gives more time to the consumer for processing the records so
         // that the broker will NOT kill the consumer.
-        properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "200000");
-        properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "700000");
+        properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "10000");
+        properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "300000");
         properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "3600000");
 
         return properties;
