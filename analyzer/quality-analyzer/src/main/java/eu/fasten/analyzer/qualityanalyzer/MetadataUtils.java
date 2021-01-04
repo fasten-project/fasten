@@ -148,14 +148,16 @@ public class MetadataUtils {
 
         List<Long> modulesId = getModuleIds(fileId);//could return empty List
 
+        logger.info("Found " + modulesId.size() + " modules");
+
         ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
 
-        //String name = jsonRecord.getJSONObject("payload").getString("name");
+        JSONObject metadata = jsonRecord.getJSONObject("payload").getJSONObject("metrics");
 
         if(!modulesId.isEmpty()) {
 
             for(Long moduleId : modulesId) {
-                callables.addAll(getCallablesInformation(moduleId, lineStart, lineEnd));
+                callables.addAll(getCallablesInformation(moduleId, lineStart, lineEnd, metadata));
             }
 
             logger.info("Found " + callables.size() + " methods for which startLine and endline are in [" + lineStart + ", " + lineEnd + "]");
@@ -287,7 +289,7 @@ public class MetadataUtils {
      *
      * @return List of CallableHolder (empty List if no callable could be found)
      */
-    private List<CallableHolder> getCallablesInformation(Long moduleId, int lineStart, int lineEnd)  {
+    private List<CallableHolder> getCallablesInformation(Long moduleId, int lineStart, int lineEnd, JSONObject metadata)  {
 
         List<CallableHolder> calls = new ArrayList<>();
 
@@ -307,6 +309,7 @@ public class MetadataUtils {
 
             // Create callable object
             CallableHolder ch = new CallableHolder(cr);
+            ch.setCallableMetadata(metadata);
             //filter and store callable only if start and end line overlap with input
             calls.add(ch);
         }
