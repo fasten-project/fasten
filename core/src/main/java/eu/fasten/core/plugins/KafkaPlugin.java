@@ -68,13 +68,13 @@ public interface KafkaPlugin extends FastenPlugin {
 
     /**
      * Corresponds to `max.poll.interval.ms` in the Kafka Consumer config.
-     * Default is set to 2 minutes.
+     * Default is set to 10 minutes.
      *
      * Overriding this method will be reflected in the Kafka Consumer config.
      * @return the maximum time (in ms) a plugin can spend on a single record before timeout.
      */
     default long getMaxConsumeTimeout() {
-        return 120000;
+        return 600000;
     }
 
     /**
