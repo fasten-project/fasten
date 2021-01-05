@@ -89,6 +89,14 @@ public class GraphMavenResolver implements Runnable {
 //        scopes.add("import");
     }
 
+    static List<String> types = new ArrayList<>();
+
+    static {
+        types.add("jar");
+        types.add("war");
+        types.add("xar");
+    }
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new GraphMavenResolver()).execute(args);
         System.exit(exitCode);
@@ -269,7 +277,7 @@ public class GraphMavenResolver implements Runnable {
                 }
             }
             outgoingEdges.forEach(e -> descendantsMap.put(e.target, e.source));
-            var filteredSuccessors = filterSuccessorsByScope(filterOptionalSuccessors(outgoingEdges), scopes)
+            var filteredSuccessors = filterSuccessorsByType(filterSuccessorsByScope(filterOptionalSuccessors(outgoingEdges), scopes), types)
                     .stream().map(e -> e.target).collect(Collectors.toList());
             var dependencies = filterDependenciesByTimestamp(filteredSuccessors, timestamp);
             for (var dependency : dependencies) {
@@ -420,6 +428,16 @@ public class GraphMavenResolver implements Runnable {
                         edge.scope = "compile";
                     }
                     return allowedScopes.contains(edge.scope);
+                }).collect(Collectors.toSet());
+    }
+
+    protected Set<DependencyEdge> filterSuccessorsByType(Set<DependencyEdge> outgoingEdges, List<String> allowedTypes) {
+        return outgoingEdges.stream()
+                .filter(edge -> {
+                    if (edge.type == null || edge.type.isEmpty()) {
+                        edge.scope = "jar";
+                    }
+                    return allowedTypes.contains(edge.type);
                 }).collect(Collectors.toSet());
     }
 

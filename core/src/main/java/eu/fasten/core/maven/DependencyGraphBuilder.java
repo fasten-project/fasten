@@ -193,7 +193,7 @@ public class DependencyGraphBuilder {
                 var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
                 for (var target : matchingRevisions) {
                     var edge = new DependencyEdge(source, target, dependency.scope, dependency.optional,
-                            dependency.exclusions);
+                            dependency.exclusions, dependency.type);
                     edges.add(edge);
                 }
             }
