@@ -27,10 +27,9 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -166,5 +165,22 @@ public class OPALPlugin extends Plugin {
         public String version() {
             return "0.1.2";
         }
+
+
+        @Override
+        public boolean isStaticMembership() {
+            return true; // The OPAL plugin relies on static members in a consumer group (using a K8s StatefulSet).
+        }
+
+        @Override
+        public long getMaxConsumeTimeout() {
+            return 3600000; //The OPAL plugin takes up to 1h to process a record.
+        }
+
+        @Override
+        public long getSessionTimeout() {
+            return 300000; // Due to static membership we also want to tune the session timeout to 5 minutes.
+        }
+
     }
 }

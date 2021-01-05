@@ -24,17 +24,24 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class KafkaConnector {
+
+    private static final Logger logger = LoggerFactory.getLogger(KafkaConnector.class);
 
     /**
      * Returns Kafka properties.
      *
      * @param serverAddresses broker address
      * @param groupId         group id
+     * @param sessionTimeout a value for `session.timeout.ms`.
+     * @param maxPollInterval a value for `max.poll.interval.ms`.
+     * @param staticMemberShip if static membership should be enabled.
      * @return Kafka Properties
      */
-    public static Properties kafkaConsumerProperties(List<String> serverAddresses, String groupId) {
+    public static Properties kafkaConsumerProperties(List<String> serverAddresses, String groupId, long sessionTimeout, long maxPollInterval, boolean staticMemberShip) {
         String deserializer = StringDeserializer.class.getName();
         Properties properties = new Properties();
 
@@ -47,18 +54,24 @@ public class KafkaConnector {
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "1");
+        properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "5000"); // 5 seconds
 
-        // Assign a static ID to the consumer based pods' unique name in K8s env.
-        if (System.getenv("POD_INSTANCE_ID") != null) {
-            System.out.println(String.format("Pod ID: %s", System.getenv("POD_INSTANCE_ID")));
-            properties.setProperty(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, System.getenv("POD_INSTANCE_ID"));
+        if (staticMemberShip) {
+            // Assign a static ID to the consumer based pods' unique name in K8s env.
+            if (System.getenv("POD_INSTANCE_ID") != null) {
+                logger.info(String.format("Static Membership ID: %s", System.getenv("POD_INSTANCE_ID")));
+                properties.setProperty(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, System.getenv("POD_INSTANCE_ID"));
+            } else {
+                logger.warn("Static Membership was enabled but POD_INSTANCE_ID was not defined. Plugin will proceed without Static Membership.");
+            }
+
         }
 
-        // Gives more time to the consumer for processing the records so
-        // that the broker will NOT kill the consumer.
-        properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "200000");
-        properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "700000");
-        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "3600000");
+        // Default consumption configuration
+        // session.timeout is 1 minutes
+        // max.poll.interval is 2 minutes
+        properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, String.valueOf(sessionTimeout));
+        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, String.valueOf(maxPollInterval));
 
         return properties;
     }
