@@ -336,9 +336,12 @@ public class GraphMavenResolver implements Runnable {
 
         while (!workQueue.isEmpty()) {
             var rev = workQueue.poll();
-            if (rev != null)
+            if (rev != null) {
                 result.add(rev);
-
+                logger.debug("Successors for {}:{}:{}: deps: {}, queue: {} items",
+                        rev.groupId, rev.artifactId, rev.version,
+                        workQueue.size(), workQueue.size());
+            }
             var dependents = filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, rev), timestamp);
             for (var dependent : dependents) {
                 if (!result.contains(dependent)) {
