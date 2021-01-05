@@ -245,13 +245,8 @@ public class RepoClonerPlugin extends Plugin {
         }
 
         @Override
-        public Properties getConsumerProperties() {
-            Properties properties = new Properties();
-
-            // Set max poll interval to 30 minutes.
-            properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "1800000");
-
-            return properties;
+        public long getMaxConsumeTimeout() {
+            return 1800000; //The RepoCloner plugin takes up to 30 minutes to process a record.
         }
     }
 }

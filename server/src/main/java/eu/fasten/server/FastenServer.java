@@ -211,7 +211,10 @@ public class FastenServer implements Runnable {
         return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName())).map(k -> {
             var consumerProperties = KafkaConnector.kafkaConsumerProperties(
                     kafkaServers,
-                    k.getClass().getCanonicalName());
+                    k.getClass().getCanonicalName(),
+                    k.getSessionTimeout(),
+                    k.getMaxConsumeTimeout(),
+                    k.isStaticMembership());
             var producerProperties = KafkaConnector.kafkaProducerProperties(
                     kafkaServers,
                     k.getClass().getCanonicalName());

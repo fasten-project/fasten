@@ -194,10 +194,5 @@ public class GraphDatabasePlugin extends Plugin {
             rocksDao.close();
             rocksDao = null;
         }
-
-        @Override
-        public Properties getConsumerProperties() {
-            return new Properties(); // GraphDB plugin relies on default configuration.
-        }
     }
 }

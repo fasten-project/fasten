@@ -193,14 +193,10 @@ public class QualityAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public Properties getConsumerProperties() {
-            Properties properties = new Properties();
-
-            // Set max poll interval to 15 minutes.
-            properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "3600000");
-
-            return properties;
+        public long getMaxConsumeTimeout() {
+            return 3600000; //The QualityAnalyzer plugin takes up to 1h to process a record.
         }
+
     }
 
 

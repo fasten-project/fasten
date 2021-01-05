@@ -166,21 +166,21 @@ public class OPALPlugin extends Plugin {
             return "0.1.2";
         }
 
+
         @Override
-        public Properties getConsumerProperties() {
-            Properties properties = new Properties();
-
-            // Assign a static ID to the consumer based pods' unique name in K8s env.
-            if (System.getenv("POD_INSTANCE_ID") != null) {
-                logger.info(String.format("Pod ID: %s", System.getenv("POD_INSTANCE_ID")));
-                properties.setProperty(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, System.getenv("POD_INSTANCE_ID"));
-            }
-
-            // Proper configuration for OPAL consumption.
-            properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "10000");
-            properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "300000");
-            properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "3600000");
-            return properties;
+        public boolean isStaticMembership() {
+            return true; // The OPAL plugin relies on static members in a consumer group (using a K8s StatefulSet).
         }
+
+        @Override
+        public long getMaxConsumeTimeout() {
+            return 3600000; //The OPAL plugin takes up to 1h to process a record.
+        }
+
+        @Override
+        public long getSessionTimeout() {
+            return 300000; // Due to static membership we also want to tune the session timeout to 5 minutes.
+        }
+
     }
 }

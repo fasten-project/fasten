@@ -287,10 +287,5 @@ public class POMAnalyzerPlugin extends Plugin {
         public void freeResource() {
 
         }
-
-        @Override
-        public Properties getConsumerProperties() {
-            return new Properties(); // Rely on default consumer configuration.
-        }
     }
 }

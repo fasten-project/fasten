@@ -324,12 +324,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
     }
 
     @Override
-    public Properties getConsumerProperties() {
-        Properties properties = new Properties();
-
-        // Set max poll interval to 15 minutes.
-        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "900000");
-
-        return properties;
+    public long getMaxConsumeTimeout() {
+        return 900000; //The MetadataDB plugin takes up to 15 minutes to process a record.
     }
 }
