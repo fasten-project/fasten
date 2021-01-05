@@ -89,6 +89,14 @@ public class GraphMavenResolver implements Runnable {
 //        scopes.add("import");
     }
 
+    static List<String> types = new ArrayList<>();
+
+    static {
+        types.add("jar");
+        types.add("war");
+        types.add("xar");
+    }
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new GraphMavenResolver()).execute(args);
         System.exit(exitCode);
@@ -269,7 +277,7 @@ public class GraphMavenResolver implements Runnable {
                 }
             }
             outgoingEdges.forEach(e -> descendantsMap.put(e.target, e.source));
-            var filteredSuccessors = filterSuccessorsByScope(filterOptionalSuccessors(outgoingEdges), scopes)
+            var filteredSuccessors = filterSuccessorsByType(filterSuccessorsByScope(filterOptionalSuccessors(outgoingEdges), scopes), types)
                     .stream().map(e -> e.target).collect(Collectors.toList());
             var dependencies = filterDependenciesByTimestamp(filteredSuccessors, timestamp);
             for (var dependency : dependencies) {
@@ -360,8 +368,14 @@ public class GraphMavenResolver implements Runnable {
     }
 
     public boolean isDescendantOf(Revision child, Revision parent, Map<Revision, Revision> descendants) {
+        var visited = new HashSet<Revision>();
         while (child != null && !Objects.equals(child, parent)) {
-            child = descendants.get(child);
+            if (!visited.contains(child)) {
+                visited.add(child);
+                child = descendants.get(child);
+            } else {
+                break;
+            }
         }
         return Objects.equals(child, parent);
     }
@@ -417,6 +431,16 @@ public class GraphMavenResolver implements Runnable {
                 }).collect(Collectors.toSet());
     }
 
+    protected Set<DependencyEdge> filterSuccessorsByType(Set<DependencyEdge> outgoingEdges, List<String> allowedTypes) {
+        return outgoingEdges.stream()
+                .filter(edge -> {
+                    if (edge.type == null || edge.type.isEmpty()) {
+                        edge.scope = "jar";
+                    }
+                    return allowedTypes.contains(edge.type);
+                }).collect(Collectors.toSet());
+    }
+
     /**
      * Resolve conflicts (duplicate products with different versions) by picking revisions that are closer to the root.
      */
@@ -447,6 +471,7 @@ public class GraphMavenResolver implements Runnable {
             } else {
                 dependencyGraph = graphOpt.get();
             }
+            dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
         } catch (Exception e) {
             logger.error("Could not build the dependency graph", e);
         }

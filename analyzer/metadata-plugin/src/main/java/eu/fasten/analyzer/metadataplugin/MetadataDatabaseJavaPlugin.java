@@ -31,6 +31,8 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.json.JSONObject;
@@ -77,7 +79,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     + groupId + File.separator + product + ".json";
         }
 
-        public ArrayList<CallablesRecord> insertDataExtractCallables(
+        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
                 ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
             ExtendedRevisionJavaCallGraph javaCallGraph = (ExtendedRevisionJavaCallGraph) callgraph;
             var callables = new ArrayList<CallablesRecord>();
@@ -92,13 +94,15 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                 callables.addAll(extractCallablesFromType(type, moduleId, true));
             }
 
+            var numInternal = callables.size();
+
             var externalTypes = cha.get(JavaScope.externalTypes);
             // Extract all external callables
             for (var fastenUri : externalTypes.keySet()) {
                 var type = externalTypes.get(fastenUri);
                 callables.addAll(extractCallablesFromType(type, -1L, false));
             }
-            return callables;
+            return new ImmutablePair<>(callables, numInternal);
         }
 
         protected long insertModule(JavaType type, FastenURI fastenUri,
