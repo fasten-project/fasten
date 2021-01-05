@@ -36,6 +36,7 @@ import java.sql.SQLException;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ObjectUtils;
@@ -116,6 +117,13 @@ public class FastenServer implements Runnable {
             paramLabel = "PATH",
             description = "Path to base directory to which data will be written")
     String baseDir;
+
+    @Option(names = {"-cg", "--consumer_group"},
+            paramLabel = "consumerGroup",
+            description = "Name of the consumer group. Defaults to (canonical) name of the plugin.",
+            defaultValue = "undefined"
+    )
+    String consumerGroup;
 
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
@@ -211,7 +219,7 @@ public class FastenServer implements Runnable {
         return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName())).map(k -> {
             var consumerProperties = KafkaConnector.kafkaConsumerProperties(
                     kafkaServers,
-                    k.getClass().getCanonicalName(),
+                    (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() : consumerGroup), // if consumergroup == undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
                     k.getSessionTimeout(),
                     k.getMaxConsumeTimeout(),
                     k.isStaticMembership());
