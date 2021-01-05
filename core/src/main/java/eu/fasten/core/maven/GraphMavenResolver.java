@@ -424,20 +424,22 @@ public class GraphMavenResolver implements Runnable {
     protected Set<DependencyEdge> filterSuccessorsByScope(Set<DependencyEdge> outgoingEdges, List<String> allowedScopes) {
         return outgoingEdges.stream()
                 .filter(edge -> {
-                    if (edge.scope == null || edge.scope.isEmpty()) {
-                        edge.scope = "compile";
+                    var scope = edge.scope;
+                    if (scope == null || scope.isEmpty()) {
+                        scope = "compile";
                     }
-                    return allowedScopes.contains(edge.scope);
+                    return allowedScopes.contains(scope);
                 }).collect(Collectors.toSet());
     }
 
     protected Set<DependencyEdge> filterSuccessorsByType(Set<DependencyEdge> outgoingEdges, List<String> allowedTypes) {
         return outgoingEdges.stream()
                 .filter(edge -> {
-                    if (edge.type == null || edge.type.isEmpty()) {
-                        edge.scope = "jar";
+                    var type = edge.type;
+                    if (type == null || type.isEmpty()) {
+                        type = "jar";
                     }
-                    return allowedTypes.contains(edge.type);
+                    return allowedTypes.contains(type);
                 }).collect(Collectors.toSet());
     }
 
