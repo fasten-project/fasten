@@ -27,7 +27,7 @@ public class MavenStats {
         dependencies.entrySet().stream().sorted(Comparator.comparingInt(e -> -e.getValue().size())).limit(10).forEachOrdered(e -> top10dependencies.put(e.getKey(), e.getValue()));
         System.out.println("10 artifacts with the most dependencies are:");
         for (var entry : top10dependencies.entrySet()) {
-            System.out.println("\t" + entry.getKey().toString() + " -> " + entry.getValue().size() + "dependencies");
+            System.out.println("\t" + entry.getKey().toString() + " -> " + entry.getValue().size() + " dependencies");
         }
         dependencies = null;
         System.out.println();
@@ -45,7 +45,7 @@ public class MavenStats {
         dependents.entrySet().stream().sorted(Comparator.comparingInt(e -> -e.getValue().size())).limit(10).forEachOrdered(e -> top10dependents.put(e.getKey(), e.getValue()));
         System.out.println("10 artifacts with the most dependents are:");
         for (var entry : top10dependents.entrySet()) {
-            System.out.println("\t" + entry.getKey().toString() + " -> " + entry.getValue().size() + "dependents");
+            System.out.println("\t" + entry.getKey().toString() + " -> " + entry.getValue().size() + " dependents");
         }
     }
 }
