@@ -60,12 +60,12 @@ public class GraphMavenResolverTest {
     public void filterDependencyGraphByOptionalTest() {
         var nodeA = new Revision("a", "a", "1", new Timestamp(1));
         var nodeB = new Revision("b", "b", "2", new Timestamp(1));
-        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptyList());
+        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptyList(), "");
         var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         var nodeB2 = new Revision("b", "b", "2", new Timestamp(2));
         var nodeC = new Revision("c", "c", "3", new Timestamp(3));
-        var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "", true, emptyList());
-        var edgeB2C = new DependencyEdge(nodeB2, nodeC, "", false, emptyList());
+        var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "", true, emptyList(), "");
+        var edgeB2C = new DependencyEdge(nodeB2, nodeC, "", false, emptyList(), "");
         graph.addVertex(nodeA);
         graph.addVertex(nodeB);
         graph.addEdge(nodeA, nodeB, edgeAB);
@@ -82,12 +82,34 @@ public class GraphMavenResolverTest {
     public void filterDependencyGraphByScopeTest() {
         var nodeA = new Revision("a", "a", "1", new Timestamp(1));
         var nodeB = new Revision("b", "b", "2", new Timestamp(1));
-        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptyList());
+        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptyList(), "");
         var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         var nodeB2 = new Revision("b", "b", "2", new Timestamp(2));
         var nodeC = new Revision("c", "c", "3", new Timestamp(3));
-        var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "test", false, emptyList());
-        var edgeB2C = new DependencyEdge(nodeB2, nodeC, "compile", false, emptyList());
+        var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "test", false, emptyList(), "");
+        var edgeB2C = new DependencyEdge(nodeB2, nodeC, "compile", false, emptyList(), "");
+        graph.addVertex(nodeA);
+        graph.addVertex(nodeB);
+        graph.addEdge(nodeA, nodeB, edgeAB);
+        graph.addVertex(nodeB2);
+        graph.addEdge(nodeA, nodeB2, edgeAB2);
+        graph.addVertex(nodeC);
+        graph.addEdge(nodeB2, nodeC, edgeB2C);
+        var expected = List.of(nodeB);
+        var actual = graphMavenResolver.filterSuccessorsByScope(graph.outgoingEdgesOf(nodeA), List.of("compile")).stream().map(e -> e.target).collect(Collectors.toList());
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void filterDependencyGraphByTypeTest() {
+        var nodeA = new Revision("a", "a", "1", new Timestamp(1));
+        var nodeB = new Revision("b", "b", "2", new Timestamp(1));
+        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptyList(), "");
+        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        var nodeB2 = new Revision("b", "b", "2", new Timestamp(2));
+        var nodeC = new Revision("c", "c", "3", new Timestamp(3));
+        var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "compile", false, emptyList(), "pom");
+        var edgeB2C = new DependencyEdge(nodeB2, nodeC, "compile", false, emptyList(), "");
         graph.addVertex(nodeA);
         graph.addVertex(nodeB);
         graph.addEdge(nodeA, nodeB, edgeAB);
