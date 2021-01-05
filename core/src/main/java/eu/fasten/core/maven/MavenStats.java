@@ -42,7 +42,7 @@ public class MavenStats {
         }
         System.out.println("10 artifacts with the most dependents are:");
         for (var entry : top10dependents.entrySet()) {
-            System.out.println("\t" + entry.getKey().toString() + " -> " + entry.getValue().size() + "dependents");
+            System.out.println("\t" + entry.getKey().toString() + " -> " + entry.getValue().size() + " dependents");
         }
     }
 }

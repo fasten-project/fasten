@@ -128,10 +128,10 @@ public class MetadataUtils {
             throw new IllegalStateException("Could not find package version id");
         }
 
-        String path = jsonRecord.getJSONObject("payload").getString("filename");
+        String filename = jsonRecord.getJSONObject("payload").getString("filename");
         //Fix issue #21 from quality-analyzer repository
-        int index = StringUtils.ordinalIndexOf(path, "/", 5);
-        String filename = path.substring(index+1);
+        //int index = StringUtils.ordinalIndexOf(path, "/", 5);
+        //String filename = path.substring(index+1);
         
         logger.info("Filename from RapidPlugin is " + filename);
 
@@ -142,7 +142,7 @@ public class MetadataUtils {
 
         if(fileId == null ) {
             logger.error("Could not fetch fileID for package version id = " + pckVersionId +
-                    " and path = " + path);
+                    " and filename = " + filename);
             throw new IllegalStateException("Could not find package version id");
         }
 
