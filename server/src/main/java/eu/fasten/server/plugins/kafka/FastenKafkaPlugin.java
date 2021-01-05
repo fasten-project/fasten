@@ -53,7 +53,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final KafkaConsumer<String, String> connection;
+
     private final KafkaProducer<String, String> producer;
+    private final String outputTopic;
 
     private final int skipOffsets;
 
@@ -68,7 +70,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param skipOffsets        skip offset number
      */
     public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink) {
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic) {
         this.plugin = plugin;
 
         this.connection = new KafkaConsumer<>(consumerProperties);
@@ -88,6 +90,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             this.writeLink = null;
         }
 
+        this.outputTopic = outputTopic;
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
 
@@ -177,12 +180,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             }
 
             emitMessage(this.producer, String.format("fasten.%s.out",
-                    plugin.getClass().getSimpleName()),
+                    outputTopic),
                     getStdOutMsg(input, payload, consumeTimestamp));
 
         } catch (Exception e) {
             emitMessage(this.producer, String.format("fasten.%s.err",
-                    plugin.getClass().getSimpleName()),
+                    outputTopic),
                     getStdErrMsg(input, e, consumeTimestamp));
         }
     }

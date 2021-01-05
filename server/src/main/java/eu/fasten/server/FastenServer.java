@@ -125,6 +125,12 @@ public class FastenServer implements Runnable {
     )
     String consumerGroup;
 
+    @Option(names = {"-ot", "--output_topic"},
+            paramLabel = "outputTopic",
+            description = "Name of the output topic. Defaults to (simple) name of the plugin."
+    )
+    String outputTopic;
+
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     @Override
@@ -229,7 +235,8 @@ public class FastenServer implements Runnable {
 
             return new FastenKafkaPlugin(consumerProperties, producerProperties, k, skipOffsets,
                     (outputDirs != null) ? outputDirs.get(k.getClass().getSimpleName()) : null,
-                    (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null);
+                    (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null,
+                    (outputTopic != null) ? outputTopic : k.getClass().getSimpleName());
         }).collect(Collectors.toList());
     }
 
