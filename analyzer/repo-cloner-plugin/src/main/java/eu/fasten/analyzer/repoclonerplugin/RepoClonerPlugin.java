@@ -28,6 +28,9 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
+
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -239,6 +242,11 @@ public class RepoClonerPlugin extends Plugin {
 
         @Override
         public void freeResource() {
+        }
+
+        @Override
+        public long getMaxConsumeTimeout() {
+            return 1800000; //The RepoCloner plugin takes up to 30 minutes to process a record.
         }
     }
 }

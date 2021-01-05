@@ -26,10 +26,9 @@ import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;

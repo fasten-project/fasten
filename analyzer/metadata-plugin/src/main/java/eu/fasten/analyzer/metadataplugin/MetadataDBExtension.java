@@ -49,11 +49,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.BatchUpdateException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
@@ -327,5 +323,10 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
     @Override
     public void freeResource() {
 
+    }
+
+    @Override
+    public long getMaxConsumeTimeout() {
+        return 900000; //The MetadataDB plugin takes up to 15 minutes to process a record.
     }
 }
