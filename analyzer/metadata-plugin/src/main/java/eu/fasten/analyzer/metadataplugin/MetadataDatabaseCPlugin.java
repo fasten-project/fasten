@@ -32,6 +32,8 @@ import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.json.JSONObject;
@@ -80,8 +82,9 @@ public class MetadataDatabaseCPlugin extends Plugin {
                     CCallGraph.getCgGenerator(), CCallGraph.version, CCallGraph.architecture,
                     getProperTimestamp(CCallGraph.timestamp), new JSONObject());
 
-            var callables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId);
-            var numInternal = callables.size();
+            var allCallables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId);
+            var callables = allCallables.getLeft();
+            var numInternal = allCallables.getRight();
 
             var callablesIds = new LongArrayList(callables.size());
             // Save all callables in the database
@@ -175,18 +178,20 @@ public class MetadataDatabaseCPlugin extends Plugin {
             return callables;
         }
 
-        public ArrayList<CallablesRecord> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
+        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
             ExtendedRevisionCCallGraph CCallGraph = (ExtendedRevisionCCallGraph) callgraph;
             var callables = new ArrayList<CallablesRecord>();
             var cha = CCallGraph.getClassHierarchy();
 
             callables.addAll(getCallables(cha, CScope.internalBinary, true, true, packageVersionId, metadataDao));
             callables.addAll(getCallables(cha, CScope.internalStaticFunction, true, true, packageVersionId, metadataDao));
+            var numInternal = callables.size();
+
             callables.addAll(getCallables(cha, CScope.externalProduct, false, false, packageVersionId, metadataDao));
             callables.addAll(getCallables(cha, CScope.externalUndefined, false, false, packageVersionId, metadataDao));
             callables.addAll(getCallables(cha, CScope.externalStaticFunction, false, true, packageVersionId, metadataDao));
 
-            return callables;
+            return new ImmutablePair<>(callables, numInternal);
         }
 
         protected List<EdgesRecord> insertEdges(Graph graph,
