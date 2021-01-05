@@ -471,6 +471,7 @@ public class GraphMavenResolver implements Runnable {
             } else {
                 dependencyGraph = graphOpt.get();
             }
+            dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
         } catch (Exception e) {
             logger.error("Could not build the dependency graph", e);
         }
