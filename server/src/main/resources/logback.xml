@@ -21,6 +21,8 @@
         <target>System.err</target>
     </appender>
 
+    <logger name="org.jooq" level="INFO"/>
+    <logger name="org.apache.kafka" level="INFO"/>
 
     <root level="info">
         <appender-ref ref="STDOUT" />

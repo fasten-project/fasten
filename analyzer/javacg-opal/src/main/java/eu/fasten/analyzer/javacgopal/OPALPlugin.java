@@ -174,7 +174,7 @@ public class OPALPlugin extends Plugin {
 
         @Override
         public long getMaxConsumeTimeout() {
-            return 3600000; //The OPAL plugin takes up to 1h to process a record.
+            return Integer.MAX_VALUE; // It can take very long to generate OPAL CG's.
         }
 
         @Override
