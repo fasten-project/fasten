@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import eu.fasten.core.data.Constants;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -64,6 +63,47 @@ public class DataExtractor {
 
     public DataExtractor(List<String> mavenRepos) {
         this.mavenRepos = mavenRepos;
+    }
+
+    /**
+     * Extracts Maven coordinate from the POM file.
+     *
+     * @param pomUrl URL to download the POM file
+     * @return Maven coordinate in the form of 'groupId:artifactId:version'
+     */
+    public String getMavenCoordinate(String pomUrl) {
+        StringBuilder coordinate = new StringBuilder();
+        try {
+            var pom = getPomRootElement(pomUrl);
+            var properties = extractDependencyResolutionMetadata(pom).getLeft();
+            var groupNode = pom.selectSingleNode("./*[local-name()='groupId']");
+            var artifactNode = pom.selectSingleNode("./*[local-name()='artifactId']");
+            var versionNode = pom.selectSingleNode("./*[local-name()='version']");
+            var parent = pom.selectSingleNode("./*[local-name()='parent']");
+            var parentGroup = parent == null ? null : parent.selectSingleNode("./*[local-name()='groupId']");
+            var parentVersion = parent == null ? null : parent.selectSingleNode("./*[local-name()='groupId']");
+            if (artifactNode != null) {
+                if (groupNode == null && parentGroup != null) {
+                    groupNode = parentGroup;
+                }
+                if (versionNode == null && parentVersion != null) {
+                    versionNode = parentVersion;
+                }
+                if (groupNode != null && versionNode != null) {
+                    coordinate.append(replacePropertyReferences(groupNode.getText(), properties, pom));
+                    coordinate.append(Constants.mvnCoordinateSeparator);
+                    coordinate.append(replacePropertyReferences(artifactNode.getText(), properties, pom));
+                    coordinate.append(Constants.mvnCoordinateSeparator);
+                    coordinate.append(replacePropertyReferences(versionNode.getText(), properties, pom));
+                    return coordinate.toString();
+                }
+            }
+        } catch (DocumentException e) {
+            logger.error("Error parsing POM file from: " + pomUrl);
+        } catch (FileNotFoundException e) {
+            logger.error("Error downloading POM file from: " + pomUrl);
+        }
+        return null;
     }
 
     /**
@@ -335,6 +375,11 @@ public class DataExtractor {
                         ? new ByteArrayInputStream(this.pomContents.getBytes())
                         : new ByteArrayInputStream(this.downloadPom(groupId, artifactId, version)
                         .orElseThrow(FileNotFoundException::new).getBytes());
+        return new SAXReader().read(pomByteStream).getRootElement();
+    }
+
+    private Element getPomRootElement(String pomUrl) throws FileNotFoundException, DocumentException {
+        var pomByteStream = new ByteArrayInputStream(this.downloadPom(pomUrl).orElseThrow(FileNotFoundException::new).getBytes());
         return new SAXReader().read(pomByteStream).getRootElement();
     }
 
@@ -691,6 +736,10 @@ public class DataExtractor {
         }
 
         return Optional.empty();
+    }
+
+    private Optional<String> downloadPom(String pomUrl) {
+        return MavenUtilities.downloadPomFile(pomUrl).flatMap(DataExtractor::fileToString);
     }
 
     /**

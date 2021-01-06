@@ -49,7 +49,7 @@ public class DependencyGraphBuilder {
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
     public static void main(String[] args) throws Exception {
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://lima:5432/fasten_java", "fastenro");
+        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
 
         String path = "mavengraph";
         if (args.length > 0 && args[0] != null) {
