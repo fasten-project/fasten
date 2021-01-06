@@ -128,6 +128,11 @@ public class Main implements Runnable {
                 required = true)
         boolean doMerge;
 
+        @CommandLine.Option(names = {"-me", "--mergeAll"},
+                paramLabel = "MergeALL",
+                description = "Merge all CG of dependencies")
+        boolean doAll;
+
         @CommandLine.Option(names = {"-d", "--dependencies"},
                 paramLabel = "DEPS",
                 description = "Dependencies, coordinates or files",
