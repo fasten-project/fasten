@@ -75,7 +75,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         this.connection = new KafkaConsumer<>(consumerProperties);
         this.producer = new KafkaProducer<>(producerProperties);
-        
+
         handleConsumerShutdown();
 
         this.skipOffsets = skipOffsets;
@@ -370,13 +370,5 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         } while (i <= 5 && statusRecords.count() == 0);
 
         return statusRecords;
-    }
-
-    /**
-     * Add hook for graceful consumer shutdown.
-     */
-    private void handleConsumerShutdown() {
-        Thread closeConsumer = new Thread(() -> connection.close());
-        Runtime.getRuntime().addShutdownHook(closeConsumer);
     }
 }
