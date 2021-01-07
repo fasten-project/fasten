@@ -179,7 +179,7 @@ public class OPALPlugin extends Plugin {
 
         @Override
         public long getSessionTimeout() {
-            return 300000; // Due to static membership we also want to tune the session timeout to 5 minutes.
+            return 1800000; // Due to static membership we also want to tune the session timeout to 30 minutes.
         }
 
     }
