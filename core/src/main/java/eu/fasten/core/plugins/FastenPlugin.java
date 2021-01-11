@@ -77,6 +77,13 @@ public interface FastenPlugin extends ExtensionPoint {
     Throwable getPluginError();
 
     /**
+     * Set the plugin error or exception that was encountered during plugin execution.
+     *
+     * @param throwable exception or error.
+     */
+    default void setPluginError(Throwable throwable) {}
+
+    /**
      * The purpose of this method is to release all the resources of a plug-in. For example,
      * closing a stream or setting a big object to null.
      */
