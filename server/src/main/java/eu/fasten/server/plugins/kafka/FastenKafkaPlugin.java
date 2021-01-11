@@ -399,7 +399,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      *
      * Based on: https://stackoverflow.com/questions/1164301/how-do-i-call-some-blocking-method-with-a-timeout-in-java
      */
-    private void consumeWithTimeout(String input, long timeout) {
+    public void consumeWithTimeout(String input, long timeout) {
         Runnable consumeTask = () -> {
             plugin.consume(input);
         };
@@ -413,7 +413,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // In this situation the consumeTask took longer than the timeout.
             // We will send an error to the err topic by setting the plugin error.
             plugin.setPluginError(timeoutException);
-            logger.error("A TimeoutException occurred", timeoutException);
+            logger.error("A TimeoutException occurred, processing a record took more than " + timeout + " seconds.");
         } catch (InterruptedException interruptedException) {
             // The consumeTask thread was interrupted.
             plugin.setPluginError(interruptedException);
