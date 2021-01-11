@@ -131,6 +131,13 @@ public class FastenServer implements Runnable {
     )
     String outputTopic;
 
+    @Option(names = {"-ct", "--consume_timeout"},
+            paramLabel = "consumeTimeout",
+            description = "Adds a timeout on the time a plugin can spend on its consumed records. Disabled by default",
+            defaultValue = "-1"
+    )
+    long consumeTimeout;
+
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     @Override
@@ -236,7 +243,9 @@ public class FastenServer implements Runnable {
             return new FastenKafkaPlugin(consumerProperties, producerProperties, k, skipOffsets,
                     (outputDirs != null) ? outputDirs.get(k.getClass().getSimpleName()) : null,
                     (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null,
-                    (outputTopic != null) ? outputTopic : k.getClass().getSimpleName());
+                    (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
+                    (consumeTimeout != -1) ? true : false,
+                    consumeTimeout);
         }).collect(Collectors.toList());
     }
 

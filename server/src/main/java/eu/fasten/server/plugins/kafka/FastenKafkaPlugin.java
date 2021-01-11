@@ -63,6 +63,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final String writeDirectory;
     private final String writeLink;
 
+    // Configuration for consumer timeout.
+    private final boolean consumeTimeoutEnabled;
+    private final long consumeTimeout;
+
     // Executor service which creates a thread pool and re-uses threads when possible.
     private final ExecutorService exexcutorService = Executors.newCachedThreadPool();
 
@@ -74,7 +78,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param skipOffsets        skip offset number
      */
     public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic) {
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout) {
         this.plugin = plugin;
 
         this.connection = new KafkaConsumer<>(consumerProperties);
@@ -95,6 +99,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
 
         this.outputTopic = outputTopic;
+        this.consumeTimeoutEnabled = consumeTimeoutEnabled;
+        this.consumeTimeout = consumeTimeout;
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
 
@@ -161,7 +167,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         for (var r : records) {
             doCommitSync();
             var consumeTimestamp = System.currentTimeMillis() / 1000L;
-            plugin.consume(r.value());
+            if (consumeTimeoutEnabled) {
+                consumeWithTimeout(r.value(), consumeTimeout);
+            } else {
+                plugin.consume(r.value());
+            }
             handleProducing(r.value(), consumeTimestamp);
         }
     }
@@ -374,6 +384,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         return statusRecords;
     }
 
+    /**
+     * Consumes an input with a timeout. If the timeout is exceeded the thread handling the message is killed.
+     * @param input the input message to be consumed.
+     * @param timeout the timeout in seconds. I.e. the maximum time a plugin can spend on processing a record.
+     */
     private void consumeWithTimeout(String input, long timeout) {
         Runnable consumeTask = () -> {
             plugin.consume(input);
@@ -388,15 +403,18 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // In this situation the consumeTask took longer than the timeout.
             // We will send an error to the err topic by setting the plugin error.
             plugin.setPluginError(timeoutException);
+            logger.error("A TimeoutException occurred", timeoutException);
         } catch (InterruptedException interruptedException) {
             // The consumeTask thread was interrupted.
             plugin.setPluginError(interruptedException);
+            logger.error("A InterruptedException occurred", interruptedException);
         } catch (ExecutionException executionException) {
             // In this situation the consumeTask threw an exception during computation.
             // We kind of expect this not to happen, because (at least for OPAL) plugins should with exception themselves.
             plugin.setPluginError(executionException);
+            logger.error("A ExecutionException occurred", executionException);
         } finally {
-            // Finally we will kill the current thread, if it's still running so we can continue processing the next record.
+            // Finally we will kill the current thread if it's still running so we can continue processing the next record.
             futureConsumeTask.cancel(true);
         }
     }
