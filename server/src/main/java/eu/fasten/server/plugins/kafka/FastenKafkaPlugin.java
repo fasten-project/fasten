@@ -388,6 +388,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Consumes an input with a timeout. If the timeout is exceeded the thread handling the message is killed.
      * @param input the input message to be consumed.
      * @param timeout the timeout in seconds. I.e. the maximum time a plugin can spend on processing a record.
+     *
+     * Based on: https://stackoverflow.com/questions/1164301/how-do-i-call-some-blocking-method-with-a-timeout-in-java
      */
     private void consumeWithTimeout(String input, long timeout) {
         Runnable consumeTask = () -> {
