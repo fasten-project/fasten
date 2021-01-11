@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.CommitFailedException;
@@ -61,6 +62,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     private final String writeDirectory;
     private final String writeLink;
+
+    // Executor service which creates a thread pool and re-uses threads when possible.
+    private final ExecutorService exexcutorService = Executors.newCachedThreadPool();
 
     /**
      * Constructs a FastenKafkaConsumer.
@@ -368,5 +372,32 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         } while (i <= 5 && statusRecords.count() == 0);
 
         return statusRecords;
+    }
+
+    private void consumeWithTimeout(String input, long timeout) {
+        Runnable consumeTask = () -> {
+            plugin.consume(input);
+        };
+
+        // Submit the consume task to a thread.
+        Future futureConsumeTask = exexcutorService.submit(consumeTask);
+
+        try {
+            futureConsumeTask.get(timeout, TimeUnit.SECONDS);
+        } catch (TimeoutException timeoutException) {
+            // In this situation the consumeTask took longer than the timeout.
+            // We will send an error to the err topic by setting the plugin error.
+            plugin.setPluginError(timeoutException);
+        } catch (InterruptedException interruptedException) {
+            // The consumeTask thread was interrupted.
+            plugin.setPluginError(interruptedException);
+        } catch (ExecutionException executionException) {
+            // In this situation the consumeTask threw an exception during computation.
+            // We kind of expect this not to happen, because (at least for OPAL) plugins should with exception themselves.
+            plugin.setPluginError(executionException);
+        } finally {
+            // Finally we will kill the current thread, if it's still running so we can continue processing the next record.
+            futureConsumeTask.cancel(true);
+        }
     }
 }
