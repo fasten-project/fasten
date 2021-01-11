@@ -53,9 +53,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final KafkaPlugin plugin;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final KafkaConsumer<String, String> connection;
+    private KafkaConsumer<String, String> connection;
 
-    private final KafkaProducer<String, String> producer;
+    private KafkaProducer<String, String> producer;
     private final String outputTopic;
 
     private final int skipOffsets;
@@ -77,12 +77,14 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param plugin             Kafka plugin
      * @param skipOffsets        skip offset number
      */
-    public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
+    public FastenKafkaPlugin(boolean enableKafka, Properties consumerProperties, Properties producerProperties,
                              KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout) {
         this.plugin = plugin;
 
-        this.connection = new KafkaConsumer<>(consumerProperties);
-        this.producer = new KafkaProducer<>(producerProperties);
+        if (enableKafka) {
+            this.connection = new KafkaConsumer<>(consumerProperties);
+            this.producer = new KafkaProducer(producerProperties);
+        }
 
         this.skipOffsets = skipOffsets;
         if (writeDirectory != null) {
@@ -103,6 +105,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         this.consumeTimeout = consumeTimeout;
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
+
+    public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout) {
+        this(true, consumerProperties, producerProperties, plugin, skipOffsets, writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout);
+    }
+
 
     @Override
     public void run() {
@@ -419,5 +427,21 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // Finally we will kill the current thread if it's still running so we can continue processing the next record.
             futureConsumeTask.cancel(true);
         }
+    }
+
+    /**
+     * Verify is the consumer timeout is enabled.
+     * @return if a consumer timeout is enabled.
+     */
+    public boolean isConsumeTimeoutEnabled() {
+        return consumeTimeoutEnabled;
+    }
+
+    /**
+     * Get the consume timeout (in seconds).
+     * @return consume timeout.
+     */
+    public long getConsumeTimeout() {
+        return consumeTimeout;
     }
 }
