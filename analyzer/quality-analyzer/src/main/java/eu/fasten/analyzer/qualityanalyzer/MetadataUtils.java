@@ -19,7 +19,6 @@ package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.analyzer.qualityanalyzer.data.*;
 
-import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
@@ -40,9 +39,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.lang3.StringUtils;
-
 
 public class MetadataUtils {
 
@@ -110,9 +106,14 @@ public class MetadataUtils {
         String product = null;
         String version = null;
 
+        JSONObject payload = null;
+
         if (jsonRecord.has("payload")) {
-            product = jsonRecord.getJSONObject("payload").getString("product");
-            version = jsonRecord.getJSONObject("payload").getString("version");
+            payload = jsonRecord.getJSONObject("payload");
+            product = payload.getString("product");
+            version = payload.getJSONObject("payload").getString("version");
+        } else {
+            payload = jsonRecord;
         }
 
         if( (product == null) || (version == null)) {
@@ -128,15 +129,15 @@ public class MetadataUtils {
             throw new IllegalStateException("Could not find package version id");
         }
 
-        String filename = jsonRecord.getJSONObject("payload").getString("filename");
+        String filename = payload.getString("filename");
         //Fix issue #21 from quality-analyzer repository
         //int index = StringUtils.ordinalIndexOf(path, "/", 5);
         //String filename = path.substring(index+1);
         
         logger.info("Filename from RapidPlugin is " + filename);
 
-        int lineStart = jsonRecord.getJSONObject("payload").getInt("start_line");
-        int lineEnd = jsonRecord.getJSONObject("payload").getInt("end_line");
+        int lineStart = payload.getInt("start_line");
+        int lineEnd = payload.getInt("end_line");
 
         Long fileId = getFileId(pckVersionId, filename);//could return null
 
@@ -152,7 +153,15 @@ public class MetadataUtils {
 
         ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
 
-        JSONObject metadata = jsonRecord.getJSONObject("payload").getJSONObject("metrics");
+        JSONObject tailored = new JSONObject(payload, new String[] {
+                "quality_analyzer_name",
+                "quality_analyzer_version",
+                "quality_analysis_timestamp",
+                "metrics"});
+        tailored.put("rapid_plugin_version", QAConstants.QA_VERSION_NUMBER);
+
+        JSONObject metadata = new JSONObject();
+        metadata.put("quality", tailored);
 
         if(!modulesId.isEmpty()) {
 
@@ -170,7 +179,6 @@ public class MetadataUtils {
 
     /**
      * Retrieves the package_version_id given the purl of the package version.
-     * @param purl - follows purl specifications
      * @return negative if it cannot be found
      */
     private Long getPackageVersionId(String coordinate, String forge, String version) {
@@ -238,7 +246,7 @@ public class MetadataUtils {
     /**
      * Retrieve the fileId of the file
      * @param packageVersionId - package version ID
-     * @param filepath - path to the file
+     * @param filename - path to the file
      * @return - Long value of fileId or -1 if the file cannot be found
      */
     private Long getFileId(Long packageVersionId, String filename) {
@@ -284,8 +292,8 @@ public class MetadataUtils {
      * Retrieves the callables information from the DB with a given values for the start and end line.
      *
      * @param moduleId - Long ID of the file where the callable was changed.
-     * @param startLine - int value that indicates start callable line in source file.
-     * @param endLine - int value that indicates the last callable line in source file.
+     * @param lineStart - int value that indicates start callable line in source file.
+     * @param lineEnd - int value that indicates the last callable line in source file.
      *
      * @return List of CallableHolder (empty List if no callable could be found)
      */
