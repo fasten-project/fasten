@@ -138,6 +138,12 @@ public class FastenServer implements Runnable {
     )
     long consumeTimeout;
 
+    @Option(names = {"-cte", "--consume_timeout_exit"},
+            paramLabel = "consumeTimeoutExit",
+            description = "Shutdowns the JVM if a consume timeout is reached."
+    )
+    boolean exitOnTimeout;
+
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     @Override
@@ -245,7 +251,8 @@ public class FastenServer implements Runnable {
                     (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null,
                     (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
                     (consumeTimeout != -1) ? true : false,
-                    consumeTimeout);
+                    consumeTimeout,
+                    exitOnTimeout);
         }).collect(Collectors.toList());
     }
 
