@@ -133,7 +133,7 @@ public class FastenServer implements Runnable {
 
     @Option(names = {"-ct", "--consume_timeout"},
             paramLabel = "consumeTimeout",
-            description = "Adds a timeout on the time a plugin can spend on its consumed records. Disabled by default",
+            description = "Adds a timeout on the time a plugin can spend on its consumed records. Disabled by default.",
             defaultValue = "-1"
     )
     long consumeTimeout;
