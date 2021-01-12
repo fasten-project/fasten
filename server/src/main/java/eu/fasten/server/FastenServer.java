@@ -142,7 +142,7 @@ public class FastenServer implements Runnable {
             paramLabel = "consumeTimeoutExit",
             description = "Shutdowns the JVM if a consume timeout is reached."
     )
-    boolean exitOnTimeout;
+    boolean consumeTimeoutExit;
 
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
@@ -252,7 +252,7 @@ public class FastenServer implements Runnable {
                     (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
                     (consumeTimeout != -1) ? true : false,
                     consumeTimeout,
-                    exitOnTimeout);
+                    consumeTimeoutExit);
         }).collect(Collectors.toList());
     }
 
