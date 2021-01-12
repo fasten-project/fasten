@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.CommitFailedException;
@@ -52,15 +53,22 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final KafkaPlugin plugin;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final KafkaConsumer<String, String> connection;
+    private KafkaConsumer<String, String> connection;
 
-    private final KafkaProducer<String, String> producer;
+    private KafkaProducer<String, String> producer;
     private final String outputTopic;
 
     private final int skipOffsets;
 
     private final String writeDirectory;
     private final String writeLink;
+
+    // Configuration for consumer timeout.
+    private final boolean consumeTimeoutEnabled;
+    private final long consumeTimeout;
+
+    // Executor service which creates a thread pool and re-uses threads when possible.
+    private final ExecutorService exexcutorService = Executors.newCachedThreadPool();
 
     /**
      * Constructs a FastenKafkaConsumer.
@@ -69,12 +77,14 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param plugin             Kafka plugin
      * @param skipOffsets        skip offset number
      */
-    public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic) {
+    public FastenKafkaPlugin(boolean enableKafka, Properties consumerProperties, Properties producerProperties,
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout) {
         this.plugin = plugin;
 
-        this.connection = new KafkaConsumer<>(consumerProperties);
-        this.producer = new KafkaProducer<>(producerProperties);
+        if (enableKafka) {
+            this.connection = new KafkaConsumer<>(consumerProperties);
+            this.producer = new KafkaProducer(producerProperties);
+        }
 
         this.skipOffsets = skipOffsets;
         if (writeDirectory != null) {
@@ -91,8 +101,16 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
 
         this.outputTopic = outputTopic;
+        this.consumeTimeoutEnabled = consumeTimeoutEnabled;
+        this.consumeTimeout = consumeTimeout;
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
+
+    public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout) {
+        this(true, consumerProperties, producerProperties, plugin, skipOffsets, writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout);
+    }
+
 
     @Override
     public void run() {
@@ -157,7 +175,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         for (var r : records) {
             doCommitSync();
             var consumeTimestamp = System.currentTimeMillis() / 1000L;
-            plugin.consume(r.value());
+            if (consumeTimeoutEnabled) {
+                consumeWithTimeout(r.value(), consumeTimeout);
+            } else {
+                plugin.consume(r.value());
+            }
             handleProducing(r.value(), consumeTimestamp);
         }
     }
@@ -368,5 +390,58 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         } while (i <= 5 && statusRecords.count() == 0);
 
         return statusRecords;
+    }
+
+    /**
+     * Consumes an input with a timeout. If the timeout is exceeded the thread handling the message is killed.
+     * @param input the input message to be consumed.
+     * @param timeout the timeout in seconds. I.e. the maximum time a plugin can spend on processing a record.
+     *
+     * Based on: https://stackoverflow.com/questions/1164301/how-do-i-call-some-blocking-method-with-a-timeout-in-java
+     */
+    public void consumeWithTimeout(String input, long timeout) {
+        Runnable consumeTask = () -> {
+            plugin.consume(input);
+        };
+
+        // Submit the consume task to a thread.
+        Future futureConsumeTask = exexcutorService.submit(consumeTask);
+
+        try {
+            futureConsumeTask.get(timeout, TimeUnit.SECONDS);
+        } catch (TimeoutException timeoutException) {
+            // In this situation the consumeTask took longer than the timeout.
+            // We will send an error to the err topic by setting the plugin error.
+            plugin.setPluginError(timeoutException);
+            logger.error("A TimeoutException occurred, processing a record took more than " + timeout + " seconds.");
+        } catch (InterruptedException interruptedException) {
+            // The consumeTask thread was interrupted.
+            plugin.setPluginError(interruptedException);
+            logger.error("A InterruptedException occurred", interruptedException);
+        } catch (ExecutionException executionException) {
+            // In this situation the consumeTask threw an exception during computation.
+            // We kind of expect this not to happen, because (at least for OPAL) plugins should with exception themselves.
+            plugin.setPluginError(executionException);
+            logger.error("A ExecutionException occurred", executionException);
+        } finally {
+            // Finally we will kill the current thread if it's still running so we can continue processing the next record.
+            futureConsumeTask.cancel(true);
+        }
+    }
+
+    /**
+     * Verify is the consumer timeout is enabled.
+     * @return if a consumer timeout is enabled.
+     */
+    public boolean isConsumeTimeoutEnabled() {
+        return consumeTimeoutEnabled;
+    }
+
+    /**
+     * Get the consume timeout (in seconds).
+     * @return consume timeout.
+     */
+    public long getConsumeTimeout() {
+        return consumeTimeout;
     }
 }
