@@ -111,7 +111,7 @@ public class MetadataUtils {
         if (jsonRecord.has("payload")) {
             payload = jsonRecord.getJSONObject("payload");
             product = payload.getString("product");
-            version = payload.getJSONObject("payload").getString("version");
+            version = payload.getString("version");
         } else {
             payload = jsonRecord;
         }
