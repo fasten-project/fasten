@@ -66,6 +66,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     // Configuration for consumer timeout.
     private final boolean consumeTimeoutEnabled;
     private final long consumeTimeout;
+    private final boolean exitOnTimeout;
 
     // Executor service which creates a thread pool and re-uses threads when possible.
     private final ExecutorService exexcutorService = Executors.newCachedThreadPool();
@@ -78,7 +79,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param skipOffsets        skip offset number
      */
     public FastenKafkaPlugin(boolean enableKafka, Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout) {
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout) {
         this.plugin = plugin;
 
         if (enableKafka) {
@@ -103,12 +104,13 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         this.outputTopic = outputTopic;
         this.consumeTimeoutEnabled = consumeTimeoutEnabled;
         this.consumeTimeout = consumeTimeout;
+        this.exitOnTimeout = exitOnTimeout;
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
 
     public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout) {
-        this(true, consumerProperties, producerProperties, plugin, skipOffsets, writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout);
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout) {
+        this(true, consumerProperties, producerProperties, plugin, skipOffsets, writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout, exitOnTimeout);
     }
 
 
@@ -176,7 +178,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             doCommitSync();
             var consumeTimestamp = System.currentTimeMillis() / 1000L;
             if (consumeTimeoutEnabled) {
-                consumeWithTimeout(r.value(), consumeTimeout);
+                consumeWithTimeout(r.value(), consumeTimeout, exitOnTimeout);
             } else {
                 plugin.consume(r.value());
             }
@@ -399,7 +401,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      *
      * Based on: https://stackoverflow.com/questions/1164301/how-do-i-call-some-blocking-method-with-a-timeout-in-java
      */
-    public void consumeWithTimeout(String input, long timeout) {
+    public void consumeWithTimeout(String input, long timeout, boolean exitOnTimeout) {
         Runnable consumeTask = () -> {
             plugin.consume(input);
         };
@@ -414,6 +416,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // We will send an error to the err topic by setting the plugin error.
             plugin.setPluginError(timeoutException);
             logger.error("A TimeoutException occurred, processing a record took more than " + timeout + " seconds.");
+            if (exitOnTimeout) { // Exit if the timeout is reached.
+                System.exit(0);
+            }
         } catch (InterruptedException interruptedException) {
             // The consumeTask thread was interrupted.
             plugin.setPluginError(interruptedException);
