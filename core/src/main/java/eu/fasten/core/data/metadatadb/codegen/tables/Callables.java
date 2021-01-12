@@ -7,6 +7,8 @@ package eu.fasten.core.data.metadatadb.codegen.tables;
 import eu.fasten.core.data.metadatadb.codegen.Indexes;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.Public;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableAccess;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 
 import java.sql.Timestamp;
@@ -22,7 +24,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row8;
+import org.jooq.Row11;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -44,7 +46,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Callables extends TableImpl<CallablesRecord> {
 
-    private static final long serialVersionUID = 1823202810;
+    private static final long serialVersionUID = 1196408397;
 
     /**
      * The reference instance of <code>public.callables</code>
@@ -93,6 +95,21 @@ public class Callables extends TableImpl<CallablesRecord> {
      * The column <code>public.callables.line_end</code>.
      */
     public final TableField<CallablesRecord, Integer> LINE_END = createField(DSL.name("line_end"), org.jooq.impl.SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>public.callables.type</code>.
+     */
+    public final TableField<CallablesRecord, CallableType> TYPE = createField(DSL.name("type"), org.jooq.impl.SQLDataType.VARCHAR.asEnumDataType(eu.fasten.core.data.metadatadb.codegen.enums.CallableType.class), this, "");
+
+    /**
+     * The column <code>public.callables.defined</code>.
+     */
+    public final TableField<CallablesRecord, Boolean> DEFINED = createField(DSL.name("defined"), org.jooq.impl.SQLDataType.BOOLEAN, this, "");
+
+    /**
+     * The column <code>public.callables.access</code>.
+     */
+    public final TableField<CallablesRecord, CallableAccess> ACCESS = createField(DSL.name("access"), org.jooq.impl.SQLDataType.VARCHAR.asEnumDataType(eu.fasten.core.data.metadatadb.codegen.enums.CallableAccess.class), this, "");
 
     /**
      * The column <code>public.callables.metadata</code>.
@@ -193,11 +210,11 @@ public class Callables extends TableImpl<CallablesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row8 type methods
+    // Row11 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Long, Long, String, Boolean, Timestamp, Integer, Integer, JSONB> fieldsRow() {
-        return (Row8) super.fieldsRow();
+    public Row11<Long, Long, String, Boolean, Timestamp, Integer, Integer, CallableType, Boolean, CallableAccess, JSONB> fieldsRow() {
+        return (Row11) super.fieldsRow();
     }
 }

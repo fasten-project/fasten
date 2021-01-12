@@ -12,6 +12,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
@@ -52,6 +53,8 @@ public class Indexes {
     public static final Index UNIQUE_MODULE_FILE = Indexes0.UNIQUE_MODULE_FILE;
     public static final Index MODULES_PKEY = Indexes0.MODULES_PKEY;
     public static final Index UNIQUE_VERSION_NAMESPACE = Indexes0.UNIQUE_VERSION_NAMESPACE;
+    public static final Index NAMESPACES_PKEY = Indexes0.NAMESPACES_PKEY;
+    public static final Index UNIQUE_NAMEPACES = Indexes0.UNIQUE_NAMEPACES;
     public static final Index PACKAGE_VERSIONS_PKEY = Indexes0.PACKAGE_VERSIONS_PKEY;
     public static final Index UNIQUE_PACKAGE_VERSION_GENERATOR = Indexes0.UNIQUE_PACKAGE_VERSION_GENERATOR;
     public static final Index PACKAGES_PKEY = Indexes0.PACKAGES_PKEY;
@@ -74,7 +77,9 @@ public class Indexes {
         public static Index UNIQUE_VERSION_PATH = Internal.createIndex("unique_version_path", Files.FILES, new OrderField[] { Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH }, true);
         public static Index UNIQUE_MODULE_FILE = Internal.createIndex("unique_module_file", ModuleContents.MODULE_CONTENTS, new OrderField[] { ModuleContents.MODULE_CONTENTS.MODULE_ID, ModuleContents.MODULE_CONTENTS.FILE_ID }, true);
         public static Index MODULES_PKEY = Internal.createIndex("modules_pkey", Modules.MODULES, new OrderField[] { Modules.MODULES.ID }, true);
-        public static Index UNIQUE_VERSION_NAMESPACE = Internal.createIndex("unique_version_namespace", Modules.MODULES, new OrderField[] { Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE }, true);
+        public static Index UNIQUE_VERSION_NAMESPACE = Internal.createIndex("unique_version_namespace", Modules.MODULES, new OrderField[] { Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE_ID }, true);
+        public static Index NAMESPACES_PKEY = Internal.createIndex("namespaces_pkey", Namespaces.NAMESPACES, new OrderField[] { Namespaces.NAMESPACES.ID }, true);
+        public static Index UNIQUE_NAMEPACES = Internal.createIndex("unique_namepaces", Namespaces.NAMESPACES, new OrderField[] { Namespaces.NAMESPACES.NAMESPACE }, true);
         public static Index PACKAGE_VERSIONS_PKEY = Internal.createIndex("package_versions_pkey", PackageVersions.PACKAGE_VERSIONS, new OrderField[] { PackageVersions.PACKAGE_VERSIONS.ID }, true);
         public static Index UNIQUE_PACKAGE_VERSION_GENERATOR = Internal.createIndex("unique_package_version_generator", PackageVersions.PACKAGE_VERSIONS, new OrderField[] { PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR }, true);
         public static Index PACKAGES_PKEY = Internal.createIndex("packages_pkey", Packages.PACKAGES, new OrderField[] { Packages.PACKAGES.ID }, true);

@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Modules extends TableImpl<ModulesRecord> {
 
-    private static final long serialVersionUID = -1972690541;
+    private static final long serialVersionUID = -603417408;
 
     /**
      * The reference instance of <code>public.modules</code>
@@ -70,9 +70,9 @@ public class Modules extends TableImpl<ModulesRecord> {
     public final TableField<ModulesRecord, Long> PACKAGE_VERSION_ID = createField(DSL.name("package_version_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
-     * The column <code>public.modules.namespace</code>.
+     * The column <code>public.modules.namespace_id</code>.
      */
-    public final TableField<ModulesRecord, String> NAMESPACE = createField(DSL.name("namespace"), org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
+    public final TableField<ModulesRecord, Long> NAMESPACE_ID = createField(DSL.name("namespace_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.modules.created_at</code>.
@@ -144,11 +144,15 @@ public class Modules extends TableImpl<ModulesRecord> {
 
     @Override
     public List<ForeignKey<ModulesRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<ModulesRecord, ?>>asList(Keys.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY);
+        return Arrays.<ForeignKey<ModulesRecord, ?>>asList(Keys.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY, Keys.MODULES__MODULES_NAMESPACE_ID_FKEY);
     }
 
     public PackageVersions packageVersions() {
         return new PackageVersions(this, Keys.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY);
+    }
+
+    public Namespaces namespaces() {
+        return new Namespaces(this, Keys.MODULES__MODULES_NAMESPACE_ID_FKEY);
     }
 
     @Override
@@ -182,7 +186,7 @@ public class Modules extends TableImpl<ModulesRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Long, Long, String, Timestamp, JSONB> fieldsRow() {
+    public Row5<Long, Long, Long, Timestamp, JSONB> fieldsRow() {
         return (Row5) super.fieldsRow();
     }
 }

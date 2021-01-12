@@ -26,6 +26,8 @@ import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableAccess;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.plugins.DBConnector;
@@ -222,7 +224,9 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
                 callGraph.getCgGenerator(), callGraph.version, null,
                 getProperTimestamp(callGraph.timestamp), new JSONObject());
 
-        var allCallables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId);
+        var namespaceMap = getNamespaceMap(callGraph, metadataDao);
+        var allCallables = insertDataExtractCallables(callGraph, metadataDao,
+                packageVersionId, namespaceMap);
         var callables = allCallables.getLeft();
         var numInternal = allCallables.getRight();
 
@@ -237,7 +241,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         }
 
         // Insert all the edges
-        var edges = insertEdges(callGraph.getGraph(), lidToGidMap, metadataDao);
+        var edges = insertEdges(callGraph.getGraph(), lidToGidMap, namespaceMap, metadataDao);
 
         // Remove duplicate nodes
         var internalIds = new LongArrayList(numInternal);
@@ -261,16 +265,21 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         return packageVersionId;
     }
 
+    protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
+        return new HashMap<>();
+    }
+
     // All classes that implements this class must provide an implementation
     // for this method. We cannot convert this class to an abstract class.
     public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
-            ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
+            ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId,
+            Map<String, Long> namespaceMap) {
         return new ImmutablePair<>(new ArrayList<>(), 0);
     }
 
-    protected List<EdgesRecord> insertEdges(Graph graph,
-                                            Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
-        return new ArrayList<EdgesRecord>();
+    protected List<EdgesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+                                            Map<String, Long> namespaceMap, MetadataDao metadataDao) {
+        return new ArrayList<>();
     }
 
     protected Timestamp getProperTimestamp(long timestamp) {
@@ -282,6 +291,27 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
             } else {
                 return new Timestamp(timestamp);
             }
+        }
+    }
+
+    protected CallableType getCallableType(String type) {
+        switch (type) {
+            case "internalBinary": return CallableType.internalBinary;
+            case "externalProduct": return CallableType.externalProduct;
+            case "externalStaticFunction": return CallableType.externalStaticFunction;
+            case "externalUndefined": return CallableType.externalUndefined;
+            case "internalStaticFunction": return CallableType.internalStaticFunction;
+            default: return null;
+        }
+    }
+
+    protected CallableAccess getCallableAccess(String access) {
+        switch (access) {
+            case "private": return CallableAccess.private_;
+            case "public": return CallableAccess.public_;
+            case "packagePrivate": return CallableAccess.packagePrivate;
+            case "static": return CallableAccess.static_;
+            default: return null;
         }
     }
 

@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class PackageVersions extends TableImpl<PackageVersionsRecord> {
 
-    private static final long serialVersionUID = -1739447162;
+    private static final long serialVersionUID = 1825137516;
 
     /**
      * The reference instance of <code>public.package_versions</code>
@@ -80,6 +80,11 @@ public class PackageVersions extends TableImpl<PackageVersionsRecord> {
     public final TableField<PackageVersionsRecord, String> CG_GENERATOR = createField(DSL.name("cg_generator"), org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
 
     /**
+     * The column <code>public.package_versions.architecture</code>.
+     */
+    public final TableField<PackageVersionsRecord, String> ARCHITECTURE = createField(DSL.name("architecture"), org.jooq.impl.SQLDataType.CLOB, this, "");
+
+    /**
      * The column <code>public.package_versions.created_at</code>.
      */
     public final TableField<PackageVersionsRecord, Timestamp> CREATED_AT = createField(DSL.name("created_at"), org.jooq.impl.SQLDataType.TIMESTAMP, this, "");
@@ -88,11 +93,6 @@ public class PackageVersions extends TableImpl<PackageVersionsRecord> {
      * The column <code>public.package_versions.metadata</code>.
      */
     public final TableField<PackageVersionsRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB, this, "");
-
-    /**
-     * The column <code>public.package_versions.architecture</code>.
-     */
-    public final TableField<PackageVersionsRecord, String> ARCHITECTURE = createField(DSL.name("architecture"), org.jooq.impl.SQLDataType.CLOB, this, "");
 
     /**
      * Create a <code>public.package_versions</code> table reference
@@ -192,7 +192,7 @@ public class PackageVersions extends TableImpl<PackageVersionsRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row7<Long, Long, String, String, Timestamp, JSONB, String> fieldsRow() {
+    public Row7<Long, Long, String, String, String, Timestamp, JSONB> fieldsRow() {
         return (Row7) super.fieldsRow();
     }
 }

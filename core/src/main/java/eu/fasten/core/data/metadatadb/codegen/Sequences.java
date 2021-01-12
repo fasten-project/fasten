@@ -44,6 +44,11 @@ public class Sequences {
     public static final Sequence<Long> MODULES_ID_SEQ = new SequenceImpl<Long>("modules_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
 
     /**
+     * The sequence <code>public.namespaces_id_seq</code>
+     */
+    public static final Sequence<Long> NAMESPACES_ID_SEQ = new SequenceImpl<Long>("namespaces_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
+
+    /**
      * The sequence <code>public.package_versions_id_seq</code>
      */
     public static final Sequence<Long> PACKAGE_VERSIONS_ID_SEQ = new SequenceImpl<Long>("package_versions_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));

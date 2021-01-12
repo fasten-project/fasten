@@ -30,7 +30,7 @@ import org.jooq.impl.UDTImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Receiver extends UDTImpl<ReceiverRecord> {
 
-    private static final long serialVersionUID = -860427907;
+    private static final long serialVersionUID = -1311768172;
 
     /**
      * The reference instance of <code>public.receiver</code>
@@ -51,14 +51,14 @@ public class Receiver extends UDTImpl<ReceiverRecord> {
     public static final UDTField<ReceiverRecord, Integer> LINE = createField(DSL.name("line"), org.jooq.impl.SQLDataType.INTEGER, RECEIVER, "");
 
     /**
-     * The attribute <code>public.receiver.type</code>.
+     * The attribute <code>public.receiver.receiver_type</code>.
      */
-    public static final UDTField<ReceiverRecord, ReceiverType> TYPE = createField(DSL.name("type"), org.jooq.impl.SQLDataType.VARCHAR.asEnumDataType(eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType.class), RECEIVER, "");
+    public static final UDTField<ReceiverRecord, ReceiverType> RECEIVER_TYPE = createField(DSL.name("receiver_type"), org.jooq.impl.SQLDataType.VARCHAR.asEnumDataType(eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType.class), RECEIVER, "");
 
     /**
-     * The attribute <code>public.receiver.receiver_uri</code>.
+     * The attribute <code>public.receiver.namespace_id</code>.
      */
-    public static final UDTField<ReceiverRecord, String> RECEIVER_URI = createField(DSL.name("receiver_uri"), org.jooq.impl.SQLDataType.CLOB, RECEIVER, "");
+    public static final UDTField<ReceiverRecord, Long> NAMESPACE_ID = createField(DSL.name("namespace_id"), org.jooq.impl.SQLDataType.BIGINT, RECEIVER, "");
 
     /**
      * No further instances allowed

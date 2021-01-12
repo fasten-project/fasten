@@ -36,11 +36,17 @@ CREATE TABLE dependencies
     metadata           JSONB
 );
 
+CREATE TABLE namespaces
+(
+    id        BIGSERIAL PRIMARY KEY,
+    namespace TEXT NOT NULL
+);
+
 CREATE TABLE modules
 (
     id                 BIGSERIAL PRIMARY KEY,
     package_version_id BIGINT NOT NULL REFERENCES package_versions (id),
-    namespace          TEXT   NOT NULL,
+    namespace_id       BIGINT NOT NULL REFERENCES namespaces (id),
     created_at         TIMESTAMP,
     metadata           JSONB
 );
@@ -76,6 +82,9 @@ CREATE TABLE binary_module_contents
     file_id          BIGINT NOT NULL REFERENCES files (id)
 );
 
+CREATE TYPE CALLABLE_TYPE AS ENUM ('internalBinary', 'externalProduct', 'externalStaticFunction', 'externalUndefined', 'internalStaticFunction');
+CREATE TYPE CALLABLE_ACCESS AS ENUM ('private', 'public', 'packagePrivate', 'static');
+
 CREATE TABLE callables
 (
     id               BIGSERIAL PRIMARY KEY,
@@ -85,6 +94,9 @@ CREATE TABLE callables
     created_at       TIMESTAMP,
     line_start       INTEGER,
     line_end         INTEGER,
+    type             CALLABLE_TYPE,
+    defined          BOOLEAN,
+    access           CALLABLE_ACCESS,
     metadata         JSONB
 );
 
@@ -92,16 +104,16 @@ CREATE TYPE RECEIVER_TYPE AS ENUM ('static', 'dynamic', 'virtual', 'interface', 
 
 CREATE TYPE RECEIVER AS
 (
-    line         INTEGER,
-    type         RECEIVER_TYPE,
-    receiver_uri TEXT
+    line          INTEGER,
+    receiver_type RECEIVER_TYPE,
+    namespace_id  BIGINT
 );
 
 CREATE TABLE edges
 (
-    source_id BIGINT     NOT NULL REFERENCES callables (id),
-    target_id BIGINT     NOT NULL REFERENCES callables (id),
-    receivers RECEIVER[] NOT NULL,
+    source_id BIGINT NOT NULL REFERENCES callables (id),
+    target_id BIGINT NOT NULL REFERENCES callables (id),
+    receivers RECEIVER[],
     metadata  JSONB
 );
 
@@ -135,7 +147,7 @@ CREATE UNIQUE INDEX CONCURRENTLY unique_version_dependency_range ON dependencies
 ALTER TABLE dependencies
     ADD CONSTRAINT unique_version_dependency_range UNIQUE USING INDEX unique_version_dependency_range;
 
-CREATE UNIQUE INDEX CONCURRENTLY unique_version_namespace ON modules USING btree (package_version_id, namespace);
+CREATE UNIQUE INDEX CONCURRENTLY unique_version_namespace ON modules USING btree (package_version_id, namespace_id);
 ALTER TABLE modules
     ADD CONSTRAINT unique_version_namespace UNIQUE USING INDEX unique_version_namespace;
 
@@ -167,6 +179,10 @@ ALTER TABLE callables
     ADD CONSTRAINT check_module_id CHECK ((module_id = -1 AND is_internal_call IS false) OR
                                           (module_id IS NOT NULL AND is_internal_call IS true));
 
+CREATE UNIQUE INDEX CONCURRENTLY unique_namespaces ON namespaces USING btree (namespace);
+ALTER TABLE edges
+    ADD CONSTRAINT unique_namespaces UNIQUE USING INDEX unique_namespaces;
+
 INSERT INTO packages (id, package_name, forge)
 VALUES (-1, 'external_callables_library', 'mvn')
 ON CONFLICT DO NOTHING;
@@ -175,6 +191,10 @@ INSERT INTO package_versions (id, package_id, version, cg_generator)
 VALUES (-1, -1, '0.0.1', 'OPAL')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO modules (id, package_version_id, namespace)
-VALUES (-1, -1, 'global_external_callables')
+INSERT INTO namespaces (id, namespace)
+VALUES (-1, 'global_external_callables')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO modules (id, package_version_id, namespace_id)
+VALUES (-1, -1, -1)
 ON CONFLICT DO NOTHING;

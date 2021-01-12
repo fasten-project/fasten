@@ -26,6 +26,8 @@ import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableAccess;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
@@ -39,9 +41,7 @@ import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.io.File;
 
 public class MetadataDatabaseJavaPlugin extends Plugin {
@@ -79,8 +79,34 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     + groupId + File.separator + product + ".json";
         }
 
+        protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
+            ExtendedRevisionJavaCallGraph javaGraph = (ExtendedRevisionJavaCallGraph) graph;
+            var namespaces = new HashSet<String>();
+            javaGraph.getClassHierarchy().get(JavaScope.internalTypes).keySet().forEach(k -> namespaces.add(k.toString()));
+            javaGraph.getClassHierarchy().get(JavaScope.externalTypes).keySet().forEach(k -> namespaces.add(k.toString()));
+            for (var edgeEntry : graph.getGraph().getExternalCalls().entrySet()) {
+                for (var obj : edgeEntry.getValue().keySet()) {
+                    var pc = obj.toString();
+                    var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(Integer.parseInt(pc));
+                    var callMetadata = new JSONObject();
+                    for (var key : metadataMap.keySet()) {
+                        callMetadata.put(key, metadataMap.get(key));
+                    }
+                    String receiverUri = callMetadata.optString("receiver");
+                    if (!receiverUri.isEmpty()) {
+                        namespaces.add(receiverUri);
+                    }
+                }
+            }
+            var namespaceMap = metadataDao.getNamespaceMap(new ArrayList<>(namespaces));
+            namespaceMap.keySet().forEach(namespaces::remove);
+            namespaceMap.putAll(metadataDao.insertNamespaces(namespaces));
+            return namespaceMap;
+        }
+
         public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
-                ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
+                ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId,
+                Map<String, Long> namespaceMap) {
             ExtendedRevisionJavaCallGraph javaCallGraph = (ExtendedRevisionJavaCallGraph) callgraph;
             var callables = new ArrayList<CallablesRecord>();
             var cha = javaCallGraph.getClassHierarchy();
@@ -88,7 +114,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             // Insert all modules, files, module contents and extract callables from internal types
             for (var fastenUri : internalTypes.keySet()) {
                 var type = internalTypes.get(fastenUri);
-                var moduleId = insertModule(type, fastenUri, packageVersionId, metadataDao);
+                var moduleId = insertModule(type, fastenUri, packageVersionId, namespaceMap, metadataDao);
                 var fileId = metadataDao.insertFile(packageVersionId, type.getSourceFileName());
                 metadataDao.insertModuleContent(moduleId, fileId);
                 callables.addAll(extractCallablesFromType(type, moduleId, true));
@@ -105,8 +131,8 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             return new ImmutablePair<>(callables, numInternal);
         }
 
-        protected long insertModule(JavaType type, FastenURI fastenUri,
-                                  long packageVersionId, MetadataDao metadataDao) {
+        protected long insertModule(JavaType type, FastenURI fastenUri, long packageVersionId,
+                                    Map<String, Long> namespaceMap, MetadataDao metadataDao) {
             // Collect metadata of the module
             var moduleMetadata = new JSONObject();
             moduleMetadata.put("superInterfaces",
@@ -117,7 +143,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             moduleMetadata.put("final", type.isFinal());
 
             // Put everything in the database
-            return metadataDao.insertModule(packageVersionId, fastenUri.toString(),
+            return metadataDao.insertModule(packageVersionId, namespaceMap.get(fastenUri.toString()),
                     null, moduleMetadata);
         }
 
@@ -139,32 +165,46 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                 if (callableMetadata.has("first")
                         && !(callableMetadata.get("first") instanceof String)) {
                     firstLine = callableMetadata.getInt("first");
-                    callableMetadata.remove("first");
                 }
+                callableMetadata.remove("first");
                 Integer lastLine = null;
                 if (callableMetadata.has("last")
                         && !(callableMetadata.get("last") instanceof String)) {
                     lastLine = callableMetadata.getInt("last");
-                    callableMetadata.remove("last");
                 }
-
+                callableMetadata.remove("last");
+                CallableType callableType = null;
+                if (callableMetadata.has("type") && (callableMetadata.get("type") instanceof String)) {
+                    callableType = getCallableType(callableMetadata.getString("type"));
+                }
+                callableMetadata.remove("type");
+                boolean callableDefined = false;
+                if (callableMetadata.has("defined") && (callableMetadata.get("defined") instanceof Boolean)) {
+                    callableDefined = callableMetadata.getBoolean("defined");
+                }
+                callableMetadata.remove("defined");
+                CallableAccess callableAccess = null;
+                if (callableMetadata.has("access") && (callableMetadata.get("access") instanceof String)) {
+                    callableAccess = getCallableAccess(callableMetadata.getString("access"));
+                }
+                callableMetadata.remove("access");
                 // Add a record to the list
                 callables.add(new CallablesRecord(localId, moduleId, uri, isInternal, null,
-                        firstLine, lastLine, JSONB.valueOf(callableMetadata.toString())));
+                        firstLine, lastLine, callableType, callableDefined, callableAccess,
+                        JSONB.valueOf(callableMetadata.toString())));
             }
             return callables;
         }
 
-        protected List<EdgesRecord> insertEdges(Graph graph,
-                                 Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
+        protected List<EdgesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+                                                Map<String, Long> namespaceMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)
-            var graphCalls = graph.getInternalCalls();
-            graphCalls.putAll(graph.getExternalCalls());
+            var externalCalls = graph.getExternalCalls();
 
             var edges = new ArrayList<EdgesRecord>(numEdges);
-            for (var edgeEntry : graphCalls.entrySet()) {
+            for (var edgeEntry : externalCalls.entrySet()) {
 
                 // Get Global ID of the source callable
                 var source = lidToGidMap.get((long) edgeEntry.getKey().get(0));
@@ -188,11 +228,19 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     int line = callMetadata.optInt("line", -1);
                     var type = this.getReceiverType(callMetadata.optString("type"));
                     String receiverUri = callMetadata.optString("receiver");
-                    receivers[counter++] = new ReceiverRecord(line, type, receiverUri);
+                    receivers[counter++] = new ReceiverRecord(line, type, namespaceMap.get(receiverUri));
                 }
-
                 // Add edge record to the list of records
-                edges.add(new EdgesRecord(source, target, receivers, JSONB.valueOf("{}")));
+                edges.add(new EdgesRecord(source, target, receivers, null));
+            }
+
+            var internalCalls = graph.getInternalCalls();
+            for (var edgeEntry : internalCalls.entrySet()) {
+                // Get Global ID of the source callable
+                var source = lidToGidMap.get((long) edgeEntry.getKey().get(0));
+                // Get Global ID of the target callable
+                var target = lidToGidMap.get((long) edgeEntry.getKey().get(1));
+                edges.add(new EdgesRecord(source, target, null, null));
             }
 
             // Batch insert all edges
