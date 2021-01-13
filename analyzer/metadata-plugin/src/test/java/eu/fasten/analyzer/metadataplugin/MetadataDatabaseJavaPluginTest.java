@@ -118,6 +118,11 @@ public class MetadataDatabaseJavaPluginTest {
                 "    },\n" +
                 "    \"timestamp\": 123\n" +
                 "}\n");
+        var namespacesMap = new HashMap<String, Long>(2);
+        namespacesMap.put("/internal.package/B", 1L);
+        namespacesMap.put("/external.package/A", 2L);
+        Mockito.when(metadataDao.getNamespaceMap(Mockito.anyList())).thenReturn(namespacesMap);
+        Mockito.when(metadataDao.insertNamespaces(Mockito.anySet())).thenReturn(Map.of());
         long packageId = 8;
         Mockito.when(metadataDao.insertPackage(json.getString("product"), Constants.mvnForge)).thenReturn(packageId);
         long packageVersionId = 42;
@@ -133,7 +138,7 @@ public class MetadataDatabaseJavaPluginTest {
                 "\"superInterfaces\": [\"/internal.package/BInterface\"]," +
                 "\"superClasses\": [\"/java.lang/Object\"]" +
                 "}");
-        Mockito.when(metadataDao.insertModule(packageVersionId, "/internal.package/B", null,
+        Mockito.when(metadataDao.insertModule(packageVersionId, 1L, null,
                 internalModuleMetadata)).thenReturn(internalModuleId);
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionJavaCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);

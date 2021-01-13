@@ -130,7 +130,7 @@ public class MetadataDatabaseCPluginTest {
         Mockito.when(metadataDao.insertFile(packageVersionId, "util.c")).thenReturn(fileId);
         Mockito.when(metadataDao.insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt())).thenReturn(List.of(64L, 65L));
         long internalModuleId = 17;
-        Mockito.when(metadataDao.insertModule(packageVersionId, null, null,
+        Mockito.when(metadataDao.insertModule(packageVersionId, 0, null,
                 null)).thenReturn(internalModuleId);
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionCCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);

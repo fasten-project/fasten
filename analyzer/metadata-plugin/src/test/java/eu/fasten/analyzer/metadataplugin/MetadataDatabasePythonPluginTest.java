@@ -108,6 +108,11 @@ public class MetadataDatabasePythonPluginTest {
            "     \"timestamp\": 123\n" +
            " }\n");
         long packageId = 8;
+       var namespacesMap = new HashMap<String, Long>(2);
+       namespacesMap.put("/module.name/", 1L);
+       namespacesMap.put("//external//", 2L);
+       Mockito.when(metadataDao.getNamespaceMap(Mockito.anyList())).thenReturn(namespacesMap);
+       Mockito.when(metadataDao.insertNamespaces(Mockito.anySet())).thenReturn(Map.of());
         Mockito.when(metadataDao.insertPackage(json.getString("product"), Constants.pypiForge)).thenReturn(packageId);
         long packageVersionId = 42;
         Mockito.when(metadataDao.insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),
@@ -116,7 +121,7 @@ public class MetadataDatabasePythonPluginTest {
         Mockito.when(metadataDao.insertFile(packageVersionId, "module/name.py")).thenReturn(fileId);
         Mockito.when(metadataDao.insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt())).thenReturn(List.of(64L, 65L, 66L));
         long internalModuleId = 17;
-        Mockito.when(metadataDao.insertModule(Mockito.eq(packageVersionId), Mockito.eq("/module.name/"), Mockito.eq(null),
+        Mockito.when(metadataDao.insertModule(Mockito.eq(packageVersionId), Mockito.eq(1L), Mockito.eq(null),
                 Mockito.any(JSONObject.class))).thenReturn(internalModuleId);
 
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionPythonCallGraph(json), metadataDao);
@@ -127,7 +132,7 @@ public class MetadataDatabasePythonPluginTest {
         Mockito.verify(metadataDao).insertFile(packageVersionId, "module/name.py");
         Mockito.verify(metadataDao).insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt());
         Mockito.verify(metadataDao).batchInsertEdges(Mockito.anyList());
-        Mockito.verify(metadataDao).insertModule(Mockito.eq(packageVersionId), Mockito.eq("/module.name/"), Mockito.eq(null), Mockito.any(JSONObject.class));
+        Mockito.verify(metadataDao).insertModule(Mockito.eq(packageVersionId), Mockito.eq(1L), Mockito.eq(null), Mockito.any(JSONObject.class));
     }
 
     @Test

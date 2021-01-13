@@ -85,7 +85,6 @@ public class MetadataDatabasePythonPlugin extends Plugin {
             for (var entry : internals.entrySet()) {
                 var type = entry.getValue();
                 var moduleName = entry.getKey();
-
                 var moduleId = metadataDao.insertModule(packageVersionId, namespaceMap.get(moduleName),
                                                         null, new JSONObject());
                 var fileId = metadataDao.insertFile(packageVersionId, type.getSourceFileName());

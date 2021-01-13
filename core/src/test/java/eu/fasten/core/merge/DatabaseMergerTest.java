@@ -8,10 +8,7 @@ import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongArraySet;
@@ -53,6 +50,7 @@ public class DatabaseMergerTest {
     private static Map<Long, String> typeDictionary;
     private static Map<Long, String> typeMap;
     private static Map<String, String> universalCHA;
+    private static Map<String, Long> namespacesMap;
 
     @BeforeAll
     static void setUp() {
@@ -87,26 +85,34 @@ public class DatabaseMergerTest {
                 "/test.group/Baz", "{\"superInterfaces\": [],\"superClasses\":[\"/test.group/Bar\"]}"
         );
 
+        namespacesMap = Map.of(
+                "/test.group/Main", 1L,
+                "/java.lang/Object", 2L,
+                "/test.group/Baz", 3L,
+                "/test.group/Bar", 4L,
+                "/test.group/Foo", 5L
+        );
+
         arcs = Map.of(
                 Pair.of(MAIN_INIT, MAIN_INIT), new ReceiverRecord[0],
                 Pair.of(MAIN_INIT, (long) 2), new ReceiverRecord[]{
-                        new ReceiverRecord(6, ReceiverType.special, "/java.lang/Object")
+                        new ReceiverRecord(6, ReceiverType.special, namespacesMap.get("/java.lang/Object"))
                 },
                 Pair.of(MAIN_MAIN_METHOD, (long) 3), new ReceiverRecord[]{
-                        new ReceiverRecord(8, ReceiverType.special, "/test.group/Baz")
+                        new ReceiverRecord(8, ReceiverType.special, namespacesMap.get("/test.group/Baz"))
                 },
                 Pair.of(MAIN_MAIN_METHOD, (long) 4), new ReceiverRecord[]{
-                        new ReceiverRecord(9, ReceiverType.virtual, "/test.group/Bar"),
-                        new ReceiverRecord(12, ReceiverType.interface_, "/test.group/Bar")
+                        new ReceiverRecord(9, ReceiverType.virtual, namespacesMap.get("/test.group/Bar")),
+                        new ReceiverRecord(12, ReceiverType.interface_, namespacesMap.get("/test.group/Bar"))
                 },
                 Pair.of(MAIN_MAIN_METHOD, (long) 5), new ReceiverRecord[]{
-                        new ReceiverRecord(11, ReceiverType.special, "/test.group/Bar")
+                        new ReceiverRecord(11, ReceiverType.special, namespacesMap.get("/test.group/Bar"))
                 },
                 Pair.of(MAIN_MAIN_METHOD, (long) 6), new ReceiverRecord[]{
-                        new ReceiverRecord(14, ReceiverType.static_, "/test.group/Foo")
+                        new ReceiverRecord(14, ReceiverType.static_, namespacesMap.get("/test.group/Foo"))
                 },
                 Pair.of(MAIN_MAIN_METHOD, (long) 7), new ReceiverRecord[]{
-                        new ReceiverRecord(15, ReceiverType.special, "/test.group/Foo")
+                        new ReceiverRecord(15, ReceiverType.special, namespacesMap.get("/test.group/Foo"))
                 }
         );
     }
@@ -191,6 +197,7 @@ public class DatabaseMergerTest {
 
         private final String modulesIdsQuery;
         private final String universalCHAQuery;
+        private final String namespacesQuery;
         private final String arcsQuery;
         private final String typeDictionaryQuery;
         private final String typeMapQuery;
@@ -203,8 +210,12 @@ public class DatabaseMergerTest {
                     .select(Callables.CALLABLES.MODULE_ID)
                     .from(Callables.CALLABLES)
                     .getSQL();
+            this.namespacesQuery = context
+                    .select(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE)
+                    .from(Namespaces.NAMESPACES)
+                    .getSQL();
             this.universalCHAQuery = context
-                    .select(Modules.MODULES.NAMESPACE, Modules.MODULES.METADATA)
+                    .select(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.METADATA)
                     .from(Modules.MODULES)
                     .getSQL();
             this.arcsQuery = context
@@ -248,17 +259,29 @@ public class DatabaseMergerTest {
 
             } else if (sql.startsWith(typeMapQuery)) {
                 mock[0] = createTypeMap();
+            } else if (sql.startsWith(namespacesQuery)) {
+                mock[0] = createNamespaces();
             }
 
             return mock;
         }
 
         private MockResult createUniversalCHA() {
-            Result<Record2<String, JSONB>> result = context.newResult(Modules.MODULES.NAMESPACE, Modules.MODULES.METADATA);
+            Result<Record2<Long, JSONB>> result = context.newResult(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.METADATA);
             for (var type : universalCHA.entrySet()) {
                 result.add(context
-                        .newRecord(Modules.MODULES.NAMESPACE, Modules.MODULES.METADATA)
-                        .values(type.getKey(), JSONB.valueOf(type.getValue())));
+                        .newRecord(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.METADATA)
+                        .values(namespacesMap.get(type.getKey()), JSONB.valueOf(type.getValue())));
+            }
+            return new MockResult(result.size(), result);
+        }
+
+        private MockResult createNamespaces() {
+            Result<Record2<Long, String>> result = context.newResult(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE);
+            for (var namespace : namespacesMap.entrySet()) {
+                result.add(context
+                        .newRecord(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE)
+                        .values(namespace.getValue(), namespace.getKey()));
             }
             return new MockResult(result.size(), result);
         }
