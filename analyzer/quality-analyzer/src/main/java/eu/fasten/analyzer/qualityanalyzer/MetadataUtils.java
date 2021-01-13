@@ -105,6 +105,7 @@ public class MetadataUtils {
 
         String product = null;
         String version = null;
+        String rapid_version = jsonRecord.getString("plugin_version");
 
         JSONObject payload = null;
 
@@ -158,7 +159,7 @@ public class MetadataUtils {
                 "quality_analyzer_version",
                 "quality_analysis_timestamp",
                 "metrics"});
-        tailored.put("rapid_plugin_version", QAConstants.QA_VERSION_NUMBER);
+        tailored.put("rapid_plugin_version", rapid_version);
 
         JSONObject metadata = new JSONObject();
         metadata.put("quality", tailored);
