@@ -18,17 +18,18 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.core.data.*;
-import eu.fasten.core.data.graphdb.GidGraph;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionPythonCallGraph;
+import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.PythonScope;
+import eu.fasten.core.data.PythonType;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableAccess;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
@@ -37,7 +38,10 @@ import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 public class MetadataDatabasePythonPlugin extends Plugin {
     public MetadataDatabasePythonPlugin(PluginWrapper wrapper) {
