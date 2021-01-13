@@ -161,7 +161,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
     public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version) {
         // TODO: dummy data; implement actual stitching response of transitive vulnerabilities.
         return new ResponseEntity<>(
-                "[{\"vulnerability\":\"https://nvd.nist.gov/vuln/detail/CVE-2019-11777\",\"path\":[{\"id\":0,\"fastenUri\":\"test_uri\",\"className\":\"ClassA\",\"methodName\":\"MethodA()\"},{\"id\":1,\"fastenUri\":\"test_uri1\",\"className\":\"ClassB\",\"methodName\":\"MethodB()\"},{\"id\":2,\"fastenUri\":\"test_uri2\",\"className\":\"ClassC\",\"methodName\":\"MethodC()\"}]},{\"vulnerability\":\"https://nvd.nist.gov/vuln/detail/CVE-2019-11777\",\"path\":[{\"id\":0,\"fastenUri\":\"test_uri\",\"className\":\"ClassJ\",\"methodName\":\"MethodA()\"},{\"id\":1,\"fastenUri\":\"test_uri1\",\"className\":\"ClassC\",\"methodName\":\"MethodZ()\"}]}]",
+                "[{\"vulnerability\":\"https://nvd.nist.gov/vuln/detail/CVE-2019-11777\",\"path\":[{\"id\":0,\"uri\":\"test_uri\",\"className\":\"ClassA\",\"methodName\":\"MethodA()\"},{\"id\":1,\"uri\":\"test_uri1\",\"className\":\"ClassB\",\"methodName\":\"MethodB()\"},{\"id\":2,\"uri\":\"test_uri2\",\"className\":\"ClassC\",\"methodName\":\"MethodC()\"}]},{\"vulnerability\":\"https://nvd.nist.gov/vuln/detail/CVE-2019-11777\",\"path\":[{\"id\":0,\"uri\":\"test_uri\",\"className\":\"ClassJ\",\"methodName\":\"MethodA()\"},{\"id\":1,\"uri\":\"test_uri1\",\"className\":\"ClassC\",\"methodName\":\"MethodZ()\"}]}]",
                 HttpStatus.OK
         );
     }
