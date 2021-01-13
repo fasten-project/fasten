@@ -23,11 +23,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.graphdb.RocksDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -45,6 +41,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Record2;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -479,26 +476,34 @@ public class DatabaseMerger {
                 .fetch();
 
         var modules = dbContext
-                .select(Modules.MODULES.NAMESPACE, Modules.MODULES.METADATA)
+                .select(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.METADATA)
                 .from(Modules.MODULES)
                 .where(Modules.MODULES.ID.in(modulesIds))
                 .fetch();
 
+        var namespacesIDs = dbContext
+                .select(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE)
+                .from(Namespaces.NAMESPACES)
+                .where(Namespaces.NAMESPACES.ID.in(modules.map(Record2::value1)))
+                .fetch();
+        var namespaceMap = new HashMap<Long, String>(namespacesIDs.size());
+        namespacesIDs.forEach(r -> namespaceMap.put(r.value1(), r.value2()));
+
         for (var callable : modules) {
-            if (!universalCHA.containsVertex(callable.value1())) {
-                universalCHA.addVertex(callable.value1());
+            if (!universalCHA.containsVertex(namespaceMap.get(callable.value1()))) {
+                universalCHA.addVertex(namespaceMap.get(callable.value1()));
             }
 
             try {
                 var superClasses = new JSONObject(callable.value2().data())
                         .getJSONArray("superClasses").toList();
-                addSuperTypes(universalCHA, callable.value1(), superClasses);
+                addSuperTypes(universalCHA, namespaceMap.get(callable.value1()), superClasses);
             } catch (NullPointerException ignore) {
             }
             try {
                 var superInterfaces = new JSONObject(callable.value2().data())
                         .getJSONArray("superInterfaces").toList();
-                addSuperTypes(universalCHA, callable.value1(), superInterfaces);
+                addSuperTypes(universalCHA, namespaceMap.get(callable.value1()), superInterfaces);
             } catch (NullPointerException ignore) {
             }
         }
