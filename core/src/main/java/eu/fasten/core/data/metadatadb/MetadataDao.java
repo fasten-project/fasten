@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
 import java.util.*;
+import static org.jooq.impl.DSL.field;
 
 public class MetadataDao {
 
@@ -726,8 +727,7 @@ public class MetadataDao {
                 .values(sourceId, targetId, receivers, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
                 .set(Edges.EDGES.RECEIVERS, Edges.EDGES.as("excluded").RECEIVERS)
-                .set(Edges.EDGES.METADATA, JsonbDSL.concat(Edges.EDGES.METADATA,
-                        Edges.EDGES.as("excluded").METADATA))
+                .set(Edges.EDGES.METADATA, field("coalesce(edges.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
                 .returning(Edges.EDGES.SOURCE_ID).fetchOne();
         return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
     }
