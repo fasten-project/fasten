@@ -55,4 +55,10 @@ public class StitchingApi {
                                             @RequestParam(required = false, defaultValue = "-1") long timestamp) {
         return service.getDirectedGraph(packageVersionId, needStitching, timestamp);
     }
+
+    @GetMapping(value = "/__INTERNAL__/packages/{pkg}/{pkg_ver}/vulnerabilities", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> getTransitiveVulnerabilities(@PathVariable("pkg") String package_name,
+                                                        @PathVariable("pkg_ver") String package_version) {
+        return service.getTransitiveVulnerabilities(package_name, package_version);
+    }
 }
