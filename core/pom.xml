@@ -227,6 +227,12 @@
             <artifactId>maven-artifact</artifactId>
             <version>3.6.3</version>
         </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.15</version>
+        </dependency>
+
 
 
         <!-- Integration tests -->
