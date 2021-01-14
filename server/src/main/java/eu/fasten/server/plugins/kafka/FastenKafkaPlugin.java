@@ -170,13 +170,33 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         // Although we loop through all records, by default we only poll 1 record.
         for (var r : records) {
-            doCommitSync();
+
+            /**
+             * Consumer strategy:
+             *
+             * 1. We poll one record (by default).
+             * 2. If the record hash is in local storage:
+             *    a. Produce to error topic, that this record couldn't be processed.
+             *    b. Commit the offset, if producer confirmed sending the message.
+             *    c. Go back to 1.
+             * 3. If the record hash is _not_ in local storage:
+             *    a. Process the record.
+             *    b. Produce its results (either to the error topic, or output topic).
+             *    c. Commit the offset if producer confirmed sending the message.
+             *    d. Go back to 1.
+             *
+             * This strategy provides at-least-once semantics.
+             * With broker and server failures, this strategy offers at-least-once semantics.
+             *
+             * TODO: Reason/think about what happens if there is a failure with producing (do we care about that)?
+             */
             if (consumeTimeoutEnabled) {
                 consumeWithTimeout(r.value(), consumeTimeout, exitOnTimeout);
             } else {
                 plugin.consume(r.value());
             }
             handleProducing(r.value(), consumeTimestamp);
+            doCommitSync();
         }
     }
 
