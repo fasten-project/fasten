@@ -34,10 +34,7 @@ import org.rocksdb.RocksDBException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StitchingApiServiceImplTest {
@@ -150,5 +147,41 @@ public class StitchingApiServiceImplTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
 
         Mockito.verify(graphDao, Mockito.times(3)).getGraphData(id);
+    }
+
+    @Test
+    void getPathsToVulnerableNodeDFSTest() {
+        var builder = new ArrayImmutableDirectedGraph.Builder();
+        builder.addInternalNode(0);
+        builder.addInternalNode(1);
+        builder.addInternalNode(2);
+        builder.addInternalNode(3);
+        builder.addInternalNode(4);
+        builder.addInternalNode(5);
+        builder.addInternalNode(6);
+        builder.addInternalNode(7);
+        builder.addArc(0, 1);
+        builder.addArc(0, 3);
+        builder.addArc(1, 2);
+        builder.addArc(1, 4);
+        builder.addArc(3, 5);
+        builder.addArc(2, 7);
+        builder.addArc(4, 7);
+        builder.addArc(5, 7);
+        builder.addArc(5, 6);
+        var graph = builder.build();
+        assertEquals(List.of(1L, 3L), graph.successors(0L));
+        assertEquals(List.of(2L, 4L), graph.successors(1L));
+        assertEquals(List.of(5L), graph.successors(3L));
+        assertEquals(List.of(7L), graph.successors(2L));
+        assertEquals(List.of(7L), graph.successors(4L));
+        assertEquals(List.of(6L, 7L), graph.successors(5L));
+        var expected = List.of(
+                List.of(0L, 1L, 2L, 7L),
+                List.of(0L, 1L, 4L, 7L),
+                List.of(0L, 3L, 5L, 7L)
+        );
+        var actual = service.getPathsToVulnerableNode(graph, 0L, 7L, new HashSet<>(), new LinkedList<>(), new ArrayList<>());
+        assertEquals(expected, actual);
     }
 }

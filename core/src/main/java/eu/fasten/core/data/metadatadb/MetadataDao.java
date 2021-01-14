@@ -37,25 +37,13 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import eu.fasten.core.utils.FastenUriUtils;
 import org.apache.commons.math3.util.Pair;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.jooq.JSONFormat;
-import org.jooq.Query;
-import org.jooq.Record;
-import org.jooq.Record2;
-import org.jooq.Result;
-import org.jooq.SelectField;
+import org.jooq.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.*;
@@ -1318,6 +1306,26 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
+    public List<Long> getPackageInternalCallableIDs(String packageName, String version) {
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
+        // Building and executing the query
+        var result = context
+                .select(c.ID)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .where(packageVersionWhereClause(packageName, version))
+                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(true))
+                .fetch();
+        return result.map(Record1::value1);
+    }
+
     public String getCallableMetadata(String packageName,
                                       String packageVersion,
                                       String fastenURI) {
@@ -1349,6 +1357,19 @@ public class MetadataDao {
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public Map<Long, JSONObject> getCallablesMetadata(Collection<Long> callableIDs) {
+        var result = context
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.in(callableIDs))
+                .fetch();
+        var map = new HashMap<Long, JSONObject>(result.size());
+        for (var record : result) {
+            map.put(record.value1(), new JSONObject(record.value2().data()));
+        }
+        return map;
     }
 
     public String getArtifactName(long packageVersionId) {

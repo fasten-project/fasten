@@ -159,10 +159,98 @@ public class StitchingApiServiceImpl implements StitchingApiService {
 
     @Override
     public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version) {
-        // TODO: dummy data; implement actual stitching response of transitive vulnerabilities.
-        return new ResponseEntity<>(
-                "[{\"vulnerability\":\"https://nvd.nist.gov/vuln/detail/CVE-2019-11777\",\"path\":[{\"id\":0,\"uri\":\"test_uri\",\"className\":\"ClassA\",\"methodName\":\"MethodA()\"},{\"id\":1,\"uri\":\"test_uri1\",\"className\":\"ClassB\",\"methodName\":\"MethodB()\"},{\"id\":2,\"uri\":\"test_uri2\",\"className\":\"ClassC\",\"methodName\":\"MethodC()\"}]},{\"vulnerability\":\"https://nvd.nist.gov/vuln/detail/CVE-2019-11777\",\"path\":[{\"id\":0,\"uri\":\"test_uri\",\"className\":\"ClassJ\",\"methodName\":\"MethodA()\"},{\"id\":1,\"uri\":\"test_uri1\",\"className\":\"ClassC\",\"methodName\":\"MethodZ()\"}]}]",
-                HttpStatus.OK
-        );
+        var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
+        var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
+
+        // Get all transitive dependencies
+        var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(groupId, artifactId, version, -1L, KnowledgeBaseConnector.dbContext, true);
+        var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
+        var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
+
+        // Get stitched (with dependencies) graph
+        var graph = databaseMerger.mergeWithCHA(package_name + Constants.mvnCoordinateSeparator + version);
+
+        // Get all callables from the graph to find their vulnerabilities
+        var callablesMetadata = KnowledgeBaseConnector.kbDao.getCallablesMetadata(graph.nodes());
+        var vulnerabilities = new HashMap<Long, JSONObject>();
+        for (var entry : callablesMetadata.entrySet()) {
+            if (entry.getValue().has("vulnerabilities")) {
+                vulnerabilities.put(entry.getKey(), entry.getValue().getJSONObject("vulnerabilities"));
+            }
+        }
+
+        // Get all internal callables
+        var internalCallables = KnowledgeBaseConnector.kbDao.getPackageInternalCallableIDs(package_name, version);
+
+        // Find all paths between any internal node and any vulnerable node in the graph
+        var vulnerablePaths = new ArrayList<List<Long>>();
+        for (var internal : internalCallables) {
+            for (var vulnerable : vulnerabilities.keySet()) {
+                vulnerablePaths.addAll(getPathsToVulnerableNode(graph, internal, vulnerable, new HashSet<>(), new ArrayList<>(), new ArrayList<>()));
+            }
+        }
+
+        // Group vulnerable path by the vulnerabilities
+        var vulnerabilitiesMap = new HashMap<String, List<List<Long>>>();
+        for (var path : vulnerablePaths) {
+            var pathVulnerabilities = vulnerabilities.get(path.get(path.size() - 1)).keySet();
+            for (var vulnerability : pathVulnerabilities) {
+                if (vulnerabilitiesMap.containsKey(vulnerability)) {
+                    var paths = vulnerabilitiesMap.get(vulnerability);
+                    var updatedPaths = new ArrayList<>(paths);
+                    updatedPaths.add(path);
+                    vulnerabilitiesMap.remove(vulnerability);
+                    vulnerabilitiesMap.put(vulnerability, updatedPaths);
+                } else {
+                    var paths = new ArrayList<List<Long>>();
+                    paths.add(path);
+                    vulnerabilitiesMap.put(vulnerability, paths);
+                }
+            }
+        }
+
+        // Get FASTEN URIs of all callables in all vulnerable paths
+        var pathNodes = new HashSet<Long>();
+        vulnerablePaths.forEach(pathNodes::addAll);
+        var fastenUris = KnowledgeBaseConnector.kbDao.getFullFastenUris(new ArrayList<>(pathNodes));
+
+        // Generate JSON response
+        var json = new JSONObject();
+        for (var entry : vulnerabilitiesMap.entrySet()) {
+            var pathsJson = new JSONArray();
+            for (var path : entry.getValue()) {
+                var pathJson = new JSONArray();
+                for (var node : path) {
+                    var jsonNode = new JSONObject();
+                    jsonNode.put("id", node);
+                    jsonNode.put("fasten_uri", fastenUris.get(node));
+                    pathJson.put(jsonNode);
+                }
+                pathsJson.put(pathJson);
+            }
+            json.put(entry.getKey(), pathsJson);
+        }
+        return new ResponseEntity<>(json.toString(), HttpStatus.OK);
+    }
+
+    List<List<Long>> getPathsToVulnerableNode(DirectedGraph graph, long source, long target,
+                                              Set<Long> visited, List<Long> path, List<List<Long>> vulnerablePaths) {
+        if (path.isEmpty()) {
+            path.add(source);
+        }
+        if (source == target) {
+            vulnerablePaths.add(new ArrayList<>(path));
+            return vulnerablePaths;
+        }
+        visited.add(source);
+        for (var node : graph.successors(source)) {
+            if (!visited.contains(node)) {
+                path.add(node);
+                getPathsToVulnerableNode(graph, node, target, visited, path, vulnerablePaths);
+                path.remove(node);
+            }
+        }
+        visited.remove(source);
+        return vulnerablePaths;
     }
 }
