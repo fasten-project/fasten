@@ -48,8 +48,6 @@ import org.slf4j.LoggerFactory;
 public class FastenKafkaPlugin implements FastenServerPlugin {
     private final Logger logger = LoggerFactory.getLogger(FastenKafkaPlugin.class.getName());
 
-    private Thread thread;
-
     private final KafkaPlugin plugin;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
@@ -67,6 +65,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final boolean consumeTimeoutEnabled;
     private final long consumeTimeout;
     private final boolean exitOnTimeout;
+
+    // Local storage for duplicate processing.
+    private final LocalStorage localStorage;
 
     // Executor service which creates a thread pool and re-uses threads when possible.
     private final ExecutorService exexcutorService = Executors.newCachedThreadPool();
@@ -97,8 +98,13 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         if (writeLink != null) {
             this.writeLink = writeLink.endsWith(File.separator)
                     ? writeLink.substring(0, writeLink.length() - 1) : writeLink;
+
+
+            // TODO Check if local storage needs to be enabled.
+            this.localStorage = new LocalStorage(this.writeLink);
         } else {
             this.writeLink = null;
+            this.localStorage = null;
         }
 
         this.outputTopic = outputTopic;
@@ -142,14 +148,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     /**
-     * Starts a thread.
+     * Starts the plugin.
      */
     public void start() {
-//        this.thread = new Thread(this);
-//        this.thread.setName(this.plugin.getClass().getSimpleName() + "_plugin");
-//        this.thread.start();
-//        this.plugin.start();
-
         this.run();
     }
 
@@ -161,22 +162,15 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     /**
-     * Getter for the thread.
-     *
-     * @return thread
-     */
-    public Thread thread() {
-        return thread;
-    }
-
-    /**
      * Consumes a message from a Kafka topics and passes it to a plugin.
      */
     private void handleConsuming() {
         ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
+        var consumeTimestamp = System.currentTimeMillis() / 1000L;
+
+        // Although we loop through all records, by default we only poll 1 record.
         for (var r : records) {
             doCommitSync();
-            var consumeTimestamp = System.currentTimeMillis() / 1000L;
             if (consumeTimeoutEnabled) {
                 consumeWithTimeout(r.value(), consumeTimeout, exitOnTimeout);
             } else {

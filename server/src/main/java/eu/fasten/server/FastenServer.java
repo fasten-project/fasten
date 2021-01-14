@@ -191,36 +191,6 @@ public class FastenServer implements Runnable {
         var kafkaServerPlugins = setupKafkaPlugins(kafkaPlugins);
 
         kafkaServerPlugins.forEach(FastenServerPlugin::start);
-
-        //waitForInterruption(kafkaServerPlugins);
-    }
-
-    /**
-     * Joins threads of kafka plugins, waits for the interrupt signal and sends
-     * shutdown signal to all threads.
-     *
-     * @param plugins list of kafka plugins
-     */
-    private void waitForInterruption(List<FastenServerPlugin> plugins) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            plugins.forEach(FastenServerPlugin::stop);
-            plugins.forEach(c -> {
-                try {
-                    c.thread().join();
-                } catch (InterruptedException e) {
-                    logger.debug("Couldn't join consumers");
-                }
-            });
-            logger.info("Fasten server has been successfully stopped");
-        }));
-
-        plugins.forEach(c -> {
-            try {
-                c.thread().join();
-            } catch (InterruptedException e) {
-                logger.debug("Couldn't join consumers");
-            }
-        });
     }
 
     /**
