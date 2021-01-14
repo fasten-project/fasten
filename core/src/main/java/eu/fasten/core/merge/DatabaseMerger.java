@@ -57,6 +57,7 @@ public class DatabaseMerger {
     private final DSLContext dbContext;
     private final RocksDao rocksDao;
     private final Set<Long> dependencySet;
+    private Map<Long, String> namespaceMap;
 
     /**
      * Create instance of database merger from package names.
@@ -260,7 +261,7 @@ public class DatabaseMerger {
             switch (type) {
                 case "virtual":
                 case "interface":
-                    final var types = universalChildren.get(receiverTypeUri);
+                    final var types = universalChildren.get(this.namespaceMap.get(receiverTypeUri));
                     if (types != null) {
                         for (final var depTypeUri : types) {
                             for (final var target : typeDictionary.getOrDefault(depTypeUri,
@@ -278,7 +279,7 @@ public class DatabaseMerger {
                     logger.warn("OPAL didn't rewrite the dynamic");
                     break;
                 default:
-                    for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
+                    for (final var target : typeDictionary.getOrDefault(this.namespaceMap.get(receiverTypeUri),
                             new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                         addEdge(result, callGraphData, arc.source, target, isCallback);
                         added = true;
@@ -486,7 +487,7 @@ public class DatabaseMerger {
                 .from(Namespaces.NAMESPACES)
                 .where(Namespaces.NAMESPACES.ID.in(modules.map(Record2::value1)))
                 .fetch();
-        var namespaceMap = new HashMap<Long, String>(namespacesIDs.size());
+        this.namespaceMap = new HashMap<>(namespacesIDs.size());
         namespacesIDs.forEach(r -> namespaceMap.put(r.value1(), r.value2()));
 
         for (var callable : modules) {
