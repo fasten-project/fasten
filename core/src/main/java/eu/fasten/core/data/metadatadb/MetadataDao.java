@@ -803,8 +803,7 @@ public class MetadataDao {
                 .values((Long) null, (Long) null, (ReceiverRecord[]) null, (JSONB) null)
                 .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
                 .set(Edges.EDGES.RECEIVERS, Edges.EDGES.as("excluded").RECEIVERS)
-                .set(Edges.EDGES.METADATA, JsonbDSL.concat(Edges.EDGES.METADATA,
-                        Edges.EDGES.as("excluded").METADATA));
+                .set(Edges.EDGES.METADATA, field("coalesce(edges.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class));
         var batchBind = context.batch(batchQuery);
         for (var edge : edges) {
             batchBind = batchBind.bind(edge.getSourceId(), edge.getTargetId(),
