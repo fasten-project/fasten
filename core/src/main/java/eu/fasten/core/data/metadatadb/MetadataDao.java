@@ -623,7 +623,7 @@ public class MetadataDao {
      */
     public long insertCallable(Long moduleId, String fastenUri, boolean isInternalCall,
                                Timestamp createdAt, Integer lineStart, Integer lineEnd,
-                               CallableType type, boolean defined, CallableAccess access,
+                               CallableType type, Boolean defined, CallableAccess access,
                                JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Callables.CALLABLES,

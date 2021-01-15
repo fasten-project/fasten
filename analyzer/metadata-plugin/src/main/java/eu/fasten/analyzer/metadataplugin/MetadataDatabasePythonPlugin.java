@@ -135,7 +135,7 @@ public class MetadataDatabasePythonPlugin extends Plugin {
                     callableType = getCallableType(callableMetadata.getString("type"));
                 }
                 callableMetadata.remove("type");
-                boolean callableDefined = false;
+                Boolean callableDefined = null;
                 if (callableMetadata.has("defined") && (callableMetadata.get("defined") instanceof Boolean)) {
                     callableDefined = callableMetadata.getBoolean("defined");
                 }

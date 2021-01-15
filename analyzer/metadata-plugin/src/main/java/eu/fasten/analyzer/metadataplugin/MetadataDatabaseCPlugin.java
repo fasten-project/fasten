@@ -191,7 +191,7 @@ public class MetadataDatabaseCPlugin extends Plugin {
                     }
                     callableMetadata.remove("last");
                     var callableType = getCallableType(String.valueOf(scope));
-                    boolean callableDefined = false;
+                    Boolean callableDefined = null;
                     if (callableMetadata.has("defined") && (callableMetadata.get("defined") instanceof Boolean)) {
                         callableDefined = callableMetadata.getBoolean("defined");
                     }
