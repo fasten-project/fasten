@@ -823,17 +823,22 @@ public class MetadataDao {
                 Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
                 Callables.CALLABLES.LINE_START, Callables.CALLABLES.LINE_END,
+                Callables.CALLABLES.TYPE, Callables.CALLABLES.DEFINED, Callables.CALLABLES.ACCESS,
                 Callables.CALLABLES.METADATA);
         for (var callable : callables) {
             insert = insert.values(callable.getModuleId(), callable.getFastenUri(),
                     callable.getIsInternalCall(), callable.getCreatedAt(),
-                    callable.getLineStart(), callable.getLineEnd(), callable.getMetadata());
+                    callable.getLineStart(), callable.getLineEnd(), callable.getType(),
+                    callable.getDefined(), callable.getAccess(), callable.getMetadata());
         }
         var result = insert.onConflictOnConstraint(Keys.UNIQUE_URI_CALL).doUpdate()
                 .set(Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.as("excluded").MODULE_ID)
                 .set(Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.as("excluded").CREATED_AT)
                 .set(Callables.CALLABLES.LINE_START, Callables.CALLABLES.as("excluded").LINE_START)
                 .set(Callables.CALLABLES.LINE_END, Callables.CALLABLES.as("excluded").LINE_END)
+                .set(Callables.CALLABLES.TYPE, Callables.CALLABLES.as("excluded").TYPE)
+                .set(Callables.CALLABLES.DEFINED, Callables.CALLABLES.as("excluded").DEFINED)
+                .set(Callables.CALLABLES.ACCESS, Callables.CALLABLES.as("excluded").ACCESS)
                 .set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
                         Callables.CALLABLES.as("excluded").METADATA))
                 .returning(Callables.CALLABLES.ID).fetch();
