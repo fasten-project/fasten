@@ -23,7 +23,7 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
 1. (Optional) Install [Kafka](https://github.com/bitnami/charts/tree/master/bitnami/kafka) in your cluster:
     ```bash
     helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm install my-release bitnami/kafka
+    helm install fasten-kafka-instance bitnami/kafka
     ```
     -
         This plugin sends the license report back to Kafka using
