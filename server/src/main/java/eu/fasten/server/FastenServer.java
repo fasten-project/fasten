@@ -215,7 +215,7 @@ public class FastenServer implements Runnable {
         return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName())).map(k -> {
             var consumerProperties = KafkaConnector.kafkaConsumerProperties(
                     kafkaServers,
-                    (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() : consumerGroup), // if consumergroup == undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
+                    (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() : consumerGroup), // if consumergroup != undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
                     k.getSessionTimeout(),
                     k.getMaxConsumeTimeout(),
                     k.isStaticMembership());
