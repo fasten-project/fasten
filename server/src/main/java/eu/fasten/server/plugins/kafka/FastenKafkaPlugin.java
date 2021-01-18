@@ -170,7 +170,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     /**
      * Consumes a message from a Kafka topics and passes it to a plugin.
      */
-    private void handleConsuming() {
+    public void handleConsuming() {
         ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
         Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
@@ -245,7 +245,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      *
      * @param input input message [can be null]
      */
-    private void handleProducing(String input, long consumeTimestamp) {
+    public void handleProducing(String input, long consumeTimestamp) {
         try {
             if (plugin.getPluginError() != null) {
                 throw new Exception(plugin.getPluginError());

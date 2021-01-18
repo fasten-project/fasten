@@ -89,11 +89,6 @@ public class KafkaConsumeTimeoutTest {
         assertEquals(new TimeoutException().getClass(), dummyPlugin.getPluginError().getClass()); // verify if a TimeoutException
     }
 
-
-
-
-
-
     class DummyPlugin implements KafkaPlugin {
 
         private final boolean blocking;

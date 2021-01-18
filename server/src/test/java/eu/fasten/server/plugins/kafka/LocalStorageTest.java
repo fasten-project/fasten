@@ -35,13 +35,13 @@ public class LocalStorageTest {
     }
 
     @Test
-    public void test_create_positive() throws IOException {
+    public void testCreatePositive() throws IOException {
         Assertions.assertTrue(localStorage.store("A very nice message!"));
         Assertions.assertTrue(localStorage.store("Second message!"));
     }
 
     @Test
-    public void test_exists() throws IOException {
+    public void testExists() throws IOException {
         Assertions.assertTrue(localStorage.store("A very nice message!"));
         Assertions.assertTrue(localStorage.store("Extra message"));
         Assertions.assertTrue(localStorage.exists("A very nice message!"));
@@ -49,7 +49,7 @@ public class LocalStorageTest {
     }
 
     @Test
-    public void test_create_negative() throws IOException {
+    public void testCreateNegative() throws IOException {
         Assertions.assertTrue(localStorage.store("A very nice message!"));
         Assertions.assertFalse(localStorage.store("A very nice message!"));
         Assertions.assertTrue(localStorage.store("Second message!"));
@@ -57,7 +57,7 @@ public class LocalStorageTest {
     }
 
     @Test
-    public void test_remove() throws IOException {
+    public void testRemove() throws IOException {
         Assertions.assertTrue(localStorage.store("A very nice message!"));
         Assertions.assertTrue(localStorage.exists("A very nice message!"));
         Assertions.assertTrue(localStorage.delete("A very nice message!"));
@@ -65,18 +65,18 @@ public class LocalStorageTest {
     }
 
     @Test
-    public void test_remove_negative() throws IOException {
+    public void testRemoveNegative() throws IOException {
         Assertions.assertFalse(localStorage.delete("Non existent message"));
     }
 
     @Test
-    public void test_sha() throws IOException {
+    public void testSHA() throws IOException {
         Assertions.assertEquals(localStorage.getSHA1("Same message"),localStorage.getSHA1("Same message"));
         Assertions.assertNotEquals(localStorage.getSHA1("Same message"),localStorage.getSHA1("Different message"));
     }
 
     @Test
-    public void test_clear() throws IOException {
+    public void testClear() throws IOException {
         localStorage.store("Number 1");
         localStorage.store("Number 2");
         Assertions.assertTrue(localStorage.exists("Number 1"));
