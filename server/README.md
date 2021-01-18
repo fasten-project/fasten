@@ -31,7 +31,7 @@ The FASTEN-server is a component necessary for running [FASTEN-specific plugins]
 - `ot` `--output_topic` Name of the output topic. Defaults to (simple) name of the plugin.
 - `ct` `--consume_timeout` Adds a timeout on the time a plugin can spend on its consumed records. Disabled by default.
 - `cte` `--consume_timeout_exit` Shutdowns the JVM if a consume timeout is reached. 
-- `ls` `--local_storage` Enables local storage which stores record currently processed. This ensure that records that were processed before won't be processed again (e.g. when the pod crashes). Local storage relies on the `-po` (plugin output directory), to store message hashes. Furthermore, the environment variable `POD_INSTANCE_ID` needs to be available with a static and unique id per pod.  
+- `ls` `--local_storage` Enables local storage which stores the record that is currently processed. This ensure that records that were processed before won't be processed again (e.g. when the pod crashes). Local storage relies on the `--local_storage_dir` flag, to store message hashes. Furthermore, the environment variable `POD_INSTANCE_ID` needs to be available with a static and unique id per pod.  
 - `-V` `--version` Print version information and exit.
 
 ## Usage 

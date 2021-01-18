@@ -83,7 +83,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param skipOffsets        skip offset number
      */
     public FastenKafkaPlugin(boolean enableKafka, Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout, boolean enableLocalStorage) {
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout, boolean enableLocalStorage, String localStorageDir) {
         this.plugin = plugin;
 
         if (enableKafka) {
@@ -95,16 +95,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         if (writeDirectory != null) {
             this.writeDirectory = writeDirectory.endsWith(File.separator)
                     ? writeDirectory.substring(0, writeDirectory.length() - 1) : writeDirectory;
-
-            // If the write link is not null, and local storage is enabled. Initialize it.
-            if (enableLocalStorage) {
-                this.localStorage = new LocalStorage(this.writeDirectory);
-            } else {
-                this.localStorage = null;
-            }
         } else {
             this.writeDirectory = null;
-            this.localStorage = null;
         }
         if (writeLink != null) {
             this.writeLink = writeLink.endsWith(File.separator)
@@ -115,6 +107,13 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             this.writeLink = null;
         }
 
+        // If the write link is not null, and local storage is enabled. Initialize it.
+        if (enableLocalStorage) {
+            this.localStorage = new LocalStorage(localStorageDir);
+        } else {
+            this.localStorage = null;
+        }
+
         this.outputTopic = outputTopic;
         this.consumeTimeoutEnabled = consumeTimeoutEnabled;
         this.consumeTimeout = consumeTimeout;
@@ -123,8 +122,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout, boolean enableLocalStorage) {
-        this(true, consumerProperties, producerProperties, plugin, skipOffsets, writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout, exitOnTimeout, enableLocalStorage);
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout, boolean enableLocalStorage, String localStorageDir) {
+        this(true, consumerProperties, producerProperties, plugin, skipOffsets, writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout, exitOnTimeout, enableLocalStorage, localStorageDir);
     }
 
 

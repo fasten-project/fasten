@@ -151,6 +151,11 @@ public class FastenServer implements Runnable {
     )
     boolean localStorage;
 
+    @Option(names = {"-lsd", "--local_storage_dir"},
+            paramLabel = "localStorageDir",
+            description = "Directory of local storage, must be available from every pod location. Default's to /mnt/fasten/local_storage/plugin_name")
+    String localStorageDir;
+
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     @Override
@@ -230,7 +235,8 @@ public class FastenServer implements Runnable {
                     (consumeTimeout != -1) ? true : false,
                     consumeTimeout,
                     consumeTimeoutExit,
-                    localStorage);
+                    localStorage,
+                    (localStorageDir != null) ? localStorageDir : "/mnt/fasten/local_storage/" + k.getClass().getSimpleName());
         }).collect(Collectors.toList());
     }
 
