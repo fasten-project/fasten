@@ -41,7 +41,7 @@ public class LocalStorage {
      * @return true if local storage, otherwise false.
      */
     public boolean exists(String message) {
-        String hashedMessage = digestUtils.digestAsHex(message);
+        String hashedMessage = getSHA1(message);
         String[] filesInFolder = storageFolder.list();
 
         for (String hash : filesInFolder) {
@@ -63,9 +63,20 @@ public class LocalStorage {
             return false;
         }
 
-        String hashedMessage = digestUtils.digestAsHex(message);
+        String hashedMessage = getSHA1(message);
         File fileToRemove = new File(storageFolder.getPath() + File.separator + hashedMessage);
 
+        return fileToRemove.delete();
+    }
+
+    /**
+     * Deletes a file by hash.
+     *
+     * @param hash the hash to remove from local storage.
+     * @return if successfully deleted.
+     */
+    private boolean deleteByHash(String hash) {
+        File fileToRemove = new File(storageFolder.getPath() + File.separator + hash);
         return fileToRemove.delete();
     }
 
@@ -81,10 +92,31 @@ public class LocalStorage {
             return false;
         }
 
-        String hashedMessage = digestUtils.digestAsHex(message);
+        String hashedMessage = getSHA1(message);
         File fileToCreate = new File(storageFolder.getPath() + File.separator + hashedMessage);
 
         return fileToCreate.createNewFile();
+    }
+
+    /**
+     * Remove all hashes/files from local storage.
+     */
+    public void clear() {
+        String[] filesInFolder = storageFolder.list();
+
+        for (String hash : filesInFolder) {
+            deleteByHash(hash);
+        }
+    }
+
+    /**
+     * Hashes a message using SHA1.
+     *
+     * @param message the message to hash.
+     * @return the hashed message.
+     */
+    public String getSHA1(String message) {
+        return digestUtils.digestAsHex(message);
     }
 
 

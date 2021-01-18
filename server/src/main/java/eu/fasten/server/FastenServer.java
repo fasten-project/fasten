@@ -144,6 +144,13 @@ public class FastenServer implements Runnable {
     )
     boolean consumeTimeoutExit;
 
+
+    @Option(names = {"-ls", "--local_storage"},
+            paramLabel = "localStorage",
+            description = "Enables local storage which stores record currently processed. This ensure that records that were processed before won't be processed again (e.g. when the pod crashes). "
+    )
+    boolean localStorage;
+
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     @Override
@@ -222,7 +229,8 @@ public class FastenServer implements Runnable {
                     (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
                     (consumeTimeout != -1) ? true : false,
                     consumeTimeout,
-                    consumeTimeoutExit);
+                    consumeTimeoutExit,
+                    localStorage);
         }).collect(Collectors.toList());
     }
 

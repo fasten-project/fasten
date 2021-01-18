@@ -69,6 +69,23 @@ public class LocalStorageTest {
         Assertions.assertFalse(localStorage.delete("Non existent message"));
     }
 
+    @Test
+    public void test_sha() throws IOException {
+        Assertions.assertEquals(localStorage.getSHA1("Same message"),localStorage.getSHA1("Same message"));
+        Assertions.assertNotEquals(localStorage.getSHA1("Same message"),localStorage.getSHA1("Different message"));
+    }
+
+    @Test
+    public void test_clear() throws IOException {
+        localStorage.store("Number 1");
+        localStorage.store("Number 2");
+        Assertions.assertTrue(localStorage.exists("Number 1"));
+        Assertions.assertTrue(localStorage.exists("Number 2"));
+        localStorage.clear();
+        Assertions.assertFalse(localStorage.exists("Number 1"));
+        Assertions.assertFalse(localStorage.exists("Number 2"));
+    }
+
 
     //From: https://stackoverflow.com/questions/19600527/java-program-setting-an-environment-variable
     public static void setEnv(String key, String value) {

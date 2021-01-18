@@ -34,6 +34,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.CommitFailedException;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -80,7 +81,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param skipOffsets        skip offset number
      */
     public FastenKafkaPlugin(boolean enableKafka, Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout) {
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout, boolean enableLocalStorage) {
         this.plugin = plugin;
 
         if (enableKafka) {
@@ -100,8 +101,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     ? writeLink.substring(0, writeLink.length() - 1) : writeLink;
 
 
-            // TODO Check if local storage needs to be enabled.
-            this.localStorage = new LocalStorage(this.writeLink);
+            // If the write link is not null, and local storage is enabled. Initialize it.
+            if (enableLocalStorage) {
+                this.localStorage = new LocalStorage(this.writeLink);
+            } else {
+                this.localStorage = null;
+            }
         } else {
             this.writeLink = null;
             this.localStorage = null;
@@ -115,8 +120,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout) {
-        this(true, consumerProperties, producerProperties, plugin, skipOffsets, writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout, exitOnTimeout);
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout, boolean enableLocalStorage) {
+        this(true, consumerProperties, producerProperties, plugin, skipOffsets, writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout, exitOnTimeout, enableLocalStorage);
     }
 
 
@@ -166,38 +171,73 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     private void handleConsuming() {
         ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
-        var consumeTimestamp = System.currentTimeMillis() / 1000L;
+        Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
         // Although we loop through all records, by default we only poll 1 record.
         for (var r : records) {
-
-            /**
-             * Consumer strategy:
-             *
-             * 1. We poll one record (by default).
-             * 2. If the record hash is in local storage:
-             *    a. Produce to error topic, that this record couldn't be processed.
-             *    b. Commit the offset, if producer confirmed sending the message.
-             *    c. Go back to 1.
-             * 3. If the record hash is _not_ in local storage:
-             *    a. Process the record.
-             *    b. Produce its results (either to the error topic, or output topic).
-             *    c. Commit the offset if producer confirmed sending the message.
-             *    d. Go back to 1.
-             *
-             * This strategy provides at-least-once semantics.
-             * With broker and server failures, this strategy offers at-least-once semantics.
-             *
-             * TODO: Reason/think about what happens if there is a failure with producing (do we care about that)?
-             */
-            if (consumeTimeoutEnabled) {
-                consumeWithTimeout(r.value(), consumeTimeout, exitOnTimeout);
-            } else {
-                plugin.consume(r.value());
-            }
-            handleProducing(r.value(), consumeTimestamp);
-            doCommitSync();
+            processRecord(r, consumeTimestamp);
         }
+
+        // Commit only after _all_ records are processed.
+        // For most plugins, this loop will only process 1 record (since max.poll.records is 1).
+        doCommitSync();
+
+        // If local storage is enabled, clear it after offsets are committed.
+        if (localStorage != null) {
+            localStorage.clear();
+        }
+    }
+    /**
+     * Consumer strategy:
+     *
+     * 1. Poll one record (by default).
+     * 2. If the record hash is in local storage:
+     *    a. Produce to error topic (this record is probably processed before and caused a crash or timeout).
+     *    b. Commit the offset, if producer confirmed sending the message.
+     *    c. Delete record in local storage.
+     *    d. Go back to 1.
+     * 3. If the record hash is _not_ in local storage:
+     *    a. Process the record.
+     *    b. Produce its results (either to the error topic, or output topic).
+     *    c. Commit the offset if producer confirmed sending the message.
+     *    d. Delete record in local storage.
+     *    e. Go back to 1.
+     *
+     *
+     * This strategy provides at-least-once semantics.
+     *
+     * TODO: Reason/think about what happens if there is a failure with producing (do we care about that)?
+     */
+    public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp) {
+        if (localStorage != null) {
+            if (localStorage.exists(record.value())) { // This plugin already consumed this record before, we will not process it now.
+                logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
+                plugin.setPluginError(new ExistsInLocalStorageException("Record already exists in local storage. Most probably it has been processed before and the pod crashed."));
+            } else {
+                try {
+                    localStorage.store(record.value());
+                } catch (IOException e) {
+                    // We couldn't store the message SHA. Will just continue processing, but logging the error.
+                    // This strategy might result in the deadlock/retry behavior of the same coordinate.
+                    // However, if local storage is failing we can't store the CG's either and that's already a problem.
+                } finally {
+                    if (consumeTimeoutEnabled) {
+                        consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
+                    } else {
+                        plugin.consume(record.value());
+                    }
+                }
+            }
+        } else {
+            if (consumeTimeoutEnabled) {
+                consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
+            } else {
+                plugin.consume(record.value());
+            }
+        }
+
+
+        handleProducing(record.value(), consumeTimestamp);
     }
 
     /**
