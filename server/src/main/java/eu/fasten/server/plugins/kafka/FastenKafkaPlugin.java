@@ -21,6 +21,7 @@ package eu.fasten.server.plugins.kafka;
 import com.google.common.base.Strings;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -93,23 +95,24 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         if (writeDirectory != null) {
             this.writeDirectory = writeDirectory.endsWith(File.separator)
                     ? writeDirectory.substring(0, writeDirectory.length() - 1) : writeDirectory;
+
+            // If the write link is not null, and local storage is enabled. Initialize it.
+            if (enableLocalStorage) {
+                this.localStorage = new LocalStorage(this.writeDirectory);
+            } else {
+                this.localStorage = null;
+            }
         } else {
             this.writeDirectory = null;
+            this.localStorage = null;
         }
         if (writeLink != null) {
             this.writeLink = writeLink.endsWith(File.separator)
                     ? writeLink.substring(0, writeLink.length() - 1) : writeLink;
 
 
-            // If the write link is not null, and local storage is enabled. Initialize it.
-            if (enableLocalStorage) {
-                this.localStorage = new LocalStorage(this.writeLink);
-            } else {
-                this.localStorage = null;
-            }
         } else {
             this.writeLink = null;
-            this.localStorage = null;
         }
 
         this.outputTopic = outputTopic;
@@ -140,7 +143,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     handleConsuming();
                 } else {
                     doCommitSync();
-
                     handleProducing(null, System.currentTimeMillis() / 1000L);
                 }
             }
@@ -187,29 +189,27 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             localStorage.clear();
         }
     }
+
     /**
-     * Consumer strategy:
-     *
+     * Consumer strategy (using local storage):
+     * <p>
      * 1. Poll one record (by default).
      * 2. If the record hash is in local storage:
-     *    a. Produce to error topic (this record is probably processed before and caused a crash or timeout).
-     *    b. Commit the offset, if producer confirmed sending the message.
-     *    c. Delete record in local storage.
-     *    d. Go back to 1.
+     * a. Produce to error topic (this record is probably processed before and caused a crash or timeout).
+     * b. Commit the offset, if producer confirmed sending the message.
+     * c. Delete record in local storage.
+     * d. Go back to 1.
      * 3. If the record hash is _not_ in local storage:
-     *    a. Process the record.
-     *    b. Produce its results (either to the error topic, or output topic).
-     *    c. Commit the offset if producer confirmed sending the message.
-     *    d. Delete record in local storage.
-     *    e. Go back to 1.
-     *
-     *
+     * a. Process the record.
+     * b. Produce its results (either to the error topic, or output topic).
+     * c. Commit the offset if producer confirmed sending the message.
+     * d. Delete record in local storage.
+     * e. Go back to 1.
+     * <p>
      * This strategy provides at-least-once semantics.
-     *
-     * TODO: Reason/think about what happens if there is a failure with producing (do we care about that)?
      */
     public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp) {
-        if (localStorage != null) {
+        if (localStorage != null) { // If local storage is enabled.
             if (localStorage.exists(record.value())) { // This plugin already consumed this record before, we will not process it now.
                 logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
                 plugin.setPluginError(new ExistsInLocalStorageException("Record already exists in local storage. Most probably it has been processed before and the pod crashed."));
@@ -217,10 +217,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 try {
                     localStorage.store(record.value());
                 } catch (IOException e) {
-                    // We couldn't store the message SHA. Will just continue processing, but logging the error.
+                    // We couldn't store the message SHA. Will just continue processing, but log the error.
                     // This strategy might result in the deadlock/retry behavior of the same coordinate.
                     // However, if local storage is failing we can't store the CG's either and that's already a problem.
-                } finally {
+                    logger.error("Trying to store the hash of a record, but failed due to an IOException", e);
+                } finally { // Event if we hit an IOException, we will execute this finally block.
                     if (consumeTimeoutEnabled) {
                         consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
                     } else {
@@ -228,7 +229,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     }
                 }
             }
-        } else {
+        } else { // If local storage is not enabled.
             if (consumeTimeoutEnabled) {
                 consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
             } else {
@@ -236,7 +237,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             }
         }
 
-
+        // We always produce, it does not matter if local storage is enabled or not.
         handleProducing(record.value(), consumeTimestamp);
     }
 
@@ -254,7 +255,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             var result = plugin.produce();
             String payload = result.orElse(null);
             if (result.isPresent() && writeDirectory != null && !writeDirectory.equals("")) {
-                    payload = writeToFile(payload);
+                payload = writeToFile(payload);
             }
 
             emitMessage(this.producer, String.format("fasten.%s.out",
@@ -450,10 +451,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     /**
      * Consumes an input with a timeout. If the timeout is exceeded the thread handling the message is killed.
-     * @param input the input message to be consumed.
-     * @param timeout the timeout in seconds. I.e. the maximum time a plugin can spend on processing a record.
      *
-     * Based on: https://stackoverflow.com/questions/1164301/how-do-i-call-some-blocking-method-with-a-timeout-in-java
+     * @param input   the input message to be consumed.
+     * @param timeout the timeout in seconds. I.e. the maximum time a plugin can spend on processing a record.
+     *                <p>
+     *                Based on: https://stackoverflow.com/questions/1164301/how-do-i-call-some-blocking-method-with-a-timeout-in-java
      */
     public void consumeWithTimeout(String input, long timeout, boolean exitOnTimeout) {
         Runnable consumeTask = () -> {
@@ -490,6 +492,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     /**
      * Verify is the consumer timeout is enabled.
+     *
      * @return if a consumer timeout is enabled.
      */
     public boolean isConsumeTimeoutEnabled() {
@@ -498,6 +501,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     /**
      * Get the consume timeout (in seconds).
+     *
      * @return consume timeout.
      */
     public long getConsumeTimeout() {
