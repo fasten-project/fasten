@@ -18,12 +18,21 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
 - `-r` `--repo` `--repository`                Path to JSON file containing repository information
 - `-n` `--ns` `--namespace`                   Kubernetes namespace to be used
 
-## Usage 
+## Usage
+
+1. (Optional) When using a custom Kubernetes namespace, make sure to create it first:
+    ```bash
+    kubectl create namespace myownnamespace
+    ``` 
 
 1. (Optional) Install [Kafka](https://github.com/bitnami/charts/tree/master/bitnami/kafka) in your cluster:
     ```bash
     helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm install fasten-kafka-instance bitnami/kafka
+    helm install \
+        --set service.type=LoadBalancer \
+        --set externalAccess.enabled=true \
+        fasten-kafka-instance \
+        bitnami/kafka
     ```
     -
         This plugin sends the license report back to Kafka using
@@ -34,26 +43,46 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
         If you need to use your own Kafka instance,
         please set its address
         [here](https://github.com/fasten-project/fasten/blob/d42f3ec828d0e6c0663e7db566b0b18df2b0d5a7/analyzer/compliance-analyzer/src/main/resources/k8s/qmstr/job.yaml#L39).
-
-1. (Optional) When using a custom Kubernetes namespace, make sure to create it first:
-    ```bash
-    kubectl create namespace myownnamespace
-    ```
+    -
+        Make sure to add:
+        ```
+        --namespace myownnamespace
+        ```
+        when using a custom Kubernetes namespace.
 
 1. Start the plugin specifying the path to the cluster credentials file as an environment variable:
-    ```bash
-    # Example: from the FASTEN root folder
-    mvn \
-      -DclusterCredentials=path/to/cluster/credentials.json \
-      clean install exec:java \
-      -f analyzer/compliance-analyzer/pom.xml \
-      -Djdk.tls.client.protocols=TLSv1.2 \
-      -Dexec.args="--repository analyzer/compliance-analyzer/dummyKafkaTopic.json"
-    ```
-    -
-        This demo simulates a Kafka message consumption by reading the [`dummyKafkaTopic.json` file](dummyKafkaTopic.json).
-    -
-        Upon consuming the message, the plugin starts Quartermaster, that will build and analyze the specified repository.
+    
+   1. From the FASTEN server:
+        1.  When using the Kafka instance installed in the cluster in step 1,
+            first retrieve its public IP with:
+            ```bash
+            export KAFKA_ADDRESS=$(kubectl get svc fasten-kafka-instance -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            ```
+        1. Start the plugin using the FASTEN server JAR (from the project root):
+            ```bash
+            java \
+                -jar docker/server/server-0.0.1-SNAPSHOT-with-dependencies.jar \
+                --kafka_server ${KAFKA_ADDRESS} \
+                --plugin_dir $(pwd)/docker/plugins \
+                --plugin_list CompliancePluginExtension \
+                --topic CompliancePluginExtension=fasten.RepoCloner.out
+            ```
+       
+   1. As a standalone Maven plugin:
+       ```bash
+       # Example: from the FASTEN root folder
+       mvn \
+         -DclusterCredentials=path/to/cluster/credentials.json \
+         clean install exec:java \
+         -f analyzer/compliance-analyzer/pom.xml \
+         -Djdk.tls.client.protocols=TLSv1.2 \
+         -Dexec.args="--repository analyzer/compliance-analyzer/dummyKafkaTopic.json"
+       ```
+       -
+           This demo simulates a Kafka message consumption by reading the [`dummyKafkaTopic.json` file](dummyKafkaTopic.json).
+       -
+           Upon consuming the message, the plugin starts Quartermaster, that will build and analyze the specified repository.
+
 
 The plugin then generates a [`fasten.qmstr.*` Kafka message](https://github.com/fasten-project/fasten/wiki/Kafka-Topics#fastenqmstr).
 
