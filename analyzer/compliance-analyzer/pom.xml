@@ -10,11 +10,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.fasten.analyzer</groupId>
-    <artifactId>compliance-analyzer-plugin</artifactId>
+    <artifactId>compliance-analyzer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>compliance-analyzer-plugin</name>
+    <name>compliance-analyzer</name>
 
     <dependencies>
         <dependency>
@@ -81,7 +81,7 @@
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
                                         <Plugin-Class>eu.fasten.analyzer.complianceanalyzer.ComplianceAnalyzerPlugin</Plugin-Class>
-                                        <Plugin-Id>license-compliance-plugin</Plugin-Id>
+                                        <Plugin-Id>compliance-analyzer</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
                                         <Plugin-Description>
                                             Given a repository URL, detects project's
