@@ -33,7 +33,10 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var compliancePlugin = new ComplianceAnalyzerPlugin.CompliancePluginExtension(namespace);
+
+        // License and compliance plugin
+        var compliancePlugin = new ComplianceAnalyzerPlugin.CompliancePluginExtension();
+        compliancePlugin.setNamespace(namespace);
 
         // Retrieving repository information
         var repoInfo = retrieveRepositoryInformation();

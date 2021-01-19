@@ -64,7 +64,7 @@ public class ComplianceAnalyzerPlugin extends Plugin {
         /**
          * Path to the Kubernetes cluster credentials file
          */
-        protected final String clusterCredentialsFilePath;
+        protected final String clusterCredentialsFilePath = System.getProperty(CLUSTER_CREDENTIALS_ENV);
 
         /**
          * Placeholder for the repository URL in the Kubernetes Job file
@@ -74,12 +74,7 @@ public class ComplianceAnalyzerPlugin extends Plugin {
         /**
          * Kubernetes namespace to be used.
          */
-        protected final String namespace;
-
-        public CompliancePluginExtension(String namespace) {
-            this.clusterCredentialsFilePath = System.getProperty(CLUSTER_CREDENTIALS_ENV);
-            this.namespace = namespace;
-        }
+        protected String namespace = "default";
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -211,6 +206,15 @@ public class ComplianceAnalyzerPlugin extends Plugin {
                 throw new ApiException("Exception while deploying a QMSTR Kubernetes resource: " + e);
             }
 
+        }
+
+        /**
+         * Sets the Kubernetes namespace in which QMSTR will be deployed.
+         *
+         * @param namespace namespace to be used by this plugin.
+         */
+        protected void setNamespace(String namespace) {
+            this.namespace = namespace;
         }
 
         @Override
