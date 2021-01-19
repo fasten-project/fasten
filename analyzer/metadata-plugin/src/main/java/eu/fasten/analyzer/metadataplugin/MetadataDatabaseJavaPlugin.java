@@ -26,7 +26,7 @@ import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.data.metadatadb.codegen.enums.CallableAccess;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
@@ -84,6 +84,10 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             var namespaces = new HashSet<String>();
             javaGraph.getClassHierarchy().get(JavaScope.internalTypes).keySet().forEach(k -> namespaces.add(k.toString()));
             javaGraph.getClassHierarchy().get(JavaScope.externalTypes).keySet().forEach(k -> namespaces.add(k.toString()));
+            javaGraph.getClassHierarchy().get(JavaScope.internalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperInterfaces())));
+            javaGraph.getClassHierarchy().get(JavaScope.internalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperClasses())));
+            javaGraph.getClassHierarchy().get(JavaScope.externalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperInterfaces())));
+            javaGraph.getClassHierarchy().get(JavaScope.externalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperClasses())));
             for (var edgeEntry : graph.getGraph().getExternalCalls().entrySet()) {
                 for (var obj : edgeEntry.getValue().keySet()) {
                     var pc = obj.toString();
@@ -133,18 +137,12 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
 
         protected long insertModule(JavaType type, FastenURI fastenUri, long packageVersionId,
                                     Map<String, Long> namespaceMap, MetadataDao metadataDao) {
-            // Collect metadata of the module
-            var moduleMetadata = new JSONObject();
-            moduleMetadata.put("superInterfaces",
-                    JavaType.toListOfString(type.getSuperInterfaces()));
-            moduleMetadata.put("superClasses",
-                    JavaType.toListOfString(type.getSuperClasses()));
-            moduleMetadata.put("access", type.getAccess());
-            moduleMetadata.put("final", type.isFinal());
-
-            // Put everything in the database
+            var isFinal = type.isFinal();
+            var access = getAccess(type.getAccess());
+            var superClasses = JavaType.toListOfString(type.getSuperClasses()).stream().map(namespaceMap::get).toArray(Long[]::new);
+            var superInterfaces = JavaType.toListOfString(type.getSuperInterfaces()).stream().map(namespaceMap::get).toArray(Long[]::new);
             return metadataDao.insertModule(packageVersionId, namespaceMap.get(fastenUri.toString()),
-                    null, moduleMetadata);
+                    isFinal, access, superClasses, superInterfaces, null);
         }
 
         private List<CallablesRecord> extractCallablesFromType(JavaType type,
@@ -183,14 +181,14 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     callableDefined = callableMetadata.getBoolean("defined");
                 }
                 callableMetadata.remove("defined");
-                CallableAccess callableAccess = null;
+                Access access = null;
                 if (callableMetadata.has("access") && (callableMetadata.get("access") instanceof String)) {
-                    callableAccess = getCallableAccess(callableMetadata.getString("access"));
+                    access = getAccess(callableMetadata.getString("access"));
                 }
                 callableMetadata.remove("access");
                 // Add a record to the list
-                callables.add(new CallablesRecord(localId, moduleId, uri, isInternal, null,
-                        firstLine, lastLine, callableType, callableDefined, callableAccess,
+                callables.add(new CallablesRecord(localId, moduleId, uri, isInternal,
+                        firstLine, lastLine, callableType, callableDefined, access,
                         JSONB.valueOf(callableMetadata.toString())));
             }
             return callables;

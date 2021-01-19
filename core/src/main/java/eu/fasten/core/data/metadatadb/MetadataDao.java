@@ -20,19 +20,39 @@ package eu.fasten.core.data.metadatadb;
 
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
-import eu.fasten.core.data.metadatadb.codegen.enums.CallableAccess;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
-import eu.fasten.core.data.metadatadb.codegen.tables.*;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
+import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
-import org.jooq.*;
+import org.jooq.DSLContext;
+import org.jooq.JSONB;
+import org.jooq.Query;
+import org.jooq.Record;
+import org.jooq.Record2;
+import org.jooq.Result;
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import static org.jooq.impl.DSL.field;
 
 public class MetadataDao {
@@ -314,21 +334,23 @@ public class MetadataDao {
      * @param packageVersionId ID of the package version where the module belongs
      *                         (references 'package_versions.id')
      * @param namespace_id     ID of the namespace of the module (references 'namespaces.id`)
-     * @param createdAt        Timestamp when the module was created
      * @param metadata         Metadata of the module
      * @return ID of the new record
      */
-    public long insertModule(long packageVersionId, long namespace_id,
-                             Timestamp createdAt, JSONObject metadata) {
+    public long insertModule(long packageVersionId, long namespace_id, Boolean isFinal, Access access,
+                             Long[] superClasses, Long[] superInterfaces, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Modules.MODULES,
                 Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE_ID,
-                Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)
-                .values(packageVersionId, namespace_id, createdAt, metadataJsonb)
+                Modules.MODULES.FINAL, Modules.MODULES.ACCESS, Modules.MODULES.SUPER_CLASSES,
+                Modules.MODULES.SUPER_INTERFACES, Modules.MODULES.METADATA)
+                .values(packageVersionId, namespace_id, isFinal, access, superClasses, superInterfaces, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_VERSION_NAMESPACE).doUpdate()
-                .set(Modules.MODULES.CREATED_AT, Modules.MODULES.as("excluded").CREATED_AT)
-                .set(Modules.MODULES.METADATA, JsonbDSL.concat(Modules.MODULES.METADATA,
-                        Modules.MODULES.as("excluded").METADATA))
+                .set(Modules.MODULES.FINAL, Modules.MODULES.as("excluded").FINAL)
+                .set(Modules.MODULES.ACCESS, Modules.MODULES.as("excluded").ACCESS)
+                .set(Modules.MODULES.SUPER_CLASSES, Modules.MODULES.as("excluded").SUPER_CLASSES)
+                .set(Modules.MODULES.SUPER_INTERFACES, Modules.MODULES.as("excluded").SUPER_INTERFACES)
+                .set(Modules.MODULES.METADATA, field("coalesce(modules.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
                 .returning(Modules.MODULES.ID).fetchOne();
         return resultRecord.getValue(Modules.MODULES.ID);
     }
@@ -339,20 +361,18 @@ public class MetadataDao {
      * @param packageVersionId ID of the package version where the module belongs
      *                         (references 'package_versions.id')
      * @param namespace_id     ID of the namespace of the module (references 'namespaces.id`)
-     * @param createdAt        Timestamp when the module was created
      * @param metadata         Metadata of the module
      * @return ID of the new record
      */
     public long insertModule(long packageVersionId, long namespace_id,
-                             Timestamp createdAt, JSONObject metadata,
+                             JSONObject metadata,
                              boolean addDuplicates) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Modules.MODULES,
                 Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE_ID,
-                Modules.MODULES.CREATED_AT, Modules.MODULES.METADATA)
-                .values(packageVersionId, namespace_id, createdAt, metadataJsonb)
+                Modules.MODULES.METADATA)
+                .values(packageVersionId, namespace_id, metadataJsonb)
                 // FIXME
-                /* .set(Modules.MODULES.CREATED_AT, Modules.MODULES.as("excluded").CREATED_AT) */
                 // .set(Modules.MODULES.METADATA, JsonbDSL.concat(Modules.MODULES.METADATA,
                 /* Modules.MODULES.as("excluded").METADATA)) */
                 .returning(Modules.MODULES.ID).fetchOne();
@@ -375,22 +395,22 @@ public class MetadataDao {
      *
      * @param packageVersionId ID of the common package version
      * @param namespacesList   List of namespace IDs
-     * @param createdAt        List of timestamps
      * @param metadata         List of metadata objects
      * @return List of IDs of new records
      * @throws IllegalArgumentException if lists are not of the same size
      */
-    public List<Long> insertModules(long packageVersionId, List<Long> namespacesList,
-                                    List<Timestamp> createdAt, List<JSONObject> metadata)
+    public List<Long> insertModules(long packageVersionId, List<Long> namespacesList, List<Boolean> isFinal,
+                                    List<Access> accesses, List<Long[]> superClasses, List<Long[]> superInterfaces,
+                                    List<JSONObject> metadata)
             throws IllegalArgumentException {
-        if (namespacesList.size() != createdAt.size() || createdAt.size() != metadata.size()) {
+        if (namespacesList.size() != metadata.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = namespacesList.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
-            long result = insertModule(packageVersionId, namespacesList.get(i),
-                    createdAt.get(i), metadata.get(i));
+            long result = insertModule(packageVersionId, namespacesList.get(i), isFinal.get(i), accesses.get(i),
+                    superClasses.get(i), superInterfaces.get(i), metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;
@@ -612,7 +632,6 @@ public class MetadataDao {
      * @param moduleId       ID of the module where the callable belongs (references 'modules.id')
      * @param fastenUri      URI of the callable in FASTEN
      * @param isInternalCall 'true' if call is internal, 'false' if external
-     * @param createdAt      Timestamp when the callable was created
      * @param lineStart      Line number where the callable starts
      * @param lineEnd        Line number where the callable ends
      * @param type           Type of the callable
@@ -622,28 +641,24 @@ public class MetadataDao {
      * @return ID of the new record
      */
     public long insertCallable(Long moduleId, String fastenUri, boolean isInternalCall,
-                               Timestamp createdAt, Integer lineStart, Integer lineEnd,
-                               CallableType type, Boolean defined, CallableAccess access,
+                               Integer lineStart, Integer lineEnd,
+                               CallableType type, boolean defined, Access access,
                                JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Callables.CALLABLES,
                 Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
-                Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
-                Callables.CALLABLES.LINE_START, Callables.CALLABLES.LINE_END,
-                Callables.CALLABLES.TYPE, Callables.CALLABLES.DEFINED, Callables.CALLABLES.ACCESS,
-                Callables.CALLABLES.METADATA)
-                .values(moduleId, fastenUri, isInternalCall, createdAt, lineStart, lineEnd,
-                        type, defined, access, metadataJsonb)
+                Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.LINE_START,
+                Callables.CALLABLES.LINE_END, Callables.CALLABLES.TYPE, Callables.CALLABLES.DEFINED,
+                Callables.CALLABLES.ACCESS, Callables.CALLABLES.METADATA)
+                .values(moduleId, fastenUri, isInternalCall, lineStart, lineEnd, type, defined, access, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_URI_CALL).doUpdate()
                 .set(Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.as("excluded").MODULE_ID)
-                .set(Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.as("excluded").CREATED_AT)
                 .set(Callables.CALLABLES.LINE_START, Callables.CALLABLES.as("excluded").LINE_START)
                 .set(Callables.CALLABLES.LINE_END, Callables.CALLABLES.as("excluded").LINE_END)
                 .set(Callables.CALLABLES.TYPE, Callables.CALLABLES.as("excluded").TYPE)
                 .set(Callables.CALLABLES.DEFINED, Callables.CALLABLES.as("excluded").DEFINED)
                 .set(Callables.CALLABLES.ACCESS, Callables.CALLABLES.as("excluded").ACCESS)
-                .set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
-                        Callables.CALLABLES.as("excluded").METADATA))
+                .set(Callables.CALLABLES.METADATA, field("coalesce(callables.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
                 .returning(Callables.CALLABLES.ID).fetchOne();
         return resultRecord.getValue(Callables.CALLABLES.ID);
     }
@@ -661,14 +676,13 @@ public class MetadataDao {
     public long updateCallableMetadata(Long moduleId, String fastenUri, boolean isInternal,
                                        JSONObject metadata) {
         var metadataJsonb = metadata != null
-                ? JSONB.valueOf(metadata.toString()) : JSONB.valueOf("{}");
+                ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Callables.CALLABLES,
                 Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
                 Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.METADATA)
                 .values(moduleId, fastenUri, isInternal, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_URI_CALL).doUpdate()
-                .set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
-                        Callables.CALLABLES.as("excluded").METADATA))
+                .set(Callables.CALLABLES.METADATA, field("coalesce(callables.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
                 .returning(Callables.CALLABLES.ID).fetchOne();
         return resultRecord.getValue(Callables.CALLABLES.ID);
     }
@@ -679,7 +693,6 @@ public class MetadataDao {
      * @param moduleId         ID of the common module
      * @param fastenUris       List of FASTEN URIs
      * @param areInternalCalls List of booleans that show if callable is internal
-     * @param createdAt        List of timestamps
      * @param lineStarts       List of line number where callable starts
      * @param lineEnds         List of line number where callable ends
      * @param metadata         List of metadata objects
@@ -687,23 +700,22 @@ public class MetadataDao {
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public List<Long> insertCallables(long moduleId, List<String> fastenUris,
-                                      List<Boolean> areInternalCalls, List<Timestamp> createdAt,
+                                      List<Boolean> areInternalCalls,
                                       List<Integer> lineStarts, List<Integer> lineEnds,
                                       List<CallableType> types, List<Boolean> defined,
-                                      List<CallableAccess> accesses, List<JSONObject> metadata)
+                                      List<Access> accesses, List<JSONObject> metadata)
             throws IllegalArgumentException {
         if (fastenUris.size() != areInternalCalls.size()
                 || areInternalCalls.size() != metadata.size()
-                || createdAt.size() != lineStarts.size()
-                || lineStarts.size() != lineEnds.size()
-                || metadata.size() != createdAt.size()) {
+                || metadata.size() != lineStarts.size()
+                || lineStarts.size() != lineEnds.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = fastenUris.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
             long result = insertCallable(moduleId, fastenUris.get(i),
-                    areInternalCalls.get(i), createdAt.get(i), lineStarts.get(i),
+                    areInternalCalls.get(i), lineStarts.get(i),
                     lineEnds.get(i), types.get(i), defined.get(i), accesses.get(i), metadata.get(i));
             recordIds.add(result);
         }
@@ -760,9 +772,9 @@ public class MetadataDao {
     }
 
     public Map<String, Long> getNamespaceMap(List<String> namespaces) {
-        var whereClause = Namespaces.NAMESPACES.NAMESPACE.equalIgnoreCase(namespaces.get(0));
+        var whereClause = Namespaces.NAMESPACES.NAMESPACE.eq(namespaces.get(0));
         for (int i = 1; i < namespaces.size(); i++) {
-            whereClause = whereClause.or(Namespaces.NAMESPACES.NAMESPACE.equalIgnoreCase(namespaces.get(i)));
+            whereClause = whereClause.or(Namespaces.NAMESPACES.NAMESPACE.eq(namespaces.get(i)));
         }
         var result = context.select(Namespaces.NAMESPACES.NAMESPACE, Namespaces.NAMESPACES.ID)
                 .from(Namespaces.NAMESPACES)
@@ -820,26 +832,24 @@ public class MetadataDao {
     public List<Long> batchInsertCallables(List<CallablesRecord> callables) {
         var insert = context.insertInto(Callables.CALLABLES,
                 Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI,
-                Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.CREATED_AT,
+                Callables.CALLABLES.IS_INTERNAL_CALL,
                 Callables.CALLABLES.LINE_START, Callables.CALLABLES.LINE_END,
                 Callables.CALLABLES.TYPE, Callables.CALLABLES.DEFINED, Callables.CALLABLES.ACCESS,
                 Callables.CALLABLES.METADATA);
         for (var callable : callables) {
             insert = insert.values(callable.getModuleId(), callable.getFastenUri(),
-                    callable.getIsInternalCall(), callable.getCreatedAt(),
+                    callable.getIsInternalCall(),
                     callable.getLineStart(), callable.getLineEnd(), callable.getType(),
                     callable.getDefined(), callable.getAccess(), callable.getMetadata());
         }
         var result = insert.onConflictOnConstraint(Keys.UNIQUE_URI_CALL).doUpdate()
                 .set(Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.as("excluded").MODULE_ID)
-                .set(Callables.CALLABLES.CREATED_AT, Callables.CALLABLES.as("excluded").CREATED_AT)
                 .set(Callables.CALLABLES.LINE_START, Callables.CALLABLES.as("excluded").LINE_START)
                 .set(Callables.CALLABLES.LINE_END, Callables.CALLABLES.as("excluded").LINE_END)
                 .set(Callables.CALLABLES.TYPE, Callables.CALLABLES.as("excluded").TYPE)
                 .set(Callables.CALLABLES.DEFINED, Callables.CALLABLES.as("excluded").DEFINED)
                 .set(Callables.CALLABLES.ACCESS, Callables.CALLABLES.as("excluded").ACCESS)
-                .set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA,
-                        Callables.CALLABLES.as("excluded").METADATA))
+                .set(Callables.CALLABLES.METADATA, field("coalesce(callables.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
                 .returning(Callables.CALLABLES.ID).fetch();
         return result.getValues(Callables.CALLABLES.ID);
     }

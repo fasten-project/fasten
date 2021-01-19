@@ -42,7 +42,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Namespaces extends TableImpl<NamespacesRecord> {
 
-    private static final long serialVersionUID = -903939630;
+    private static final long serialVersionUID = 1633950567;
 
     /**
      * The reference instance of <code>public.namespaces</code>
@@ -107,7 +107,7 @@ public class Namespaces extends TableImpl<NamespacesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.NAMESPACES_PKEY, Indexes.UNIQUE_NAMEPACES);
+        return Arrays.<Index>asList(Indexes.NAMESPACES_PKEY, Indexes.UNIQUE_NAMESPACES);
     }
 
     @Override

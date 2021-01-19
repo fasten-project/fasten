@@ -26,7 +26,7 @@ import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.data.metadatadb.codegen.enums.CallableAccess;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
@@ -161,7 +161,7 @@ public class MetadataDatabaseCPlugin extends Plugin {
                         // Check if dummy module already exist for this file.
                         moduleId = metadataDao.getModuleContent(fileId);
                         if (moduleId == -1L) {
-                            moduleId = metadataDao.insertModule(packageVersionId, namespaceMap.get(namespace), null, null, true);
+                            moduleId = metadataDao.insertModule(packageVersionId, namespaceMap.get(namespace), null, true);
                         }
                         metadataDao.insertModuleContent(moduleId, fileId);
                         // Save binary Module
@@ -196,12 +196,12 @@ public class MetadataDatabaseCPlugin extends Plugin {
                         callableDefined = callableMetadata.getBoolean("defined");
                     }
                     callableMetadata.remove("defined");
-                    CallableAccess callableAccess = null;
+                    Access callableAccess = null;
                     if (callableMetadata.has("access") && (callableMetadata.get("access") instanceof String)) {
-                        callableAccess = getCallableAccess(callableMetadata.getString("access"));
+                        callableAccess = getAccess(callableMetadata.getString("access"));
                     }
                     callableMetadata.remove("access");
-                    callables.add(new CallablesRecord(localId, moduleId, uri, isInternal, null,
+                    callables.add(new CallablesRecord(localId, moduleId, uri, isInternal,
                         firstLine, lastLine, callableType, callableDefined, callableAccess,
                             JSONB.valueOf(callableMetadata.toString())));
                 }

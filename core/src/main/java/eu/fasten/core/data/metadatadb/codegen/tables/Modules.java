@@ -7,9 +7,9 @@ package eu.fasten.core.data.metadatadb.codegen.tables;
 import eu.fasten.core.data.metadatadb.codegen.Indexes;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.Public;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.ModulesRecord;
 
-import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,7 +22,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row5;
+import org.jooq.Row8;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Modules extends TableImpl<ModulesRecord> {
 
-    private static final long serialVersionUID = -603417408;
+    private static final long serialVersionUID = 638902105;
 
     /**
      * The reference instance of <code>public.modules</code>
@@ -75,9 +75,24 @@ public class Modules extends TableImpl<ModulesRecord> {
     public final TableField<ModulesRecord, Long> NAMESPACE_ID = createField(DSL.name("namespace_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
-     * The column <code>public.modules.created_at</code>.
+     * The column <code>public.modules.final</code>.
      */
-    public final TableField<ModulesRecord, Timestamp> CREATED_AT = createField(DSL.name("created_at"), org.jooq.impl.SQLDataType.TIMESTAMP, this, "");
+    public final TableField<ModulesRecord, Boolean> FINAL = createField(DSL.name("final"), org.jooq.impl.SQLDataType.BOOLEAN, this, "");
+
+    /**
+     * The column <code>public.modules.access</code>.
+     */
+    public final TableField<ModulesRecord, Access> ACCESS = createField(DSL.name("access"), org.jooq.impl.SQLDataType.VARCHAR.asEnumDataType(eu.fasten.core.data.metadatadb.codegen.enums.Access.class), this, "");
+
+    /**
+     * The column <code>public.modules.super_classes</code>.
+     */
+    public final TableField<ModulesRecord, Long[]> SUPER_CLASSES = createField(DSL.name("super_classes"), org.jooq.impl.SQLDataType.BIGINT.getArrayDataType(), this, "");
+
+    /**
+     * The column <code>public.modules.super_interfaces</code>.
+     */
+    public final TableField<ModulesRecord, Long[]> SUPER_INTERFACES = createField(DSL.name("super_interfaces"), org.jooq.impl.SQLDataType.BIGINT.getArrayDataType(), this, "");
 
     /**
      * The column <code>public.modules.metadata</code>.
@@ -182,11 +197,11 @@ public class Modules extends TableImpl<ModulesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row5 type methods
+    // Row8 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<Long, Long, Long, Timestamp, JSONB> fieldsRow() {
-        return (Row5) super.fieldsRow();
+    public Row8<Long, Long, Long, Boolean, Access, Long[], Long[], JSONB> fieldsRow() {
+        return (Row8) super.fieldsRow();
     }
 }

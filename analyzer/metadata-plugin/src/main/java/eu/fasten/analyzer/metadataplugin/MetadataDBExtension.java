@@ -26,7 +26,8 @@ import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.data.metadatadb.codegen.enums.CallableAccess;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
@@ -305,12 +306,13 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         }
     }
 
-    protected CallableAccess getCallableAccess(String access) {
+    protected Access getAccess(String access) {
         switch (access) {
-            case "private": return CallableAccess.private_;
-            case "public": return CallableAccess.public_;
-            case "packagePrivate": return CallableAccess.packagePrivate;
-            case "static": return CallableAccess.static_;
+            case "private": return Access.private_;
+            case "public": return Access.public_;
+            case "packagePrivate": return Access.packagePrivate;
+            case "static": return Access.static_;
+            case "protected" : return Access.protected_;
             default: return null;
         }
     }

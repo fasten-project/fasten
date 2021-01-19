@@ -54,7 +54,7 @@ public class Indexes {
     public static final Index MODULES_PKEY = Indexes0.MODULES_PKEY;
     public static final Index UNIQUE_VERSION_NAMESPACE = Indexes0.UNIQUE_VERSION_NAMESPACE;
     public static final Index NAMESPACES_PKEY = Indexes0.NAMESPACES_PKEY;
-    public static final Index UNIQUE_NAMEPACES = Indexes0.UNIQUE_NAMEPACES;
+    public static final Index UNIQUE_NAMESPACES = Indexes0.UNIQUE_NAMESPACES;
     public static final Index PACKAGE_VERSIONS_PKEY = Indexes0.PACKAGE_VERSIONS_PKEY;
     public static final Index UNIQUE_PACKAGE_VERSION_GENERATOR = Indexes0.UNIQUE_PACKAGE_VERSION_GENERATOR;
     public static final Index PACKAGES_PKEY = Indexes0.PACKAGES_PKEY;
@@ -79,7 +79,7 @@ public class Indexes {
         public static Index MODULES_PKEY = Internal.createIndex("modules_pkey", Modules.MODULES, new OrderField[] { Modules.MODULES.ID }, true);
         public static Index UNIQUE_VERSION_NAMESPACE = Internal.createIndex("unique_version_namespace", Modules.MODULES, new OrderField[] { Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE_ID }, true);
         public static Index NAMESPACES_PKEY = Internal.createIndex("namespaces_pkey", Namespaces.NAMESPACES, new OrderField[] { Namespaces.NAMESPACES.ID }, true);
-        public static Index UNIQUE_NAMEPACES = Internal.createIndex("unique_namepaces", Namespaces.NAMESPACES, new OrderField[] { Namespaces.NAMESPACES.NAMESPACE }, true);
+        public static Index UNIQUE_NAMESPACES = Internal.createIndex("unique_namespaces", Namespaces.NAMESPACES, new OrderField[] { Namespaces.NAMESPACES.NAMESPACE }, true);
         public static Index PACKAGE_VERSIONS_PKEY = Internal.createIndex("package_versions_pkey", PackageVersions.PACKAGE_VERSIONS, new OrderField[] { PackageVersions.PACKAGE_VERSIONS.ID }, true);
         public static Index UNIQUE_PACKAGE_VERSION_GENERATOR = Internal.createIndex("unique_package_version_generator", PackageVersions.PACKAGE_VERSIONS, new OrderField[] { PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR }, true);
         public static Index PACKAGES_PKEY = Internal.createIndex("packages_pkey", Packages.PACKAGES, new OrderField[] { Packages.PACKAGES.ID }, true);

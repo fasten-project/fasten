@@ -26,13 +26,8 @@ import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -41,7 +36,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.Record2;
+import org.jooq.Record3;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -477,18 +472,21 @@ public class DatabaseMerger {
                 .fetch();
 
         var modules = dbContext
-                .select(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.METADATA)
+                .select(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
                 .from(Modules.MODULES)
                 .where(Modules.MODULES.ID.in(modulesIds))
                 .fetch();
 
-        var namespacesIDs = dbContext
+        var namespaceIDs = new HashSet<>(modules.map(Record3::value1));
+        modules.forEach(m -> namespaceIDs.addAll(Arrays.asList(m.value2())));
+        modules.forEach(m -> namespaceIDs.addAll(Arrays.asList(m.value3())));
+        var namespaceResults = dbContext
                 .select(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE)
                 .from(Namespaces.NAMESPACES)
-                .where(Namespaces.NAMESPACES.ID.in(modules.map(Record2::value1)))
+                .where(Namespaces.NAMESPACES.ID.in(namespaceIDs))
                 .fetch();
-        this.namespaceMap = new HashMap<>(namespacesIDs.size());
-        namespacesIDs.forEach(r -> namespaceMap.put(r.value1(), r.value2()));
+        this.namespaceMap = new HashMap<>(namespaceResults.size());
+        namespaceResults.forEach(r -> namespaceMap.put(r.value1(), r.value2()));
 
         for (var callable : modules) {
             if (!universalCHA.containsVertex(namespaceMap.get(callable.value1()))) {
@@ -496,14 +494,12 @@ public class DatabaseMerger {
             }
 
             try {
-                var superClasses = new JSONObject(callable.value2().data())
-                        .getJSONArray("superClasses").toList();
+                var superClasses = Arrays.stream(callable.value2()).map(n -> namespaceMap.get(n)).collect(Collectors.toList());
                 addSuperTypes(universalCHA, namespaceMap.get(callable.value1()), superClasses);
             } catch (NullPointerException ignore) {
             }
             try {
-                var superInterfaces = new JSONObject(callable.value2().data())
-                        .getJSONArray("superInterfaces").toList();
+                var superInterfaces = Arrays.stream(callable.value3()).map(n -> namespaceMap.get(n)).collect(Collectors.toList());
                 addSuperTypes(universalCHA, namespaceMap.get(callable.value1()), superInterfaces);
             } catch (NullPointerException ignore) {
             }
@@ -630,13 +626,13 @@ public class DatabaseMerger {
      */
     private void addSuperTypes(final DefaultDirectedGraph<String, DefaultEdge> result,
                                final String sourceType,
-                               final List<Object> targetTypes) {
+                               final List<String> targetTypes) {
         for (final var superClass : targetTypes) {
-            if (!result.containsVertex((String) superClass)) {
-                result.addVertex((String) superClass);
+            if (!result.containsVertex(superClass)) {
+                result.addVertex(superClass);
             }
-            if (!result.containsEdge(sourceType, (String) superClass)) {
-                result.addEdge((String) superClass, sourceType);
+            if (!result.containsEdge(sourceType, superClass)) {
+                result.addEdge(superClass, sourceType);
             }
         }
     }

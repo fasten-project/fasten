@@ -42,12 +42,17 @@ CREATE TABLE namespaces
     namespace TEXT NOT NULL
 );
 
+CREATE TYPE ACCESS AS ENUM ('private', 'public', 'packagePrivate', 'static', 'protected');
+
 CREATE TABLE modules
 (
     id                 BIGSERIAL PRIMARY KEY,
     package_version_id BIGINT NOT NULL REFERENCES package_versions (id),
     namespace_id       BIGINT NOT NULL REFERENCES namespaces (id),
-    created_at         TIMESTAMP,
+    final              BOOLEAN,
+    access             ACCESS,
+    super_classes      BIGINT[],
+    super_interfaces   BIGINT[],
     metadata           JSONB
 );
 
@@ -83,7 +88,6 @@ CREATE TABLE binary_module_contents
 );
 
 CREATE TYPE CALLABLE_TYPE AS ENUM ('internalBinary', 'externalProduct', 'externalStaticFunction', 'externalUndefined', 'internalStaticFunction');
-CREATE TYPE CALLABLE_ACCESS AS ENUM ('private', 'public', 'packagePrivate', 'static');
 
 CREATE TABLE callables
 (
@@ -91,12 +95,11 @@ CREATE TABLE callables
     module_id        BIGINT  NOT NULL REFERENCES modules (id),
     fasten_uri       TEXT    NOT NULL,
     is_internal_call BOOLEAN NOT NULL,
-    created_at       TIMESTAMP,
     line_start       INTEGER,
     line_end         INTEGER,
     type             CALLABLE_TYPE,
     defined          BOOLEAN,
-    access           CALLABLE_ACCESS,
+    access           ACCESS,
     metadata         JSONB
 );
 

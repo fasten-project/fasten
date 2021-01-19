@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
-import org.jooq.JSONB;
 import org.jooq.Record2;
 import org.jooq.Record3;
 import org.jooq.Result;
@@ -49,7 +48,7 @@ public class DatabaseMergerTest {
     private static Map<Pair<Long, Long>, ReceiverRecord[]> arcs;
     private static Map<Long, String> typeDictionary;
     private static Map<Long, String> typeMap;
-    private static Map<String, String> universalCHA;
+    private static Map<String, Pair<Long[], Long[]>> universalCHA;
     private static Map<String, Long> namespacesMap;
 
     @BeforeAll
@@ -79,10 +78,10 @@ public class DatabaseMergerTest {
         );
 
         universalCHA = Map.of(
-                "/test.group/Main", "{\"superInterfaces\": [],\"superClasses\":[\"/java.lang/Object\"]}",
-                "/test.group/Foo", "{\"superInterfaces\": [],\"superClasses\":[\"/java.lang/Object\"]}",
-                "/test.group/Bar", "{\"superInterfaces\": [],\"superClasses\":[\"/java.lang/Object\"]}",
-                "/test.group/Baz", "{\"superInterfaces\": [],\"superClasses\":[\"/test.group/Bar\"]}"
+                "/test.group/Main", Pair.of(new Long[]{}, new Long[]{}),
+                "/test.group/Foo", Pair.of(new Long[]{2L}, new Long[]{}),
+                "/test.group/Bar", Pair.of(new Long[]{2L}, new Long[]{}),
+                "/test.group/Baz", Pair.of(new Long[]{4L}, new Long[]{})
         );
 
         namespacesMap = Map.of(
@@ -215,7 +214,7 @@ public class DatabaseMergerTest {
                     .from(Namespaces.NAMESPACES)
                     .getSQL();
             this.universalCHAQuery = context
-                    .select(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.METADATA)
+                    .select(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
                     .from(Modules.MODULES)
                     .getSQL();
             this.arcsQuery = context
@@ -267,11 +266,11 @@ public class DatabaseMergerTest {
         }
 
         private MockResult createUniversalCHA() {
-            Result<Record2<Long, JSONB>> result = context.newResult(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.METADATA);
+            var result = context.newResult(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES);
             for (var type : universalCHA.entrySet()) {
                 result.add(context
-                        .newRecord(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.METADATA)
-                        .values(namespacesMap.get(type.getKey()), JSONB.valueOf(type.getValue())));
+                        .newRecord(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
+                        .values(namespacesMap.get(type.getKey()), type.getValue().getLeft(), type.getValue().getRight()));
             }
             return new MockResult(result.size(), result);
         }
