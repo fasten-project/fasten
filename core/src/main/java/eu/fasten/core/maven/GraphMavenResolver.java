@@ -447,18 +447,14 @@ public class GraphMavenResolver implements Runnable {
                 })).values().stream().map(Pair::getFirst).collect(Collectors.toSet());
     }
 
-    public void buildDependencyGraph(DSLContext dbContext, String serializedGraphPath) {
-        try {
-            var graphOpt = DependencyGraphUtilities.loadDependencyGraph(serializedGraphPath);
-            if (graphOpt.isEmpty()) {
-                dependencyGraph = DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedGraphPath);
-            } else {
-                dependencyGraph = graphOpt.get();
-            }
-            dependentGraph =  DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
-        } catch (Exception e) {
-            logger.error("Could not build the dependency graph", e);
+    public void buildDependencyGraph(DSLContext dbContext, String serializedGraphPath) throws Exception {
+        var graphOpt = DependencyGraphUtilities.loadDependencyGraph(serializedGraphPath);
+        if (graphOpt.isEmpty()) {
+            dependencyGraph = DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedGraphPath);
+        } else {
+            dependencyGraph = graphOpt.get();
         }
+        dependentGraph =  DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
     }
 
     private long getCreatedAt(String groupId, String artifactId, String version, DSLContext context) {
