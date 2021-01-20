@@ -77,7 +77,11 @@ public class MavenResolverBenchmark implements Runnable {
         var mavenResolver = new MavenResolver();
         var graphResolver = new GraphMavenResolver();
         graphResolver.scopes = Arrays.asList(Dependency.SCOPES);
-        graphResolver.buildDependencyGraph(dbContext, graphPath);
+        try {
+            graphResolver.buildDependencyGraph(dbContext, graphPath);
+        } catch (Exception e) {
+            logger.error("Could not construct dependency graph", e);
+        }
         var artifactCount = 0;
         var dbCount = 0;
         var onlineCount = 0;
