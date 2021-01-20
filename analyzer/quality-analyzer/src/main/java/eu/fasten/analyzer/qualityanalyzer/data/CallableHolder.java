@@ -82,4 +82,8 @@ public class CallableHolder {
         return callableMetadata;
     }
 
+    public void setCallableMetadata(JSONObject metadata) {
+        this.callableMetadata = metadata;
+    }
+
 }

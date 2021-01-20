@@ -19,7 +19,6 @@ package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.analyzer.qualityanalyzer.data.*;
 
-import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
@@ -40,9 +39,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.lang3.StringUtils;
-
 
 public class MetadataUtils {
 
@@ -106,10 +102,16 @@ public class MetadataUtils {
 
         String product = null;
         String version = null;
+        String rapid_version = jsonRecord.getString("plugin_version");
+
+        JSONObject payload = null;
 
         if (jsonRecord.has("payload")) {
-            product = jsonRecord.getJSONObject("payload").getString("product");
-            version = jsonRecord.getJSONObject("payload").getString("version");
+            payload = jsonRecord.getJSONObject("payload");
+            product = payload.getString("product");
+            version = payload.getString("version");
+        } else {
+            payload = jsonRecord;
         }
 
         if( (product == null) || (version == null)) {
@@ -125,34 +127,44 @@ public class MetadataUtils {
             throw new IllegalStateException("Could not find package version id");
         }
 
-        String path = jsonRecord.getJSONObject("payload").getString("filename");
+        String filename = payload.getString("filename");
         //Fix issue #21 from quality-analyzer repository
-        int index = StringUtils.ordinalIndexOf(path, "/", 5);
-        String filename = path.substring(index+1);
+        //int index = StringUtils.ordinalIndexOf(path, "/", 5);
+        //String filename = path.substring(index+1);
         
         logger.info("Filename from RapidPlugin is " + filename);
 
-        int lineStart = jsonRecord.getJSONObject("payload").getInt("start_line");
-        int lineEnd = jsonRecord.getJSONObject("payload").getInt("end_line");
+        int lineStart = payload.getInt("start_line");
+        int lineEnd = payload.getInt("end_line");
 
         Long fileId = getFileId(pckVersionId, filename);//could return null
 
         if(fileId == null ) {
             logger.error("Could not fetch fileID for package version id = " + pckVersionId +
-                    " and path = " + path);
+                    " and filename = " + filename);
             throw new IllegalStateException("Could not find package version id");
         }
 
         List<Long> modulesId = getModuleIds(fileId);//could return empty List
 
+        logger.info("Found " + modulesId.size() + " modules");
+
         ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
 
-        //String name = jsonRecord.getJSONObject("payload").getString("name");
+        JSONObject tailored = new JSONObject(payload, new String[] {
+                "quality_analyzer_name",
+                "quality_analyzer_version",
+                "quality_analysis_timestamp",
+                "metrics"});
+        tailored.put("rapid_plugin_version", rapid_version);
+
+        JSONObject metadata = new JSONObject();
+        metadata.put("quality", tailored);
 
         if(!modulesId.isEmpty()) {
 
             for(Long moduleId : modulesId) {
-                callables.addAll(getCallablesInformation(moduleId, lineStart, lineEnd));
+                callables.addAll(getCallablesInformation(moduleId, lineStart, lineEnd, metadata));
             }
 
             logger.info("Found " + callables.size() + " methods for which startLine and endline are in [" + lineStart + ", " + lineEnd + "]");
@@ -165,7 +177,6 @@ public class MetadataUtils {
 
     /**
      * Retrieves the package_version_id given the purl of the package version.
-     * @param purl - follows purl specifications
      * @return negative if it cannot be found
      */
     private Long getPackageVersionId(String coordinate, String forge, String version) {
@@ -233,7 +244,7 @@ public class MetadataUtils {
     /**
      * Retrieve the fileId of the file
      * @param packageVersionId - package version ID
-     * @param filepath - path to the file
+     * @param filename - path to the file
      * @return - Long value of fileId or -1 if the file cannot be found
      */
     private Long getFileId(Long packageVersionId, String filename) {
@@ -279,12 +290,12 @@ public class MetadataUtils {
      * Retrieves the callables information from the DB with a given values for the start and end line.
      *
      * @param moduleId - Long ID of the file where the callable was changed.
-     * @param startLine - int value that indicates start callable line in source file.
-     * @param endLine - int value that indicates the last callable line in source file.
+     * @param lineStart - int value that indicates start callable line in source file.
+     * @param lineEnd - int value that indicates the last callable line in source file.
      *
      * @return List of CallableHolder (empty List if no callable could be found)
      */
-    private List<CallableHolder> getCallablesInformation(Long moduleId, int lineStart, int lineEnd)  {
+    private List<CallableHolder> getCallablesInformation(Long moduleId, int lineStart, int lineEnd, JSONObject metadata)  {
 
         List<CallableHolder> calls = new ArrayList<>();
 
@@ -304,6 +315,7 @@ public class MetadataUtils {
 
             // Create callable object
             CallableHolder ch = new CallableHolder(cr);
+            ch.setCallableMetadata(metadata);
             //filter and store callable only if start and end line overlap with input
             calls.add(ch);
         }

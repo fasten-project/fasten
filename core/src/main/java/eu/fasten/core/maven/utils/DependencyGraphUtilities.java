@@ -56,9 +56,8 @@ public final class DependencyGraphUtilities {
             graph.addVertex(node);
         }
         for (var edge : dependencyGraph.edgeSet()) {
-            var source = dependencyGraph.getEdgeSource(edge);
-            var target = dependencyGraph.getEdgeTarget(edge);
-            graph.addEdge(target, source, edge);    // Reverse edges
+            var reversedEdges = new DependencyEdge(edge.target, edge.source, edge.scope, edge.optional, edge.exclusions, edge.type);
+            graph.addEdge(reversedEdges.source, reversedEdges.target, reversedEdges);    // Reverse edges
         }
         logger.info("Graph transposed: {} ms", System.currentTimeMillis() - startTs);
         return graph;

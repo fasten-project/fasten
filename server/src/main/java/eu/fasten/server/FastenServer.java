@@ -36,6 +36,7 @@ import java.sql.SQLException;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ObjectUtils;
@@ -116,6 +117,32 @@ public class FastenServer implements Runnable {
             paramLabel = "PATH",
             description = "Path to base directory to which data will be written")
     String baseDir;
+
+    @Option(names = {"-cg", "--consumer_group"},
+            paramLabel = "consumerGroup",
+            description = "Name of the consumer group. Defaults to (canonical) name of the plugin.",
+            defaultValue = "undefined"
+    )
+    String consumerGroup;
+
+    @Option(names = {"-ot", "--output_topic"},
+            paramLabel = "outputTopic",
+            description = "Name of the output topic. Defaults to (simple) name of the plugin."
+    )
+    String outputTopic;
+
+    @Option(names = {"-ct", "--consume_timeout"},
+            paramLabel = "consumeTimeout",
+            description = "Adds a timeout on the time a plugin can spend on its consumed records. Disabled by default.",
+            defaultValue = "-1"
+    )
+    long consumeTimeout;
+
+    @Option(names = {"-cte", "--consume_timeout_exit"},
+            paramLabel = "consumeTimeoutExit",
+            description = "Shutdowns the JVM if a consume timeout is reached."
+    )
+    boolean consumeTimeoutExit;
 
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
@@ -211,14 +238,21 @@ public class FastenServer implements Runnable {
         return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName())).map(k -> {
             var consumerProperties = KafkaConnector.kafkaConsumerProperties(
                     kafkaServers,
-                    k.getClass().getCanonicalName());
+                    (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() : consumerGroup), // if consumergroup == undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
+                    k.getSessionTimeout(),
+                    k.getMaxConsumeTimeout(),
+                    k.isStaticMembership());
             var producerProperties = KafkaConnector.kafkaProducerProperties(
                     kafkaServers,
                     k.getClass().getCanonicalName());
 
             return new FastenKafkaPlugin(consumerProperties, producerProperties, k, skipOffsets,
                     (outputDirs != null) ? outputDirs.get(k.getClass().getSimpleName()) : null,
-                    (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null);
+                    (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null,
+                    (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
+                    (consumeTimeout != -1) ? true : false,
+                    consumeTimeout,
+                    consumeTimeoutExit);
         }).collect(Collectors.toList());
     }
 

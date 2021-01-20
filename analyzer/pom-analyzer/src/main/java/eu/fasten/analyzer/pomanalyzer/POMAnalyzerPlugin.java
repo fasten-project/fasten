@@ -110,10 +110,20 @@ public class POMAnalyzerPlugin extends Plugin {
             group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
             version = payload.getString("version").replaceAll("[\\n\\t ]", "");
             date = payload.optLong("date", -1L);
+            var pomUrl = payload.optString("pomUrl", null);
             final var product = group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version;
             var dataExtractor = new DataExtractor();
             try {
+                if (pomUrl != null) {
+                    var mavenCoordinate = dataExtractor.getMavenCoordinate(pomUrl);
+                    logger.info("Extracted Maven coordinate: " + mavenCoordinate);
+                    if (mavenCoordinate != null && !mavenCoordinate.contains("${")) {
+                        group = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[0];
+                        artifact = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
+                        version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
+                    }
+                }
                 repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
                 logger.info("Extracted repository URL " + repoUrl + " from " + product);
                 dependencyData = dataExtractor.extractDependencyData(group, artifact, version);

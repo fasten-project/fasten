@@ -33,6 +33,8 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -47,11 +49,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.BatchUpdateException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
@@ -224,8 +222,9 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
                 callGraph.getCgGenerator(), callGraph.version, null,
                 getProperTimestamp(callGraph.timestamp), new JSONObject());
 
-        var callables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId);
-        var numInternal = callables.size();
+        var allCallables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId);
+        var callables = allCallables.getLeft();
+        var numInternal = allCallables.getRight();
 
         var callablesIds = new LongArrayList(callables.size());
         // Save all callables in the database
@@ -264,9 +263,9 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
     // All classes that implements this class must provide an implementation
     // for this method. We cannot convert this class to an abstract class.
-    public ArrayList<CallablesRecord> insertDataExtractCallables(
+    public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
             ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
-        return new ArrayList<CallablesRecord>();
+        return new ImmutablePair<>(new ArrayList<>(), 0);
     }
 
     protected List<EdgesRecord> insertEdges(Graph graph,
@@ -324,5 +323,10 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
     @Override
     public void freeResource() {
 
+    }
+
+    @Override
+    public long getMaxConsumeTimeout() {
+        return 900000; //The MetadataDB plugin takes up to 15 minutes to process a record.
     }
 }

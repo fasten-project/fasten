@@ -88,6 +88,16 @@ public class MavenUtilities {
         return Optional.empty();
     }
 
+    public static Optional<File> downloadPomFile(String pomUrl) {
+        Optional<File> pom;
+        try {
+            pom = httpGetToFile(pomUrl);
+        } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+            return Optional.empty();
+        }
+        return pom;
+    }
+
     /**
      * Retrieve the list of available repositories from the environmental variables.
      * If not given, use DEFAULT_REPO.
