@@ -231,7 +231,7 @@ public class GraphMavenResolver implements Runnable {
         var node = new Revision(-1, nodeGroup, nodeArtifact, nodeVersion, new Timestamp(-1));
         dependencyGraph.addVertex(node);
         directDependencies.forEach(d -> dependencyGraph.addVertex(d));
-        directDependencies.forEach(d -> dependencyGraph.addEdge(node, d, new DependencyEdge(node, d, "compile", false, Collections.emptyList())));
+        directDependencies.forEach(d -> dependencyGraph.addEdge(node, d, new DependencyEdge(node, d, "compile", false, new ArrayList<>(), "jar")));
         return node;
     }
 
