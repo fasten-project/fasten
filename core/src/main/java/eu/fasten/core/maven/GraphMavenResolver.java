@@ -241,6 +241,9 @@ public class GraphMavenResolver implements Runnable {
         logger.debug("BFS from root: {}:{}:{}", groupId, artifactId, version);
 
         var excludeProducts = new ArrayList<Pair<Revision, MavenProduct>>();
+        System.out.println("group: " + groupId + "; artifact: " + artifactId + "; version: " + version + "; timestamp: " + timestamp);
+        System.out.println(dependencyGraph == null);
+        System.out.println(dependencyGraph);
         var edges = dependencyGraph.outgoingEdgesOf(new Revision(groupId, artifactId, version, new Timestamp(timestamp)));
         for (var exclusionEdge : edges.stream().filter(e -> !e.exclusions.isEmpty()).collect(Collectors.toList())) {
             for (var exclusion : exclusionEdge.exclusions) {
