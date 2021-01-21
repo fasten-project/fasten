@@ -24,6 +24,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.jooq.exception.DataAccessException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -34,10 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.sql.BatchUpdateException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.List;
-import java.util.Collections;
+import java.util.*;
 
 import org.jooq.DSLContext;
 
@@ -193,6 +191,12 @@ public class QualityAnalyzerPlugin extends Plugin {
         public void setPluginError(Throwable throwable) {
             this.pluginError = throwable;
         }
+
+        @Override
+        public long getMaxConsumeTimeout() {
+            return 3600000; //The QualityAnalyzer plugin takes up to 1h to process a record.
+        }
+
     }
 
 

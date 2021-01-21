@@ -18,7 +18,6 @@
 
 package eu.fasten.core.data;
 
-import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -148,7 +147,14 @@ public abstract class ExtendedRevisionCallGraph<A> {
      *
      * @param json JSONObject of a revision call graph.
      */
-    protected ExtendedRevisionCallGraph(final JSONObject json) throws JSONException {
+    protected ExtendedRevisionCallGraph(final JSONObject json, Class rcgClass) throws JSONException {
+        if (rcgClass.getName().equals(ExtendedRevisionCCallGraph.class.getName())) {
+            classHierarchyJSONKey = "functions";
+        } else if (rcgClass.getName().equals(ExtendedRevisionPythonCallGraph.class.getName())) {
+            classHierarchyJSONKey = "modules";
+        } else {
+            classHierarchyJSONKey = "cha";
+        }
         this.forge = json.getString("forge");
         this.product = json.getString("product");
         this.version = json.getString("version");
@@ -157,7 +163,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = json.getString("generator");
         this.graph = new Graph(json.getJSONObject("graph"));
-        this.classHierarchy = getCHAFromJSON(json.getJSONObject(this.classHierarchyJSONKey));
+        this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
         this.nodeCount = json.getInt("nodes");
     }
 

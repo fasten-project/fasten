@@ -20,6 +20,7 @@ package eu.fasten.core.plugins;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 
 public interface KafkaPlugin extends FastenPlugin {
     /**
@@ -63,4 +64,44 @@ public interface KafkaPlugin extends FastenPlugin {
      * @return relative path to the output file
      */
     String getOutputPath();
+
+
+    /**
+     * Corresponds to `max.poll.interval.ms` in the Kafka Consumer config.
+     * Default is set to 10 minutes.
+     *
+     * Overriding this method will be reflected in the Kafka Consumer config.
+     * @return the maximum time (in ms) a plugin can spend on a single record before timeout.
+     */
+    default long getMaxConsumeTimeout() {
+        return 600000;
+    }
+
+    /**
+     * Corresponds to `session.timeout.ms` in the Kafka Consumer config.
+     * Default is set to 1 minute for non static membership, otherwise 10 minutes.
+     *
+     * Overriding this method will be reflected in the Kafka Consumer config.
+     * @return the maximum time (in ms) a plugin can be unresponsive in the heartbeat thread, before it's considered 'dead'.
+     */
+    default long getSessionTimeout() {
+        if (!isStaticMembership()) {
+            return 600000;
+        } else {
+            return 60000;
+        }
+    }
+
+    /**
+     * Reflects if the Kafka consumer should enable 'Static Membership'.
+     * Default is enabled if the env POD_INSTANCE_ID is used.
+     *
+     * Overriding this method will be reflected in the Kafka Consumer config.
+     * If enabled, the plugin should set `POD_INSTANCE_ID` as environment variable. Each plugin/deployment should have an unique and static id.
+     * This `POD_INSTANCE_ID` will be set in Kafka Consumer config for the key `group.instance.id`.
+     * @return if the plugin should consume using 'Static Membership'.
+     */
+    default boolean isStaticMembership() {
+        return System.getenv("POD_INSTANCE_ID") != null;
+    }
 }

@@ -99,7 +99,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
      * @param json JSONObject of a revision call graph.
      */
     public ExtendedRevisionCCallGraph(final JSONObject json) throws JSONException {
-        super(json);
+        super(json, ExtendedRevisionCCallGraph.class);
         this.architecture = json.has("architecture") ? json.getString("architecture") : null;
     }
 

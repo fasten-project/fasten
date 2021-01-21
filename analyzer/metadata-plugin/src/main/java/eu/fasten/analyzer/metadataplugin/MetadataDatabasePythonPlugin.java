@@ -33,6 +33,8 @@ import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.json.JSONObject;
@@ -62,7 +64,7 @@ public class MetadataDatabasePythonPlugin extends Plugin {
             return MetadataDBPythonExtension.dslContext;
         }
 
-        public ArrayList<CallablesRecord> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
+        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
             ExtendedRevisionPythonCallGraph pythonCallGraph = (ExtendedRevisionPythonCallGraph) callgraph;
 
             var callables = new ArrayList<CallablesRecord>();
@@ -80,6 +82,8 @@ public class MetadataDatabasePythonPlugin extends Plugin {
                 callables.addAll(extractCallablesFromType(type, moduleId, true));
             }
 
+            var numInternal = callables.size();
+
             var externals = cha.get(PythonScope.external);
             // Extract all external callables
             for (var entry : externals.entrySet()) {
@@ -87,7 +91,7 @@ public class MetadataDatabasePythonPlugin extends Plugin {
                 callables.addAll(extractCallablesFromType(type, -1L, false));
             }
 
-            return callables;
+            return new ImmutablePair<>(callables, numInternal);
         }
 
         private List<CallablesRecord> extractCallablesFromType(PythonType type,

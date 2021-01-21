@@ -237,9 +237,13 @@ public class Main implements Runnable {
                             .format((System.currentTimeMillis() - startTime) / 1000d));
 
             if (!this.output.isEmpty()) {
+                try{
                 CallGraphUtils.writeToFile(Paths.get(Paths.get(this.output).getParent().toString(),
                         FilenameUtils.getBaseName(this.output) + "_" + result.product + "_merged" + "." +
                                 FilenameUtils.getExtension(this.output)).toString(), JSONUtils.toJSONString(result), "");
+                }catch (NullPointerException e){
+                    logger.error("Provided output path might be incomplete!");
+                }
             }
         }
 

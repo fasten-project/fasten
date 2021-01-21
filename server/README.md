@@ -27,6 +27,10 @@ The FASTEN-server is a component necessary for running [FASTEN-specific plugins]
     - `-pl` `--plugin_list` List of plugins to run. Can be used multiple times.
     - `-po` `--plugin_output` Path to directory where plugin output messages will be stored
     - `-pol` `--plugin_output_link` HTTP link to the root directory where output messages will be stored
+- `cg` `--consumer_group` Name of the consumer group. Defaults to (canonical) name of the plugin.
+- `ot` `--output_topic` Name of the output topic. Defaults to (simple) name of the plugin.
+- `ct` `--consume_timeout` Adds a timeout on the time a plugin can spend on its consumed records. Disabled by default.
+- `cte` `--consume_timeout_exit` Shutdowns the JVM if a consume timeout is reached. 
 - `-V` `--version` Print version information and exit.
 
 ## Usage 

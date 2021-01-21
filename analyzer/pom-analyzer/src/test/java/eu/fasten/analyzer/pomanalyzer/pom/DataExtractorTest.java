@@ -50,6 +50,21 @@ public class DataExtractorTest {
     }
 
     @Test
+    public void getMavenCoordinateTest() {
+        var expected = "junit:junit:4.12";
+        var actual = dataExtractor.getMavenCoordinate("https://repo1.maven.org/maven2/junit/junit/4.12/junit-4.12.pom");
+        assertEquals(expected, actual);
+
+        expected = "commons-logging:commons-logging:1.2";
+        actual = dataExtractor.getMavenCoordinate("https://repo1.maven.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.pom");
+        assertEquals(expected, actual);
+
+        expected = "org.apache.commons:commons-lang3:3.11";
+        actual = dataExtractor.getMavenCoordinate("https://repo1.maven.org/maven2/org/apache/commons/commons-lang3/3.11/commons-lang3-3.11.pom");
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void extractCommitTagTest() {
         var expected = "r4.12";
         var actual = dataExtractor.extractCommitTag("junit", "junit", "4.12");

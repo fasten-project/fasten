@@ -28,6 +28,9 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.math3.util.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -127,25 +130,27 @@ public class RepoClonerPlugin extends Plugin {
                 var gitCloner = new GitCloner(baseDir);
                 var hgCloner = new HgCloner(baseDir);
                 var svnCloner = new SvnCloner(baseDir);
-                repoPath = cloneRepo(repoUrl, artifact, group, gitCloner, hgCloner, svnCloner);
-                if (repoPath != null) {
-                    pluginError = null;
+                var result = cloneRepo(repoUrl, artifact, group, gitCloner, hgCloner, svnCloner);
+                if (result.getFirst() != null) {
+                    repoPath = result.getFirst();
+                    logger.info("Successfully cloned the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl);
                 } else {
-                    logger.error("Could not clone repository of " + product + " from " + repoUrl,
-                            pluginError);
-                    return;
-                }
-                if (getPluginError() == null) {
-                    logger.info("Cloned repository" + " of '" + product + "'"
-                            + " from " + repoUrl + " to " + repoPath);
+                    logger.error("Could not clone the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl
+                            + "; GitCloner: " + result.getSecond().getLeft().getMessage()
+                            + "; SvnCloner: " + result.getSecond().getMiddle().getMessage()
+                            + "; HgCloner: " + result.getSecond().getRight().getMessage()
+                    );
                 }
             } else {
                 logger.info("Repository URL not found");
             }
         }
 
-        public String cloneRepo(String repoUrl, String artifact, String group,
-                                GitCloner gitCloner, HgCloner hgCloner, SvnCloner svnCloner) {
+        public Pair<String, Triple<Exception, Exception, Exception>> cloneRepo(String repoUrl, String artifact, String group,
+                                             GitCloner gitCloner, HgCloner hgCloner, SvnCloner svnCloner) {
+            Exception gitError = null;
+            Exception svnError = null;
+            Exception hgError = null;
             if (repoUrl.startsWith("scm:git:") || repoUrl.startsWith("scm:svn:")) {
                 repoUrl = repoUrl.substring(8);
             } else if (repoUrl.startsWith("scm:")) {
@@ -159,9 +164,8 @@ public class RepoClonerPlugin extends Plugin {
                 try {
                     var repo = gitCloner.cloneRepo(repoUrl, artifact, group);
                     this.repoType = "git";
-                    return repo;
-                } catch (Exception e) {
-                    pluginError = e;
+                    return new Pair<>(repo, new ImmutableTriple<>(null, null, null));
+                } catch (Exception ignored) {
                 }
             }
             var triedSvn = false;
@@ -171,9 +175,8 @@ public class RepoClonerPlugin extends Plugin {
                 try {
                     var repo = svnCloner.cloneRepo(repoUrl, artifact, group);
                     this.repoType = "svn";
-                    return repo;
-                } catch (Exception e) {
-                    pluginError = e;
+                    return new Pair<>(repo, new ImmutableTriple<>(null, null, null));
+                } catch (Exception ignored) {
                 }
             }
             // If reached here then we don't really know what type of repository it is.
@@ -181,29 +184,29 @@ public class RepoClonerPlugin extends Plugin {
             try {
                 var repo = hgCloner.cloneRepo(repoUrl, artifact, group);
                 this.repoType = "hg";
-                return repo;
+                return new Pair<>(repo, new ImmutableTriple<>(null, null, null));
             } catch (Exception e) {
-                pluginError = e;
+                hgError = e;
             }
             if (!triedGit) {
                 try {
                     var repo = gitCloner.cloneRepo(repoUrl, artifact, group);
                     this.repoType = "git";
-                    return repo;
+                    return new Pair<>(repo, new ImmutableTriple<>(null, null, null));
                 } catch (Exception e) {
-                    pluginError = e;
+                    gitError = e;
                 }
             }
             if (!triedSvn) {
                 try {
                     var repo = svnCloner.cloneRepo(repoUrl, artifact, group);
                     this.repoType = "svn";
-                    return repo;
+                    return new Pair<>(repo, new ImmutableTriple<>(null, null, null));
                 } catch (Exception e) {
-                    pluginError = e;
+                    svnError = e;
                 }
             }
-            return null;
+            return new Pair<>(null, new ImmutableTriple<>(gitError, svnError, hgError));
         }
 
         @Override
@@ -239,6 +242,11 @@ public class RepoClonerPlugin extends Plugin {
 
         @Override
         public void freeResource() {
+        }
+
+        @Override
+        public long getMaxConsumeTimeout() {
+            return 1800000; //The RepoCloner plugin takes up to 30 minutes to process a record.
         }
     }
 }

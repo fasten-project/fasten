@@ -28,10 +28,9 @@ import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -75,7 +74,7 @@ public class OPALPlugin extends Plugin {
             long startTime = System.nanoTime();
             try {
                 // Generate CG and measure construction duration.
-                logger.info("[CG-GENERATION] [UNPROCESSED] [-1i] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
+                logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
                         "", "CHA", kafkaConsumedJson.optLong("date", -1));
                 long endTime = System.nanoTime();
@@ -96,19 +95,19 @@ public class OPALPlugin extends Plugin {
                         + firstLetter + File.separator
                         + artifactId + File.separator + product + ".json";
 
-                logger.info("[CG-GENERATION] [SUCCESS] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
+                logger.info("[CG-GENERATION] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
 
             } catch (OPALException | EmptyCallGraphException e) {
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
 
-                logger.error("[CG-GENERATION] [FAILED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
+                logger.error("[CG-GENERATION] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
                 setPluginError(e);
             } catch (MissingArtifactException e) {
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
 
-                logger.error("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
+                logger.error("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
                 setPluginError(e);
             }
         }
@@ -167,5 +166,22 @@ public class OPALPlugin extends Plugin {
         public String version() {
             return "0.1.2";
         }
+
+
+        @Override
+        public boolean isStaticMembership() {
+            return true; // The OPAL plugin relies on static members in a consumer group (using a K8s StatefulSet).
+        }
+
+        @Override
+        public long getMaxConsumeTimeout() {
+            return Integer.MAX_VALUE; // It can take very long to generate OPAL CG's.
+        }
+
+        @Override
+        public long getSessionTimeout() {
+            return 1800000; // Due to static membership we also want to tune the session timeout to 30 minutes.
+        }
+
     }
 }

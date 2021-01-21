@@ -29,16 +29,19 @@ public class DependencyEdge implements Serializable {
     public String scope;
     public boolean optional;
     public List<Dependency.Exclusion> exclusions;
+    public String type;
 
-    public DependencyEdge() {}
+    public DependencyEdge() {
+    }
 
     public DependencyEdge(Revision source, Revision target, String scope, boolean optional,
-                          List<Dependency.Exclusion> exclusions) {
+                          List<Dependency.Exclusion> exclusions, String type) {
         this.source = source;
         this.target = target;
         this.scope = scope;
         this.optional = optional;
         this.exclusions = exclusions;
+        this.type = type;
     }
 
     @Override
@@ -62,6 +65,9 @@ public class DependencyEdge implements Serializable {
         if (!Objects.equals(scope, that.scope)) {
             return false;
         }
+        if (!Objects.equals(type, that.type)) {
+            return false;
+        }
         return Objects.equals(exclusions, that.exclusions);
     }
 
@@ -70,6 +76,7 @@ public class DependencyEdge implements Serializable {
         int result = source != null ? source.hashCode() : 0;
         result = 31 * result + (target != null ? target.hashCode() : 0);
         result = 31 * result + (scope != null ? scope.hashCode() : 0);
+        result = 31 * result + (type != null ? type.hashCode() : 0);
         result = 31 * result + (optional ? 1 : 0);
         result = 31 * result + (exclusions != null ? exclusions.hashCode() : 0);
         return result;
@@ -83,6 +90,7 @@ public class DependencyEdge implements Serializable {
                 ", scope='" + scope + '\'' +
                 ", optional=" + optional +
                 ", exclusions=" + exclusions +
+                ", type='" + type + '\'' +
                 '}';
     }
 }

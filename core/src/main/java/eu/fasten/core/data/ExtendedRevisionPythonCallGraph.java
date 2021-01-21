@@ -67,7 +67,7 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<M
      * @param json JSONObject of a revision call graph.
      */
     public ExtendedRevisionPythonCallGraph(final JSONObject json) throws JSONException {
-        super(json);
+        super(json, ExtendedRevisionPythonCallGraph.class);
     }
 
     /**
