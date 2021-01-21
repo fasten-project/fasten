@@ -24,6 +24,7 @@ import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.merge.LocalMerger;
 import eu.fasten.core.merge.CallGraphUtils;
@@ -239,7 +240,7 @@ public class Main implements Runnable {
                 try{
                 CallGraphUtils.writeToFile(Paths.get(Paths.get(this.output).getParent().toString(),
                         FilenameUtils.getBaseName(this.output) + "_" + result.product + "_merged" + "." +
-                                FilenameUtils.getExtension(this.output)).toString(), result.toJSON(), "");
+                                FilenameUtils.getExtension(this.output)).toString(), JSONUtils.toJSONString(result), "");
                 }catch (NullPointerException e){
                     logger.error("Provided output path might be incomplete!");
                 }
@@ -291,7 +292,8 @@ public class Main implements Runnable {
                 .format((System.currentTimeMillis() - startTime) / 1000d));
 
         if (writeToFile) {
-            CallGraphUtils.writeToFile(this.output, revisionCallGraph.toJSON(), "");
+            CallGraphUtils.writeToFile(this.output, JSONUtils.toJSONString(revisionCallGraph), "");
+
         }
         return revisionCallGraph;
     }
