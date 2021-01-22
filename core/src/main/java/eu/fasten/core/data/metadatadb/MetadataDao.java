@@ -1387,6 +1387,35 @@ public class MetadataDao {
         return result.value1() + Constants.mvnCoordinateSeparator + result.value2();
     }
 
+    public Set<Long> findVulnerablePackageVersions(Set<Long> packageVersionIDs) {
+        var result = context
+                .select(PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.in(packageVersionIDs))
+                .and("package_versions.metadata::jsonb->'vulnerabilities' is not null")
+                .fetch();
+        return new HashSet<>(result.map(Record1::value1));
+    }
+
+    public Map<Long, JSONObject> findVulnerableCallables(Set<Long> vulnerablePackageVersions, Set<Long> callableIDs) {
+        var result = context
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .join(Modules.MODULES)
+                .on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.in(vulnerablePackageVersions))
+                .and(Callables.CALLABLES.ID.in(callableIDs))
+                .and("callables.metadata::jsonb->'vulnerabilities' is not null")
+                .fetch();
+        var map = new HashMap<Long, JSONObject>(result.size());
+        for (var record : result) {
+            map.put(record.value1(), new JSONObject(record.value2().data()));
+        }
+        return map;
+    }
+
     public String getPackageFiles(String packageName, String packageVersion, int offset, int limit) {
 
         // SQL query

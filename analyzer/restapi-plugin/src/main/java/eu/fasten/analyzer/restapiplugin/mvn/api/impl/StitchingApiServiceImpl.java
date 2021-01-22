@@ -170,14 +170,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         // Get stitched (with dependencies) graph
         var graph = databaseMerger.mergeWithCHA(package_name + Constants.mvnCoordinateSeparator + version);
 
-        // Get all callables from the graph to find their vulnerabilities
-        var callablesMetadata = KnowledgeBaseConnector.kbDao.getCallablesMetadata(graph.nodes());
-        var vulnerabilities = new HashMap<Long, JSONObject>();
-        for (var entry : callablesMetadata.entrySet()) {
-            if (entry.getValue().has("vulnerabilities")) {
-                vulnerabilities.put(entry.getKey(), entry.getValue().getJSONObject("vulnerabilities"));
-            }
-        }
+        // Find all vulnerable callables (nodes) in the graph
+        var vulnerableDependencies = KnowledgeBaseConnector.kbDao.findVulnerablePackageVersions(depIds);
+        var vulnerabilities = KnowledgeBaseConnector.kbDao.findVulnerableCallables(vulnerableDependencies, graph.nodes());
 
         // Get all internal callables
         var internalCallables = KnowledgeBaseConnector.kbDao.getPackageInternalCallableIDs(package_name, version);
