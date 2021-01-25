@@ -114,7 +114,8 @@ public class MetadataUtils {
             product = payload.getString("product");
             version = payload.getString("version");
         } else {
-            payload = jsonRecord;
+            logger.error("JSON record does not contain payload");
+            throw new IllegalStateException("Non-existing payload in JSON record");
         }
 
         if( (product == null) || (version == null)) {
@@ -148,12 +149,6 @@ public class MetadataUtils {
             throw new IllegalStateException("Could not find package version id");
         }
 
-        List<Long> modulesId = getModuleIds(fileId);//could return empty List
-
-        logger.info("Found " + modulesId.size() + " modules");
-
-        ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
-
         JSONObject tailored = new JSONObject(payload, new String[] {
                 "quality_analyzer_name",
                 "quality_analyzer_version",
@@ -164,14 +159,25 @@ public class MetadataUtils {
         JSONObject metadata = new JSONObject();
         metadata.put("quality", tailored);
 
+        List<Long> modulesId = getModuleIds(fileId);//could return empty List
+        logger.info("Found " + modulesId.size() + " modules");
+
+        ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
+
         if(!modulesId.isEmpty()) {
 
             for(Long moduleId : modulesId) {
+                logger.info("Found module with moduleId: " + moduleId);
                 callables.addAll(getCallablesInformation(moduleId, lineStart, lineEnd, metadata));
             }
 
             logger.info("Found " + callables.size() + " methods for which startLine and endline are in [" + lineStart + ", " + lineEnd + "]");
+            logger.info("Method details ###");
 
+            for(CallableHolder callable : callables ){
+                logger.info(" CallableId = " + callable.getCallableId() + ", and fastenURI = " + callable.getFastenUri());
+            }
+            logger.info("End of method details ###");
         }
 
         return callables;
