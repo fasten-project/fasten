@@ -25,7 +25,6 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -131,9 +130,12 @@ public class POMAnalyzerPluginTest {
                 "   ]\n" +
                 "}"));
         var commitTag = "f8a34a";
+        var artifactRepository = "maven central";
         final var packageId = 1L;
         Mockito.when(metadataDao.insertPackage("junit:junit", Constants.mvnForge, projectName, repoUrl, null))
                 .thenReturn(packageId);
+        final var artifactRepoId = -1L;
+        Mockito.when(metadataDao.insertArtifactRepository(artifactRepository)).thenReturn(artifactRepoId);
         final var packageVersionId = 0L;
         var packageVersionMetadata = new JSONObject();
         packageVersionMetadata.put("dependencyManagement",
@@ -142,12 +144,12 @@ public class POMAnalyzerPluginTest {
         packageVersionMetadata.put("sourcesUrl", sourcesUrl);
         packageVersionMetadata.put("packagingType", packagingType);
         packageVersionMetadata.put("parentCoordinate", "");
-        Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", null, null, packageVersionMetadata))
+        Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", artifactRepoId, null, null, packageVersionMetadata))
                 .thenReturn(packageVersionId);
         final var dependencyId = 16L;
         Mockito.when(metadataDao.insertPackage("org.hamcrest:hamcrest-core", Constants.mvnForge, null, null, null))
                 .thenReturn(dependencyId);
-        var result = pomAnalyzer.saveToDatabase("junit:junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, -1, projectName, null, dependencyData, metadataDao);
+        var result = pomAnalyzer.saveToDatabase("junit:junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, -1, projectName, null, dependencyData, artifactRepository, metadataDao);
         assertEquals(packageVersionId, result);
     }
 

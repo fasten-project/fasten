@@ -42,7 +42,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dependencies extends TableImpl<DependenciesRecord> {
 
-    private static final long serialVersionUID = -974168096;
+    private static final long serialVersionUID = 573431324;
 
     /**
      * The reference instance of <code>public.dependencies</code>
@@ -73,11 +73,6 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
     public final TableField<DependenciesRecord, String[]> VERSION_RANGE = createField(DSL.name("version_range"), org.jooq.impl.SQLDataType.CLOB.getArrayDataType(), this, "");
 
     /**
-     * The column <code>public.dependencies.metadata</code>.
-     */
-    public final TableField<DependenciesRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB, this, "");
-
-    /**
      * The column <code>public.dependencies.architecture</code>.
      */
     public final TableField<DependenciesRecord, String[]> ARCHITECTURE = createField(DSL.name("architecture"), org.jooq.impl.SQLDataType.CLOB.getArrayDataType(), this, "");
@@ -91,6 +86,11 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
      * The column <code>public.dependencies.alternative_group</code>.
      */
     public final TableField<DependenciesRecord, Long> ALTERNATIVE_GROUP = createField(DSL.name("alternative_group"), org.jooq.impl.SQLDataType.BIGINT, this, "");
+
+    /**
+     * The column <code>public.dependencies.metadata</code>.
+     */
+    public final TableField<DependenciesRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB, this, "");
 
     /**
      * Create a <code>public.dependencies</code> table reference
@@ -184,7 +184,7 @@ public class Dependencies extends TableImpl<DependenciesRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row7<Long, Long, String[], JSONB, String[], String[], Long> fieldsRow() {
+    public Row7<Long, Long, String[], String[], String[], Long, JSONB> fieldsRow() {
         return (Row7) super.fieldsRow();
     }
 }

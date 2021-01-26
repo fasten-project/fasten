@@ -4,6 +4,7 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
@@ -15,6 +16,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.ArtifactRepositoriesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.BinaryModuleContentsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.BinaryModulesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
@@ -53,6 +55,7 @@ public class Keys {
     // IDENTITY definitions
     // -------------------------------------------------------------------------
 
+    public static final Identity<ArtifactRepositoriesRecord, Long> IDENTITY_ARTIFACT_REPOSITORIES = Identities0.IDENTITY_ARTIFACT_REPOSITORIES;
     public static final Identity<BinaryModulesRecord, Long> IDENTITY_BINARY_MODULES = Identities0.IDENTITY_BINARY_MODULES;
     public static final Identity<CallablesRecord, Long> IDENTITY_CALLABLES = Identities0.IDENTITY_CALLABLES;
     public static final Identity<FilesRecord, Long> IDENTITY_FILES = Identities0.IDENTITY_FILES;
@@ -64,6 +67,8 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<ArtifactRepositoriesRecord> ARTIFACT_REPOSITORIES_PKEY = UniqueKeys0.ARTIFACT_REPOSITORIES_PKEY;
+    public static final UniqueKey<ArtifactRepositoriesRecord> UNIQUE_ARTIFACT_REPOSITORIES = UniqueKeys0.UNIQUE_ARTIFACT_REPOSITORIES;
     public static final UniqueKey<BinaryModuleContentsRecord> UNIQUE_BINARY_MODULE_FILE = UniqueKeys0.UNIQUE_BINARY_MODULE_FILE;
     public static final UniqueKey<BinaryModulesRecord> BINARY_MODULES_PKEY = UniqueKeys0.BINARY_MODULES_PKEY;
     public static final UniqueKey<BinaryModulesRecord> UNIQUE_VERSION_NAME = UniqueKeys0.UNIQUE_VERSION_NAME;
@@ -99,6 +104,7 @@ public class Keys {
     public static final ForeignKey<ModuleContentsRecord, FilesRecord> MODULE_CONTENTS__MODULE_CONTENTS_FILE_ID_FKEY = ForeignKeys0.MODULE_CONTENTS__MODULE_CONTENTS_FILE_ID_FKEY;
     public static final ForeignKey<ModulesRecord, PackageVersionsRecord> MODULES__MODULES_PACKAGE_VERSION_ID_FKEY = ForeignKeys0.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY;
     public static final ForeignKey<PackageVersionsRecord, PackagesRecord> PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY = ForeignKeys0.PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY;
+    public static final ForeignKey<PackageVersionsRecord, ArtifactRepositoriesRecord> PACKAGE_VERSIONS__PACKAGE_VERSIONS_ARTIFACT_REPOSITORY_ID_FKEY = ForeignKeys0.PACKAGE_VERSIONS__PACKAGE_VERSIONS_ARTIFACT_REPOSITORY_ID_FKEY;
     public static final ForeignKey<VirtualImplementationsRecord, PackageVersionsRecord> VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_VIRTUAL_PACKAGE_VERSION_ID_FKEY = ForeignKeys0.VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_VIRTUAL_PACKAGE_VERSION_ID_FKEY;
     public static final ForeignKey<VirtualImplementationsRecord, PackageVersionsRecord> VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_PACKAGE_VERSION_ID_FKEY = ForeignKeys0.VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_PACKAGE_VERSION_ID_FKEY;
 
@@ -107,6 +113,7 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     private static class Identities0 {
+        public static Identity<ArtifactRepositoriesRecord, Long> IDENTITY_ARTIFACT_REPOSITORIES = Internal.createIdentity(ArtifactRepositories.ARTIFACT_REPOSITORIES, ArtifactRepositories.ARTIFACT_REPOSITORIES.ID);
         public static Identity<BinaryModulesRecord, Long> IDENTITY_BINARY_MODULES = Internal.createIdentity(BinaryModules.BINARY_MODULES, BinaryModules.BINARY_MODULES.ID);
         public static Identity<CallablesRecord, Long> IDENTITY_CALLABLES = Internal.createIdentity(Callables.CALLABLES, Callables.CALLABLES.ID);
         public static Identity<FilesRecord, Long> IDENTITY_FILES = Internal.createIdentity(Files.FILES, Files.FILES.ID);
@@ -116,6 +123,8 @@ public class Keys {
     }
 
     private static class UniqueKeys0 {
+        public static final UniqueKey<ArtifactRepositoriesRecord> ARTIFACT_REPOSITORIES_PKEY = Internal.createUniqueKey(ArtifactRepositories.ARTIFACT_REPOSITORIES, "artifact_repositories_pkey", ArtifactRepositories.ARTIFACT_REPOSITORIES.ID);
+        public static final UniqueKey<ArtifactRepositoriesRecord> UNIQUE_ARTIFACT_REPOSITORIES = Internal.createUniqueKey(ArtifactRepositories.ARTIFACT_REPOSITORIES, "unique_artifact_repositories", ArtifactRepositories.ARTIFACT_REPOSITORIES.REPOSITORY_BASE_URL);
         public static final UniqueKey<BinaryModuleContentsRecord> UNIQUE_BINARY_MODULE_FILE = Internal.createUniqueKey(BinaryModuleContents.BINARY_MODULE_CONTENTS, "unique_binary_module_file", BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID, BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID);
         public static final UniqueKey<BinaryModulesRecord> BINARY_MODULES_PKEY = Internal.createUniqueKey(BinaryModules.BINARY_MODULES, "binary_modules_pkey", BinaryModules.BINARY_MODULES.ID);
         public static final UniqueKey<BinaryModulesRecord> UNIQUE_VERSION_NAME = Internal.createUniqueKey(BinaryModules.BINARY_MODULES, "unique_version_name", BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME);
@@ -149,6 +158,7 @@ public class Keys {
         public static final ForeignKey<ModuleContentsRecord, FilesRecord> MODULE_CONTENTS__MODULE_CONTENTS_FILE_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.FILES_PKEY, ModuleContents.MODULE_CONTENTS, "module_contents__module_contents_file_id_fkey", ModuleContents.MODULE_CONTENTS.FILE_ID);
         public static final ForeignKey<ModulesRecord, PackageVersionsRecord> MODULES__MODULES_PACKAGE_VERSION_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGE_VERSIONS_PKEY, Modules.MODULES, "modules__modules_package_version_id_fkey", Modules.MODULES.PACKAGE_VERSION_ID);
         public static final ForeignKey<PackageVersionsRecord, PackagesRecord> PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGES_PKEY, PackageVersions.PACKAGE_VERSIONS, "package_versions__package_versions_package_id_fkey", PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID);
+        public static final ForeignKey<PackageVersionsRecord, ArtifactRepositoriesRecord> PACKAGE_VERSIONS__PACKAGE_VERSIONS_ARTIFACT_REPOSITORY_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.ARTIFACT_REPOSITORIES_PKEY, PackageVersions.PACKAGE_VERSIONS, "package_versions__package_versions_artifact_repository_id_fkey", PackageVersions.PACKAGE_VERSIONS.ARTIFACT_REPOSITORY_ID);
         public static final ForeignKey<VirtualImplementationsRecord, PackageVersionsRecord> VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_VIRTUAL_PACKAGE_VERSION_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGE_VERSIONS_PKEY, VirtualImplementations.VIRTUAL_IMPLEMENTATIONS, "virtual_implementations__virtual_implementations_virtual_package_version_id_fkey", VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.VIRTUAL_PACKAGE_VERSION_ID);
         public static final ForeignKey<VirtualImplementationsRecord, PackageVersionsRecord> VIRTUAL_IMPLEMENTATIONS__VIRTUAL_IMPLEMENTATIONS_PACKAGE_VERSION_ID_FKEY = Internal.createForeignKey(eu.fasten.core.data.metadatadb.codegen.Keys.PACKAGE_VERSIONS_PKEY, VirtualImplementations.VIRTUAL_IMPLEMENTATIONS, "virtual_implementations__virtual_implementations_package_version_id_fkey", VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.PACKAGE_VERSION_ID);
     }

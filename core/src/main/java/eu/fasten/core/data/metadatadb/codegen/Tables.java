@@ -4,6 +4,7 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
@@ -14,9 +15,15 @@ import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders;
 import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.PgpArmorHeadersRecord;
 
 import javax.annotation.processing.Generated;
+
+import org.jooq.Configuration;
+import org.jooq.Field;
+import org.jooq.Result;
 
 
 /**
@@ -31,6 +38,11 @@ import javax.annotation.processing.Generated;
 )
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
+
+    /**
+     * The table <code>public.artifact_repositories</code>.
+     */
+    public static final ArtifactRepositories ARTIFACT_REPOSITORIES = ArtifactRepositories.ARTIFACT_REPOSITORIES;
 
     /**
      * The table <code>public.binary_module_contents</code>.
@@ -81,6 +93,32 @@ public class Tables {
      * The table <code>public.packages</code>.
      */
     public static final Packages PACKAGES = Packages.PACKAGES;
+
+    /**
+     * The table <code>public.pgp_armor_headers</code>.
+     */
+    public static final PgpArmorHeaders PGP_ARMOR_HEADERS = PgpArmorHeaders.PGP_ARMOR_HEADERS;
+
+    /**
+     * Call <code>public.pgp_armor_headers</code>.
+     */
+    public static Result<PgpArmorHeadersRecord> PGP_ARMOR_HEADERS(Configuration configuration, String __1) {
+        return configuration.dsl().selectFrom(eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders.PGP_ARMOR_HEADERS.call(__1)).fetch();
+    }
+
+    /**
+     * Get <code>public.pgp_armor_headers</code> as a table.
+     */
+    public static PgpArmorHeaders PGP_ARMOR_HEADERS(String __1) {
+        return eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders.PGP_ARMOR_HEADERS.call(__1);
+    }
+
+    /**
+     * Get <code>public.pgp_armor_headers</code> as a table.
+     */
+    public static PgpArmorHeaders PGP_ARMOR_HEADERS(Field<String> __1) {
+        return eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders.PGP_ARMOR_HEADERS.call(__1);
+    }
 
     /**
      * The table <code>public.virtual_implementations</code>.

@@ -123,6 +123,17 @@ public class MetadataDao {
         return recordIds;
     }
 
+    public long insertArtifactRepository(String repositoryBaseUrl) {
+        var result = context.insertInto(ArtifactRepositories.ARTIFACT_REPOSITORIES,
+                ArtifactRepositories.ARTIFACT_REPOSITORIES.REPOSITORY_BASE_URL)
+                .values(repositoryBaseUrl)
+                .onConflictOnConstraint(Keys.UNIQUE_ARTIFACT_REPOSITORIES).doUpdate()
+                .set(ArtifactRepositories.ARTIFACT_REPOSITORIES.REPOSITORY_BASE_URL,
+                        ArtifactRepositories.ARTIFACT_REPOSITORIES.as("excluded").REPOSITORY_BASE_URL)
+                .returning(ArtifactRepositories.ARTIFACT_REPOSITORIES.ID).fetchOne();
+        return result.getId();
+    }
+
     /**
      * Inserts a record in 'package_versions' table in the database.
      *
@@ -134,17 +145,18 @@ public class MetadataDao {
      * @param metadata     Metadata of the package version
      * @return ID of the new record
      */
-    public long insertPackageVersion(long packageId, String cgGenerator, String version,
+    public long insertPackageVersion(long packageId, String cgGenerator, String version, Long artifactRepositoryId,
                                      String architecture, Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
                 PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID,
                 PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
                 PackageVersions.PACKAGE_VERSIONS.VERSION,
+                PackageVersions.PACKAGE_VERSIONS.ARTIFACT_REPOSITORY_ID,
                 PackageVersions.PACKAGE_VERSIONS.ARCHITECTURE,
                 PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
                 PackageVersions.PACKAGE_VERSIONS.METADATA)
-                .values(packageId, cgGenerator, version, architecture, createdAt, metadataJsonb)
+                .values(packageId, cgGenerator, version, artifactRepositoryId, architecture, createdAt, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_PACKAGE_VERSION_GENERATOR).doUpdate()
                 .set(PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
                         PackageVersions.PACKAGE_VERSIONS.as("excluded").CREATED_AT)
@@ -168,8 +180,9 @@ public class MetadataDao {
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public List<Long> insertPackageVersions(long packageId, List<String> cgGenerators,
-                                            List<String> versions, List<String> architectures,
-                                            List<Timestamp> createdAt, List<JSONObject> metadata)
+                                            List<String> versions, List<Long> artifactRepositoriesIds,
+                                            List<String> architectures, List<Timestamp> createdAt,
+                                            List<JSONObject> metadata)
             throws IllegalArgumentException {
         if (cgGenerators.size() != versions.size() || versions.size() != createdAt.size()
                 || createdAt.size() != metadata.size() || metadata.size() != architectures.size()) {
@@ -179,7 +192,7 @@ public class MetadataDao {
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
             long result = insertPackageVersion(packageId, cgGenerators.get(i), versions.get(i),
-                    architectures.get(i), createdAt.get(i), metadata.get(i));
+                    artifactRepositoriesIds.get(i), architectures.get(i), createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;

@@ -8,15 +8,22 @@ CREATE TABLE packages
     created_at   TIMESTAMP
 );
 
+CREATE TABLE artifact_repositories
+(
+    id                  BIGSERIAL PRIMARY KEY,
+    repository_base_url TEXT NOT NULL
+);
+
 CREATE TABLE package_versions
 (
-    id           BIGSERIAL PRIMARY KEY,
-    package_id   BIGINT NOT NULL REFERENCES packages (id),
-    version      TEXT   NOT NULL,
-    cg_generator TEXT   NOT NULL,
-    architecture TEXT,
-    created_at   TIMESTAMP,
-    metadata     JSONB
+    id                     BIGSERIAL PRIMARY KEY,
+    package_id             BIGINT NOT NULL REFERENCES packages (id),
+    version                TEXT   NOT NULL,
+    cg_generator           TEXT   NOT NULL,
+    artifact_repository_id BIGINT references artifact_repositories (id),
+    architecture           TEXT,
+    created_at             TIMESTAMP,
+    metadata               JSONB
 );
 
 CREATE TABLE virtual_implementations
@@ -123,6 +130,10 @@ CREATE UNIQUE INDEX CONCURRENTLY unique_package_forge ON packages USING btree (p
 ALTER TABLE packages
     ADD CONSTRAINT unique_package_forge UNIQUE USING INDEX unique_package_forge;
 
+CREATE UNIQUE INDEX CONCURRENTLY unique_artifact_repositories ON artifact_repositories USING btree (repository_base_url);
+ALTER TABLE artifact_repositories
+    ADD CONSTRAINT unique_artifact_repositories UNIQUE USING INDEX unique_artifact_repositories;
+
 CREATE UNIQUE INDEX CONCURRENTLY unique_package_version_generator ON package_versions USING btree (package_id, version, cg_generator);
 ALTER TABLE package_versions
     ADD CONSTRAINT unique_package_version_generator UNIQUE USING INDEX unique_package_version_generator;
@@ -171,8 +182,12 @@ INSERT INTO packages (id, package_name, forge)
 VALUES (-1, 'external_callables_library', 'mvn')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO package_versions (id, package_id, version, cg_generator)
-VALUES (-1, -1, '0.0.1', 'OPAL')
+INSERT INTO artifact_repositories (id, repository_base_url)
+VALUES (-1, 'https://repo.maven.apache.org/maven2/')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO package_versions (id, package_id, version, cg_generator, artifact_repository_id)
+VALUES (-1, -1, '0.0.1', 'OPAL', -1)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO modules (id, package_version_id, namespace)
