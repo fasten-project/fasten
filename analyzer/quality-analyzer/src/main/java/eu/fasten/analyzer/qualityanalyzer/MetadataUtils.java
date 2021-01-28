@@ -154,6 +154,7 @@ public class MetadataUtils {
                 "quality_analyzer_version",
                 "quality_analysis_timestamp",
                 "callable_name",
+                "callable_long_name",
                 "metrics"});
         tailored.put("rapid_plugin_version", rapid_version);
 
