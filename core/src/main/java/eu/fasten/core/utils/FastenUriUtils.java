@@ -2,6 +2,8 @@ package eu.fasten.core.utils;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class FastenUriUtils {
@@ -52,5 +54,56 @@ public class FastenUriUtils {
             partialUri = "/" + partialUri;
         }
         return List.of(forge, packageName, version, partialUri);
+    }
+
+    /**
+     * Given a partial FASTEN URI, produces a list consisting of namespace, class, method name and its signature.
+     * Specification: /{namespace}/{class}.<{method}>({signature.args})/{signature.returnType}
+     *
+     * @param partialFastenUri a partial FASTEN URI
+     * @return List containing namespace, class name, method name and its signature.
+     */
+    public static List<String> parsePartialFastenUri(String partialFastenUri) {
+        if (partialFastenUri.startsWith("fasten://") && partialFastenUri.contains("!") && partialFastenUri.contains("$") && partialFastenUri.contains("/")) {
+            throw new IllegalArgumentException("Invalid partial FASTEN URI. You may want to use parser for full FASTEN URI instead.");
+        }
+
+        // Use regex to find the part before `.<`, which is start of the method.
+        // This part is module, including namespace and class.
+        Pattern modulePattern = Pattern.compile(".+?(?=\\.<)");
+        Matcher moduleMatcher = modulePattern.matcher(partialFastenUri);
+        if (!moduleMatcher.find())
+            throw new IllegalArgumentException("Invalid partial FASTEN URI: module was not found.");
+
+        var splitModule = moduleMatcher.group(0).split("/");
+        var namespace = splitModule[1];
+        var className = splitModule[2];
+
+        // Use regex to find the part of `<{method}>`.
+        Pattern methodNamePattern = Pattern.compile("(?<=<)(.+?)(?=>)");
+        Matcher methodNameMatcher = methodNamePattern.matcher(partialFastenUri);
+        if (!methodNameMatcher.find() || methodNameMatcher.group(0).isEmpty())
+            throw new IllegalArgumentException("Invalid partial FASTEN URI: method name was not found.");
+
+        var methodName = methodNameMatcher.group(0);
+
+        // Use regex to find method's arguments of `({arguments})`.
+        Pattern methodArgsPattern = Pattern.compile("(?<=\\()(.+?)(?=\\))");
+        Matcher methodArgsMatcher = methodArgsPattern.matcher(partialFastenUri);
+        if (!methodArgsMatcher.find() || methodArgsMatcher.group(0).isEmpty())
+            throw new IllegalArgumentException("Invalid partial FASTEN URI: method's arguments were not found.");
+
+        var methodArgs = methodArgsMatcher.group(0);
+
+        // Use regex to find method's return type after closing `){return}`.
+        Pattern methodReturnPattern = Pattern.compile("(?<=\\))(.*)");
+        Matcher methodReturnMatcher = methodReturnPattern.matcher(partialFastenUri);
+        if (!methodReturnMatcher.find() || methodReturnMatcher.group(0).isEmpty())
+            throw new IllegalArgumentException("Invalid partial FASTEN URI: method's return type was not found.");
+
+        var methodReturnType = methodReturnMatcher.group(0);
+
+
+        return List.of(namespace, className, methodName, methodArgs, methodReturnType);
     }
 }
