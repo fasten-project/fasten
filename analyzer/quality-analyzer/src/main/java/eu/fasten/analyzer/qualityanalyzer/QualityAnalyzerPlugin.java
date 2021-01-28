@@ -19,25 +19,23 @@
 package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.analyzer.qualityanalyzer.data.QAConstants;
-
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
-
-import org.apache.kafka.clients.consumer.ConsumerConfig;
+import eu.fasten.core.plugins.KafkaPlugin;
+import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.BatchUpdateException;
-import java.util.*;
-
-import org.jooq.DSLContext;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 
 public class QualityAnalyzerPlugin extends Plugin {
@@ -99,6 +97,7 @@ public class QualityAnalyzerPlugin extends Plugin {
             Long recordId = null;
 
             do {
+                logger.info("Beginning of the transaction sequence");
                 setPluginError(null);
                 try {
                     recordId = utils.updateMetadataInDB(forge, jsonRecord);
@@ -111,6 +110,7 @@ public class QualityAnalyzerPlugin extends Plugin {
                     setPluginError(e);
 
                     if (e instanceof DataAccessException) {
+                        logger.info("Data access exception");
                         // Database connection error
                         if (e.getCause() instanceof BatchUpdateException) {
                             var exception = ((BatchUpdateException) e.getCause())
@@ -124,6 +124,7 @@ public class QualityAnalyzerPlugin extends Plugin {
                     }
 
                     if (e instanceof IllegalStateException) {
+                        logger.info("Illegal state exception");
                         //do not restart transaction, callable list is empty
                         restartTransaction = false;
                         setPluginError(e);
