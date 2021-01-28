@@ -63,6 +63,26 @@ public class FastenUriUtilsTest {
     }
 
     @Test
+    void testParsePartialFastenEncodedUriSuccess() {
+
+        var partialUri = "/com.sun.istack.localization/Localizer.%3Cinit%3E(%2Fjava.util%2FLocale)%2Fjava.lang%2FVoidType";
+
+        var expectedNamespace = "com.sun.istack.localization";
+        var expectedClass = "Localizer";
+        var expectedMethod = "<init>";
+        var expectedArgs = "/java.util/Locale";
+        var expectedReturnType = "/java.lang/VoidType";
+
+        var actual = FastenUriUtils.parsePartialFastenUri(partialUri);
+
+        assertEquals(expectedNamespace, actual.get(0));
+        assertEquals(expectedClass, actual.get(1));
+        assertEquals(expectedMethod, actual.get(2));
+        assertEquals(expectedArgs, actual.get(3));
+        assertEquals(expectedReturnType, actual.get(4));
+    }
+
+    @Test
     void testParsePartialFastenUriSuccessWithEmptyArgs() {
         var partialUri = "/junit.awtui/AboutDialog.<init>()/java.lang/VoidType";
         var expectedArgs = "";
