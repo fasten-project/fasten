@@ -21,17 +21,7 @@ package eu.fasten.core.data.metadatadb;
 import com.github.t9t.jooq.json.JsonbDSL;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
-import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
-import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
-import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
-import eu.fasten.core.data.metadatadb.codegen.tables.Files;
-import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
+import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
@@ -925,13 +915,15 @@ public class MetadataDao {
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
 
         // Building and executing the query
         Record queryResult = this.context
                 .select(p.fields())
-                .select(pv.VERSION)
+                .select(pv.VERSION, ar.REPOSITORY_BASE_URL)
                 .from(p)
                 .leftJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .join(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
                 .orderBy(pv.CREATED_AT.sortDesc().nullsLast())
                 .limit(1)
@@ -971,13 +963,14 @@ public class MetadataDao {
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
 
         // Select clause
         SelectField<?>[] selectClause;
         if (metadataOnly) {
             selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, pv.METADATA};
         } else {
-            selectClause = pv.fields();
+            selectClause = new SelectField[]{pv.ID, pv.PACKAGE_ID, pv.VERSION, pv.CG_GENERATOR, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.METADATA, pv.CREATED_AT};
         }
 
         // Building and executing the query
@@ -985,6 +978,7 @@ public class MetadataDao {
                 .select(selectClause)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .join(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
                 .limit(1)
                 .fetchOne();
@@ -1017,12 +1011,14 @@ public class MetadataDao {
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
 
         // Query
-        Result<Record> queryResult = context
-                .select(pv.fields())
+        var queryResult = context
+                .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.CREATED_AT)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
                 .offset(offset)
                 .limit(limit)
