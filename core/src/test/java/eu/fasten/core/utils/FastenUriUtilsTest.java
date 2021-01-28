@@ -4,9 +4,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FastenUriUtilsTest {
+
+    private String partialUriFormatException = "Invalid partial FASTEN URI. The format is corrupted.\nMust be: `/{namespace}/{class}.{method}({signature.args})/{signature.returnType}`";
 
     @Test
     void testGenerateFullFastenUriSuccess() {
@@ -48,7 +49,7 @@ public class FastenUriUtilsTest {
 
         var expectedNamespace = "junit.awtui";
         var expectedClass = "AboutDialog";
-        var expectedMethod = "init";
+        var expectedMethod = "<init>";
         var expectedArgs = "/java.awt/Frame";
         var expectedReturnType = "/java.lang/VoidType";
 
@@ -62,29 +63,35 @@ public class FastenUriUtilsTest {
     }
 
     @Test
-    void testParsePartialFastenUriFailedModule() {
-        var partialUri = "/junit.awtui/AboutDialog<init>(/java.awt/Frame)/java.lang/VoidType";  // missing leading `.` after class name.
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            FastenUriUtils.parsePartialFastenUri(partialUri);
-        });
-
-        String expectedMessage = "Invalid partial FASTEN URI: module was not found.";
-        String actualMessage = exception.getMessage();
-
-        assertTrue(actualMessage.contains(expectedMessage));
+    void testParsePartialFastenUriSuccessWithEmptyArgs() {
+        var partialUri = "/junit.awtui/AboutDialog.<init>()/java.lang/VoidType";
+        var expectedArgs = "";
+        var actual = FastenUriUtils.parsePartialFastenUri(partialUri);
+        assertEquals(expectedArgs, actual.get(3));
     }
 
     @Test
-    void testParsePartialFastenUriFailedMethod() {
-        var partialUri = "/junit.awtui/AboutDialog.<init(/java.awt/Frame)/java.lang/VoidType"; // missing trailing `>`.
+    void testParsePartialFastenUriFailFullUri() {
+        var fullUriException = "Invalid partial FASTEN URI. You may want to use parser for full FASTEN URI instead.";
+        var partialUri = "fasten://forge!name$1.0/partial";
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             FastenUriUtils.parsePartialFastenUri(partialUri);
         });
 
-        String expectedMessage = "Invalid partial FASTEN URI: method name was not found.";
         String actualMessage = exception.getMessage();
+        assertEquals(fullUriException, actualMessage);
 
-        assertTrue(actualMessage.contains(expectedMessage));
+    }
+
+    @Test
+    void testParsePartialFastenUriFailedModule() {
+        var partialUri = "/junit.awtui/AboutDialog<init>(/java.awt/Frame)/java.lang/VoidType";  // missing trailing `.` after class name.
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            FastenUriUtils.parsePartialFastenUri(partialUri);
+        });
+
+        String actualMessage = exception.getMessage();
+        assertEquals(partialUriFormatException, actualMessage);
     }
 
     @Test
@@ -94,10 +101,8 @@ public class FastenUriUtilsTest {
             FastenUriUtils.parsePartialFastenUri(partialUri);
         });
 
-        String expectedMessage = "Invalid partial FASTEN URI: method's arguments were not found.";
         String actualMessage = exception.getMessage();
-
-        assertTrue(actualMessage.contains(expectedMessage));
+        assertEquals(partialUriFormatException, actualMessage);
     }
 
     @Test
@@ -107,10 +112,19 @@ public class FastenUriUtilsTest {
             FastenUriUtils.parsePartialFastenUri(partialUri);
         });
 
-        String expectedMessage = "Invalid partial FASTEN URI: method's return type was not found.";
         String actualMessage = exception.getMessage();
+        assertEquals(partialUriFormatException, actualMessage);
+    }
 
-        assertTrue(actualMessage.contains(expectedMessage));
+    @Test
+    void testParsePartialFastenUriFailedMissingNamespace() {
+        var partialUri = "/AboutDialog.<init>(/java.awt/Frame)"; // missing return type.
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            FastenUriUtils.parsePartialFastenUri(partialUri);
+        });
+
+        String actualMessage = exception.getMessage();
+        assertEquals(partialUriFormatException, actualMessage);
     }
 
 }
