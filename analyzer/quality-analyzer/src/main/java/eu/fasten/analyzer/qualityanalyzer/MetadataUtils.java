@@ -332,16 +332,16 @@ public class MetadataUtils {
 
         for (Record cr : crs) {
 
-            var fastenUri = (String) cr.get(2);
+            String fastenUri = (String) cr.get(2);
 
             String separator = "::";
             int position = qaName.indexOf(separator);
-            String substr1 = qaName.substring(0,position);
-            String substr2 = qaName.substring(position+separator.length());
+            String methodName = qaName.substring(position+separator.length());
 
-            logger.info("Lizard callable name = " + qaName + " substring 1 is " + substr1 + " substring 2 is " + substr2);
+            logger.info("fastenUri (from DB) is " + fastenUri);
+            logger.info("Lizard callable name is " + qaName + " parsed methodName is " + methodName);
 
-            if(fastenUri.contains(substr1) && fastenUri.contains(substr2)) {
+            if(fastenUri.contains(methodName)) {
 
                 // Create callable object
                 CallableHolder ch = new CallableHolder(cr);
