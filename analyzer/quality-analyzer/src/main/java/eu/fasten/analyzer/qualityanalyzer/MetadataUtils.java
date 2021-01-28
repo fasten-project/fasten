@@ -153,7 +153,7 @@ public class MetadataUtils {
                 "quality_analyzer_name",
                 "quality_analyzer_version",
                 "quality_analysis_timestamp",
-                "quality_analysis_callable_name",
+                "callable_name",
                 "metrics"});
         tailored.put("rapid_plugin_version", rapid_version);
 
@@ -165,7 +165,7 @@ public class MetadataUtils {
 
         ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
 
-        String qaCallableName = payload.getString("quality_analysis_callable_name");
+        String qaCallableName = payload.getString("callable_name");
 
         if(!modulesId.isEmpty()) {
 
