@@ -918,9 +918,9 @@ public class MetadataDao {
                 .select(p.fields())
                 .select(pv.VERSION)
                 .from(p)
-                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .leftJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
-                .orderBy(pv.CREATED_AT.sortDesc())
+                .orderBy(pv.CREATED_AT.sortDesc().nullsLast())
                 .limit(1)
                 .fetchOne();
 
