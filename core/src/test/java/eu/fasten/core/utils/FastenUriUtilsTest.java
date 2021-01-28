@@ -118,7 +118,7 @@ public class FastenUriUtilsTest {
 
     @Test
     void testParsePartialFastenUriFailedMissingNamespace() {
-        var partialUri = "/AboutDialog.<init>(/java.awt/Frame)"; // missing return type.
+        var partialUri = "/AboutDialog.<init>(/java.awt/Frame)"; // missing namespace.
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             FastenUriUtils.parsePartialFastenUri(partialUri);
         });
