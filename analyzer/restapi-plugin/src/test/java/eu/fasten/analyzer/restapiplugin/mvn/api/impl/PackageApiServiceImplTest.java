@@ -55,7 +55,7 @@ public class PackageApiServiceImplTest {
     @Test
     void getPackageLastVersionTest() {
         var packageName = "pkg";
-        var response = "latest package version";
+        var response = "a package";
         Mockito.when(kbDao.getPackageLastVersion(packageName)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.getPackageLastVersion(packageName);
