@@ -28,9 +28,10 @@ import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
-import java.util.*;
-
-import org.apache.kafka.clients.consumer.ConsumerConfig;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -70,13 +71,13 @@ public class OPALPlugin extends Plugin {
                 kafkaConsumedJson = kafkaConsumedJson.getJSONObject("payload");
             }
             final var mavenCoordinate = new MavenCoordinate(kafkaConsumedJson);
-
+            var artifactRepository = kafkaConsumedJson.optString("artifactRepository", null);
             long startTime = System.nanoTime();
             try {
                 // Generate CG and measure construction duration.
                 logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
-                        "", "CHA", kafkaConsumedJson.optLong("date", -1));
+                        "", "CHA", kafkaConsumedJson.optLong("date", -1), artifactRepository);
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms. 
 
