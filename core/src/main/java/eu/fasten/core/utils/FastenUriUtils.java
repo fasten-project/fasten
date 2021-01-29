@@ -76,18 +76,19 @@ public class FastenUriUtils {
         }
 
         // URI is usually stored encoded, so decode for parsing.
+        // E.g., `/com.sun.istack.localization/Localizer.%3Cinit%3E(%2Fjava.util%2FLocale)%2Fjava.lang%2FVoidType`
         partialFastenUri = java.net.URLDecoder.decode(partialFastenUri, StandardCharsets.UTF_8);
 
         // Namespace: `/{namespace}/`
         Pattern namespacePattern = Pattern.compile("(?<=/)(.+?)(?=/)");
         Matcher namespaceMatcher = namespacePattern.matcher(partialFastenUri);
-        if (!namespaceMatcher.find())
+        if (!namespaceMatcher.find() || namespaceMatcher.group(0).isEmpty())
             throw new IllegalArgumentException(partialUriFormatException);
 
         // Class: `/{class}.*(`
         Pattern classPattern = Pattern.compile("(?<=/)([^\\/]+)(?=\\.([^./]+)\\()");
         Matcher classMatcher = classPattern.matcher(partialFastenUri);
-        if (!classMatcher.find())
+        if (!classMatcher.find() || classMatcher.group(0).isEmpty())
             throw new IllegalArgumentException(partialUriFormatException);
 
 
