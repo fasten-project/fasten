@@ -8,7 +8,7 @@ import eu.fasten.core.data.metadatadb.codegen.Indexes;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.Public;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
+import eu.fasten.core.data.metadatadb.codegen.udt.records.CallSiteRecord;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,7 +43,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Edges extends TableImpl<EdgesRecord> {
 
-    private static final long serialVersionUID = 932813204;
+    private static final long serialVersionUID = -809485564;
 
     /**
      * The reference instance of <code>public.edges</code>
@@ -69,9 +69,9 @@ public class Edges extends TableImpl<EdgesRecord> {
     public final TableField<EdgesRecord, Long> TARGET_ID = createField(DSL.name("target_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
-     * The column <code>public.edges.receivers</code>.
+     * The column <code>public.edges.call_sites</code>.
      */
-    public final TableField<EdgesRecord, ReceiverRecord[]> RECEIVERS = createField(DSL.name("receivers"), eu.fasten.core.data.metadatadb.codegen.udt.Receiver.RECEIVER.getDataType().getArrayDataType(), this, "");
+    public final TableField<EdgesRecord, CallSiteRecord[]> CALL_SITES = createField(DSL.name("call_sites"), eu.fasten.core.data.metadatadb.codegen.udt.CallSite.CALL_SITE.getDataType().getArrayDataType(), this, "");
 
     /**
      * The column <code>public.edges.metadata</code>.
@@ -170,7 +170,7 @@ public class Edges extends TableImpl<EdgesRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row4<Long, Long, ReceiverRecord[], JSONB> fieldsRow() {
+    public Row4<Long, Long, CallSiteRecord[], JSONB> fieldsRow() {
         return (Row4) super.fieldsRow();
     }
 }

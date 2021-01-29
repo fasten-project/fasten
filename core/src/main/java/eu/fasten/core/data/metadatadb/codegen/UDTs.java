@@ -4,7 +4,7 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
-import eu.fasten.core.data.metadatadb.codegen.udt.Receiver;
+import eu.fasten.core.data.metadatadb.codegen.udt.CallSite;
 
 import javax.annotation.processing.Generated;
 
@@ -23,7 +23,7 @@ import javax.annotation.processing.Generated;
 public class UDTs {
 
     /**
-     * The type <code>public.receiver</code>
+     * The type <code>public.call_site</code>
      */
-    public static Receiver RECEIVER = eu.fasten.core.data.metadatadb.codegen.udt.Receiver.RECEIVER;
+    public static CallSite CALL_SITE = eu.fasten.core.data.metadatadb.codegen.udt.CallSite.CALL_SITE;
 }

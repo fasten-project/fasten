@@ -28,10 +28,10 @@ import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
-import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
+import eu.fasten.core.data.metadatadb.codegen.udt.records.CallSiteRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -210,7 +210,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                 var target = lidToGidMap.get((long) edgeEntry.getKey().get(1));
 
                 // Create receivers
-                var receivers = new ReceiverRecord[edgeEntry.getValue().size()];
+                var receivers = new CallSiteRecord[edgeEntry.getValue().size()];
                 var counter = 0;
                 for (var obj : edgeEntry.getValue().keySet()) {
                     var pc = obj.toString();
@@ -226,7 +226,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     int line = callMetadata.optInt("line", -1);
                     var type = this.getReceiverType(callMetadata.optString("type"));
                     String receiverUri = callMetadata.optString("receiver");
-                    receivers[counter++] = new ReceiverRecord(line, type, namespaceMap.get(receiverUri));
+                    receivers[counter++] = new CallSiteRecord(line, type, namespaceMap.get(receiverUri));
                 }
                 // Add edge record to the list of records
                 edges.add(new EdgesRecord(source, target, receivers, null));
@@ -254,18 +254,18 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             return edges;
         }
 
-        private ReceiverType getReceiverType(String type) {
+        private CallType getReceiverType(String type) {
             switch (type) {
                 case "invokestatic":
-                    return ReceiverType.static_;
+                    return CallType.static_;
                 case "invokespecial":
-                    return ReceiverType.special;
+                    return CallType.special;
                 case "invokevirtual":
-                    return ReceiverType.virtual;
+                    return CallType.virtual;
                 case "invokedynamic":
-                    return ReceiverType.dynamic;
+                    return CallType.dynamic;
                 case "invokeinterface":
-                    return ReceiverType.interface_;
+                    return CallType.interface_;
                 default:
                     return null;
             }

@@ -24,7 +24,7 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
+import eu.fasten.core.data.metadatadb.codegen.udt.records.CallSiteRecord;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -99,19 +99,19 @@ public class DatabaseMerger {
     private static class Arc {
         private final Long source;
         private final Long target;
-        private final ReceiverRecord[] receivers;
+        private final CallSiteRecord[] callSites;
 
         /**
          * Create new Arc instance.
          *
          * @param source    source ID
          * @param target    target ID
-         * @param receivers list of receivers
+         * @param callSites list of receivers
          */
-        public Arc(final Long source, final Long target, final ReceiverRecord[] receivers) {
+        public Arc(final Long source, final Long target, final CallSiteRecord[] callSites) {
             this.source = source;
             this.target = target;
-            this.receivers = receivers;
+            this.callSites = callSites;
         }
     }
 
@@ -250,13 +250,13 @@ public class DatabaseMerger {
             added = resolveInitsAndConstructors(result, callGraphData, arc, node, isCallback);
         }
 
-        for (var entry : arc.receivers) {
-            var receiverTypeUri = entry.component3();
+        for (var entry : arc.callSites) {
+            var receiverTypeUri = this.namespaceMap.get(entry.component3());
             var type = entry.component2().getLiteral();
             switch (type) {
                 case "virtual":
                 case "interface":
-                    final var types = universalChildren.get(this.namespaceMap.get(receiverTypeUri));
+                    final var types = universalChildren.get(receiverTypeUri);
                     if (types != null) {
                         for (final var depTypeUri : types) {
                             for (final var target : typeDictionary.getOrDefault(depTypeUri,
@@ -274,7 +274,7 @@ public class DatabaseMerger {
                     logger.warn("OPAL didn't rewrite the dynamic");
                     break;
                 default:
-                    for (final var target : typeDictionary.getOrDefault(this.namespaceMap.get(receiverTypeUri),
+                    for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                         addEdge(result, callGraphData, arc.source, target, isCallback);
                         added = true;
@@ -345,7 +345,7 @@ public class DatabaseMerger {
                 }
             }
         }
-        dbContext.select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS)
+        dbContext.select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES)
                 .from(Edges.EDGES)
                 .where(arcsCondition)
                 .fetch()

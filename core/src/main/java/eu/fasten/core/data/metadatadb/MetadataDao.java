@@ -36,7 +36,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
+import eu.fasten.core.data.metadatadb.codegen.udt.records.CallSiteRecord;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Query;
@@ -727,18 +727,18 @@ public class MetadataDao {
      *
      * @param sourceId  ID of the source callable (references 'callables.id')
      * @param targetId  ID of the target callable (references 'callables.id')
-     * @param receivers Array of receivers data (one receiver per call-site)
+     * @param callSites Array of call sites data
      * @param metadata  Metadata of the edge between source and target
      * @return ID of the source callable (sourceId)
      */
-    public long insertEdge(long sourceId, long targetId, ReceiverRecord[] receivers, JSONObject metadata) {
+    public long insertEdge(long sourceId, long targetId, CallSiteRecord[] callSites, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Edges.EDGES,
                 Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
-                Edges.EDGES.RECEIVERS, Edges.EDGES.METADATA)
-                .values(sourceId, targetId, receivers, metadataJsonb)
+                Edges.EDGES.CALL_SITES, Edges.EDGES.METADATA)
+                .values(sourceId, targetId, callSites, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
-                .set(Edges.EDGES.RECEIVERS, Edges.EDGES.as("excluded").RECEIVERS)
+                .set(Edges.EDGES.CALL_SITES, Edges.EDGES.as("excluded").CALL_SITES)
                 .set(Edges.EDGES.METADATA, field("coalesce(edges.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
                 .returning(Edges.EDGES.SOURCE_ID).fetchOne();
         return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
@@ -749,23 +749,23 @@ public class MetadataDao {
      *
      * @param sourceIds     List of IDs of source callables
      * @param targetIds     List of IDs of target callables
-     * @param receiversList List of arrays of receivers
+     * @param callSitesList List of arrays of call sites
      * @param metadata      List of metadata objects
      * @return List of IDs of source callables (sourceIds)
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public List<Long> insertEdges(List<Long> sourceIds, List<Long> targetIds,
-                                  List<ReceiverRecord[]> receiversList,
+                                  List<CallSiteRecord[]> callSitesList,
                                   List<JSONObject> metadata) throws IllegalArgumentException {
         if (sourceIds.size() != targetIds.size() || targetIds.size() != metadata.size()
-                || metadata.size() != receiversList.size()) {
+                || metadata.size() != callSitesList.size()) {
             throw new IllegalArgumentException("All lists should have equal size");
         }
         int length = sourceIds.size();
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
             long result = insertEdge(sourceIds.get(i), targetIds.get(i),
-                    receiversList.get(i), metadata.get(i));
+                    callSitesList.get(i), metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;
@@ -810,16 +810,16 @@ public class MetadataDao {
      */
     public void batchInsertEdges(List<EdgesRecord> edges) {
         Query batchQuery = context.insertInto(Edges.EDGES,
-                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS,
+                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES,
                 Edges.EDGES.METADATA)
-                .values((Long) null, (Long) null, (ReceiverRecord[]) null, (JSONB) null)
+                .values((Long) null, (Long) null, (CallSiteRecord[]) null, (JSONB) null)
                 .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
-                .set(Edges.EDGES.RECEIVERS, Edges.EDGES.as("excluded").RECEIVERS)
+                .set(Edges.EDGES.CALL_SITES, Edges.EDGES.as("excluded").CALL_SITES)
                 .set(Edges.EDGES.METADATA, field("coalesce(edges.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class));
         var batchBind = context.batch(batchQuery);
         for (var edge : edges) {
             batchBind = batchBind.bind(edge.getSourceId(), edge.getTargetId(),
-                    edge.getReceivers(), edge.getMetadata());
+                    edge.getCallSites(), edge.getMetadata());
         }
         batchBind.execute();
     }

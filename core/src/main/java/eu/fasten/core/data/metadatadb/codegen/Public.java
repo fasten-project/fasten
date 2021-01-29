@@ -18,7 +18,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders;
 import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PgpArmorHeadersRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.Receiver;
+import eu.fasten.core.data.metadatadb.codegen.udt.CallSite;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +49,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = -1377895602;
+    private static final long serialVersionUID = -952422029;
 
     /**
      * The reference instance of <code>public</code>
@@ -206,6 +206,6 @@ public class Public extends SchemaImpl {
 
     private final List<UDT<?>> getUDTs0() {
         return Arrays.<UDT<?>>asList(
-            Receiver.RECEIVER);
+            CallSite.CALL_SITE);
     }
 }

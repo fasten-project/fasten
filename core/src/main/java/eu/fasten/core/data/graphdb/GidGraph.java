@@ -19,7 +19,7 @@
 package eu.fasten.core.data.graphdb;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
+import eu.fasten.core.data.metadatadb.codegen.udt.records.CallSiteRecord;
 import org.jooq.JSONB;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -124,7 +124,7 @@ public class GidGraph {
         List<EdgesRecord> edges = new ArrayList<>(jsonEdges.length());
         for (int i = 0; i < jsonEdges.length(); i++) {
             var edgeArr = jsonEdges.getJSONArray(i);
-            var edge = new EdgesRecord(edgeArr.getLong(0), edgeArr.getLong(1), new ReceiverRecord[]{}, JSONB.valueOf(""));
+            var edge = new EdgesRecord(edgeArr.getLong(0), edgeArr.getLong(1), new CallSiteRecord[]{}, JSONB.valueOf(""));
             edges.add(edge);
         }
         return new GidGraph(index, product, version, nodes, numInternalNodes, edges);

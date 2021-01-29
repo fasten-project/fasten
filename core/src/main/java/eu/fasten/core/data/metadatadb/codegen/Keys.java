@@ -80,6 +80,7 @@ public class Keys {
     public static final UniqueKey<ModulesRecord> MODULES_PKEY = UniqueKeys0.MODULES_PKEY;
     public static final UniqueKey<ModulesRecord> UNIQUE_VERSION_NAMESPACE = UniqueKeys0.UNIQUE_VERSION_NAMESPACE;
     public static final UniqueKey<NamespacesRecord> NAMESPACES_PKEY = UniqueKeys0.NAMESPACES_PKEY;
+    public static final UniqueKey<NamespacesRecord> UNIQUE_NAMESPACES = UniqueKeys0.UNIQUE_NAMESPACES;
     public static final UniqueKey<PackageVersionsRecord> PACKAGE_VERSIONS_PKEY = UniqueKeys0.PACKAGE_VERSIONS_PKEY;
     public static final UniqueKey<PackageVersionsRecord> UNIQUE_PACKAGE_VERSION_GENERATOR = UniqueKeys0.UNIQUE_PACKAGE_VERSION_GENERATOR;
     public static final UniqueKey<PackagesRecord> PACKAGES_PKEY = UniqueKeys0.PACKAGES_PKEY;
@@ -135,6 +136,7 @@ public class Keys {
         public static final UniqueKey<ModulesRecord> MODULES_PKEY = Internal.createUniqueKey(Modules.MODULES, "modules_pkey", Modules.MODULES.ID);
         public static final UniqueKey<ModulesRecord> UNIQUE_VERSION_NAMESPACE = Internal.createUniqueKey(Modules.MODULES, "unique_version_namespace", Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE_ID);
         public static final UniqueKey<NamespacesRecord> NAMESPACES_PKEY = Internal.createUniqueKey(Namespaces.NAMESPACES, "namespaces_pkey", Namespaces.NAMESPACES.ID);
+        public static final UniqueKey<NamespacesRecord> UNIQUE_NAMESPACES = Internal.createUniqueKey(Namespaces.NAMESPACES, "unique_namespaces", Namespaces.NAMESPACES.NAMESPACE);
         public static final UniqueKey<PackageVersionsRecord> PACKAGE_VERSIONS_PKEY = Internal.createUniqueKey(PackageVersions.PACKAGE_VERSIONS, "package_versions_pkey", PackageVersions.PACKAGE_VERSIONS.ID);
         public static final UniqueKey<PackageVersionsRecord> UNIQUE_PACKAGE_VERSION_GENERATOR = Internal.createUniqueKey(PackageVersions.PACKAGE_VERSIONS, "unique_package_version_generator", PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID, PackageVersions.PACKAGE_VERSIONS.VERSION, PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR);
         public static final UniqueKey<PackagesRecord> PACKAGES_PKEY = Internal.createUniqueKey(Packages.PACKAGES, "packages_pkey", Packages.PACKAGES.ID);

@@ -103,21 +103,21 @@ CREATE TABLE callables
     metadata         JSONB
 );
 
-CREATE TYPE RECEIVER_TYPE AS ENUM ('static', 'dynamic', 'virtual', 'interface', 'special');
+CREATE TYPE CALL_TYPE AS ENUM ('static', 'dynamic', 'virtual', 'interface', 'special');
 
-CREATE TYPE RECEIVER AS
+CREATE TYPE CALL_SITE AS
 (
-    line          INTEGER,
-    receiver_type RECEIVER_TYPE,
-    namespace_id  BIGINT
+    line                  INTEGER,
+    call_type             CALL_TYPE,
+    receiver_namespace_id BIGINT
 );
 
 CREATE TABLE edges
 (
-    source_id BIGINT NOT NULL REFERENCES callables (id),
-    target_id BIGINT NOT NULL REFERENCES callables (id),
-    receivers RECEIVER[],
-    metadata  JSONB
+    source_id  BIGINT NOT NULL REFERENCES callables (id),
+    target_id  BIGINT NOT NULL REFERENCES callables (id),
+    call_sites CALL_SITE[],
+    metadata   JSONB
 );
 
 -- CREATE INDEX CONCURRENTLY package_versions_package_id ON package_versions USING btree (package_id);
@@ -183,7 +183,7 @@ ALTER TABLE callables
                                           (module_id IS NOT NULL AND is_internal_call IS true));
 
 CREATE UNIQUE INDEX CONCURRENTLY unique_namespaces ON namespaces USING btree (namespace);
-ALTER TABLE edges
+ALTER TABLE namespaces
     ADD CONSTRAINT unique_namespaces UNIQUE USING INDEX unique_namespaces;
 
 INSERT INTO packages (id, package_name, forge)
