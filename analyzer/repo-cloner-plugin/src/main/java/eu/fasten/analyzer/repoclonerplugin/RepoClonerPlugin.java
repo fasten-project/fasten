@@ -134,11 +134,12 @@ public class RepoClonerPlugin extends Plugin {
                 if (result.getFirst() != null) {
                     repoPath = result.getFirst();
                     logger.info("Successfully cloned the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl);
-                } else {
+                } else if (result.getSecond() != null) {
+                    var errorTriple = result.getSecond();
                     logger.error("Could not clone the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl
-                            + "; GitCloner: " + result.getSecond().getLeft().getMessage()
-                            + "; SvnCloner: " + result.getSecond().getMiddle().getMessage()
-                            + "; HgCloner: " + result.getSecond().getRight().getMessage()
+                            + "; GitCloner: " + (errorTriple.getLeft() != null ? errorTriple.getLeft().getMessage() : "null")
+                            + "; SvnCloner: " + (errorTriple.getMiddle() != null ? errorTriple.getMiddle().getMessage() : "null")
+                            + "; HgCloner: " + (errorTriple.getRight() != null ? errorTriple.getRight().getMessage() : "null")
                     );
                 }
             } else {
@@ -147,7 +148,7 @@ public class RepoClonerPlugin extends Plugin {
         }
 
         public Pair<String, Triple<Exception, Exception, Exception>> cloneRepo(String repoUrl, String artifact, String group,
-                                             GitCloner gitCloner, HgCloner hgCloner, SvnCloner svnCloner) {
+                                                                               GitCloner gitCloner, HgCloner hgCloner, SvnCloner svnCloner) {
             Exception gitError = null;
             Exception svnError = null;
             Exception hgError = null;
