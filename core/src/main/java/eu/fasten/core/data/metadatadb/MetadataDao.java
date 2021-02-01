@@ -1167,7 +1167,19 @@ public class MetadataDao {
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
 
-        // Query
+        // Check if module namespace exists
+        Result<Record> selectModule = context
+                .select(m.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .and(m.NAMESPACE.equalIgnoreCase(moduleNamespace))
+                .fetch();
+
+        if(selectModule.isEmpty()) return null;
+
+        // Main Query
         Result<Record> queryResult = context
                 .select(c.fields())
                 .from(p)

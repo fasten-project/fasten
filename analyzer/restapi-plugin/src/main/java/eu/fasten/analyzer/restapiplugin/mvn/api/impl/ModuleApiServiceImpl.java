@@ -71,6 +71,9 @@ public class ModuleApiServiceImpl implements ModuleApiService {
                                                  int limit) {
         String result = KnowledgeBaseConnector.kbDao.getModuleCallables(
                 package_name, package_version, module_namespace, offset, limit);
+        if (result == null) {
+            return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
