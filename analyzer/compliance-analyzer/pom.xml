@@ -66,6 +66,12 @@
                 <version>1.5.0</version>
                 <configuration>
                     <mainClass>eu.fasten.analyzer.complianceanalyzer.Main</mainClass>
+                    <systemProperties>
+                        <systemProperty>
+                            <key>jdk.tls.client.protocols</key>
+                            <value>TLSv1.2</value>
+                        </systemProperty>
+                    </systemProperties>
                 </configuration>
             </plugin>
 
