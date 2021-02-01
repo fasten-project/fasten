@@ -1154,6 +1154,8 @@ public class MetadataDao {
         Modules m = Modules.MODULES;
         Files f = Files.FILES;
 
+        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
+
         // Query
         Result<Record> queryResult = context
                 .select(f.fields())
