@@ -17,9 +17,10 @@
 
 package eu.fasten.core.search.predicate;
 
+import java.util.function.Predicate;
+
 import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.jooq.Record1;
+import org.json.JSONObject;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 
@@ -35,16 +36,24 @@ public class PredicateFactory {
 	 * @return the metadata field associated to it.
 	 */
 	@SuppressWarnings("unused")
-	private JSONB getCallableMetadata(final long callableId) {
-		return dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableId)).fetchOne().component1();
+	private JSONObject getCallableMetadata(final long callableId) {
+		return new JSONObject(dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableId)).fetchOne().component1().data());
 	}
 	
 	public PredicateFactory(final DSLContext dbContext) {
 		this.dbContext = dbContext;
 	}
 	
-	public CallableContains callableContains(final CharSequence s) {
-		return t -> getCallableMetadata(t).toString().contains(s);
+	public CallableContains callableContains(final String key, final Predicate<String> valuePredicate) {
+		return t -> getCallableMetadata(t).has(key) && valuePredicate.test(getCallableMetadata(t).getString(key));
 	}
-	
+
+	public CallableContains callableContains(final String key) {
+		return callableContains(key, x -> true);
+	}
+
+	public CallableContains callableContains(final String key, final String value) {
+		return callableContains(key, x -> value.equals(x));
+	}
+
 }
