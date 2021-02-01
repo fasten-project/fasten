@@ -907,6 +907,23 @@ public class MetadataDao {
                 .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equalIgnoreCase(version));
     }
 
+    protected boolean assertModulesExistence(String name, String version, String namespace) {
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+
+        Record selectModule = context
+                .select(m.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .where(packageVersionWhereClause(name, version))
+                .and(m.NAMESPACE.equalIgnoreCase(namespace))
+                .fetchOne();
+
+        return selectModule != null;
+    }
+
     public String getPackageLastVersion(String packageName) {
 
         // Tables
@@ -1167,17 +1184,7 @@ public class MetadataDao {
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
 
-        // Check if module namespace exists
-        Result<Record> selectModule = context
-                .select(m.fields())
-                .from(p)
-                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
-                .where(packageVersionWhereClause(packageName, packageVersion))
-                .and(m.NAMESPACE.equalIgnoreCase(moduleNamespace))
-                .fetch();
-
-        if(selectModule.isEmpty()) return null;
+        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
         // Main Query
         Result<Record> queryResult = context
