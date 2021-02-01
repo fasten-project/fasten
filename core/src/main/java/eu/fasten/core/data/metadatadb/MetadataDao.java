@@ -907,6 +907,20 @@ public class MetadataDao {
                 .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equalIgnoreCase(version));
     }
 
+    protected boolean assertPackageExistence(String name, String version) {
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+
+        Record selectPackage = context
+                .select(p.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .where(packageVersionWhereClause(name, version))
+                .fetchOne();
+
+        return selectPackage != null;
+    }
+
     protected boolean assertModulesExistence(String name, String version, String namespace) {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1309,6 +1323,8 @@ public class MetadataDao {
 
         // Where clause
         Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
+
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Building and executing the query
         Result<Record> queryResult = context
