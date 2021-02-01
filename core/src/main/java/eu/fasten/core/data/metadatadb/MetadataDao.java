@@ -1150,25 +1150,13 @@ public class MetadataDao {
                                  int offset,
                                  int limit) {
 
-        // SQL query
-        /*
-            SELECT f.*
-            FROM packages AS p
-                JOIN package_versions AS pv ON p.id = pv.package_id
-                JOIN modules AS m ON pv.id = m.package_version_id
-                JOIN files AS f ON pv.id = f.package_version_id
-            WHERE p.package_name = <packageName>
-                AND pv.version = <packageVersion>
-                AND m.namespace = <moduleNamespace>
-        */
+        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
         Files f = Files.FILES;
-
-        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
         // Query
         Result<Record> queryResult = context
@@ -1194,13 +1182,13 @@ public class MetadataDao {
                                      int offset,
                                      int limit) {
 
+        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
-
-        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
         // Main Query
         Result<Record> queryResult = context
@@ -1312,6 +1300,9 @@ public class MetadataDao {
     }
 
     public String getPackageCallables(String packageName, String packageVersion, int offset, int limit) {
+
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1323,8 +1314,6 @@ public class MetadataDao {
 
         // Where clause
         Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
-
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Building and executing the query
         Result<Record> queryResult = context
