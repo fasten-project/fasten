@@ -1444,15 +1444,7 @@ public class MetadataDao {
 
     public String getPackageFiles(String packageName, String packageVersion, int offset, int limit) {
 
-        // SQL query
-        /*
-            SELECT f.*
-            FROM packages AS p
-                JOIN package_versions AS pv ON p.id = pv.package_id
-                JOIN files AS f ON pv.id = f.package_version_id
-            WHERE p.package_name = <packageName>
-                AND pv.version = <packageVersion>
-        */
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
