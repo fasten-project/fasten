@@ -33,6 +33,7 @@ import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -106,10 +107,16 @@ public class POMAnalyzerPlugin extends Plugin {
             } else {
                 payload = jsonRecord;
             }
-            artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
-            group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
-            version = payload.getString("version").replaceAll("[\\n\\t ]", "");
-            date = payload.optLong("date", -1L);
+            try {
+                artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
+                group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
+                version = payload.getString("version").replaceAll("[\\n\\t ]", "");
+                date = payload.optLong("date", -1L);
+            } catch (JSONException e) {
+                logger.error("Malformed input: " + payload.toString(), e);
+                this.pluginError = e;
+                return;
+            }
             var pomUrl = payload.optString("pomUrl", null);
             final var product = group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version;
