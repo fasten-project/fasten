@@ -82,6 +82,11 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
            This demo simulates a Kafka message consumption by reading the [`dummyKafkaTopic.json` file](dummyKafkaTopic.json).
        -
            Upon consuming the message, the plugin starts Quartermaster, that will build and analyze the specified repository.
+       -
+           Make sure to include the Kubernetes namespace when using a custom one:
+           ```
+           -Dexec.args="--repository analyzer/compliance-analyzer/dummyKafkaTopic.json --namespace myownnamespace"
+           ```
 
 
 The plugin then generates a [`fasten.qmstr.*` Kafka message](https://github.com/fasten-project/fasten/wiki/Kafka-Topics#fastenqmstr).
