@@ -1500,17 +1500,7 @@ public class MetadataDao {
                                   int offset,
                                   int limit) {
 
-        // SQL query
-        /*
-            SELECT {e.* | (e.source_id, e.target_id)}
-            FROM edges AS e
-                JOIN callables AS c ON e.source_id = c.id
-                JOIN modules AS m ON m.id = c.module_id
-                JOIN package_versions AS pv ON pv.id = m.package_version_id
-                JOIN packages AS p ON p.id = pv.package_id
-            WHERE p.package_name = <packageName>
-                AND pv.version = <packageVersion>;
-         */
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
