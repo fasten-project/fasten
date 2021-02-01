@@ -1087,6 +1087,9 @@ public class MetadataDao {
                                     String packageVersion,
                                     int offset,
                                     int limit) {
+
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
