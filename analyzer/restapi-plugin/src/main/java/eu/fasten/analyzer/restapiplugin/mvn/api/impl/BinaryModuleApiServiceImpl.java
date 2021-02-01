@@ -34,6 +34,9 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
                                                           int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageBinaryModules(
                 package_name, package_version, offset, limit);
+        if (result == null) {
+            return new ResponseEntity<>("Package not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -59,6 +62,9 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
                                                        int limit) {
         String result = KnowledgeBaseConnector.kbDao.getBinaryModuleFiles(
                 package_name, package_version, binary_module, offset, limit);
+        if (result == null) {
+            return new ResponseEntity<>("Package not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

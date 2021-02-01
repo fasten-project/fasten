@@ -1209,6 +1209,8 @@ public class MetadataDao {
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) {
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1274,6 +1276,7 @@ public class MetadataDao {
                                        String binaryModule,
                                        int offset,
                                        int limit) {
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
