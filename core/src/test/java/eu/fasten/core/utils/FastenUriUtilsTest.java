@@ -1,6 +1,9 @@
 package eu.fasten.core.utils;
 
+import eu.fasten.core.data.FastenURI;
 import org.junit.jupiter.api.Test;
+
+import java.net.URISyntaxException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -22,6 +25,28 @@ public class FastenUriUtilsTest {
         var actual = FastenUriUtils.generateFullFastenUri(forge, pkg, version, partial);
 
         assertEquals(expectedFullUri, actual);
+    }
+
+    @Test
+    void testGenerateFullFastenUriObjectSuccess() {
+
+        var forge = "forge";
+        var pkg = "name";
+        var version = "1.0";
+        var namespace = "namespace";
+        var entity = "class.method()/void";
+
+        var partial = "/" + namespace + "/" + entity;
+
+        var uri = FastenUriUtils.generateFullFastenUri(forge, pkg, version, partial);
+        var fastenUri = FastenURI.create(uri);
+
+        assertEquals(forge, fastenUri.getForge());
+        assertEquals(pkg, fastenUri.getProduct());
+        assertEquals(version, fastenUri.getVersion());
+        assertEquals(namespace, fastenUri.getNamespace());
+        assertEquals(entity, fastenUri.getEntity());
+
     }
 
     @Test
