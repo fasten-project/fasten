@@ -9,22 +9,31 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RepoAnalyzer {
-
-    private static final Logger logger = LoggerFactory.getLogger(RepoAnalyzer.class);
 
     private static final String DEFAULT_TESTS_PATH = "/src/test/java";
     private static final String DEFAULT_SOURCES_PATH = "/src/main/java";
 
+    private static final double ESTIMATED_COVERAGE_THRESHOLD = 0.5;
+
     private final File repoPath;
 
+    /**
+     * Constructs a Repo Analyzer given a path the root of a repository to analyze.
+     *
+     * @param path path to the repository
+     */
     public RepoAnalyzer(final String path) {
         this.repoPath = new File(path);
     }
 
+    /**
+     * Analyses tests in repository.
+     *
+     * @return JSON with statistics of the repository
+     * @throws IOException if I/O exception occurs when accessing root file
+     */
     public JSONObject analyze() throws IOException {
         var statistics = new JSONObject();
 
@@ -34,8 +43,18 @@ public class RepoAnalyzer {
         var sourceFiles = getMatchingFiles(getPathToSourcesRoot(), List.of("^.*\\.java"));
         statistics.put("sourceFiles", sourceFiles.size());
 
-        var ration = (float) testFiles.size() / (float) sourceFiles.size();
-        statistics.put("estimatedCoverage", (float) Math.round(1000 * ration) / 1000);
+        var estimatedCoverage = (double) Math.round(1000 * (double) testFiles.size() / (double) sourceFiles.size()) / 1000;
+        statistics.put("estimatedCoverage", estimatedCoverage);
+
+        if (estimatedCoverage < ESTIMATED_COVERAGE_THRESHOLD) {
+            return statistics;
+        }
+
+        statistics.put("statementCoverage", 0);
+        statistics.put("filesWithMockitoImport", 0);
+        statistics.put("unitTests", 0);
+        statistics.put("unitTestsWithMocks", 0);
+        statistics.put("mockingRatio", 0);
 
         return statistics;
     }
