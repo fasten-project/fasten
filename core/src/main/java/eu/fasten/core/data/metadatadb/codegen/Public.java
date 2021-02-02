@@ -5,6 +5,7 @@ package eu.fasten.core.data.metadatadb.codegen;
 
 
 import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
+import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactStates;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
@@ -13,11 +14,13 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders;
 import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PgpArmorHeadersRecord;
+import eu.fasten.core.data.metadatadb.codegen.udt.CallSite;
 import eu.fasten.core.data.metadatadb.codegen.udt.Receiver;
 
 import java.util.ArrayList;
@@ -49,7 +52,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = 1799656807;
+    private static final long serialVersionUID = 2056439415;
 
     /**
      * The reference instance of <code>public</code>
@@ -60,6 +63,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.artifact_repositories</code>.
      */
     public final ArtifactRepositories ARTIFACT_REPOSITORIES = eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories.ARTIFACT_REPOSITORIES;
+
+    /**
+     * The table <code>public.artifact_states</code>.
+     */
+    public final ArtifactStates ARTIFACT_STATES = eu.fasten.core.data.metadatadb.codegen.tables.ArtifactStates.ARTIFACT_STATES;
 
     /**
      * The table <code>public.binary_module_contents</code>.
@@ -100,6 +108,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.modules</code>.
      */
     public final Modules MODULES = eu.fasten.core.data.metadatadb.codegen.tables.Modules.MODULES;
+
+    /**
+     * The table <code>public.namespaces</code>.
+     */
+    public final Namespaces NAMESPACES = eu.fasten.core.data.metadatadb.codegen.tables.Namespaces.NAMESPACES;
 
     /**
      * The table <code>public.package_versions</code>.
@@ -165,10 +178,12 @@ public class Public extends SchemaImpl {
     private final List<Sequence<?>> getSequences0() {
         return Arrays.<Sequence<?>>asList(
             Sequences.ARTIFACT_REPOSITORIES_ID_SEQ,
+            Sequences.ARTIFACT_STATES_ID_SEQ,
             Sequences.BINARY_MODULES_ID_SEQ,
             Sequences.CALLABLES_ID_SEQ,
             Sequences.FILES_ID_SEQ,
             Sequences.MODULES_ID_SEQ,
+            Sequences.NAMESPACES_ID_SEQ,
             Sequences.PACKAGE_VERSIONS_ID_SEQ,
             Sequences.PACKAGES_ID_SEQ);
     }
@@ -183,6 +198,7 @@ public class Public extends SchemaImpl {
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
             ArtifactRepositories.ARTIFACT_REPOSITORIES,
+            ArtifactStates.ARTIFACT_STATES,
             BinaryModuleContents.BINARY_MODULE_CONTENTS,
             BinaryModules.BINARY_MODULES,
             Callables.CALLABLES,
@@ -191,6 +207,7 @@ public class Public extends SchemaImpl {
             Files.FILES,
             ModuleContents.MODULE_CONTENTS,
             Modules.MODULES,
+            Namespaces.NAMESPACES,
             PackageVersions.PACKAGE_VERSIONS,
             Packages.PACKAGES,
             PgpArmorHeaders.PGP_ARMOR_HEADERS,
@@ -206,6 +223,7 @@ public class Public extends SchemaImpl {
 
     private final List<UDT<?>> getUDTs0() {
         return Arrays.<UDT<?>>asList(
+            CallSite.CALL_SITE,
             Receiver.RECEIVER);
     }
 }

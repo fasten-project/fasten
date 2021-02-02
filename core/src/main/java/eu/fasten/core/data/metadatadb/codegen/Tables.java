@@ -5,6 +5,7 @@ package eu.fasten.core.data.metadatadb.codegen;
 
 
 import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
+import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactStates;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
@@ -13,6 +14,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders;
@@ -43,6 +45,11 @@ public class Tables {
      * The table <code>public.artifact_repositories</code>.
      */
     public static final ArtifactRepositories ARTIFACT_REPOSITORIES = ArtifactRepositories.ARTIFACT_REPOSITORIES;
+
+    /**
+     * The table <code>public.artifact_states</code>.
+     */
+    public static final ArtifactStates ARTIFACT_STATES = ArtifactStates.ARTIFACT_STATES;
 
     /**
      * The table <code>public.binary_module_contents</code>.
@@ -83,6 +90,11 @@ public class Tables {
      * The table <code>public.modules</code>.
      */
     public static final Modules MODULES = Modules.MODULES;
+
+    /**
+     * The table <code>public.namespaces</code>.
+     */
+    public static final Namespaces NAMESPACES = Namespaces.NAMESPACES;
 
     /**
      * The table <code>public.package_versions</code>.
