@@ -86,6 +86,32 @@ public class PredicateFactory {
 		PACKAGE_VERSION
 	}
 	
+	/** Puts a given key/value pair in a map, and guarantees that the pair is in the first
+	 *  position, ensuring also that the map size does not exceed a given maximum.
+	 * 
+	 * @param map the map to be modified.
+	 * @param key the key.
+	 * @param value the value associated to the key.
+	 * @param maxSize the maximum size.
+	 */
+	private static <T> void putLRUMap(Long2ObjectLinkedOpenHashMap<T> map, final long key, final T value, final int maxSize) {
+		map.putAndMoveToFirst(key, value);
+		if (map.size() > maxSize) map.removeLast();
+	}
+
+	/** Puts a given key/value pair in a map, and guarantees that the pair is in the first
+	 *  position, ensuring also that the map size does not exceed a given maximum.
+	 * 
+	 * @param map the map to be modified.
+	 * @param key the key.
+	 * @param value the value associated to the key.
+	 * @param maxSize the maximum size.
+	 */
+	private static void putLRUMap(Long2LongLinkedOpenHashMap map, final long key, final long value, final int maxSize) {
+		map.putAndMoveToFirst(key, value);
+		if (map.size() > maxSize) map.removeLastLong();
+	}
+
 	/** Returns the metadata field of a given callable.
 	 * 
 	 * @param callableId the callable id.
@@ -95,8 +121,7 @@ public class PredicateFactory {
 		JSONObject jsonMetadata = callableId2callableMetadata.get(callableId);
 		if (jsonMetadata == null) {
 			jsonMetadata = new JSONObject(dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableId)).fetchOne().component1().data());
-			callableId2callableMetadata.putAndMoveToFirst(callableId, jsonMetadata);
-			callableId2callableMetadata.trim(METADATA_MAP_MAXSIZE);
+			putLRUMap(callableId2callableMetadata, callableId, jsonMetadata, METADATA_MAP_MAXSIZE);
 		}
 		return jsonMetadata;
 	}
@@ -117,10 +142,8 @@ public class PredicateFactory {
 
 			moduleId = queryResult.component2().longValue();
 			jsonMetadata = new JSONObject(queryResult.component1().data());
-			callableId2moduleId.putAndMoveToFirst(callableId, moduleId);
-			moduleId2moduleMetadata.putAndMoveToFirst(moduleId, jsonMetadata);
-			callableId2moduleId.trim(LONG_MAP_MAXSIZE);
-			moduleId2moduleMetadata.trim(METADATA_MAP_MAXSIZE);
+			putLRUMap(callableId2moduleId, callableId, moduleId, LONG_MAP_MAXSIZE);
+			putLRUMap(moduleId2moduleMetadata, moduleId, jsonMetadata, METADATA_MAP_MAXSIZE);
 		}
 		return jsonMetadata;
 	}
@@ -143,12 +166,9 @@ public class PredicateFactory {
 			packageVersionId = queryResult.component2().longValue();
 			moduleId = queryResult.component3().longValue();
 			jsonMetadata = new JSONObject(queryResult.component1().data());
-			callableId2moduleId.putAndMoveToFirst(callableId, moduleId);
-			moduleId2packageVersionId.putAndMoveToFirst(moduleId, packageVersionId);
-			packageVersionId2packageVersionMetadata.putAndMoveToFirst(packageVersionId, jsonMetadata);
-			callableId2moduleId.trim(LONG_MAP_MAXSIZE);
-			moduleId2packageVersionId.trim(LONG_MAP_MAXSIZE);
-			packageVersionId2packageVersionMetadata.trim(METADATA_MAP_MAXSIZE);
+			putLRUMap(callableId2moduleId, callableId, moduleId, LONG_MAP_MAXSIZE);
+			putLRUMap(moduleId2packageVersionId, moduleId, packageVersionId, LONG_MAP_MAXSIZE);
+			putLRUMap(packageVersionId2packageVersionMetadata, packageVersionId, jsonMetadata, METADATA_MAP_MAXSIZE);
 		}
 		return jsonMetadata;
 	}
