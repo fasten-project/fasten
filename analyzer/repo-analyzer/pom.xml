@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>eu.fasten.analyzer</groupId>
-    <artifactId>tests-analyzer</artifactId>
+    <artifactId>repo-analyzer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
@@ -22,6 +22,15 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>eu.fasten</groupId>
+            <artifactId>core</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -47,13 +56,13 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>eu.fasten.analyzer.testsanalyzer.Main</Main-Class>
+                                        <Main-Class>eu.fasten.analyzer.repoanalyzer.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.testsanalyzer.TestsAnalyzerPlugin</Plugin-Class>
-                                        <Plugin-Id>tests-analyzer</Plugin-Id>
+                                        <Plugin-Class>eu.fasten.analyzer.repoanalyzer.RepoAnalyzerPlugin</Plugin-Class>
+                                        <Plugin-Id>repo-analyzer</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
-                                        <Plugin-Description>Tests Analyzer</Plugin-Description>
+                                        <Plugin-Description>Repo Analyzer</Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
                                 </transformer>
