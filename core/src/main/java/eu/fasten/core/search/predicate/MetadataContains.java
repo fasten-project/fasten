@@ -19,7 +19,7 @@ package eu.fasten.core.search.predicate;
 
 import java.util.function.LongPredicate;
 
-/* A predicate that determines whether the metadata of a given callable contain a 
- * certain JSON key/value pair.
+/** A predicate that determines whether the metadata associated with a given callable satisfy a certain
+ * condition. 
  */
 public interface MetadataContains extends LongPredicate {}

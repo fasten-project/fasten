@@ -26,6 +26,7 @@ import org.jooq.Record2;
 import org.jooq.Record3;
 import org.json.JSONObject;
 
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
@@ -111,6 +112,11 @@ public class PredicateFactory {
 		map.putAndMoveToFirst(key, value);
 		if (map.size() > maxSize) map.removeLastLong();
 	}
+	
+    private FastenURI getCallableName(final long id) {
+        return FastenURI.create(dbContext.select(Callables.CALLABLES.FASTEN_URI).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(id)).fetchOne().component1());
+    }
+
 
 	/** Returns the metadata field of a given callable.
 	 * 
@@ -213,6 +219,15 @@ public class PredicateFactory {
 	 */
 	public MetadataContains metadataContains(final MetadataSource source, final String key, final String value) {
 		return metadataContains(source, key, x -> value.equals(x));
+	}
+	
+	/** A predicate that holds true if the callable {@link FastenURI} matches a certain predicate.
+	 * 
+	 * @param fastenURIPredicate the predicate that the callable {@link FastenURI} is matched against.
+	 * @return the predicate.
+	 */
+	public FastenURIMatches fastenURIMatches(final Predicate<FastenURI> fastenURIPredicate) {
+		return x -> fastenURIPredicate.test(getCallableName(x));
 	}
 
 }
