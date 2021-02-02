@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.function.LongPredicate;
 
 import org.jgrapht.traverse.ClosestFirstIterator;
+import org.jooq.conf.ParseUnknownFunctions;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.rocksdb.RocksDBException;
@@ -72,6 +73,10 @@ public class SearchEngine {
 			this.gid = gid;
 			this.score = score;
 		}
+
+		public String toString() {
+			return gid + " (" + score + ")";
+		}
 	}
 
 	/** The handle to the Postgres metadata database. */
@@ -95,7 +100,7 @@ public class SearchEngine {
 	 * @throws Exception
 	 */
 	public SearchEngine(final String jdbcURI, final String database, final String rocksDb, final String resolverGraph) throws Exception {
-		this(PostgresConnector.getDSLContext(jdbcURI, database), new eu.fasten.core.data.graphdb.RocksDao(rocksDb, true), resolverGraph);
+		this(PostgresConnector.getDSLContext(jdbcURI, database), new RocksDao(rocksDb, true), resolverGraph);
 	}
 
 	/**
@@ -178,21 +183,25 @@ public class SearchEngine {
 		final String rocksDb = jsapResult.getString("rocksDB");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
-		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, resolverGraph);
+		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, "/mnt/fasten/graphdb", resolverGraph);
+		final var parsingConnection = searchEngine.context.parsingConnection();
+		searchEngine.context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
+		final var s = parsingConnection.createStatement();
 
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine()) {
 			final String line = scanner.nextLine();
 			try {
 				final FastenJavaURI uri = FastenJavaURI.create(line);
+				final java.sql.ResultSet result = s.executeQuery("select id from callables where digest(fasten_uri, 'sha1'::text) = digest('" + uri + "', 'sha1'::text)");
 
-				final ResultSet result = searchEngine.context.parsingConnection().prepareCall("select id from callables where digest(fasten_uri, 'sha1'::text) = digest('" + uri + "', 'sha1'::text);").executeQuery();
-				System.err.println(result);
+				result.next();
+				var r = searchEngine.fromCallable(result.getLong(1), x -> true);
+				System.err.println(r.subList(0, 10));
 			} catch (final Exception e) {
 				e.printStackTrace();
 			}
 		}
-
 	}
 
 }
