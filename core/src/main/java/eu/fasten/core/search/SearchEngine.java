@@ -159,7 +159,7 @@ public class SearchEngine {
 
 		final ClosestFirstIterator<Long, LongLongPair> reachable = new ClosestFirstIterator<>(stitchedGraph, Long.valueOf(gid));
 		reachable.forEachRemaining((x) -> {
-			if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / reachable.getShortestPathLength(x)));
+			if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / (double)reachable.getShortestPathLength(x)));
 		});
 
 		Collections.sort(results, (x, y) -> Double.compare(y.score, x.score));
@@ -206,7 +206,7 @@ public class SearchEngine {
 
 			final ClosestFirstIterator<Long, LongLongPair> coreachable = new ClosestFirstIterator<>(new EdgeReversedGraph<>(stitchedGraph), Long.valueOf(gid));
 			coreachable.forEachRemaining((x) -> {
-				if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / coreachable.getShortestPathLength(x)));
+				if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / (double)coreachable.getShortestPathLength(x)));
 			});
 
 		}
