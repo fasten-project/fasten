@@ -39,13 +39,13 @@ public class Util {
 		final var parsingConnection = context.parsingConnection();
         final var statement = parsingConnection.createStatement();
 
-		final String query = "select id from callables " +
-				"join modules on modules.id=callables.modules.id " +
-				"join package_versions where package_versions.id=modules.package_version.id " +
-				"join packages where packages.id=packages_versions.package.id" +
-				"where package.package_name='" + product.replace("'", "\'") + 
-				"' and package_versions.version='" + version.replace("'", "\'") +
-				"' and digest(fasten_uri, 'sha1'::text) = digest('" + path.replace("'", "\'") + "', 'sha1'::text)";
+		final String query = "select callables.id from callables " +
+				"join modules on modules.id=callables.module_id " +
+				"join package_versions on package_versions.id=modules.package_version_id " +
+				"join packages on packages.id=package_versions.package_id " +
+				"where packages.package_name='" + product.replace("'", "\\'") + 
+				"' and package_versions.version='" + version.replace("'", "\\'") +
+				"' and digest(fasten_uri, 'sha1'::text) = digest('" + path.replace("'", "\\'") + "', 'sha1'::text)";
 
 		final java.sql.ResultSet result = statement.executeQuery(query);
 		return result.next() ? -1 : result.getLong(1);
