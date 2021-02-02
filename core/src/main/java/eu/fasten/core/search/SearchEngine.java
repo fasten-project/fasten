@@ -245,7 +245,7 @@ public class SearchEngine {
 
 				var r = searchEngine.fromCallable(gid, x -> true);
 				for(int i = 0; i < Math.min(10, r.size()); i++)
-					System.out.println(Util.getCallableName(r.get(i).gid, searchEngine.context) + "\t" + r.get(i).score);
+					System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, searchEngine.context) + "\t" + r.get(i).score);
 			} catch (final Exception e) {
 				e.printStackTrace();
 			}

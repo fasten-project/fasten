@@ -86,8 +86,8 @@ public class Util {
 					Packages.PACKAGES.FORGE,
 					Packages.PACKAGES.PACKAGE_NAME,
 					PackageVersions.PACKAGE_VERSIONS.VERSION,
-					Modules.MODULES.NAMESPACE,
-					Callables.CALLABLES.FASTEN_URI
+					Callables.CALLABLES.FASTEN_URI,
+					Modules.MODULES.ID
 					)
 			.from(Callables.CALLABLES)
 			.join(Modules.MODULES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
@@ -96,6 +96,9 @@ public class Util {
 				.where(Callables.CALLABLES.ID.eq(Long.valueOf(callableGID)))
 			.fetchOne();
 		if (singleRow == null) return null;
-		return FastenURI.create(singleRow.component1(), singleRow.component2(), singleRow.component3(), singleRow.component4(), singleRow.component5());
+		// External calls get just the path
+		return singleRow.component5() == -1
+			? FastenURI.create(null, null, null, singleRow.component4())
+			: FastenURI.create(singleRow.component1(), singleRow.component2(), singleRow.component3(), singleRow.component4());
 	}
 }
