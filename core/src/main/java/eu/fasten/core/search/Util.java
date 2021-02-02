@@ -53,7 +53,7 @@ public class Util {
 				"' and digest(fasten_uri, 'sha1'::text) = digest('" + path.replace("'", "\\'") + "', 'sha1'::text)";
 
 		final java.sql.ResultSet result = statement.executeQuery(query);
-		return result.next() ? -1 : result.getLong(1);
+		return result.next() ? result.getLong(1) : -1;
 	}
 
 	/** Returns the {@link FastenURI} of a given {@link Callables#CALLABLES#ID}.

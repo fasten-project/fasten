@@ -191,11 +191,11 @@ public class SearchEngine {
 			final String line = scanner.nextLine();
 			try {
 				final FastenJavaURI uri = FastenJavaURI.create(line);
-				final long gid = Util.getCallableGID(uri, context);
+				final long gid = Util.getCallableGID(uri, searchEngine.context);
 
 				var r = searchEngine.fromCallable(gid, x -> true);
 				for(int i = 0; i < Math.min(10, r.size()); i++)
-					System.out.println(Util.getCallableName(r.get(i).gid) + "\t" + r.get(i).score);
+					System.out.println(Util.getCallableName(r.get(i).gid, searchEngine.context) + "\t" + r.get(i).score);
 			} catch (final Exception e) {
 				e.printStackTrace();
 			}
