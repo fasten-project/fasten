@@ -3,12 +3,19 @@ package eu.fasten.core.search;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
+import org.jetbrains.annotations.Nullable;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
+import org.jooq.Record3;
+import org.jooq.Record4;
+import org.jooq.Record5;
 import org.jooq.conf.Settings;
 
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 
 /**
  * Miscellaneous utility methods.
@@ -60,9 +67,22 @@ public class Util {
 	 * @throws NoSuchElementException if the callableGID does not correspond to any element in the {@link Callables#CALLABLES} table.
 	 */
 	public static FastenURI getCallableName(final long callableGID, final DSLContext dbContext) {
-		Record1<String> singleRow = dbContext.select(Callables.CALLABLES.FASTEN_URI).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
+		Record5<String, String, String, String, String> singleRow = dbContext
+			.select(
+					Packages.PACKAGES.FORGE,
+					Packages.PACKAGES.PACKAGE_NAME,
+					PackageVersions.PACKAGE_VERSIONS.VERSION, 
+					Modules.MODULES.NAMESPACE, 
+					Callables.CALLABLES.FASTEN_URI 
+					)
+			.from(Callables.CALLABLES, Modules.MODULES, PackageVersions.PACKAGE_VERSIONS, Packages.PACKAGES)
+			.join(Modules.MODULES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
+			.join(PackageVersions.PACKAGE_VERSIONS).on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
+			.join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+			.where(Callables.CALLABLES.ID.eq(callableGID))
+			.fetchOne();
 		if (singleRow == null) throw new NoSuchElementException();
-	    return FastenURI.create(singleRow.component1());
+	    return FastenURI.createSchemeless(singleRow.component1(), singleRow.component2(), singleRow.component3(), singleRow.component4(), singleRow.component5());
 	}
 
 }
