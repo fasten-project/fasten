@@ -22,4 +22,4 @@ import java.util.function.LongPredicate;
 /* A predicate that determines whether the metadata of a given callable contain a 
  * certain JSON key/value pair.
  */
-public interface CallableContains extends LongPredicate {}
+public interface MetadataContains extends LongPredicate {}
