@@ -3,7 +3,6 @@ package eu.fasten.core.search;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
-import org.jetbrains.annotations.Nullable;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Record3;
