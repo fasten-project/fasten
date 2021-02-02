@@ -18,7 +18,6 @@
 
 package eu.fasten.core.search;
 
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,9 +27,9 @@ import java.util.Set;
 import java.util.function.LongPredicate;
 
 import org.jgrapht.traverse.ClosestFirstIterator;
-import org.jooq.conf.ParseUnknownFunctions;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
+import org.jooq.conf.ParseUnknownFunctions;
 import org.rocksdb.RocksDBException;
 
 import com.martiansoftware.jsap.JSAP;
@@ -74,6 +73,7 @@ public class SearchEngine {
 			this.score = score;
 		}
 
+		@Override
 		public String toString() {
 			return gid + " (" + score + ")";
 		}
@@ -163,6 +163,56 @@ public class SearchEngine {
 
 		Collections.sort(results, (x, y) -> Double.compare(x.score, y.score));
 		return results;
+	}
+
+	/**
+	 * Computes the callables satisfying the given predicate and coreachable from the provided callable,
+	 * and returns them in a ranked list.
+	 *
+	 * @param gid the global ID of a callable.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @return a list of {@linkplain Result results}.
+	 */
+	public List<Result> toCallable(final long gid, final LongPredicate filter) throws RocksDBException {
+		// Fetch revision id
+		final long rev = gid2Rev(gid);
+
+		final var graph = rocksDao.getGraphData(rev);
+		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing fromå the graph database");
+
+		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(rev)).fetchOne();
+		final String[] a = record.component1().split(":");
+		final String groupId = a[0];
+		final String artifactId = a[1];
+		final String version = record.component2();
+		final Set<Revision> dependentSet = resolver.resolveDependents(groupId, artifactId, version, -1, true);
+
+/*
+ * for(var dependent: dependentSet) { final Record2<String, String> record =
+ * context.select(Packages.PACKAGES.PACKAGE_NAME,
+ * PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.
+ * PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(
+ * PackageVersions.PACKAGE_VERSIONS.ID.eq(dependent.id)).fetchOne(); final String[] a =
+ * record.component1().split(":"); final String groupId = a[0]; final String artifactId = a[1];
+ * final String version = record.component2(); final Set<Revision> dependencySet =
+ * resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+ * 
+ * final DatabaseMerger dm = new
+ * DatabaseMerger(LongOpenHashSet.toSet(dependentSet.stream().mapToLong(x -> x.id)), context,
+ * rocksDao); final var stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
+ * } if (!stitchedGraph.nodes().contains(gid)) throw new
+ * IllegalStateException("The stitched graph does not contain the given callable");
+ * 
+ * final ArrayList<Result> results = new ArrayList<>();
+ * 
+ * final ClosestFirstIterator<Long, LongLongPair> reachable = new
+ * ClosestFirstIterator<>(stitchedGraph, Long.valueOf(gid)); reachable.forEachRemaining((x) -> { if
+ * (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) +
+ * stitchedGraph.indegree(x)) / reachable.getShortestPathLength(x))); });
+ * 
+ * Collections.sort(results, (x, y) -> Double.compare(x.score, y.score)); return results;
+ */
+return null;
 	}
 
 	// dbContext=PostgresConnector.getDSLContext("jdbc:postgresql://monster:5432/fasten_java","fastenro");rocksDao=new
