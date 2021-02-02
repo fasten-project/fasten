@@ -138,8 +138,8 @@ public class PredicateFactory {
 		JSONObject jsonMetadata = moduleGID >= 0? moduleGID2moduleMetadata.get(moduleGID) : null;
 		if (jsonMetadata == null) {
 			Record2<JSONB, Long> queryResult = dbContext.select(Modules.MODULES.METADATA, Modules.MODULES.ID)
-					.from(Modules.MODULES)
-					.join(Callables.CALLABLES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
+					.from(Callables.CALLABLES)
+					.join(Modules.MODULES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
 					.where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
 
 			moduleGID = queryResult.component2().longValue();
@@ -161,9 +161,9 @@ public class PredicateFactory {
 		JSONObject jsonMetadata = packageVersionGID >= 0? packageVersionGID2packageVersionMetadata.get(packageVersionGID) : null;
 		if (jsonMetadata == null ) {
 			Record3<JSONB, Long, Long> queryResult = dbContext.select(PackageVersions.PACKAGE_VERSIONS.METADATA, PackageVersions.PACKAGE_VERSIONS.ID, Modules.MODULES.ID)
-					.from(Modules.MODULES, PackageVersions.PACKAGE_VERSIONS)
-					.join(Callables.CALLABLES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
-					.join(PackageVersions.PACKAGE_VERSIONS).on(PackageVersions.PACKAGE_VERSIONS.ID.eq(Modules.MODULES.PACKAGE_VERSION_ID))
+					.from(Callables.CALLABLES)
+					.join(Modules.MODULES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
+					.join(PackageVersions.PACKAGE_VERSIONS).on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
 					.where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
 			packageVersionGID = queryResult.component2().longValue();
 			moduleGID = queryResult.component3().longValue();
