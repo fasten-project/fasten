@@ -4,9 +4,6 @@ import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
 import org.jooq.DSLContext;
-import org.jooq.Record1;
-import org.jooq.Record3;
-import org.jooq.Record4;
 import org.jooq.Record5;
 import org.jooq.conf.Settings;
 
