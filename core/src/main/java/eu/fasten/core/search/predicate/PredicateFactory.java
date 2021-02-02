@@ -55,15 +55,15 @@ public class PredicateFactory {
 	
 	private DSLContext dbContext;
 	/** LRU cache of the last metadata from the {@link Callables#CALLABLES} table. */
-	private Long2ObjectLinkedOpenHashMap<JSONObject> callableId2callableMetadata;
+	private Long2ObjectLinkedOpenHashMap<JSONObject> callableGID2callableMetadata;
 	/** LRU cache of the last metadata from the {@link Modules#MODULES} table. */
-	private Long2ObjectLinkedOpenHashMap<JSONObject> moduleId2moduleMetadata;
+	private Long2ObjectLinkedOpenHashMap<JSONObject> moduleGID2moduleMetadata;
 	/** LRU cache of the last metadata from the {@link PackageVersions#PACKAGE_VERSIONS} table. */
-	private Long2ObjectLinkedOpenHashMap<JSONObject> packageVersionId2packageVersionMetadata;
+	private Long2ObjectLinkedOpenHashMap<JSONObject> packageVersionGID2packageVersionMetadata;
 	/** LRU cache of the map between {@link Callables#CALLABLES#ID} and {@link Modules#MODULES#ID}. */
-	private Long2LongLinkedOpenHashMap callableId2moduleId;
+	private Long2LongLinkedOpenHashMap callableGID2moduleGID;
 	/** LRU cache of the map between {@link Modules#MODULES#ID} and {@link PackageVersions#PACKAGE_VERSIONS#ID}. */
-	private Long2LongLinkedOpenHashMap moduleId2packageVersionId;
+	private Long2LongLinkedOpenHashMap moduleGID2packageVersionGID;
 
 	/** A factory for predicates that will be matched against a given database.
 	 * 
@@ -71,11 +71,11 @@ public class PredicateFactory {
 	 */
 	public PredicateFactory(final DSLContext dbContext) {
 		this.dbContext = dbContext;
-		this.callableId2callableMetadata = new Long2ObjectLinkedOpenHashMap<>();
-		this.callableId2moduleId = new Long2LongLinkedOpenHashMap();
-		callableId2moduleId.defaultReturnValue(-1);
-		this.moduleId2packageVersionId = new Long2LongLinkedOpenHashMap();
-		moduleId2packageVersionId.defaultReturnValue(-1);
+		this.callableGID2callableMetadata = new Long2ObjectLinkedOpenHashMap<>();
+		this.callableGID2moduleGID = new Long2LongLinkedOpenHashMap();
+		callableGID2moduleGID.defaultReturnValue(-1);
+		this.moduleGID2packageVersionGID = new Long2LongLinkedOpenHashMap();
+		moduleGID2packageVersionGID.defaultReturnValue(-1);
 	}
 	
 	/** An enum corresponding to the possible sources (i.e., database table) of metadata. */
@@ -116,61 +116,61 @@ public class PredicateFactory {
 	
 	/** Returns the metadata field of a given callable.
 	 * 
-	 * @param callableId the callable id.
+	 * @param callableGID the callable GID.
 	 * @return the metadata field associated to it.
 	 */
-	private JSONObject getCallableMetadata(final long callableId) {
-		JSONObject jsonMetadata = callableId2callableMetadata.get(callableId);
+	private JSONObject getCallableMetadata(final long callableGID) {
+		JSONObject jsonMetadata = callableGID2callableMetadata.get(callableGID);
 		if (jsonMetadata == null) {
-			jsonMetadata = new JSONObject(dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableId)).fetchOne().component1().data());
-			putLRUMap(callableId2callableMetadata, callableId, jsonMetadata, METADATA_MAP_MAXSIZE);
+			jsonMetadata = new JSONObject(dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne().component1().data());
+			putLRUMap(callableGID2callableMetadata, callableGID, jsonMetadata, METADATA_MAP_MAXSIZE);
 		}
 		return jsonMetadata;
 	}
 
 	/** Returns the metadata field of the package version corresponding to a given callable.
 	 * 
-	 * @param callableId the callable id.
+	 * @param callableGID the callable GID.
 	 * @return the metadata field associated to the package version of the callable.
 	 */
-	private JSONObject getModuleMetadata(final long callableId) {
-		long moduleId = callableId2moduleId.get(callableId);
-		JSONObject jsonMetadata = moduleId >= 0? moduleId2moduleMetadata.get(moduleId) : null;
+	private JSONObject getModuleMetadata(final long callableGID) {
+		long moduleGID = callableGID2moduleGID.get(callableGID);
+		JSONObject jsonMetadata = moduleGID >= 0? moduleGID2moduleMetadata.get(moduleGID) : null;
 		if (jsonMetadata == null) {
 			Record2<JSONB, Long> queryResult = dbContext.select(Modules.MODULES.METADATA, Modules.MODULES.ID)
 					.from(Modules.MODULES)
 					.join(Callables.CALLABLES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
-					.where(Callables.CALLABLES.ID.eq(callableId)).fetchOne();
+					.where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
 
-			moduleId = queryResult.component2().longValue();
+			moduleGID = queryResult.component2().longValue();
 			jsonMetadata = new JSONObject(queryResult.component1().data());
-			putLRUMap(callableId2moduleId, callableId, moduleId, LONG_MAP_MAXSIZE);
-			putLRUMap(moduleId2moduleMetadata, moduleId, jsonMetadata, METADATA_MAP_MAXSIZE);
+			putLRUMap(callableGID2moduleGID, callableGID, moduleGID, LONG_MAP_MAXSIZE);
+			putLRUMap(moduleGID2moduleMetadata, moduleGID, jsonMetadata, METADATA_MAP_MAXSIZE);
 		}
 		return jsonMetadata;
 	}
 
 	/** Returns the metadata field of the package version corresponding to a given callable.
 	 * 
-	 * @param callableId the callable id.
+	 * @param callableGID the callable id.
 	 * @return the metadata field associated to the package version of the callable.
 	 */
-	private JSONObject getPackageVersionMetadata(final long callableId) {
-		long moduleId = callableId2moduleId.get(callableId);
-		long packageVersionId = callableId >= 0? moduleId2packageVersionId.get(moduleId) : -1;
-		JSONObject jsonMetadata = packageVersionId >= 0? packageVersionId2packageVersionMetadata.get(packageVersionId) : null;
+	private JSONObject getPackageVersionMetadata(final long callableGID) {
+		long moduleGID = callableGID2moduleGID.get(callableGID);
+		long packageVersionGID = callableGID >= 0? moduleGID2packageVersionGID.get(moduleGID) : -1;
+		JSONObject jsonMetadata = packageVersionGID >= 0? packageVersionGID2packageVersionMetadata.get(packageVersionGID) : null;
 		if (jsonMetadata == null ) {
 			Record3<JSONB, Long, Long> queryResult = dbContext.select(PackageVersions.PACKAGE_VERSIONS.METADATA, PackageVersions.PACKAGE_VERSIONS.ID, Modules.MODULES.ID)
 					.from(Modules.MODULES, PackageVersions.PACKAGE_VERSIONS)
 					.join(Callables.CALLABLES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
 					.join(PackageVersions.PACKAGE_VERSIONS).on(PackageVersions.PACKAGE_VERSIONS.ID.eq(Modules.MODULES.PACKAGE_VERSION_ID))
-					.where(Callables.CALLABLES.ID.eq(callableId)).fetchOne();
-			packageVersionId = queryResult.component2().longValue();
-			moduleId = queryResult.component3().longValue();
+					.where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
+			packageVersionGID = queryResult.component2().longValue();
+			moduleGID = queryResult.component3().longValue();
 			jsonMetadata = new JSONObject(queryResult.component1().data());
-			putLRUMap(callableId2moduleId, callableId, moduleId, LONG_MAP_MAXSIZE);
-			putLRUMap(moduleId2packageVersionId, moduleId, packageVersionId, LONG_MAP_MAXSIZE);
-			putLRUMap(packageVersionId2packageVersionMetadata, packageVersionId, jsonMetadata, METADATA_MAP_MAXSIZE);
+			putLRUMap(callableGID2moduleGID, callableGID, moduleGID, LONG_MAP_MAXSIZE);
+			putLRUMap(moduleGID2packageVersionGID, moduleGID, packageVersionGID, LONG_MAP_MAXSIZE);
+			putLRUMap(packageVersionGID2packageVersionMetadata, packageVersionGID, jsonMetadata, METADATA_MAP_MAXSIZE);
 		}
 		return jsonMetadata;
 	}
@@ -178,14 +178,14 @@ public class PredicateFactory {
 	/** Returns the metadata of a given callable for a specific source.
 	 * 
 	 * @param source the source of the metadata we want to obtain.
-	 * @param callableId the {@link Callables#CALLABLES#ID} of the callable under consideration.
+	 * @param callableGID the {@link Callables#CALLABLES#ID} of the callable under consideration.
 	 * @return the JSON metadata.
 	 */
-	private JSONObject getMetadata(final MetadataSource source, final long callableId) {
+	private JSONObject getMetadata(final MetadataSource source, final long callableGID) {
 		switch(source) {
-		case CALLABLE: return getCallableMetadata(callableId);
-		case MODULE: return getModuleMetadata(callableId);
-		case PACKAGE_VERSION: return getPackageVersionMetadata(callableId);
+		case CALLABLE: return getCallableMetadata(callableGID);
+		case MODULE: return getModuleMetadata(callableGID);
+		case PACKAGE_VERSION: return getPackageVersionMetadata(callableGID);
 		default: throw new NoSuchElementException("Unknown source");
 		}
 	}

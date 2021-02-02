@@ -1,8 +1,10 @@
 package eu.fasten.core.search;
 
 import java.sql.SQLException;
+import java.util.NoSuchElementException;
 
 import org.jooq.DSLContext;
+import org.jooq.Record1;
 import org.jooq.conf.Settings;
 
 import eu.fasten.core.data.FastenURI;
@@ -32,7 +34,7 @@ public class Util {
 	 * @return the GID of {@code uri}, if {@code uri} is in the database; &minus;1 otherwise.
 	 */
 
-	public long getGID(final FastenURI uri, final DSLContext context) throws SQLException {
+	public static long getCallableGID(final FastenURI uri, final DSLContext context) throws SQLException {
 		final String product = uri.getRawProduct();
 		final String version = uri.getRawVersion();
 		final String path = uri.getRawPath();
@@ -53,11 +55,14 @@ public class Util {
 
 	/** Returns the {@link FastenURI} of a given {@link Callables#CALLABLES#ID}.
 	 * 
-	 * @param callableId the {@link Callables#CALLABLES#ID}.
+	 * @param callableGID the {@link Callables#CALLABLES#ID}.
 	 * @return the corresponding {@link FastenURI}.
+	 * @throws NoSuchElementException if the callableGID does not correspond to any element in the {@link Callables#CALLABLES} table.
 	 */
-	public static FastenURI getCallableName(final long callableId, final DSLContext dbContext) {
-	    return FastenURI.create(dbContext.select(Callables.CALLABLES.FASTEN_URI).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableId)).fetchOne().component1());
+	public static FastenURI getCallableName(final long callableGID, final DSLContext dbContext) {
+		Record1<String> singleRow = dbContext.select(Callables.CALLABLES.FASTEN_URI).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
+		if (singleRow == null) throw new NoSuchElementException();
+	    return FastenURI.create(singleRow.component1());
 	}
 
 }
