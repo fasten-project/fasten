@@ -162,7 +162,7 @@ public class SearchEngine {
 			if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / reachable.getShortestPathLength(x)));
 		});
 
-		Collections.sort(results, (x, y) -> Double.compare(x.score, y.score));
+		Collections.sort(results, (x, y) -> Double.compare(y.score, x.score));
 		return results;
 	}
 
@@ -211,7 +211,7 @@ public class SearchEngine {
 
 		}
 
-		Collections.sort(results, (x, y) -> Double.compare(x.score, y.score));
+		Collections.sort(results, (x, y) -> Double.compare(y.score, x.score));
 		return results;
 	}
 
@@ -238,12 +238,14 @@ public class SearchEngine {
 
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine()) {
-			final String line = scanner.nextLine();
+			String line = scanner.nextLine();
 			try {
+				char dir = line.charAt(0);
+				line = line.substring(1);
 				final FastenJavaURI uri = FastenJavaURI.create(line);
 				final long gid = Util.getCallableGID(uri, searchEngine.context);
 
-				var r = searchEngine.fromCallable(gid, x -> true);
+				var r = dir == '+' ? searchEngine.fromCallable(gid, x -> true) : searchEngine.toCallable(gid, x -> true);
 				for(int i = 0; i < Math.min(10, r.size()); i++)
 					System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, searchEngine.context) + "\t" + r.get(i).score);
 			} catch (final Exception e) {

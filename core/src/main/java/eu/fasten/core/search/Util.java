@@ -81,7 +81,7 @@ public class Util {
 	 *         appear in the database.
 	 */
 	public static FastenURI getCallableName(final long callableGID, final DSLContext dbContext) {
-		final Record5<String, String, String, String, String> singleRow = dbContext
+		final Record5<String, String, String, String, Long> singleRow = dbContext
 			.select(
 					Packages.PACKAGES.FORGE,
 					Packages.PACKAGES.PACKAGE_NAME,
