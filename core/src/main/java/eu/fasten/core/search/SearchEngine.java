@@ -159,7 +159,7 @@ public class SearchEngine {
 
 		final ClosestFirstIterator<Long, LongLongPair> reachable = new ClosestFirstIterator<>(stitchedGraph, Long.valueOf(gid));
 		reachable.forEachRemaining((x) -> {
-			if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / (double)reachable.getShortestPathLength(x)));
+			if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / reachable.getShortestPathLength(x)));
 		});
 
 		Collections.sort(results, (x, y) -> Double.compare(y.score, x.score));
@@ -188,10 +188,13 @@ public class SearchEngine {
 		String version = record.component2();
 		final Set<Revision> dependentSet = resolver.resolveDependents(groupId, artifactId, version, -1, true);
 
+		final LongOpenHashSet dependentIds = LongOpenHashSet.toSet(dependentSet.stream().mapToLong(x -> x.id));
+		dependentIds.add(rev);
+
 		final ArrayList<Result> results = new ArrayList<>();
 
-		for (final var dependent : dependentSet) {
-			record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(dependent.id)).fetchOne();
+		for (final var dependentId : dependentIds) {
+			record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(dependentId)).fetchOne();
 			a = record.component1().split(":");
 			groupId = a[0];
 			artifactId = a[1];
@@ -206,7 +209,7 @@ public class SearchEngine {
 
 			final ClosestFirstIterator<Long, LongLongPair> coreachable = new ClosestFirstIterator<>(new EdgeReversedGraph<>(stitchedGraph), Long.valueOf(gid));
 			coreachable.forEachRemaining((x) -> {
-				if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / (double)coreachable.getShortestPathLength(x)));
+				if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / coreachable.getShortestPathLength(x)));
 			});
 
 		}
@@ -240,12 +243,12 @@ public class SearchEngine {
 		while (scanner.hasNextLine()) {
 			String line = scanner.nextLine();
 			try {
-				char dir = line.charAt(0);
+				final char dir = line.charAt(0);
 				line = line.substring(1);
 				final FastenJavaURI uri = FastenJavaURI.create(line);
 				final long gid = Util.getCallableGID(uri, searchEngine.context);
 
-				var r = dir == '+' ? searchEngine.fromCallable(gid, x -> true) : searchEngine.toCallable(gid, x -> true);
+				final var r = dir == '+' ? searchEngine.fromCallable(gid, x -> true) : searchEngine.toCallable(gid, x -> true);
 				for(int i = 0; i < Math.min(10, r.size()); i++)
 					System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, searchEngine.context) + "\t" + r.get(i).score);
 			} catch (final Exception e) {
