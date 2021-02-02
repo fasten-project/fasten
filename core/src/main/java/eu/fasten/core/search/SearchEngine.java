@@ -184,20 +184,19 @@ public class SearchEngine {
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
 		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, "/mnt/fasten/graphdb", resolverGraph);
-		final var parsingConnection = searchEngine.context.parsingConnection();
 		searchEngine.context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
-		final var s = parsingConnection.createStatement();
 
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine()) {
 			final String line = scanner.nextLine();
 			try {
 				final FastenJavaURI uri = FastenJavaURI.create(line);
-				final java.sql.ResultSet result = s.executeQuery("select id from callables where digest(fasten_uri, 'sha1'::text) = digest('" + uri + "', 'sha1'::text)");
+				final long git = Util.getGID(uri, context);
 
-				result.next();
-				var r = searchEngine.fromCallable(result.getLong(1), x -> true);
-				System.err.println(r.subList(0, 10));
+
+				var r = searchEngine.fromCallable(gid, x -> true);
+				for(int i = 0; i < Math.min(10, r.size()); i++)
+					System.out.println();
 			} catch (final Exception e) {
 				e.printStackTrace();
 			}
