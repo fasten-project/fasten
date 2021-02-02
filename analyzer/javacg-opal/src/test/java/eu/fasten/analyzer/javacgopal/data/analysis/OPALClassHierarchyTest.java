@@ -20,11 +20,18 @@ package eu.fasten.analyzer.javacgopal.data.analysis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.merge.LocalMerger;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -33,6 +40,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mockito;
 import org.opalj.br.BaseType;
 import org.opalj.br.ClassFile;
@@ -437,9 +445,9 @@ class OPALClassHierarchyTest {
         classHierarchy.putCalls(source, internalCalls, externalCalls,
                 Mockito.mock(DeclaredMethod.class), newMetadata, target);
 
-        assertEquals(2, externalCalls.size());
+        assertEquals(1, externalCalls.size());
         assertEquals("newMetadata", externalCalls.get(List.of(5, 6)).get(10));
-        assertEquals(0, externalCalls.get(List.of(6, 6)).size());
+        assertNull(externalCalls.get(List.of(6, 6)));
     }
 
     @Test
@@ -740,5 +748,19 @@ class OPALClassHierarchyTest {
         assertEquals(30, ((HashMap<String, Object>) callSite.get("0")).get("line"));
         assertEquals("notFound", ((HashMap<String, Object>) callSite.get("0")).get("receiver"));
         assertEquals("notFound", ((HashMap<String, Object>) callSite.get("0")).get("type"));
+    }
+
+    @Test
+    void duplicateArcsTest() throws MissingArtifactException, OPALException {
+
+        var coordinate = MavenCoordinate.fromString("ch.qos.logback:logback-classic:1.2.3", "jar");
+        var rcg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
+            "", "CHA", 1574072773);
+
+        var depSet = new ArrayList<ExtendedRevisionJavaCallGraph>();
+        depSet.add(rcg);
+        var merger = new LocalMerger(depSet);
+
+        Assertions.assertDoesNotThrow(merger::mergeAllDeps, "Duplicate arc 943 -> 943");
     }
 }

@@ -332,8 +332,8 @@ public class MetadataUtils {
 
             String fastenUri = (String) cr.get(2);
 
-            String separator = "::";
-            int position = qaName.indexOf(separator);
+            String separator = ":";
+            int position = qaName.lastIndexOf(separator);
             String methodName = qaName.substring(position+separator.length());
 
             logger.info("fastenUri (from DB) is " + fastenUri);

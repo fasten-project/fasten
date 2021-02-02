@@ -71,11 +71,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             var packageName = forgelessArtifact.split("\\$")[0];
             var version = forgelessArtifact.split("\\$")[1];
             var partialUris = packageVersionUris.get(artifact);
-            var uriMetadataMap = KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris);
-            if (uriMetadataMap == null) {
-                return new ResponseEntity<>("Could not find one the FASTEN URIs for " + artifact, HttpStatus.NOT_FOUND);
-            }
-            metadataMap.putAll(uriMetadataMap);
+            metadataMap.putAll(KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris));
         }
         var json = new JSONObject();
         for (var entry : metadataMap.entrySet()) {

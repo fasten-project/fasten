@@ -2,14 +2,14 @@ name: Publish Docker image
 
 on:
   push:
-    # Publish `kbapi` as Docker `latest` image.
+    # Publish `develop` as Docker `latest` image.
     branches:
-      - kbapi
+      - develop
 
   # Run tests for any PRs.
   pull_request:
     branches:
-      - kbapi
+      - develop
 
 env:
   # TODO: Change variable to your image's name.
@@ -52,7 +52,7 @@ jobs:
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
 
           # Use Docker `latest` tag convention
-          [ "$VERSION" == "kbapi" ] && VERSION=${GITHUB_SHA::8}
+          [ "$VERSION" == "develop" ] && VERSION=${GITHUB_SHA::8}
 
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
