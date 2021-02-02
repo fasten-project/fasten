@@ -140,16 +140,30 @@ public class FastenURI implements Serializable {
 		return new FastenURI(URI.create(urisb.toString()));
 	}
 
+	private static FastenURI create(final StringBuilder urisb, final String rawForge, final String rawProduct, final String rawVersion, final String rawPath) {
+		if (rawProduct != null) {
+			urisb.append("//");
+			if (rawForge != null) urisb.append(rawForge + "!");
+			urisb.append(rawProduct);
+			if (rawVersion != null) urisb.append("$" + rawVersion);
+			urisb.append(rawPath);
+		} else urisb.append(rawPath);
+		return new FastenURI(URI.create(urisb.toString()));
+	}
+
 	/**
 	 * Creates a {@link FastenURI} from given raw (i.e., properly escaped) fine-grained components.
 	 *
-	 * <p>No check is performed on the correctness of the components.
+	 * <p>
+	 * No check is performed on the correctness of the components.
+	 *
 	 * @param rawForge the forge, or {@code null}.
 	 * @param rawProduct the product, or {@code null}.
 	 * @param rawVersion the version, or {@code null}.
-	 * @param rawNamespace the namespace, or {@code null}.
-	 * @param rawEntity the entity, or {@code null}.
-	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a {@link FastenURI}.
+	 * @param rawNamespace the namespace.
+	 * @param rawEntity the entity.
+	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a
+	 *             {@link FastenURI}.
 	 * @see #create(String, String, String)
 	 */
 
@@ -158,15 +172,19 @@ public class FastenURI implements Serializable {
 	}
 
 	/**
-	 * Creates a <em>schemeless</em> {@link FastenURI} from given raw (i.e., properly escaped) fine-grained components.
+	 * Creates a <em>schemeless</em> {@link FastenURI} from given raw (i.e., properly escaped)
+	 * fine-grained components.
 	 *
-	 * <p>No check is performed on the correctness of the components.
+	 * <p>
+	 * No check is performed on the correctness of the components.
+	 *
 	 * @param rawForge the forge, or {@code null}.
 	 * @param rawProduct the product, or {@code null}.
 	 * @param rawVersion the version, or {@code null}.
-	 * @param rawNamespace the namespace, or {@code null}.
-	 * @param rawEntity the entity, or {@code null}.
-	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a {@link FastenURI}.
+	 * @param rawNamespace the namespace.
+	 * @param rawEntity the entity.
+	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a
+	 *             {@link FastenURI}.
 	 * @see #create(String, String, String)
 	 */
 
@@ -175,13 +193,55 @@ public class FastenURI implements Serializable {
 	}
 
 	/**
+	 * Creates a {@link FastenURI} from given raw (i.e., properly escaped) fine-grained components.
+	 *
+	 * <p>
+	 * No check is performed on the correctness of the components.
+	 *
+	 * @param rawForge the forge, or {@code null}.
+	 * @param rawProduct the product, or {@code null}.
+	 * @param rawVersion the version, or {@code null}.
+	 * @param rawPath the path.
+	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a
+	 *             {@link FastenURI}.
+	 * @see #create(String, String, String)
+	 */
+
+	public static FastenURI create(final String rawForge, final String rawProduct, final String rawVersion, final String rawPath) {
+		return create(new StringBuilder().append("fasten:"), rawForge, rawProduct, rawVersion, rawPath);
+	}
+
+	/**
+	 * Creates a <em>schemeless</em> {@link FastenURI} from given raw (i.e., properly escaped)
+	 * fine-grained components.
+	 *
+	 * <p>
+	 * No check is performed on the correctness of the components.
+	 *
+	 * @param rawForge the forge, or {@code null}.
+	 * @param rawProduct the product, or {@code null}.
+	 * @param rawVersion the version, or {@code null}.
+	 * @param rawPath the path.
+	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a
+	 *             {@link FastenURI}.
+	 * @see #create(String, String, String)
+	 */
+
+	public static FastenURI createSchemeless(final String rawForge, final String rawProduct, final String rawVersion, final String rawPath) {
+		return create(new StringBuilder(), rawForge, rawProduct, rawVersion, rawPath);
+	}
+
+	/**
 	 * Creates a {@link FastenURI} from given raw (i.e., properly escaped) coarse-grained components.
 	 *
-	 * <p>No check is performed on the correctness of the components.
+	 * <p>
+	 * No check is performed on the correctness of the components.
+	 *
 	 * @param rawForgeProductVersion forge, product, and version, combined, or {@code null}.
 	 * @param rawNamespace the namespace, or {@code null}.
 	 * @param rawEntity the entity, or {@code null}.
-	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a {@link FastenURI}.
+	 * @throws IllegalArgumentException if the argument does not satisfy the further constraints of a
+	 *             {@link FastenURI}.
 	 * @see #create(String, String, String, String, String)
 	 */
 	public static FastenURI create(final String rawForgeProductVersion, final String rawNamespace, final String rawEntity) {
