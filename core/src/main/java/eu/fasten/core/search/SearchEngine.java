@@ -26,6 +26,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.function.LongPredicate;
 
+import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.ClosestFirstIterator;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
@@ -180,39 +181,38 @@ public class SearchEngine {
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing fromå the graph database");
 
-		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(rev)).fetchOne();
-		final String[] a = record.component1().split(":");
-		final String groupId = a[0];
-		final String artifactId = a[1];
-		final String version = record.component2();
+		Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(rev)).fetchOne();
+		String[] a = record.component1().split(":");
+		String groupId = a[0];
+		String artifactId = a[1];
+		String version = record.component2();
 		final Set<Revision> dependentSet = resolver.resolveDependents(groupId, artifactId, version, -1, true);
 
-/*
- * for(var dependent: dependentSet) { final Record2<String, String> record =
- * context.select(Packages.PACKAGES.PACKAGE_NAME,
- * PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.
- * PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(
- * PackageVersions.PACKAGE_VERSIONS.ID.eq(dependent.id)).fetchOne(); final String[] a =
- * record.component1().split(":"); final String groupId = a[0]; final String artifactId = a[1];
- * final String version = record.component2(); final Set<Revision> dependencySet =
- * resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
- * 
- * final DatabaseMerger dm = new
- * DatabaseMerger(LongOpenHashSet.toSet(dependentSet.stream().mapToLong(x -> x.id)), context,
- * rocksDao); final var stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
- * } if (!stitchedGraph.nodes().contains(gid)) throw new
- * IllegalStateException("The stitched graph does not contain the given callable");
- * 
- * final ArrayList<Result> results = new ArrayList<>();
- * 
- * final ClosestFirstIterator<Long, LongLongPair> reachable = new
- * ClosestFirstIterator<>(stitchedGraph, Long.valueOf(gid)); reachable.forEachRemaining((x) -> { if
- * (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) +
- * stitchedGraph.indegree(x)) / reachable.getShortestPathLength(x))); });
- * 
- * Collections.sort(results, (x, y) -> Double.compare(x.score, y.score)); return results;
- */
-return null;
+		final ArrayList<Result> results = new ArrayList<>();
+
+		for (final var dependent : dependentSet) {
+			record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(dependent.id)).fetchOne();
+			a = record.component1().split(":");
+			groupId = a[0];
+			artifactId = a[1];
+			version = record.component2();
+			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+
+			final LongOpenHashSet dependencyIds = LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+			if (!dependencyIds.contains(rev)) continue; // We cannot possibly reach the callable
+			final DatabaseMerger dm = new DatabaseMerger(dependencyIds, context, rocksDao);
+			final var stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
+			if (!stitchedGraph.nodes().contains(gid)) continue; // We cannot possibly reach the callable
+
+			final ClosestFirstIterator<Long, LongLongPair> coreachable = new ClosestFirstIterator<>(new EdgeReversedGraph<>(stitchedGraph), Long.valueOf(gid));
+			coreachable.forEachRemaining((x) -> {
+				if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / coreachable.getShortestPathLength(x)));
+			});
+
+		}
+
+		Collections.sort(results, (x, y) -> Double.compare(x.score, y.score));
+		return results;
 	}
 
 	// dbContext=PostgresConnector.getDSLContext("jdbc:postgresql://monster:5432/fasten_java","fastenro");rocksDao=new

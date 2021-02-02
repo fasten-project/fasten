@@ -48,7 +48,7 @@ public class Util {
 				"join modules on modules.id=callables.module_id " +
 				"join package_versions on package_versions.id=modules.package_version_id " +
 				"join packages on packages.id=package_versions.package_id " +
-				"where packages.package_name='" + product.replace("'", "\\'") + 
+				"where packages.package_name='" + product.replace("'", "\\'") +
 				"' and package_versions.version='" + version.replace("'", "\\'") +
 				"' and digest(fasten_uri, 'sha1'::text) = digest('" + path.replace("'", "\\'") + "', 'sha1'::text)";
 
@@ -57,19 +57,19 @@ public class Util {
 	}
 
 	/** Returns the {@link FastenURI} of a given {@link Callables#CALLABLES#ID}.
-	 * 
+	 *
 	 * @param callableGID the {@link Callables#CALLABLES#ID}.
 	 * @return the corresponding {@link FastenURI}.
 	 * @throws NoSuchElementException if the callableGID does not correspond to any element in the {@link Callables#CALLABLES} table.
 	 */
 	public static FastenURI getCallableName(final long callableGID, final DSLContext dbContext) {
-		Record5<String, String, String, String, String> singleRow = dbContext
+		final Record5<String, String, String, String, String> singleRow = dbContext
 			.select(
 					Packages.PACKAGES.FORGE,
 					Packages.PACKAGES.PACKAGE_NAME,
-					PackageVersions.PACKAGE_VERSIONS.VERSION, 
-					Modules.MODULES.NAMESPACE, 
-					Callables.CALLABLES.FASTEN_URI 
+					PackageVersions.PACKAGE_VERSIONS.VERSION,
+					Modules.MODULES.NAMESPACE,
+					Callables.CALLABLES.FASTEN_URI
 					)
 			.from(Callables.CALLABLES, Modules.MODULES, PackageVersions.PACKAGE_VERSIONS, Packages.PACKAGES)
 			.join(Modules.MODULES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
@@ -78,7 +78,7 @@ public class Util {
 			.where(Callables.CALLABLES.ID.eq(callableGID))
 			.fetchOne();
 		if (singleRow == null) throw new NoSuchElementException();
-	    return FastenURI.createSchemeless(singleRow.component1(), singleRow.component2(), singleRow.component3(), singleRow.component4(), singleRow.component5());
+		return FastenURI.create(singleRow.component1(), singleRow.component2(), singleRow.component3(), singleRow.component4(), singleRow.component5());
 	}
 
 }
