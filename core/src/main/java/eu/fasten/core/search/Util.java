@@ -6,6 +6,7 @@ import org.jooq.DSLContext;
 import org.jooq.conf.Settings;
 
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 
 /**
  * Miscellaneous utility methods.
@@ -48,6 +49,15 @@ public class Util {
 
 		final java.sql.ResultSet result = statement.executeQuery(query);
 		return result.next() ? -1 : result.getLong(1);
+	}
+
+	/** Returns the {@link FastenURI} of a given {@link Callables#CALLABLES#ID}.
+	 * 
+	 * @param callableId the {@link Callables#CALLABLES#ID}.
+	 * @return the corresponding {@link FastenURI}.
+	 */
+	public static FastenURI getCallableName(final long callableId, final DSLContext dbContext) {
+	    return FastenURI.create(dbContext.select(Callables.CALLABLES.FASTEN_URI).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableId)).fetchOne().component1());
 	}
 
 }

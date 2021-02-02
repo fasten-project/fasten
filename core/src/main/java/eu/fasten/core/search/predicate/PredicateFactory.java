@@ -30,6 +30,7 @@ import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.search.Util;
 import it.unimi.dsi.fastutil.longs.Long2LongLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 
@@ -113,16 +114,6 @@ public class PredicateFactory {
 		if (map.size() > maxSize) map.removeLastLong();
 	}
 	
-	/** Returns the {@link FastenURI} of a given {@link Callables#CALLABLES#ID}.
-	 * 
-	 * @param callableId the {@link Callables#CALLABLES#ID}.
-	 * @return the corresponding {@link FastenURI}.
-	 */
-    private FastenURI getCallableName(final long callableId, final DSLContext dbContext) {
-        return FastenURI.create(dbContext.select(Callables.CALLABLES.FASTEN_URI).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableId)).fetchOne().component1());
-    }
-
-
 	/** Returns the metadata field of a given callable.
 	 * 
 	 * @param callableId the callable id.
@@ -238,7 +229,7 @@ public class PredicateFactory {
 	 * @return the predicate.
 	 */
 	public FastenURIMatches fastenURIMatches(final Predicate<FastenURI> fastenURIPredicate) {
-		return x -> fastenURIPredicate.test(getCallableName(x, dbContext));
+		return x -> fastenURIPredicate.test(Util.getCallableName(x, dbContext));
 	}
 
 }
