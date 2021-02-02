@@ -483,7 +483,7 @@ public class GraphMavenResolver implements Runnable {
         } else {
             dependencyGraph = graphOpt.get();
         }
-        dependentGraph =  DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
+        dependentGraph = new org.jgrapht.graph.EdgeReversedGraph<>(dependencyGraph);
     }
 
     private long getCreatedAt(String groupId, String artifactId, String version, DSLContext context) {
