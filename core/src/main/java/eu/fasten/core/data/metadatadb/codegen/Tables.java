@@ -5,13 +5,13 @@ package eu.fasten.core.data.metadatadb.codegen;
 
 
 import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
-import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactStates;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
@@ -47,11 +47,6 @@ public class Tables {
     public static final ArtifactRepositories ARTIFACT_REPOSITORIES = ArtifactRepositories.ARTIFACT_REPOSITORIES;
 
     /**
-     * The table <code>public.artifact_states</code>.
-     */
-    public static final ArtifactStates ARTIFACT_STATES = ArtifactStates.ARTIFACT_STATES;
-
-    /**
      * The table <code>public.binary_module_contents</code>.
      */
     public static final BinaryModuleContents BINARY_MODULE_CONTENTS = BinaryModuleContents.BINARY_MODULE_CONTENTS;
@@ -80,6 +75,11 @@ public class Tables {
      * The table <code>public.files</code>.
      */
     public static final Files FILES = Files.FILES;
+
+    /**
+     * The table <code>public.ingested_artifacts</code>.
+     */
+    public static final IngestedArtifacts INGESTED_ARTIFACTS = IngestedArtifacts.INGESTED_ARTIFACTS;
 
     /**
      * The table <code>public.module_contents</code>.

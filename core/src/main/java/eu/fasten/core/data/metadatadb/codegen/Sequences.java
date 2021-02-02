@@ -29,11 +29,6 @@ public class Sequences {
     public static final Sequence<Long> ARTIFACT_REPOSITORIES_ID_SEQ = new SequenceImpl<Long>("artifact_repositories_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
 
     /**
-     * The sequence <code>public.artifact_states_id_seq</code>
-     */
-    public static final Sequence<Long> ARTIFACT_STATES_ID_SEQ = new SequenceImpl<Long>("artifact_states_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
-
-    /**
      * The sequence <code>public.binary_modules_id_seq</code>
      */
     public static final Sequence<Long> BINARY_MODULES_ID_SEQ = new SequenceImpl<Long>("binary_modules_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
@@ -47,6 +42,11 @@ public class Sequences {
      * The sequence <code>public.files_id_seq</code>
      */
     public static final Sequence<Long> FILES_ID_SEQ = new SequenceImpl<Long>("files_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
+
+    /**
+     * The sequence <code>public.ingested_artifacts_id_seq</code>
+     */
+    public static final Sequence<Long> INGESTED_ARTIFACTS_ID_SEQ = new SequenceImpl<Long>("ingested_artifacts_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
 
     /**
      * The sequence <code>public.modules_id_seq</code>

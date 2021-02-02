@@ -5,13 +5,13 @@ package eu.fasten.core.data.metadatadb.codegen;
 
 
 import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
-import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactStates;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
@@ -19,13 +19,13 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.ArtifactRepositoriesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.ArtifactStatesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.BinaryModuleContentsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.BinaryModulesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.DependenciesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.FilesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.IngestedArtifactsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.ModuleContentsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.ModulesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.NamespacesRecord;
@@ -60,10 +60,10 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final Identity<ArtifactRepositoriesRecord, Long> IDENTITY_ARTIFACT_REPOSITORIES = Identities0.IDENTITY_ARTIFACT_REPOSITORIES;
-    public static final Identity<ArtifactStatesRecord, Long> IDENTITY_ARTIFACT_STATES = Identities0.IDENTITY_ARTIFACT_STATES;
     public static final Identity<BinaryModulesRecord, Long> IDENTITY_BINARY_MODULES = Identities0.IDENTITY_BINARY_MODULES;
     public static final Identity<CallablesRecord, Long> IDENTITY_CALLABLES = Identities0.IDENTITY_CALLABLES;
     public static final Identity<FilesRecord, Long> IDENTITY_FILES = Identities0.IDENTITY_FILES;
+    public static final Identity<IngestedArtifactsRecord, Long> IDENTITY_INGESTED_ARTIFACTS = Identities0.IDENTITY_INGESTED_ARTIFACTS;
     public static final Identity<ModulesRecord, Long> IDENTITY_MODULES = Identities0.IDENTITY_MODULES;
     public static final Identity<NamespacesRecord, Long> IDENTITY_NAMESPACES = Identities0.IDENTITY_NAMESPACES;
     public static final Identity<PackageVersionsRecord, Long> IDENTITY_PACKAGE_VERSIONS = Identities0.IDENTITY_PACKAGE_VERSIONS;
@@ -75,8 +75,6 @@ public class Keys {
 
     public static final UniqueKey<ArtifactRepositoriesRecord> ARTIFACT_REPOSITORIES_PKEY = UniqueKeys0.ARTIFACT_REPOSITORIES_PKEY;
     public static final UniqueKey<ArtifactRepositoriesRecord> UNIQUE_ARTIFACT_REPOSITORIES = UniqueKeys0.UNIQUE_ARTIFACT_REPOSITORIES;
-    public static final UniqueKey<ArtifactStatesRecord> ARTIFACT_STATES_PKEY = UniqueKeys0.ARTIFACT_STATES_PKEY;
-    public static final UniqueKey<ArtifactStatesRecord> UNIQUE_ARTIFACTS = UniqueKeys0.UNIQUE_ARTIFACTS;
     public static final UniqueKey<BinaryModuleContentsRecord> UNIQUE_BINARY_MODULE_FILE = UniqueKeys0.UNIQUE_BINARY_MODULE_FILE;
     public static final UniqueKey<BinaryModulesRecord> BINARY_MODULES_PKEY = UniqueKeys0.BINARY_MODULES_PKEY;
     public static final UniqueKey<BinaryModulesRecord> UNIQUE_VERSION_NAME = UniqueKeys0.UNIQUE_VERSION_NAME;
@@ -86,6 +84,8 @@ public class Keys {
     public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = UniqueKeys0.UNIQUE_SOURCE_TARGET;
     public static final UniqueKey<FilesRecord> FILES_PKEY = UniqueKeys0.FILES_PKEY;
     public static final UniqueKey<FilesRecord> UNIQUE_VERSION_PATH = UniqueKeys0.UNIQUE_VERSION_PATH;
+    public static final UniqueKey<IngestedArtifactsRecord> INGESTED_ARTIFACTS_PKEY = UniqueKeys0.INGESTED_ARTIFACTS_PKEY;
+    public static final UniqueKey<IngestedArtifactsRecord> UNIQUE_INGESTED_ARTIFACTS = UniqueKeys0.UNIQUE_INGESTED_ARTIFACTS;
     public static final UniqueKey<ModuleContentsRecord> UNIQUE_MODULE_FILE = UniqueKeys0.UNIQUE_MODULE_FILE;
     public static final UniqueKey<ModulesRecord> MODULES_PKEY = UniqueKeys0.MODULES_PKEY;
     public static final UniqueKey<ModulesRecord> UNIQUE_VERSION_NAMESPACE = UniqueKeys0.UNIQUE_VERSION_NAMESPACE;
@@ -121,10 +121,10 @@ public class Keys {
 
     private static class Identities0 {
         public static Identity<ArtifactRepositoriesRecord, Long> IDENTITY_ARTIFACT_REPOSITORIES = Internal.createIdentity(ArtifactRepositories.ARTIFACT_REPOSITORIES, ArtifactRepositories.ARTIFACT_REPOSITORIES.ID);
-        public static Identity<ArtifactStatesRecord, Long> IDENTITY_ARTIFACT_STATES = Internal.createIdentity(ArtifactStates.ARTIFACT_STATES, ArtifactStates.ARTIFACT_STATES.ID);
         public static Identity<BinaryModulesRecord, Long> IDENTITY_BINARY_MODULES = Internal.createIdentity(BinaryModules.BINARY_MODULES, BinaryModules.BINARY_MODULES.ID);
         public static Identity<CallablesRecord, Long> IDENTITY_CALLABLES = Internal.createIdentity(Callables.CALLABLES, Callables.CALLABLES.ID);
         public static Identity<FilesRecord, Long> IDENTITY_FILES = Internal.createIdentity(Files.FILES, Files.FILES.ID);
+        public static Identity<IngestedArtifactsRecord, Long> IDENTITY_INGESTED_ARTIFACTS = Internal.createIdentity(IngestedArtifacts.INGESTED_ARTIFACTS, IngestedArtifacts.INGESTED_ARTIFACTS.ID);
         public static Identity<ModulesRecord, Long> IDENTITY_MODULES = Internal.createIdentity(Modules.MODULES, Modules.MODULES.ID);
         public static Identity<NamespacesRecord, Long> IDENTITY_NAMESPACES = Internal.createIdentity(Namespaces.NAMESPACES, Namespaces.NAMESPACES.ID);
         public static Identity<PackageVersionsRecord, Long> IDENTITY_PACKAGE_VERSIONS = Internal.createIdentity(PackageVersions.PACKAGE_VERSIONS, PackageVersions.PACKAGE_VERSIONS.ID);
@@ -134,8 +134,6 @@ public class Keys {
     private static class UniqueKeys0 {
         public static final UniqueKey<ArtifactRepositoriesRecord> ARTIFACT_REPOSITORIES_PKEY = Internal.createUniqueKey(ArtifactRepositories.ARTIFACT_REPOSITORIES, "artifact_repositories_pkey", ArtifactRepositories.ARTIFACT_REPOSITORIES.ID);
         public static final UniqueKey<ArtifactRepositoriesRecord> UNIQUE_ARTIFACT_REPOSITORIES = Internal.createUniqueKey(ArtifactRepositories.ARTIFACT_REPOSITORIES, "unique_artifact_repositories", ArtifactRepositories.ARTIFACT_REPOSITORIES.REPOSITORY_BASE_URL);
-        public static final UniqueKey<ArtifactStatesRecord> ARTIFACT_STATES_PKEY = Internal.createUniqueKey(ArtifactStates.ARTIFACT_STATES, "artifact_states_pkey", ArtifactStates.ARTIFACT_STATES.ID);
-        public static final UniqueKey<ArtifactStatesRecord> UNIQUE_ARTIFACTS = Internal.createUniqueKey(ArtifactStates.ARTIFACT_STATES, "unique_artifacts", ArtifactStates.ARTIFACT_STATES.PACKAGE_NAME, ArtifactStates.ARTIFACT_STATES.VERSION);
         public static final UniqueKey<BinaryModuleContentsRecord> UNIQUE_BINARY_MODULE_FILE = Internal.createUniqueKey(BinaryModuleContents.BINARY_MODULE_CONTENTS, "unique_binary_module_file", BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID, BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID);
         public static final UniqueKey<BinaryModulesRecord> BINARY_MODULES_PKEY = Internal.createUniqueKey(BinaryModules.BINARY_MODULES, "binary_modules_pkey", BinaryModules.BINARY_MODULES.ID);
         public static final UniqueKey<BinaryModulesRecord> UNIQUE_VERSION_NAME = Internal.createUniqueKey(BinaryModules.BINARY_MODULES, "unique_version_name", BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME);
@@ -145,6 +143,8 @@ public class Keys {
         public static final UniqueKey<EdgesRecord> UNIQUE_SOURCE_TARGET = Internal.createUniqueKey(Edges.EDGES, "unique_source_target", Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID);
         public static final UniqueKey<FilesRecord> FILES_PKEY = Internal.createUniqueKey(Files.FILES, "files_pkey", Files.FILES.ID);
         public static final UniqueKey<FilesRecord> UNIQUE_VERSION_PATH = Internal.createUniqueKey(Files.FILES, "unique_version_path", Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH);
+        public static final UniqueKey<IngestedArtifactsRecord> INGESTED_ARTIFACTS_PKEY = Internal.createUniqueKey(IngestedArtifacts.INGESTED_ARTIFACTS, "ingested_artifacts_pkey", IngestedArtifacts.INGESTED_ARTIFACTS.ID);
+        public static final UniqueKey<IngestedArtifactsRecord> UNIQUE_INGESTED_ARTIFACTS = Internal.createUniqueKey(IngestedArtifacts.INGESTED_ARTIFACTS, "unique_ingested_artifacts", IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME, IngestedArtifacts.INGESTED_ARTIFACTS.VERSION);
         public static final UniqueKey<ModuleContentsRecord> UNIQUE_MODULE_FILE = Internal.createUniqueKey(ModuleContents.MODULE_CONTENTS, "unique_module_file", ModuleContents.MODULE_CONTENTS.MODULE_ID, ModuleContents.MODULE_CONTENTS.FILE_ID);
         public static final UniqueKey<ModulesRecord> MODULES_PKEY = Internal.createUniqueKey(Modules.MODULES, "modules_pkey", Modules.MODULES.ID);
         public static final UniqueKey<ModulesRecord> UNIQUE_VERSION_NAMESPACE = Internal.createUniqueKey(Modules.MODULES, "unique_version_namespace", Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE);
