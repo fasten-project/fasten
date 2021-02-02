@@ -1,7 +1,24 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.core.search;
 
 import java.sql.SQLException;
-import java.util.NoSuchElementException;
 
 import org.jooq.DSLContext;
 import org.jooq.Record5;
@@ -56,11 +73,12 @@ public class Util {
 		return result.next() ? result.getLong(1) : -1;
 	}
 
-	/** Returns the {@link FastenURI} of a given {@link Callables#CALLABLES#ID}.
+	/**
+	 * Returns the {@link FastenURI} of a given {@link Callables#CALLABLES#ID}.
 	 *
 	 * @param callableGID the {@link Callables#CALLABLES#ID}.
-	 * @return the corresponding {@link FastenURI}.
-	 * @throws NoSuchElementException if the callableGID does not correspond to any element in the {@link Callables#CALLABLES} table.
+	 * @return the corresponding {@link FastenURI}, or {@code null} if {@code callableGID} does not
+	 *         appear in the database.
 	 */
 	public static FastenURI getCallableName(final long callableGID, final DSLContext dbContext) {
 		final Record5<String, String, String, String, String> singleRow = dbContext
@@ -75,10 +93,9 @@ public class Util {
 			.join(Modules.MODULES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
 			.join(PackageVersions.PACKAGE_VERSIONS).on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
 			.join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-			.where(Callables.CALLABLES.ID.eq(callableGID))
+				.where(Callables.CALLABLES.ID.eq(Long.valueOf(callableGID)))
 			.fetchOne();
-		if (singleRow == null) throw new NoSuchElementException();
+		if (singleRow == null) return null;
 		return FastenURI.create(singleRow.component1(), singleRow.component2(), singleRow.component3(), singleRow.component4(), singleRow.component5());
 	}
-
 }
