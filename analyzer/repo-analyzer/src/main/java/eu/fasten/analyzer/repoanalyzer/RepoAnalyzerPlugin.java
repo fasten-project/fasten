@@ -1,10 +1,10 @@
 package eu.fasten.analyzer.repoanalyzer;
 
+import eu.fasten.analyzer.repoanalyzer.repo.RepoAnalyzer;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
