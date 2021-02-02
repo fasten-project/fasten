@@ -113,8 +113,13 @@ public class PredicateFactory {
 		if (map.size() > maxSize) map.removeLastLong();
 	}
 	
-    private FastenURI getCallableName(final long id) {
-        return FastenURI.create(dbContext.select(Callables.CALLABLES.FASTEN_URI).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(id)).fetchOne().component1());
+	/** Returns the {@link FastenURI} of a given {@link Callables#CALLABLES#ID}.
+	 * 
+	 * @param callableId the {@link Callables#CALLABLES#ID}.
+	 * @return the corresponding {@link FastenURI}.
+	 */
+    private FastenURI getCallableName(final long callableId, final DSLContext dbContext) {
+        return FastenURI.create(dbContext.select(Callables.CALLABLES.FASTEN_URI).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableId)).fetchOne().component1());
     }
 
 
@@ -179,6 +184,12 @@ public class PredicateFactory {
 		return jsonMetadata;
 	}
 	
+	/** Returns the metadata of a given callable for a specific source.
+	 * 
+	 * @param source the source of the metadata we want to obtain.
+	 * @param callableId the {@link Callables#CALLABLES#ID} of the callable under consideration.
+	 * @return the JSON metadata.
+	 */
 	private JSONObject getMetadata(final MetadataSource source, final long callableId) {
 		switch(source) {
 		case CALLABLE: return getCallableMetadata(callableId);
@@ -227,7 +238,7 @@ public class PredicateFactory {
 	 * @return the predicate.
 	 */
 	public FastenURIMatches fastenURIMatches(final Predicate<FastenURI> fastenURIPredicate) {
-		return x -> fastenURIPredicate.test(getCallableName(x));
+		return x -> fastenURIPredicate.test(getCallableName(x, dbContext));
 	}
 
 }
