@@ -189,7 +189,10 @@ public class SearchEngine {
 				switch(commandAndArgs[1].toLowerCase()) {
 				case "pmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
-					predicate = predicateFactory.fastenURIMatches(uri -> regExp.matcher(uri.getProduct()).matches());
+					predicate = predicateFactory.fastenURIMatches(uri -> {
+						System.out.println("MATCHING " + uri);
+						System.out.println("MATCHING " + uri.getProduct());
+						return regExp.matcher(uri.getProduct()).matches();});
 					break;
 				case "vmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
