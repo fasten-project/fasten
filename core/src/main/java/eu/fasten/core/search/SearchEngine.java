@@ -265,10 +265,12 @@ public class SearchEngine {
 		searchEngine.context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
 
 		final Scanner scanner = new Scanner(System.in);
-		while (scanner.hasNextLine()) {
+		for(;;) {
 			System.out.print(">");
 			System.out.flush();
+			if (!scanner.hasNextLine()) break;
 			String line = scanner.nextLine();
+			if (line.length() == 0) continue;
 			try {
 				final char dir = line.charAt(0);
 				line = line.substring(1);
