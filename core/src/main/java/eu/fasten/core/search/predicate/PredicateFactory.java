@@ -209,6 +209,7 @@ public class PredicateFactory {
 	 * @return the predicate.
 	 */
 	public MetadataContains metadataContains(final MetadataSource source, final String key) {
+		System.out.println("CHECKING: " + key);
 		return metadataContains(source, key, x -> true);
 	}
 
