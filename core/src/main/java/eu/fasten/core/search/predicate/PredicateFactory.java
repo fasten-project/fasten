@@ -238,7 +238,12 @@ public class PredicateFactory {
 	 * that satisfies the predicate.
 	 */
 	public MetadataContains metadataQueryJSONPointer(final MetadataSource source, final String jsonPointer, final Predicate<String> valuePredicate) {
-		return t -> valuePredicate.test(getMetadata(source, t).query(jsonPointer).toString());
+		return t -> {
+			System.out.println("METADATA: " + getMetadata(source, t));
+			System.out.println("JSONPointer: " + jsonPointer);
+			System.out.println("Query result: " + getMetadata(source, t).query(jsonPointer));
+			return valuePredicate.test(getMetadata(source, t).query(jsonPointer).toString());
+		};
 	}
 
 		
@@ -253,7 +258,7 @@ public class PredicateFactory {
 	
 	public static void main(String[] args) {
 	    var a = new JSONObject("{\"final\": false, \"access\": \"public\", \"superClasses\": [\"/it.unimi.dsi.webgraph/ImmutableGraph\", \"/java.lang/Object\"], \"superInterfaces\": [\"/it.unimi.dsi.lang/FlyweightPrototype\", \"/it.unimi.dsi.webgraph/CompressionFlags\"]}");
-	    System.out.println(a.query("/superClasses/0")); 
+	    System.out.println(a.query("/superInterfaces")); 
 	}
 
 }
