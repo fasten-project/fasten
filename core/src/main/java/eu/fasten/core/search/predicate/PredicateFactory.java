@@ -145,6 +145,9 @@ public class PredicateFactory {
 					.where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
 
 			moduleGID = queryResult.component2().longValue();
+			System.out.println(queryResult);
+			System.out.println(queryResult.component1());
+			System.out.println(queryResult.component1().data());
 			jsonMetadata = new JSONObject(queryResult.component1().data());
 			putLRUMap(callableGID2moduleGID, callableGID, moduleGID, LONG_MAP_MAXSIZE);
 			putLRUMap(moduleGID2moduleMetadata, moduleGID, jsonMetadata, METADATA_MAP_MAXSIZE);
