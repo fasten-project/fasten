@@ -199,7 +199,7 @@ public class PredicateFactory {
 	 * @return the predicate.
 	 */
 	public MetadataContains metadataContains(final MetadataSource source, final String key, final Predicate<String> valuePredicate) {
-		return t -> getMetadata(source, t).has(key) && valuePredicate.test(getCallableMetadata(t).getString(key));
+		return t -> getMetadata(source, t).has(key) && valuePredicate.test(getMetadata(source, t).getString(key));
 	}
 
 	/** A predicate that holds true if a given metadata contains a specific key. 
@@ -209,7 +209,6 @@ public class PredicateFactory {
 	 * @return the predicate.
 	 */
 	public MetadataContains metadataContains(final MetadataSource source, final String key) {
-		System.out.println("CHECKING: " + key);
 		return metadataContains(source, key, x -> true);
 	}
 

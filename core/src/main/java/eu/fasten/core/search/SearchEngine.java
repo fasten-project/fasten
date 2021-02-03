@@ -28,6 +28,8 @@ import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.management.RuntimeErrorException;
+
 import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.ClosestFirstIterator;
 import org.jooq.DSLContext;
@@ -160,12 +162,15 @@ public class SearchEngine {
 				"\t$help                           Help on commands\n" +
 				"\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" +
 				"\t$clear                          Clear filters\n" +
-				"\t$and pmatches <REGEXP>          Add filter: package (a.k.a. product) matches <REGEXP>\n" +
-				"\t$and vmatches <REGEXP>          Add filter: version matches <REGEXP>\n" +
-				"\t$and xmatches <REGEXP>          Add filter: path (namespace + entity) matches <REGEXP>\n" +
-				"\t$and cmd <KEY> [<VALREGEXP>]    Add filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" +
-				"\t$and mmd <KEY> [<VALREGEXP>]    Add filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" +
-				"\t$and pmd <KEY> [<VALREGEXP>]    Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$f pmatches <REGEXP>            Add filter: package (a.k.a. product) matches <REGEXP>\n" +
+				"\t$f vmatches <REGEXP>            Add filter: version matches <REGEXP>\n" +
+				"\t$f xmatches <REGEXP>            Add filter: path (namespace + entity) matches <REGEXP>\n" +
+				"\t$f cmd <KEY> [<VALREGEXP>]      Add filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$f mmd <KEY> [<VALREGEXP>]      Add filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$f pmd <KEY> [<VALREGEXP>]      Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$or                             The last two filters are substituted by their disjunction (or)\n" +
+				"\t$and                            The last two filters are substituted by their conjunction (and)\n" +
+				"\t$not                            The last filter is substituted by its negation (not)\n" +				
 				"";
 		try {
 			switch(commandAndArgs[0].toLowerCase()) {
@@ -183,7 +188,7 @@ public class SearchEngine {
 				predicateFilters.clear();
 				break;
 			
-			case "and":
+			case "f":
 				LongPredicate predicate = null;
 				Pattern regExp;
 				switch(commandAndArgs[1].toLowerCase()) {
@@ -217,7 +222,20 @@ public class SearchEngine {
 				default:
 					throw new RuntimeException("Unknown type of predicate " + commandAndArgs[1]);
 				}
-				if (predicate != null) predicateFilters.add(predicate);
+				if (predicate != null) predicateFilters.push(predicate);
+				break;
+				
+			case "and": case "or":
+				if (predicateFilters.size() < 2) throw new RuntimeException("At least two predicates must be present");
+				if ("and".equals(commandAndArgs[0].toLowerCase()))
+					predicateFilters.push(predicateFilters.pop().and(predicateFilters.pop()));
+				else
+					predicateFilters.push(predicateFilters.pop().or(predicateFilters.pop()));
+				break;
+				
+			case "not":
+				if (predicateFilters.size() < 1) throw new RuntimeException("At least one predicates must be present");
+				predicateFilters.push(predicateFilters.pop().negate());
 				break;
 			}
 		} catch (RuntimeException e) {
