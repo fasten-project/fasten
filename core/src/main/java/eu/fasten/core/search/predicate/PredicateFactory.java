@@ -145,10 +145,7 @@ public class PredicateFactory {
 					.where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
 
 			moduleGID = queryResult.component2().longValue();
-			System.out.println(queryResult);
-			System.out.println(queryResult.component1());
-			System.out.println(queryResult.component1().data());
-			jsonMetadata = new JSONObject(queryResult.component1().data());
+			jsonMetadata = moduleGID >=0? new JSONObject(queryResult.component1().data()) : null;
 			putLRUMap(callableGID2moduleGID, callableGID, moduleGID, LONG_MAP_MAXSIZE);
 			putLRUMap(moduleGID2moduleMetadata, moduleGID, jsonMetadata, METADATA_MAP_MAXSIZE);
 		}
@@ -172,7 +169,7 @@ public class PredicateFactory {
 					.where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
 			packageVersionGID = queryResult.component2().longValue();
 			moduleGID = queryResult.component3().longValue();
-			jsonMetadata = new JSONObject(queryResult.component1().data());
+			jsonMetadata = packageVersionGID >= 0 && moduleGID >= 0? new JSONObject(queryResult.component1().data()) : null;
 			putLRUMap(callableGID2moduleGID, callableGID, moduleGID, LONG_MAP_MAXSIZE);
 			putLRUMap(moduleGID2packageVersionGID, moduleGID, packageVersionGID, LONG_MAP_MAXSIZE);
 			putLRUMap(packageVersionGID2packageVersionMetadata, packageVersionGID, jsonMetadata, METADATA_MAP_MAXSIZE);
