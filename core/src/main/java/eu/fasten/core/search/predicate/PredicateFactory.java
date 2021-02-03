@@ -242,7 +242,7 @@ public class PredicateFactory {
 			var md = getMetadata(source, t);
 			var qr = md != null? md.query(jsonPointer) : null;
 			return md != null && qr != null && valuePredicate.test(qr.toString());
-		}
+		};
 	}
 
 		
