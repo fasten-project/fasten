@@ -59,18 +59,18 @@ public class CallableApiServiceImplTest {
 
     @Test
     void getCallableMetadataTest() {
-        var packageName = "pkg";
-        var version = "pkg ver";
+        var packageName = "group:artifact";
+        var version = "version";
         var callable = "callable uri";
         var response = "callable metadata";
         Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getCallableMetadata(packageName, version, callable);
+        var result = service.getCallableMetadata(packageName, version, callable, null);
         assertEquals(expected, result);
 
         Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
-        result = service.getCallableMetadata(packageName, version, callable);
-        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+        result = service.getCallableMetadata(packageName, version, callable, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(2)).getCallableMetadata(packageName, version, callable);
     }

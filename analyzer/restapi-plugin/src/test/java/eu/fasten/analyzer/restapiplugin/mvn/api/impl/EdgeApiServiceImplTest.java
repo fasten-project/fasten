@@ -44,12 +44,12 @@ public class EdgeApiServiceImplTest {
 
     @Test
     void getPackageEdgesTest() {
-        var packageName = "pkg";
-        var version = "pkg ver";
+        var packageName = "group:artifact";
+        var version = "version";
         var response = "edges";
         Mockito.when(kbDao.getPackageEdges(packageName, version, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageEdges(packageName, version, offset, limit);
+        var result = service.getPackageEdges(packageName, version, offset, limit, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getPackageEdges(packageName, version, offset, limit);
     }

@@ -56,10 +56,10 @@ public class ModuleApiTest {
         var version = "pkg version";
         var module = "module namespace";
         var response = new ResponseEntity<>("module metadata", HttpStatus.OK);
-        Mockito.when(service.getModuleMetadata(packageName, version, module)).thenReturn(response);
-        var result = api.getModuleMetadata(packageName, version, module);
+        Mockito.when(service.getModuleMetadata(packageName, version, module, null)).thenReturn(response);
+        var result = api.getModuleMetadata(packageName, version, module, null);
         assertEquals(response, result);
-        Mockito.verify(service).getModuleMetadata(packageName, version, module);
+        Mockito.verify(service).getModuleMetadata(packageName, version, module, null);
     }
 
     @Test

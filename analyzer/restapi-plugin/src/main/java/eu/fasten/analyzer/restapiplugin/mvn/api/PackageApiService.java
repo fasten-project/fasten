@@ -31,7 +31,8 @@ public interface PackageApiService {
                                               int limit);
 
     ResponseEntity<String> getPackageVersion(String package_name,
-                                             String package_version);
+                                             String package_version,
+                                             String artifactRepo);
 
     ResponseEntity<String> getPackageMetadata(String package_name,
                                               String package_version);
@@ -39,7 +40,8 @@ public interface PackageApiService {
     ResponseEntity<String> getPackageCallgraph(String package_name,
                                                String package_version,
                                                int offset,
-                                               int limit);
+                                               int limit,
+                                               String artifactRepo);
 
     ResponseEntity<String> searchPackageNames(String packageName, int offset, int limit);
 

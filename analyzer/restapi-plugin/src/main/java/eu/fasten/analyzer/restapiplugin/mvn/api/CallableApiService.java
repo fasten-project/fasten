@@ -30,7 +30,8 @@ public interface CallableApiService {
 
     ResponseEntity<String> getCallableMetadata(String package_name,
                                                String package_version,
-                                               String fasten_uri);
+                                               String fasten_uri,
+                                               String artifactRepo);
 
     ResponseEntity<String> getCallables(List<Long> callableIds);
 }

@@ -25,5 +25,6 @@ public interface EdgeApiService {
     ResponseEntity<String> getPackageEdges(String package_name,
                                            String package_version,
                                            int offset,
-                                           int limit);
+                                           int limit,
+                                           String artifactRepo);
 }

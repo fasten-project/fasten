@@ -20,21 +20,27 @@ package eu.fasten.analyzer.restapiplugin.mvn;
 
 import eu.fasten.core.data.Constants;
 import org.json.JSONObject;
+import java.sql.Timestamp;
 
 public class LazyIngestArtifactChecker {
 
     private static boolean hasArtifactBeenIngested(String packageName, String version) {
-        // TODO: See if artifact has been already ingested
-        return false;
+        return KnowledgeBaseConnector.kbDao.isArtifactIngested(packageName, version);
     }
 
-    public static void ingestArtifactIfNecessary(String packageName, String version) {
+    public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo) {
         if (!hasArtifactBeenIngested(packageName, version)) {
             var jsonRecord = new JSONObject();
             jsonRecord.put("groupId", packageName.split(Constants.mvnCoordinateSeparator)[0]);
             jsonRecord.put("artifactId", packageName.split(Constants.mvnCoordinateSeparator)[1]);
             jsonRecord.put("version", version);
-            KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
+            if (artifactRepo != null && !artifactRepo.isEmpty()) {
+                jsonRecord.put("artifactRepository", artifactRepo);
+            }
+            var id = KnowledgeBaseConnector.kbDao.insertIngestedArtifact(packageName, version, new Timestamp(System.currentTimeMillis()));
+            if (id != -1 && KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
+                KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
+            }
         }
     }
 }

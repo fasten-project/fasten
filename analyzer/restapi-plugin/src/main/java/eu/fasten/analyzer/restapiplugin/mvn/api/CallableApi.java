@@ -49,8 +49,9 @@ public class CallableApi {
     @PostMapping(value = "/mvn/packages/{pkg}/{pkg_ver}/callable/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getCallableMetadata(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
-                                               @RequestBody String fasten_uri) {
-        return service.getCallableMetadata(package_name, package_version, fasten_uri);
+                                               @RequestBody String fasten_uri,
+                                               @RequestParam(value = "artifactRepository", required = false) String artifactRepo) {
+        return service.getCallableMetadata(package_name, package_version, fasten_uri, artifactRepo);
     }
 
     @PostMapping(value = "/callables", produces = MediaType.APPLICATION_JSON_VALUE)

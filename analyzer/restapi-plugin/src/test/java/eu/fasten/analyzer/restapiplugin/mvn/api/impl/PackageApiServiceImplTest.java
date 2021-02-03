@@ -54,7 +54,7 @@ public class PackageApiServiceImplTest {
 
     @Test
     void getPackageLastVersionTest() {
-        var packageName = "pkg";
+        var packageName = "group:artifact";
         var response = "a package";
         Mockito.when(kbDao.getPackageLastVersion(packageName)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
@@ -70,7 +70,7 @@ public class PackageApiServiceImplTest {
 
     @Test
     void getPackageVersionsTest() {
-        var packageName = "pkg";
+        var packageName = "group:artifact";
         var response = "package versions";
         Mockito.when(kbDao.getPackageVersions(packageName, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
@@ -81,25 +81,25 @@ public class PackageApiServiceImplTest {
 
     @Test
     void getPackageVersionTest() {
-        var packageName = "pkg";
-        var version = "pkg version";
+        var packageName = "group:artifact";
+        var version = "version";
         var response = "package version";
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageVersion(packageName, version);
+        var result = service.getPackageVersion(packageName, version, null);
         assertEquals(expected, result);
 
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);
-        result = service.getPackageVersion(packageName, version);
-        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+        result = service.getPackageVersion(packageName, version, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(2)).getPackageVersion(packageName, version);
     }
 
     @Test
     void getPackageMetadataTest() {
-        var packageName = "pkg";
-        var version = "pkg version";
+        var packageName = "group:artifact";
+        var version = "version";
         var response = "package metadata";
         Mockito.when(kbDao.getPackageMetadata(packageName, version)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
@@ -115,19 +115,19 @@ public class PackageApiServiceImplTest {
 
     @Test
     void getPackageCallgraphTest() {
-        var packageName = "pkg";
-        var version = "pkg version";
+        var packageName = "group:artifact";
+        var version = "version";
         var response = "package callgraph";
         Mockito.when(kbDao.getPackageCallgraph(packageName, version, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageCallgraph(packageName, version, offset, limit);
+        var result = service.getPackageCallgraph(packageName, version, offset, limit, null);
         Mockito.verify(kbDao).getPackageCallgraph(packageName, version, offset, limit);
         assertEquals(expected, result);
     }
 
     @Test
     void searchPackageNamesTest() {
-        var packageName = "pkg";
+        var packageName = "group:artifact";
         var response = "matching package versions";
         Mockito.when(kbDao.searchPackageNames(packageName, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);

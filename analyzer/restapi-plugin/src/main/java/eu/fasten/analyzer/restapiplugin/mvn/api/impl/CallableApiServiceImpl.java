@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestArtifactChecker;
 import eu.fasten.analyzer.restapiplugin.mvn.api.CallableApiService;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
@@ -43,11 +44,13 @@ public class CallableApiServiceImpl implements CallableApiService {
     @Override
     public ResponseEntity<String> getCallableMetadata(String package_name,
                                                       String package_version,
-                                                      String fasten_uri) {
+                                                      String fasten_uri,
+                                                      String artifactRepo) {
         String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
                 package_name, package_version, fasten_uri);
         if (result == null) {
-            return new ResponseEntity<>("Callable not found", HttpStatus.NOT_FOUND);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);

@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestArtifactChecker;
 import eu.fasten.analyzer.restapiplugin.mvn.api.EdgeApiService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,9 +32,14 @@ public class EdgeApiServiceImpl implements EdgeApiService {
     public ResponseEntity<String> getPackageEdges(String package_name,
                                                   String package_version,
                                                   int offset,
-                                                  int limit) {
+                                                  int limit,
+                                                  String artifactRepo) {
         String result = KnowledgeBaseConnector.kbDao.getPackageEdges(
                 package_name, package_version, offset, limit);
+        if (result == null) {
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

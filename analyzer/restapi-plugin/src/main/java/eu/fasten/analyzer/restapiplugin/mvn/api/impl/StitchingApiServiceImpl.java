@@ -122,6 +122,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         DirectedGraph graph;
         if (needStitching) {
             var mavenCoordinate = KnowledgeBaseConnector.kbDao.getMavenCoordinate(packageVersionId);
+            if (mavenCoordinate == null) {
+                return new ResponseEntity<>("Package version ID not found", HttpStatus.NOT_FOUND);
+            }
             var groupId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[0];
             var artifactId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
             var version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];

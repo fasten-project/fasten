@@ -29,7 +29,8 @@ public interface ModuleApiService {
 
     ResponseEntity<String> getModuleMetadata(String package_name,
                                              String package_version,
-                                             String module_namespace);
+                                             String module_namespace,
+                                             String artifactRepo);
 
     ResponseEntity<String> getModuleFiles(String package_name,
                                           String package_version,

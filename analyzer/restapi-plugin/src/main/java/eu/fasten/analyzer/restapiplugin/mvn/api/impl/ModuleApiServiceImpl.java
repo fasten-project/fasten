@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestArtifactChecker;
 import eu.fasten.analyzer.restapiplugin.mvn.api.ModuleApiService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,11 +42,13 @@ public class ModuleApiServiceImpl implements ModuleApiService {
     @Override
     public ResponseEntity<String> getModuleMetadata(String package_name,
                                                     String package_version,
-                                                    String module_namespace) {
+                                                    String module_namespace,
+                                                    String artifactRepo) {
         String result = KnowledgeBaseConnector.kbDao.getModuleMetadata(
                 package_name, package_version, module_namespace);
         if (result == null) {
-            return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);

@@ -57,10 +57,10 @@ public class CallableApiTest {
         var version = "pkg version";
         var callable = "callable";
         var response = new ResponseEntity<>("callable metadata", HttpStatus.OK);
-        Mockito.when(service.getCallableMetadata(packageName, version, callable)).thenReturn(response);
-        var result = api.getCallableMetadata(packageName, version, callable);
+        Mockito.when(service.getCallableMetadata(packageName, version, callable, null)).thenReturn(response);
+        var result = api.getCallableMetadata(packageName, version, callable, null);
         assertEquals(response, result);
-        Mockito.verify(service).getCallableMetadata(packageName, version, callable);
+        Mockito.verify(service).getCallableMetadata(packageName, version, callable, null);
     }
 
     @Test

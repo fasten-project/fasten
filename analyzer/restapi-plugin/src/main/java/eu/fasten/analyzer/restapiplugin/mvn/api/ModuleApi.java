@@ -50,8 +50,9 @@ public class ModuleApi {
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getModuleMetadata(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
-                                             @RequestBody String module_namespace) {
-        return service.getModuleMetadata(package_name, package_version, module_namespace);
+                                             @RequestBody String module_namespace,
+                                             @RequestParam(value = "artifactRepository", required = false) String artifactRepo) {
+        return service.getModuleMetadata(package_name, package_version, module_namespace, artifactRepo);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/files", produces = MediaType.APPLICATION_JSON_VALUE)
