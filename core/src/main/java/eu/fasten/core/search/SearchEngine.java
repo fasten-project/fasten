@@ -156,20 +156,22 @@ public class SearchEngine {
 	 */
 	private void executeCommand(final String command) {
 		String[] commandAndArgs = command.split("\\s"); // Split command on whitespace
-		
+		String help = 
+				"\t$help\t\tHelp on commands\n" +
+				"\t$limit <LIMIT>\t\tPrint at most <LIMIT> results (-1 for infinity)\n" +
+				"\t$clear\t\tClear filters\n" +
+				"\t$and pmatches <REGEXP>\t\tAdd filter: package (a.k.a. product) matches <REGEXP>\n" +
+				"\t$and vmatches <REGEXP>\t\tAdd filter: version matches <REGEXP>\n" +
+				"\t$and xmatches <REGEXP>\t\tAdd filter: path (namespace + entity) matches <REGEXP>\n" +
+				"\t$and cmd <KEY> [<VALREGEXP>]\t\tAdd filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$and mmd <KEY> [<VALREGEXP>]\t\tAdd filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$and pmd <KEY> [<VALREGEXP>]\t\tAdd filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"";
 		try {
 			switch(commandAndArgs[0].toLowerCase()) {
 			
 			case "help":
-				System.err.println("\t$help\t\tHelp on commands");
-				System.err.println("\t$limit <LIMIT>\t\tPrint at most <LIMIT> results (-1 for infinity)");
-				System.err.println("\t$clear\t\tClear filters");
-				System.err.println("\t$and pmatches <REGEXP>\t\tAdd filter: package (a.k.a. product) matches <REGEXP>");
-				System.err.println("\t$and vmatches <REGEXP>\t\tAdd filter: version matches <REGEXP>");
-				System.err.println("\t$and xmatches <REGEXP>\t\tAdd filter: path (namespace + entity) matches <REGEXP>");
-				System.err.println("\t$and cmd <KEY> [<VALREGEXP>]\t\tAdd filter: callable metadata contains key <KEY> (satisfying <REGEXP>)");
-				System.err.println("\t$and mmd <KEY> [<VALREGEXP>]\t\tAdd filter: module metadata contains key <KEY> (satisfying <REGEXP>)");
-				System.err.println("\t$and pmd <KEY> [<VALREGEXP>]\t\tAdd filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)");
+				System.err.println(help);
 				break;
 				
 			case "limit":
@@ -221,6 +223,7 @@ public class SearchEngine {
 		} catch (RuntimeException e) {
 			System.err.println("Exception while executing command " + command);
 			e.printStackTrace(System.err);
+			System.err.println(help);
 		}
 	}
 
@@ -399,7 +402,7 @@ public class SearchEngine {
 					System.err.println("Unknown URI " + uri);
 					continue;
 				}
-				final var r = dir == '+' ? searchEngine.fromCallable(gid, x -> true) : searchEngine.toCallable(gid, x -> true);
+				final var r = dir == '+' ? searchEngine.fromCallable(gid) : searchEngine.toCallable(gid);
 				for(int i = 0; i < Math.min(searchEngine.limit, r.size()); i++)
 					System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, searchEngine.context) + "\t" + r.get(i).score);
 			} catch (final Exception e) {
