@@ -189,18 +189,15 @@ public class SearchEngine {
 				switch(commandAndArgs[1].toLowerCase()) {
 				case "pmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
-					predicate = predicateFactory.fastenURIMatches(uri -> {
-						System.out.println("MATCHING " + uri);
-						System.out.println("MATCHING " + uri.getProduct());
-						return regExp.matcher(uri.getProduct()).matches();});
+					predicate = predicateFactory.fastenURIMatches(uri -> uri.getProduct() != null && regExp.matcher(uri.getProduct()).matches());
 					break;
 				case "vmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
-					predicate = predicateFactory.fastenURIMatches(uri -> regExp.matcher(uri.getVersion()).matches());
+					predicate = predicateFactory.fastenURIMatches(uri -> uri.getVersion() != null && uri -> regExp.matcher(uri.getVersion()).matches());
 					break;
 				case "xmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
-					predicate = predicateFactory.fastenURIMatches(uri -> regExp.matcher(uri.getPath()).matches());
+					predicate = predicateFactory.fastenURIMatches(uri -> uri.getPath() != null && uri -> regExp.matcher(uri.getPath()).matches());
 					break;
 				case "cmd": case "mmd": case "pmd":
 					String key = commandAndArgs[3];
