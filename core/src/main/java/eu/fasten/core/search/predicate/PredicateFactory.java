@@ -237,7 +237,7 @@ public class PredicateFactory {
 	 * @return true iff the metadata {@link JSONObject} matches the jsonPointer and the corresponding value has a string representation
 	 * that satisfies the predicate.
 	 */
-	public MetadataContains metadataMatchesJSONPointer(final MetadataSource source, final String jsonPointer, final Predicate<String> valuePredicate) {
+	public MetadataContains metadataQueryJSONPointer(final MetadataSource source, final String jsonPointer, final Predicate<String> valuePredicate) {
 		return t -> valuePredicate.test(getMetadata(source, t).query(jsonPointer).toString());
 	}
 

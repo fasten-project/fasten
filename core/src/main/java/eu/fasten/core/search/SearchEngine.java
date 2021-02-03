@@ -168,6 +168,9 @@ public class SearchEngine {
 				"\t$f cmd <KEY> [<VALREGEXP>]      Add filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" +
 				"\t$f mmd <KEY> [<VALREGEXP>]      Add filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" +
 				"\t$f pmd <KEY> [<VALREGEXP>]      Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$f cmdjp <JP> <VALREGEXP>       Add filter: callable metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
+				"\t$f mmdjp <JP> <VALREGEXP>       Add filter: module metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
+				"\t$f pmdjp <JP> <VALREGEXP>       Add filter: package+version metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
 				"\t$or                             The last two filters are substituted by their disjunction (or)\n" +
 				"\t$and                            The last two filters are substituted by their conjunction (and)\n" +
 				"\t$not                            The last filter is substituted by its negation (not)\n" +
@@ -192,6 +195,7 @@ public class SearchEngine {
 			case "f":
 				LongPredicate predicate = null;
 				Pattern regExp;
+				MetadataSource mds;
 				switch(commandAndArgs[1].toLowerCase()) {
 				case "pmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
@@ -205,9 +209,9 @@ public class SearchEngine {
 					regExp = Pattern.compile(commandAndArgs[2]);
 					predicate = predicateFactory.fastenURIMatches(uri -> uri.getPath() != null && regExp.matcher(uri.getPath()).matches());
 					break;
-				case "cmd": case "mmd": case "pmd":
+				case "cmd": case "mmd": case "pmd": 
 					String key = commandAndArgs[2];
-					MetadataSource mds = null;
+					mds = null;
 					switch (commandAndArgs[1].toLowerCase().charAt(0)) {
 					case 'c':  mds = MetadataSource.CALLABLE; break;
 					case 'm':  mds = MetadataSource.MODULE; break;
@@ -219,6 +223,18 @@ public class SearchEngine {
 				 		regExp = Pattern.compile(commandAndArgs[3]);
 				 		predicate = predicateFactory.metadataContains(mds, key, regExp.asPredicate());
 				 	}
+				 	break;
+				case "cmdjp": case "mmdjp": case "pmdjp": 
+					String jsonPointer = commandAndArgs[2];
+					mds = null;
+					switch (commandAndArgs[1].toLowerCase().charAt(0)) {
+					case 'c':  mds = MetadataSource.CALLABLE; break;
+					case 'm':  mds = MetadataSource.MODULE; break;
+					case 'p':  mds = MetadataSource.PACKAGE_VERSION; break;
+					default: throw new RuntimeException("Cannot happen"); 
+					}
+				 	regExp = Pattern.compile(commandAndArgs[3]);
+				 	predicate = predicateFactory.metadataQueryJSONPointer(mds, jsonPointer, regExp.asPredicate());
 				 	break;
 				default:
 					throw new RuntimeException("Unknown type of predicate " + commandAndArgs[1]);
