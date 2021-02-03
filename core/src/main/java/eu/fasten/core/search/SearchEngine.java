@@ -157,15 +157,15 @@ public class SearchEngine {
 	private void executeCommand(final String command) {
 		String[] commandAndArgs = command.split("\\s"); // Split command on whitespace
 		String help = 
-				"\t$help\t\tHelp on commands\n" +
-				"\t$limit <LIMIT>\t\tPrint at most <LIMIT> results (-1 for infinity)\n" +
-				"\t$clear\t\tClear filters\n" +
-				"\t$and pmatches <REGEXP>\t\tAdd filter: package (a.k.a. product) matches <REGEXP>\n" +
-				"\t$and vmatches <REGEXP>\t\tAdd filter: version matches <REGEXP>\n" +
-				"\t$and xmatches <REGEXP>\t\tAdd filter: path (namespace + entity) matches <REGEXP>\n" +
-				"\t$and cmd <KEY> [<VALREGEXP>]\t\tAdd filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" +
-				"\t$and mmd <KEY> [<VALREGEXP>]\t\tAdd filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" +
-				"\t$and pmd <KEY> [<VALREGEXP>]\t\tAdd filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$help                           Help on commands\n" +
+				"\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" +
+				"\t$clear                          Clear filters\n" +
+				"\t$and pmatches <REGEXP>          Add filter: package (a.k.a. product) matches <REGEXP>\n" +
+				"\t$and vmatches <REGEXP>          Add filter: version matches <REGEXP>\n" +
+				"\t$and xmatches <REGEXP>          Add filter: path (namespace + entity) matches <REGEXP>\n" +
+				"\t$and cmd <KEY> [<VALREGEXP>]    Add filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$and mmd <KEY> [<VALREGEXP>]    Add filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$and pmd <KEY> [<VALREGEXP>]    Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" +
 				"";
 		try {
 			switch(commandAndArgs[0].toLowerCase()) {
@@ -193,14 +193,14 @@ public class SearchEngine {
 					break;
 				case "vmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
-					predicate = predicateFactory.fastenURIMatches(uri -> uri.getVersion() != null && uri -> regExp.matcher(uri.getVersion()).matches());
+					predicate = predicateFactory.fastenURIMatches(uri -> uri.getVersion() != null && regExp.matcher(uri.getVersion()).matches());
 					break;
 				case "xmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
-					predicate = predicateFactory.fastenURIMatches(uri -> uri.getPath() != null && uri -> regExp.matcher(uri.getPath()).matches());
+					predicate = predicateFactory.fastenURIMatches(uri -> uri.getPath() != null && regExp.matcher(uri.getPath()).matches());
 					break;
 				case "cmd": case "mmd": case "pmd":
-					String key = commandAndArgs[3];
+					String key = commandAndArgs[2];
 					MetadataSource mds = null;
 					switch (commandAndArgs[1].toLowerCase().charAt(0)) {
 					case 'c':  mds = MetadataSource.CALLABLE; break;
@@ -208,9 +208,9 @@ public class SearchEngine {
 					case 'p':  mds = MetadataSource.PACKAGE_VERSION; break;
 					default: throw new RuntimeException("Cannot happen"); 
 					}
-				 	if (commandAndArgs.length == 4) predicate = predicateFactory.metadataContains(MetadataSource.CALLABLE, key);
+				 	if (commandAndArgs.length == 3) predicate = predicateFactory.metadataContains(MetadataSource.CALLABLE, key);
 				 	else {
-				 		regExp = Pattern.compile(commandAndArgs[4]);
+				 		regExp = Pattern.compile(commandAndArgs[3]);
 				 		predicate = predicateFactory.metadataContains(MetadataSource.CALLABLE, key, regExp.asPredicate());
 				 	}
 				 	break;
