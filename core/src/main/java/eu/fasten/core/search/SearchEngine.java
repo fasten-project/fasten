@@ -55,8 +55,9 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.DatabaseMerger;
+import eu.fasten.core.search.predicate.CachingPredicateFactory;
+import eu.fasten.core.search.predicate.CachingPredicateFactory.MetadataSource;
 import eu.fasten.core.search.predicate.PredicateFactory;
-import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -68,7 +69,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
  * Instances of this class access the metadata Postgres database and the RocksDB database of
  * revision call graphs. Users can interrogate the engine by providing an entry point (e.g., a
  * callable) and a {@link LongPredicate} that will be used to filter the results. For more
- * documentation on the available filters, see {@link PredicateFactory}.
+ * documentation on the available filters, see {@link CachingPredicateFactory}.
  */
 
 public class SearchEngine {
@@ -143,7 +144,7 @@ public class SearchEngine {
 		this.rocksDao = rocksDao;
 		resolver = new GraphMavenResolver();
 		resolver.buildDependencyGraph(null, resolverGraph);
-		this.predicateFactory = new PredicateFactory(context);
+		this.predicateFactory = new CachingPredicateFactory(context);
 	}
 
 	public long gid2Rev(final long gid) {
