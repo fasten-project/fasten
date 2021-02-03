@@ -907,6 +907,37 @@ public class MetadataDao {
                 .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equalIgnoreCase(version));
     }
 
+    protected boolean assertPackageExistence(String name, String version) {
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+
+        Record selectPackage = context
+                .select(p.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .where(packageVersionWhereClause(name, version))
+                .fetchOne();
+
+        return selectPackage != null;
+    }
+
+    protected boolean assertModulesExistence(String name, String version, String namespace) {
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+
+        Record selectModule = context
+                .select(m.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .where(packageVersionWhereClause(name, version))
+                .and(m.NAMESPACE.equalIgnoreCase(namespace))
+                .fetchOne();
+
+        return selectModule != null;
+    }
+
     public String getPackageLastVersion(String packageName) {
 
         // Tables
@@ -1031,6 +1062,8 @@ public class MetadataDao {
      */
     public String getPackageDependencies(String packageName, String packageVersion, int offset, int limit) {
 
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1056,6 +1089,9 @@ public class MetadataDao {
                                     String packageVersion,
                                     int offset,
                                     int limit) {
+
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1119,17 +1155,7 @@ public class MetadataDao {
                                  int offset,
                                  int limit) {
 
-        // SQL query
-        /*
-            SELECT f.*
-            FROM packages AS p
-                JOIN package_versions AS pv ON p.id = pv.package_id
-                JOIN modules AS m ON pv.id = m.package_version_id
-                JOIN files AS f ON pv.id = f.package_version_id
-            WHERE p.package_name = <packageName>
-                AND pv.version = <packageVersion>
-                AND m.namespace = <moduleNamespace>
-        */
+        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1161,13 +1187,15 @@ public class MetadataDao {
                                      int offset,
                                      int limit) {
 
+        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
 
-        // Query
+        // Main Query
         Result<Record> queryResult = context
                 .select(c.fields())
                 .from(p)
@@ -1186,6 +1214,8 @@ public class MetadataDao {
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) {
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1251,6 +1281,7 @@ public class MetadataDao {
                                        String binaryModule,
                                        int offset,
                                        int limit) {
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1277,6 +1308,9 @@ public class MetadataDao {
     }
 
     public String getPackageCallables(String packageName, String packageVersion, int offset, int limit) {
+
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1418,15 +1452,7 @@ public class MetadataDao {
 
     public String getPackageFiles(String packageName, String packageVersion, int offset, int limit) {
 
-        // SQL query
-        /*
-            SELECT f.*
-            FROM packages AS p
-                JOIN package_versions AS pv ON p.id = pv.package_id
-                JOIN files AS f ON pv.id = f.package_version_id
-            WHERE p.package_name = <packageName>
-                AND pv.version = <packageVersion>
-        */
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1463,17 +1489,7 @@ public class MetadataDao {
                                   int offset,
                                   int limit) {
 
-        // SQL query
-        /*
-            SELECT {e.* | (e.source_id, e.target_id)}
-            FROM edges AS e
-                JOIN callables AS c ON e.source_id = c.id
-                JOIN modules AS m ON m.id = c.module_id
-                JOIN package_versions AS pv ON pv.id = m.package_version_id
-                JOIN packages AS p ON p.id = pv.package_id
-            WHERE p.package_name = <packageName>
-                AND pv.version = <packageVersion>;
-         */
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;

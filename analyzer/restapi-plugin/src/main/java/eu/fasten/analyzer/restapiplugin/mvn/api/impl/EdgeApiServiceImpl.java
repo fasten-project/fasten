@@ -34,6 +34,9 @@ public class EdgeApiServiceImpl implements EdgeApiService {
                                                   int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageEdges(
                 package_name, package_version, offset, limit);
+        if (result == null) {
+            return new ResponseEntity<>("Package not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

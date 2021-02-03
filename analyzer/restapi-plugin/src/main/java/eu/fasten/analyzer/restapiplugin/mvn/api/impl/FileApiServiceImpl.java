@@ -34,6 +34,9 @@ public class FileApiServiceImpl implements FileApiService {
                                                   int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageFiles(
                 package_name, package_version, offset, limit);
+        if (result == null) {
+            return new ResponseEntity<>("Package not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
