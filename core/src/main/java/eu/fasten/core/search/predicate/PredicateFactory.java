@@ -202,7 +202,7 @@ public class PredicateFactory {
 	 * @return the predicate.
 	 */
 	public MetadataContains metadataContains(final MetadataSource source, final String key, final Predicate<String> valuePredicate) {
-		return t -> getMetadata(source, t).has(key) && valuePredicate.test(getMetadata(source, t).get(key).toString());
+		return t -> getMetadata(source, t) != null && getMetadata(source, t).has(key) && valuePredicate.test(getMetadata(source, t).get(key).toString());
 	}
 
 	/** A predicate that holds true if a given metadata contains a specific key. 
@@ -238,12 +238,7 @@ public class PredicateFactory {
 	 * that satisfies the predicate.
 	 */
 	public MetadataContains metadataQueryJSONPointer(final MetadataSource source, final String jsonPointer, final Predicate<String> valuePredicate) {
-		return t -> {
-			System.out.println("METADATA: " + getMetadata(source, t));
-			System.out.println("JSONPointer: " + jsonPointer);
-			System.out.println("Query result: " + getMetadata(source, t).query(jsonPointer));
-			return valuePredicate.test(getMetadata(source, t).query(jsonPointer).toString());
-		};
+		return t -> getMetadata(source, t) != null && valuePredicate.test(getMetadata(source, t).query(jsonPointer).toString());
 	}
 
 		
