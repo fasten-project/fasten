@@ -213,10 +213,10 @@ public class SearchEngine {
 					case 'p':  mds = MetadataSource.PACKAGE_VERSION; break;
 					default: throw new RuntimeException("Cannot happen"); 
 					}
-				 	if (commandAndArgs.length == 3) predicate = predicateFactory.metadataContains(MetadataSource.CALLABLE, key);
+				 	if (commandAndArgs.length == 3) predicate = predicateFactory.metadataContains(mds, key);
 				 	else {
 				 		regExp = Pattern.compile(commandAndArgs[3]);
-				 		predicate = predicateFactory.metadataContains(MetadataSource.CALLABLE, key, regExp.asPredicate());
+				 		predicate = predicateFactory.metadataContains(mds, key, regExp.asPredicate());
 				 	}
 				 	break;
 				default:
