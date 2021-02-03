@@ -197,11 +197,12 @@ public class PredicateFactory {
 	 * 
 	 * @param source the source containing the metadata.
 	 * @param key the (exact) key that the callable must contain.
-	 * @param valuePredicate the predicate that the value must satisfy.
+	 * @param valuePredicate the predicate that the value must satisfy. It can be of any type, but its {@link #toString()} method
+	 * is used to get the value.
 	 * @return the predicate.
 	 */
 	public MetadataContains metadataContains(final MetadataSource source, final String key, final Predicate<String> valuePredicate) {
-		return t -> getMetadata(source, t).has(key) && valuePredicate.test(getMetadata(source, t).getString(key));
+		return t -> getMetadata(source, t).has(key) && valuePredicate.test(getMetadata(source, t).get(key).toString());
 	}
 
 	/** A predicate that holds true if a given metadata contains a specific key. 
@@ -218,22 +219,26 @@ public class PredicateFactory {
 	 * 
 	 * @param source the source containing the metadata.
 	 * @param key the (exact) key that the callable must contain.
-	 * @param value the (exact) value that the callable must contain associated with the key. It must be of String type.
+	 * @param value the (exact) string value that the callable must contain associated with the key. It can be of any type, but its {@link #toString()} method
+	 * is used to get the value.
 	 * @return the predicate.
 	 */
 	public MetadataContains metadataContains(final MetadataSource source, final String key, final String value) {
 		return metadataContains(source, key, x -> value.equals(x));
 	}
 	
-	/** A predicate that holds true if a given metadata matches a certain {@link org.json.JSONPointer}. 
+	/** A predicate that holds true if a given metadata, queried with a certain {@link org.json.JSONPointer}, has
+	 *  a string value satisfying some predicate. 
 	 * 
 	 * @param source the source containing the metadata.
-	 * @param key the (exact) key that the callable must contain.
 	 * @param jsonPointer the {@link org.json.JSONPointer} (<a href="https://tools.ietf.org/html/rfc6901">RFC 6901</a>).
-	 * @return true iff the metadata contains the key and its associated {@link JSONObject} matches the jsonPointer.
+	 * @param valuePredicate a predicate that is matched against the value returned {@linkplain JSONObject#query(String) by the JSONPointer
+	 * query}, after {@linkplain #toString() conversion to a string}. 
+	 * @return true iff the metadata {@link JSONObject} matches the jsonPointer and the corresponding value has a string representation
+	 * that satisfies the predicate.
 	 */
-	public MetadataContains metadataMatchesJSONPointer(final MetadataSource source, final String key, final String jsonPointer) {
-		return t -> getMetadata(source, t).has(key) && getMetadata(source, t).query(jsonPointer) != null;
+	public MetadataContains metadataMatchesJSONPointer(final MetadataSource source, final String jsonPointer, final Predicate<String> valuePredicate) {
+		return t -> valuePredicate.test(getMetadata(source, t).query(jsonPointer).toString());
 	}
 
 		
@@ -244,6 +249,11 @@ public class PredicateFactory {
 	 */
 	public FastenURIMatches fastenURIMatches(final Predicate<FastenURI> fastenURIPredicate) {
 		return x -> fastenURIPredicate.test(Util.getCallableName(x, dbContext));
+	}
+	
+	public static void main(String[] args) {
+	    var a = new JSONObject("{\"final\": false, \"access\": \"public\", \"superClasses\": [\"/it.unimi.dsi.webgraph/ImmutableGraph\", \"/java.lang/Object\"], \"superInterfaces\": [\"/it.unimi.dsi.lang/FlyweightPrototype\", \"/it.unimi.dsi.webgraph/CompressionFlags\"]}");
+	    System.out.println(a.query("/superClasses/0")); 
 	}
 
 }
