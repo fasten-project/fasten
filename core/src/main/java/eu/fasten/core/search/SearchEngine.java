@@ -170,7 +170,8 @@ public class SearchEngine {
 				"\t$f pmd <KEY> [<VALREGEXP>]      Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" +
 				"\t$or                             The last two filters are substituted by their disjunction (or)\n" +
 				"\t$and                            The last two filters are substituted by their conjunction (and)\n" +
-				"\t$not                            The last filter is substituted by its negation (not)\n" +				
+				"\t$not                            The last filter is substituted by its negation (not)\n" +
+				"\t±<URI>                          Find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" +
 				"";
 		try {
 			switch(commandAndArgs[0].toLowerCase()) {
