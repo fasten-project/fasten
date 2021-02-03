@@ -72,6 +72,8 @@ public class PredicateFactory {
 	public PredicateFactory(final DSLContext dbContext) {
 		this.dbContext = dbContext;
 		this.callableGID2callableMetadata = new Long2ObjectLinkedOpenHashMap<>();
+		this.moduleGID2moduleMetadata = new Long2ObjectLinkedOpenHashMap<>();
+		this.packageVersionGID2packageVersionMetadata = new Long2ObjectLinkedOpenHashMap<>();
 		this.callableGID2moduleGID = new Long2LongLinkedOpenHashMap();
 		callableGID2moduleGID.defaultReturnValue(-1);
 		this.moduleGID2packageVersionGID = new Long2LongLinkedOpenHashMap();
