@@ -25,6 +25,8 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.function.LongPredicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.ClosestFirstIterator;
@@ -69,6 +71,10 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 public class SearchEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngine.class);
 
+	/** The regular expression for commands. */
+	private static Pattern COMMAND_REGEXP = Pattern.compile("\\?\\s*(.*)\\s*"); 
+	
+	
 	public final static class Result {
 		public long gid;
 		public double score;
@@ -90,6 +96,8 @@ public class SearchEngine {
 	private final RocksDao rocksDao;
 	/** The resolver. */
 	private final GraphMavenResolver resolver;
+	/** The maximum number of results that should be printed. */
+	private int limit;
 
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
@@ -130,6 +138,24 @@ public class SearchEngine {
 		return context.select(PackageVersions.PACKAGE_VERSIONS.ID).from(PackageVersions.PACKAGE_VERSIONS).
 				join(Modules.MODULES).on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID)).
 				join(Callables.CALLABLES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID)).where(Callables.CALLABLES.ID.eq(Long.valueOf(gid))).fetchOne().component1().longValue();
+	}
+
+	/** Executes a given command.
+	 * 
+	 * @param command the command.
+	 */
+	private void executeCommand(final String command) {
+		String[] commandAndArgs = command.split("\\s"); // Split command on whitespace
+		
+		switch(commandAndArgs[0].toLowerCase()) {
+		case "help":
+			System.err.println("\t?help\t\tHelp on commands");
+			System.err.println("\t?limit <LIMIT>\t\tPrint at most <LIMIT> results");
+			break;
+		case "limit":
+			limit = Integer.parseInt(commandAndArgs[1]);
+			break;
+		}
 	}
 
 	/**
@@ -266,11 +292,16 @@ public class SearchEngine {
 
 		final Scanner scanner = new Scanner(System.in);
 		for(;;) {
-			System.out.print(">");
+			System.out.print("[?help for help]>");
 			System.out.flush();
 			if (!scanner.hasNextLine()) break;
 			String line = scanner.nextLine();
 			if (line.length() == 0) continue;
+			Matcher matcher = COMMAND_REGEXP.matcher(line);
+			if (matcher.matches()) {
+				searchEngine.executeCommand(matcher.group(1));
+				continue;
+			}
 			try {
 				final char dir = line.charAt(0);
 				line = line.substring(1);
@@ -281,7 +312,7 @@ public class SearchEngine {
 					continue;
 				}
 				final var r = dir == '+' ? searchEngine.fromCallable(gid, x -> true) : searchEngine.toCallable(gid, x -> true);
-				for(int i = 0; i < Math.min(10, r.size()); i++)
+				for(int i = 0; i < Math.min(searchEngine.limit, r.size()); i++)
 					System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, searchEngine.context) + "\t" + r.get(i).score);
 			} catch (final Exception e) {
 				e.printStackTrace();
