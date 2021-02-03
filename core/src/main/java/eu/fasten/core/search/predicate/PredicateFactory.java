@@ -238,7 +238,11 @@ public class PredicateFactory {
 	 * that satisfies the predicate.
 	 */
 	public MetadataContains metadataQueryJSONPointer(final MetadataSource source, final String jsonPointer, final Predicate<String> valuePredicate) {
-		return t -> getMetadata(source, t) != null && valuePredicate.test(getMetadata(source, t).query(jsonPointer).toString());
+		return t -> {
+			var md = getMetadata(source, t);
+			var qr = md != null? md.query(jsonPointer) : null;
+			return md != null && qr != null && valuePredicate.test(qr.toString());
+		}
 	}
 
 		
