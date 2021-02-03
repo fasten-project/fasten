@@ -218,13 +218,25 @@ public class PredicateFactory {
 	 * 
 	 * @param source the source containing the metadata.
 	 * @param key the (exact) key that the callable must contain.
-	 * @param value the (exact) value that the callable must contain associated with the key.
+	 * @param value the (exact) value that the callable must contain associated with the key. It must be of String type.
 	 * @return the predicate.
 	 */
 	public MetadataContains metadataContains(final MetadataSource source, final String key, final String value) {
 		return metadataContains(source, key, x -> value.equals(x));
 	}
 	
+	/** A predicate that holds true if a given metadata matches a certain {@link org.json.JSONPointer}. 
+	 * 
+	 * @param source the source containing the metadata.
+	 * @param key the (exact) key that the callable must contain.
+	 * @param jsonPointer the {@link org.json.JSONPointer} (<a href="https://tools.ietf.org/html/rfc6901">RFC 6901</a>).
+	 * @return true iff the metadata contains the key and its associated {@link JSONObject} matches the jsonPointer.
+	 */
+	public MetadataContains metadataMatchesJSONPointer(final MetadataSource source, final String key, final String jsonPointer) {
+		return t -> getMetadata(source, t).has(key) && getMetadata(source, t).query(jsonPointer) != null;
+	}
+
+		
 	/** A predicate that holds true if the callable {@link FastenURI} matches a certain predicate.
 	 * 
 	 * @param fastenURIPredicate the predicate that the callable {@link FastenURI} is matched against.
