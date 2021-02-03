@@ -3,8 +3,11 @@ package eu.fasten.analyzer.repoanalyzer.repo;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -50,11 +53,19 @@ public class RepoAnalyzer {
             return statistics;
         }
 
-        statistics.put("statementCoverage", 0);
+        var testBodies = getJUnitTests(testFiles);
+        int numberOfUnitTests = testBodies.values().stream()
+                .map(List::size)
+                .reduce(0, Integer::sum);
+        statistics.put("unitTests", numberOfUnitTests);
+
         statistics.put("filesWithMockitoImport", 0);
-        statistics.put("unitTests", 0);
+
+
         statistics.put("unitTestsWithMocks", 0);
         statistics.put("mockingRatio", 0);
+
+        statistics.put("statementCoverage", 0);
 
         return statistics;
     }
@@ -67,14 +78,12 @@ public class RepoAnalyzer {
      * @return list of files
      * @throws IOException if I/O exception occurs when accessing root file
      */
-    public List<File> getMatchingFiles(final File directory, final List<String> patterns) throws IOException {
+    public List<Path> getMatchingFiles(final File directory, final List<String> patterns) throws IOException {
         var predicate = patterns.stream()
                 .map(p -> Pattern.compile(p).asPredicate())
                 .reduce(x -> false, Predicate::or);
         return Files.walk(directory.toPath())
-                .map(p -> p.getFileName().toString())
-                .filter(predicate)
-                .map(File::new)
+                .filter(f -> predicate.test(f.getFileName().toString()))
                 .collect(Collectors.toList());
     }
 
@@ -118,5 +127,48 @@ public class RepoAnalyzer {
         patterns.add("^.*TestCase\\.java");
 
         return patterns;
+    }
+
+    /**
+     * Get a map of files as keys and a list of test bodies as value.
+     *
+     * @param testClasses paths to test classes
+     * @return a map of files and test bodies
+     * @throws IOException if I/O exception occurs when reading a file
+     */
+    public Map<Path, List<String>> getJUnitTests(final List<Path> testClasses) throws IOException {
+        var testBodies = new HashMap<Path, List<String>>();
+        for (var testClass : testClasses) {
+            String content = Files.readString(testClass);
+
+            var unitTests = content.split("@Test");
+
+            var pseudoStack = 0;
+            for (int i = 1; i < unitTests.length; i++) {
+                var currIndex = 0;
+                while (currIndex == 0 || pseudoStack != 0) {
+                    var open = unitTests[i].indexOf("{", currIndex);
+                    var close = unitTests[i].indexOf("}", currIndex);
+
+                    open = open == -1 ? Integer.MAX_VALUE : open;
+                    close = close == -1 ? Integer.MAX_VALUE : close;
+
+                    if (open == Integer.MAX_VALUE && close == Integer.MAX_VALUE) {
+                        break;
+                    }
+
+                    if (open < close) {
+                        pseudoStack++;
+                        currIndex = open + 1;
+                    } else {
+                        pseudoStack--;
+                        currIndex = close + 1;
+                    }
+                }
+                testBodies.putIfAbsent(testClass, new ArrayList<>());
+                testBodies.get(testClass).add(unitTests[i].substring(0, currIndex));
+            }
+        }
+        return testBodies;
     }
 }
