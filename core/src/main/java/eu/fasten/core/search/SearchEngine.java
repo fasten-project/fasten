@@ -306,7 +306,7 @@ public class SearchEngine {
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	private void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Collection<Result> results) {
+	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Collection<Result> results) {
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
 		seed.forEach(x -> queue.enqueue(x)); // Load initial state
 		final LongOpenHashSet seen = new LongOpenHashSet();
