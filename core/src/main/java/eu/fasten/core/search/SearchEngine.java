@@ -482,7 +482,7 @@ public class SearchEngine {
 		// Fetch revision id
 		final long rev = Util.getRevisionId(revisionUri, context);
 		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
-		return from(rev, null, filter);
+		return to(rev, null, filter);
 	}
 
 	/**
