@@ -575,7 +575,8 @@ public class SearchEngine {
 		 */
 
 		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, "/mnt/fasten/graphdb", resolverGraph);
-		searchEngine.context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
+		final DSLContext context = searchEngine.context;
+		context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
 
 		final Scanner scanner = new Scanner(System.in);
 		for(;;) {
@@ -591,16 +592,25 @@ public class SearchEngine {
 			}
 			try {
 				final char dir = line.charAt(0);
-				line = line.substring(1);
-				final FastenJavaURI uri = FastenJavaURI.create(line);
-				final long gid = Util.getCallableGID(uri, searchEngine.context);
-				if (gid == -1) {
-					System.err.println("Unknown URI " + uri);
+				if (dir != '+' && dir != '-') {
+					if (dir != '#') System.err.println("First character must be '+', '-', or '#'");
 					continue;
 				}
-				final var r = dir == '+' ? searchEngine.fromCallable(gid) : searchEngine.toCallable(gid);
-				for(int i = 0; i < Math.min(searchEngine.limit, r.size()); i++)
-					System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, searchEngine.context) + "\t" + r.get(i).score);
+				line = line.substring(1);
+				final FastenJavaURI uri = FastenJavaURI.create(line);
+
+				if (uri.getPath() == null) {
+					final var r = dir == '+' ? searchEngine.fromRevision(uri) : searchEngine.toRevision(uri);
+					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
+				} else {
+					final long gid = Util.getCallableGID(uri, context);
+					if (gid == -1) {
+						System.err.println("Unknown URI " + uri);
+						continue;
+					}
+,					final var r = dir == '+' ? searchEngine.fromCallable(gid) : searchEngine.toCallable(gid);
+					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
+				}
 			} catch (final Exception e) {
 				e.printStackTrace();
 			}
