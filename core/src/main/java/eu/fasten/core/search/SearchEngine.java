@@ -18,8 +18,8 @@
 
 package eu.fasten.core.search;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -28,8 +28,6 @@ import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.jgrapht.graph.EdgeReversedGraph;
-import org.jgrapht.traverse.ClosestFirstIterator;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.jooq.conf.ParseUnknownFunctions;
@@ -43,6 +41,7 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
+import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
@@ -56,9 +55,15 @@ import eu.fasten.core.merge.DatabaseMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
-import it.unimi.dsi.fastutil.longs.LongLongPair;
+import it.unimi.dsi.bits.Fast;
+import it.unimi.dsi.fastutil.HashCommon;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import it.unimi.dsi.fastutil.longs.LongCollection;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 
 /**
  * A class offering searching capabilities over the FASTEN knowledge base.
@@ -83,6 +88,9 @@ public class SearchEngine {
 		public long gid;
 		public double score;
 
+		public Result() {
+		}
+
 		public Result(final long gid, final double score) {
 			this.gid = gid;
 			this.score = score;
@@ -91,6 +99,21 @@ public class SearchEngine {
 		@Override
 		public String toString() {
 			return gid + " (" + score + ")";
+		}
+
+		@Override
+		public int hashCode() {
+			return (int)HashCommon.mix(gid);
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			final Result other = (Result)obj;
+			if (gid != other.gid) return false;
+			return true;
 		}
 	}
 
@@ -261,14 +284,46 @@ public class SearchEngine {
 		}
 	}
 
+	private void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Collection<Result> results) {
+		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
+		seed.forEach(x -> queue.enqueue(x)); // Load initial state
+		final LongOpenHashSet seen = new LongOpenHashSet();
+		int d = -1;
+		long sentinel = queue.firstLong();
+		final Result probe = new Result();
+
+		while (!queue.isEmpty()) {
+			final long gid = queue.dequeueLong();
+			if (gid == sentinel) {
+				d++;
+				sentinel = -1;
+			}
+			if (filter.test(gid)) {
+				probe.gid = gid;
+				if (!results.contains(probe)) results.add(new Result(gid, (graph.outdegree(gid) + graph.indegree(gid)) / Fast.log2(d + 1)));
+			}
+
+			final LongIterator iterator = forward ? graph.successors(gid).iterator() : graph.predecessors(gid).iterator();
+
+			while (iterator.hasNext()) {
+				final long x = iterator.nextLong();
+				if (seen.add(x)) {
+					if (sentinel == -1) sentinel = x;
+					queue.enqueue(x);
+				}
+			}
+		}
+	}
+
 	/**
 	 * Computes the callables satisfying the given predicate and reachable from the provided callable,
-	 * and returns them in a ranked list. They will be filtered by the conjuction of {@link #predicateFilters}.
+	 * and returns them in a ranked list. They will be filtered by the conjunction of
+	 * {@link #predicateFilters}.
 	 *
 	 * @param gid the global ID of a callable.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> fromCallable(final long gid) throws RocksDBException {
+	private List<Result> fromCallable(final long gid) throws RocksDBException {
 		return fromCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and));
 	}
 
@@ -303,17 +358,15 @@ public class SearchEngine {
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
-		final ArrayList<Result> results = new ArrayList<>();
+		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
-		final ClosestFirstIterator<Long, LongLongPair> reachable = new ClosestFirstIterator<>(stitchedGraph, Long.valueOf(gid));
-		reachable.forEachRemaining((x) -> {
-			if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / reachable.getShortestPathLength(x)));
-		});
+		bfs(stitchedGraph, true, LongSets.singleton(gid), filter, results);
 
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
 
-		Collections.sort(results, (x, y) -> Double.compare(y.score, x.score));
-		return results;
+		final Result[] array = results.toArray(new Result[0]);
+		Arrays.sort(array, (x, y) -> Double.compare(y.score, x.score));
+		return Arrays.asList(array);
 	}
 
 	/**
@@ -323,7 +376,7 @@ public class SearchEngine {
 	 * @param gid the global ID of a callable.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> toCallable(final long gid) throws RocksDBException {
+	private List<Result> toCallable(final long gid) throws RocksDBException {
 		return toCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and));
 	}
 
@@ -355,7 +408,7 @@ public class SearchEngine {
 		dependentIds.add(rev);
 		LOGGER.debug("Found " + dependentIds.size() + " dependents");
 
-		final ArrayList<Result> results = new ArrayList<>();
+		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
 		for (final var dependentId : dependentIds) {
 			record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(dependentId)).fetchOne();
@@ -381,17 +434,16 @@ public class SearchEngine {
 			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 			final int sizeBefore = results.size();
 
-			final ClosestFirstIterator<Long, LongLongPair> coreachable = new ClosestFirstIterator<>(new EdgeReversedGraph<>(stitchedGraph), Long.valueOf(gid));
-			coreachable.forEachRemaining((x) -> {
-				if (filter.test(x)) results.add(new Result(x, (stitchedGraph.outdegree(x) + stitchedGraph.indegree(x)) / coreachable.getShortestPathLength(x)));
-			});
+			bfs(stitchedGraph, false, LongSets.singleton(gid), filter, results);
 
 			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
 		}
 
 		LOGGER.debug("Found overall " + results.size() + " coreachable nodes");
-		Collections.sort(results, (x, y) -> Double.compare(y.score, x.score));
-		return results;
+
+		final Result[] array = results.toArray(new Result[0]);
+		Arrays.sort(array, (x, y) -> Double.compare(y.score, x.score));
+		return Arrays.asList(array);
 	}
 
 	// dbContext=PostgresConnector.getDSLContext("jdbc:postgresql://monster:5432/fasten_java","fastenro");rocksDao=new
