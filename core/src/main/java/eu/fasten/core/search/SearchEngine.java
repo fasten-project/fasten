@@ -100,7 +100,7 @@ public class SearchEngine {
 			this.score = score;
 		}
 
-		@Override
+ 		@Override
 		public String toString() {
 			return gid + " (" + score + ")";
 		}
@@ -297,7 +297,11 @@ public class SearchEngine {
 				if (predicateFilters.size() < 1) throw new RuntimeException("At least one predicates must be present");
 				predicateFilters.push(predicateFilters.pop().negate());
 				break;
+
+			default: 
+				System.err.println("Unknown command " + command);
 			}
+			
 		} catch (final RuntimeException e) {
 			System.err.println("Exception while executing command " + command);
 			e.printStackTrace(System.err);
