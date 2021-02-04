@@ -400,8 +400,10 @@ public class SearchEngine {
 	 */
 	public List<Result> from(final long rev, LongCollection seed, final LongPredicate filter) throws RocksDBException {
 		final var graph = rocksDao.getGraphData(rev);
-		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing fromå the graph database");
+		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
 		if (seed == null) seed = graph.nodes();
+
+		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
 
 		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(rev)).fetchOne();
 		final String[] a = record.component1().split(":");
@@ -517,8 +519,11 @@ public class SearchEngine {
 
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
+		long trueDependents = 0;
+
 		for (final var iterator = dependentIds.iterator(); iterator.hasNext();) {
 			final long dependentId = iterator.nextLong();
+
 			record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(dependentId)).fetchOne();
 
 			a = record.component1().split(":");
@@ -532,6 +537,8 @@ public class SearchEngine {
 			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
 			resolveTime += System.nanoTime();
 
+			LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
+
 			LOGGER.debug("Found " + dependencySet.size() + " dependencies");
 
 			final LongOpenHashSet dependencyIds = LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
@@ -539,6 +546,8 @@ public class SearchEngine {
 				LOGGER.debug("False dependent");
 				continue; // We cannot possibly reach the callable
 			}
+
+			trueDependents++;
 
 			stitchingTime -= System.nanoTime();
 			final DatabaseMerger dm = new DatabaseMerger(dependencyIds, context, rocksDao);
@@ -555,6 +564,7 @@ public class SearchEngine {
 			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
 		}
 
+		LOGGER.debug("Found " + trueDependents + " true dependents");
 		LOGGER.debug("Found overall " + results.size() + " coreachable nodes");
 
 		final Result[] array = results.toArray(new Result[0]);
