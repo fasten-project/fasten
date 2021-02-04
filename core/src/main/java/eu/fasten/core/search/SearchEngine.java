@@ -189,12 +189,12 @@ public class SearchEngine {
 				"\t$f pmatches <REGEXP>            Add filter: package (a.k.a. product) matches <REGEXP>\n" +
 				"\t$f vmatches <REGEXP>            Add filter: version matches <REGEXP>\n" +
 				"\t$f xmatches <REGEXP>            Add filter: path (namespace + entity) matches <REGEXP>\n" +
-				"\t$f cmd <KEY> [<VALREGEXP>]      Add filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" +
-				"\t$f mmd <KEY> [<VALREGEXP>]      Add filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" +
-				"\t$f pmd <KEY> [<VALREGEXP>]      Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" +
-				"\t$f cmdjp <JP> <VALREGEXP>       Add filter: callable metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
-				"\t$f mmdjp <JP> <VALREGEXP>       Add filter: module metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
-				"\t$f pmdjp <JP> <VALREGEXP>       Add filter: package+version metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
+				"\t$f cmd <KEY> [<REGEXP>]         Add filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$f mmd <KEY> [<REGEXP>]         Add filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$f pmd <KEY> [<REGEXP>]         Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" +
+				"\t$f cmdjp <JP> <REGEXP>          Add filter: callable metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
+				"\t$f mmdjp <JP> <REGEXP>          Add filter: module metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
+				"\t$f pmdjp <JP> <REGEXP>          Add filter: package+version metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
 				"\t$or                             The last two filters are substituted by their disjunction (or)\n" +
 				"\t$and                            The last two filters are substituted by their conjunction (and)\n" +
 				"\t$not                            The last filter is substituted by its negation (not)\n" +

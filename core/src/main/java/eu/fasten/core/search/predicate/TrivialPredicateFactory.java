@@ -57,7 +57,9 @@ public class TrivialPredicateFactory implements PredicateFactory {
 		if (selectResult == null) return null;
 		Record1<JSONB> record = selectResult.fetchOne();
 		if (record == null) return null;
-		return new JSONObject(record.component1().data());
+		JSONB jsonb = record.component1();
+		if (jsonb == null || jsonb.data() == null) return null;
+		return new JSONObject(jsonb.data());
 	}
 	
 	/** Returns the metadata field of a given callable.
@@ -65,7 +67,7 @@ public class TrivialPredicateFactory implements PredicateFactory {
 	 * @param callableGID the callable GID.
 	 * @return the metadata field associated to it.
 	 */
-	private JSONObject getCallableMetadata(final long callableGID) {
+	protected JSONObject getCallableMetadata(final long callableGID) {
 		return selectJSONObject(dbContext.select(Callables.CALLABLES.METADATA)
 				.from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID)));
 	}
@@ -75,7 +77,7 @@ public class TrivialPredicateFactory implements PredicateFactory {
 	 * @param callableGID the callable GID.
 	 * @return the metadata field associated to the package version of the callable.
 	 */
-	private JSONObject getModuleMetadata(final long callableGID) {
+	protected JSONObject getModuleMetadata(final long callableGID) {
 		return selectJSONObject(dbContext.select(Modules.MODULES.METADATA)
 				.from(Callables.CALLABLES)
 				.join(Modules.MODULES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
@@ -87,7 +89,7 @@ public class TrivialPredicateFactory implements PredicateFactory {
 	 * @param callableGID the callable id.
 	 * @return the metadata field associated to the package version of the callable.
 	 */
-	private JSONObject getPackageVersionMetadata(final long callableGID) {
+	protected JSONObject getPackageVersionMetadata(final long callableGID) {
 		return selectJSONObject(dbContext.select(PackageVersions.PACKAGE_VERSIONS.METADATA)
 					.from(Callables.CALLABLES)
 					.join(Modules.MODULES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))

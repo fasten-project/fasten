@@ -100,7 +100,8 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 	 * @param callableGID the callable GID.
 	 * @return the metadata field associated to it.
 	 */
-	private JSONObject getCallableMetadata(final long callableGID) {
+	@Override
+	protected JSONObject getCallableMetadata(final long callableGID) {
 		JSONObject jsonMetadata = callableGID2callableMetadata.get(callableGID);
 		if (jsonMetadata == null) {
 			SelectConditionStep<Record1<JSONB>> rs = dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID));
@@ -120,7 +121,8 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 	 * @param callableGID the callable GID.
 	 * @return the metadata field associated to the package version of the callable.
 	 */
-	private JSONObject getModuleMetadata(final long callableGID) {
+	@Override
+	protected JSONObject getModuleMetadata(final long callableGID) {
 		long moduleGID = callableGID2moduleGID.get(callableGID);
 		JSONObject jsonMetadata = moduleGID >= 0? moduleGID2moduleMetadata.get(moduleGID) : null;
 		if (jsonMetadata == null) {
@@ -141,7 +143,8 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 	 * @param callableGID the callable id.
 	 * @return the metadata field associated to the package version of the callable.
 	 */
-	private JSONObject getPackageVersionMetadata(final long callableGID) {
+	@Override
+	protected JSONObject getPackageVersionMetadata(final long callableGID) {
 		long moduleGID = callableGID2moduleGID.get(callableGID);
 		long packageVersionGID = callableGID >= 0? moduleGID2packageVersionGID.get(moduleGID) : -1;
 		JSONObject jsonMetadata = packageVersionGID >= 0? packageVersionGID2packageVersionMetadata.get(packageVersionGID) : null;
