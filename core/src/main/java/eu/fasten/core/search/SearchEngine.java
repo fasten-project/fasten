@@ -517,7 +517,8 @@ public class SearchEngine {
 
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
-		for (final var dependentId : dependentIds) {
+		for (final var iterator = dependentIds.iterator(); iterator.hasNext();) {
+			final long dependentId = iterator.nextLong();
 			record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(dependentId)).fetchOne();
 
 			LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
@@ -598,6 +599,7 @@ public class SearchEngine {
 		final DSLContext context = searchEngine.context;
 		context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
 
+		@SuppressWarnings("resource")
 		final Scanner scanner = new Scanner(System.in);
 		for(;;) {
 			System.out.print("[$help for help]>");
