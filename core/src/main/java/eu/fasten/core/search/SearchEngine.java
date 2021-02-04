@@ -320,7 +320,7 @@ public class SearchEngine {
 
 			if (!nodes.contains(gid)) continue; // We accept arbitrary seed sets
 
-			if (filter.test(gid)) {
+			if (!seed.contains(gid) && filter.test(gid)) {
 				probe.gid = gid;
 				if (!results.contains(probe)) results.add(new Result(gid, (graph.outdegree(gid) + graph.indegree(gid)) / Fast.log2(d + 2)));
 			}
@@ -426,8 +426,6 @@ public class SearchEngine {
 		visitTime -= System.nanoTime();
 		bfs(stitchedGraph, true, seed, filter, results);
 		visitTime += System.nanoTime();
-
-		results.removeAll(seed);
 
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
 
@@ -553,8 +551,6 @@ public class SearchEngine {
 
 			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
 		}
-
-		results.removeAll(seed);
 
 		LOGGER.debug("Found overall " + results.size() + " coreachable nodes");
 
