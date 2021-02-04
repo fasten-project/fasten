@@ -226,7 +226,7 @@ public class SearchEngine {
 				if (limit < 0) limit = Integer.MAX_VALUE;
 				break;
 			
-			case "maxDependents":
+			case "maxdependents":
 				maxDependents = Long.parseLong(commandAndArgs[1]);
 				if (maxDependents < 0) maxDependents = Long.MAX_VALUE;
 				break;
@@ -674,8 +674,10 @@ public class SearchEngine {
 				final long start = -System.nanoTime();
 				searchEngine.stitchingTime = searchEngine.resolveTime = searchEngine.visitTime = 0;
 
+				final List<Result> r;
+
 				if (uri.getPath() == null) {
-					final var r = dir == '+' ? searchEngine.fromRevision(uri) : searchEngine.toRevision(uri);
+					r = dir == '+' ? searchEngine.fromRevision(uri) : searchEngine.toRevision(uri);
 					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
 				} else {
 					final long gid = Util.getCallableGID(uri, context);
@@ -683,12 +685,15 @@ public class SearchEngine {
 						System.err.println("Unknown URI " + uri);
 						continue;
 					}
-					final var r = dir == '+' ? searchEngine.fromCallable(gid) : searchEngine.toCallable(gid);
+					r = dir == '+' ? searchEngine.fromCallable(gid) : searchEngine.toCallable(gid);
 					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
 				}
 
-				for(var t: searchEngine.throwables) System.err.println(t);
-				System.err.printf("\nTotal time: %.3fs Resolve time: %.3fs Stitching time: %.3fs Visit time %.3fs\n", (System.nanoTime() + start) * 1E-9, searchEngine.resolveTime * 1E-9, searchEngine.stitchingTime * 1E-9, searchEngine.visitTime * 1E-9);
+				for(var t: searchEngine.throwables) {
+					System.err.println(t);
+					System.err.println("\t" + t.getStackTrace()[0]);
+				}
+				System.err.printf("\n%d results \nTotal time: %.3fs Resolve time: %.3fs Stitching time: %.3fs Visit time %.3fs\n", r.size(), (System.nanoTime() + start) * 1E-9, searchEngine.resolveTime * 1E-9, searchEngine.stitchingTime * 1E-9, searchEngine.visitTime * 1E-9);
 			} catch (final Exception e) {
 				e.printStackTrace();
 			}
