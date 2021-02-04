@@ -176,6 +176,7 @@
                                 <excludes>
 <!--                                    <exclude>org.slf4j:slf4j-simple:*</exclude>-->
 <!--                                    <exclude>org.slf4j:slf4j-api:*</exclude>-->
+                                    <exclude>org.rocksdb:*</exclude>
                                 </excludes>
                             </artifactSet>
                             <transformers>
