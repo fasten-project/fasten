@@ -286,6 +286,18 @@ public class SearchEngine {
 		}
 	}
 
+	/**
+	 * Performs a breadth-first visit of the given graph, starting from the provided seed, using the
+	 * provided predicate and returning a collection of ranked {@link Result} instances satisfying the
+	 * provided filter.
+	 *
+	 * @param graph a {@link DirectedGraph}.
+	 * @param forward if true, the visit follows arcs; if false, the visit follows arcs backwards.
+	 * @param seed an initial seed; may contain GIDs that do not appear in the graph, which will be
+	 *            ignored.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @return a list of {@linkplain Result results}.
+	 */
 	private void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Collection<Result> results) {
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
 		seed.forEach(x -> queue.enqueue(x)); // Load initial state
@@ -521,6 +533,20 @@ public class SearchEngine {
 		final String database = jsapResult.getString("database");
 		final String rocksDb = jsapResult.getString("rocksDB");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
+
+		/* WARNING
+		 *
+		 * As of JDK 11.0.10, replacing the constant string below with the parameter "rocksDb" causes
+		 * a JVM crash with the following stack trace:
+		 *
+		 * V  [libjvm.so+0x5ad861]  AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<1097844ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 1097844ul>::oop_access_barrier(void*)+0x1
+		 * C  [librocksdbjni5446245757426305293.so+0x22aefc]  rocksdb_open_helper(JNIEnv_*, long, _jstring*, _jobjectArray*, _jlongArray*, std::function<rocksdb::Status (rocksdb::DBOptions const&, std::string const&, std::vector<rocksdb::ColumnFamilyDescriptor, std::allocator<rocksdb::ColumnFamilyDescriptor> > const&, std::vector<rocksdb::ColumnFamilyHandle*, std::allocator<rocksdb::ColumnFamilyHandle*> >*, rocksdb::DB**)>)+0x3c
+		 * C  [librocksdbjni5446245757426305293.so+0x22b371]  Java_org_rocksdb_RocksDB_openROnly__JLjava_lang_String_2_3_3B_3JZ+0x41
+		 * j  org.rocksdb.RocksDB.openROnly(JLjava/lang/String;[[B[JZ)[J+0
+		 *
+		 * The most likely explanation is some kind of aggressive early collection of the variable rocksDb by the G1
+		 * collector which clashes with RocksDB's JNI usage of the variable.
+		 */
 
 		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, "/mnt/fasten/graphdb", resolverGraph);
 		searchEngine.context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
