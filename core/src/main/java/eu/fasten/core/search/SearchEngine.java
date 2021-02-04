@@ -136,10 +136,15 @@ public class SearchEngine {
 	 *  specified (compare, e.g., {@link #fromCallable(long)} and {@link #fromCallable(long, LongPredicate)}). */
 	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
 
+	/** Time spent during resolution (dependency and dependents). */
 	private long resolveTime;
+	/** Time spent stitching graphs (mergeWithCHA()). */
 	private long stitchingTime;
+	/** Time spent during {@linkplain #bfs visits}. */
 	private long visitTime;
+	/** Maximum number of dependents used by {@link #to}. */
 	private long maxDependents = Long.MAX_VALUE;
+	/** Throwables thrown by mergeWithCHA(). */
 	private List<Throwable> throwables = new ArrayList<>();
 
 	/**
@@ -517,10 +522,10 @@ public class SearchEngine {
 		final Set<Revision> dependentSet = new ObjectOpenHashSet<>();
 
 		// Temporary reduction in size to circumvent mergeWithCHA() crashes
-		int m = 0;
+		long m = 0;
 		for(var r: s) {
+			if (m++ == maxDependents) break;
 			dependentSet.add(r);
-			if (m++ == 100) break;
 		}
 
 		resolveTime += System.nanoTime();
