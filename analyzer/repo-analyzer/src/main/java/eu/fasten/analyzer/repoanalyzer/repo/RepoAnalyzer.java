@@ -1,19 +1,37 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.analyzer.repoanalyzer.repo;
 
-import com.google.common.collect.Sets;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 
 public class RepoAnalyzer {
@@ -23,7 +41,7 @@ public class RepoAnalyzer {
 
     private static final double ESTIMATED_COVERAGE_THRESHOLD = 0.5;
 
-    private final File repoPath;
+    private final List<Path> moduleRoots;
 
     /**
      * Constructs a Repo Analyzer given a path the root of a repository to analyze.
@@ -31,7 +49,7 @@ public class RepoAnalyzer {
      * @param path path to the repository
      */
     public RepoAnalyzer(final String path) {
-        this.repoPath = new File(path);
+        this.moduleRoots = extractModuleRoots(Path.of(path));
     }
 
     /**
@@ -43,46 +61,52 @@ public class RepoAnalyzer {
     public JSONObject analyze() throws IOException {
         var statistics = new JSONObject();
 
-        var testFiles = getMatchingFiles(getPathToTestsRoot(), getTestsPatterns());
-        statistics.put("testFiles", testFiles.size());
+        for (var module : this.moduleRoots) {
+            statistics.put("path", module.toAbsolutePath());
 
-        var sourceFiles = getMatchingFiles(getPathToSourcesRoot(), List.of("^.*\\.java"));
-        statistics.put("sourceFiles", sourceFiles.size());
+            var testFiles = new HashSet<Path>();
+            for (var file : getMatchingFiles(getPathToTestsRoot(module), getTestsPatterns())) {
+                if (Files.readString(file).contains("@Test")) {
+                    testFiles.add(file);
+                }
+            }
+            statistics.put("testFiles", testFiles.size());
 
-        var estimatedCoverage = (double) Math.round(1000 * (double) testFiles.size() / (double) sourceFiles.size()) / 1000;
-        statistics.put("estimatedCoverage", estimatedCoverage);
+            var sourceFiles = getMatchingFiles(getPathToSourcesRoot(module), List.of("^.*\\.java"));
+            statistics.put("sourceFiles", sourceFiles.size());
 
-        if (estimatedCoverage < ESTIMATED_COVERAGE_THRESHOLD) {
-            statistics.put("unitTests", -1);
-            statistics.put("filesWithMockImport", -1);
-            statistics.put("unitTestsWithMocks", -1);
-            statistics.put("mockingRatio", -1);
-            statistics.put("statementCoverage", -1);
-            return statistics;
+            var estimatedCoverage = (double) Math.round(1000 * (double) testFiles.size() / (double) sourceFiles.size()) / 1000;
+            statistics.put("estimatedCoverage", estimatedCoverage);
+
+            if (estimatedCoverage < ESTIMATED_COVERAGE_THRESHOLD) {
+                statistics.put("unitTests", -1);
+                statistics.put("filesWithMockImport", -1);
+                statistics.put("unitTestsWithMocks", -1);
+                statistics.put("mockingRatio", -1);
+                statistics.put("statementCoverage", -1);
+                return statistics;
+            }
+
+            var testBodies = getJUnitTests(testFiles);
+            var numberOfUnitTests = testBodies.values().stream()
+                    .map(List::size)
+                    .reduce(0, Integer::sum);
+            statistics.put("unitTests", numberOfUnitTests);
+
+            var mockImportFiles = getFilesWithMockImport(testFiles);
+            statistics.put("filesWithMockImport", mockImportFiles.size());
+
+            var testWithMocks = getTestsWithMock(testBodies, mockImportFiles);
+            int numberOfUnitTestsWithMocks = testWithMocks.values().stream()
+                    .map(List::size)
+                    .reduce(0, Integer::sum);
+            statistics.put("unitTestsWithMocks", numberOfUnitTestsWithMocks);
+
+            var mockingRatio = (double) Math.round(1000 * (double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests) / 1000;
+            statistics.put("mockingRatio", mockingRatio);
+
+            statistics.put("statementCoverage", 0);
         }
-
-        var testBodies = getJUnitTests(testFiles);
-        var numberOfUnitTests = testBodies.values().stream()
-                .map(List::size)
-                .reduce(0, Integer::sum);
-        statistics.put("unitTests", numberOfUnitTests);
-
-        testFiles.retainAll(testBodies.keySet());
-        statistics.put("testFiles", testFiles.size());
-
-        var mockImportFiles = getFilesWithMockImport(testFiles);
-        statistics.put("filesWithMockImport", mockImportFiles.size());
-
-        var testWithMocks = getTestsWithMock(testBodies, mockImportFiles);
-        int numberOfUnitTestsWithMocks = testWithMocks.values().stream()
-                .map(List::size)
-                .reduce(0, Integer::sum);
-        statistics.put("unitTestsWithMocks", numberOfUnitTestsWithMocks);
-
-        var mockingRatio = (double) Math.round(1000 * (double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests) / 1000;
-        statistics.put("mockingRatio", mockingRatio);
-
-        statistics.put("statementCoverage", 0);
 
         return statistics;
     }
@@ -95,11 +119,11 @@ public class RepoAnalyzer {
      * @return list of files
      * @throws IOException if I/O exception occurs when accessing root file
      */
-    private Set<Path> getMatchingFiles(final File directory, final List<String> patterns) throws IOException {
+    private Set<Path> getMatchingFiles(final Path directory, final List<String> patterns) throws IOException {
         var predicate = patterns.stream()
                 .map(p -> Pattern.compile(p).asPredicate())
                 .reduce(x -> false, Predicate::or);
-        return Files.walk(directory.toPath())
+        return Files.walk(directory)
                 .filter(f -> predicate.test(f.getFileName().toString()))
                 .collect(Collectors.toSet());
     }
@@ -108,22 +132,34 @@ public class RepoAnalyzer {
      * Get absolute path to the source files root. Extracts source file directory from pom.xml or
      * uses Maven default path.
      *
+     * @param root root directory
      * @return root of the source files
      */
-    private File getPathToSourcesRoot() {
-        // TODO: take into account custom source dir in pom.xml
-        return new File(repoPath.getAbsolutePath() + DEFAULT_SOURCES_PATH);
+    private Path getPathToSourcesRoot(final Path root) throws IOException {
+        var pomContent = Files.readString(Path.of(root.toString(), "pom.xml"));
+        var sourcePath = StringUtils.substringBetween(pomContent, "<sourceDirectory>", "</sourceDirectory>");
+        sourcePath = sourcePath == null ? DEFAULT_SOURCES_PATH : sourcePath;
+        while (sourcePath.contains("$")) {
+            sourcePath = sourcePath.replaceFirst("\\$\\{.*}", "");
+        }
+        return Path.of(root.toAbsolutePath().toString(), sourcePath);
     }
 
     /**
      * Get absolute path to the test files root. Extracts test file directory from pom.xml or
      * uses Maven default path.
      *
+     * @param root root directory
      * @return root of the test files
      */
-    private File getPathToTestsRoot() {
-        // TODO: take into account custom test dir in pom.xml
-        return new File(repoPath.getAbsolutePath() + DEFAULT_TESTS_PATH);
+    private Path getPathToTestsRoot(final Path root) throws IOException {
+        var pomContent = Files.readString(Path.of(root.toString(), "pom.xml"));
+        var sourcePath = StringUtils.substringBetween(pomContent, "<testSourceDirectory>", "</testSourceDirectory>");
+        sourcePath = sourcePath == null ? DEFAULT_TESTS_PATH : sourcePath;
+        while (sourcePath.contains("$")) {
+            sourcePath = sourcePath.replaceFirst("\\$\\{.*}", "");
+        }
+        return Path.of(root.toAbsolutePath().toString(), sourcePath);
     }
 
     /**
@@ -235,5 +271,19 @@ public class RepoAnalyzer {
         }
 
         return tests;
+    }
+
+    /**
+     * Extract paths to all modules of the project.
+     *
+     * @param root root directory
+     * @return a list of paths to modules
+     */
+    private List<Path> extractModuleRoots(final Path root) {
+        var moduleRoots = new ArrayList<Path>();
+
+        // TODO: parse pom.xml to get modules info
+        moduleRoots.add(root);
+        return moduleRoots;
     }
 }
