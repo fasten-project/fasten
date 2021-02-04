@@ -134,6 +134,10 @@ public class SearchEngine {
 	 *  specified (compare, e.g., {@link #fromCallable(long)} and {@link #fromCallable(long, LongPredicate)}). */
 	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
 
+	private long resolveTime;
+	private long stitchingTime;
+	private long visitTime;
+
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
 	 *
@@ -404,18 +408,24 @@ public class SearchEngine {
 		final String groupId = a[0];
 		final String artifactId = a[1];
 		final String version = record.component2();
+		resolveTime -= System.nanoTime();
 		final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+		resolveTime += System.nanoTime();
 
 		LOGGER.debug("Found " + dependencySet.size() + " dependencies");
 
+		stitchingTime -= System.nanoTime();
 		final DatabaseMerger dm = new DatabaseMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, rocksDao);
 		final var stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
+		stitchingTime += System.nanoTime();
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
+		visitTime -= System.nanoTime();
 		bfs(stitchedGraph, true, seed, filter, results);
+		visitTime += System.nanoTime();
 
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
 
@@ -495,7 +505,9 @@ public class SearchEngine {
 		String groupId = a[0];
 		String artifactId = a[1];
 		String version = record.component2();
+		resolveTime -= System.nanoTime();
 		final Set<Revision> dependentSet = resolver.resolveDependents(groupId, artifactId, version, -1, true);
+		resolveTime += System.nanoTime();
 
 		LOGGER.debug("Found " + dependentSet.size() + " dependents");
 
@@ -513,7 +525,9 @@ public class SearchEngine {
 			groupId = a[0];
 			artifactId = a[1];
 			version = record.component2();
+			resolveTime -= System.nanoTime();
 			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+			resolveTime += System.nanoTime();
 
 			LOGGER.debug("Found " + dependencySet.size() + " dependencies");
 
@@ -522,13 +536,18 @@ public class SearchEngine {
 				LOGGER.debug("False dependent");
 				continue; // We cannot possibly reach the callable
 			}
+
+			stitchingTime -= System.nanoTime();
 			final DatabaseMerger dm = new DatabaseMerger(dependencyIds, context, rocksDao);
 			final var stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
+			stitchingTime += System.nanoTime();
 
 			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 			final int sizeBefore = results.size();
 
+			visitTime -= System.nanoTime();
 			bfs(stitchedGraph, false, seed, filter, results);
+			visitTime += System.nanoTime();
 
 			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
 		}
@@ -545,6 +564,7 @@ public class SearchEngine {
 	// dbContext=PostgresConnector.getDSLContext("jdbc:postgresql://monster:5432/fasten_java","fastenro");rocksDao=new
 	// eu.fasten.core.data.graphdb.RocksDao("/home/vigna/graphdb/",true);
 
+	@SuppressWarnings("boxing")
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(SearchEngine.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
@@ -599,6 +619,9 @@ public class SearchEngine {
 				line = line.substring(1);
 				final FastenJavaURI uri = FastenJavaURI.create(line);
 
+				final long start = -System.nanoTime();
+				searchEngine.stitchingTime = searchEngine.resolveTime = searchEngine.visitTime = 0;
+
 				if (uri.getPath() == null) {
 					final var r = dir == '+' ? searchEngine.fromRevision(uri) : searchEngine.toRevision(uri);
 					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
@@ -611,6 +634,8 @@ public class SearchEngine {
 					final var r = dir == '+' ? searchEngine.fromCallable(gid) : searchEngine.toCallable(gid);
 					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
 				}
+
+				System.err.printf("Total time: %.3fs Resolve time: %.3fs Stitching time: %.3fs Visit time %.3fs", System.nanoTime() + start, searchEngine.resolveTime, searchEngine.stitchingTime, searchEngine.visitTime);
 			} catch (final Exception e) {
 				e.printStackTrace();
 			}
