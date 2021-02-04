@@ -427,6 +427,8 @@ public class SearchEngine {
 		bfs(stitchedGraph, true, seed, filter, results);
 		visitTime += System.nanoTime();
 
+		results.removeAll(seed);
+
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
 
 		final Result[] array = results.toArray(new Result[0]);
@@ -552,6 +554,8 @@ public class SearchEngine {
 			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
 		}
 
+		results.removeAll(seed);
+
 		LOGGER.debug("Found overall " + results.size() + " coreachable nodes");
 
 		final Result[] array = results.toArray(new Result[0]);
@@ -635,7 +639,7 @@ public class SearchEngine {
 					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
 				}
 
-				System.err.printf("Total time: %.3fs Resolve time: %.3fs Stitching time: %.3fs Visit time %.3fs", System.nanoTime() + start, searchEngine.resolveTime, searchEngine.stitchingTime, searchEngine.visitTime);
+				System.err.printf("\nTotal time: %.3fs Resolve time: %.3fs Stitching time: %.3fs Visit time %.3fs\n", (System.nanoTime() + start) * 1E-9, searchEngine.resolveTime * 1E-9, searchEngine.stitchingTime * 1E-9, searchEngine.visitTime * 1E-9);
 			} catch (final Exception e) {
 				e.printStackTrace();
 			}
