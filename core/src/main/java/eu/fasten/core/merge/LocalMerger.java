@@ -230,10 +230,12 @@ public class LocalMerger {
         final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
         final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
 
-        final var externalTypeToId = HashBiMap.create(artifact.getClassHierarchy()
-                .get(JavaScope.externalTypes)).inverse();
-        final var internalTypeToId = HashBiMap.create(artifact.getClassHierarchy()
-                .get(JavaScope.internalTypes)).inverse();
+        final var externalTypeToId = reverseMap(artifact.getClassHierarchy()
+                .get(JavaScope.externalTypes));
+
+        final var internalTypeToId = reverseMap(artifact.getClassHierarchy()
+            .get(JavaScope.internalTypes));
+
 
         artifact.getGraph().getExternalCalls().entrySet().parallelStream().forEach(arc -> {
             final var targetKey = arc.getKey().get(1);
@@ -255,6 +257,16 @@ public class LocalMerger {
             }
         });
         return buildRCG(artifact, result);
+    }
+
+    private Map<JavaType, FastenURI> reverseMap(final Map<FastenURI, JavaType> types) {
+        final Map<JavaType, FastenURI> result = new HashMap<>();
+        for (final var type : types.entrySet()) {
+            if (!type.getValue().getMethods().isEmpty()) {
+                result.put(type.getValue(), type.getKey());
+            }
+        }
+        return result;
     }
 
     /**
