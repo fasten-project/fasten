@@ -17,20 +17,17 @@
 
 package eu.fasten.core.search.predicate;
 
-import java.util.NoSuchElementException;
-import java.util.function.Predicate;
-
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Record3;
+import org.jooq.SelectConditionStep;
 import org.json.JSONObject;
 
-import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.search.Util;
 import it.unimi.dsi.fastutil.longs.Long2LongLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 
@@ -38,17 +35,14 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
  * A predicate factory that builds search predicates resolving them against a specific database
  * instance.
  *
- * <p>
- * This class keeps a LRU cache of the metadata returned most recently, and also of the association
+ * <p>This class keeps a LRU cache of the metadata returned most recently, and also of the association
  * between callable IDs, module IDs and package version IDs.
  */
-public class CachingPredicateFactory implements PredicateFactory {
+public class CachingPredicateFactory extends TrivialPredicateFactory {
 	/** Maximum size of all metadata caches (all maps are kept trimmed to this size). */
 	private static final int METADATA_MAP_MAXSIZE = 1024;
 	/** Maximum size of all ID association caches (all maps are kept trimmed to this size). */
 	private static final int LONG_MAP_MAXSIZE = 1024*1024;
-
-	private final DSLContext dbContext;
 	/** LRU cache of the last metadata from the {@link Callables#CALLABLES} table. */
 	private final Long2ObjectLinkedOpenHashMap<JSONObject> callableGID2callableMetadata;
 	/** LRU cache of the last metadata from the {@link Modules#MODULES} table. */
@@ -65,7 +59,7 @@ public class CachingPredicateFactory implements PredicateFactory {
 	 * @param dbContext the db context that will be used to match predicates.
 	 */
 	public CachingPredicateFactory(final DSLContext dbContext) {
-		this.dbContext = dbContext;
+		super(dbContext);
 		this.callableGID2callableMetadata = new Long2ObjectLinkedOpenHashMap<>();
 		this.moduleGID2moduleMetadata = new Long2ObjectLinkedOpenHashMap<>();
 		this.packageVersionGID2packageVersionMetadata = new Long2ObjectLinkedOpenHashMap<>();
@@ -109,7 +103,13 @@ public class CachingPredicateFactory implements PredicateFactory {
 	private JSONObject getCallableMetadata(final long callableGID) {
 		JSONObject jsonMetadata = callableGID2callableMetadata.get(callableGID);
 		if (jsonMetadata == null) {
-			jsonMetadata = new JSONObject(dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne().component1().data());
+			SelectConditionStep<Record1<JSONB>> rs = dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID));
+			if (rs != null) {
+				Record1<JSONB> record = rs.fetchOne();
+				if (record != null) {
+					jsonMetadata = new JSONObject(record.component1().data());
+				}
+			}
 			putLRUMap(callableGID2callableMetadata, callableGID, jsonMetadata, METADATA_MAP_MAXSIZE);
 		}
 		return jsonMetadata;
@@ -128,7 +128,6 @@ public class CachingPredicateFactory implements PredicateFactory {
 					.from(Callables.CALLABLES)
 					.join(Modules.MODULES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
 					.where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
-
 			moduleGID = queryResult.component2().longValue();
 			jsonMetadata = moduleGID >=0? new JSONObject(queryResult.component1().data()) : null;
 			putLRUMap(callableGID2moduleGID, callableGID, moduleGID, LONG_MAP_MAXSIZE);
@@ -160,89 +159,6 @@ public class CachingPredicateFactory implements PredicateFactory {
 			putLRUMap(packageVersionGID2packageVersionMetadata, packageVersionGID, jsonMetadata, METADATA_MAP_MAXSIZE);
 		}
 		return jsonMetadata;
-	}
-
-	/** Returns the metadata of a given callable for a specific source.
-	 *
-	 * @param source the source of the metadata we want to obtain.
-	 * @param callableGID the {@link Callables#CALLABLES#ID} of the callable under consideration.
-	 * @return the JSON metadata.
-	 */
-	private JSONObject getMetadata(final MetadataSource source, final long callableGID) {
-		switch(source) {
-		case CALLABLE: return getCallableMetadata(callableGID);
-		case MODULE: return getModuleMetadata(callableGID);
-		case PACKAGE_VERSION: return getPackageVersionMetadata(callableGID);
-		default: throw new NoSuchElementException("Unknown source");
-		}
-	}
-
-	/** A predicate that holds true if a given metadata contains a key/value pair with a specific key and
-	 *  a value satisfying a certain property.
-	 *
-	 * @param source the source containing the metadata.
-	 * @param key the (exact) key that the callable must contain.
-	 * @param valuePredicate the predicate that the value must satisfy. It can be of any type, but its {@link #toString()} method
-	 * is used to get the value.
-	 * @return the predicate.
-	 */
-	@Override
-	public MetadataContains metadataContains(final MetadataSource source, final String key, final Predicate<String> valuePredicate) {
-		return t -> getMetadata(source, t) != null && getMetadata(source, t).has(key) && valuePredicate.test(getMetadata(source, t).get(key).toString());
-	}
-
-	/** A predicate that holds true if a given metadata contains a specific key.
-	 *
-	 * @param source the source containing the metadata.
-	 * @param key the (exact) key that the callable must contain.
-	 * @return the predicate.
-	 */
-	@Override
-	public MetadataContains metadataContains(final MetadataSource source, final String key) {
-		return metadataContains(source, key, x -> true);
-	}
-
-	/** A predicate that holds true if a given metadata contains a specific key/value pair.
-	 *
-	 * @param source the source containing the metadata.
-	 * @param key the (exact) key that the callable must contain.
-	 * @param value the (exact) string value that the callable must contain associated with the key. It can be of any type, but its {@link #toString()} method
-	 * is used to get the value.
-	 * @return the predicate.
-	 */
-	@Override
-	public MetadataContains metadataContains(final MetadataSource source, final String key, final String value) {
-		return metadataContains(source, key, x -> value.equals(x));
-	}
-
-	/** A predicate that holds true if a given metadata, queried with a certain {@link org.json.JSONPointer}, has
-	 *  a string value satisfying some predicate.
-	 *
-	 * @param source the source containing the metadata.
-	 * @param jsonPointer the {@link org.json.JSONPointer} (<a href="https://tools.ietf.org/html/rfc6901">RFC 6901</a>).
-	 * @param valuePredicate a predicate that is matched against the value returned {@linkplain JSONObject#query(String) by the JSONPointer
-	 * query}, after {@linkplain #toString() conversion to a string}.
-	 * @return true iff the metadata {@link JSONObject} matches the jsonPointer and the corresponding value has a string representation
-	 * that satisfies the predicate.
-	 */
-	@Override
-	public MetadataContains metadataQueryJSONPointer(final MetadataSource source, final String jsonPointer, final Predicate<String> valuePredicate) {
-		return t -> {
-			final var md = getMetadata(source, t);
-			final var qr = md != null? md.query(jsonPointer) : null;
-			return md != null && qr != null && valuePredicate.test(qr.toString());
-		};
-	}
-
-
-	/** A predicate that holds true if the callable {@link FastenURI} matches a certain predicate.
-	 *
-	 * @param fastenURIPredicate the predicate that the callable {@link FastenURI} is matched against.
-	 * @return the predicate.
-	 */
-	@Override
-	public FastenURIMatches fastenURIMatches(final Predicate<FastenURI> fastenURIPredicate) {
-		return x -> fastenURIPredicate.test(Util.getCallableName(x, dbContext));
 	}
 
 	public static void main(final String[] args) {
