@@ -43,6 +43,7 @@ import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
@@ -61,6 +62,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
@@ -291,6 +293,7 @@ public class SearchEngine {
 		int d = -1;
 		long sentinel = queue.firstLong();
 		final Result probe = new Result();
+		final LongSet nodes = graph.nodes();
 
 		while (!queue.isEmpty()) {
 			final long gid = queue.dequeueLong();
@@ -298,9 +301,12 @@ public class SearchEngine {
 				d++;
 				sentinel = -1;
 			}
+
+			if (!nodes.contains(gid)) continue; // We accept arbitrary seed sets
+
 			if (filter.test(gid)) {
 				probe.gid = gid;
-				if (!results.contains(probe)) results.add(new Result(gid, (graph.outdegree(gid) + graph.indegree(gid)) / Fast.log2(d + 1)));
+				if (!results.contains(probe)) results.add(new Result(gid, (graph.outdegree(gid) + graph.indegree(gid)) / Fast.log2(d + 2)));
 			}
 
 			final LongIterator iterator = forward ? graph.successors(gid).iterator() : graph.predecessors(gid).iterator();
@@ -328,19 +334,19 @@ public class SearchEngine {
 	}
 
 	/**
-	 * Computes the callables satisfying the given predicate and reachable from the provided callable,
-	 * and returns them in a ranked list.
+	 * Computes the callables satisfying the given predicate and reachable from the provided seed, in
+	 * the stitched graph associated with the provided revision, and returns them in a ranked list.
 	 *
-	 * @param gid the global ID of a callable.
+	 * @param rev the database id of a revision.
+	 * @param seed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
+	 *            entire set of GIDs of the specified revision will be used as a seed.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> fromCallable(final long gid, final LongPredicate filter) throws RocksDBException {
-		// Fetch revision id
-		final long rev = gid2Rev(gid);
-
+	public List<Result> from(final long rev, LongCollection seed, final LongPredicate filter) throws RocksDBException {
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing fromå the graph database");
+		if (seed == null) seed = graph.nodes();
 
 		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(rev)).fetchOne();
 		final String[] a = record.component1().split(":");
@@ -354,13 +360,11 @@ public class SearchEngine {
 		final DatabaseMerger dm = new DatabaseMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, rocksDao);
 		final var stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
 
-		if (!stitchedGraph.nodes().contains(gid)) throw new IllegalStateException("The stitched graph does not contain the given callable");
-
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
-		bfs(stitchedGraph, true, LongSets.singleton(gid), filter, results);
+		bfs(stitchedGraph, true, seed, filter, results);
 
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
 
@@ -370,8 +374,36 @@ public class SearchEngine {
 	}
 
 	/**
+	 * Computes the callables satisfying the given predicate and reachable from the provided callable,
+	 * and returns them in a ranked list.
+	 *
+	 * @param gid the global ID of a callable.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @return a list of {@linkplain Result results}.
+	 */
+	public List<Result> fromCallable(final long gid, final LongPredicate filter) throws RocksDBException {
+		return from(gid2Rev(gid), LongSets.singleton(gid), filter);
+	}
+
+	/**
+	 * Computes the callables satisfying the given predicate and reachable from the provided revision,
+	 * and returns them in a ranked list.
+	 *
+	 * @param revisionUri a FASTEN URI specifying a revision.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @return a list of {@linkplain Result results}.
+	 */
+	public List<Result> fromRevision(final FastenURI revisionUri, final LongPredicate filter) throws RocksDBException {
+		// Fetch revision id
+		final long rev = Util.getRevisionId(revisionUri, context);
+		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
+		return from(rev, null, filter);
+	}
+
+	/**
 	 * Computes the callables satisfying the given predicate and coreachable from the provided callable,
-	 * and returns them in a ranked list. They will be filtered by the conjuction of {@link #predicateFilters}.
+	 * and returns them in a ranked list. They will be filtered by the conjuction of
+	 * {@link #predicateFilters}.
 	 *
 	 * @param gid the global ID of a callable.
 	 * @return a list of {@linkplain Result results}.
@@ -381,19 +413,19 @@ public class SearchEngine {
 	}
 
 	/**
-	 * Computes the callables satisfying the given predicate and coreachable from the provided callable,
-	 * and returns them in a ranked list.
+	 * Computes the callables satisfying the given predicate and coreachable from the provided seed, in
+	 * the stitched graph associated with the provided revision, and returns them in a ranked list.
 	 *
-	 * @param gid the global ID of a callable.
+	 * @param rev the database id of a revision.
+	 * @param seed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
+	 *            entire set of GIDs of the specified revision will be used as a seed.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> toCallable(final long gid, final LongPredicate filter) throws RocksDBException {
-		// Fetch revision id
-		final long rev = gid2Rev(gid);
-
+	public List<Result> to(final long rev, LongCollection seed, final LongPredicate filter) throws RocksDBException {
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
+		if (seed == null) seed = graph.nodes();
 
 		Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(rev)).fetchOne();
 		String[] a = record.component1().split(":");
@@ -429,12 +461,11 @@ public class SearchEngine {
 			}
 			final DatabaseMerger dm = new DatabaseMerger(dependencyIds, context, rocksDao);
 			final var stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
-			if (!stitchedGraph.nodes().contains(gid)) continue; // We cannot possibly reach the callable
 
 			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 			final int sizeBefore = results.size();
 
-			bfs(stitchedGraph, false, LongSets.singleton(gid), filter, results);
+			bfs(stitchedGraph, false, seed, filter, results);
 
 			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
 		}
@@ -444,6 +475,33 @@ public class SearchEngine {
 		final Result[] array = results.toArray(new Result[0]);
 		Arrays.sort(array, (x, y) -> Double.compare(y.score, x.score));
 		return Arrays.asList(array);
+	}
+
+	/**
+	 * Computes the callables satisfying the given predicate and coreachable from the provided callable,
+	 * and returns them in a ranked list.
+	 *
+	 * @param gid the global ID of a callable.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @return a list of {@linkplain Result results}.
+	 */
+	public List<Result> toCallable(final long gid, final LongPredicate filter) throws RocksDBException {
+		return to(gid2Rev(gid), LongSets.singleton(gid), filter);
+	}
+
+	/**
+	 * Computes the callables satisfying the given predicate and coreachable from the provided revision,
+	 * and returns them in a ranked list.
+	 *
+	 * @param revisionUri a FASTEN URI specifying a revision.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @return a list of {@linkplain Result results}.
+	 */
+	public List<Result> roRevision(final FastenURI revisionUri, final LongPredicate filter) throws RocksDBException {
+		// Fetch revision id
+		final long rev = Util.getRevisionId(revisionUri, context);
+		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
+		return from(rev, null, filter);
 	}
 
 	// dbContext=PostgresConnector.getDSLContext("jdbc:postgresql://monster:5432/fasten_java","fastenro");rocksDao=new

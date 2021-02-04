@@ -21,6 +21,7 @@ package eu.fasten.core.search;
 import java.sql.SQLException;
 
 import org.jooq.DSLContext;
+import org.jooq.Record1;
 import org.jooq.Record5;
 import org.jooq.conf.Settings;
 
@@ -101,4 +102,28 @@ public class Util {
 			? FastenURI.create(null, null, null, singleRow.component4())
 			: FastenURI.create(singleRow.component1(), singleRow.component2(), singleRow.component3(), singleRow.component4());
 	}
+
+	/**
+	 * Given a FASTEN URI pointing at a revision and a database connection, returns the associated id in
+	 * the database.
+	 *
+	 * @implNote This method currently ignores the forge.
+	 *
+	 * @param uri a FASTEN URI without a path (defining a revision).
+	 * @param context a database connection.
+	 * @return the database id of the revision specified by {@code uri}, if such a revision is in the
+	 *         database; &minus;1 otherwise.
+	 */
+
+	public static long getRevisionId(final FastenURI uri, final DSLContext context) {
+		if (uri.getPath() != null) throw new IllegalArgumentException("URI " + uri + " does not specify a revision (nonempty path)");
+		final String product = uri.getRawProduct();
+		final String version = uri.getRawVersion();
+		final Record1<Long> singleRow = context.select(PackageVersions.PACKAGE_VERSIONS.ID)
+		.from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
+		.where(Packages.PACKAGES.PACKAGE_NAME.eq(product)).and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version)).fetchOne();
+
+		return singleRow == null ? -1 : singleRow.component1().longValue();
+	}
+
 }
