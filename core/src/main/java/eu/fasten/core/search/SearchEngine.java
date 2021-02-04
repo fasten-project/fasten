@@ -521,11 +521,13 @@ public class SearchEngine {
 			final long dependentId = iterator.nextLong();
 			record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(dependentId)).fetchOne();
 
-			LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
 			a = record.component1().split(":");
 			groupId = a[0];
 			artifactId = a[1];
 			version = record.component2();
+
+			LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
+
 			resolveTime -= System.nanoTime();
 			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
 			resolveTime += System.nanoTime();
@@ -533,7 +535,7 @@ public class SearchEngine {
 			LOGGER.debug("Found " + dependencySet.size() + " dependencies");
 
 			final LongOpenHashSet dependencyIds = LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-			if (dependentId != rev && !dependencyIds.contains(dependentId)) {
+			if (dependentId != rev && !dependencyIds.contains(rev)) {
 				LOGGER.debug("False dependent");
 				continue; // We cannot possibly reach the callable
 			}
