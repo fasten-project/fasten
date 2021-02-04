@@ -42,7 +42,6 @@ public class SearchEngineTest {
 		Long2DoubleOpenHashMap node2score = new Long2DoubleOpenHashMap();
 		for (int i = 0; i < node.length; i++) 
 			node2score.put(node[i], (indegree[i] + outdegree[i]) / Fast.log2(dist[i] + 2));
-		System.out.println(results);
 		assertEquals(node.length, results.size());
 		for (Result r: results) {
 			assertTrue(node2score.containsKey(r.gid));
