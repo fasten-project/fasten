@@ -36,13 +36,14 @@ public class CallableApiServiceImpl implements CallableApiService {
                                                       String package_version,
                                                       int offset,
                                                       int limit,
-                                                      String artifactRepo) {
+                                                      String artifactRepo,
+                                                      Long date) {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getPackageCallables(
                     package_name, package_version, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
@@ -53,11 +54,12 @@ public class CallableApiServiceImpl implements CallableApiService {
     public ResponseEntity<String> getCallableMetadata(String package_name,
                                                       String package_version,
                                                       String fasten_uri,
-                                                      String artifactRepo) {
+                                                      String artifactRepo,
+                                                      Long date) {
         String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
                 package_name, package_version, fasten_uri);
         if (result == null) {
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

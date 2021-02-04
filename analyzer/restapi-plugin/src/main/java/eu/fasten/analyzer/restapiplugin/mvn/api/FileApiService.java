@@ -26,5 +26,6 @@ public interface FileApiService {
                                            String package_version,
                                            int offset,
                                            int limit,
-                                           String artifactRepo);
+                                           String artifactRepo,
+                                           Long date);
 }

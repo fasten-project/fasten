@@ -58,11 +58,12 @@ public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
     public ResponseEntity<String> getPackageVersion(String package_name,
-                                                    String package_version, String artifactRepo) {
+                                                    String package_version, String artifactRepo,
+                                                    Long date) {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersion(
                 package_name, package_version);
         if (result == null) {
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
@@ -86,13 +87,14 @@ public class PackageApiServiceImpl implements PackageApiService {
                                                       String package_version,
                                                       int offset,
                                                       int limit,
-                                                      String artifactRepo) {
+                                                      String artifactRepo,
+                                                      Long date) {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
                     package_name, package_version, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

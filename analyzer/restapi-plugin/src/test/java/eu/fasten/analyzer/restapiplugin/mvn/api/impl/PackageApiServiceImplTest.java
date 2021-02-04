@@ -86,11 +86,11 @@ public class PackageApiServiceImplTest {
         var response = "package version";
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageVersion(packageName, version, null);
+        var result = service.getPackageVersion(packageName, version, null, null);
         assertEquals(expected, result);
 
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);
-        result = service.getPackageVersion(packageName, version, null);
+        result = service.getPackageVersion(packageName, version, null, null);
         assertEquals(HttpStatus.CREATED, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(2)).getPackageVersion(packageName, version);
@@ -120,7 +120,7 @@ public class PackageApiServiceImplTest {
         var response = "package callgraph";
         Mockito.when(kbDao.getPackageCallgraph(packageName, version, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageCallgraph(packageName, version, offset, limit, null);
+        var result = service.getPackageCallgraph(packageName, version, offset, limit, null, null);
         Mockito.verify(kbDao).getPackageCallgraph(packageName, version, offset, limit);
         assertEquals(expected, result);
     }

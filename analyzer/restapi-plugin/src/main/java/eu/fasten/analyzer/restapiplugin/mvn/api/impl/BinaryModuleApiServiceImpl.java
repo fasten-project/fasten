@@ -34,13 +34,14 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
                                                           String package_version,
                                                           int offset,
                                                           int limit,
-                                                          String artifactRepo) {
+                                                          String artifactRepo,
+                                                          Long date) {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getPackageBinaryModules(
                     package_name, package_version, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
@@ -51,13 +52,14 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
     public ResponseEntity<String> getBinaryModuleMetadata(String package_name,
                                                           String package_version,
                                                           String binary_module,
-                                                          String artifactRepo) {
+                                                          String artifactRepo,
+                                                          Long date) {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getBinaryModuleMetadata(
                     package_name, package_version, binary_module);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         if (result == null) {
@@ -73,13 +75,14 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
                                                        String binary_module,
                                                        int offset,
                                                        int limit,
-                                                       String artifactRepo) {
+                                                       String artifactRepo,
+                                                       Long date) {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getBinaryModuleFiles(
                     package_name, package_version, binary_module, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

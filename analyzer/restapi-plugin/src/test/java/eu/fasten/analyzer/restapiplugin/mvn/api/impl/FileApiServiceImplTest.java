@@ -49,7 +49,7 @@ public class FileApiServiceImplTest {
         var response = "files";
         Mockito.when(kbDao.getPackageFiles(packageName, version, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageFiles(packageName, version, offset, limit, null);
+        var result = service.getPackageFiles(packageName, version, offset, limit, null, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getPackageFiles(packageName, version, offset, limit);
     }

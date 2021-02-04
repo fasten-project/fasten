@@ -44,9 +44,9 @@ public class EdgeApiTest {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("package version edges", HttpStatus.OK);
-        Mockito.when(service.getPackageEdges(packageName, version, offset, limit, null)).thenReturn(response);
-        var result = api.getPackageEdges(packageName, version, offset, limit, null);
+        Mockito.when(service.getPackageEdges(packageName, version, offset, limit, null, null)).thenReturn(response);
+        var result = api.getPackageEdges(packageName, version, offset, limit, null, null);
         assertEquals(response, result);
-        Mockito.verify(service).getPackageEdges(packageName, version, offset, limit, null);
+        Mockito.verify(service).getPackageEdges(packageName, version, offset, limit, null, null);
     }
 }

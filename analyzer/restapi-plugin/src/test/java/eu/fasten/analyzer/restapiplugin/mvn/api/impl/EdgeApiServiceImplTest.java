@@ -49,7 +49,7 @@ public class EdgeApiServiceImplTest {
         var response = "edges";
         Mockito.when(kbDao.getPackageEdges(packageName, version, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageEdges(packageName, version, offset, limit, null);
+        var result = service.getPackageEdges(packageName, version, offset, limit, null, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getPackageEdges(packageName, version, offset, limit);
     }

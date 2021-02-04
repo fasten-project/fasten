@@ -52,7 +52,7 @@ public class CallableApiServiceImplTest {
         var response = "callables";
         Mockito.when(kbDao.getPackageCallables(packageName, version, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageCallables(packageName, version, offset, limit, null);
+        var result = service.getPackageCallables(packageName, version, offset, limit, null, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getPackageCallables(packageName, version, offset, limit);
     }
@@ -65,11 +65,11 @@ public class CallableApiServiceImplTest {
         var response = "callable metadata";
         Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getCallableMetadata(packageName, version, callable, null);
+        var result = service.getCallableMetadata(packageName, version, callable, null, null);
         assertEquals(expected, result);
 
         Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
-        result = service.getCallableMetadata(packageName, version, callable, null);
+        result = service.getCallableMetadata(packageName, version, callable, null, null);
         assertEquals(HttpStatus.CREATED, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(2)).getCallableMetadata(packageName, version, callable);

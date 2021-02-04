@@ -34,13 +34,14 @@ public class FileApiServiceImpl implements FileApiService {
                                                   String package_version,
                                                   int offset,
                                                   int limit,
-                                                  String artifactRepo) {
+                                                  String artifactRepo,
+                                                  Long date) {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getPackageFiles(
                     package_name, package_version, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

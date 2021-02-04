@@ -45,10 +45,10 @@ public class CallableApiTest {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("package binary callables", HttpStatus.OK);
-        Mockito.when(service.getPackageCallables(packageName, version, offset, limit, null)).thenReturn(response);
-        var result = api.getPackageCallables(packageName, version, offset, limit, null);
+        Mockito.when(service.getPackageCallables(packageName, version, offset, limit, null, null)).thenReturn(response);
+        var result = api.getPackageCallables(packageName, version, offset, limit, null, null);
         assertEquals(response, result);
-        Mockito.verify(service).getPackageCallables(packageName, version, offset, limit, null);
+        Mockito.verify(service).getPackageCallables(packageName, version, offset, limit, null, null);
     }
 
     @Test
@@ -57,10 +57,10 @@ public class CallableApiTest {
         var version = "pkg version";
         var callable = "callable";
         var response = new ResponseEntity<>("callable metadata", HttpStatus.OK);
-        Mockito.when(service.getCallableMetadata(packageName, version, callable, null)).thenReturn(response);
-        var result = api.getCallableMetadata(packageName, version, callable, null);
+        Mockito.when(service.getCallableMetadata(packageName, version, callable, null, null)).thenReturn(response);
+        var result = api.getCallableMetadata(packageName, version, callable, null, null);
         assertEquals(response, result);
-        Mockito.verify(service).getCallableMetadata(packageName, version, callable, null);
+        Mockito.verify(service).getCallableMetadata(packageName, version, callable, null, null);
     }
 
     @Test

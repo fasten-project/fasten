@@ -42,7 +42,8 @@ public class EdgeApi {
                                            @PathVariable("pkg_ver") String package_version,
                                            @RequestParam(required = false, defaultValue = "0") int offset,
                                            @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
-                                           @RequestParam(value = "artifactRepository", required = false) String artifactRepo) {
-        return service.getPackageEdges(package_name, package_version, offset, limit, artifactRepo);
+                                           @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
+                                           @RequestParam(required = false) Long releaseDate) {
+        return service.getPackageEdges(package_name, package_version, offset, limit, artifactRepo, releaseDate);
     }
 }

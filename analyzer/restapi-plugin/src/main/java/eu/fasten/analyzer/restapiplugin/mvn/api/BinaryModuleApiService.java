@@ -26,17 +26,20 @@ public interface BinaryModuleApiService {
                                                    String package_version,
                                                    int offset,
                                                    int limit,
-                                                   String artifactRepo);
+                                                   String artifactRepo,
+                                                   Long date);
 
     ResponseEntity<String> getBinaryModuleMetadata(String package_name,
                                                    String package_version,
                                                    String binary_module,
-                                                   String artifactRepo);
+                                                   String artifactRepo,
+                                                   Long date);
 
     ResponseEntity<String> getBinaryModuleFiles(String package_name,
                                                 String package_version,
                                                 String binary_module,
                                                 int offset,
                                                 int limit,
-                                                String artifactRepo);
+                                                String artifactRepo,
+                                                Long date);
 }

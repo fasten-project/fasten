@@ -28,7 +28,7 @@ public class LazyIngestArtifactChecker {
         return KnowledgeBaseConnector.kbDao.isArtifactIngested(packageName, version);
     }
 
-    public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo) {
+    public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) {
         if (!hasArtifactBeenIngested(packageName, version)) {
             var jsonRecord = new JSONObject();
             jsonRecord.put("groupId", packageName.split(Constants.mvnCoordinateSeparator)[0]);
@@ -36,6 +36,9 @@ public class LazyIngestArtifactChecker {
             jsonRecord.put("version", version);
             if (artifactRepo != null && !artifactRepo.isEmpty()) {
                 jsonRecord.put("artifactRepository", artifactRepo);
+            }
+            if (date != null && date > 0) {
+                jsonRecord.put("date", date);
             }
             var id = KnowledgeBaseConnector.kbDao.insertIngestedArtifact(packageName, version, new Timestamp(System.currentTimeMillis()));
             if (id != -1 && KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
