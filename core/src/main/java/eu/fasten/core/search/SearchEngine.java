@@ -226,7 +226,7 @@ public class SearchEngine {
 				if (limit < 0) limit = Integer.MAX_VALUE;
 				break;
 			
-			case "maxDependants":
+			case "maxDependents":
 				maxDependents = Long.parseLong(commandAndArgs[1]);
 				if (maxDependents < 0) maxDependents = Long.MAX_VALUE;
 				break;
