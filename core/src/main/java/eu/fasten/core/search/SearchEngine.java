@@ -28,8 +28,6 @@ import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.management.RuntimeErrorException;
-
 import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.ClosestFirstIterator;
 import org.jooq.DSLContext;
@@ -56,8 +54,8 @@ import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.DatabaseMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
-import eu.fasten.core.search.predicate.CachingPredicateFactory.MetadataSource;
 import eu.fasten.core.search.predicate.PredicateFactory;
+import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -78,9 +76,9 @@ public class SearchEngine {
 	private static final int DEFAULT_LIMIT = 10;
 
 	/** The regular expression for commands. */
-	private static Pattern COMMAND_REGEXP = Pattern.compile("\\$\\s*(.*)\\s*"); 
-	
-	
+	private static Pattern COMMAND_REGEXP = Pattern.compile("\\$\\s*(.*)\\s*");
+
+
 	public final static class Result {
 		public long gid;
 		public double score;
@@ -103,13 +101,13 @@ public class SearchEngine {
 	/** The resolver. */
 	private final GraphMavenResolver resolver;
 	/** The predicate factory to be used to create predicates for this search engine. */
-	private PredicateFactory predicateFactory;
+	private final PredicateFactory predicateFactory;
 
 	/** The maximum number of results that should be printed. */
 	private int limit = DEFAULT_LIMIT;
 	/** The filters whose conjunction will be applied by default when executing a query, unless otherwise
 	 *  specified (compare, e.g., {@link #fromCallable(long)} and {@link #fromCallable(long, LongPredicate)}). */
-	private ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
+	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
 
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
@@ -154,12 +152,12 @@ public class SearchEngine {
 	}
 
 	/** Executes a given command.
-	 * 
+	 *
 	 * @param command the command.
 	 */
 	private void executeCommand(final String command) {
-		String[] commandAndArgs = command.split("\\s"); // Split command on whitespace
-		String help = 
+		final String[] commandAndArgs = command.split("\\s"); // Split command on whitespace
+		final String help =
 				"\t$help                           Help on commands\n" +
 				"\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" +
 				"\t$clear                          Clear filters\n" +
@@ -179,20 +177,20 @@ public class SearchEngine {
 				"";
 		try {
 			switch(commandAndArgs[0].toLowerCase()) {
-			
+
 			case "help":
 				System.err.println(help);
 				break;
-				
+
 			case "limit":
 				limit = Integer.parseInt(commandAndArgs[1]);
 				if (limit < 0) limit = Integer.MAX_VALUE;
 				break;
-				
+
 			case "clear":
 				predicateFilters.clear();
 				break;
-			
+
 			case "f":
 				LongPredicate predicate = null;
 				Pattern regExp;
@@ -210,14 +208,14 @@ public class SearchEngine {
 					regExp = Pattern.compile(commandAndArgs[2]);
 					predicate = predicateFactory.fastenURIMatches(uri -> uri.getPath() != null && regExp.matcher(uri.getPath()).matches());
 					break;
-				case "cmd": case "mmd": case "pmd": 
-					String key = commandAndArgs[2];
+				case "cmd": case "mmd": case "pmd":
+					final String key = commandAndArgs[2];
 					mds = null;
 					switch (commandAndArgs[1].toLowerCase().charAt(0)) {
 					case 'c':  mds = MetadataSource.CALLABLE; break;
 					case 'm':  mds = MetadataSource.MODULE; break;
 					case 'p':  mds = MetadataSource.PACKAGE_VERSION; break;
-					default: throw new RuntimeException("Cannot happen"); 
+					default: throw new RuntimeException("Cannot happen");
 					}
 				 	if (commandAndArgs.length == 3) predicate = predicateFactory.metadataContains(mds, key);
 				 	else {
@@ -225,14 +223,14 @@ public class SearchEngine {
 				 		predicate = predicateFactory.metadataContains(mds, key, regExp.asPredicate());
 				 	}
 				 	break;
-				case "cmdjp": case "mmdjp": case "pmdjp": 
-					String jsonPointer = commandAndArgs[2];
+				case "cmdjp": case "mmdjp": case "pmdjp":
+					final String jsonPointer = commandAndArgs[2];
 					mds = null;
 					switch (commandAndArgs[1].toLowerCase().charAt(0)) {
 					case 'c':  mds = MetadataSource.CALLABLE; break;
 					case 'm':  mds = MetadataSource.MODULE; break;
 					case 'p':  mds = MetadataSource.PACKAGE_VERSION; break;
-					default: throw new RuntimeException("Cannot happen"); 
+					default: throw new RuntimeException("Cannot happen");
 					}
 				 	regExp = Pattern.compile(commandAndArgs[3]);
 				 	predicate = predicateFactory.metadataQueryJSONPointer(mds, jsonPointer, regExp.asPredicate());
@@ -242,7 +240,7 @@ public class SearchEngine {
 				}
 				if (predicate != null) predicateFilters.push(predicate);
 				break;
-				
+
 			case "and": case "or":
 				if (predicateFilters.size() < 2) throw new RuntimeException("At least two predicates must be present");
 				if ("and".equals(commandAndArgs[0].toLowerCase()))
@@ -250,13 +248,13 @@ public class SearchEngine {
 				else
 					predicateFilters.push(predicateFilters.pop().or(predicateFilters.pop()));
 				break;
-				
+
 			case "not":
 				if (predicateFilters.size() < 1) throw new RuntimeException("At least one predicates must be present");
 				predicateFilters.push(predicateFilters.pop().negate());
 				break;
 			}
-		} catch (RuntimeException e) {
+		} catch (final RuntimeException e) {
 			System.err.println("Exception while executing command " + command);
 			e.printStackTrace(System.err);
 			System.err.println(help);
@@ -273,13 +271,13 @@ public class SearchEngine {
 	public List<Result> fromCallable(final long gid) throws RocksDBException {
 		return fromCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and));
 	}
-	
+
 	/**
 	 * Computes the callables satisfying the given predicate and reachable from the provided callable,
 	 * and returns them in a ranked list.
 	 *
 	 * @param gid the global ID of a callable.
-	 * @param filter a {@link LongPredicate} that will be used to filter callables. 
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @return a list of {@linkplain Result results}.
 	 */
 	public List<Result> fromCallable(final long gid, final LongPredicate filter) throws RocksDBException {
@@ -424,7 +422,7 @@ public class SearchEngine {
 			if (!scanner.hasNextLine()) break;
 			String line = scanner.nextLine();
 			if (line.length() == 0) continue;
-			Matcher matcher = COMMAND_REGEXP.matcher(line);
+			final Matcher matcher = COMMAND_REGEXP.matcher(line);
 			if (matcher.matches()) {
 				searchEngine.executeCommand(matcher.group(1));
 				continue;
