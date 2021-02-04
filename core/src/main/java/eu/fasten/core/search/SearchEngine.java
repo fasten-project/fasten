@@ -197,7 +197,6 @@ public class SearchEngine {
 		final String[] commandAndArgs = command.split("\\s"); // Split command on whitespace
 		final String help =
 				"\t$help                           Help on commands\n" +
-				"\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" +
 				"\t$clear                          Clear filters\n" +
 				"\t$f pmatches <REGEXP>            Add filter: package (a.k.a. product) matches <REGEXP>\n" +
 				"\t$f vmatches <REGEXP>            Add filter: version matches <REGEXP>\n" +
@@ -211,6 +210,8 @@ public class SearchEngine {
 				"\t$or                             The last two filters are substituted by their disjunction (or)\n" +
 				"\t$and                            The last two filters are substituted by their conjunction (and)\n" +
 				"\t$not                            The last filter is substituted by its negation (not)\n" +
+				"\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" +
+				"\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)" +
 				"\t±<URI>                          Find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" +
 				"";
 		try {
@@ -223,6 +224,11 @@ public class SearchEngine {
 			case "limit":
 				limit = Integer.parseInt(commandAndArgs[1]);
 				if (limit < 0) limit = Integer.MAX_VALUE;
+				break;
+			
+			case "maxDependants":
+				maxDependents = Long.parseLong(commandAndArgs[1]);
+				if (maxDependents < 0) maxDependents = Long.MAX_VALUE;
 				break;
 
 			case "clear":
