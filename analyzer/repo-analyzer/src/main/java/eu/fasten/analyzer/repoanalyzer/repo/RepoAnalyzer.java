@@ -198,7 +198,7 @@ public class RepoAnalyzer {
             var content = Files.readString(testClass);
 
             var header = content.split("class", 2)[0];
-            var pattern = Pattern.compile("import[^;]*[mM]ock.*;");
+            var pattern = Pattern.compile("import[^;]*Mock.*;");
             if (pattern.matcher(header).find()) {
                 files.add(testClass);
             }
@@ -217,8 +217,11 @@ public class RepoAnalyzer {
                                                      final List<Path> filesWithMockImport) {
         var tests = new HashMap<Path, List<String>>();
 
-        var mockitoPatterns = new String[]{"\\.mock\\(", "\\.when\\(", "\\.spy\\(", "\\.doNothing\\("};
-        var predicate = Arrays.stream(mockitoPatterns)
+        var patterns = new String[]{
+                "\\.mock\\(", "\\.when\\(", "\\.spy\\(", "\\.doNothing\\(", // Mockito
+                "replayAll\\(\\)", "verifyAll\\(\\)", "\\.createMock\\(", // EasyMock
+                "@Mocked", "new Expectations\\(\\)"}; // JMockit
+        var predicate = Arrays.stream(patterns)
                 .map(p -> Pattern.compile(p).asPredicate())
                 .reduce(x -> false, Predicate::or);
 
