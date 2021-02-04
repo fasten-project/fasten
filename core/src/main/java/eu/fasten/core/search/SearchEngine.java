@@ -346,6 +346,45 @@ public class SearchEngine {
 	}
 
 	/**
+	 * Computes the callables satisfying the given predicate and reachable from the provided callable,
+	 * and returns them in a ranked list.
+	 *
+	 * @param gid the global ID of a callable.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @return a list of {@linkplain Result results}.
+	 */
+	public List<Result> fromCallable(final long gid, final LongPredicate filter) throws RocksDBException {
+		return from(gid2Rev(gid), LongSets.singleton(gid), filter);
+	}
+	
+	/**
+	 * Computes the callables satisfying the given predicate and reachable from the provided revision,
+	 * and returns them in a ranked list. They will be filtered by the conjunction of
+	 * {@link #predicateFilters}.
+	 *
+	 * @param revisionUri a FASTEN URI specifying a revision.
+	 * @return a list of {@linkplain Result results}.
+	 */
+	private List<Result> fromRevision(final FastenURI revisionUri) throws RocksDBException {
+		return fromRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and));
+	}
+
+	/**
+	 * Computes the callables satisfying the given predicate and reachable from the provided revision,
+	 * and returns them in a ranked list.
+	 *
+	 * @param revisionUri a FASTEN URI specifying a revision.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @return a list of {@linkplain Result results}.
+	 */
+	public List<Result> fromRevision(final FastenURI revisionUri, final LongPredicate filter) throws RocksDBException {
+		// Fetch revision id
+		final long rev = Util.getRevisionId(revisionUri, context);
+		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
+		return from(rev, null, filter);
+	}
+
+	/**
 	 * Computes the callables satisfying the given predicate and reachable from the provided seed, in
 	 * the stitched graph associated with the provided revision, and returns them in a ranked list.
 	 *
@@ -386,30 +425,15 @@ public class SearchEngine {
 	}
 
 	/**
-	 * Computes the callables satisfying the given predicate and reachable from the provided callable,
-	 * and returns them in a ranked list.
+	 * Computes the callables satisfying the given predicate and coreachable from the provided callable,
+	 * and returns them in a ranked list. They will be filtered by the conjuction of
+	 * {@link #predicateFilters}.
 	 *
 	 * @param gid the global ID of a callable.
-	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> fromCallable(final long gid, final LongPredicate filter) throws RocksDBException {
-		return from(gid2Rev(gid), LongSets.singleton(gid), filter);
-	}
-
-	/**
-	 * Computes the callables satisfying the given predicate and reachable from the provided revision,
-	 * and returns them in a ranked list.
-	 *
-	 * @param revisionUri a FASTEN URI specifying a revision.
-	 * @param filter a {@link LongPredicate} that will be used to filter callables.
-	 * @return a list of {@linkplain Result results}.
-	 */
-	public List<Result> fromRevision(final FastenURI revisionUri, final LongPredicate filter) throws RocksDBException {
-		// Fetch revision id
-		final long rev = Util.getRevisionId(revisionUri, context);
-		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
-		return from(rev, null, filter);
+	private List<Result> toCallable(final long gid) throws RocksDBException {
+		return toCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and));
 	}
 
 	/**
@@ -420,8 +444,35 @@ public class SearchEngine {
 	 * @param gid the global ID of a callable.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	private List<Result> toCallable(final long gid) throws RocksDBException {
-		return toCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and));
+	public List<Result> toCallable(final long gid, final LongPredicate filter) throws RocksDBException {
+		return to(gid2Rev(gid), LongSets.singleton(gid), filter);
+	}
+
+	/**
+	 * Computes the callables satisfying the given predicate and coreachable from the provided revision,
+	 * and returns them in a ranked list.
+	 *
+	 * @param revisionUri a FASTEN URI specifying a revision.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @return a list of {@linkplain Result results}.
+	 */	
+	public List<Result> toRevision(final FastenURI revisionUri) throws RocksDBException {
+		return toRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and));
+	}
+	
+	/**
+	 * Computes the callables satisfying the given predicate and coreachable from the provided revision,
+	 * and returns them in a ranked list.
+	 *
+	 * @param revisionUri a FASTEN URI specifying a revision.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @return a list of {@linkplain Result results}.
+	 */
+	public List<Result> toRevision(final FastenURI revisionUri, final LongPredicate filter) throws RocksDBException {
+		// Fetch revision id
+		final long rev = Util.getRevisionId(revisionUri, context);
+		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
+		return from(rev, null, filter);
 	}
 
 	/**
@@ -489,32 +540,7 @@ public class SearchEngine {
 		return Arrays.asList(array);
 	}
 
-	/**
-	 * Computes the callables satisfying the given predicate and coreachable from the provided callable,
-	 * and returns them in a ranked list.
-	 *
-	 * @param gid the global ID of a callable.
-	 * @param filter a {@link LongPredicate} that will be used to filter callables.
-	 * @return a list of {@linkplain Result results}.
-	 */
-	public List<Result> toCallable(final long gid, final LongPredicate filter) throws RocksDBException {
-		return to(gid2Rev(gid), LongSets.singleton(gid), filter);
-	}
-
-	/**
-	 * Computes the callables satisfying the given predicate and coreachable from the provided revision,
-	 * and returns them in a ranked list.
-	 *
-	 * @param revisionUri a FASTEN URI specifying a revision.
-	 * @param filter a {@link LongPredicate} that will be used to filter callables.
-	 * @return a list of {@linkplain Result results}.
-	 */
-	public List<Result> roRevision(final FastenURI revisionUri, final LongPredicate filter) throws RocksDBException {
-		// Fetch revision id
-		final long rev = Util.getRevisionId(revisionUri, context);
-		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
-		return from(rev, null, filter);
-	}
+	
 
 	// dbContext=PostgresConnector.getDSLContext("jdbc:postgresql://monster:5432/fasten_java","fastenro");rocksDao=new
 	// eu.fasten.core.data.graphdb.RocksDao("/home/vigna/graphdb/",true);
