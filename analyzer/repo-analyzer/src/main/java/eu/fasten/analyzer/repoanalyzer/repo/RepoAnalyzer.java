@@ -1,5 +1,6 @@
 package eu.fasten.analyzer.repoanalyzer.repo;
 
+import com.google.common.collect.Sets;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -9,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -65,6 +67,9 @@ public class RepoAnalyzer {
                 .reduce(0, Integer::sum);
         statistics.put("unitTests", numberOfUnitTests);
 
+        testFiles.retainAll(testBodies.keySet());
+        statistics.put("testFiles", testFiles.size());
+
         var mockImportFiles = getFilesWithMockImport(testFiles);
         statistics.put("filesWithMockImport", mockImportFiles.size());
 
@@ -90,13 +95,13 @@ public class RepoAnalyzer {
      * @return list of files
      * @throws IOException if I/O exception occurs when accessing root file
      */
-    private List<Path> getMatchingFiles(final File directory, final List<String> patterns) throws IOException {
+    private Set<Path> getMatchingFiles(final File directory, final List<String> patterns) throws IOException {
         var predicate = patterns.stream()
                 .map(p -> Pattern.compile(p).asPredicate())
                 .reduce(x -> false, Predicate::or);
         return Files.walk(directory.toPath())
                 .filter(f -> predicate.test(f.getFileName().toString()))
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -148,7 +153,7 @@ public class RepoAnalyzer {
      * @return a map of files and test bodies
      * @throws IOException if I/O exception occurs when reading a file
      */
-    private Map<Path, List<String>> getJUnitTests(final List<Path> testClasses) throws IOException {
+    private Map<Path, List<String>> getJUnitTests(Set<Path> testClasses) throws IOException {
         var testBodies = new HashMap<Path, List<String>>();
         for (var testClass : testClasses) {
             var content = Files.readString(testClass);
@@ -191,7 +196,7 @@ public class RepoAnalyzer {
      * @return a list of files with mock import
      * @throws IOException if I/O exception occurs when reading a file
      */
-    private List<Path> getFilesWithMockImport(final List<Path> testClasses) throws IOException {
+    private List<Path> getFilesWithMockImport(final Set<Path> testClasses) throws IOException {
         var files = new ArrayList<Path>();
 
         for (var testClass : testClasses) {
