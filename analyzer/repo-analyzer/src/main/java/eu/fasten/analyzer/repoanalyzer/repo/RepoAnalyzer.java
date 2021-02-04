@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,20 +51,31 @@ public class RepoAnalyzer {
         statistics.put("estimatedCoverage", estimatedCoverage);
 
         if (estimatedCoverage < ESTIMATED_COVERAGE_THRESHOLD) {
+            statistics.put("unitTests", -1);
+            statistics.put("filesWithMockImport", -1);
+            statistics.put("unitTestsWithMocks", -1);
+            statistics.put("mockingRatio", -1);
+            statistics.put("statementCoverage", -1);
             return statistics;
         }
 
         var testBodies = getJUnitTests(testFiles);
-        int numberOfUnitTests = testBodies.values().stream()
+        var numberOfUnitTests = testBodies.values().stream()
                 .map(List::size)
                 .reduce(0, Integer::sum);
         statistics.put("unitTests", numberOfUnitTests);
 
-        statistics.put("filesWithMockitoImport", 0);
+        var mockImportFiles = getFilesWithMockImport(testFiles);
+        statistics.put("filesWithMockImport", mockImportFiles.size());
 
+        var testWithMocks = getTestsWithMock(testBodies, mockImportFiles);
+        int numberOfUnitTestsWithMocks = testWithMocks.values().stream()
+                .map(List::size)
+                .reduce(0, Integer::sum);
+        statistics.put("unitTestsWithMocks", numberOfUnitTestsWithMocks);
 
-        statistics.put("unitTestsWithMocks", 0);
-        statistics.put("mockingRatio", 0);
+        var mockingRatio = (double) Math.round(1000 * (double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests) / 1000;
+        statistics.put("mockingRatio", mockingRatio);
 
         statistics.put("statementCoverage", 0);
 
@@ -78,7 +90,7 @@ public class RepoAnalyzer {
      * @return list of files
      * @throws IOException if I/O exception occurs when accessing root file
      */
-    public List<Path> getMatchingFiles(final File directory, final List<String> patterns) throws IOException {
+    private List<Path> getMatchingFiles(final File directory, final List<String> patterns) throws IOException {
         var predicate = patterns.stream()
                 .map(p -> Pattern.compile(p).asPredicate())
                 .reduce(x -> false, Predicate::or);
@@ -93,7 +105,7 @@ public class RepoAnalyzer {
      *
      * @return root of the source files
      */
-    public File getPathToSourcesRoot() {
+    private File getPathToSourcesRoot() {
         // TODO: take into account custom source dir in pom.xml
         return new File(repoPath.getAbsolutePath() + DEFAULT_SOURCES_PATH);
     }
@@ -104,7 +116,7 @@ public class RepoAnalyzer {
      *
      * @return root of the test files
      */
-    public File getPathToTestsRoot() {
+    private File getPathToTestsRoot() {
         // TODO: take into account custom test dir in pom.xml
         return new File(repoPath.getAbsolutePath() + DEFAULT_TESTS_PATH);
     }
@@ -115,7 +127,7 @@ public class RepoAnalyzer {
      *
      * @return list of regular expressions
      */
-    public List<String> getTestsPatterns() {
+    private List<String> getTestsPatterns() {
         // TODO: take into account custom regex configurations of maven surefire plugin
         // https://maven.apache.org/surefire/maven-surefire-plugin/examples/inclusion-exclusion.html
 
@@ -136,10 +148,10 @@ public class RepoAnalyzer {
      * @return a map of files and test bodies
      * @throws IOException if I/O exception occurs when reading a file
      */
-    public Map<Path, List<String>> getJUnitTests(final List<Path> testClasses) throws IOException {
+    private Map<Path, List<String>> getJUnitTests(final List<Path> testClasses) throws IOException {
         var testBodies = new HashMap<Path, List<String>>();
         for (var testClass : testClasses) {
-            String content = Files.readString(testClass);
+            var content = Files.readString(testClass);
 
             var unitTests = content.split("@Test");
 
@@ -170,5 +182,50 @@ public class RepoAnalyzer {
             }
         }
         return testBodies;
+    }
+
+    /**
+     * Get a list of files that have imported a mock framework.
+     *
+     * @param testClasses paths to test classes
+     * @return a list of files with mock import
+     * @throws IOException if I/O exception occurs when reading a file
+     */
+    private List<Path> getFilesWithMockImport(final List<Path> testClasses) throws IOException {
+        var files = new ArrayList<Path>();
+
+        for (var testClass : testClasses) {
+            var content = Files.readString(testClass);
+
+            var header = content.split("class", 2)[0];
+            var pattern = Pattern.compile("import[^;]*[mM]ock.*;");
+            if (pattern.matcher(header).find()) {
+                files.add(testClass);
+            }
+        }
+        return files;
+    }
+
+    /**
+     * Get a map of files and respective test bodies that contain keywords of mocking frameworks.
+     *
+     * @param testBodies          all test bodies
+     * @param filesWithMockImport files that have mock imports
+     * @return map of files and test bodies with mocks
+     */
+    private Map<Path, List<String>> getTestsWithMock(final Map<Path, List<String>> testBodies,
+                                                     final List<Path> filesWithMockImport) {
+        var tests = new HashMap<Path, List<String>>();
+
+        var mockitoPatterns = new String[]{"\\.mock\\(", "\\.when\\(", "\\.spy\\(", "\\.doNothing\\("};
+        var predicate = Arrays.stream(mockitoPatterns)
+                .map(p -> Pattern.compile(p).asPredicate())
+                .reduce(x -> false, Predicate::or);
+
+        for (var file : filesWithMockImport) {
+            tests.put(file, testBodies.get(file).stream().filter(predicate).collect(Collectors.toList()));
+        }
+
+        return tests;
     }
 }
