@@ -19,6 +19,7 @@
 package eu.fasten.core.search;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -137,6 +138,7 @@ public class SearchEngine {
 	private long resolveTime;
 	private long stitchingTime;
 	private long visitTime;
+	private List<Throwable> throwables = new ArrayList<>();
 
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
@@ -498,6 +500,7 @@ public class SearchEngine {
 	 * @return a list of {@linkplain Result results}.
 	 */
 	public List<Result> to(final long rev, LongCollection seed, final LongPredicate filter) throws RocksDBException {
+		throwables.clear();
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
 		if (seed == null) seed = graph.nodes();
@@ -551,8 +554,17 @@ public class SearchEngine {
 
 			stitchingTime -= System.nanoTime();
 			final DatabaseMerger dm = new DatabaseMerger(dependencyIds, context, rocksDao);
-			final var stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
+
+			DirectedGraph stitchedGraph = null;
+			try {
+				stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
+			} catch(Throwable t) {
+				throwables.add(t);
+				LOGGER.error("mergeWithCHA threw an exception", t);
+			}
 			stitchingTime += System.nanoTime();
+
+			if (stitchedGraph == null) continue;
 
 			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 			final int sizeBefore = results.size();
@@ -649,6 +661,7 @@ public class SearchEngine {
 					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
 				}
 
+				for(var t: searchEngine.throwables) System.err.println(t);
 				System.err.printf("\nTotal time: %.3fs Resolve time: %.3fs Stitching time: %.3fs Visit time %.3fs\n", (System.nanoTime() + start) * 1E-9, searchEngine.resolveTime * 1E-9, searchEngine.stitchingTime * 1E-9, searchEngine.visitTime * 1E-9);
 			} catch (final Exception e) {
 				e.printStackTrace();
