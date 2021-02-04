@@ -66,6 +66,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 
 /**
@@ -138,6 +139,7 @@ public class SearchEngine {
 	private long resolveTime;
 	private long stitchingTime;
 	private long visitTime;
+	private long maxDependents = Long.MAX_VALUE;
 	private List<Throwable> throwables = new ArrayList<>();
 
 	/**
@@ -511,7 +513,16 @@ public class SearchEngine {
 		String artifactId = a[1];
 		String version = record.component2();
 		resolveTime -= System.nanoTime();
-		final Set<Revision> dependentSet = resolver.resolveDependents(groupId, artifactId, version, -1, true);
+		final Set<Revision> s = resolver.resolveDependents(groupId, artifactId, version, -1, true);
+		final Set<Revision> dependentSet = new ObjectOpenHashSet<>();
+
+		// Temporary reduction in size to circumvent mergeWithCHA() crashes
+		int m = 0;
+		for(var r: s) {
+			dependentSet.add(r);
+			if (m++ == 100) break;
+		}
+
 		resolveTime += System.nanoTime();
 
 		LOGGER.debug("Found " + dependentSet.size() + " dependents");
