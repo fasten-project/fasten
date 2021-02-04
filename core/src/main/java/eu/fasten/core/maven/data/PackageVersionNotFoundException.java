@@ -16,15 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.core.maven.data;
 
-import org.springframework.http.ResponseEntity;
-
-public interface FileApiService {
-
-    ResponseEntity<String> getPackageFiles(String package_name,
-                                           String package_version,
-                                           int offset,
-                                           int limit,
-                                           String artifactRepo);
+public class PackageVersionNotFoundException extends RuntimeException {
+    public PackageVersionNotFoundException(String message) {
+        super(message);
+    }
 }

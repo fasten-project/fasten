@@ -52,7 +52,7 @@ public class CallableApiServiceImplTest {
         var response = "callables";
         Mockito.when(kbDao.getPackageCallables(packageName, version, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageCallables(packageName, version, offset, limit);
+        var result = service.getPackageCallables(packageName, version, offset, limit, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getPackageCallables(packageName, version, offset, limit);
     }

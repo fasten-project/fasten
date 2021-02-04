@@ -25,6 +25,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import eu.fasten.core.utils.FastenUriUtils;
 import org.apache.commons.math3.util.Pair;
 import org.jooq.*;
@@ -1051,9 +1052,11 @@ public class MetadataDao {
      * @param limit
      * @return All package version dependencies.
      */
-    public String getPackageDependencies(String packageName, String packageVersion, int offset, int limit) {
+    public String getPackageDependencies(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
 
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1079,9 +1082,11 @@ public class MetadataDao {
     public String getPackageModules(String packageName,
                                     String packageVersion,
                                     int offset,
-                                    int limit) {
+                                    int limit) throws PackageVersionNotFoundException {
 
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1112,7 +1117,11 @@ public class MetadataDao {
 
     public String getModuleMetadata(String packageName,
                                     String packageVersion,
-                                    String moduleNamespace) {
+                                    String moduleNamespace) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1144,7 +1153,10 @@ public class MetadataDao {
                                  String packageVersion,
                                  String moduleNamespace,
                                  int offset,
-                                 int limit) {
+                                 int limit) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
@@ -1176,7 +1188,10 @@ public class MetadataDao {
                                      String packageVersion,
                                      String moduleNamespace,
                                      int offset,
-                                     int limit) {
+                                     int limit) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
@@ -1204,8 +1219,10 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) {
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+    public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1237,7 +1254,11 @@ public class MetadataDao {
 
     public String getBinaryModuleMetadata(String packageName,
                                           String packageVersion,
-                                          String binaryModule) {
+                                          String binaryModule) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1271,8 +1292,10 @@ public class MetadataDao {
                                        String packageVersion,
                                        String binaryModule,
                                        int offset,
-                                       int limit) {
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+                                       int limit) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1298,9 +1321,11 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getPackageCallables(String packageName, String packageVersion, int offset, int limit) {
+    public String getPackageCallables(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
 
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1441,9 +1466,11 @@ public class MetadataDao {
         return map;
     }
 
-    public String getPackageFiles(String packageName, String packageVersion, int offset, int limit) {
+    public String getPackageFiles(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
 
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1478,9 +1505,11 @@ public class MetadataDao {
                                   String packageVersion,
                                   boolean idsOnly,
                                   int offset,
-                                  int limit) {
+                                  int limit) throws PackageVersionNotFoundException {
 
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1509,9 +1538,6 @@ public class MetadataDao {
                 .offset(offset)
                 .limit(limit)
                 .fetch();
-        if (queryResult.isEmpty()) {
-            return null;
-        }
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));

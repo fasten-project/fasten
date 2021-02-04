@@ -41,15 +41,17 @@ public class BinaryModuleApi {
     ResponseEntity<String> getPackageBinaryModules(@PathVariable("pkg") String package_name,
                                                    @PathVariable("pkg_ver") String package_version,
                                                    @RequestParam(required = false, defaultValue = "0") int offset,
-                                                   @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getPackageBinaryModules(package_name, package_version, offset, limit);
+                                                   @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+                                                   @RequestParam(required = false) String artifactRepository) {
+        return service.getPackageBinaryModules(package_name, package_version, offset, limit, artifactRepository);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules/{binary}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getBinaryModuleMetadata(@PathVariable("pkg") String package_name,
                                                    @PathVariable("pkg_ver") String package_version,
-                                                   @PathVariable("binary") String binary_module) {
-        return service.getBinaryModuleMetadata(package_name, package_version, binary_module);
+                                                   @PathVariable("binary") String binary_module,
+                                                   @RequestParam(required = false) String artifactRepository) {
+        return service.getBinaryModuleMetadata(package_name, package_version, binary_module, artifactRepository);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules/{binary}/files", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -57,7 +59,8 @@ public class BinaryModuleApi {
                                                 @PathVariable("pkg_ver") String package_version,
                                                 @PathVariable("binary") String binary_module,
                                                 @RequestParam(required = false, defaultValue = "0") int offset,
-                                                @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getBinaryModuleFiles(package_name, package_version, binary_module, offset, limit);
+                                                @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+                                                @RequestParam(required = false) String artifactRepository) {
+        return service.getBinaryModuleFiles(package_name, package_version, binary_module, offset, limit, artifactRepository);
     }
 }

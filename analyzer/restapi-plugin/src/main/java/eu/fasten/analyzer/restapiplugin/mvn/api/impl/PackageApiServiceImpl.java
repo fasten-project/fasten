@@ -22,6 +22,7 @@ import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestArtifactChecker;
 import eu.fasten.analyzer.restapiplugin.mvn.api.PackageApiService;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -86,9 +87,11 @@ public class PackageApiServiceImpl implements PackageApiService {
                                                       int offset,
                                                       int limit,
                                                       String artifactRepo) {
-        String result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
-                package_name, package_version, offset, limit);
-        if (result == null) {
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
+                    package_name, package_version, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
             LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }

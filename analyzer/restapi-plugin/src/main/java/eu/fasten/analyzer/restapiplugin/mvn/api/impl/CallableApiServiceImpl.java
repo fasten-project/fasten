@@ -21,6 +21,7 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestArtifactChecker;
 import eu.fasten.analyzer.restapiplugin.mvn.api.CallableApiService;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,11 +35,15 @@ public class CallableApiServiceImpl implements CallableApiService {
     public ResponseEntity<String> getPackageCallables(String package_name,
                                                       String package_version,
                                                       int offset,
-                                                      int limit) {
-        String result = KnowledgeBaseConnector.kbDao.getPackageCallables(
-                package_name, package_version, offset, limit);
-        if (result == null) {
-            return new ResponseEntity<>("Package not found", HttpStatus.NOT_FOUND);
+                                                      int limit,
+                                                      String artifactRepo) {
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getPackageCallables(
+                    package_name, package_version, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);

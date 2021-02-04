@@ -44,10 +44,10 @@ public class ModuleApiTest {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("package version modules", HttpStatus.OK);
-        Mockito.when(service.getPackageModules(packageName, version, offset, limit)).thenReturn(response);
-        var result = api.getPackageModules(packageName, version, offset, limit);
+        Mockito.when(service.getPackageModules(packageName, version, offset, limit, null)).thenReturn(response);
+        var result = api.getPackageModules(packageName, version, offset, limit, null);
         assertEquals(response, result);
-        Mockito.verify(service).getPackageModules(packageName, version, offset, limit);
+        Mockito.verify(service).getPackageModules(packageName, version, offset, limit, null);
     }
 
     @Test
@@ -68,10 +68,10 @@ public class ModuleApiTest {
         var version = "pkg version";
         var module = "module namespace";
         var response = new ResponseEntity<>("module files", HttpStatus.OK);
-        Mockito.when(service.getModuleFiles(packageName, version, module, offset, limit)).thenReturn(response);
-        var result = api.getModuleFiles(packageName, version, module, offset, limit);
+        Mockito.when(service.getModuleFiles(packageName, version, module, offset, limit, null)).thenReturn(response);
+        var result = api.getModuleFiles(packageName, version, module, offset, limit, null);
         assertEquals(response, result);
-        Mockito.verify(service).getModuleFiles(packageName, version, module, offset, limit);
+        Mockito.verify(service).getModuleFiles(packageName, version, module, offset, limit, null);
     }
 
     @Test
@@ -80,9 +80,9 @@ public class ModuleApiTest {
         var version = "pkg version";
         var module = "module namespace";
         var response = new ResponseEntity<>("module callables", HttpStatus.OK);
-        Mockito.when(service.getModuleCallables(packageName, version, module, offset, limit)).thenReturn(response);
-        var result = api.getModuleCallables(packageName, version, module, offset, limit);
+        Mockito.when(service.getModuleCallables(packageName, version, module, offset, limit, null)).thenReturn(response);
+        var result = api.getModuleCallables(packageName, version, module, offset, limit, null);
         assertEquals(response, result);
-        Mockito.verify(service).getModuleCallables(packageName, version, module, offset, limit);
+        Mockito.verify(service).getModuleCallables(packageName, version, module, offset, limit, null);
     }
 }

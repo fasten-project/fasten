@@ -45,10 +45,10 @@ public class CallableApiTest {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("package binary callables", HttpStatus.OK);
-        Mockito.when(service.getPackageCallables(packageName, version, offset, limit)).thenReturn(response);
-        var result = api.getPackageCallables(packageName, version, offset, limit);
+        Mockito.when(service.getPackageCallables(packageName, version, offset, limit, null)).thenReturn(response);
+        var result = api.getPackageCallables(packageName, version, offset, limit, null);
         assertEquals(response, result);
-        Mockito.verify(service).getPackageCallables(packageName, version, offset, limit);
+        Mockito.verify(service).getPackageCallables(packageName, version, offset, limit, null);
     }
 
     @Test

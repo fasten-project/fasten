@@ -43,8 +43,9 @@ public class ModuleApi {
     ResponseEntity<String> getPackageModules(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
                                              @RequestParam(required = false, defaultValue = "0") int offset,
-                                             @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getPackageModules(package_name, package_version, offset, limit);
+                                             @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+                                             @RequestParam(required = false) String artifactRepository) {
+        return service.getPackageModules(package_name, package_version, offset, limit, artifactRepository);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -60,8 +61,9 @@ public class ModuleApi {
                                           @PathVariable("pkg_ver") String package_version,
                                           @RequestBody String module_namespace,
                                           @RequestParam(required = false, defaultValue = "0") int offset,
-                                          @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getModuleFiles(package_name, package_version, module_namespace, offset, limit);
+                                          @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+                                          @RequestParam(required = false) String artifactRepository) {
+        return service.getModuleFiles(package_name, package_version, module_namespace, offset, limit, artifactRepository);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/callables", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -69,7 +71,8 @@ public class ModuleApi {
                                               @PathVariable("pkg_ver") String package_version,
                                               @RequestBody String module_namespace,
                                               @RequestParam(required = false, defaultValue = "0") int offset,
-                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getModuleCallables(package_name, package_version, module_namespace, offset, limit);
+                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+                                              @RequestParam(required = false) String artifactRepository) {
+        return service.getModuleCallables(package_name, package_version, module_namespace, offset, limit, artifactRepository);
     }
 }

@@ -49,7 +49,7 @@ public class ModuleApiServiceImplTest {
         var response = "modules";
         Mockito.when(kbDao.getPackageModules(packageName, version, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageModules(packageName, version, offset, limit);
+        var result = service.getPackageModules(packageName, version, offset, limit, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getPackageModules(packageName, version, offset, limit);
     }
@@ -67,7 +67,7 @@ public class ModuleApiServiceImplTest {
 
         Mockito.when(kbDao.getModuleMetadata(packageName, version, module)).thenReturn(null);
         result = service.getModuleMetadata(packageName, version, module, null);
-        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(2)).getModuleMetadata(packageName, version, module);
     }
@@ -80,7 +80,7 @@ public class ModuleApiServiceImplTest {
         var response = "module files";
         Mockito.when(kbDao.getModuleFiles(packageName, version, module, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getModuleFiles(packageName, version, module, offset, limit);
+        var result = service.getModuleFiles(packageName, version, module, offset, limit, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getModuleFiles(packageName, version, module, offset, limit);
     }
@@ -93,7 +93,7 @@ public class ModuleApiServiceImplTest {
         var response = "module callables";
         Mockito.when(kbDao.getModuleCallables(packageName, version, module, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getModuleCallables(packageName, version, module, offset, limit);
+        var result = service.getModuleCallables(packageName, version, module, offset, limit, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getModuleCallables(packageName, version, module, offset, limit);
     }

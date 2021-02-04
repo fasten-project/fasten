@@ -25,15 +25,18 @@ public interface BinaryModuleApiService {
     ResponseEntity<String> getPackageBinaryModules(String package_name,
                                                    String package_version,
                                                    int offset,
-                                                   int limit);
+                                                   int limit,
+                                                   String artifactRepo);
 
     ResponseEntity<String> getBinaryModuleMetadata(String package_name,
                                                    String package_version,
-                                                   String binary_module);
+                                                   String binary_module,
+                                                   String artifactRepo);
 
     ResponseEntity<String> getBinaryModuleFiles(String package_name,
                                                 String package_version,
                                                 String binary_module,
                                                 int offset,
-                                                int limit);
+                                                int limit,
+                                                String artifactRepo);
 }

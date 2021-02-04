@@ -42,8 +42,9 @@ public class CallableApi {
     ResponseEntity<String> getPackageCallables(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestParam(required = false, defaultValue = "0") int offset,
-                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getPackageCallables(package_name, package_version, offset, limit);
+                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+                                               @RequestParam(required = false) String artifactRepository) {
+        return service.getPackageCallables(package_name, package_version, offset, limit, artifactRepository);
     }
 
     @PostMapping(value = "/mvn/packages/{pkg}/{pkg_ver}/callable/metadata", produces = MediaType.APPLICATION_JSON_VALUE)

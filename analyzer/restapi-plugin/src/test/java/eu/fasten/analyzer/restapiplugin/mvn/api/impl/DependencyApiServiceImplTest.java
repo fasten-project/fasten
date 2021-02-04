@@ -53,7 +53,7 @@ public class DependencyApiServiceImplTest {
         var response = "dependencies";
         Mockito.when(kbDao.getPackageDependencies(packageName, version, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageDependencies(packageName, version, offset, limit);
+        var result = service.getPackageDependencies(packageName, version, offset, limit, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getPackageDependencies(packageName, version, offset, limit);
     }

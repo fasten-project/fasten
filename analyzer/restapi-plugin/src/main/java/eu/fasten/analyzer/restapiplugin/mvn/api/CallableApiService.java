@@ -26,7 +26,8 @@ public interface CallableApiService {
     ResponseEntity<String> getPackageCallables(String package_name,
                                                String package_version,
                                                int offset,
-                                               int limit);
+                                               int limit,
+                                               String artifactRepo);
 
     ResponseEntity<String> getCallableMetadata(String package_name,
                                                String package_version,
