@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import org.junit.jupiter.api.Test;
 
 class MavenCoordinateTest {
@@ -83,7 +84,7 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>());
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, MavenUtilities.getRepos().get(0)));
     }
 
     @Test
@@ -92,7 +93,7 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, MavenUtilities.getRepos().get(0)));
     }
 
     @Test
@@ -101,7 +102,7 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, MavenUtilities.getRepos().get(0)));
     }
 
     @Test
@@ -109,6 +110,6 @@ class MavenCoordinateTest {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.30", "wrongPackagingType");
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertNotNull(resolver.downloadArtifact(coordinate));
+        assertNotNull(resolver.downloadArtifact(coordinate, MavenUtilities.getRepos().get(0)));
     }
 }

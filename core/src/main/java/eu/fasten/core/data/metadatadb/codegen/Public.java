@@ -4,6 +4,7 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
@@ -14,7 +15,9 @@ import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders;
 import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.PgpArmorHeadersRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.Receiver;
 
 import java.util.ArrayList;
@@ -24,6 +27,9 @@ import java.util.List;
 import javax.annotation.processing.Generated;
 
 import org.jooq.Catalog;
+import org.jooq.Configuration;
+import org.jooq.Field;
+import org.jooq.Result;
 import org.jooq.Sequence;
 import org.jooq.Table;
 import org.jooq.UDT;
@@ -43,12 +49,17 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = -42696926;
+    private static final long serialVersionUID = 1799656807;
 
     /**
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * The table <code>public.artifact_repositories</code>.
+     */
+    public final ArtifactRepositories ARTIFACT_REPOSITORIES = eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories.ARTIFACT_REPOSITORIES;
 
     /**
      * The table <code>public.binary_module_contents</code>.
@@ -101,6 +112,32 @@ public class Public extends SchemaImpl {
     public final Packages PACKAGES = eu.fasten.core.data.metadatadb.codegen.tables.Packages.PACKAGES;
 
     /**
+     * The table <code>public.pgp_armor_headers</code>.
+     */
+    public final PgpArmorHeaders PGP_ARMOR_HEADERS = eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders.PGP_ARMOR_HEADERS;
+
+    /**
+     * Call <code>public.pgp_armor_headers</code>.
+     */
+    public static Result<PgpArmorHeadersRecord> PGP_ARMOR_HEADERS(Configuration configuration, String __1) {
+        return configuration.dsl().selectFrom(eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders.PGP_ARMOR_HEADERS.call(__1)).fetch();
+    }
+
+    /**
+     * Get <code>public.pgp_armor_headers</code> as a table.
+     */
+    public static PgpArmorHeaders PGP_ARMOR_HEADERS(String __1) {
+        return eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders.PGP_ARMOR_HEADERS.call(__1);
+    }
+
+    /**
+     * Get <code>public.pgp_armor_headers</code> as a table.
+     */
+    public static PgpArmorHeaders PGP_ARMOR_HEADERS(Field<String> __1) {
+        return eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders.PGP_ARMOR_HEADERS.call(__1);
+    }
+
+    /**
      * The table <code>public.virtual_implementations</code>.
      */
     public final VirtualImplementations VIRTUAL_IMPLEMENTATIONS = eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations.VIRTUAL_IMPLEMENTATIONS;
@@ -127,6 +164,7 @@ public class Public extends SchemaImpl {
 
     private final List<Sequence<?>> getSequences0() {
         return Arrays.<Sequence<?>>asList(
+            Sequences.ARTIFACT_REPOSITORIES_ID_SEQ,
             Sequences.BINARY_MODULES_ID_SEQ,
             Sequences.CALLABLES_ID_SEQ,
             Sequences.FILES_ID_SEQ,
@@ -144,6 +182,7 @@ public class Public extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
+            ArtifactRepositories.ARTIFACT_REPOSITORIES,
             BinaryModuleContents.BINARY_MODULE_CONTENTS,
             BinaryModules.BINARY_MODULES,
             Callables.CALLABLES,
@@ -154,6 +193,7 @@ public class Public extends SchemaImpl {
             Modules.MODULES,
             PackageVersions.PACKAGE_VERSIONS,
             Packages.PACKAGES,
+            PgpArmorHeaders.PGP_ARMOR_HEADERS,
             VirtualImplementations.VIRTUAL_IMPLEMENTATIONS);
     }
 

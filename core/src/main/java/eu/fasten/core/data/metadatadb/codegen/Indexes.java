@@ -4,6 +4,7 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
@@ -40,6 +41,8 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index ARTIFACT_REPOSITORIES_PKEY = Indexes0.ARTIFACT_REPOSITORIES_PKEY;
+    public static final Index UNIQUE_ARTIFACT_REPOSITORIES = Indexes0.UNIQUE_ARTIFACT_REPOSITORIES;
     public static final Index UNIQUE_BINARY_MODULE_FILE = Indexes0.UNIQUE_BINARY_MODULE_FILE;
     public static final Index BINARY_MODULES_PKEY = Indexes0.BINARY_MODULES_PKEY;
     public static final Index UNIQUE_VERSION_NAME = Indexes0.UNIQUE_VERSION_NAME;
@@ -63,6 +66,8 @@ public class Indexes {
     // -------------------------------------------------------------------------
 
     private static class Indexes0 {
+        public static Index ARTIFACT_REPOSITORIES_PKEY = Internal.createIndex("artifact_repositories_pkey", ArtifactRepositories.ARTIFACT_REPOSITORIES, new OrderField[] { ArtifactRepositories.ARTIFACT_REPOSITORIES.ID }, true);
+        public static Index UNIQUE_ARTIFACT_REPOSITORIES = Internal.createIndex("unique_artifact_repositories", ArtifactRepositories.ARTIFACT_REPOSITORIES, new OrderField[] { ArtifactRepositories.ARTIFACT_REPOSITORIES.REPOSITORY_BASE_URL }, true);
         public static Index UNIQUE_BINARY_MODULE_FILE = Internal.createIndex("unique_binary_module_file", BinaryModuleContents.BINARY_MODULE_CONTENTS, new OrderField[] { BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID, BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID }, true);
         public static Index BINARY_MODULES_PKEY = Internal.createIndex("binary_modules_pkey", BinaryModules.BINARY_MODULES, new OrderField[] { BinaryModules.BINARY_MODULES.ID }, true);
         public static Index UNIQUE_VERSION_NAME = Internal.createIndex("unique_version_name", BinaryModules.BINARY_MODULES, new OrderField[] { BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME }, true);

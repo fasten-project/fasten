@@ -22,7 +22,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row7;
+import org.jooq.Row8;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class PackageVersions extends TableImpl<PackageVersionsRecord> {
 
-    private static final long serialVersionUID = -1739447162;
+    private static final long serialVersionUID = -1488021527;
 
     /**
      * The reference instance of <code>public.package_versions</code>
@@ -80,6 +80,16 @@ public class PackageVersions extends TableImpl<PackageVersionsRecord> {
     public final TableField<PackageVersionsRecord, String> CG_GENERATOR = createField(DSL.name("cg_generator"), org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
 
     /**
+     * The column <code>public.package_versions.artifact_repository_id</code>.
+     */
+    public final TableField<PackageVersionsRecord, Long> ARTIFACT_REPOSITORY_ID = createField(DSL.name("artifact_repository_id"), org.jooq.impl.SQLDataType.BIGINT, this, "");
+
+    /**
+     * The column <code>public.package_versions.architecture</code>.
+     */
+    public final TableField<PackageVersionsRecord, String> ARCHITECTURE = createField(DSL.name("architecture"), org.jooq.impl.SQLDataType.CLOB, this, "");
+
+    /**
      * The column <code>public.package_versions.created_at</code>.
      */
     public final TableField<PackageVersionsRecord, Timestamp> CREATED_AT = createField(DSL.name("created_at"), org.jooq.impl.SQLDataType.TIMESTAMP, this, "");
@@ -88,11 +98,6 @@ public class PackageVersions extends TableImpl<PackageVersionsRecord> {
      * The column <code>public.package_versions.metadata</code>.
      */
     public final TableField<PackageVersionsRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB, this, "");
-
-    /**
-     * The column <code>public.package_versions.architecture</code>.
-     */
-    public final TableField<PackageVersionsRecord, String> ARCHITECTURE = createField(DSL.name("architecture"), org.jooq.impl.SQLDataType.CLOB, this, "");
 
     /**
      * Create a <code>public.package_versions</code> table reference
@@ -154,11 +159,15 @@ public class PackageVersions extends TableImpl<PackageVersionsRecord> {
 
     @Override
     public List<ForeignKey<PackageVersionsRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<PackageVersionsRecord, ?>>asList(Keys.PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY);
+        return Arrays.<ForeignKey<PackageVersionsRecord, ?>>asList(Keys.PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY, Keys.PACKAGE_VERSIONS__PACKAGE_VERSIONS_ARTIFACT_REPOSITORY_ID_FKEY);
     }
 
     public Packages packages() {
         return new Packages(this, Keys.PACKAGE_VERSIONS__PACKAGE_VERSIONS_PACKAGE_ID_FKEY);
+    }
+
+    public ArtifactRepositories artifactRepositories() {
+        return new ArtifactRepositories(this, Keys.PACKAGE_VERSIONS__PACKAGE_VERSIONS_ARTIFACT_REPOSITORY_ID_FKEY);
     }
 
     @Override
@@ -188,11 +197,11 @@ public class PackageVersions extends TableImpl<PackageVersionsRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row7 type methods
+    // Row8 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row7<Long, Long, String, String, Timestamp, JSONB, String> fieldsRow() {
-        return (Row7) super.fieldsRow();
+    public Row8<Long, Long, String, String, Long, String, Timestamp, JSONB> fieldsRow() {
+        return (Row8) super.fieldsRow();
     }
 }

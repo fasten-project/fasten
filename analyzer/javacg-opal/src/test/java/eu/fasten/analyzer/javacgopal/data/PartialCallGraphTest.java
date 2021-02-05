@@ -36,6 +36,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -187,7 +188,7 @@ class PartialCallGraphTest {
     void createExtendedRevisionJavaCallGraph() throws MissingArtifactException, OPALException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
         var cg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
-                "", "CHA", 1574072773);
+                "", "CHA", 1574072773, MavenUtilities.getRepos().get(0));
         assertNotNull(cg);
         Assertions.assertEquals(Constants.mvnForge, cg.forge);
         Assertions.assertEquals("1.7.29", cg.version);

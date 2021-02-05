@@ -6,6 +6,7 @@ import eu.fasten.core.data.ExtendedBuilder;
 import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.LocalMerger;
 import java.io.File;
 import java.io.FileReader;
@@ -39,17 +40,17 @@ class JSONUtilsTest {
         var coordinate =
             new MavenCoordinate("com.github.shoothzj", "java-tool", "3.0.30.RELEASE", "jar");
         graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
-            "", "CHA", 1574072773);
+            "", "CHA", 1574072773, MavenUtilities.getRepos().get(0));
 
         coordinate =
             new MavenCoordinate("abbot", "costello", "1.4.0", "jar");
         artifact = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
-            "", "CHA", 1574072773);
+            "", "CHA", 1574072773, MavenUtilities.getRepos().get(0));
 
         coordinate =
             new MavenCoordinate("abbot", "abbot", "1.4.0", "jar");
         dependency = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
-            "", "CHA", 1574072773);
+            "", "CHA", 1574072773, MavenUtilities.getRepos().get(0));
         final var deps = new ArrayList<>(Collections.singletonList(dependency));
         deps.add(artifact);
         final var merger = new LocalMerger(deps);
@@ -99,7 +100,7 @@ class JSONUtilsTest {
         for (int i = 0; i < coordsSize; i++) {
             MavenCoordinate coord = coords.get(i);
             final var cg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coord,
-                "", "CHA", 1574072773);
+                "", "CHA", 1574072773, MavenUtilities.getRepos().get(0));
 
             logger.debug("Serialization for: {}", coord.getCoordinate());
             final var ser1 = avgConsumption(cg, "direct", "direct", 20, 20);
