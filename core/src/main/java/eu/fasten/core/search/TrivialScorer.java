@@ -46,7 +46,7 @@ public class TrivialScorer implements Scorer {
 	}
 
 	public static Scorer getInstance() {
-		return getInstance();
+		return INSTANCE;
 	}
 
 }
