@@ -136,9 +136,13 @@ public class RepoAnalyzer {
         var predicate = patterns.stream()
                 .map(p -> Pattern.compile(p).asPredicate())
                 .reduce(x -> false, Predicate::or);
-        return Files.walk(directory)
-                .filter(f -> predicate.test(f.getFileName().toString()))
-                .collect(Collectors.toSet());
+        try {
+            return Files.walk(directory)
+                    .filter(f -> predicate.test(f.getFileName().toString()))
+                    .collect(Collectors.toSet());
+        } catch (IOException e) {
+            return new HashSet<>();
+        }
     }
 
     /**
