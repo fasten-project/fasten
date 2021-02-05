@@ -115,10 +115,14 @@ public class POMAnalyzerPlugin extends Plugin {
                 group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
                 version = payload.getString("version").replaceAll("[\\n\\t ]", "");
                 date = payload.optLong("date", -1L);
+                artifactRepository = payload.optString("artifactRepository", MavenUtilities.MAVEN_CENTRAL_REPO);
             } catch (JSONException e) {
                 logger.error("Malformed input: " + payload.toString(), e);
                 this.pluginError = e;
                 return;
+            }
+            if (!artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
+                MavenUtilities.getRepos().add(artifactRepository);
             }
             var pomUrl = payload.optString("pomUrl", null);
             final var product = group + Constants.mvnCoordinateSeparator + artifact
@@ -132,6 +136,12 @@ public class POMAnalyzerPlugin extends Plugin {
                         group = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[0];
                         artifact = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
                         version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
+                    }
+                }
+                if (date == -1) {
+                    var releaseDate = dataExtractor.extractReleaseDate(group, artifact, version, artifactRepository);
+                    if (releaseDate != null) {
+                        date = releaseDate;
                     }
                 }
                 repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
@@ -151,6 +161,7 @@ public class POMAnalyzerPlugin extends Plugin {
             } catch (RuntimeException e) {
                 logger.error("Error extracting data for " + product, e);
                 this.pluginError = e;
+                MavenUtilities.getRepos().remove(artifactRepository);
                 return;
             }
             int transactionRestartCount = 0;
@@ -188,22 +199,23 @@ public class POMAnalyzerPlugin extends Plugin {
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
                     && transactionRestartCount < Constants.transactionRestartLimit);
+            MavenUtilities.getRepos().remove(artifactRepository);
         }
 
         /**
          * Saves information extracted from POM into Metadata Database.
          *
-         * @param product        groupId.artifactId
-         * @param version        Version of the artifact
-         * @param repoUrl        URL of the repository of the product
-         * @param commitTag      Commit tag of the version of the artifact in the repository
-         * @param sourcesUrl     Link to Maven sources Jar file
-         * @param packagingType  Packaging type of the artifact
-         * @param timestamp      Timestamp of the package
-         * @param projectName    Project name to which artifact belongs
+         * @param product          groupId.artifactId
+         * @param version          Version of the artifact
+         * @param repoUrl          URL of the repository of the product
+         * @param commitTag        Commit tag of the version of the artifact in the repository
+         * @param sourcesUrl       Link to Maven sources Jar file
+         * @param packagingType    Packaging type of the artifact
+         * @param timestamp        Timestamp of the package
+         * @param projectName      Project name to which artifact belongs
          * @param parentCoordinate Coordinate of the parent POM
-         * @param dependencyData Dependency information from POM
-         * @param metadataDao    Metadata Database Access Object
+         * @param dependencyData   Dependency information from POM
+         * @param metadataDao      Metadata Database Access Object
          * @return ID of the package version in the database
          */
         public long saveToDatabase(String product, String version, String repoUrl, String commitTag,

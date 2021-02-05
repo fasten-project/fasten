@@ -47,8 +47,7 @@ public class MavenUtilities {
     /**
      * The default pom's repository url.
      */
-    private static String DEFAULT_REPO = "https://repo.maven.apache.org/maven2/";
-
+    public static String MAVEN_CENTRAL_REPO = "https://repo.maven.apache.org/maven2/";
 
     /**
      * Download pom file of the given coordinate.
@@ -107,7 +106,7 @@ public class MavenUtilities {
     public static List<String> getRepos() {
         return System.getenv(Constants.mvnRepoEnvVariable) != null
                 ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
-                : Collections.singletonList(DEFAULT_REPO);
+                : Collections.singletonList(MAVEN_CENTRAL_REPO);
     }
 
     /**
@@ -119,7 +118,7 @@ public class MavenUtilities {
      * @param repo       repository url of the artifact
      * @return a string full URL to the anticipated pom file
      */
-    private static String getPomUrl(String groupId, String artifactId, String version, String repo) {
+    public static String getPomUrl(String groupId, String artifactId, String version, String repo) {
         return repo + groupId.replace('.', '/') + "/" + artifactId + "/" + version
                 + "/" + artifactId + "-" + version + ".pom";
     }

@@ -22,6 +22,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.maven.data.DependencyManagement;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import org.dom4j.DocumentException;
 import org.dom4j.io.SAXReader;
 import org.json.JSONObject;
@@ -31,7 +32,8 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class DataExtractorTest {
 
@@ -40,6 +42,13 @@ public class DataExtractorTest {
     @BeforeEach
     public void setup() {
         dataExtractor = new DataExtractor();
+    }
+
+    @Test
+    public void extractReleaseDateTest() {
+        var expected = 1417709863000L;
+        var actual = dataExtractor.extractReleaseDate("junit", "junit", "4.12", MavenUtilities.getRepos().get(0));
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -344,7 +353,7 @@ public class DataExtractorTest {
     public void replaceDomTreeReferenceTest() throws DocumentException {
         var name = "fasten";
         var xml = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">" +
-                    "<name>" + name + "</name>" +
+                "<name>" + name + "</name>" +
                 "</project>";
         var value = dataExtractor.replacePropertyReferences("${project.name}", new HashMap<>(), new SAXReader().read(new ByteArrayInputStream(xml.getBytes())).getRootElement());
         assertEquals(name, value);
@@ -390,7 +399,7 @@ public class DataExtractorTest {
     @Test
     public void extractParentTest() {
         var expected = "org.apache.logging.log4j" + Constants.mvnCoordinateSeparator + "log4j" + Constants.mvnCoordinateSeparator + "2.13.3";
-        var actual = dataExtractor.extractParentCoordinate("org.apache.logging.log4j", "log4j-api","2.13.3");
+        var actual = dataExtractor.extractParentCoordinate("org.apache.logging.log4j", "log4j-api", "2.13.3");
         assertEquals(expected, actual);
     }
 }
