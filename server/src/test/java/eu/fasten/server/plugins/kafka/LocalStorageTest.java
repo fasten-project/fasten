@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 
 public class LocalStorageTest {
@@ -28,6 +29,12 @@ public class LocalStorageTest {
 
         for(String s: entries){
             File currentFile = new File(toRemove.getPath(), s);
+            if (currentFile.isDirectory()) {
+                for (String child : currentFile.list()) {
+                    new File(currentFile.getPath(), child).delete();
+                }
+            }
+
             currentFile.delete();
         }
 
@@ -36,37 +43,37 @@ public class LocalStorageTest {
 
     @Test
     public void testCreatePositive() throws IOException {
-        Assertions.assertTrue(localStorage.store("A very nice message!"));
-        Assertions.assertTrue(localStorage.store("Second message!"));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
+        Assertions.assertTrue(localStorage.store("Second message!", 1));
     }
 
     @Test
     public void testExists() throws IOException {
-        Assertions.assertTrue(localStorage.store("A very nice message!"));
-        Assertions.assertTrue(localStorage.store("Extra message"));
-        Assertions.assertTrue(localStorage.exists("A very nice message!"));
-        Assertions.assertFalse(localStorage.exists("Doesn't exist"));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
+        Assertions.assertTrue(localStorage.store("Extra message", 1));
+        Assertions.assertTrue(localStorage.exists("A very nice message!", 1));
+        Assertions.assertFalse(localStorage.exists("Doesn't exist", 1));
     }
 
     @Test
     public void testCreateNegative() throws IOException {
-        Assertions.assertTrue(localStorage.store("A very nice message!"));
-        Assertions.assertFalse(localStorage.store("A very nice message!"));
-        Assertions.assertTrue(localStorage.store("Second message!"));
-        Assertions.assertFalse(localStorage.store("Second message!"));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
+        Assertions.assertFalse(localStorage.store("A very nice message!", 1));
+        Assertions.assertTrue(localStorage.store("Second message!", 1));
+        Assertions.assertFalse(localStorage.store("Second message!", 1));
     }
 
     @Test
     public void testRemove() throws IOException {
-        Assertions.assertTrue(localStorage.store("A very nice message!"));
-        Assertions.assertTrue(localStorage.exists("A very nice message!"));
-        Assertions.assertTrue(localStorage.delete("A very nice message!"));
-        Assertions.assertFalse(localStorage.exists("A very nice message!"));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
+        Assertions.assertTrue(localStorage.exists("A very nice message!", 1));
+        Assertions.assertTrue(localStorage.delete("A very nice message!", 1));
+        Assertions.assertFalse(localStorage.exists("A very nice message!", 1));
     }
 
     @Test
     public void testRemoveNegative() throws IOException {
-        Assertions.assertFalse(localStorage.delete("Non existent message"));
+        Assertions.assertFalse(localStorage.delete("Non existent message", 1));
     }
 
     @Test
@@ -77,13 +84,13 @@ public class LocalStorageTest {
 
     @Test
     public void testClear() throws IOException {
-        localStorage.store("Number 1");
-        localStorage.store("Number 2");
-        Assertions.assertTrue(localStorage.exists("Number 1"));
-        Assertions.assertTrue(localStorage.exists("Number 2"));
-        localStorage.clear();
-        Assertions.assertFalse(localStorage.exists("Number 1"));
-        Assertions.assertFalse(localStorage.exists("Number 2"));
+        localStorage.store("Number 1", 1);
+        localStorage.store("Number 2", 1);
+        Assertions.assertTrue(localStorage.exists("Number 1", 1));
+        Assertions.assertTrue(localStorage.exists("Number 2", 1));
+        localStorage.clear(List.of(1));
+        Assertions.assertFalse(localStorage.exists("Number 1", 1));
+        Assertions.assertFalse(localStorage.exists("Number 2", 1));
     }
 
 

@@ -201,9 +201,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         logger.info("Committed offsets [" + allOffsets + "] of partitions [" + allPartitions + "].");
 
 
-        // If local storage is enabled, clear it after offsets are committed.
+        // If local storage is enabled, clear the correct partitions after offsets are committed.
         if (localStorage != null) {
-            localStorage.clear();
+            localStorage.clear(messagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()));
         }
     }
 
@@ -227,12 +227,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp) {
         if (localStorage != null) { // If local storage is enabled.
-            if (localStorage.exists(record.value())) { // This plugin already consumed this record before, we will not process it now.
+            if (localStorage.exists(record.value(), record.partition())) { // This plugin already consumed this record before, we will not process it now.
                 logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
                 plugin.setPluginError(new ExistsInLocalStorageException("Record already exists in local storage. Most probably it has been processed before and the pod crashed."));
             } else {
                 try {
-                    localStorage.store(record.value());
+                    localStorage.store(record.value(), record.partition());
                 } catch (IOException e) {
                     // We couldn't store the message SHA. Will just continue processing, but log the error.
                     // This strategy might result in the deadlock/retry behavior of the same coordinate.
