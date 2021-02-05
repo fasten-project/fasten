@@ -70,8 +70,8 @@ public class RepoAnalyzerPlugin extends Plugin {
 
                 final var coordinate =
                         json.has("groupId") && json.has("artifactId") && json.has("version")
-                        ? json.get("groupId") + ":" + json.get("artifactId") + ":" + json.get("version")
-                        : "UNKNOWN-ARTIFACT";
+                                ? json.get("groupId") + ":" + json.get("artifactId") + ":" + json.get("version")
+                                : "UNKNOWN-ARTIFACT";
 
                 var analyzer = new RepoAnalyzer(repoPath);
                 this.statistics = analyzer.analyze();
@@ -134,7 +134,7 @@ public class RepoAnalyzerPlugin extends Plugin {
 
         @Override
         public String name() {
-            return "Repo Analyzer Plugin";
+            return "RepoAnalyzerPlugin";
         }
 
         @Override

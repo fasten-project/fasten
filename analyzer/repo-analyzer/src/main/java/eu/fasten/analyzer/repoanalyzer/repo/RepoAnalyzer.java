@@ -32,6 +32,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class RepoAnalyzer {
@@ -48,7 +49,7 @@ public class RepoAnalyzer {
      *
      * @param path path to the repository
      */
-    public RepoAnalyzer(final String path) {
+    public RepoAnalyzer(final String path) throws IOException {
         this.moduleRoots = extractModuleRoots(Path.of(path));
     }
 
@@ -59,9 +60,12 @@ public class RepoAnalyzer {
      * @throws IOException if I/O exception occurs when accessing root file
      */
     public JSONObject analyze() throws IOException {
-        var statistics = new JSONObject();
+        var payload = new JSONObject();
 
+        double averageCoverage = 0;
+        var results = new JSONArray();
         for (var module : this.moduleRoots) {
+            var statistics = new JSONObject();
             statistics.put("path", module.toAbsolutePath());
 
             var testFiles = new HashSet<Path>();
@@ -75,7 +79,7 @@ public class RepoAnalyzer {
             var sourceFiles = getMatchingFiles(getPathToSourcesRoot(module), List.of("^.*\\.java"));
             statistics.put("sourceFiles", sourceFiles.size());
 
-            var estimatedCoverage = (double) Math.round(1000 * (double) testFiles.size() / (double) sourceFiles.size()) / 1000;
+            var estimatedCoverage = round((double) testFiles.size() / (double) sourceFiles.size(), 3);
             statistics.put("estimatedCoverage", estimatedCoverage);
 
             if (estimatedCoverage < ESTIMATED_COVERAGE_THRESHOLD) {
@@ -84,7 +88,9 @@ public class RepoAnalyzer {
                 statistics.put("unitTestsWithMocks", -1);
                 statistics.put("mockingRatio", -1);
                 statistics.put("statementCoverage", -1);
-                return statistics;
+                results.put(statistics);
+                averageCoverage += estimatedCoverage;
+                continue;
             }
 
             var testBodies = getJUnitTests(testFiles);
@@ -102,13 +108,20 @@ public class RepoAnalyzer {
                     .reduce(0, Integer::sum);
             statistics.put("unitTestsWithMocks", numberOfUnitTestsWithMocks);
 
-            var mockingRatio = (double) Math.round(1000 * (double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests) / 1000;
+            var mockingRatio = round((double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests, 3);
             statistics.put("mockingRatio", mockingRatio);
 
-            statistics.put("statementCoverage", 0);
+            var statementCoverage = 0;
+            statistics.put("statementCoverage", statementCoverage);
+            results.put(statistics);
+
+            averageCoverage += statementCoverage > 0 ? statementCoverage : estimatedCoverage;
         }
 
-        return statistics;
+        payload.put("averageCoverage", round(averageCoverage / moduleRoots.size(), 3));
+        payload.put("modules", results);
+
+        return payload;
     }
 
     /**
@@ -279,11 +292,38 @@ public class RepoAnalyzer {
      * @param root root directory
      * @return a list of paths to modules
      */
-    private List<Path> extractModuleRoots(final Path root) {
+    private List<Path> extractModuleRoots(final Path root) throws IOException {
         var moduleRoots = new ArrayList<Path>();
 
-        // TODO: parse pom.xml to get modules info
-        moduleRoots.add(root);
+        var pomContent = Files.readString(Path.of(root.toAbsolutePath().toString(), "pom.xml"));
+        var modules = StringUtils.substringBetween(pomContent, "<modules>", "</modules>");
+
+        if (modules == null) {
+            moduleRoots.add(root);
+            return moduleRoots;
+        }
+
+        var moduleTags = modules.split("</module>");
+        var moduleNames = Arrays.stream(moduleTags)
+                .filter(t -> t.contains("<module>"))
+                .map(t -> t.substring(t.indexOf("<module>") + 8))
+                .map(t -> Path.of(root.toAbsolutePath().toString(), t))
+                .collect(Collectors.toList());
+        for (var module : moduleNames) {
+            moduleRoots.addAll(extractModuleRoots(module));
+        }
         return moduleRoots;
+    }
+
+    /**
+     * Rounds value with given precision.
+     *
+     * @param value     value to round
+     * @param precision precision for rounding
+     * @return rounded value
+     */
+    private double round(double value, int precision) {
+        double multiplier = Math.pow(10, precision);
+        return (double) Math.round(multiplier * value) / multiplier;
     }
 }
