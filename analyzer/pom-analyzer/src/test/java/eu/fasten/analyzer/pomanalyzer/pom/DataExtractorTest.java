@@ -41,7 +41,7 @@ public class DataExtractorTest {
 
     @BeforeEach
     public void setup() {
-        dataExtractor = new DataExtractor();
+        dataExtractor = new DataExtractor(MavenUtilities.getRepos());
     }
 
     @Test

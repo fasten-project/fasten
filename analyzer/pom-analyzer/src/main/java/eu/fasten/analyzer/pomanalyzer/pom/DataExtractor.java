@@ -63,10 +63,6 @@ public class DataExtractor {
     private String pomContents = null;
     private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
 
-    public DataExtractor() {
-        this.mavenRepos = MavenUtilities.getRepos();
-    }
-
     public DataExtractor(List<String> mavenRepos) {
         this.mavenRepos = mavenRepos;
     }

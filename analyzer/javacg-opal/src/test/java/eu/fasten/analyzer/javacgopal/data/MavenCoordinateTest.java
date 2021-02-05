@@ -84,7 +84,7 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>());
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, MavenUtilities.getRepos().get(0)));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, null));
     }
 
     @Test
@@ -93,7 +93,7 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, MavenUtilities.getRepos().get(0)));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, null));
     }
 
     @Test
@@ -102,7 +102,7 @@ class MavenCoordinateTest {
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, MavenUtilities.getRepos().get(0)));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, null));
     }
 
     @Test
@@ -110,6 +110,6 @@ class MavenCoordinateTest {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.30", "wrongPackagingType");
         var resolver = new MavenCoordinate.MavenResolver();
 
-        assertNotNull(resolver.downloadArtifact(coordinate, MavenUtilities.getRepos().get(0)));
+        assertNotNull(resolver.downloadArtifact(coordinate, MavenUtilities.MAVEN_CENTRAL_REPO));
     }
 }

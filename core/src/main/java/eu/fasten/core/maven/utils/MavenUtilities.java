@@ -32,10 +32,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * The helper utility class for working with maven repositories and pom files.
@@ -105,8 +102,8 @@ public class MavenUtilities {
      */
     public static List<String> getRepos() {
         return System.getenv(Constants.mvnRepoEnvVariable) != null
-                ? Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";"))
-                : Collections.singletonList(MAVEN_CENTRAL_REPO);
+                ? new ArrayList<>(Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";")))
+                : new ArrayList<>(Collections.singleton(MAVEN_CENTRAL_REPO));
     }
 
     /**

@@ -121,13 +121,14 @@ public class POMAnalyzerPlugin extends Plugin {
                 this.pluginError = e;
                 return;
             }
+            var repos = MavenUtilities.getRepos();
             if (!artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
-                MavenUtilities.getRepos().add(artifactRepository);
+                repos.add(artifactRepository);
             }
             var pomUrl = payload.optString("pomUrl", null);
             final var product = group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version;
-            var dataExtractor = new DataExtractor();
+            var dataExtractor = new DataExtractor(repos);
             try {
                 if (pomUrl != null) {
                     var mavenCoordinate = dataExtractor.getMavenCoordinate(pomUrl);
