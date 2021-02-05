@@ -18,8 +18,8 @@
 
 package eu.fasten.core.search;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -57,7 +57,6 @@ import eu.fasten.core.merge.DatabaseMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
-import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
@@ -66,8 +65,9 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.lang.ObjectParser;
 
 /**
  * A class offering searching capabilities over the FASTEN knowledge base.
@@ -129,9 +129,13 @@ public class SearchEngine {
 	private final GraphMavenResolver resolver;
 	/** The predicate factory to be used to create predicates for this search engine. */
 	private final PredicateFactory predicateFactory;
+	/** The scorer that will be used to rank results. */
+	private final Scorer scorer;
 
 	/** The maximum number of results that should be printed. */
 	private int limit = DEFAULT_LIMIT;
+	/** Maximum number of dependents used by {@link #to}. */
+	private long maxDependents = Long.MAX_VALUE;
 	/** The filters whose conjunction will be applied by default when executing a query, unless otherwise
 	 *  specified (compare, e.g., {@link #fromCallable(long)} and {@link #fromCallable(long, LongPredicate)}). */
 	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
@@ -142,10 +146,8 @@ public class SearchEngine {
 	private long stitchingTime;
 	/** Time spent during {@linkplain #bfs visits}. */
 	private long visitTime;
-	/** Maximum number of dependents used by {@link #to}. */
-	private long maxDependents = Long.MAX_VALUE;
 	/** Throwables thrown by mergeWithCHA(). */
-	private List<Throwable> throwables = new ArrayList<>();
+	private final List<Throwable> throwables = new ArrayList<>();
 
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
@@ -158,10 +160,11 @@ public class SearchEngine {
 	 * @param rocksDb the path to the RocksDB database of revision call graphs.
 	 * @param resolverGraph the path to a serialized resolver graph (will be created if it does not
 	 *            exist).
-	 * @throws Exception
+	 * @param scorer an {@link ObjectParser} specification providing a scorer; if {@code null}, a
+	 *            {@link TrivialScorer} will be used instead.
 	 */
-	public SearchEngine(final String jdbcURI, final String database, final String rocksDb, final String resolverGraph) throws Exception {
-		this(PostgresConnector.getDSLContext(jdbcURI, database), new RocksDao(rocksDb, true), resolverGraph);
+	public SearchEngine(final String jdbcURI, final String database, final String rocksDb, final String resolverGraph, final String scorer) throws Exception {
+		this(PostgresConnector.getDSLContext(jdbcURI, database), new RocksDao(rocksDb, true), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
 	}
 
 	/**
@@ -172,12 +175,14 @@ public class SearchEngine {
 	 * @param resolver a resolver.
 	 * @param resolverGraph the path to a serialized resolver graph (will be created if it does not
 	 *            exist).
-	 * @throws Exception
+	 * @param scorer a scorer that will be used to sort results; if {@code null}, a
+	 *            {@link TrivialScorer} will be used instead.
 	 */
 
-	public SearchEngine(final DSLContext context, final RocksDao rocksDao, final String resolverGraph) throws Exception {
+	public SearchEngine(final DSLContext context, final RocksDao rocksDao, final String resolverGraph, final Scorer scorer) throws Exception {
 		this.context = context;
 		this.rocksDao = rocksDao;
+		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
 		resolver = new GraphMavenResolver();
 		resolver.buildDependencyGraph(null, resolverGraph);
 		this.predicateFactory = new CachingPredicateFactory(context);
@@ -225,7 +230,6 @@ public class SearchEngine {
 				limit = Integer.parseInt(commandAndArgs[1]);
 				if (limit < 0) limit = Integer.MAX_VALUE;
 				break;
-			
 			case "maxdependents":
 				maxDependents = Long.parseLong(commandAndArgs[1]);
 				if (maxDependents < 0) maxDependents = Long.MAX_VALUE;
@@ -298,10 +302,10 @@ public class SearchEngine {
 				predicateFilters.push(predicateFilters.pop().negate());
 				break;
 
-			default: 
+			default:
 				System.err.println("Unknown command " + command);
 			}
-			
+
 		} catch (final RuntimeException e) {
 			System.err.println("Exception while executing command " + command);
 			e.printStackTrace(System.err);
@@ -319,9 +323,11 @@ public class SearchEngine {
 	 * @param seed an initial seed; may contain GIDs that do not appear in the graph, which will be
 	 *            ignored.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
-	 * @return a list of {@linkplain Result results}.
+	 * @param scorer a scorer that will be used to score the results.
+	 * @return a list of {@linkplain Result results} that will be filled during the visit; pre-existing
+	 *         results will not be modified.
 	 */
-	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Collection<Result> results) {
+	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final Collection<Result> results) {
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
 		seed.forEach(x -> queue.enqueue(x)); // Load initial state
 		final LongOpenHashSet seen = new LongOpenHashSet();
@@ -340,8 +346,9 @@ public class SearchEngine {
 			if (!nodes.contains(gid)) continue; // We accept arbitrary seed sets
 
 			if (!seed.contains(gid) && filter.test(gid)) {
+				// TODO: maybe we want to update in case of improved score?
 				probe.gid = gid;
-				if (!results.contains(probe)) results.add(new Result(gid, (graph.outdegree(gid) + graph.indegree(gid)) / Fast.log2(d + 2)));
+				if (!results.contains(probe)) results.add(new Result(gid, scorer.score(graph, gid, d)));
 			}
 
 			final LongIterator iterator = forward ? graph.successors(gid).iterator() : graph.predecessors(gid).iterator();
@@ -445,7 +452,7 @@ public class SearchEngine {
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
 		visitTime -= System.nanoTime();
-		bfs(stitchedGraph, true, seed, filter, results);
+		bfs(stitchedGraph, true, seed, filter, scorer, results);
 		visitTime += System.nanoTime();
 
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
@@ -533,7 +540,7 @@ public class SearchEngine {
 
 		// Temporary reduction in size to circumvent mergeWithCHA() crashes
 		long m = 0;
-		for(var r: s) {
+		for(final var r: s) {
 			if (m++ == maxDependents) break;
 			dependentSet.add(r);
 		}
@@ -584,7 +591,7 @@ public class SearchEngine {
 			DirectedGraph stitchedGraph = null;
 			try {
 				stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
-			} catch(Throwable t) {
+			} catch(final Throwable t) {
 				throwables.add(t);
 				LOGGER.error("mergeWithCHA threw an exception", t);
 			}
@@ -596,7 +603,7 @@ public class SearchEngine {
 			final int sizeBefore = results.size();
 
 			visitTime -= System.nanoTime();
-			bfs(stitchedGraph, false, seed, filter, results);
+			bfs(stitchedGraph, false, seed, filter, scorer, results);
 			visitTime += System.nanoTime();
 
 			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
@@ -645,7 +652,7 @@ public class SearchEngine {
 		 * collector which clashes with RocksDB's JNI usage of the variable.
 		 */
 
-		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, "/mnt/fasten/graphdb", resolverGraph);
+		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, "/mnt/fasten/graphdb", resolverGraph, null);
 		final DSLContext context = searchEngine.context;
 		context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
 
