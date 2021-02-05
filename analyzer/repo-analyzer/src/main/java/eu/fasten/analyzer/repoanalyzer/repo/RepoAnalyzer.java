@@ -18,6 +18,12 @@
 
 package eu.fasten.analyzer.repoanalyzer.repo;
 
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.Name;
+import com.github.javaparser.ast.nodeTypes.NodeWithMembers;
+import com.github.javaparser.ast.stmt.BlockStmt;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,8 +45,6 @@ public class RepoAnalyzer {
 
     private static final String DEFAULT_TESTS_PATH = "/src/test/java";
     private static final String DEFAULT_SOURCES_PATH = "/src/main/java";
-
-    private static final double ESTIMATED_COVERAGE_THRESHOLD = 0.5;
 
     private final String rootPath;
     private final List<Path> moduleRoots;
@@ -65,48 +69,32 @@ public class RepoAnalyzer {
         var payload = new JSONObject();
         payload.put("repoPath", this.rootPath);
 
-        double averageCoverage = 0;
-        int moduleCounter = 0;
-
         var results = new JSONArray();
         for (var module : this.moduleRoots) {
             var statistics = new JSONObject();
             statistics.put("path", module.toAbsolutePath());
 
-            var testFiles = new HashSet<Path>();
-            for (var file : getMatchingFiles(getPathToTestsRoot(module), getTestsPatterns())) {
-                if (Files.readString(file).contains("@Test")) {
-                    testFiles.add(file);
-                }
-            }
-            statistics.put("testFiles", testFiles.size());
-
             var sourceFiles = getMatchingFiles(getPathToSourcesRoot(module), List.of("^.*\\.java"));
             statistics.put("sourceFiles", sourceFiles.size());
+
+            var testFiles = getMatchingFiles(getPathToTestsRoot(module), getTestsPatterns());
+            var testBodies = getJUnitTests(testFiles);
+            testFiles = testBodies.keySet();
+            statistics.put("testFiles", testFiles.size());
+
+            var sourceFunctions = getNumberOfFunctions(sourceFiles);
+            statistics.put("numberOfFunctions", sourceFunctions);
 
             var testToSourceRatio = roundTo3((double) testFiles.size() / (double) sourceFiles.size());
             statistics.put("testToSourceRatio", testToSourceRatio);
 
-            if (testToSourceRatio < ESTIMATED_COVERAGE_THRESHOLD) {
-                statistics.put("unitTests", -1);
-                statistics.put("filesWithMockImport", -1);
-                statistics.put("unitTestsWithMocks", -1);
-                statistics.put("unitTestsMockingRatio", -1);
-                statistics.put("statementCoverage", -1);
-
-                if (sourceFiles.size() > 0) {
-                    results.put(statistics);
-                    averageCoverage += testToSourceRatio;
-                    moduleCounter++;
-                }
-                continue;
-            }
-
-            var testBodies = getJUnitTests(testFiles);
             var numberOfUnitTests = testBodies.values().stream()
                     .map(List::size)
                     .reduce(0, Integer::sum);
-            statistics.put("unitTests", numberOfUnitTests);
+            statistics.put("numberOfUnitTests", numberOfUnitTests);
+
+            var unitTestsToFunctionsRatio = roundTo3((double) numberOfUnitTests / (double) sourceFunctions);
+            statistics.put("unitTestsToFunctionsRatio", unitTestsToFunctionsRatio);
 
             var mockImportFiles = getFilesWithMockImport(testFiles);
             statistics.put("filesWithMockImport", mockImportFiles.size());
@@ -120,17 +108,10 @@ public class RepoAnalyzer {
             var mockingRatio = roundTo3((double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests);
             statistics.put("unitTestsMockingRatio", mockingRatio);
 
-            var statementCoverage = 0;
-            statistics.put("statementCoverage", statementCoverage);
-
             if (sourceFiles.size() > 0) {
                 results.put(statistics);
-                averageCoverage += statementCoverage > 0 ? statementCoverage : testToSourceRatio;
-                moduleCounter++;
             }
         }
-
-        payload.put("averageCoverage", roundTo3(averageCoverage / moduleCounter));
         payload.put("modules", results);
 
         return payload;
@@ -217,40 +198,53 @@ public class RepoAnalyzer {
      * @return a map of files and test bodies
      * @throws IOException if I/O exception occurs when reading a file
      */
-    private Map<Path, List<String>> getJUnitTests(Set<Path> testClasses) throws IOException {
-        var testBodies = new HashMap<Path, List<String>>();
+    private Map<Path, List<BlockStmt>> getJUnitTests(final Set<Path> testClasses) throws IOException {
+        var parser = new JavaParser();
+        var testBodies = new HashMap<Path, List<BlockStmt>>();
+
         for (var testClass : testClasses) {
-            var content = Files.readString(testClass);
+            var content = parser.parse(testClass)
+                    .getResult()
+                    .orElseThrow(IOException::new);
 
-            var unitTests = content.split("@Test");
+            var methods = content.findAll(MethodDeclaration.class)
+                    .stream()
+                    .filter(t -> t.getAnnotations()
+                            .stream()
+                            .anyMatch(a -> a.getName().equals(new Name("Test"))))
+                    .map(t -> t.getBody().orElse(new BlockStmt()))
+                    .collect(Collectors.toList());
 
-            var pseudoStack = 0;
-            for (int i = 1; i < unitTests.length; i++) {
-                var currIndex = 0;
-                while (currIndex == 0 || pseudoStack != 0) {
-                    var open = unitTests[i].indexOf("{", currIndex);
-                    var close = unitTests[i].indexOf("}", currIndex);
-
-                    open = open == -1 ? Integer.MAX_VALUE : open;
-                    close = close == -1 ? Integer.MAX_VALUE : close;
-
-                    if (open == Integer.MAX_VALUE && close == Integer.MAX_VALUE) {
-                        break;
-                    }
-
-                    if (open < close) {
-                        pseudoStack++;
-                        currIndex = open + 1;
-                    } else {
-                        pseudoStack--;
-                        currIndex = close + 1;
-                    }
-                }
-                testBodies.putIfAbsent(testClass, new ArrayList<>());
-                testBodies.get(testClass).add(unitTests[i].substring(0, currIndex));
+            if (!methods.isEmpty()) {
+                testBodies.put(testClass, methods);
             }
         }
         return testBodies;
+    }
+
+    /**
+     * Get number of functions in source files.
+     *
+     * @param sourceFiles paths to source files
+     * @return number of source files
+     * @throws IOException if I/O exception occurs when reading a file
+     */
+    private int getNumberOfFunctions(final Set<Path> sourceFiles) throws IOException {
+        var parser = new JavaParser();
+        int methodCounter = 0;
+
+        for (var testClass : sourceFiles) {
+            var content = parser.parse(testClass)
+                    .getResult()
+                    .orElseThrow(IOException::new);
+
+            methodCounter += content.findAll(ClassOrInterfaceDeclaration.class)
+                    .stream()
+                    .map(NodeWithMembers::getMethods)
+                    .map(List::size)
+                    .reduce(0, Integer::sum);
+        }
+        return methodCounter;
     }
 
     /**
@@ -282,9 +276,9 @@ public class RepoAnalyzer {
      * @param filesWithMockImport files that have mock imports
      * @return map of files and test bodies with mocks
      */
-    private Map<Path, List<String>> getTestsWithMock(final Map<Path, List<String>> testBodies,
-                                                     final List<Path> filesWithMockImport) {
-        var tests = new HashMap<Path, List<String>>();
+    private Map<Path, List<BlockStmt>> getTestsWithMock(final Map<Path, List<BlockStmt>> testBodies,
+                                                        final List<Path> filesWithMockImport) {
+        var tests = new HashMap<Path, List<BlockStmt>>();
 
         var patterns = new String[]{
                 "\\.mock\\(", "\\.when\\(", "\\.spy\\(", "\\.doNothing\\(", // Mockito
@@ -295,7 +289,7 @@ public class RepoAnalyzer {
                 .reduce(x -> false, Predicate::or);
 
         for (var file : filesWithMockImport) {
-            tests.put(file, testBodies.get(file).stream().filter(predicate).collect(Collectors.toList()));
+            tests.put(file, testBodies.get(file).stream().filter(t -> predicate.test(t.toString())).collect(Collectors.toList()));
         }
 
         return tests;
