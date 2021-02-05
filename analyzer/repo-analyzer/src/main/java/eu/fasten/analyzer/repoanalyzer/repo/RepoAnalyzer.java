@@ -79,7 +79,7 @@ public class RepoAnalyzer {
             var sourceFiles = getMatchingFiles(getPathToSourcesRoot(module), List.of("^.*\\.java"));
             statistics.put("sourceFiles", sourceFiles.size());
 
-            var estimatedCoverage = round((double) testFiles.size() / (double) sourceFiles.size(), 3);
+            var estimatedCoverage = roundTo3((double) testFiles.size() / (double) sourceFiles.size());
             statistics.put("estimatedCoverage", estimatedCoverage);
 
             if (estimatedCoverage < ESTIMATED_COVERAGE_THRESHOLD) {
@@ -108,7 +108,7 @@ public class RepoAnalyzer {
                     .reduce(0, Integer::sum);
             statistics.put("unitTestsWithMocks", numberOfUnitTestsWithMocks);
 
-            var mockingRatio = round((double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests, 3);
+            var mockingRatio = roundTo3((double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests);
             statistics.put("mockingRatio", mockingRatio);
 
             var statementCoverage = 0;
@@ -118,7 +118,7 @@ public class RepoAnalyzer {
             averageCoverage += statementCoverage > 0 ? statementCoverage : estimatedCoverage;
         }
 
-        payload.put("averageCoverage", round(averageCoverage / moduleRoots.size(), 3));
+        payload.put("averageCoverage", roundTo3(averageCoverage / moduleRoots.size()));
         payload.put("modules", results);
 
         return payload;
@@ -130,9 +130,8 @@ public class RepoAnalyzer {
      * @param directory root to start searching from
      * @param patterns  list of regular expressions
      * @return list of files
-     * @throws IOException if I/O exception occurs when accessing root file
      */
-    private Set<Path> getMatchingFiles(final Path directory, final List<String> patterns) throws IOException {
+    private Set<Path> getMatchingFiles(final Path directory, final List<String> patterns) {
         var predicate = patterns.stream()
                 .map(p -> Pattern.compile(p).asPredicate())
                 .reduce(x -> false, Predicate::or);
@@ -320,14 +319,13 @@ public class RepoAnalyzer {
     }
 
     /**
-     * Rounds value with given precision.
+     * Rounds value with precision 3.
      *
-     * @param value     value to round
-     * @param precision precision for rounding
+     * @param value value to round
      * @return rounded value
      */
-    private double round(double value, int precision) {
-        double multiplier = Math.pow(10, precision);
+    private double roundTo3(double value) {
+        double multiplier = Math.pow(10, 3);
         return (double) Math.round(multiplier * value) / multiplier;
     }
 }
