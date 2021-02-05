@@ -89,14 +89,27 @@ public class SearchEngine {
 	/** The regular expression for commands. */
 	private static Pattern COMMAND_REGEXP = Pattern.compile("\\$\\s*(.*)\\s*");
 
-
+	/**
+	 * A class representing results with an associated score.
+	 */
 	public final static class Result {
+		/** The GID of a callable. */
 		public long gid;
+		/** The score associated to the callable during the search. */
 		public double score;
 
+		/**
+		 * Creates a {@link Result} instance with fields initialized to zero.
+		 */
 		public Result() {
 		}
 
+		/**
+		 * Creates a {@link Result} instance using a provided GID and score.
+		 *
+		 * @param gid the GID of a callable.
+		 * @param score the associated score.
+		 */
 		public Result(final long gid, final double score) {
 			this.gid = gid;
 			this.score = score;
