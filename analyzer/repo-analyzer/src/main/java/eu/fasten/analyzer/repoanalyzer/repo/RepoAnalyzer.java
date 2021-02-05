@@ -42,6 +42,7 @@ public class RepoAnalyzer {
 
     private static final double ESTIMATED_COVERAGE_THRESHOLD = 0.5;
 
+    private final String rootPath;
     private final List<Path> moduleRoots;
 
     /**
@@ -50,6 +51,7 @@ public class RepoAnalyzer {
      * @param path path to the repository
      */
     public RepoAnalyzer(final String path) throws IOException {
+        this.rootPath = path;
         this.moduleRoots = extractModuleRoots(Path.of(path));
     }
 
@@ -61,8 +63,11 @@ public class RepoAnalyzer {
      */
     public JSONObject analyze() throws IOException {
         var payload = new JSONObject();
+        payload.put("repoPath", this.rootPath);
 
         double averageCoverage = 0;
+        int moduleCounter = 0;
+
         var results = new JSONArray();
         for (var module : this.moduleRoots) {
             var statistics = new JSONObject();
@@ -88,8 +93,12 @@ public class RepoAnalyzer {
                 statistics.put("unitTestsWithMocks", -1);
                 statistics.put("mockingRatio", -1);
                 statistics.put("statementCoverage", -1);
-                results.put(statistics);
-                averageCoverage += estimatedCoverage;
+
+                if (sourceFiles.size() > 0) {
+                    results.put(statistics);
+                    averageCoverage += estimatedCoverage;
+                    moduleCounter++;
+                }
                 continue;
             }
 
@@ -113,12 +122,15 @@ public class RepoAnalyzer {
 
             var statementCoverage = 0;
             statistics.put("statementCoverage", statementCoverage);
-            results.put(statistics);
 
-            averageCoverage += statementCoverage > 0 ? statementCoverage : estimatedCoverage;
+            if (sourceFiles.size() > 0) {
+                results.put(statistics);
+                averageCoverage += statementCoverage > 0 ? statementCoverage : estimatedCoverage;
+                moduleCounter++;
+            }
         }
 
-        payload.put("averageCoverage", roundTo3(averageCoverage / moduleRoots.size()));
+        payload.put("averageCoverage", roundTo3(averageCoverage / moduleCounter));
         payload.put("modules", results);
 
         return payload;
