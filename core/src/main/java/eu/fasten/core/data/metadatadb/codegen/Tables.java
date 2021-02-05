@@ -11,8 +11,10 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders;
@@ -75,6 +77,11 @@ public class Tables {
     public static final Files FILES = Files.FILES;
 
     /**
+     * The table <code>public.ingested_artifacts</code>.
+     */
+    public static final IngestedArtifacts INGESTED_ARTIFACTS = IngestedArtifacts.INGESTED_ARTIFACTS;
+
+    /**
      * The table <code>public.module_contents</code>.
      */
     public static final ModuleContents MODULE_CONTENTS = ModuleContents.MODULE_CONTENTS;
@@ -83,6 +90,11 @@ public class Tables {
      * The table <code>public.modules</code>.
      */
     public static final Modules MODULES = Modules.MODULES;
+
+    /**
+     * The table <code>public.namespaces</code>.
+     */
+    public static final Namespaces NAMESPACES = Namespaces.NAMESPACES;
 
     /**
      * The table <code>public.package_versions</code>.

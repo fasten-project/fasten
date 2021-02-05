@@ -55,6 +55,23 @@ class OPALPluginTest {
     }
 
     @Test
+    public void testConsumeFromDifferentRepo() throws JSONException {
+        JSONObject coordinateJSON = new JSONObject("{" +
+                "\"payload\": {" +
+                "\"artifactId\": \"common\"," +
+                "\"groupId\": \"android.arch.core\"," +
+                "\"version\": \"1.1.1\"," +
+                "\"artifactRepository\": \"https://dl.google.com/android/maven2/\"" +
+                "}}");
+
+        plugin.consume(coordinateJSON.toString());
+
+        assertTrue(plugin.produce().isPresent());
+        assertFalse(new ExtendedRevisionJavaCallGraph(new JSONObject(plugin.produce().get()))
+                .isCallGraphEmpty());
+    }
+
+    @Test
     public void testConsume() throws JSONException {
 
         JSONObject coordinateJSON = new JSONObject("{\n" +

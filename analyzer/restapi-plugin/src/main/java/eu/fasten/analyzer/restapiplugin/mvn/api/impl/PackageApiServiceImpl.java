@@ -19,8 +19,10 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestArtifactChecker;
 import eu.fasten.analyzer.restapiplugin.mvn.api.PackageApiService;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -56,11 +58,13 @@ public class PackageApiServiceImpl implements PackageApiService {
 
     @Override
     public ResponseEntity<String> getPackageVersion(String package_name,
-                                                    String package_version) {
+                                                    String package_version, String artifactRepo,
+                                                    Long date) {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersion(
                 package_name, package_version);
         if (result == null) {
-            return new ResponseEntity<>("Package version not found", HttpStatus.NOT_FOUND);
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -82,9 +86,17 @@ public class PackageApiServiceImpl implements PackageApiService {
     public ResponseEntity<String> getPackageCallgraph(String package_name,
                                                       String package_version,
                                                       int offset,
-                                                      int limit) {
-        String result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
-                package_name, package_version, offset, limit);
+                                                      int limit,
+                                                      String artifactRepo,
+                                                      Long date) {
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
+                    package_name, package_version, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

@@ -29,12 +29,18 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import eu.fasten.core.data.Constants;
@@ -56,10 +62,6 @@ public class DataExtractor {
     private String mavenCoordinate = null;
     private String pomContents = null;
     private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
-
-    public DataExtractor() {
-        this.mavenRepos = MavenUtilities.getRepos();
-    }
 
     public DataExtractor(List<String> mavenRepos) {
         this.mavenRepos = mavenRepos;
@@ -104,6 +106,34 @@ public class DataExtractor {
             logger.error("Error downloading POM file from: " + pomUrl);
         }
         return null;
+    }
+
+    /**
+     * Extracts the artifact's release date from the given artifact repository.
+     *
+     * @param groupId      groupId of the artifact
+     * @param artifactId   artifactId of the artifact
+     * @param version      version of the artifact
+     * @param artifactRepo Artifact repository (like Maven Central)
+     * @return artifact's release date as Long (in ms since 01.01.1970) or null if could not extract
+     */
+    public Long extractReleaseDate(String groupId, String artifactId, String version, String artifactRepo) {
+        URLConnection connection;
+        try {
+            connection = new URL(MavenUtilities.getPomUrl(groupId, artifactId, version, artifactRepo)).openConnection();
+        } catch (IOException e) {
+            logger.error("Could not extract release date", e);
+            return null;
+        }
+        String lastModified = connection.getHeaderField("Last-Modified");
+        Date releaseDate;
+        try {
+            releaseDate = new SimpleDateFormat("E, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH).parse(lastModified);
+        } catch (ParseException e) {
+            logger.error("Could not parse extracted release date", e);
+            return null;
+        }
+        return releaseDate.getTime();
     }
 
     /**

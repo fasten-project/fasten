@@ -16,23 +16,28 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.analyzer.restapiplugin.mvn;
 
-import org.json.JSONArray;
-import org.springframework.http.ResponseEntity;
-import java.util.List;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public interface StitchingApiService {
+public class KafkaWriter {
 
-    ResponseEntity<String> resolveCallablesToUris(List<Long> gidList);
+    private static final Logger logger = LoggerFactory.getLogger(KafkaWriter.class.getName());
 
-    ResponseEntity<String> getCallablesMetadata(List<String> fastenUris, boolean allAttributes, List<String> attributes);
+    public static void sendToKafka(KafkaProducer<String, String> producer, String topic, String msg) {
+        ProducerRecord<String, String> record = new ProducerRecord<>(topic, msg);
 
-    ResponseEntity<String> resolveMultipleDependencies(List<String> mavenCoordinates);
+        producer.send(record, (recordMetadata, e) -> {
+            if (recordMetadata != null) {
+                logger.debug("Sent: {} to {}", msg, topic);
+            } else {
+                e.printStackTrace();
+            }
+        });
 
-    ResponseEntity<String> getDirectedGraph(long packageVersionId, boolean needStitching, long timestamp);
-
-    ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version);
-
-    ResponseEntity<String> batchIngestArtifacts(JSONArray jsonArtifacts);
+        producer.flush();
+    }
 }

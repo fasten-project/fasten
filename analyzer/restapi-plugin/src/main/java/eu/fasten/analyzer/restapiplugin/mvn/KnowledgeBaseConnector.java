@@ -23,6 +23,9 @@ import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +34,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.sql.SQLException;
+import java.util.Properties;
 
 @Component
 public class KnowledgeBaseConnector {
@@ -56,6 +60,10 @@ public class KnowledgeBaseConnector {
      */
     public static DSLContext dbContext;
 
+    public static KafkaProducer<String, String> kafkaProducer;
+
+    public static String ingestTopic;
+
     /**
      * KnowledgeBase username, retrieved from the server configuration file.
      */
@@ -79,6 +87,12 @@ public class KnowledgeBaseConnector {
 
     @Value("${lima.rcg.url}")
     private String rcgUrl;
+
+    @Value("${kafka.address}")
+    private String kafkaAddress;
+
+    @Value("${kafka.output.topic}")
+    private String kafkaOutputTopic;
 
     /**
      * Connects to the KnowledgeBase before starting the REST server.
@@ -135,5 +149,17 @@ public class KnowledgeBaseConnector {
             System.exit(1);
         }
         logger.info("...Graph database connection established successfully.");
+    }
+
+    @PostConstruct
+    public void initKafkaProducer() {
+        ingestTopic = this.kafkaOutputTopic;
+        var producerProperties = new Properties();
+        producerProperties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, String.join(",", kafkaAddress));
+        producerProperties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "fasten_restapi_producer");
+        producerProperties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        producerProperties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        producerProperties.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "1000000");
+        kafkaProducer = new KafkaProducer<>(producerProperties);
     }
 }

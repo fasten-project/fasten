@@ -32,7 +32,6 @@ import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.LocalMerger;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -41,7 +40,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mockito;
 import org.opalj.br.BaseType;
 import org.opalj.br.ClassFile;
@@ -756,7 +754,7 @@ class OPALClassHierarchyTest {
 
         var coordinate = MavenCoordinate.fromString("ch.qos.logback:logback-classic:1.2.3", "jar");
         var rcg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
-            "", "CHA", 1574072773, MavenUtilities.getRepos().get(0));
+            "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO);
 
         var depSet = new ArrayList<ExtendedRevisionJavaCallGraph>();
         depSet.add(rcg);

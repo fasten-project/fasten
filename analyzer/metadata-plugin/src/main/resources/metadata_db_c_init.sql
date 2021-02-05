@@ -1,3 +1,11 @@
+CREATE TABLE ingested_artifacts
+(
+    id BIGSERIAL PRIMARY KEY ,
+    package_name TEXT NOT NULL ,
+    version TEXT NOT NULL ,
+    timestamp TIMESTAMP
+);
+
 CREATE TABLE packages
 (
     id           BIGSERIAL PRIMARY KEY,
@@ -118,6 +126,10 @@ CREATE TABLE edges
 -- CREATE INDEX CONCURRENTLY callables_module_id ON callables USING btree (module_id);
 -- CREATE INDEX CONCURRENTLY edges_source_id ON edges USING btree (source_id);
 -- CREATE INDEX CONCURRENTLY edges_target_id ON edges USING btree (target_id);
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_ingested_artifacts ON ingested_artifacts USING btree (package_name, version);
+ALTER TABLE ingested_artifacts
+    ADD CONSTRAINT unique_ingested_artifacts UNIQUE USING INDEX unique_ingested_artifacts;
 
 CREATE UNIQUE INDEX CONCURRENTLY unique_package_forge ON packages USING btree (package_name, forge);
 ALTER TABLE packages

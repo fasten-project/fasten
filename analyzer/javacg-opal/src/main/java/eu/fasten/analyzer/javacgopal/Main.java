@@ -286,7 +286,8 @@ public class Main implements Runnable {
         } else {
             revisionCallGraph = PartialCallGraph
                     .createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact, mainClass,
-                            algorithm, Long.parseLong(this.commands.computations.timestamp), MavenUtilities.getRepos().get(0));
+                            algorithm, Long.parseLong(this.commands.computations.timestamp),
+                            (repos == null || repos.size() < 1) ? MavenUtilities.MAVEN_CENTRAL_REPO : repos.get(0));
         }
 
         logger.info("Generated the call graph in {} seconds.", new DecimalFormat("#0.000")

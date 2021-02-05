@@ -16,23 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.core.maven.data;
 
-import org.json.JSONArray;
-import org.springframework.http.ResponseEntity;
-import java.util.List;
-
-public interface StitchingApiService {
-
-    ResponseEntity<String> resolveCallablesToUris(List<Long> gidList);
-
-    ResponseEntity<String> getCallablesMetadata(List<String> fastenUris, boolean allAttributes, List<String> attributes);
-
-    ResponseEntity<String> resolveMultipleDependencies(List<String> mavenCoordinates);
-
-    ResponseEntity<String> getDirectedGraph(long packageVersionId, boolean needStitching, long timestamp);
-
-    ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version);
-
-    ResponseEntity<String> batchIngestArtifacts(JSONArray jsonArtifacts);
+public class PackageVersionNotFoundException extends RuntimeException {
+    public PackageVersionNotFoundException(String message) {
+        super(message);
+    }
 }
