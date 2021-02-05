@@ -46,8 +46,6 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.graphdb.RocksDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -76,7 +74,11 @@ import it.unimi.dsi.lang.ObjectParser;
  * Instances of this class access the metadata Postgres database and the RocksDB database of
  * revision call graphs. Users can interrogate the engine by providing an entry point (e.g., a
  * callable) and a {@link LongPredicate} that will be used to filter the results. For more
- * documentation on the available filters, see {@link CachingPredicateFactory}.
+ * documentation on the available filters, see {@link PredicateFactory}.
+ *
+ * <p>
+ * This class sports a {@link #main(String[])} method offering a command-line interface over an
+ * instance. Please use the command-line help for more information.
  */
 
 public class SearchEngine {
@@ -152,8 +154,9 @@ public class SearchEngine {
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
 	 *
-	 * @implNote This method creates a context and DAO using the given parameters and delegates to
-	 *           {@link #SearchEngine(DSLContext, RocksDao)}.
+	 * @implNote This method creates a {@linkplain DSLContext context}, {@linkplain RocksDao RocksDB
+	 *           DAO}, and {@linkplain Scorer scorer} using the given parameters and delegates to
+	 *           {@link #SearchEngine(DSLContext, RocksDao, String, Scorer)}.
 	 *
 	 * @param jdbcURI the JDBC URI.
 	 * @param database the database name.
@@ -172,7 +175,6 @@ public class SearchEngine {
 	 *
 	 * @param context the DSL context.
 	 * @param rocksDao the RocksDB DAO.
-	 * @param resolver a resolver.
 	 * @param resolverGraph the path to a serialized resolver graph (will be created if it does not
 	 *            exist).
 	 * @param scorer a scorer that will be used to sort results; if {@code null}, a
@@ -186,12 +188,6 @@ public class SearchEngine {
 		resolver = new GraphMavenResolver();
 		resolver.buildDependencyGraph(null, resolverGraph);
 		this.predicateFactory = new CachingPredicateFactory(context);
-	}
-
-	public long gid2Rev(final long gid) {
-		return context.select(PackageVersions.PACKAGE_VERSIONS.ID).from(PackageVersions.PACKAGE_VERSIONS).
-				join(Modules.MODULES).on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID)).
-				join(Callables.CALLABLES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID)).where(Callables.CALLABLES.ID.eq(Long.valueOf(gid))).fetchOne().component1().longValue();
 	}
 
 	/** Executes a given command.
@@ -315,8 +311,8 @@ public class SearchEngine {
 
 	/**
 	 * Performs a breadth-first visit of the given graph, starting from the provided seed, using the
-	 * provided predicate and returning a collection of ranked {@link Result} instances satisfying the
-	 * provided filter.
+	 * provided predicate and returning a collection of {@link Result} instances scored using the
+	 * provided scorer and satisfying the provided filter.
 	 *
 	 * @param graph a {@link DirectedGraph}.
 	 * @param forward if true, the visit follows arcs; if false, the visit follows arcs backwards.
@@ -324,8 +320,8 @@ public class SearchEngine {
 	 *            ignored.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param scorer a scorer that will be used to score the results.
-	 * @return a list of {@linkplain Result results} that will be filled during the visit; pre-existing
-	 *         results will not be modified.
+	 * @param results a list of {@linkplain Result results} that will be filled during the visit;
+	 *            pre-existing results will not be modified.
 	 */
 	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final Collection<Result> results) {
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
@@ -364,9 +360,8 @@ public class SearchEngine {
 	}
 
 	/**
-	 * Computes the callables satisfying the given predicate and reachable from the provided callable,
-	 * and returns them in a ranked list. They will be filtered by the conjunction of
-	 * {@link #predicateFilters}.
+	 * Computes the callables satisfying the conjunction of {@link #predicateFilters} and reachable from
+	 * the provided callable, and returns them in a ranked list.
 	 *
 	 * @param gid the global ID of a callable.
 	 * @return a list of {@linkplain Result results}.
@@ -384,13 +379,12 @@ public class SearchEngine {
 	 * @return a list of {@linkplain Result results}.
 	 */
 	public List<Result> fromCallable(final long gid, final LongPredicate filter) throws RocksDBException {
-		return from(gid2Rev(gid), LongSets.singleton(gid), filter);
+		return from(Util.getRevision(gid, context), LongSets.singleton(gid), filter);
 	}
 
 	/**
-	 * Computes the callables satisfying the given predicate and reachable from the provided revision,
-	 * and returns them in a ranked list. They will be filtered by the conjunction of
-	 * {@link #predicateFilters}.
+	 * Computes the callables satisfying satisfying the conjunction of {@link #predicateFilters} and
+	 * reachable from the provided revision, and returns them in a ranked list.
 	 *
 	 * @param revisionUri a FASTEN URI specifying a revision.
 	 * @return a list of {@linkplain Result results}.
@@ -463,9 +457,8 @@ public class SearchEngine {
 	}
 
 	/**
-	 * Computes the callables satisfying the given predicate and coreachable from the provided callable,
-	 * and returns them in a ranked list. They will be filtered by the conjuction of
-	 * {@link #predicateFilters}.
+	 * Computes the callables satisfying the conjunction of {@link #predicateFilters} and coreachable
+	 * from the provided callable, and returns them in a ranked list.
 	 *
 	 * @param gid the global ID of a callable.
 	 * @return a list of {@linkplain Result results}.
@@ -483,18 +476,17 @@ public class SearchEngine {
 	 * @return a list of {@linkplain Result results}.
 	 */
 	public List<Result> toCallable(final long gid, final LongPredicate filter) throws RocksDBException {
-		return to(gid2Rev(gid), LongSets.singleton(gid), filter);
+		return to(Util.getRevision(gid, context), LongSets.singleton(gid), filter);
 	}
 
 	/**
-	 * Computes the callables satisfying the given predicate and coreachable from the provided revision,
-	 * and returns them in a ranked list.
+	 * Computes the callables satisfying {{@link #predicateFilters} and coreachable from the provided
+	 * revision, and returns them in a ranked list.
 	 *
 	 * @param revisionUri a FASTEN URI specifying a revision.
-	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> toRevision(final FastenURI revisionUri) throws RocksDBException {
+	private List<Result> toRevision(final FastenURI revisionUri) throws RocksDBException {
 		return toRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and));
 	}
 
@@ -617,11 +609,6 @@ public class SearchEngine {
 		return Arrays.asList(array);
 	}
 
-
-
-	// dbContext=PostgresConnector.getDSLContext("jdbc:postgresql://monster:5432/fasten_java","fastenro");rocksDao=new
-	// eu.fasten.core.data.graphdb.RocksDao("/home/vigna/graphdb/",true);
-
 	@SuppressWarnings("boxing")
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(SearchEngine.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
@@ -696,7 +683,7 @@ public class SearchEngine {
 					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
 				}
 
-				for(var t: searchEngine.throwables) {
+				for(final var t: searchEngine.throwables) {
 					System.err.println(t);
 					System.err.println("\t" + t.getStackTrace()[0]);
 				}

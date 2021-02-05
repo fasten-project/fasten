@@ -49,9 +49,15 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 	private final Long2ObjectLinkedOpenHashMap<JSONObject> moduleGID2moduleMetadata;
 	/** LRU cache of the last metadata from the {@link PackageVersions#PACKAGE_VERSIONS} table. */
 	private final Long2ObjectLinkedOpenHashMap<JSONObject> packageVersionGID2packageVersionMetadata;
-	/** LRU cache of the map between {@link Callables#CALLABLES#ID} and {@link Modules#MODULES#ID}. */
+	/**
+	 * LRU cache of the map between {@linkplain Callables#CALLABLES GIDs} and
+	 * {@linkplain Modules#MODULES module database ids}.
+	 */
 	private final Long2LongLinkedOpenHashMap callableGID2moduleGID;
-	/** LRU cache of the map between {@link Modules#MODULES#ID} and {@link PackageVersions#PACKAGE_VERSIONS#ID}. */
+	/**
+	 * LRU cache of the map between {@linkplain Modules#MODULES module database ids} and
+	 * {@linkplains PackageVersions#PACKAGE_VERSIONS revision ids}.
+	 */
 	private final Long2LongLinkedOpenHashMap moduleGID2packageVersionGID;
 
 	/** A factory for predicates that will be matched against a given database.
@@ -104,9 +110,9 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 	protected JSONObject getCallableMetadata(final long callableGID) {
 		JSONObject jsonMetadata = callableGID2callableMetadata.get(callableGID);
 		if (jsonMetadata == null) {
-			SelectConditionStep<Record1<JSONB>> rs = dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID));
+			final SelectConditionStep<Record1<JSONB>> rs = dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID));
 			if (rs != null) {
-				Record1<JSONB> record = rs.fetchOne();
+				final Record1<JSONB> record = rs.fetchOne();
 				if (record != null) {
 					jsonMetadata = new JSONObject(record.component1().data());
 				}

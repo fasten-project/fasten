@@ -48,20 +48,20 @@ public class TrivialPredicateFactory implements PredicateFactory {
 	}
 
 	/** Given a select returning a single record with a single {@link JSONB} field, it
-	 *  returns the field, returning {@code null} if anything goes wrong at any step. 
-	 * 
+	 *  returns the field, returning {@code null} if anything goes wrong at any step.
+	 *
 	 * @param selectResult the select result.
 	 * @return the {@link JSONObject} corresponding to the result, or {@code null}.
 	 */
 	private JSONObject selectJSONObject(final SelectConditionStep<Record1<JSONB>> selectResult) {
 		if (selectResult == null) return null;
-		Record1<JSONB> record = selectResult.fetchOne();
+		final Record1<JSONB> record = selectResult.fetchOne();
 		if (record == null) return null;
-		JSONB jsonb = record.component1();
+		final JSONB jsonb = record.component1();
 		if (jsonb == null || jsonb.data() == null) return null;
 		return new JSONObject(jsonb.data());
 	}
-	
+
 	/** Returns the metadata field of a given callable.
 	 *
 	 * @param callableGID the callable GID.
@@ -71,7 +71,7 @@ public class TrivialPredicateFactory implements PredicateFactory {
 		return selectJSONObject(dbContext.select(Callables.CALLABLES.METADATA)
 				.from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID)));
 	}
-	
+
 	/** Returns the metadata field of the package version corresponding to a given callable.
 	 *
 	 * @param callableGID the callable GID.
@@ -97,10 +97,11 @@ public class TrivialPredicateFactory implements PredicateFactory {
 					.where(Callables.CALLABLES.ID.eq(callableGID)));
 	}
 
-	/** Returns the metadata of a given callable for a specific source.
+	/**
+	 * Returns the metadata of a given callable for a specific source.
 	 *
 	 * @param source the source of the metadata we want to obtain.
-	 * @param callableGID the {@link Callables#CALLABLES#ID} of the callable under consideration.
+	 * @param callableGID the {@linkplain Callables#CALLABLES GID} of the callable under consideration.
 	 * @return the JSON metadata.
 	 */
 	protected JSONObject getMetadata(final MetadataSource source, final long callableGID) {

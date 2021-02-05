@@ -75,9 +75,9 @@ public class Util {
 	}
 
 	/**
-	 * Returns the {@link FastenURI} of a given {@link Callables#CALLABLES#ID}.
+	 * Returns the {@link FastenURI} of a given {@linkplain Callables#CALLABLES GID}.
 	 *
-	 * @param callableGID the {@link Callables#CALLABLES#ID}.
+	 * @param callableGID the {@link Callables#CALLABLES GID}.
 	 * @return the corresponding {@link FastenURI}, or {@code null} if {@code callableGID} does not
 	 *         appear in the database.
 	 */
@@ -98,7 +98,7 @@ public class Util {
 			.fetchOne();
 		if (singleRow == null) return null;
 		// External calls get just the path
-		return singleRow.component5() == -1
+		return singleRow.component5().longValue() == -1
 			? FastenURI.create(null, null, null, singleRow.component4())
 			: FastenURI.create(singleRow.component1(), singleRow.component2(), singleRow.component3(), singleRow.component4());
 	}
@@ -123,6 +123,20 @@ public class Util {
 		.from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
 		.where(Packages.PACKAGES.PACKAGE_NAME.eq(product)).and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version)).fetchOne();
 
+		return singleRow == null ? -1 : singleRow.component1().longValue();
+	}
+
+	/**
+	 * Returns the database id of the revision of a given {@linkplain Callables#CALLABLES GID}.
+	 *
+	 * @param callableGID the {@linkplain Callables#CALLABLES GID}.
+	 * @param context a database connection.
+	 * @return the id of the associated revision, or &minus;1 if no such revision can be found.
+	 */
+	public static long getRevision(final long callableGID, final DSLContext context) {
+		final Record1<Long> singleRow = context.select(PackageVersions.PACKAGE_VERSIONS.ID).from(PackageVersions.PACKAGE_VERSIONS).
+				join(Modules.MODULES).on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID)).
+				join(Callables.CALLABLES).on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID)).where(Callables.CALLABLES.ID.eq(Long.valueOf(callableGID))).fetchOne();
 		return singleRow == null ? -1 : singleRow.component1().longValue();
 	}
 

@@ -25,7 +25,7 @@ import it.unimi.dsi.bits.Fast;
  * A trivial ranking algorithm using local information only.
  *
  * <p>
- * This this scorer is stateless, its only implementation can be retrieved using the factory method
+ * As this scorer is stateless, its only implementation can be retrieved using the factory method
  * {@link #getInstance()}.
  */
 
@@ -45,6 +45,11 @@ public class TrivialScorer implements Scorer {
 		return (graph.outdegree(gid) + graph.indegree(gid)) / Fast.log2(distance + 2);
 	}
 
+	/**
+	 * Returns the only instance of this scorer.
+	 *
+	 * @return the only instance of this scorer.
+	 */
 	public static Scorer getInstance() {
 		return INSTANCE;
 	}
