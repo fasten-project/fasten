@@ -64,6 +64,32 @@ public class LocalStorageTest {
     }
 
     @Test
+    public void testAcrossPartitions() throws IOException {
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 2));
+        Assertions.assertFalse(localStorage.store("A very nice message!", 1));
+        Assertions.assertFalse(localStorage.store("A very nice message!", 2));
+        Assertions.assertTrue(localStorage.store("Second message!", 1));
+        Assertions.assertTrue(localStorage.store("Second message!", 2));
+    }
+
+    @Test
+    public void testClearPartitions() throws IOException {
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 2));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 3));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 4));
+
+        localStorage.clear(List.of(1, 2, 3));
+
+        Assertions.assertFalse(localStorage.exists("A very nice message!", 1));
+        Assertions.assertFalse(localStorage.exists("A very nice message!", 2));
+        Assertions.assertFalse(localStorage.exists("A very nice message!", 3));
+        Assertions.assertTrue(localStorage.exists("A very nice message!", 4));
+    }
+
+
+    @Test
     public void testRemove() throws IOException {
         Assertions.assertTrue(localStorage.store("A very nice message!", 1));
         Assertions.assertTrue(localStorage.exists("A very nice message!", 1));
