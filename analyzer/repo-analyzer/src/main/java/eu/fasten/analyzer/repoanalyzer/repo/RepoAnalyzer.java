@@ -84,19 +84,19 @@ public class RepoAnalyzer {
             var sourceFiles = getMatchingFiles(getPathToSourcesRoot(module), List.of("^.*\\.java"));
             statistics.put("sourceFiles", sourceFiles.size());
 
-            var estimatedCoverage = roundTo3((double) testFiles.size() / (double) sourceFiles.size());
-            statistics.put("estimatedCoverage", estimatedCoverage);
+            var testToSourceRatio = roundTo3((double) testFiles.size() / (double) sourceFiles.size());
+            statistics.put("testToSourceRatio", testToSourceRatio);
 
-            if (estimatedCoverage < ESTIMATED_COVERAGE_THRESHOLD) {
+            if (testToSourceRatio < ESTIMATED_COVERAGE_THRESHOLD) {
                 statistics.put("unitTests", -1);
                 statistics.put("filesWithMockImport", -1);
                 statistics.put("unitTestsWithMocks", -1);
-                statistics.put("mockingRatio", -1);
+                statistics.put("unitTestsMockingRatio", -1);
                 statistics.put("statementCoverage", -1);
 
                 if (sourceFiles.size() > 0) {
                     results.put(statistics);
-                    averageCoverage += estimatedCoverage;
+                    averageCoverage += testToSourceRatio;
                     moduleCounter++;
                 }
                 continue;
@@ -118,14 +118,14 @@ public class RepoAnalyzer {
             statistics.put("unitTestsWithMocks", numberOfUnitTestsWithMocks);
 
             var mockingRatio = roundTo3((double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests);
-            statistics.put("mockingRatio", mockingRatio);
+            statistics.put("unitTestsMockingRatio", mockingRatio);
 
             var statementCoverage = 0;
             statistics.put("statementCoverage", statementCoverage);
 
             if (sourceFiles.size() > 0) {
                 results.put(statistics);
-                averageCoverage += statementCoverage > 0 ? statementCoverage : estimatedCoverage;
+                averageCoverage += statementCoverage > 0 ? statementCoverage : testToSourceRatio;
                 moduleCounter++;
             }
         }
