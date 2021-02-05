@@ -28,22 +28,22 @@ public class SearchEngineTest {
 		builder.addArc(3, 4);
 		builder.addArc(4, 1);
 		final ArrayImmutableDirectedGraph graph = builder.build();
-    	Collection<Result> results = new ObjectOpenHashSet<>();
-		SearchEngine.bfs(graph, true, LongIterators.pour(LongIterators.singleton(1)), x -> true, results);
+    	final Collection<Result> results = new ObjectOpenHashSet<>();
+		SearchEngine.bfs(graph, true, LongIterators.pour(LongIterators.singleton(1)), x -> true, TrivialScorer.getInstance(), results);
 		// #node #indegree #outdegree #distance (from 1)
 		// 1 2 2 0
 		// 2 1 1 1
 		// 3 1 1 1
 		// 4 2 1 2
-		int[] node      = new int[] {2,3,4};
-		int[] indegree  = new int[] {1,1,2};
-		int[] outdegree = new int[] {1,1,1};
-		int[] dist      = new int[] {1,1,2};
-		Long2DoubleOpenHashMap node2score = new Long2DoubleOpenHashMap();
-		for (int i = 0; i < node.length; i++) 
+		final int[] node      = new int[] {2,3,4};
+		final int[] indegree  = new int[] {1,1,2};
+		final int[] outdegree = new int[] {1,1,1};
+		final int[] dist      = new int[] {1,1,2};
+		final Long2DoubleOpenHashMap node2score = new Long2DoubleOpenHashMap();
+		for (int i = 0; i < node.length; i++)
 			node2score.put(node[i], (indegree[i] + outdegree[i]) / Fast.log2(dist[i] + 2));
 		assertEquals(node.length, results.size());
-		for (Result r: results) {
+		for (final Result r: results) {
 			assertTrue(node2score.containsKey(r.gid));
 			assertEquals(node2score.get(r.gid), r.score);
 		}
