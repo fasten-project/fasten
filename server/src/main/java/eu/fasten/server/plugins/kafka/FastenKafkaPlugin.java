@@ -33,8 +33,11 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -174,14 +177,29 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
         Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
+        // Keep a list of all records and offsets we processed (by default this is only 1).
+        ArrayList<ImmutablePair<Long, Integer>> messagesProcessed = new ArrayList<ImmutablePair<Long, Integer>>();
+
         // Although we loop through all records, by default we only poll 1 record.
         for (var r : records) {
+            logger.info("Read message offset " + r.offset() + " from partition " + r.partition() + ".");
             processRecord(r, consumeTimestamp);
+            logger.info("Successfully processed message offset " + r.offset() + " from partition " + r.partition() + ".");
+
+            messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
         }
 
         // Commit only after _all_ records are processed.
         // For most plugins, this loop will only process 1 record (since max.poll.records is 1).
         doCommitSync();
+
+        // More logging.
+        String allOffsets = messagesProcessed.stream().map((x) -> x.left).map(Object::toString)
+                .collect(Collectors.joining(", "));
+        String allPartitions = messagesProcessed.stream().map((x) -> x.right).map(Object::toString)
+                .collect(Collectors.joining(", "));
+        logger.info("Committed offsets [" + allOffsets + "] of partitions [" + allPartitions + "].");
+
 
         // If local storage is enabled, clear it after offsets are committed.
         if (localStorage != null) {
