@@ -49,20 +49,6 @@ public class GradleRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected List<String> getTestsPatterns() {
-        // TODO: take into account custom regex configurations in build.gradle(.kts)
-
-        var patterns = new ArrayList<String>();
-
-        patterns.add("^.*Test\\.java");
-        patterns.add("^Test.*\\.java");
-        patterns.add("^.*Tests\\.java");
-        patterns.add("^.*TestCase\\.java");
-
-        return patterns;
-    }
-
-    @Override
     protected List<Path> extractModuleRoots(Path root) throws IOException {
         var moduleRoots = new ArrayList<Path>();
 

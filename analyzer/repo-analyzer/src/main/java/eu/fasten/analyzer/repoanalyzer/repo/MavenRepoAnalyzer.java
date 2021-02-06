@@ -62,21 +62,6 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected List<String> getTestsPatterns() {
-        // TODO: take into account custom regex configurations of maven surefire plugin
-        // https://maven.apache.org/surefire/maven-surefire-plugin/examples/inclusion-exclusion.html
-
-        var patterns = new ArrayList<String>();
-
-        patterns.add("^.*Test\\.java");
-        patterns.add("^Test.*\\.java");
-        patterns.add("^.*Tests\\.java");
-        patterns.add("^.*TestCase\\.java");
-
-        return patterns;
-    }
-
-    @Override
     protected List<Path> extractModuleRoots(Path root) throws IOException {
         var moduleRoots = new ArrayList<Path>();
 

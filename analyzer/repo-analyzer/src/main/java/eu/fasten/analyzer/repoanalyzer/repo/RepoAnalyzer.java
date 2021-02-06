@@ -38,7 +38,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.NotImplementedException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -109,10 +108,10 @@ public abstract class RepoAnalyzer {
             var statistics = new JSONObject();
             statistics.put("path", module.toAbsolutePath());
 
-            var sourceFiles = getMatchingFiles(getPathToSourcesRoot(module), List.of("^.*\\.java"));
+            var sourceFiles = getJavaFiles(getPathToSourcesRoot(module));
             statistics.put("sourceFiles", sourceFiles.size());
 
-            var testFiles = getMatchingFiles(getPathToTestsRoot(module), getTestsPatterns());
+            var testFiles = getJavaFiles(getPathToTestsRoot(module));
             var testBodies = getJUnitTests(testFiles);
             testFiles = testBodies.keySet();
             statistics.put("testFiles", testFiles.size());
@@ -153,19 +152,15 @@ public abstract class RepoAnalyzer {
     }
 
     /**
-     * Recursively get a list of files that have a name that matches one of the regular expressions.
+     * Recursively get a list of all java files.
      *
      * @param directory root to start searching from
-     * @param patterns  list of regular expressions
      * @return list of files
      */
-    private Set<Path> getMatchingFiles(final Path directory, final List<String> patterns) {
-        var predicate = patterns.stream()
-                .map(p -> Pattern.compile(p).asPredicate())
-                .reduce(x -> false, Predicate::or);
+    private Set<Path> getJavaFiles(final Path directory) {
         try {
             return Files.walk(directory)
-                    .filter(f -> predicate.test(f.getFileName().toString()))
+                    .filter(f -> f.toFile().getName().endsWith(".java"))
                     .collect(Collectors.toSet());
         } catch (IOException e) {
             return new HashSet<>();
@@ -189,14 +184,6 @@ public abstract class RepoAnalyzer {
      * @return root of the test files
      */
     protected abstract Path getPathToTestsRoot(final Path root) throws IOException;
-
-    /**
-     * Get a list of default Maven regular expressions that match test files names.
-     * Extracts additional regular expressions from build file.
-     *
-     * @return list of regular expressions
-     */
-    protected abstract List<String> getTestsPatterns();
 
     /**
      * Get a map of files as keys and a list of test bodies as value.
