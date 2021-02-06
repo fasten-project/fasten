@@ -22,10 +22,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.dom4j.DocumentException;
+import org.dom4j.io.SAXReader;
 
 public class MavenRepoAnalyzer extends RepoAnalyzer {
 
@@ -62,26 +63,29 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected List<Path> extractModuleRoots(final Path root) throws IOException {
+    protected List<Path> extractModuleRoots(final Path root) throws DocumentException {
         var moduleRoots = new ArrayList<Path>();
 
-        var pomContent = Files.readString(Path.of(root.toAbsolutePath().toString(), "pom.xml"));
-        var modules = StringUtils.substringBetween(pomContent, "<modules>", "</modules>");
+        var reader = new SAXReader();
+        var document = reader.read(Path.of(root.toAbsolutePath().toString(), "pom.xml").toFile());
+        var rootElement = document.getRootElement();
+
+        var modules = rootElement.selectSingleNode("./*[local-name()='modules']");
 
         if (modules == null) {
             moduleRoots.add(root);
             return moduleRoots;
         }
 
-        var moduleTags = modules.split("</module>");
-        var moduleNames = Arrays.stream(moduleTags)
-                .filter(t -> t.contains("<module>"))
-                .map(t -> t.substring(t.indexOf("<module>") + 8))
-                .map(t -> Path.of(root.toAbsolutePath().toString(), t))
+        var moduleNames = modules.selectNodes("./*[local-name()='module']")
+                .stream()
+                .map(m -> Path.of(root.toAbsolutePath().toString(), m.getText()))
                 .collect(Collectors.toList());
+
         for (var module : moduleNames) {
             moduleRoots.addAll(extractModuleRoots(module));
         }
+
         return moduleRoots;
     }
 }

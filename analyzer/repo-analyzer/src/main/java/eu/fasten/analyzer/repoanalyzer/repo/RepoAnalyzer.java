@@ -306,7 +306,7 @@ public abstract class RepoAnalyzer {
      * @param root root directory
      * @return a list of paths to modules
      */
-    protected abstract List<Path> extractModuleRoots(final Path root) throws IOException;
+    protected abstract List<Path> extractModuleRoots(final Path root) throws IOException, DocumentException;
 
     /**
      * Rounds value with precision 3.
