@@ -49,7 +49,8 @@ public abstract class RepoAnalyzer {
     enum BuildManager {
         maven,
         gradle,
-        gradleKotlin
+        gradleKotlin,
+        ant
     }
 
     public static final String DEFAULT_TESTS_PATH = "/src/test/java";
@@ -80,6 +81,8 @@ public abstract class RepoAnalyzer {
             return new GradleRepoAnalyzer(repoPath, BuildManager.gradle);
         } else if (files.contains("build.gradle.kts")) {
             return new GradleRepoAnalyzer(repoPath, BuildManager.gradleKotlin);
+        } else if (files.contains("build.xml")) {
+            return new AntRepoAnalyzer(repoPath, BuildManager.ant);
         } else {
             throw new UnsupportedOperationException("Only analysis of Maven, Gradle, and Ant "
                     + "repositories is available");
