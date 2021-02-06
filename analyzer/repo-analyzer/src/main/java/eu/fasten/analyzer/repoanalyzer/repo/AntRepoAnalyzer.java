@@ -19,10 +19,12 @@
 package eu.fasten.analyzer.repoanalyzer.repo;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
+import java.util.stream.Collectors;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
 
 public class AntRepoAnalyzer extends RepoAnalyzer {
 
@@ -37,42 +39,56 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected Path getPathToSourcesRoot(Path root) throws IOException {
-        var buildContent = Files.readString(Path.of(root.toAbsolutePath().toString(), "build.xml"));
+    protected Path getPathToSourcesRoot(final Path root) throws IOException, DocumentException {
+        var reader = new SAXReader();
+        var buildContent = reader.read(Path.of(root.toAbsolutePath().toString(), "build.xml").toFile());
+        var rootElement = buildContent.getRootElement();
 
-        var compileTarget = StringUtils.substringBetween(buildContent, "<target name=\"compile\"", "</target>");
-        return extractPathFromTarget(root, buildContent, compileTarget);
+        var compileTarget = rootElement.selectNodes("./*[local-name()='target']").stream()
+                .filter(n -> n.valueOf("@name").equals("compile"))
+                .collect(Collectors.toList());
+        if (compileTarget.isEmpty()) {
+            throw new IOException("No compile target found");
+        }
+        var srcDir = compileTarget.get(0).selectSingleNode("./*[local-name()='javac']").valueOf("@srcdir");
+        return Path.of(root.toAbsolutePath().toString(), resolveProperty(rootElement, srcDir));
     }
 
     @Override
-    protected Path getPathToTestsRoot(Path root) throws IOException {
-        var buildContent = Files.readString(Path.of(root.toAbsolutePath().toString(), "build.xml"));
+    protected Path getPathToTestsRoot(final Path root) throws IOException, DocumentException {
+        var reader = new SAXReader();
+        var buildContent = reader.read(Path.of(root.toAbsolutePath().toString(), "build.xml").toFile());
+        var rootElement = buildContent.getRootElement();
 
-        var testCompileTarget = StringUtils.substringBetween(buildContent, "<target name=\"compileTest\"", "</target>");
-        return extractPathFromTarget(root, buildContent, testCompileTarget);
+        var compileTarget = rootElement.selectNodes("./*[local-name()='target']").stream()
+                .filter(n -> n.valueOf("@name").equals("compileTest"))
+                .collect(Collectors.toList());
+        if (compileTarget.isEmpty()) {
+            throw new IOException("No compileTest target found");
+        }
+        var srcDir = compileTarget.get(0).selectSingleNode("./*[local-name()='javac']").valueOf("@srcdir");
+        return Path.of(root.toAbsolutePath().toString(), resolveProperty(rootElement, srcDir));
     }
 
-    private Path extractPathFromTarget(Path root, String buildContent, String compileTarget) throws IOException {
-        if (compileTarget != null) {
-            var srcDir = StringUtils.substringBetween(compileTarget, "srcdir=\"", "\"");
+    /**
+     * Resolve property from Ant build.xml file.
+     *
+     * @param rootElement XML root element
+     * @param property    String with property to resolve
+     * @return String with all properties resolved
+     */
+    private String resolveProperty(final Element rootElement, String property) {
+        while (property.contains("${")) {
+            var finalProperty = property.substring(2, property.length() - 1);
+            var values = rootElement.selectNodes("./*[local-name()='property']").stream()
+                    .filter(n -> n.valueOf("@name").equals(finalProperty))
+                    .map(n -> n.valueOf("@value"))
+                    .collect(Collectors.toList());
+            var value = values.isEmpty() ? "" : values.get(0);
 
-            if (srcDir != null) {
-                srcDir = resolveProperties(buildContent, srcDir);
-            }
-            return Path.of(root.toAbsolutePath().toString(), srcDir);
+            property = property.replaceFirst("\\$\\{.*}", resolveProperty(rootElement, value));
         }
-        throw new IOException("Error parsing build.xml");
-    }
-
-    private String resolveProperties(final String buildContent, String value) {
-        while (value.contains("${")) {
-            var prop = StringUtils.substringBetween(value, "${", "}");
-            var property = StringUtils
-                    .substringBetween(buildContent, "<property name=\"" + prop + "\" value=\"", "\"/>");
-            property = property == null ? "" : property;
-            value = value.replaceFirst("\\$\\{.*}", resolveProperties(buildContent, property));
-        }
-        return value;
+        return property;
     }
 
     @Override

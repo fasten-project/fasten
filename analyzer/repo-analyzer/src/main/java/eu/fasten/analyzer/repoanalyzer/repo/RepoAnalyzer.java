@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.dom4j.DocumentException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -99,7 +100,7 @@ public abstract class RepoAnalyzer {
      * @return JSON with statistics of the repository
      * @throws IOException if I/O exception occurs when accessing root file
      */
-    public JSONObject analyze() throws IOException {
+    public JSONObject analyze() throws IOException, DocumentException {
         var payload = new JSONObject();
         payload.put("repoPath", this.rootPath);
         payload.put("buildManager", this.buildManager);
@@ -177,7 +178,7 @@ public abstract class RepoAnalyzer {
      * @param root root directory
      * @return root of the source files
      */
-    protected abstract Path getPathToSourcesRoot(final Path root) throws IOException;
+    protected abstract Path getPathToSourcesRoot(final Path root) throws IOException, DocumentException;
 
     /**
      * Get absolute path to the test files root. Extracts test file directory from pom.xml or
@@ -186,7 +187,7 @@ public abstract class RepoAnalyzer {
      * @param root root directory
      * @return root of the test files
      */
-    protected abstract Path getPathToTestsRoot(final Path root) throws IOException;
+    protected abstract Path getPathToTestsRoot(final Path root) throws IOException, DocumentException;
 
     /**
      * Get a map of files as keys and a list of test bodies as value.
