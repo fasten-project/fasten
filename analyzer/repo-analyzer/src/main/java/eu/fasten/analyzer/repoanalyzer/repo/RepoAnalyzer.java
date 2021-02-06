@@ -81,10 +81,9 @@ public abstract class RepoAnalyzer {
             return new GradleRepoAnalyzer(repoPath, BuildManager.gradle);
         } else if (files.contains("build.gradle.kts")) {
             return new GradleRepoAnalyzer(repoPath, BuildManager.gradleKotlin);
-        } else if (files.contains("build.sbt")) {
-            throw new NotImplementedException("Analysis of SBT repositories is not implemented");
         } else {
-            throw new NotImplementedException("Analysis of UNKNOWN repositories is not implemented");
+            throw new UnsupportedOperationException("Only analysis of Maven, Gradle, and Ant "
+                    + "repositories is available");
         }
     }
 
