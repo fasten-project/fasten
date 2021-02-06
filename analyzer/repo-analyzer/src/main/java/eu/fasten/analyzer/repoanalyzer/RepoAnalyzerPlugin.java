@@ -73,7 +73,7 @@ public class RepoAnalyzerPlugin extends Plugin {
                                 ? json.get("groupId") + ":" + json.get("artifactId") + ":" + json.get("version")
                                 : "UNKNOWN-ARTIFACT";
 
-                var analyzer = new RepoAnalyzer(repoPath);
+                var analyzer = RepoAnalyzer.of(repoPath);
                 this.statistics = analyzer.analyze();
 
                 long endTime = System.nanoTime();
