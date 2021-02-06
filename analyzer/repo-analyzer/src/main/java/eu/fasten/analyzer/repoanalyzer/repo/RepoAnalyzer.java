@@ -24,6 +24,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.Name;
 import com.github.javaparser.ast.nodeTypes.NodeWithMembers;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,15 +38,28 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class RepoAnalyzer {
 
+    /**
+     * Build managers that repo analyzer supports.
+     */
+    private enum BuildManager {
+        maven,
+        gradle,
+        gradleKotlin,
+        sbt,
+        unknown
+    }
+
     private static final String DEFAULT_TESTS_PATH = "/src/test/java";
     private static final String DEFAULT_SOURCES_PATH = "/src/main/java";
 
+    private final BuildManager buildManager;
     private final String rootPath;
     private final List<Path> moduleRoots;
 
@@ -56,7 +70,27 @@ public class RepoAnalyzer {
      */
     public RepoAnalyzer(final String path) throws IOException {
         this.rootPath = path;
-        this.moduleRoots = extractModuleRoots(Path.of(path));
+
+        var files = Arrays.stream(new File(path).listFiles())
+                .map(File::getName)
+                .collect(Collectors.toSet());
+
+        if (files.contains("pom.xml")) {
+            this.buildManager = BuildManager.maven;
+            this.moduleRoots = extractModuleRootsPom(Path.of(path));
+        } else if (files.contains("build.gradle")) {
+            this.buildManager = BuildManager.gradle;
+            this.moduleRoots = extractModuleRootsGradle(Path.of(path));
+        } else if (files.contains("build.gradle.kts")) {
+            this.buildManager = BuildManager.gradleKotlin;
+            this.moduleRoots = extractModuleRootsGradle(Path.of(path));
+        } else if (files.contains("build.sbt")) {
+            this.buildManager = BuildManager.sbt;
+            throw new NotImplementedException("Analysis of SBT repositories is not implemented");
+        } else {
+            this.buildManager = BuildManager.unknown;
+            this.moduleRoots = List.of(Path.of(path));
+        }
     }
 
     /**
@@ -68,6 +102,7 @@ public class RepoAnalyzer {
     public JSONObject analyze() throws IOException {
         var payload = new JSONObject();
         payload.put("repoPath", this.rootPath);
+        payload.put("buildManager", this.buildManager);
 
         var results = new JSONArray();
         for (var module : this.moduleRoots) {
@@ -231,7 +266,7 @@ public class RepoAnalyzer {
      */
     private int getNumberOfFunctions(final Set<Path> sourceFiles) throws IOException {
         var parser = new JavaParser();
-        int methodCounter = 0;
+        var methodCounter = 0;
 
         for (var testClass : sourceFiles) {
             var content = parser.parse(testClass)
@@ -296,12 +331,12 @@ public class RepoAnalyzer {
     }
 
     /**
-     * Extract paths to all modules of the project.
+     * Extract paths to all modules of the maven project.
      *
      * @param root root directory
      * @return a list of paths to modules
      */
-    private List<Path> extractModuleRoots(final Path root) throws IOException {
+    private List<Path> extractModuleRootsPom(final Path root) throws IOException {
         var moduleRoots = new ArrayList<Path>();
 
         var pomContent = Files.readString(Path.of(root.toAbsolutePath().toString(), "pom.xml"));
@@ -319,7 +354,40 @@ public class RepoAnalyzer {
                 .map(t -> Path.of(root.toAbsolutePath().toString(), t))
                 .collect(Collectors.toList());
         for (var module : moduleNames) {
-            moduleRoots.addAll(extractModuleRoots(module));
+            moduleRoots.addAll(extractModuleRootsPom(module));
+        }
+        return moduleRoots;
+    }
+
+    /**
+     * Extract paths to all modules of the gradle project.
+     *
+     * @param root root directory
+     * @return a list of paths to modules
+     */
+    private List<Path> extractModuleRootsGradle(final Path root) throws IOException {
+        var moduleRoots = new ArrayList<Path>();
+
+        if (Arrays.stream(root.toFile().listFiles())
+                .noneMatch(f -> f.getName().equals("settings.gradle")
+                        || f.getName().equals("settings.gradle.kts"))) {
+            moduleRoots.add(root);
+            return moduleRoots;
+        }
+
+        var settings = this.buildManager == BuildManager.gradleKotlin
+                ? Files.readString(Path.of(root.toAbsolutePath().toString(), "settings.gradle.kts"))
+                : Files.readString(Path.of(root.toAbsolutePath().toString(), "settings.gradle"));
+
+        var moduleTags = settings.split("\n");
+        var modules = Arrays.stream(moduleTags)
+                .filter(t -> t.contains("include"))
+                .map(t -> t.substring((t.contains("\"") ? t.indexOf("\"") : t.indexOf("'")) + 1,
+                        (t.contains("\"") ? t.lastIndexOf("\"") : t.lastIndexOf("'") - 1)))
+                .map(t -> Path.of(root.toAbsolutePath().toString(), t))
+                .collect(Collectors.toList());
+        for (var module : modules) {
+            moduleRoots.addAll(extractModuleRootsGradle(module));
         }
         return moduleRoots;
     }
