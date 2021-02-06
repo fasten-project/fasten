@@ -34,22 +34,22 @@ public class GradleRepoAnalyzer extends RepoAnalyzer {
      * @param path         path to the repository
      * @param buildManager build manager info
      */
-    public GradleRepoAnalyzer(String path, BuildManager buildManager) {
+    public GradleRepoAnalyzer(final String path, final BuildManager buildManager) {
         super(path, buildManager);
     }
 
     @Override
-    protected Path getPathToSourcesRoot(Path root) {
+    protected Path getPathToSourcesRoot(final Path root) {
         return Path.of(root.toAbsolutePath().toString(), DEFAULT_SOURCES_PATH);
     }
 
     @Override
-    protected Path getPathToTestsRoot(Path root) {
+    protected Path getPathToTestsRoot(final Path root) {
         return Path.of(root.toAbsolutePath().toString(), DEFAULT_TESTS_PATH);
     }
 
     @Override
-    protected List<Path> extractModuleRoots(Path root) throws IOException {
+    protected List<Path> extractModuleRoots(final Path root) throws IOException {
         var moduleRoots = new ArrayList<Path>();
 
         if (Arrays.stream(root.toFile().listFiles())

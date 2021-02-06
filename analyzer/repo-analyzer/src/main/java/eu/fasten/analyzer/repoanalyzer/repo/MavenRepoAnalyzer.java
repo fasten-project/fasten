@@ -35,12 +35,12 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
      * @param path         path to the repository
      * @param buildManager build manager info
      */
-    public MavenRepoAnalyzer(String path, RepoAnalyzer.BuildManager buildManager) {
+    public MavenRepoAnalyzer(final String path, final BuildManager buildManager) {
         super(path, buildManager);
     }
 
     @Override
-    protected Path getPathToSourcesRoot(Path root) throws IOException {
+    protected Path getPathToSourcesRoot(final Path root) throws IOException {
         var pomContent = Files.readString(Path.of(root.toString(), "pom.xml"));
         var sourcePath = StringUtils.substringBetween(pomContent, "<sourceDirectory>", "</sourceDirectory>");
         sourcePath = sourcePath == null ? DEFAULT_SOURCES_PATH : sourcePath;
@@ -51,7 +51,7 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected Path getPathToTestsRoot(Path root) throws IOException {
+    protected Path getPathToTestsRoot(final Path root) throws IOException {
         var pomContent = Files.readString(Path.of(root.toString(), "pom.xml"));
         var sourcePath = StringUtils.substringBetween(pomContent, "<testSourceDirectory>", "</testSourceDirectory>");
         sourcePath = sourcePath == null ? DEFAULT_TESTS_PATH : sourcePath;
@@ -62,7 +62,7 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected List<Path> extractModuleRoots(Path root) throws IOException {
+    protected List<Path> extractModuleRoots(final Path root) throws IOException {
         var moduleRoots = new ArrayList<Path>();
 
         var pomContent = Files.readString(Path.of(root.toAbsolutePath().toString(), "pom.xml"));

@@ -71,6 +71,13 @@ public abstract class RepoAnalyzer {
         this.buildManager = buildManager;
     }
 
+    /**
+     * Create a new instance of RepoAnalyzer of the right type based on the build manager used
+     * in the repository.
+     *
+     * @param repoPath repo path
+     * @return RepoAnalyzer of right type
+     */
     public static RepoAnalyzer of(final String repoPath) {
         var files = Arrays.stream(new File(repoPath).listFiles())
                 .map(File::getName)

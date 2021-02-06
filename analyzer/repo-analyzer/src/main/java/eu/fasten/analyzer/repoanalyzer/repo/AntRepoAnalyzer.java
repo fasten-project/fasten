@@ -34,7 +34,7 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
      * @param path         path to the repository
      * @param buildManager build manager info
      */
-    public AntRepoAnalyzer(String path, BuildManager buildManager) {
+    public AntRepoAnalyzer(final String path, final BuildManager buildManager) {
         super(path, buildManager);
     }
 
@@ -92,7 +92,7 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected List<Path> extractModuleRoots(Path root) {
+    protected List<Path> extractModuleRoots(final Path root) {
         return List.of(root);
     }
 }
