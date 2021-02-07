@@ -67,6 +67,9 @@ public class RepoAnalyzerPlugin extends Plugin {
                 }
 
                 final String repoPath = json.getString("repoPath");
+                if (repoPath.isEmpty()) {
+                    throw new IllegalArgumentException("Empty repo path");
+                }
 
                 final var coordinate =
                         json.has("groupId") && json.has("artifactId") && json.has("version")
@@ -79,7 +82,7 @@ public class RepoAnalyzerPlugin extends Plugin {
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000;
                 logger.info("[REPO-ANALYSIS] [SUCCESS] [" + duration + "] [" + coordinate + "] [NONE]");
-            } catch (JSONException e) {
+            } catch (JSONException | IllegalArgumentException e) {
                 logger.error("[RECORD-PARSING] [FAILED] [-1] [NONE] " +
                         "[" + e.getClass().getSimpleName() + "]" +
                         "[" + e.getMessage() + "]", e);
