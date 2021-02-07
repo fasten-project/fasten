@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.repoanalyzer.repo;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,29 +51,21 @@ public class GradleRepoAnalyzer extends RepoAnalyzer {
 
     @Override
     protected List<Path> extractModuleRoots(final Path root) throws IOException {
-        var moduleRoots = new ArrayList<Path>();
+        var modules = new ArrayList<Path>();
 
-        if (Arrays.stream(root.toFile().listFiles())
-                .noneMatch(f -> f.getName().equals("settings.gradle")
-                        || f.getName().equals("settings.gradle.kts"))) {
-            moduleRoots.add(root);
-            return moduleRoots;
-        }
-
-        var settings = this.getBuildManager() == BuildManager.gradleKotlin
-                ? Files.readString(Path.of(root.toAbsolutePath().toString(), "settings.gradle.kts"))
-                : Files.readString(Path.of(root.toAbsolutePath().toString(), "settings.gradle"));
-
-        var moduleTags = settings.split("\n");
-        var modules = Arrays.stream(moduleTags)
-                .filter(t -> t.contains("include"))
-                .map(t -> t.substring((t.contains("\"") ? t.indexOf("\"") : t.indexOf("'")) + 1,
-                        (t.contains("\"") ? t.lastIndexOf("\"") : t.lastIndexOf("'") - 1)))
-                .map(t -> Path.of(root.toAbsolutePath().toString(), t))
+        var directories = Files.walk(root)
+                .map(Path::toFile)
+                .filter(File::isDirectory)
                 .collect(Collectors.toList());
-        for (var module : modules) {
-            moduleRoots.addAll(extractModuleRoots(module));
+
+        for (var dir : directories) {
+            var files = Arrays.stream(dir.listFiles())
+                    .collect(Collectors.toMap(File::getName, File::getAbsolutePath));
+
+            if (files.containsKey("src")) {
+                modules.add(dir.toPath());
+            }
         }
-        return moduleRoots;
+        return modules;
     }
 }
