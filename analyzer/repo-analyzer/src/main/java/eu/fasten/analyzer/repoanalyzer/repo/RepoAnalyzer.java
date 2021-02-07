@@ -18,12 +18,6 @@
 
 package eu.fasten.analyzer.repoanalyzer.repo;
 
-import com.github.javaparser.JavaParser;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.expr.Name;
-import com.github.javaparser.ast.nodeTypes.NodeWithMembers;
-import com.github.javaparser.ast.stmt.BlockStmt;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -95,10 +89,6 @@ public abstract class RepoAnalyzer {
             throw new UnsupportedOperationException("Only analysis of Maven, Gradle, and Ant "
                     + "repositories is available");
         }
-    }
-
-    public BuildManager getBuildManager() {
-        return buildManager;
     }
 
     /**
@@ -203,27 +193,51 @@ public abstract class RepoAnalyzer {
      * @return a map of files and test bodies
      * @throws IOException if I/O exception occurs when reading a file
      */
-    private Map<Path, List<BlockStmt>> getJUnitTests(final Set<Path> testClasses) throws IOException {
-        var parser = new JavaParser();
-        var testBodies = new HashMap<Path, List<BlockStmt>>();
+    private Map<Path, List<String>> getJUnitTests(final Set<Path> testClasses) throws IOException {
+        var testBodies = new HashMap<Path, List<String>>();
+
+        var pattern = Pattern.compile("@Test(\\(.*\\))?[^a-zA-Z0-9]");
 
         for (var testClass : testClasses) {
-            var content = parser.parse(testClass)
-                    .getResult()
-                    .orElseThrow(IOException::new);
+            var content = Files.readString(testClass);
+            content = content.replaceAll("/\\*([\\S\\s]+?)\\*/", "");
+            content = content.replaceAll("//.*", "");
 
-            var methods = content.findAll(MethodDeclaration.class)
-                    .stream()
-                    .filter(t -> t.getAnnotations()
-                            .stream()
-                            .anyMatch(a -> a.getName().equals(new Name("Test"))))
-                    .map(t -> t.getBody().orElse(new BlockStmt()))
-                    .collect(Collectors.toList());
+            var matcher = pattern.matcher(content);
 
-            if (!methods.isEmpty()) {
-                testBodies.put(testClass, methods);
+            var results = matcher.results().collect(Collectors.toList());
+            for (int i = 0; i < results.size(); i++) {
+                int start = results.get(i).start();
+                int end = results.size() > i + 1 ? results.get(i + 1).start() : content.length();
+
+                var method = content.substring(start, end);
+
+                var currIndex = 0;
+                var pseudoStack = 0;
+                while (currIndex == 0 || pseudoStack != 0) {
+                    var open = method.indexOf("{", currIndex);
+                    var close = method.indexOf("}", currIndex);
+
+                    open = open == -1 ? Integer.MAX_VALUE : open;
+                    close = close == -1 ? Integer.MAX_VALUE : close;
+
+                    if (open == Integer.MAX_VALUE && close == Integer.MAX_VALUE) {
+                        break;
+                    }
+
+                    if (open < close) {
+                        pseudoStack++;
+                        currIndex = open + 1;
+                    } else {
+                        pseudoStack--;
+                        currIndex = close + 1;
+                    }
+                }
+                testBodies.putIfAbsent(testClass, new ArrayList<>());
+                testBodies.get(testClass).add(method.substring(0, currIndex));
             }
         }
+
         return testBodies;
     }
 
@@ -235,21 +249,14 @@ public abstract class RepoAnalyzer {
      * @throws IOException if I/O exception occurs when reading a file
      */
     private int getNumberOfFunctions(final Set<Path> sourceFiles) throws IOException {
-        var parser = new JavaParser();
-        var methodCounter = 0;
+        var pattern = Pattern.compile("(public|protected|private|static|\\s) +[\\w<>\\[\\]]+\\s+(\\w+) *\\([^)]*\\) *(\\{?|[^;])");
+        var count = 0;
 
-        for (var testClass : sourceFiles) {
-            var content = parser.parse(testClass)
-                    .getResult()
-                    .orElseThrow(IOException::new);
-
-            methodCounter += content.findAll(ClassOrInterfaceDeclaration.class)
-                    .stream()
-                    .map(NodeWithMembers::getMethods)
-                    .map(List::size)
-                    .reduce(0, Integer::sum);
+        for (var source : sourceFiles) {
+            var matcher = pattern.matcher(Files.readString(source));
+            count += matcher.results().count();
         }
-        return methodCounter;
+        return count;
     }
 
     /**
@@ -281,9 +288,9 @@ public abstract class RepoAnalyzer {
      * @param filesWithMockImport files that have mock imports
      * @return map of files and test bodies with mocks
      */
-    private Map<Path, List<BlockStmt>> getTestsWithMock(final Map<Path, List<BlockStmt>> testBodies,
-                                                        final List<Path> filesWithMockImport) {
-        var tests = new HashMap<Path, List<BlockStmt>>();
+    private Map<Path, List<String>> getTestsWithMock(final Map<Path, List<String>> testBodies,
+                                                     final List<Path> filesWithMockImport) {
+        var tests = new HashMap<Path, List<String>>();
 
         var patterns = new String[]{
                 "\\.mock\\(", "\\.when\\(", "\\.spy\\(", "\\.doNothing\\(", // Mockito
@@ -294,7 +301,7 @@ public abstract class RepoAnalyzer {
                 .reduce(x -> false, Predicate::or);
 
         for (var file : filesWithMockImport) {
-            tests.put(file, testBodies.get(file).stream().filter(t -> predicate.test(t.toString())).collect(Collectors.toList()));
+            tests.put(file, testBodies.get(file).stream().filter(predicate).collect(Collectors.toList()));
         }
 
         return tests;
