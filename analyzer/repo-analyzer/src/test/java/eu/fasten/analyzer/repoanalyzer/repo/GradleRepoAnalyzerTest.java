@@ -30,20 +30,20 @@ import org.dom4j.DocumentException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class AntRepoAnalyzerTest {
+class GradleRepoAnalyzerTest {
 
     private static RepoAnalyzer analyzer;
     private static String root;
 
     @BeforeAll
     static void setUp() {
-        root = new File(Objects.requireNonNull(AntRepoAnalyzerTest.class.getClassLoader().getResource("simpleAntRepo")).getFile()).getAbsolutePath();
+        root = new File(Objects.requireNonNull(GradleRepoAnalyzer.class.getClassLoader().getResource("simpleGradleRepo")).getFile()).getAbsolutePath();
         analyzer = RepoAnalyzer.of(root);
     }
 
     @Test
     void analyzerTypeCheck() {
-        assertTrue(analyzer instanceof AntRepoAnalyzer);
+        assertTrue(analyzer instanceof GradleRepoAnalyzer);
     }
 
     @Test
@@ -58,6 +58,8 @@ class AntRepoAnalyzerTest {
 
     @Test
     void extractModuleRoots() throws IOException, DocumentException {
-        assertEquals(Set.of(Path.of(root)), analyzer.extractModuleRoots(Path.of(root)));
+        var roots = Set.of(Path.of(root), Path.of(root, "subprojects/module1"),
+                Path.of(root, "subprojects/module2"));
+        assertEquals(roots, analyzer.extractModuleRoots(Path.of(root)));
     }
 }

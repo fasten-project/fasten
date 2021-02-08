@@ -20,7 +20,7 @@ package eu.fasten.analyzer.repoanalyzer.repo;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -100,7 +100,7 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected List<Path> extractModuleRoots(final Path root) {
-        return List.of(root);
+    protected Set<Path> extractModuleRoots(final Path root) {
+        return Set.of(root);
     }
 }

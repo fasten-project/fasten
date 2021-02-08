@@ -21,8 +21,8 @@ package eu.fasten.analyzer.repoanalyzer.repo;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.dom4j.DocumentException;
@@ -63,8 +63,8 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected List<Path> extractModuleRoots(final Path root) throws DocumentException {
-        var moduleRoots = new ArrayList<Path>();
+    protected Set<Path> extractModuleRoots(final Path root) throws DocumentException {
+        var moduleRoots = new HashSet<Path>();
 
         var reader = new SAXReader();
         var document = reader.read(Path.of(root.toAbsolutePath().toString(), "pom.xml").toFile());
