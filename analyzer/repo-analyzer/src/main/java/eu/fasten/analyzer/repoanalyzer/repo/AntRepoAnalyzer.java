@@ -84,6 +84,14 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
                     .filter(n -> n.valueOf("@name").equals(finalProperty))
                     .map(n -> n.valueOf("@value"))
                     .collect(Collectors.toList());
+
+            values = !values.isEmpty() && values.get(0).isEmpty()
+                    ? rootElement.selectNodes("./*[local-name()='property']").stream()
+                    .filter(n -> n.valueOf("@name").equals(finalProperty))
+                    .map(n -> n.valueOf("@location"))
+                    .collect(Collectors.toList())
+                    : values;
+
             var value = values.isEmpty() ? "" : values.get(0);
 
             property = property.replaceFirst("\\$\\{.*}", resolveProperty(rootElement, value));
