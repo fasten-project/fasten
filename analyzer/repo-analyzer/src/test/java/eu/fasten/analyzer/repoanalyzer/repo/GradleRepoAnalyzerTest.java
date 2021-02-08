@@ -63,4 +63,11 @@ class GradleRepoAnalyzerTest {
                 Path.of(root, "subprojects/module2"));
         assertEquals(roots, analyzer.extractModuleRoots(Path.of(root)));
     }
+
+    @Test
+    void gradleKotlin() {
+        root = new File(Objects.requireNonNull(GradleRepoAnalyzerTest.class.getClassLoader()
+                .getResource("simpleGradleKotlinRepo")).getFile()).getAbsolutePath();
+        analyzer = RepoAnalyzer.of(root);
+    }
 }

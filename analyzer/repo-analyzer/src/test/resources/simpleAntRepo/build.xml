@@ -1,6 +1,6 @@
 <project name="TestProject" basedir=".">
     <property name="src.dir" location="src/main/java"/>
-    <property name="test.src.dir" location="src/test/java"/>
+    <property name="test.src.dir" value="src/test/java"/>
     <property name="build" location="build"/>
     <property name="dist" location="dist"/>
 

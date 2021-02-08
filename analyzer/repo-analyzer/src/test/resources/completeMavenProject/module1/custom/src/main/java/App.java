@@ -1,7 +1,9 @@
 class App {
 
     public static void a() {
+        if (true) {
 
+        }
     }
 
     private int b() {

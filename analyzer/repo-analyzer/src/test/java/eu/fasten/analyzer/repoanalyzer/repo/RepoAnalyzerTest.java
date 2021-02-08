@@ -20,6 +20,7 @@ package eu.fasten.analyzer.repoanalyzer.repo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +30,13 @@ import org.dom4j.DocumentException;
 import org.junit.jupiter.api.Test;
 
 class RepoAnalyzerTest {
+
+    @Test
+    void wringRepoType() {
+        var root = new File(Objects.requireNonNull(RepoAnalyzerTest.class.getClassLoader()
+                .getResource("emptyRepo")).getFile()).getAbsolutePath();
+        assertThrows(UnsupportedOperationException.class, () -> RepoAnalyzer.of(root));
+    }
 
     @Test
     void analyze() throws IOException, DocumentException {

@@ -37,23 +37,23 @@ class RepoAnalyzerPluginTest {
     private static RepoAnalyzerPlugin.RepoAnalyzerExtension plugin;
 
     @BeforeAll
-    public static void setUp() {
+    static void setUp() {
         plugin = new RepoAnalyzerPlugin.RepoAnalyzerExtension();
     }
 
     @Test
-    public void name() {
+    void name() {
         assertEquals("RepoAnalyzerPlugin", plugin.name());
     }
 
     @Test
-    public void description() {
+    void description() {
         assertEquals("Consumes records from RepoCloner and produces statistics" +
                 " about tests present in the cloned repository", plugin.description());
     }
 
     @Test
-    public void consume() throws IOException, DocumentException {
+    void consume() throws IOException, DocumentException {
         assertTrue(plugin.produce().isEmpty());
 
         var repoPath = new File(Objects.requireNonNull(RepoAnalyzerPluginTest.class.getClassLoader()
