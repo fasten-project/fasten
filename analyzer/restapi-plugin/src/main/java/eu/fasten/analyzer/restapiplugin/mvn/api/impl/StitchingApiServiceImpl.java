@@ -154,20 +154,33 @@ public class StitchingApiServiceImpl implements StitchingApiService {
     }
 
     @Override
-    public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version) {
+    public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise) {
         var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
 
         // Get all transitive dependencies
         var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(groupId, artifactId, version, -1L, KnowledgeBaseConnector.dbContext, true);
         var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
-        var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
+        var vulnerableDependencies = KnowledgeBaseConnector.kbDao.findVulnerablePackageVersions(depIds);
 
+        if (!precise) {
+            // Leave only those dependencies that are in any path from the artifact to any of its vulnerable dependencies
+            var vulnerablePathDeps = new HashSet<Revision>();
+            var source = new Revision(groupId, artifactId, version, new Timestamp(-1));
+            for (var vulnerableDependency : vulnerableDependencies) {
+                var target = revisionIdToRevision(depSet, vulnerableDependency);
+                if (target != null) {
+                    vulnerablePathDeps.addAll(KnowledgeBaseConnector.graphResolver.findAllRevisionsInThePath(source, target));
+                }
+            }
+            var vulnerableDepsIds = vulnerablePathDeps.stream().map(r -> r.id).collect(Collectors.toSet());
+            depIds = depIds.stream().filter(vulnerableDepsIds::contains).collect(Collectors.toSet());
+        }
+        var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
         // Get stitched (with dependencies) graph
         var graph = databaseMerger.mergeWithCHA(package_name + Constants.mvnCoordinateSeparator + version);
 
         // Find all vulnerable callables (nodes) in the graph
-        var vulnerableDependencies = KnowledgeBaseConnector.kbDao.findVulnerablePackageVersions(depIds);
         var vulnerabilities = KnowledgeBaseConnector.kbDao.findVulnerableCallables(vulnerableDependencies, graph.nodes());
 
         // Get all internal callables
@@ -222,6 +235,15 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             json.put(entry.getKey(), pathsJson);
         }
         return new ResponseEntity<>(json.toString(), HttpStatus.OK);
+    }
+
+    private Revision revisionIdToRevision(Collection<Revision> revisions, long id) {
+        for (var revision : revisions) {
+            if (revision.id == id) {
+                return revision;
+            }
+        }
+        return null;
     }
 
     List<List<Long>> getPathsToVulnerableNode(DirectedGraph graph, long source, long target,
