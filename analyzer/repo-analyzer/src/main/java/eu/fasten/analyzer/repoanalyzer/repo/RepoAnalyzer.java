@@ -37,16 +37,6 @@ import org.json.JSONObject;
 
 public abstract class RepoAnalyzer {
 
-    /**
-     * Build managers that repo analyzer supports.
-     */
-    enum BuildManager {
-        maven,
-        gradle,
-        gradleKotlin,
-        ant
-    }
-
     public static final String DEFAULT_TESTS_PATH = "/src/test/java";
     public static final String DEFAULT_SOURCES_PATH = "/src/main/java";
 

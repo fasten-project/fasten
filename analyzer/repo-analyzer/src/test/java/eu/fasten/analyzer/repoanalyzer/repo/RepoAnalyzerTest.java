@@ -51,7 +51,7 @@ class RepoAnalyzerTest {
 
         assertNotNull(result);
 
-        assertEquals(RepoAnalyzer.BuildManager.maven, result.get("buildManager"));
+        assertEquals(BuildManager.maven, result.get("buildManager"));
         assertEquals(root, result.get("repoPath").toString());
 
         var modules = result.getJSONArray("modules");

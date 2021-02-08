@@ -20,13 +20,13 @@ public class RepoAnalyzerFactory {
                 .collect(Collectors.toSet());
 
         if (files.contains("pom.xml")) {
-            return new MavenRepoAnalyzer(Path.of(repoPath), RepoAnalyzer.BuildManager.maven);
+            return new MavenRepoAnalyzer(Path.of(repoPath), BuildManager.maven);
         } else if (files.contains("build.gradle")) {
-            return new GradleRepoAnalyzer(Path.of(repoPath), RepoAnalyzer.BuildManager.gradle);
+            return new GradleRepoAnalyzer(Path.of(repoPath), BuildManager.gradle);
         } else if (files.contains("build.gradle.kts")) {
-            return new GradleRepoAnalyzer(Path.of(repoPath), RepoAnalyzer.BuildManager.gradleKotlin);
+            return new GradleRepoAnalyzer(Path.of(repoPath), BuildManager.gradleKotlin);
         } else if (files.contains("build.xml")) {
-            return new AntRepoAnalyzer(Path.of(repoPath), RepoAnalyzer.BuildManager.ant);
+            return new AntRepoAnalyzer(Path.of(repoPath), BuildManager.ant);
         } else {
             throw new UnsupportedOperationException("Only analysis of Maven, Gradle, and Ant "
                     + "repositories is available");
