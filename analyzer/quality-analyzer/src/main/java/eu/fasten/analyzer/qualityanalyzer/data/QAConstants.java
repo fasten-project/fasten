@@ -20,7 +20,7 @@ package eu.fasten.analyzer.qualityanalyzer.data;
 
 public class QAConstants {
 
-    public static final String QA_VERSION_NUMBER = "0.0.1";
+    public static final String QA_VERSION_NUMBER = "1.2.0";
     public static final String QA_PLUGIN_NAME = "Quality Analyzer Plugin";
 
     //field names in JSON Object sent by Rapid
