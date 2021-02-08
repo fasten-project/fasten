@@ -477,7 +477,7 @@ public class SearchEngine {
 
 		stitchingTime -= System.nanoTime();
 		final DatabaseMerger dm = new DatabaseMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, rocksDao);
-		final var stitchedGraph = getStitchedGraph(dm, groupId, artifactId + ":", version);
+		final var stitchedGraph = getStitchedGraph(dm, groupId, artifactId, version);
 		stitchingTime += System.nanoTime();
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
