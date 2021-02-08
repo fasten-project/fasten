@@ -62,6 +62,7 @@ import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -85,6 +86,9 @@ public class SearchEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngine.class);
 
 	private static final int DEFAULT_LIMIT = 10;
+
+	/** Maximum number of stitched graphs in the cache. */
+	private static final int STITCHED_MAX_SIZE = 1024;
 
 	/** The regular expression for commands. */
 	private static Pattern COMMAND_REGEXP = Pattern.compile("\\$\\s*(.*)\\s*");
@@ -154,6 +158,9 @@ public class SearchEngine {
 	/** The filters whose conjunction will be applied by default when executing a query, unless otherwise
 	 *  specified (compare, e.g., {@link #fromCallable(long)} and {@link #fromCallable(long, LongPredicate)}). */
 	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
+	
+	/** LRU cache of stitched graphs. */
+	private final Object2ObjectLinkedOpenHashMap<String, DirectedGraph> stitchedGraphCache = new Object2ObjectLinkedOpenHashMap<>();
 
 	/** Time spent during resolution (dependency and dependents). */
 	private long resolveTime;
@@ -322,6 +329,25 @@ public class SearchEngine {
 		}
 	}
 
+	/** Use the given {@link DatabaseMerger} to get the stitched graph for the given artifact.
+	 * 
+	 * @param dm the {@link DatabaseMerger} to be used.
+	 * @param groupId the groupId of the artifact to be produced.
+	 * @param artifactId the artifactId of the artifact to be produced.
+	 * @param version the version of the artifact to be produced.
+	 * @return the stitched graph.
+	 */
+	private DirectedGraph getStitchedGraph(final DatabaseMerger dm, final String groupId, final String artifactId, final String version) {
+		String identifier = groupId + ":" + artifactId + ":" + version;
+		DirectedGraph result = stitchedGraphCache.getAndMoveToFirst(identifier);
+		if (result == null) {
+			result = dm.mergeWithCHA(identifier);
+			stitchedGraphCache.put(identifier, result);
+			if (stitchedGraphCache.size() > STITCHED_MAX_SIZE) stitchedGraphCache.removeLast();
+		}
+		return result;
+	}
+
 	/**
 	 * Performs a breadth-first visit of the given graph, starting from the provided seed, using the
 	 * provided predicate and returning a collection of {@link Result} instances scored using the
@@ -451,7 +477,7 @@ public class SearchEngine {
 
 		stitchingTime -= System.nanoTime();
 		final DatabaseMerger dm = new DatabaseMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, rocksDao);
-		final var stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
+		final var stitchedGraph = getStitchedGraph(dm, groupId, artifactId + ":", version);
 		stitchingTime += System.nanoTime();
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
@@ -595,7 +621,7 @@ public class SearchEngine {
 
 			DirectedGraph stitchedGraph = null;
 			try {
-				stitchedGraph = dm.mergeWithCHA(groupId + ":" + artifactId + ":" + version);
+				stitchedGraph = getStitchedGraph(dm, groupId, artifactId, version);
 			} catch(final Throwable t) {
 				throwables.add(t);
 				LOGGER.error("mergeWithCHA threw an exception", t);
