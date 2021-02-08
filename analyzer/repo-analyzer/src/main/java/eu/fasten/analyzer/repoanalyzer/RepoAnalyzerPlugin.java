@@ -97,7 +97,7 @@ public class RepoAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            return Optional.of(statistics.toString());
+            return statistics != null ? Optional.of(statistics.toString()) : Optional.empty();
         }
 
         @Override

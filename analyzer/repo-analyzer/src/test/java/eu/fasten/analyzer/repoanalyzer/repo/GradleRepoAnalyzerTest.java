@@ -37,7 +37,8 @@ class GradleRepoAnalyzerTest {
 
     @BeforeAll
     static void setUp() {
-        root = new File(Objects.requireNonNull(GradleRepoAnalyzer.class.getClassLoader().getResource("simpleGradleRepo")).getFile()).getAbsolutePath();
+        root = new File(Objects.requireNonNull(GradleRepoAnalyzerTest.class.getClassLoader()
+                .getResource("simpleGradleRepo")).getFile()).getAbsolutePath();
         analyzer = RepoAnalyzer.of(root);
     }
 

@@ -37,7 +37,8 @@ class AntRepoAnalyzerTest {
 
     @BeforeAll
     static void setUp() {
-        root = new File(Objects.requireNonNull(AntRepoAnalyzerTest.class.getClassLoader().getResource("simpleAntRepo")).getFile()).getAbsolutePath();
+        root = new File(Objects.requireNonNull(AntRepoAnalyzerTest.class.getClassLoader()
+                .getResource("simpleAntRepo")).getFile()).getAbsolutePath();
         analyzer = RepoAnalyzer.of(root);
     }
 
