@@ -107,7 +107,7 @@ public abstract class RepoAnalyzer {
         var results = new JSONArray();
         for (var module : moduleRoots) {
             var statistics = new JSONObject();
-            statistics.put("path", module.toAbsolutePath());
+            statistics.put("path", module.toAbsolutePath().toString());
 
             var sourceFiles = getJavaFiles(getPathToSourcesRoot(module));
             statistics.put("sourceFiles", sourceFiles.size());
@@ -253,7 +253,11 @@ public abstract class RepoAnalyzer {
         var count = 0;
 
         for (var source : sourceFiles) {
-            var matcher = pattern.matcher(Files.readString(source));
+            var content = Files.readString(source);
+            content = content.replaceAll("/\\*([\\S\\s]+?)\\*/", "");
+            content = content.replaceAll("//.*", "");
+
+            var matcher = pattern.matcher(content);
             count += matcher.results().count();
         }
         return count;
