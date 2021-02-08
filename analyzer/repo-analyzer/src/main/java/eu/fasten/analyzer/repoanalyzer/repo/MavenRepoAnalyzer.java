@@ -36,7 +36,7 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
      * @param path         path to the repository
      * @param buildManager build manager info
      */
-    public MavenRepoAnalyzer(final String path, final BuildManager buildManager) {
+    public MavenRepoAnalyzer(final Path path, final BuildManager buildManager) {
         super(path, buildManager);
     }
 

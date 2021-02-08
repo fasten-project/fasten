@@ -34,7 +34,7 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
      * @param path         path to the repository
      * @param buildManager build manager info
      */
-    public AntRepoAnalyzer(final String path, final BuildManager buildManager) {
+    public AntRepoAnalyzer(final Path path, final BuildManager buildManager) {
         super(path, buildManager);
     }
 

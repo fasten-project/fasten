@@ -39,7 +39,8 @@ class MavenRepoAnalyzerTest {
     static void setUp() {
         root = new File(Objects.requireNonNull(MavenRepoAnalyzerTest.class.getClassLoader()
                 .getResource("simpleMavenRepo")).getFile()).getAbsolutePath();
-        analyzer = RepoAnalyzer.of(root);
+        var repoAnalyzerFactory = new RepoAnalyzerFactory();
+        analyzer = repoAnalyzerFactory.getAnalyzer(root);
     }
 
     @Test

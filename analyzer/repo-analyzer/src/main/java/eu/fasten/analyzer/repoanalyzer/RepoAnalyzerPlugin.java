@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.repoanalyzer;
 
-import eu.fasten.analyzer.repoanalyzer.repo.RepoAnalyzer;
+import eu.fasten.analyzer.repoanalyzer.repo.RepoAnalyzerFactory;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.util.Collections;
 import java.util.List;
@@ -76,7 +76,8 @@ public class RepoAnalyzerPlugin extends Plugin {
                                 ? json.get("groupId") + ":" + json.get("artifactId") + ":" + json.get("version")
                                 : "UNKNOWN-ARTIFACT";
 
-                var analyzer = RepoAnalyzer.of(repoPath);
+                var repoAnalyzerFactory = new RepoAnalyzerFactory();
+                var analyzer = repoAnalyzerFactory.getAnalyzer(repoPath);
                 this.statistics = analyzer.analyze();
 
                 long endTime = System.nanoTime();

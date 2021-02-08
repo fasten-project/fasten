@@ -22,8 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.analyzer.repoanalyzer.repo.MavenRepoAnalyzer;
-import eu.fasten.analyzer.repoanalyzer.repo.RepoAnalyzer;
+import eu.fasten.analyzer.repoanalyzer.repo.RepoAnalyzerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
@@ -70,7 +69,8 @@ class RepoAnalyzerPluginTest {
 
         var result = optResult.orElse("");
 
-        var analyzer = RepoAnalyzer.of(repoPath);
+        var repoAnalyzerFactory = new RepoAnalyzerFactory();
+        var analyzer = repoAnalyzerFactory.getAnalyzer(repoPath);
         assertEquals(result, analyzer.analyze().toString());
     }
 }

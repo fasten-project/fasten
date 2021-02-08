@@ -35,7 +35,7 @@ public class GradleRepoAnalyzer extends RepoAnalyzer {
      * @param path         path to the repository
      * @param buildManager build manager info
      */
-    public GradleRepoAnalyzer(final String path, final BuildManager buildManager) {
+    public GradleRepoAnalyzer(final Path path, final BuildManager buildManager) {
         super(path, buildManager);
     }
 

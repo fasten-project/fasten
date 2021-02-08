@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.repoanalyzer.repo;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,7 +51,7 @@ public abstract class RepoAnalyzer {
     public static final String DEFAULT_SOURCES_PATH = "/src/main/java";
 
     private final BuildManager buildManager;
-    private final String rootPath;
+    private final Path rootPath;
 
     /**
      * Constructs a Repo Analyzer given a path the root of a repository to analyze.
@@ -60,35 +59,9 @@ public abstract class RepoAnalyzer {
      * @param path         path to the repository
      * @param buildManager build manager info
      */
-    public RepoAnalyzer(final String path, final BuildManager buildManager) {
+    public RepoAnalyzer(final Path path, final BuildManager buildManager) {
         this.rootPath = path;
         this.buildManager = buildManager;
-    }
-
-    /**
-     * Create a new instance of RepoAnalyzer of the right type based on the build manager used
-     * in the repository.
-     *
-     * @param repoPath repo path
-     * @return RepoAnalyzer of right type
-     */
-    public static RepoAnalyzer of(final String repoPath) {
-        var files = Arrays.stream(new File(repoPath).listFiles())
-                .map(File::getName)
-                .collect(Collectors.toSet());
-
-        if (files.contains("pom.xml")) {
-            return new MavenRepoAnalyzer(repoPath, BuildManager.maven);
-        } else if (files.contains("build.gradle")) {
-            return new GradleRepoAnalyzer(repoPath, BuildManager.gradle);
-        } else if (files.contains("build.gradle.kts")) {
-            return new GradleRepoAnalyzer(repoPath, BuildManager.gradleKotlin);
-        } else if (files.contains("build.xml")) {
-            return new AntRepoAnalyzer(repoPath, BuildManager.ant);
-        } else {
-            throw new UnsupportedOperationException("Only analysis of Maven, Gradle, and Ant "
-                    + "repositories is available");
-        }
     }
 
     /**
@@ -102,7 +75,7 @@ public abstract class RepoAnalyzer {
         payload.put("repoPath", this.rootPath);
         payload.put("buildManager", this.buildManager);
 
-        var moduleRoots = extractModuleRoots(Path.of(this.rootPath));
+        var moduleRoots = extractModuleRoots(this.rootPath);
 
         var results = new JSONArray();
         for (var module : moduleRoots) {

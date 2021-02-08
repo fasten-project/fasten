@@ -35,20 +35,24 @@ class RepoAnalyzerTest {
     void wringRepoType() {
         var root = new File(Objects.requireNonNull(RepoAnalyzerTest.class.getClassLoader()
                 .getResource("emptyRepo")).getFile()).getAbsolutePath();
-        assertThrows(UnsupportedOperationException.class, () -> RepoAnalyzer.of(root));
+        assertThrows(UnsupportedOperationException.class, () -> {
+            var repoAnalyzerFactory = new RepoAnalyzerFactory();
+            repoAnalyzerFactory.getAnalyzer(root);
+        });
     }
 
     @Test
     void analyze() throws IOException, DocumentException {
         var root = new File(Objects.requireNonNull(RepoAnalyzerTest.class.getClassLoader()
                 .getResource("completeMavenProject")).getFile()).getAbsolutePath();
-        var analyzer = RepoAnalyzer.of(root);
+        var repoAnalyzerFactory = new RepoAnalyzerFactory();
+        var analyzer = repoAnalyzerFactory.getAnalyzer(root);
         var result = analyzer.analyze();
 
         assertNotNull(result);
 
         assertEquals(RepoAnalyzer.BuildManager.maven, result.get("buildManager"));
-        assertEquals(root, result.get("repoPath"));
+        assertEquals(root, result.get("repoPath").toString());
 
         var modules = result.getJSONArray("modules");
         assertEquals(2, modules.length());
