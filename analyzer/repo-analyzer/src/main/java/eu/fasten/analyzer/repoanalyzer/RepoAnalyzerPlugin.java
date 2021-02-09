@@ -43,7 +43,7 @@ public class RepoAnalyzerPlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(RepoAnalyzerPlugin.class);
 
         private String consumerTopic = "fasten.RepoCloner.out";
-        private Throwable pluginError;
+        private Exception pluginError;
         private JSONObject statistics;
 
         @Override
@@ -112,12 +112,12 @@ public class RepoAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public void setPluginError(Throwable throwable) {
+        public void setPluginError(Exception throwable) {
             this.pluginError = throwable;
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return pluginError;
         }
 

@@ -50,7 +50,7 @@ public class QualityAnalyzerPlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(QualityAnalyzer.class.getName());
         private String consumerTopic = "fasten.RapidPlugin.out";
         private static MetadataUtils utils = null;
-        private Throwable pluginError = null;
+        private Exception pluginError = null;
 
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
@@ -180,7 +180,7 @@ public class QualityAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return pluginError;
         }
 
@@ -189,7 +189,7 @@ public class QualityAnalyzerPlugin extends Plugin {
             utils.freeResource();
         }
 
-        public void setPluginError(Throwable throwable) {
+        public void setPluginError(Exception throwable) {
             this.pluginError = throwable;
         }
 

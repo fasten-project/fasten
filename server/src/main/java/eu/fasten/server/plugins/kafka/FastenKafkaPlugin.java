@@ -266,7 +266,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     public void handleProducing(String input, long consumeTimestamp) {
         try {
             if (plugin.getPluginError() != null) {
-                throw new Exception(plugin.getPluginError());
+                throw plugin.getPluginError();
             }
 
             var result = plugin.produce();

@@ -174,12 +174,12 @@ public class KafkaPluginConsumeBehaviourTest {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return null;
         }
 
         @Override
-        public void setPluginError(Throwable throwable) {
+        public void setPluginError(Exception throwable) {
 
         }
 
