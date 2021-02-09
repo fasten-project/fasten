@@ -85,7 +85,7 @@ import it.unimi.dsi.lang.ObjectParser;
 public class SearchEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngine.class);
 
-	private static final int DEFAULT_LIMIT = 10;
+	private static final int DEFAULT_LIMIT = 10; 
 
 	/** Maximum number of stitched graphs in the cache. */
 	private static final int STITCHED_MAX_SIZE = 1024;
@@ -342,7 +342,7 @@ public class SearchEngine {
 		DirectedGraph result = stitchedGraphCache.getAndMoveToFirst(identifier);
 		if (result == null) {
 			result = dm.mergeWithCHA(identifier);
-			stitchedGraphCache.put(identifier, result);
+			stitchedGraphCache.putAndMoveToFirst(identifier, result);
 			if (stitchedGraphCache.size() > STITCHED_MAX_SIZE) stitchedGraphCache.removeLast();
 		}
 		return result;
