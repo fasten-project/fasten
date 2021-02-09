@@ -1,0 +1,19 @@
+<project name="TestProject" basedir=".">
+    <property name="src.dir" location="src/main/java"/>
+    <property name="test.src.dir" value="src/test/java"/>
+    <property name="build" location="build"/>
+    <property name="dist" location="dist"/>
+
+    <target name="init">
+        <tstamp/>
+        <mkdir dir="${build}"/>
+    </target>
+
+    <target name="compile" depends="init" description="compile the source">
+        <javac srcdir="${src.dir}" destdir="${build}"/>
+    </target>
+
+    <target name="compileTest" depends="compile" description="compile the test sources">
+        <javac srcdir="${test.src.dir}" destdir="${build}"/>
+    </target>
+</project>
