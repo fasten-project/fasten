@@ -1220,8 +1220,8 @@ public class MetadataDao {
         // Parse result json string back into object
         JSONArray json;
         try {
-            json = new JSONArray(queryResult.toArray());
-        } catch (JSONException err){
+            json = new JSONArray(res);
+        } catch (JSONException err){g
             logger.error("Error JSON Parser: " + err.toString());
             return null;
         }
