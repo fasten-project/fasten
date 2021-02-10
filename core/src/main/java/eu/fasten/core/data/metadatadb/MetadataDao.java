@@ -1221,7 +1221,7 @@ public class MetadataDao {
         JSONArray json;
         try {
             json = new JSONArray(res);
-        } catch (JSONException err){g
+        } catch (JSONException err){
             logger.error("Error JSON Parser: " + err.toString());
             return null;
         }
