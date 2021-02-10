@@ -33,8 +33,11 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -174,18 +177,33 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
         Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
+        // Keep a list of all records and offsets we processed (by default this is only 1).
+        ArrayList<ImmutablePair<Long, Integer>> messagesProcessed = new ArrayList<ImmutablePair<Long, Integer>>();
+
         // Although we loop through all records, by default we only poll 1 record.
         for (var r : records) {
+            logger.info("Read message offset " + r.offset() + " from partition " + r.partition() + ".");
             processRecord(r, consumeTimestamp);
+            logger.info("Successfully processed message offset " + r.offset() + " from partition " + r.partition() + ".");
+
+            messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
         }
 
         // Commit only after _all_ records are processed.
         // For most plugins, this loop will only process 1 record (since max.poll.records is 1).
         doCommitSync();
 
-        // If local storage is enabled, clear it after offsets are committed.
+        // More logging.
+        String allOffsets = messagesProcessed.stream().map((x) -> x.left).map(Object::toString)
+                .collect(Collectors.joining(", "));
+        String allPartitions = messagesProcessed.stream().map((x) -> x.right).map(Object::toString)
+                .collect(Collectors.joining(", "));
+        logger.info("Committed offsets [" + allOffsets + "] of partitions [" + allPartitions + "].");
+
+
+        // If local storage is enabled, clear the correct partitions after offsets are committed.
         if (localStorage != null) {
-            localStorage.clear();
+            localStorage.clear(messagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()));
         }
     }
 
@@ -209,12 +227,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp) {
         if (localStorage != null) { // If local storage is enabled.
-            if (localStorage.exists(record.value())) { // This plugin already consumed this record before, we will not process it now.
+            if (localStorage.exists(record.value(), record.partition())) { // This plugin already consumed this record before, we will not process it now.
                 logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
                 plugin.setPluginError(new ExistsInLocalStorageException("Record already exists in local storage. Most probably it has been processed before and the pod crashed."));
             } else {
                 try {
-                    localStorage.store(record.value());
+                    localStorage.store(record.value(), record.partition());
                 } catch (IOException e) {
                     // We couldn't store the message SHA. Will just continue processing, but log the error.
                     // This strategy might result in the deadlock/retry behavior of the same coordinate.
@@ -248,7 +266,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     public void handleProducing(String input, long consumeTimestamp) {
         try {
             if (plugin.getPluginError() != null) {
-                throw new Exception(plugin.getPluginError());
+                throw plugin.getPluginError();
             }
 
             var result = plugin.produce();

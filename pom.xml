@@ -40,6 +40,11 @@
             <email>mihhail1998@gmail.com</email>
             <organization>TU Delft</organization>
         </developer>
+        <developer>
+            <name>Ilya Grishkov</name>
+            <email>ilyagrishkov@icloud.com</email>
+            <organization>TU Delft</organization>
+        </developer>
     </developers>
 
     <contributors>

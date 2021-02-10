@@ -25,6 +25,7 @@
         <module>quality-analyzer</module>
         <module>restapi-plugin</module>
         <module>vulnerability-consumer</module>
+        <module>repo-analyzer</module>
     </modules>
 
     <build>

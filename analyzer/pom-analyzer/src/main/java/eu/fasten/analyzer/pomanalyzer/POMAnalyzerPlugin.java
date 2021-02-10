@@ -19,10 +19,10 @@
 package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
-import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
@@ -53,7 +53,7 @@ public class POMAnalyzerPlugin extends Plugin {
 
         private String consumerTopic = "fasten.mvn.pkg";
         private final Logger logger = LoggerFactory.getLogger(POMAnalyzer.class.getName());
-        private Throwable pluginError = null;
+        private Exception pluginError = null;
         private static DSLContext dslContext;
         private String artifact = null;
         private String group = null;
@@ -315,7 +315,7 @@ public class POMAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return this.pluginError;
         }
 

@@ -30,6 +30,7 @@ import eu.fasten.core.utils.FastenUriUtils;
 import org.apache.commons.math3.util.Pair;
 import org.jooq.*;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1216,7 +1217,36 @@ public class MetadataDao {
 
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+        var res = queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+
+
+
+        //// Insert user-friendly formatted method signature
+
+        // Parse result json string back into object
+        JSONArray json;
+        try {
+            json = new JSONArray(res);
+        } catch (JSONException err){
+            logger.error("Error JSON Parser: " + err.toString());
+            return null;
+        }
+
+        // Go through each callable, parse fasten uri, insert signature.
+        for(Object j: json) {
+            JSONObject jObj = (JSONObject)j;
+            var uri = jObj.getString("fasten_uri");
+
+            try {
+                var uriObject = FastenUriUtils.parsePartialFastenUri(uri);
+                jObj.put("methodName", uriObject.get(2));
+                jObj.put("methodArgs", uriObject.get(3));
+            } catch (IllegalArgumentException err) {
+                logger.warn("Error FASTEN URI Parser: " + err.toString());
+            }
+        }
+
+        return json.toString();
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {

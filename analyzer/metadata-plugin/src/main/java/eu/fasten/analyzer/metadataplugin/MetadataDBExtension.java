@@ -19,10 +19,10 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCCallGraph;
-import eu.fasten.core.data.ExtendedRevisionPythonCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.ExtendedRevisionPythonCallGraph;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
@@ -34,6 +34,17 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.sql.BatchUpdateException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
@@ -61,7 +72,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
     protected String consumerTopic = "fasten.OPAL.out";
     private static DSLContext dslContext;
     protected boolean processedRecord = false;
-    protected Throwable pluginError = null;
+    protected Exception pluginError = null;
     protected final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
     protected boolean restartTransaction = false;
     protected GidGraph gidGraph = null;
@@ -322,12 +333,12 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
     public void stop() {
     }
 
-    public void setPluginError(Throwable throwable) {
+    public void setPluginError(Exception throwable) {
         this.pluginError = throwable;
     }
 
     @Override
-    public Throwable getPluginError() {
+    public Exception getPluginError() {
         return this.pluginError;
     }
 

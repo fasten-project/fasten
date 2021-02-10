@@ -35,4 +35,6 @@ public interface StitchingApiService {
     ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version);
 
     ResponseEntity<String> batchIngestArtifacts(JSONArray jsonArtifacts);
+    
+    ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise);
 }

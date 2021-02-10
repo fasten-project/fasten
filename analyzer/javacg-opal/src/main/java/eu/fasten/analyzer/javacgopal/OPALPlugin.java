@@ -52,7 +52,7 @@ public class OPALPlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
         private String consumeTopic = "fasten.maven.pkg";
-        private Throwable pluginError;
+        private Exception pluginError;
         private ExtendedRevisionJavaCallGraph graph;
         private String outputPath;
 
@@ -153,11 +153,11 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return this.pluginError;
         }
 
-        public void setPluginError(Throwable throwable) {
+        public void setPluginError(Exception throwable) {
             this.pluginError = throwable;
         }
 
