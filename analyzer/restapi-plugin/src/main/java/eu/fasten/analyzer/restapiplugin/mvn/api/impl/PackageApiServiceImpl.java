@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestArtifactChecker;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.api.PackageApiService;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
@@ -63,7 +63,7 @@ public class PackageApiServiceImpl implements PackageApiService {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersion(
                 package_name, package_version);
         if (result == null) {
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
@@ -94,7 +94,7 @@ public class PackageApiServiceImpl implements PackageApiService {
             result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
                     package_name, package_version, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

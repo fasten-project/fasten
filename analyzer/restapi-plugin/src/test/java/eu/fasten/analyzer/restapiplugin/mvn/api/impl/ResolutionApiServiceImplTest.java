@@ -20,6 +20,7 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import org.jooq.DSLContext;
@@ -59,7 +60,10 @@ public class ResolutionApiServiceImplTest {
         );
         Mockito.when(resolver.resolveDependencies(packageName.split(Constants.mvnCoordinateSeparator)[0], packageName.split(Constants.mvnCoordinateSeparator)[1], version, timestamp, KnowledgeBaseConnector.dbContext, transitive)).thenReturn(deps);
         KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl";
-        var result = service.resolveDependencies(packageName, version, transitive, timestamp);
+        var kbDaoMock = Mockito.mock(MetadataDao.class);
+        Mockito.when(kbDaoMock.assertPackageExistence(packageName, version)).thenReturn(true);
+        KnowledgeBaseConnector.kbDao = kbDaoMock;
+        var result = service.resolveDependencies(packageName, version, transitive, timestamp, true);
         var jsonArray = new JSONArray();
         deps.stream().map(Revision::toJSON).peek(json -> {
             var group = json.getString("groupId");

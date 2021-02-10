@@ -19,10 +19,11 @@
 package eu.fasten.analyzer.restapiplugin.mvn;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.MavenResolver;
 import org.json.JSONObject;
 import java.sql.Timestamp;
 
-public class LazyIngestArtifactChecker {
+public class LazyIngestionProvider {
 
     private static boolean hasArtifactBeenIngested(String packageName, String version) {
         return KnowledgeBaseConnector.kbDao.isArtifactIngested(packageName, version);
@@ -45,5 +46,15 @@ public class LazyIngestArtifactChecker {
                 KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
             }
         }
+    }
+
+    public static void ingestArtifactWithDependencies(String packageName, String version) {
+        var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+        var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+        var mavenResolver = new MavenResolver();
+        var dependencies = mavenResolver.resolveFullDependencySetOnline(groupId, artifactId, version);
+        // TODO: Provide proper support for different artifact repositories
+        ingestArtifactIfNecessary(packageName, version, null, null);
+        dependencies.forEach(d -> ingestArtifactIfNecessary(d.groupId + Constants.mvnCoordinateSeparator + d.artifactId, d.version.toString(), null, null));
     }
 }

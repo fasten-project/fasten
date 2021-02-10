@@ -894,7 +894,7 @@ public class MetadataDao {
                 .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equalIgnoreCase(version));
     }
 
-    protected boolean assertPackageExistence(String name, String version) {
+    public boolean assertPackageExistence(String name, String version) {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
 
@@ -908,7 +908,7 @@ public class MetadataDao {
         return selectPackage != null;
     }
 
-    protected boolean assertModulesExistence(String name, String version, String namespace) {
+    public boolean assertModulesExistence(String name, String version, String namespace) {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
@@ -1159,7 +1159,7 @@ public class MetadataDao {
             throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
         }
 
-        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
+        if (!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1194,7 +1194,7 @@ public class MetadataDao {
             throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
         }
 
-        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
+        if (!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1220,21 +1220,20 @@ public class MetadataDao {
         var res = queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
 
 
-
         //// Insert user-friendly formatted method signature
 
         // Parse result json string back into object
         JSONArray json;
         try {
             json = new JSONArray(res);
-        } catch (JSONException err){
+        } catch (JSONException err) {
             logger.error("Error JSON Parser: " + err.toString());
             return null;
         }
 
         // Go through each callable, parse fasten uri, insert signature.
-        for(Object j: json) {
-            JSONObject jObj = (JSONObject)j;
+        for (Object j : json) {
+            JSONObject jObj = (JSONObject) j;
             var uri = jObj.getString("fasten_uri");
 
             try {

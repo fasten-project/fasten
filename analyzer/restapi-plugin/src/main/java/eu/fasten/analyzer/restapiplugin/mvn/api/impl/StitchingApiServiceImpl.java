@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestArtifactChecker;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.api.StitchingApiService;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
@@ -159,6 +159,12 @@ public class StitchingApiServiceImpl implements StitchingApiService {
 
     @Override
     public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise) {
+
+        if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, version)) {
+            LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+
         var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
 
@@ -279,7 +285,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             var version = json.getString("version");
             var date = json.optLong("date", -1);
             var artifactRepository = json.optString("artifactRepository", null);
-            LazyIngestArtifactChecker.ingestArtifactIfNecessary(groupId + Constants.mvnCoordinateSeparator + artifactId, version, artifactRepository, date);
+            LazyIngestionProvider.ingestArtifactIfNecessary(groupId + Constants.mvnCoordinateSeparator + artifactId, version, artifactRepository, date);
         }
         return new ResponseEntity<>("Ingested successfully", HttpStatus.OK);
     }
