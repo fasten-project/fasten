@@ -25,11 +25,13 @@ import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
-import java.util.*;
-
-import org.apache.kafka.clients.consumer.ConsumerConfig;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -49,7 +51,7 @@ public class OPALPlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
         private String consumeTopic = "fasten.maven.pkg";
-        private Throwable pluginError;
+        private Exception pluginError;
         private ExtendedRevisionJavaCallGraph graph;
         private String outputPath;
 
@@ -73,7 +75,7 @@ public class OPALPlugin extends Plugin {
             long startTime = System.nanoTime();
             try {
                 // Generate CG and measure construction duration.
-                logger.info("[CG-GENERATION] [UNPROCESSED] [-1i] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
+                logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
                         "", "CHA", kafkaConsumedJson.optLong("date", -1));
                 long endTime = System.nanoTime();
@@ -94,19 +96,19 @@ public class OPALPlugin extends Plugin {
                         + firstLetter + File.separator
                         + artifactId + File.separator + product + ".json";
 
-                logger.info("[CG-GENERATION] [SUCCESS] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
+                logger.info("[CG-GENERATION] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
 
             } catch (OPALException | EmptyCallGraphException e) {
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
 
-                logger.error("[CG-GENERATION] [FAILED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
+                logger.error("[CG-GENERATION] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
                 setPluginError(e);
             } catch (MissingArtifactException e) {
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
 
-                logger.error("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "i] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
+                logger.error("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
                 setPluginError(e);
             }
         }
@@ -114,7 +116,7 @@ public class OPALPlugin extends Plugin {
         @Override
         public Optional<String> produce() {
             if (this.graph != null && !this.graph.isCallGraphEmpty()) {
-                return Optional.of(graph.toJSON().toString());
+                return Optional.of(JSONUtils.toJSONString(graph));
             } else {
                 return Optional.empty();
             }
@@ -149,11 +151,11 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return this.pluginError;
         }
 
-        public void setPluginError(Throwable throwable) {
+        public void setPluginError(Exception throwable) {
             this.pluginError = throwable;
         }
 
@@ -174,12 +176,12 @@ public class OPALPlugin extends Plugin {
 
         @Override
         public long getMaxConsumeTimeout() {
-            return 3600000; //The OPAL plugin takes up to 1h to process a record.
+            return Integer.MAX_VALUE; // It can take very long to generate OPAL CG's.
         }
 
         @Override
         public long getSessionTimeout() {
-            return 300000; // Due to static membership we also want to tune the session timeout to 5 minutes.
+            return 1800000; // Due to static membership we also want to tune the session timeout to 30 minutes.
         }
 
     }

@@ -1,7 +1,10 @@
 package eu.fasten.core.utils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class FastenUriUtils {
@@ -32,7 +35,7 @@ public class FastenUriUtils {
 
     /**
      * Given a full FASTEN URI, produces a list consisting of package name, package version and partial FASTEN URI.
-     * Specification: fasten://{forge}!{package_name}${version}/{partial_fasten_uri}
+     * Specification: `fasten://{forge}!{package_name}${version}/{partial_fasten_uri}`
      *
      * @param fullFastenUri Fully-qualified FASTEN URI
      * @return List containing first forge, then package name, then package version, and lastly partial FASTEN URI
@@ -52,5 +55,70 @@ public class FastenUriUtils {
             partialUri = "/" + partialUri;
         }
         return List.of(forge, packageName, version, partialUri);
+    }
+
+    /**
+     * Given a partial FASTEN URI, produces a list consisting of namespace, class, method name and its signature.
+     * Specification: `/{namespace}/{class}.{method}({signature.args})/{signature.returnType}`
+     *
+     * @param partialFastenUri a partial FASTEN URI
+     * @return List containing namespace, class name, method name, method's args, method's return type.
+     */
+    public static List<String> parsePartialFastenUri(String partialFastenUri) {
+
+        // Exception messages
+        var fullUriException = "Invalid partial FASTEN URI. You may want to use parser for full FASTEN URI instead.";
+        var partialUriFormatException = "Invalid partial FASTEN URI. The format is corrupted.\nMust be: `/{namespace}/{class}.{method}({signature.args})/{signature.returnType}`";
+
+        // Ensure that this is not a Full FASTEN URI
+        if (partialFastenUri.startsWith("fasten://") && partialFastenUri.contains("!") && partialFastenUri.contains("$") && partialFastenUri.contains("/")) {
+            throw new IllegalArgumentException(fullUriException);
+        }
+
+        // URI is usually stored encoded, so decode for parsing.
+        // E.g., `/com.sun.istack.localization/Localizer.%3Cinit%3E(%2Fjava.util%2FLocale)%2Fjava.lang%2FVoidType`
+        partialFastenUri = java.net.URLDecoder.decode(partialFastenUri, StandardCharsets.UTF_8);
+
+        // Namespace: `/{namespace}/`
+        Pattern namespacePattern = Pattern.compile("(?<=/)(.+?)(?=/)");
+        Matcher namespaceMatcher = namespacePattern.matcher(partialFastenUri);
+        if (!namespaceMatcher.find() || namespaceMatcher.group(0).isEmpty())
+            throw new IllegalArgumentException(partialUriFormatException);
+
+        // Class: `/{class}.*(`
+        Pattern classPattern = Pattern.compile("(?<=/)([^\\/]+)(?=\\.([^./]+)\\()");
+        Matcher classMatcher = classPattern.matcher(partialFastenUri);
+        if (!classMatcher.find() || classMatcher.group(0).isEmpty())
+            throw new IllegalArgumentException(partialUriFormatException);
+
+
+        // Method: `.{method}(`
+        Pattern methodNamePattern = Pattern.compile("(?<=\\.)([^.]+)(?=\\()");
+        Matcher methodNameMatcher = methodNamePattern.matcher(partialFastenUri);
+        if (!methodNameMatcher.find() || methodNameMatcher.group(0).isEmpty())
+            throw new IllegalArgumentException(partialUriFormatException);
+
+
+        // Method Args: `({args})`
+        Pattern methodArgsPattern = Pattern.compile("(?<=\\()(.*)(?=\\))");
+        Matcher methodArgsMatcher = methodArgsPattern.matcher(partialFastenUri);
+        if (!methodArgsMatcher.find())
+            throw new IllegalArgumentException(partialUriFormatException);
+
+
+        // Method Return Type: `)/{type}`
+        Pattern methodReturnPattern = Pattern.compile("(?<=\\))(.*)");
+        Matcher methodReturnMatcher = methodReturnPattern.matcher(partialFastenUri);
+        if (!methodReturnMatcher.find() || methodReturnMatcher.group(0).isEmpty())
+            throw new IllegalArgumentException(partialUriFormatException);
+
+
+        var namespace = namespaceMatcher.group(0);
+        var className = classMatcher.group(0);
+        var methodName = methodNameMatcher.group(0);
+        var methodArgs = methodArgsMatcher.group(0);
+        var methodReturnType = methodReturnMatcher.group(0);
+
+        return List.of(namespace, className, methodName, methodArgs, methodReturnType);
     }
 }

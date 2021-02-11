@@ -131,6 +131,31 @@ public class FastenServer implements Runnable {
     )
     String outputTopic;
 
+    @Option(names = {"-ct", "--consume_timeout"},
+            paramLabel = "consumeTimeout",
+            description = "Adds a timeout on the time a plugin can spend on its consumed records. Disabled by default.",
+            defaultValue = "-1"
+    )
+    long consumeTimeout;
+
+    @Option(names = {"-cte", "--consume_timeout_exit"},
+            paramLabel = "consumeTimeoutExit",
+            description = "Shutdowns the JVM if a consume timeout is reached."
+    )
+    boolean consumeTimeoutExit;
+
+
+    @Option(names = {"-ls", "--local_storage"},
+            paramLabel = "localStorage",
+            description = "Enables local storage which stores record currently processed. This ensure that records that were processed before won't be processed again (e.g. when the pod crashes). "
+    )
+    boolean localStorage;
+
+    @Option(names = {"-lsd", "--local_storage_dir"},
+            paramLabel = "localStorageDir",
+            description = "Directory of local storage, must be available from every pod location. Default's to /mnt/fasten/local_storage/plugin_name")
+    String localStorageDir;
+
     private static final Logger logger = LoggerFactory.getLogger(FastenServer.class);
 
     @Override
@@ -178,36 +203,6 @@ public class FastenServer implements Runnable {
         var kafkaServerPlugins = setupKafkaPlugins(kafkaPlugins);
 
         kafkaServerPlugins.forEach(FastenServerPlugin::start);
-
-        //waitForInterruption(kafkaServerPlugins);
-    }
-
-    /**
-     * Joins threads of kafka plugins, waits for the interrupt signal and sends
-     * shutdown signal to all threads.
-     *
-     * @param plugins list of kafka plugins
-     */
-    private void waitForInterruption(List<FastenServerPlugin> plugins) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            plugins.forEach(FastenServerPlugin::stop);
-            plugins.forEach(c -> {
-                try {
-                    c.thread().join();
-                } catch (InterruptedException e) {
-                    logger.debug("Couldn't join consumers");
-                }
-            });
-            logger.info("Fasten server has been successfully stopped");
-        }));
-
-        plugins.forEach(c -> {
-            try {
-                c.thread().join();
-            } catch (InterruptedException e) {
-                logger.debug("Couldn't join consumers");
-            }
-        });
     }
 
     /**
@@ -225,7 +220,7 @@ public class FastenServer implements Runnable {
         return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName())).map(k -> {
             var consumerProperties = KafkaConnector.kafkaConsumerProperties(
                     kafkaServers,
-                    (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() : consumerGroup), // if consumergroup == undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
+                    (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() : consumerGroup), // if consumergroup != undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
                     k.getSessionTimeout(),
                     k.getMaxConsumeTimeout(),
                     k.isStaticMembership());
@@ -236,7 +231,12 @@ public class FastenServer implements Runnable {
             return new FastenKafkaPlugin(consumerProperties, producerProperties, k, skipOffsets,
                     (outputDirs != null) ? outputDirs.get(k.getClass().getSimpleName()) : null,
                     (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null,
-                    (outputTopic != null) ? outputTopic : k.getClass().getSimpleName());
+                    (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
+                    (consumeTimeout != -1) ? true : false,
+                    consumeTimeout,
+                    consumeTimeoutExit,
+                    localStorage,
+                    (localStorageDir != null) ? localStorageDir : "/mnt/fasten/local_storage/" + k.getClass().getSimpleName());
         }).collect(Collectors.toList());
     }
 

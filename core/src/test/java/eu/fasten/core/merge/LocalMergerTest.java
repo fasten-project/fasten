@@ -4,6 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -52,5 +57,20 @@ public class LocalMergerTest {
             ".%3Cinit%3E()%2Fjava.lang%2FVoidType");
         assertEquals(cg.edgeSet(), Set.of(LongLongPair.of(source, target1), LongLongPair.of(source,
             target2)));
+    }
+
+    @Test
+    public void souldNotGetIllegalArgumentExceptionWhileMerging() throws IOException {
+        final var dir =
+            new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource("merge/LocalMergeException")).getFile());
+        final List<ExtendedRevisionJavaCallGraph> depSet = new ArrayList<>();
+
+        for (final var jsonFile : dir.listFiles()) {
+            depSet.add(new ExtendedRevisionJavaCallGraph(new JSONObject(Files.readString(jsonFile.toPath()))));
+        }
+
+        var merger = new LocalMerger(depSet);
+        merger.mergeWithCHA(depSet.get(0));
     }
 }

@@ -207,7 +207,6 @@ public class CallGraphAnalysisExample {
 			});
 		}
 
-		context.close();
 		rocksDao.close();
 	}
 }

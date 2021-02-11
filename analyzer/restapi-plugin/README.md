@@ -11,27 +11,47 @@
 </p>
 <br/>
 
-The FASTEN Rest API Plugin is a tool to expose canned queries from the  [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema). It can be used both as a standalone tool and as a part of FASTEN server.
+This plugin exposes canned queries for the [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema) through a REST server.
+<!-- It can be used both as a standalone tool and as a part of FASTEN server. -->
 
-## Arguments
-- `-h` `--help` Show this help message and exit.
-- `-d` `--database` Database URL for connection.
-- `-u` `--user` Database username.
+## Design
+
+- [Endpoints details and current status](https://github.com/fasten-project/fasten/wiki/API-endpoints-for-Maven-projects)
+
+## Configuration
+
+The [server configuration file](src/main/resources/application.properties) has the following properties:
+
+- Serlvet context path
+- REST server port
+- KnowledgeBase username
+- KnowledgeBase URL
 
 ## Usage
 
-### Requirements 
-- Access to the Metadata DB instance or a Metadata DB dump.
-
-### Initialize the Rest API server locally
-- Run the following command to start the Rest API server:
-    ```shell script
-    FASTEN_DBPASS=your_pass ... -d YOUR_DB_ADDRESS -u YOUR_USER'
+1. Port-forward the remote Postgres server to a local port, e.g., `5433`:    
+    ```bash
+    export KB_USER=...
+    export KB_ADDR=...
+    ssh -f ${KB_USER}@${KB_ADDR} -L 5433:${KB_ADDR}:5432 -N
     ```
-- Once the server is up, curl the endpoint or just follow this link:
-    [http://127.0.0.1:8080/api/mvn/au.org.consumerdatastandards.reflection/1.1.1](http://127.0.0.1:8080/api/mvn/au.org.consumerdatastandards.reflection/1.1.1)
+1. Edit the [server configuration file](src/main/resources/application.properties).
+1. Launch the REST server (example from the root directory):
+    ```bash
+    PGPASSWORD=... mvn clean install \
+      -Dmaven.test.skip=true spring-boot:run \
+      -f analyzer/restapi-plugin/pom.xml
+    ```
 
-_Note: the default value for the DB address and the user are respectively `jdbc:postgresql:postgres` and `postgres`_
+<!-- TODO ### Requirements  -->
+
+## Postman workspace
+
+You can find a
+[Postman workspace](https://learning.postman.com/docs/getting-started/importing-and-exporting-data)
+configuration
+[here](endpoints.postman_collection.json)
+.
 
 ## Join the community
 

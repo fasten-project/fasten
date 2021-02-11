@@ -20,6 +20,8 @@ package eu.fasten.server.connectors;
 
 import java.util.List;
 import java.util.Properties;
+
+import eu.fasten.core.plugins.KafkaPlugin;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -54,7 +56,12 @@ public class KafkaConnector {
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "1");
+        properties.setProperty(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, "50000000"); //Set max read size to 50 MB.
         properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "5000"); // 5 seconds
+
+        // Default consumption configuration
+        properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, String.valueOf(sessionTimeout));
+        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, String.valueOf(maxPollInterval));
 
         if (staticMemberShip) {
             // Assign a static ID to the consumer based pods' unique name in K8s env.
@@ -66,12 +73,6 @@ public class KafkaConnector {
             }
 
         }
-
-        // Default consumption configuration
-        // session.timeout is 1 minutes
-        // max.poll.interval is 2 minutes
-        properties.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, String.valueOf(sessionTimeout));
-        properties.setProperty(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, String.valueOf(maxPollInterval));
 
         return properties;
     }
@@ -92,7 +93,8 @@ public class KafkaConnector {
                 StringSerializer.class.getName());
         p.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
                 StringSerializer.class.getName());
-
+        p.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG,
+                "50000000"); //Set produce size to 50MB.
         return p;
     }
 }

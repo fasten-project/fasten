@@ -29,8 +29,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.math3.util.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.math3.util.Pair;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -48,7 +48,7 @@ public class RepoClonerPlugin extends Plugin {
     public static class RepoCloner implements KafkaPlugin, DataWriter {
 
         private String consumerTopic = "fasten.POMAnalyzer.out";
-        private Throwable pluginError = null;
+        private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(RepoCloner.class.getName());
         private String repoPath = null;
         private String artifact = null;
@@ -134,11 +134,12 @@ public class RepoClonerPlugin extends Plugin {
                 if (result.getFirst() != null) {
                     repoPath = result.getFirst();
                     logger.info("Successfully cloned the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl);
-                } else {
+                } else if (result.getSecond() != null) {
+                    var errorTriple = result.getSecond();
                     logger.error("Could not clone the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl
-                            + "; GitCloner: " + result.getSecond().getLeft().getMessage()
-                            + "; SvnCloner: " + result.getSecond().getMiddle().getMessage()
-                            + "; HgCloner: " + result.getSecond().getRight().getMessage()
+                            + "; GitCloner: " + (errorTriple.getLeft() != null ? errorTriple.getLeft().getMessage() : "null")
+                            + "; SvnCloner: " + (errorTriple.getMiddle() != null ? errorTriple.getMiddle().getMessage() : "null")
+                            + "; HgCloner: " + (errorTriple.getRight() != null ? errorTriple.getRight().getMessage() : "null")
                     );
                 }
             } else {
@@ -147,7 +148,7 @@ public class RepoClonerPlugin extends Plugin {
         }
 
         public Pair<String, Triple<Exception, Exception, Exception>> cloneRepo(String repoUrl, String artifact, String group,
-                                             GitCloner gitCloner, HgCloner hgCloner, SvnCloner svnCloner) {
+                                                                               GitCloner gitCloner, HgCloner hgCloner, SvnCloner svnCloner) {
             Exception gitError = null;
             Exception svnError = null;
             Exception hgError = null;
@@ -236,7 +237,7 @@ public class RepoClonerPlugin extends Plugin {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return this.pluginError;
         }
 

@@ -21,6 +21,7 @@ package eu.fasten.server.plugins.kafka;
 import com.google.common.base.Strings;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -30,9 +31,15 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.CommitFailedException;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -47,20 +54,29 @@ import org.slf4j.LoggerFactory;
 public class FastenKafkaPlugin implements FastenServerPlugin {
     private final Logger logger = LoggerFactory.getLogger(FastenKafkaPlugin.class.getName());
 
-    private Thread thread;
-
     private final KafkaPlugin plugin;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final KafkaConsumer<String, String> connection;
+    private KafkaConsumer<String, String> connection;
 
-    private final KafkaProducer<String, String> producer;
+    private KafkaProducer<String, String> producer;
     private final String outputTopic;
 
     private final int skipOffsets;
 
     private final String writeDirectory;
     private final String writeLink;
+
+    // Configuration for consumer timeout.
+    private final boolean consumeTimeoutEnabled;
+    private final long consumeTimeout;
+    private final boolean exitOnTimeout;
+
+    // Local storage for duplicate processing.
+    private final LocalStorage localStorage;
+
+    // Executor service which creates a thread pool and re-uses threads when possible.
+    private final ExecutorService exexcutorService = Executors.newCachedThreadPool();
 
     /**
      * Constructs a FastenKafkaConsumer.
@@ -69,12 +85,14 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param plugin             Kafka plugin
      * @param skipOffsets        skip offset number
      */
-    public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic) {
+    public FastenKafkaPlugin(boolean enableKafka, Properties consumerProperties, Properties producerProperties,
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout, boolean enableLocalStorage, String localStorageDir) {
         this.plugin = plugin;
 
-        this.connection = new KafkaConsumer<>(consumerProperties);
-        this.producer = new KafkaProducer<>(producerProperties);
+        if (enableKafka) {
+            this.connection = new KafkaConsumer<>(consumerProperties);
+            this.producer = new KafkaProducer(producerProperties);
+        }
 
         this.skipOffsets = skipOffsets;
         if (writeDirectory != null) {
@@ -86,13 +104,31 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         if (writeLink != null) {
             this.writeLink = writeLink.endsWith(File.separator)
                     ? writeLink.substring(0, writeLink.length() - 1) : writeLink;
+
+
         } else {
             this.writeLink = null;
         }
 
+        // If the write link is not null, and local storage is enabled. Initialize it.
+        if (enableLocalStorage) {
+            this.localStorage = new LocalStorage(localStorageDir);
+        } else {
+            this.localStorage = null;
+        }
+
         this.outputTopic = outputTopic;
+        this.consumeTimeoutEnabled = consumeTimeoutEnabled;
+        this.consumeTimeout = consumeTimeout;
+        this.exitOnTimeout = exitOnTimeout;
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
+
+    public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout, boolean enableLocalStorage, String localStorageDir) {
+        this(true, consumerProperties, producerProperties, plugin, skipOffsets, writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout, exitOnTimeout, enableLocalStorage, localStorageDir);
+    }
+
 
     @Override
     public void run() {
@@ -109,7 +145,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     handleConsuming();
                 } else {
                     doCommitSync();
-
                     handleProducing(null, System.currentTimeMillis() / 1000L);
                 }
             }
@@ -122,14 +157,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     /**
-     * Starts a thread.
+     * Starts the plugin.
      */
     public void start() {
-//        this.thread = new Thread(this);
-//        this.thread.setName(this.plugin.getClass().getSimpleName() + "_plugin");
-//        this.thread.start();
-//        this.plugin.start();
-
         this.run();
     }
 
@@ -141,25 +171,91 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     /**
-     * Getter for the thread.
-     *
-     * @return thread
+     * Consumes a message from a Kafka topics and passes it to a plugin.
      */
-    public Thread thread() {
-        return thread;
+    public void handleConsuming() {
+        ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
+        Long consumeTimestamp = System.currentTimeMillis() / 1000L;
+
+        // Keep a list of all records and offsets we processed (by default this is only 1).
+        ArrayList<ImmutablePair<Long, Integer>> messagesProcessed = new ArrayList<ImmutablePair<Long, Integer>>();
+
+        // Although we loop through all records, by default we only poll 1 record.
+        for (var r : records) {
+            logger.info("Read message offset " + r.offset() + " from partition " + r.partition() + ".");
+            processRecord(r, consumeTimestamp);
+            logger.info("Successfully processed message offset " + r.offset() + " from partition " + r.partition() + ".");
+
+            messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
+        }
+
+        // Commit only after _all_ records are processed.
+        // For most plugins, this loop will only process 1 record (since max.poll.records is 1).
+        doCommitSync();
+
+        // More logging.
+        String allOffsets = messagesProcessed.stream().map((x) -> x.left).map(Object::toString)
+                .collect(Collectors.joining(", "));
+        String allPartitions = messagesProcessed.stream().map((x) -> x.right).map(Object::toString)
+                .collect(Collectors.joining(", "));
+        logger.info("Committed offsets [" + allOffsets + "] of partitions [" + allPartitions + "].");
+
+
+        // If local storage is enabled, clear the correct partitions after offsets are committed.
+        if (localStorage != null) {
+            localStorage.clear(messagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()));
+        }
     }
 
     /**
-     * Consumes a message from a Kafka topics and passes it to a plugin.
+     * Consumer strategy (using local storage):
+     * <p>
+     * 1. Poll one record (by default).
+     * 2. If the record hash is in local storage:
+     * a. Produce to error topic (this record is probably processed before and caused a crash or timeout).
+     * b. Commit the offset, if producer confirmed sending the message.
+     * c. Delete record in local storage.
+     * d. Go back to 1.
+     * 3. If the record hash is _not_ in local storage:
+     * a. Process the record.
+     * b. Produce its results (either to the error topic, or output topic).
+     * c. Commit the offset if producer confirmed sending the message.
+     * d. Delete record in local storage.
+     * e. Go back to 1.
+     * <p>
+     * This strategy provides at-least-once semantics.
      */
-    private void handleConsuming() {
-        ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
-        for (var r : records) {
-            doCommitSync();
-            var consumeTimestamp = System.currentTimeMillis() / 1000L;
-            plugin.consume(r.value());
-            handleProducing(r.value(), consumeTimestamp);
+    public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp) {
+        if (localStorage != null) { // If local storage is enabled.
+            if (localStorage.exists(record.value(), record.partition())) { // This plugin already consumed this record before, we will not process it now.
+                logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
+                plugin.setPluginError(new ExistsInLocalStorageException("Record already exists in local storage. Most probably it has been processed before and the pod crashed."));
+            } else {
+                try {
+                    localStorage.store(record.value(), record.partition());
+                } catch (IOException e) {
+                    // We couldn't store the message SHA. Will just continue processing, but log the error.
+                    // This strategy might result in the deadlock/retry behavior of the same coordinate.
+                    // However, if local storage is failing we can't store the CG's either and that's already a problem.
+                    logger.error("Trying to store the hash of a record, but failed due to an IOException", e);
+                } finally { // Event if we hit an IOException, we will execute this finally block.
+                    if (consumeTimeoutEnabled) {
+                        consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
+                    } else {
+                        plugin.consume(record.value());
+                    }
+                }
+            }
+        } else { // If local storage is not enabled.
+            if (consumeTimeoutEnabled) {
+                consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
+            } else {
+                plugin.consume(record.value());
+            }
         }
+
+        // We always produce, it does not matter if local storage is enabled or not.
+        handleProducing(record.value(), consumeTimestamp);
     }
 
     /**
@@ -167,16 +263,16 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      *
      * @param input input message [can be null]
      */
-    private void handleProducing(String input, long consumeTimestamp) {
+    public void handleProducing(String input, long consumeTimestamp) {
         try {
             if (plugin.getPluginError() != null) {
-                throw new Exception(plugin.getPluginError());
+                throw plugin.getPluginError();
             }
 
             var result = plugin.produce();
             String payload = result.orElse(null);
             if (result.isPresent() && writeDirectory != null && !writeDirectory.equals("")) {
-                    payload = writeToFile(payload);
+                payload = writeToFile(payload);
             }
 
             emitMessage(this.producer, String.format("fasten.%s.out",
@@ -368,5 +464,64 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         } while (i <= 5 && statusRecords.count() == 0);
 
         return statusRecords;
+    }
+
+    /**
+     * Consumes an input with a timeout. If the timeout is exceeded the thread handling the message is killed.
+     *
+     * @param input   the input message to be consumed.
+     * @param timeout the timeout in seconds. I.e. the maximum time a plugin can spend on processing a record.
+     *                <p>
+     *                Based on: https://stackoverflow.com/questions/1164301/how-do-i-call-some-blocking-method-with-a-timeout-in-java
+     */
+    public void consumeWithTimeout(String input, long timeout, boolean exitOnTimeout) {
+        Runnable consumeTask = () -> {
+            plugin.consume(input);
+        };
+
+        // Submit the consume task to a thread.
+        Future futureConsumeTask = exexcutorService.submit(consumeTask);
+
+        try {
+            futureConsumeTask.get(timeout, TimeUnit.SECONDS);
+        } catch (TimeoutException timeoutException) {
+            // In this situation the consumeTask took longer than the timeout.
+            // We will send an error to the err topic by setting the plugin error.
+            plugin.setPluginError(timeoutException);
+            logger.error("A TimeoutException occurred, processing a record took more than " + timeout + " seconds.");
+            if (exitOnTimeout) { // Exit if the timeout is reached.
+                System.exit(0);
+            }
+        } catch (InterruptedException interruptedException) {
+            // The consumeTask thread was interrupted.
+            plugin.setPluginError(interruptedException);
+            logger.error("A InterruptedException occurred", interruptedException);
+        } catch (ExecutionException executionException) {
+            // In this situation the consumeTask threw an exception during computation.
+            // We kind of expect this not to happen, because (at least for OPAL) plugins should with exception themselves.
+            plugin.setPluginError(executionException);
+            logger.error("A ExecutionException occurred", executionException);
+        } finally {
+            // Finally we will kill the current thread if it's still running so we can continue processing the next record.
+            futureConsumeTask.cancel(true);
+        }
+    }
+
+    /**
+     * Verify is the consumer timeout is enabled.
+     *
+     * @return if a consumer timeout is enabled.
+     */
+    public boolean isConsumeTimeoutEnabled() {
+        return consumeTimeoutEnabled;
+    }
+
+    /**
+     * Get the consume timeout (in seconds).
+     *
+     * @return consume timeout.
+     */
+    public long getConsumeTimeout() {
+        return consumeTimeout;
     }
 }

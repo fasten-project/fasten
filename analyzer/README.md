@@ -34,7 +34,8 @@ The FASTEN QualityAnalyzer plugin is used to insert source code quality analysis
 The FASTEN RepoCloner plugin is a tool for cloning repositories into the file system.
 
 #### Rest API
-The FASTEN Rest API Plugin is a tool to expose canned queries from the  [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema). It can be used both as a standalone tool and as a part of FASTEN server.
+The FASTEN Rest API Plugin is a tool to expose canned queries from the [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema).
+<!-- It can be used both as a standalone tool and as a part of FASTEN server. -->
 
 ## Join the community
 

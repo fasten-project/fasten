@@ -19,7 +19,6 @@ package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.analyzer.qualityanalyzer.data.*;
 
-import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
@@ -41,9 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
-
-
 public class MetadataUtils {
 
     private final Logger logger = LoggerFactory.getLogger(MetadataUtils.class.getName());
@@ -59,9 +55,6 @@ public class MetadataUtils {
     }
 
     public void freeResource() {
-        for(String key: dslContexts.keySet()) {
-            dslContexts.get(key).close();
-        }
     }
 
     /**
@@ -70,7 +63,7 @@ public class MetadataUtils {
      * @param jsonRecord    Object that contains quality analysis metadata.
      * @return              id of the callable record
      */
-    public Long updateMetadataInDB(String forge, JSONObject jsonRecord) throws RuntimeException, IllegalStateException {
+    public Long updateMetadataInDB(String forge, JSONObject jsonRecord) throws RuntimeException {
 
         selectedContext = dslContexts.get(forge);
 
@@ -109,10 +102,17 @@ public class MetadataUtils {
 
         String product = null;
         String version = null;
+        String rapid_version = jsonRecord.getString("plugin_version");
+
+        JSONObject payload = null;
 
         if (jsonRecord.has("payload")) {
-            product = jsonRecord.getJSONObject("payload").getString("product");
-            version = jsonRecord.getJSONObject("payload").getString("version");
+            payload = jsonRecord.getJSONObject("payload");
+            product = payload.getString("product");
+            version = payload.getString("version");
+        } else {
+            logger.error("JSON record does not contain payload");
+            throw new IllegalStateException("Non-existing payload in JSON record");
         }
 
         if( (product == null) || (version == null)) {
@@ -128,15 +128,15 @@ public class MetadataUtils {
             throw new IllegalStateException("Could not find package version id");
         }
 
-        String filename = jsonRecord.getJSONObject("payload").getString("filename");
+        String filename = payload.getString("filename");
         //Fix issue #21 from quality-analyzer repository
         //int index = StringUtils.ordinalIndexOf(path, "/", 5);
         //String filename = path.substring(index+1);
         
         logger.info("Filename from RapidPlugin is " + filename);
 
-        int lineStart = jsonRecord.getJSONObject("payload").getInt("start_line");
-        int lineEnd = jsonRecord.getJSONObject("payload").getInt("end_line");
+        int lineStart = payload.getInt("start_line");
+        int lineEnd = payload.getInt("end_line");
 
         Long fileId = getFileId(pckVersionId, filename);//could return null
 
@@ -146,22 +146,40 @@ public class MetadataUtils {
             throw new IllegalStateException("Could not find package version id");
         }
 
-        List<Long> modulesId = getModuleIds(fileId);//could return empty List
+        JSONObject tailored = new JSONObject(payload, new String[] {
+                "quality_analyzer_name",
+                "quality_analyzer_version",
+                "quality_analysis_timestamp",
+                "callable_name",
+                "callable_long_name",
+                "callable_parameters",
+                "metrics"});
+        tailored.put("rapid_plugin_version", rapid_version);
 
+        JSONObject metadata = new JSONObject();
+        metadata.put("quality", tailored);
+
+        List<Long> modulesId = getModuleIds(fileId);//could return empty List
         logger.info("Found " + modulesId.size() + " modules");
 
         ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
 
-        JSONObject metadata = jsonRecord.getJSONObject("payload").getJSONObject("metrics");
+        String qaCallableName = payload.getString("callable_name");
 
         if(!modulesId.isEmpty()) {
 
             for(Long moduleId : modulesId) {
-                callables.addAll(getCallablesInformation(moduleId, lineStart, lineEnd, metadata));
+                logger.info("Found module with moduleId: " + moduleId);
+                callables.addAll(getCallablesInformation(moduleId, qaCallableName, lineStart, lineEnd, metadata));
             }
 
-            logger.info("Found " + callables.size() + " methods for which startLine and endline are in [" + lineStart + ", " + lineEnd + "]");
 
+            logger.info("Found " + callables.size() + " methods for which startLine and endline are in [" + lineStart + ", " + lineEnd + "]");
+            logger.info("Callables details ###");
+            for(CallableHolder callable : callables ){
+                logger.info(" CallableId = " + callable.getCallableId() + ", and fastenURI = " + callable.getFastenUri());
+            }
+            logger.info("End of callables details ###");
         }
 
         return callables;
@@ -170,7 +188,6 @@ public class MetadataUtils {
 
     /**
      * Retrieves the package_version_id given the purl of the package version.
-     * @param purl - follows purl specifications
      * @return negative if it cannot be found
      */
     private Long getPackageVersionId(String coordinate, String forge, String version) {
@@ -198,6 +215,8 @@ public class MetadataUtils {
      * @return - Value of the package ID if found, null otherwise.
      */
     private Long getPackageIdFromCoordinate(String coordinate, String forge) {
+
+        logger.info("getPackageIdFromCoordinate: coordinate = " + coordinate + ", forge = " + forge);
 
         PackagesRecord record = (PackagesRecord) selectedContext.select()
                 .from(Packages.PACKAGES)
@@ -238,7 +257,7 @@ public class MetadataUtils {
     /**
      * Retrieve the fileId of the file
      * @param packageVersionId - package version ID
-     * @param filepath - path to the file
+     * @param filename - path to the file
      * @return - Long value of fileId or -1 if the file cannot be found
      */
     private Long getFileId(Long packageVersionId, String filename) {
@@ -283,35 +302,52 @@ public class MetadataUtils {
     /**
      * Retrieves the callables information from the DB with a given values for the start and end line.
      *
-     * @param moduleId - Long ID of the file where the callable was changed.
-     * @param startLine - int value that indicates start callable line in source file.
-     * @param endLine - int value that indicates the last callable line in source file.
+     * @param moduleId - Long ID of the file where the callable belongs.
+     * @param qaName - String that represents callable name from Lizard tool.
+     * @param lineStart - int value that indicates start callable line in source file from Lizard tool.
+     * @param lineEnd - int value that indicates the last callable line in source file from Lizard tool.
+     * @param metadata - JSON object that contains callable metadata, to be stored in Metadata DB.
      *
      * @return List of CallableHolder (empty List if no callable could be found)
      */
-    private List<CallableHolder> getCallablesInformation(Long moduleId, int lineStart, int lineEnd, JSONObject metadata)  {
+    private List<CallableHolder> getCallablesInformation(Long moduleId, String qaName, int lineStart, int lineEnd, JSONObject metadata)  {
 
         List<CallableHolder> calls = new ArrayList<>();
 
-        // Get all the records with the moduleId given
-        //and the average of line start and line end is between what we get from MDB
-
-        int average = (int) Math.floor((lineStart+lineEnd)/2);
+        /*
+         Get all the records with the moduleId given, with callable name, and
+         for which there is an overlap between line intervals from Lizard
+         and OPAL.
+        */
 
         Result<Record> crs = selectedContext.select()
                 .from(Callables.CALLABLES)
                 .where(Callables.CALLABLES.MODULE_ID.equal(moduleId))
-                .and(Callables.CALLABLES.LINE_START.le(average))
-                .and(Callables.CALLABLES.LINE_END.ge(average))
+                .andNot(Callables.CALLABLES.LINE_START.gt(lineEnd))
+                .andNot(Callables.CALLABLES.LINE_END.lt(lineStart))
                 .fetch();
+
+        logger.info("Fetched " + crs.size() + " entries from callables table");
 
         for (Record cr : crs) {
 
-            // Create callable object
-            CallableHolder ch = new CallableHolder(cr);
-            ch.setCallableMetadata(metadata);
-            //filter and store callable only if start and end line overlap with input
-            calls.add(ch);
+            String fastenUri = (String) cr.get(2);
+
+            String separator = ":";
+            int position = qaName.lastIndexOf(separator);
+            String methodName = qaName.substring(position+separator.length());
+
+            logger.info("fastenUri (from DB) is " + fastenUri);
+            logger.info("Lizard callable name is " + qaName + " parsed methodName is " + methodName);
+
+            if(fastenUri.contains(methodName)) {
+
+                // Create callable object
+                CallableHolder ch = new CallableHolder(cr);
+                ch.setCallableMetadata(metadata);
+                //filter and store callable only if start and end line overlap with input
+                calls.add(ch);
+            }
         }
         return calls;
     }

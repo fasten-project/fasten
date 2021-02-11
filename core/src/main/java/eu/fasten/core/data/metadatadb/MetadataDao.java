@@ -19,44 +19,39 @@
 package eu.fasten.core.data.metadatadb;
 
 import com.github.t9t.jooq.json.JsonbDSL;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
-import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
-import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
-import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
-import eu.fasten.core.data.metadatadb.codegen.tables.Files;
-import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
+import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.CallSiteRecord;
+import eu.fasten.core.utils.FastenUriUtils;
+import org.apache.commons.math3.util.Pair;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jooq.JSONFormat;
 import org.jooq.Query;
 import org.jooq.Record;
+import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Result;
-import org.jooq.impl.DSL;
+import org.jooq.SelectField;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+import static org.jooq.impl.DSL.and;
 import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.trueCondition;
 
 public class MetadataDao {
-
     private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
     private DSLContext context;
 
@@ -723,87 +718,6 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts a record in the 'edges' table in the database.
-     *
-     * @param sourceId  ID of the source callable (references 'callables.id')
-     * @param targetId  ID of the target callable (references 'callables.id')
-     * @param callSites Array of call sites data
-     * @param metadata  Metadata of the edge between source and target
-     * @return ID of the source callable (sourceId)
-     */
-    public long insertEdge(long sourceId, long targetId, CallSiteRecord[] callSites, JSONObject metadata) {
-        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
-        var resultRecord = context.insertInto(Edges.EDGES,
-                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
-                Edges.EDGES.CALL_SITES, Edges.EDGES.METADATA)
-                .values(sourceId, targetId, callSites, metadataJsonb)
-                .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
-                .set(Edges.EDGES.CALL_SITES, Edges.EDGES.as("excluded").CALL_SITES)
-                .set(Edges.EDGES.METADATA, field("coalesce(edges.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
-                .returning(Edges.EDGES.SOURCE_ID).fetchOne();
-        return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
-    }
-
-    /**
-     * Inserts multiple records in the 'edges' table in the database.
-     *
-     * @param sourceIds     List of IDs of source callables
-     * @param targetIds     List of IDs of target callables
-     * @param callSitesList List of arrays of call sites
-     * @param metadata      List of metadata objects
-     * @return List of IDs of source callables (sourceIds)
-     * @throws IllegalArgumentException if lists are not of the same size
-     */
-    public List<Long> insertEdges(List<Long> sourceIds, List<Long> targetIds,
-                                  List<CallSiteRecord[]> callSitesList,
-                                  List<JSONObject> metadata) throws IllegalArgumentException {
-        if (sourceIds.size() != targetIds.size() || targetIds.size() != metadata.size()
-                || metadata.size() != callSitesList.size()) {
-            throw new IllegalArgumentException("All lists should have equal size");
-        }
-        int length = sourceIds.size();
-        var recordIds = new ArrayList<Long>(length);
-        for (int i = 0; i < length; i++) {
-            long result = insertEdge(sourceIds.get(i), targetIds.get(i),
-                    callSitesList.get(i), metadata.get(i));
-            recordIds.add(result);
-        }
-        return recordIds;
-    }
-
-    public Map<String, Long> getNamespaceMap(List<String> namespaces) {
-        var whereClause = Namespaces.NAMESPACES.NAMESPACE.eq(namespaces.get(0));
-        for (int i = 1; i < namespaces.size(); i++) {
-            whereClause = whereClause.or(Namespaces.NAMESPACES.NAMESPACE.eq(namespaces.get(i)));
-        }
-        var result = context.select(Namespaces.NAMESPACES.NAMESPACE, Namespaces.NAMESPACES.ID)
-                .from(Namespaces.NAMESPACES)
-                .where(whereClause)
-                .fetch();
-        var map = new HashMap<String, Long>(result.size());
-        for (var record : result) {
-            map.put(record.value1(), record.value2());
-        }
-        return map;
-    }
-
-    public Map<String, Long> insertNamespaces(Set<String> namespaces) {
-        var map = new HashMap<String, Long>();
-        context.transaction(transaction -> {
-            var transactionContext = DSL.using(transaction);
-            var insert = transactionContext.insertInto(Namespaces.NAMESPACES, Namespaces.NAMESPACES.NAMESPACE);
-            for (var namespace : namespaces) {
-                insert = insert.values(namespace);
-            }
-            var result = insert.returning(Namespaces.NAMESPACES.NAMESPACE, Namespaces.NAMESPACES.ID).fetch();
-            for (var record : result) {
-                map.put(record.getNamespace(), record.getId());
-            }
-        });
-        return map;
-    }
-
-    /**
      * Executes batch insert for 'edges' table.
      *
      * @param edges List of edges records to insert
@@ -942,36 +856,865 @@ public class MetadataDao {
         return ids;
     }
 
+    protected Condition packageVersionWhereClause(String name, String version) {
+        return trueCondition()
+                .and(Packages.PACKAGES.PACKAGE_NAME.equalIgnoreCase(name))
+                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equalIgnoreCase(version));
+    }
+
+    protected boolean assertPackageExistence(String name, String version) {
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+
+        Record selectPackage = context
+                .select(p.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .where(packageVersionWhereClause(name, version))
+                .fetchOne();
+
+        return selectPackage != null;
+    }
+
+    protected boolean assertModulesExistence(String name, String version, String namespace) {
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Namespaces n = Namespaces.NAMESPACES;
+
+        Record selectModule = context
+                .select(m.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(n).on(m.NAMESPACE_ID.eq(n.ID))
+                .where(packageVersionWhereClause(name, version))
+                .and(n.NAMESPACE.equalIgnoreCase(namespace))
+                .fetchOne();
+
+        return selectModule != null;
+    }
+
+    public String getPackageLastVersion(String packageName) {
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+
+        // Building and executing the query
+        Record queryResult = this.context
+                .select(p.fields())
+                .select(pv.VERSION)
+                .from(p)
+                .leftJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
+                .orderBy(pv.CREATED_AT.sortDesc().nullsLast())
+                .limit(1)
+                .fetchOne();
+
+        if (queryResult == null) {
+            return null;
+        }
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getAllPackages(int offset, int limit) {
+        var result = context
+                .select(Packages.PACKAGES.fields())
+                .from(Packages.PACKAGES)
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getPackageVersion(String packageName, String packageVersion) {
+        return getPackageInfo(packageName, packageVersion, false);
+    }
+
+    public String getPackageMetadata(String packageName, String packageVersion) {
+        return getPackageInfo(packageName, packageVersion, true);
+    }
+
+    protected String getPackageInfo(String packageName,
+                                    String packageVersion,
+                                    boolean metadataOnly) {
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+
+        // Select clause
+        SelectField<?>[] selectClause;
+        if (metadataOnly) {
+            selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, pv.METADATA};
+        } else {
+            selectClause = pv.fields();
+        }
+
+        // Building and executing the query
+        Record queryResult = this.context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .limit(1)
+                .fetchOne();
+        if (queryResult == null) {
+            return null;
+        }
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).format(true).quoteNested(false));
+    }
+
     /**
-     * Gets all known metadata given a forge, package name and its version
+     * Returns information about versions of a package, including potential vulnerabilities.
      *
-     * @param forge       Forge of the package
+     * @param packageName Name of the package of interest.
+     * @param offset
+     * @param limit
+     * @return Package version information, including potential vulnerabilities.
+     */
+    public String getPackageVersions(String packageName, int offset, int limit) {
+
+        // SQL query
+        /*
+            SELECT pv.*
+            FROM packages AS p
+                JOIN package_versions AS pv ON p.id = pv.package_id
+            WHERE p.package_name=<package_name>
+        */
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(pv.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    /**
+     * Returns all dependencies of a given package version.
+     *
+     * @param packageName    Name of the package whose dependencies are of interest.
+     * @param packageVersion Version of the package whose dependencies are of interest.
+     * @param offset
+     * @param limit
+     * @return All package version dependencies.
+     */
+    public String getPackageDependencies(String packageName, String packageVersion, int offset, int limit) {
+
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Dependencies d = Dependencies.DEPENDENCIES;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(d.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(d).on(pv.ID.eq(d.PACKAGE_VERSION_ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getPackageModules(String packageName,
+                                    String packageVersion,
+                                    int offset,
+                                    int limit) {
+
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+
+        // Select clause
+        SelectField<?>[] selectClause = m.fields();
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
+
+        // Building and executing the query
+        Result<Record> queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .where(whereClause)
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getModuleMetadata(String packageName,
+                                    String packageVersion,
+                                    String moduleNamespace) {
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Namespaces n = Namespaces.NAMESPACES;
+
+        // Select clause
+        SelectField<?>[] selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, n.NAMESPACE, m.METADATA};
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion).and(n.NAMESPACE.equalIgnoreCase(moduleNamespace));
+
+        // Building and executing the query
+        var queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(n).on(m.NAMESPACE_ID.eq(n.ID))
+                .where(whereClause)
+                .limit(1)
+                .fetchOne();
+        if (queryResult == null) {
+            return null;
+        }
+        // Returning the result
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getModuleFiles(String packageName,
+                                 String packageVersion,
+                                 String moduleNamespace,
+                                 int offset,
+                                 int limit) {
+
+        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Files f = Files.FILES;
+        Namespaces n = Namespaces.NAMESPACES;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(f.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
+                .innerJoin(n).on(m.NAMESPACE_ID.eq(n.ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .and(n.NAMESPACE.eq(moduleNamespace))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getModuleCallables(String packageName,
+                                     String packageVersion,
+                                     String moduleNamespace,
+                                     int offset,
+                                     int limit) {
+
+        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+        Namespaces n = Namespaces.NAMESPACES;
+
+        // Main Query
+        Result<Record> queryResult = context
+                .select(c.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .innerJoin(n).on(m.NAMESPACE_ID.eq(n.ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .and(n.NAMESPACE.eq(moduleNamespace))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        var res = queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+
+
+
+        //// Insert user-friendly formatted method signature
+
+        // Parse result json string back into object
+        JSONArray json;
+        try {
+            json = new JSONArray(res);
+        } catch (JSONException err){
+            logger.error("Error JSON Parser: " + err.toString());
+            return null;
+        }
+
+        // Go through each callable, parse fasten uri, insert signature.
+        for(Object j: json) {
+            JSONObject jObj = (JSONObject)j;
+            var uri = jObj.getString("fasten_uri");
+
+            try {
+                var uriObject = FastenUriUtils.parsePartialFastenUri(uri);
+                jObj.put("methodName", uriObject.get(2));
+                jObj.put("methodArgs", uriObject.get(3));
+            } catch (IllegalArgumentException err) {
+                logger.warn("Error FASTEN URI Parser: " + err.toString());
+            }
+        }
+
+        return json.toString();
+    }
+
+    public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) {
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        BinaryModules b = BinaryModules.BINARY_MODULES;
+
+        // Select clause
+        SelectField<?>[] selectClause = b.fields();
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
+
+
+        // Building and executing the query
+        Result<Record> queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(b).on(pv.ID.eq(b.PACKAGE_VERSION_ID))
+                .where(whereClause)
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getBinaryModuleMetadata(String packageName,
+                                          String packageVersion,
+                                          String binaryModule) {
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        BinaryModules b = BinaryModules.BINARY_MODULES;
+
+        // Select clause
+        SelectField<?>[] selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, b.NAME, b.METADATA};
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion).and(b.NAME.equalIgnoreCase(binaryModule));
+
+        // Building and executing the query
+        var queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(b).on(pv.ID.eq(b.PACKAGE_VERSION_ID))
+                .where(whereClause)
+                .limit(1)
+                .fetchOne();
+        if (queryResult == null) {
+            return null;
+        }
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    // TODO Test with real DB data
+    public String getBinaryModuleFiles(String packageName,
+                                       String packageVersion,
+                                       String binaryModule,
+                                       int offset,
+                                       int limit) {
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        BinaryModules b = BinaryModules.BINARY_MODULES;
+        Files f = Files.FILES;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(f.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(b).on(pv.ID.eq(b.PACKAGE_VERSION_ID))
+                .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .and(b.NAME.equalIgnoreCase(binaryModule))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getPackageCallables(String packageName, String packageVersion, int offset, int limit) {
+
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
+        // Select clause
+        SelectField<?>[] selectClause = c.fields();
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
+
+        // Building and executing the query
+        Result<Record> queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .where(whereClause)
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public List<Long> getPackageInternalCallableIDs(String packageName, String version) {
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
+        // Building and executing the query
+        var result = context
+                .select(c.ID)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .where(packageVersionWhereClause(packageName, version))
+                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(true))
+                .fetch();
+        return result.map(Record1::value1);
+    }
+
+    public String getCallableMetadata(String packageName,
+                                      String packageVersion,
+                                      String fastenURI) {
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
+        // Select clause
+        SelectField<?>[] selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, c.FASTEN_URI, c.METADATA};
+
+        // Where clause
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion).and("digest(callables.fasten_uri, 'sha1') = digest(?, 'sha1')", fastenURI);
+
+        // Building and executing the query
+        var queryResult = context
+                .select(selectClause)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .where(whereClause)
+                .limit(1)
+                .fetchOne();
+        if (queryResult == null) {
+            return null;
+        }
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public Map<Long, JSONObject> getCallablesMetadata(Collection<Long> callableIDs) {
+        var result = context
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.in(callableIDs))
+                .fetch();
+        var map = new HashMap<Long, JSONObject>(result.size());
+        for (var record : result) {
+            map.put(record.value1(), new JSONObject(record.value2().data()));
+        }
+        return map;
+    }
+
+    public String getArtifactName(long packageVersionId) {
+        var result = context
+                .select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION)
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.eq(packageVersionId))
+                .limit(1)
+                .fetchOne();
+        if (result == null) {
+            return null;
+        }
+        return result.value1() + Constants.mvnCoordinateSeparator + result.value2();
+    }
+
+    public Set<Long> findVulnerablePackageVersions(Set<Long> packageVersionIDs) {
+        var result = context
+                .select(PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.in(packageVersionIDs))
+                .and("package_versions.metadata::jsonb->'vulnerabilities' is not null")
+                .fetch();
+        return new HashSet<>(result.map(Record1::value1));
+    }
+
+    public Map<Long, JSONObject> findVulnerableCallables(Set<Long> vulnerablePackageVersions, Set<Long> callableIDs) {
+        var result = context
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .join(Modules.MODULES)
+                .on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.in(vulnerablePackageVersions))
+                .and(Callables.CALLABLES.ID.in(callableIDs))
+                .and("callables.metadata::jsonb->'vulnerabilities' is not null")
+                .fetch();
+        var map = new HashMap<Long, JSONObject>(result.size());
+        for (var record : result) {
+            map.put(record.value1(), new JSONObject(record.value2().data()));
+        }
+        return map;
+    }
+
+    public String getPackageFiles(String packageName, String packageVersion, int offset, int limit) {
+
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Files f = Files.FILES;
+
+        // Query
+        Result<Record> queryResult = context
+                .select(f.fields())
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getPackageCallgraph(String packageName, String packageVersion, int offset, int limit) {
+        return getEdgesInfo(packageName, packageVersion, true, offset, limit);
+    }
+
+    public String getPackageEdges(String packageName, String packageVersion, int offset, int limit) {
+        return getEdgesInfo(packageName, packageVersion, false, offset, limit);
+    }
+
+    protected String getEdgesInfo(String packageName,
+                                  String packageVersion,
+                                  boolean idsOnly,
+                                  int offset,
+                                  int limit) {
+
+        if(!assertPackageExistence(packageName, packageVersion)) return null;
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+        Edges e = Edges.EDGES;
+
+        // Select clause
+        SelectField<?>[] selectClause;
+        if (idsOnly) {
+            selectClause = new SelectField[]{e.SOURCE_ID, e.TARGET_ID};
+        } else {
+            selectClause = e.fields();
+        }
+
+        // Query
+        Result<Record> queryResult = context
+                .select(selectClause)
+                .from(e)
+                .innerJoin(c).on(e.SOURCE_ID.eq(c.ID))
+                .innerJoin(m).on(m.ID.eq(c.MODULE_ID))
+                .innerJoin(pv).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(p).on(p.ID.eq(pv.PACKAGE_ID))
+                .where(packageVersionWhereClause(packageName, packageVersion))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    /**
+     * Retrieves an ID of certain package version.
+     *
      * @param packageName Name of the package
      * @param version     Version of the package
-     * @return metadata   All known metadata
+     * @return ID of the package version
      */
-    public String getAllMetadataForPkg(String forge, String packageName, String version) {
+    public Long getPackageVersionID(String packageName, String version) {
+        var record = context
+                .select(PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .where(packageVersionWhereClause(packageName, version))
+                .limit(1)
+                .fetchOne();
+        if (record == null) {
+            return null;
+        }
+        return record.value1();
+    }
 
-        Packages p = Packages.PACKAGES.as("p");
-        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS.as("pv");
+    /**
+     * Returns a Map (Maven Coordinate -> Package Version ID) for a list of artifacts.
+     *
+     * @param artifacts List of Maven coordinates
+     * @return HashMap from artifact to package version ID
+     */
+    public Map<String, Long> getPackageVersionIDs(List<String> artifacts) {
+        var packageNames = new ArrayList<String>(artifacts.size());
+        var versions = new ArrayList<String>(artifacts.size());
+        for (var coordinate : artifacts) {
+            var parts = coordinate.split(Constants.mvnCoordinateSeparator);
+            var packageName = parts[0] + Constants.mvnCoordinateSeparator + parts[1];
+            packageNames.add(packageName);
+            versions.add(parts[2]);
+        }
+        var whereClause = packageVersionWhereClause(packageNames.get(0), versions.get(0));
+        for (int i = 1; i < artifacts.size(); i++) {
+            whereClause = whereClause.or(packageVersionWhereClause(packageNames.get(i), versions.get(0)));
+        }
+        var queryResult = context
+                .select(Packages.PACKAGES.PACKAGE_NAME,
+                        PackageVersions.PACKAGE_VERSIONS.VERSION,
+                        PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(Packages.PACKAGES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(whereClause)
+                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                .fetch();
+        var map = new HashMap<String, Long>(queryResult.size());
+        for (var record : queryResult) {
+            var coordinate = record.value1() + Constants.mvnCoordinateSeparator + record.value2();
+            map.put(coordinate, record.value3());
+        }
+        return map;
+    }
 
-        Result<Record> queryResult =
-                context
-                        .select(p.FORGE, p.PACKAGE_NAME)
-                        .select(pv.VERSION, pv.METADATA.as("metadata"))
-                        .from(p)
-                        .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                        .where(p.FORGE.equalIgnoreCase(forge)
-                                .and(p.PACKAGE_NAME.equalIgnoreCase(packageName)
-                                        .and(pv.VERSION.equalIgnoreCase(version))
-                                )
-                        )
-                        .fetch();
+    /**
+     * Returns a Map (Callable ID -> JSON Metadata) for a list of callables.
+     *
+     * @param callableIds List of IDs of callables
+     * @return HashMap from ID to metadata of callables
+     */
+    public Map<Long, JSONObject> getCallablesMetadata(Set<Long> callableIds) {
+        var queryResult = context
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.in(callableIds))
+                .fetch();
+        var metadataMap = new HashMap<Long, JSONObject>(queryResult.size());
+        for (var record : queryResult) {
+            var json = new JSONObject(record.value2().data());
+            metadataMap.put(record.value1(), json);
+        }
+        return metadataMap;
+    }
 
-        logger.debug("Total rows: " + queryResult.size());
+    public Map<Long, JSONObject> getCallables(List<Long> callableIds) {
+        var queryResult = context
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.MODULE_ID,
+                        Callables.CALLABLES.IS_INTERNAL_CALL, Callables.CALLABLES.LINE_START,
+                        Callables.CALLABLES.LINE_END, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.in(callableIds))
+                .fetch();
+        var callablesMap = new HashMap<Long, JSONObject>(queryResult.size());
+        for (var record : queryResult) {
+            var json = new JSONObject();
+            json.put("fasten_uri", record.value2());
+            json.put("module_id", record.value3());
+            json.put("is_internal_call", record.value4());
+            json.put("line_start", record.value5());
+            json.put("line_end", record.value6());
+            json.put("metadata", new JSONObject(record.value7().data()));
+            callablesMap.put(record.value1(), json);
+        }
+        return callablesMap;
+    }
 
-        String result = queryResult.formatJSON();
-        return result;
+    /**
+     * Returns a Map (Pair of IDs -> JSON Metadata) for a list of edges.
+     *
+     * @param edges List of pairs of IDs which constitute edges
+     * @return HashMap from Pair of IDs to metadata of the edge
+     */
+    public Map<Pair<Long, Long>, JSONObject> getEdgesMetadata(List<Pair<Long, Long>> edges) {
+        var whereClause = and(Edges.EDGES.SOURCE_ID.eq(edges.get(0).getFirst()))
+                .and(Edges.EDGES.TARGET_ID.eq(edges.get(0).getSecond()));
+        for (int i = 1; i < edges.size(); i++) {
+            whereClause = whereClause.or(
+                    and(Edges.EDGES.SOURCE_ID.eq(edges.get(i).getFirst()))
+                            .and(Edges.EDGES.TARGET_ID.eq(edges.get(i).getSecond()))
+            );
+        }
+        var queryResult = context
+                .select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES, Edges.EDGES.METADATA)
+                .from(Edges.EDGES)
+                .where(whereClause)
+                .fetch();
+        var metadataMap = new HashMap<Pair<Long, Long>, JSONObject>(queryResult.size());
+        for (var record : queryResult) {
+            var json = new JSONObject(record.value4().data());
+            var receiversJson = new JSONArray();
+            for (var receiver : record.value3()) {
+                var receiverJson = new JSONObject();
+                receiverJson.put("line", receiver.value1());
+                receiverJson.put("type", receiver.value2().getLiteral());
+                receiverJson.put("receiver_uri", receiver.value3());
+            }
+            json.put("receivers", receiversJson);
+            metadataMap.put(new Pair<>(record.value1(), record.value2()), json);
+        }
+        return metadataMap;
+    }
+
+    public Map<Long, String> getFullFastenUris(List<Long> callableIds) {
+        var result = context
+                .select(Packages.PACKAGES.FORGE,
+                        Packages.PACKAGES.PACKAGE_NAME,
+                        PackageVersions.PACKAGE_VERSIONS.VERSION,
+                        Callables.CALLABLES.FASTEN_URI,
+                        Callables.CALLABLES.ID)
+                .from(Packages.PACKAGES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
+                .join(Modules.MODULES)
+                .on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
+                .join(Callables.CALLABLES)
+                .on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
+                .where(Callables.CALLABLES.ID.in(callableIds))
+                .fetch();
+        var map = new HashMap<Long, String>(result.size());
+        result.forEach(r -> map.put(r.value5(), FastenUriUtils.generateFullFastenUri(r.value1(), r.value2(), r.value3(), r.value4())));
+        return map;
+    }
+
+    public Map<String, JSONObject> getCallablesMetadataByUri(String forge, String packageName, String version, List<String> fastenUris) {
+        var result = context
+                .select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .join(Modules.MODULES).on(Modules.MODULES.ID.eq(Callables.CALLABLES.MODULE_ID))
+                .join(PackageVersions.PACKAGE_VERSIONS).on(PackageVersions.PACKAGE_VERSIONS.ID.eq(Modules.MODULES.PACKAGE_VERSION_ID))
+                .join(Packages.PACKAGES).on(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
+                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName).and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
+                        .and("digest(callables.fasten_uri, 'sha1') in ("
+                                + fastenUris.stream()
+                                .map(u -> "digest(?, 'sha1')")
+                                .collect(Collectors.joining(",")) + ")", fastenUris.toArray()))
+                .fetch();
+        if (result.isEmpty()) {
+            return null;
+        }
+        var metadataMap = new HashMap<String, JSONObject>(result.size());
+        for (var record : result) {
+            metadataMap.put(FastenUriUtils.generateFullFastenUri(forge, packageName, version, record.value1()), new JSONObject(record.value2().data()));
+        }
+        return metadataMap;
+    }
+
+    public String getMavenCoordinate(long packageVersionId) {
+        var record = context
+                .select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION)
+                .from(Packages.PACKAGES)
+                .join(PackageVersions.PACKAGE_VERSIONS)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(PackageVersions.PACKAGE_VERSIONS.ID.eq(packageVersionId))
+                .limit(1)
+                .fetchOne();
+        if (record == null) {
+            return null;
+        }
+        return record.value1() + Constants.mvnCoordinateSeparator + record.value2();
+    }
+
+    public String searchPackageNames(String searchName, int offset, int limit) {
+        var result = context
+                .fetch("select * from packages where package_name like ? offset ? limit ?", "%" + searchName + "%", offset, limit);
+        logger.debug("Total rows: " + result.size());
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     /**
@@ -1004,9 +1747,7 @@ public class MetadataDao {
                         .fetch();
 
         logger.debug("Total rows: " + queryResult.size());
-
-        String result = queryResult.formatJSON();
-        return result;
+        return queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     /**
@@ -1040,9 +1781,7 @@ public class MetadataDao {
                         .fetch();
 
         logger.debug("Total rows: " + queryResult.size());
-
-        String result = queryResult.formatJSON();
-        return result;
+        return queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     /**
@@ -1064,7 +1803,7 @@ public class MetadataDao {
             String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
             logger.debug("id: " + id + "  / name: " + pkgName);
         }
-        String result = queryResult.formatJSON();
+        String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
         logger.debug("Query dummy result: " + result);
         return ("dummy getVulnerabilities query OK!");
     }
@@ -1089,7 +1828,7 @@ public class MetadataDao {
             String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
             logger.debug("id: " + id + "  / name: " + pkgName);
         }
-        String result = queryResult.formatJSON();
+        String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
         logger.debug("Query dummy result: " + result);
         return ("dummy updateImpact query OK!");
     }
@@ -1113,7 +1852,7 @@ public class MetadataDao {
             String pkgName = r.getValue(Packages.PACKAGES.PACKAGE_NAME);
             logger.debug("id: " + id + "  / name: " + pkgName);
         }
-        String result = queryResult.formatJSON();
+        String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
         logger.debug("Query dummy result: " + result);
         return ("dummy updateCg query OK!");
     }

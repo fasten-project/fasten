@@ -19,6 +19,7 @@
 package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -40,16 +41,7 @@ import picocli.CommandLine;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "GraphMavenResolver")
@@ -231,6 +223,23 @@ public class GraphMavenResolver implements Runnable {
     public Set<Revision> resolveDependencies(Revision r, DSLContext db, boolean transitive) {
         return resolveDependencies(r.groupId, r.artifactId, r.version.toString(),
                 r.createdAt.getTime(), db, transitive);
+    }
+
+    public Revision addVirtualNode(Set<Revision> directDependencies) {
+        var nodeGroup = String.valueOf(directDependencies.stream().reduce(0, (x, r) -> x + r.groupId.hashCode(), Integer::sum));
+        var nodeArtifact = String.valueOf(directDependencies.stream().reduce(0, (x, r) -> x + r.artifactId.hashCode(), Integer::sum));
+        var nodeVersion = String.valueOf(directDependencies.stream().reduce(0, (x, r) -> x + r.version.hashCode(), Integer::sum));
+        var node = new Revision(-1, nodeGroup, nodeArtifact, nodeVersion, new Timestamp(-1));
+        dependencyGraph.addVertex(node);
+        directDependencies.forEach(d -> dependencyGraph.addVertex(d));
+        directDependencies.forEach(d -> dependencyGraph.addEdge(node, d, new DependencyEdge(node, d, "compile", false, new ArrayList<>(), "jar")));
+        return node;
+    }
+
+    public void removeVirtualNode(Revision virtualNode) {
+        var edges = dependencyGraph.outgoingEdgesOf(virtualNode);
+        edges.forEach(e -> dependencyGraph.removeEdge(e));
+        dependencyGraph.removeVertex(virtualNode);
     }
 
 
@@ -468,18 +477,14 @@ public class GraphMavenResolver implements Runnable {
                 })).values().stream().map(Pair::getFirst).collect(Collectors.toSet());
     }
 
-    public void buildDependencyGraph(DSLContext dbContext, String serializedGraphPath) {
-        try {
-            var graphOpt = DependencyGraphUtilities.loadDependencyGraph(serializedGraphPath);
-            if (graphOpt.isEmpty()) {
-                dependencyGraph = DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedGraphPath);
-            } else {
-                dependencyGraph = graphOpt.get();
-            }
-            dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
-        } catch (Exception e) {
-            logger.error("Could not build the dependency graph", e);
+    public void buildDependencyGraph(DSLContext dbContext, String serializedGraphPath) throws Exception {
+        var graphOpt = DependencyGraphUtilities.loadDependencyGraph(serializedGraphPath);
+        if (graphOpt.isEmpty()) {
+            dependencyGraph = DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedGraphPath);
+        } else {
+            dependencyGraph = graphOpt.get();
         }
+        dependentGraph =  DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
     }
 
     private long getCreatedAt(String groupId, String artifactId, String version, DSLContext context) {
@@ -525,5 +530,38 @@ public class GraphMavenResolver implements Runnable {
             logger.error("Could not parse JSON for package version's metadata", e);
             return null;
         }
+    }
+
+    public Set<Revision> findAllRevisionsInThePath(Revision source, Revision target) {
+        var paths = getPaths(dependencyGraph, source, target, new HashSet<>(), new ArrayList<>(), new ArrayList<>());
+        var pathsNodes = new HashSet<Revision>();
+        for (var path : paths) {
+            for (var node : path) {
+                pathsNodes.add(node);
+            }
+        }
+        return pathsNodes;
+    }
+
+    private List<List<Revision>> getPaths(Graph<Revision, DependencyEdge> graph, Revision source, Revision target,
+                              Set<Revision> visited, List<Revision> path, List<List<Revision>> vulnerablePaths) {
+        if (path.isEmpty()) {
+            path.add(source);
+        }
+        if (source == target) {
+            vulnerablePaths.add(new ArrayList<>(path));
+            return vulnerablePaths;
+        }
+        visited.add(source);
+        for (var edge : graph.outgoingEdgesOf(source)) {
+            var node = edge.target;
+            if (!visited.contains(node)) {
+                path.add(node);
+                getPaths(graph, node, target, visited, path, vulnerablePaths);
+                path.remove(node);
+            }
+        }
+        visited.remove(source);
+        return vulnerablePaths;
     }
 }

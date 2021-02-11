@@ -19,9 +19,9 @@
 package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
-import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
@@ -33,6 +33,7 @@ import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -51,7 +52,7 @@ public class POMAnalyzerPlugin extends Plugin {
 
         private String consumerTopic = "fasten.mvn.pkg";
         private final Logger logger = LoggerFactory.getLogger(POMAnalyzer.class.getName());
-        private Throwable pluginError = null;
+        private Exception pluginError = null;
         private static DSLContext dslContext;
         private String artifact = null;
         private String group = null;
@@ -106,10 +107,16 @@ public class POMAnalyzerPlugin extends Plugin {
             } else {
                 payload = jsonRecord;
             }
-            artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
-            group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
-            version = payload.getString("version").replaceAll("[\\n\\t ]", "");
-            date = payload.optLong("date", -1L);
+            try {
+                artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
+                group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
+                version = payload.getString("version").replaceAll("[\\n\\t ]", "");
+                date = payload.optLong("date", -1L);
+            } catch (JSONException e) {
+                logger.error("Malformed input: " + payload.toString(), e);
+                this.pluginError = e;
+                return;
+            }
             var pomUrl = payload.optString("pomUrl", null);
             final var product = group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version;
@@ -183,17 +190,17 @@ public class POMAnalyzerPlugin extends Plugin {
         /**
          * Saves information extracted from POM into Metadata Database.
          *
-         * @param product        groupId.artifactId
-         * @param version        Version of the artifact
-         * @param repoUrl        URL of the repository of the product
-         * @param commitTag      Commit tag of the version of the artifact in the repository
-         * @param sourcesUrl     Link to Maven sources Jar file
-         * @param packagingType  Packaging type of the artifact
-         * @param timestamp      Timestamp of the package
-         * @param projectName    Project name to which artifact belongs
+         * @param product          groupId.artifactId
+         * @param version          Version of the artifact
+         * @param repoUrl          URL of the repository of the product
+         * @param commitTag        Commit tag of the version of the artifact in the repository
+         * @param sourcesUrl       Link to Maven sources Jar file
+         * @param packagingType    Packaging type of the artifact
+         * @param timestamp        Timestamp of the package
+         * @param projectName      Project name to which artifact belongs
          * @param parentCoordinate Coordinate of the parent POM
-         * @param dependencyData Dependency information from POM
-         * @param metadataDao    Metadata Database Access Object
+         * @param dependencyData   Dependency information from POM
+         * @param metadataDao      Metadata Database Access Object
          * @return ID of the package version in the database
          */
         public long saveToDatabase(String product, String version, String repoUrl, String commitTag,
@@ -290,7 +297,7 @@ public class POMAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return this.pluginError;
         }
 

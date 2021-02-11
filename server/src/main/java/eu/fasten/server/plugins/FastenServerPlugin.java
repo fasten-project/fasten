@@ -29,11 +29,4 @@ public interface FastenServerPlugin extends Runnable {
      * Stops the fasten plugin.
      */
     void stop();
-
-    /**
-     * Returns the current thread the fasten plugin is running on.
-     *
-     * @return current plugin thread
-     */
-    Thread thread();
 }
