@@ -47,9 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
-import static org.jooq.impl.DSL.and;
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.trueCondition;
+import static org.jooq.impl.DSL.*;
 
 public class MetadataDao {
     private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
@@ -1019,7 +1017,7 @@ public class MetadataDao {
      */
     public String getPackageDependencies(String packageName, String packageVersion, int offset, int limit) {
 
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1047,7 +1045,7 @@ public class MetadataDao {
                                     int offset,
                                     int limit) {
 
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1114,7 +1112,7 @@ public class MetadataDao {
                                  int offset,
                                  int limit) {
 
-        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
+        if (!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1148,7 +1146,7 @@ public class MetadataDao {
                                      int offset,
                                      int limit) {
 
-        if(!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
+        if (!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1176,21 +1174,20 @@ public class MetadataDao {
         var res = queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
 
 
-
         //// Insert user-friendly formatted method signature
 
         // Parse result json string back into object
         JSONArray json;
         try {
             json = new JSONArray(res);
-        } catch (JSONException err){
+        } catch (JSONException err) {
             logger.error("Error JSON Parser: " + err.toString());
             return null;
         }
 
         // Go through each callable, parse fasten uri, insert signature.
-        for(Object j: json) {
-            JSONObject jObj = (JSONObject)j;
+        for (Object j : json) {
+            JSONObject jObj = (JSONObject) j;
             var uri = jObj.getString("fasten_uri");
 
             try {
@@ -1206,7 +1203,7 @@ public class MetadataDao {
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) {
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1273,7 +1270,7 @@ public class MetadataDao {
                                        String binaryModule,
                                        int offset,
                                        int limit) {
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1301,7 +1298,7 @@ public class MetadataDao {
 
     public String getPackageCallables(String packageName, String packageVersion, int offset, int limit) {
 
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1444,7 +1441,7 @@ public class MetadataDao {
 
     public String getPackageFiles(String packageName, String packageVersion, int offset, int limit) {
 
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1481,7 +1478,7 @@ public class MetadataDao {
                                   int offset,
                                   int limit) {
 
-        if(!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) return null;
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1857,4 +1854,27 @@ public class MetadataDao {
         return ("dummy updateCg query OK!");
     }
 
+    public Map<String, Long> getNamespaceMap(Collection<String> namespaces) {
+        var result = context
+                .selectFrom(Namespaces.NAMESPACES)
+                .where(Namespaces.NAMESPACES.NAMESPACE.in(namespaces))
+                .fetch();
+        var map = new HashMap<String, Long>(result.size());
+        result.forEach(r -> map.put(r.getNamespace(), r.getId()));
+        return map;
+    }
+
+    public Map<String, Long> insertNamespaces(Collection<String> namespaces) {
+        var insert = context.insertInto(Namespaces.NAMESPACES, Namespaces.NAMESPACES.NAMESPACE);
+        for (var namespace : namespaces) {
+            insert = insert.values(namespace);
+        }
+        var result = insert.onConflictOnConstraint(Keys.UNIQUE_NAMESPACES).doUpdate()
+                .set(Namespaces.NAMESPACES.NAMESPACE, Namespaces.NAMESPACES.as("excluded").NAMESPACE)
+                .returning(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE)
+                .fetch();
+        var map = new HashMap<String, Long>(result.size());
+        result.forEach(r -> map.put(r.getNamespace(), r.getId()));
+        return map;
+    }
 }

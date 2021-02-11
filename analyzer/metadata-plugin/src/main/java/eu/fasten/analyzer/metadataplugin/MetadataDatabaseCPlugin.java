@@ -76,7 +76,7 @@ public class MetadataDatabaseCPlugin extends Plugin {
             cGraph.getClassHierarchy().get(CScope.externalStaticFunction).values().forEach(v -> v.values().forEach(m -> namespaces.add(m.getFile() + moduleNamespaceAddition)));
             cGraph.getClassHierarchy().get(CScope.externalUndefined).values().forEach(v -> v.values().forEach(m -> namespaces.add(m.getFile() + moduleNamespaceAddition)));
             cGraph.getClassHierarchy().get(CScope.internalStaticFunction).values().forEach(v -> v.values().forEach(m -> namespaces.add(m.getFile() + moduleNamespaceAddition)));
-            var namespaceMap = metadataDao.getNamespaceMap(new ArrayList<>(namespaces));
+            var namespaceMap = metadataDao.getNamespaceMap(namespaces);
             namespaceMap.keySet().forEach(namespaces::remove);
             namespaceMap.putAll(metadataDao.insertNamespaces(namespaces));
             return namespaceMap;
