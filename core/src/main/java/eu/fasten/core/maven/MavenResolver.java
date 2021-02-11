@@ -251,7 +251,7 @@ public class MavenResolver implements Runnable {
                             "                        <version>VERSION</version>\n" +
                             "                </dependency>\n" +
                             "        </dependencies>\n" +
-                            "</project>\" | sed -e \"s/GROUP/junit/\" | sed -e \"s/ARTIFACT/junit/\" | sed -e \"s/VERSION/4.12/\" > pom.xml " +
+                            "</project>\" | sed -e \"s/GROUP/" + group +"/\" | sed -e \"s/ARTIFACT/" + artifact + "/\" | sed -e \"s/VERSION/" + version + "/\" > pom.xml " +
                             "&& deps=$(mvn dependency:tree -DoutputType=tgf 2>&1| grep -v WARN | grep -Po \"[0-9]+ (([A-Za-z0-9.\\-_])*:){1,6}\"| " +
                             "cut -f2 -d ' '| cut -f1,2,4 -d ':' | sort | uniq | grep -v 'depresolver') && echo $deps | tr ' ' '\\n' && rm pom.xml"};
             var process = new ProcessBuilder(cmd).directory(tempDir).start();

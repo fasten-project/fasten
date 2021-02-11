@@ -123,7 +123,7 @@ public class POMAnalyzerPlugin extends Plugin {
             }
             var repos = MavenUtilities.getRepos();
             if (!artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
-                repos.add(artifactRepository);
+                repos.addFirst(artifactRepository);
             }
             var pomUrl = payload.optString("pomUrl", null);
             final var product = group + Constants.mvnCoordinateSeparator + artifact

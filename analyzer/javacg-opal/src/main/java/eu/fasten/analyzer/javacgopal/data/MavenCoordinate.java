@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
  */
 public class MavenCoordinate {
 
-    private List<String> mavenRepos;
+    private LinkedList<String> mavenRepos;
 
     private final String groupID;
     private final String artifactID;
@@ -53,12 +54,12 @@ public class MavenCoordinate {
 
     private final String packaging;
 
-    public List<String> getMavenRepos() {
+    public LinkedList<String> getMavenRepos() {
         return mavenRepos;
     }
 
     public void setMavenRepos(List<String> mavenRepos) {
-        this.mavenRepos = mavenRepos;
+        this.mavenRepos = new LinkedList<>(mavenRepos);
     }
 
     public String getGroupID() {
@@ -167,7 +168,7 @@ public class MavenCoordinate {
             Optional<File> jar = Optional.empty();
             var repos = mavenCoordinate.getMavenRepos();
             if (artifactRepo != null && !artifactRepo.isEmpty() && !artifactRepo.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
-                repos.add(artifactRepo);
+                repos.addFirst(artifactRepo);
             }
             for (int i = 0; i < repos.size(); i++) {
 

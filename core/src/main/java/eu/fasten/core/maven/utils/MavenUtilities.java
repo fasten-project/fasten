@@ -100,10 +100,10 @@ public class MavenUtilities {
      *
      * @return list of urls of available maven repositories
      */
-    public static List<String> getRepos() {
+    public static LinkedList<String> getRepos() {
         return System.getenv(Constants.mvnRepoEnvVariable) != null
-                ? new ArrayList<>(Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";")))
-                : new ArrayList<>(Collections.singleton(MAVEN_CENTRAL_REPO));
+                ? new LinkedList<>(Arrays.asList(System.getenv(Constants.mvnRepoEnvVariable).split(";")))
+                : new LinkedList<>(Collections.singleton(MAVEN_CENTRAL_REPO));
     }
 
     /**
