@@ -36,6 +36,8 @@ import org.opalj.br.ClassHierarchy;
 import org.opalj.br.Code;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.FieldType;
+import org.opalj.br.LineNumber;
+import org.opalj.br.LineNumberTable;
 import org.opalj.br.Method;
 import org.opalj.br.MethodDescriptor;
 import org.opalj.br.ObjectType;
@@ -359,8 +361,8 @@ class OPALTypeTest {
         Mockito.when(method.instructionsOption()).thenReturn(Option.empty());
 
         node = OPALType.toURIMethods(methods).get(123);
-        Assertions.assertEquals("", node.getMetadata().get("first"));
-        Assertions.assertEquals("", node.getMetadata().get("last"));
+        Assertions.assertEquals(10, node.getMetadata().get("first"));
+        Assertions.assertEquals(30, node.getMetadata().get("last"));
         Assertions.assertEquals(false, node.getMetadata().get("defined"));
         Assertions.assertEquals("public", node.getMetadata().get("access"));
     }
@@ -428,9 +430,13 @@ class OPALTypeTest {
         Mockito.when(classFile.thisType()).thenReturn(type);
 
         var code = Mockito.mock(Code.class);
-        Mockito.when(code.firstLineNumber()).thenReturn(Option.apply(10));
-        Mockito.when(code.lineNumber(20)).thenReturn(Option.apply(30));
-        Mockito.when(code.codeSize()).thenReturn(20);
+        var lineNumberTable = Mockito.mock(LineNumberTable.class);
+        LineNumber[] lineNumber = new LineNumber[2];
+        lineNumber[0] = new LineNumber(0,10);
+        lineNumber[1] = new LineNumber(1,30);
+        var lineNumbers = new RefArray<LineNumber>(lineNumber);
+        Mockito.when(code.lineNumberTable()).thenReturn(Option.apply(lineNumberTable));
+        Mockito.when(code.lineNumberTable().get().lineNumbers()).thenReturn(lineNumbers);
 
         var method = Mockito.mock(Method.class);
         Mockito.when(method.descriptor()).thenReturn(descriptor);
