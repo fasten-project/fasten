@@ -715,57 +715,6 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts a record in the 'edges' table in the database.
-     *
-     * @param sourceId  ID of the source callable (references 'callables.id')
-     * @param targetId  ID of the target callable (references 'callables.id')
-     * @param receivers Array of receivers data (one receiver per call-site)
-     * @param metadata  Metadata of the edge between source and target
-     * @return ID of the source callable (sourceId)
-     */
-    public long insertEdge(long sourceId, long targetId, ReceiverRecord[] receivers, JSONObject metadata) {
-        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString())
-                : JSONB.valueOf("{}");
-        var resultRecord = context.insertInto(Edges.EDGES,
-                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID,
-                Edges.EDGES.RECEIVERS, Edges.EDGES.METADATA)
-                .values(sourceId, targetId, receivers, metadataJsonb)
-                .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
-                .set(Edges.EDGES.RECEIVERS, Edges.EDGES.as("excluded").RECEIVERS)
-                .set(Edges.EDGES.METADATA, JsonbDSL.concat(Edges.EDGES.METADATA,
-                        Edges.EDGES.as("excluded").METADATA))
-                .returning(Edges.EDGES.SOURCE_ID).fetchOne();
-        return resultRecord.getValue(Edges.EDGES.SOURCE_ID);
-    }
-
-    /**
-     * Inserts multiple records in the 'edges' table in the database.
-     *
-     * @param sourceIds     List of IDs of source callables
-     * @param targetIds     List of IDs of target callables
-     * @param receiversList List of arrays of receivers
-     * @param metadata      List of metadata objects
-     * @return List of IDs of source callables (sourceIds)
-     * @throws IllegalArgumentException if lists are not of the same size
-     */
-    public List<Long> insertEdges(List<Long> sourceIds, List<Long> targetIds,
-                                  List<ReceiverRecord[]> receiversList,
-                                  List<JSONObject> metadata) throws IllegalArgumentException {
-        if (sourceIds.size() != targetIds.size() || targetIds.size() != metadata.size()
-                || metadata.size() != receiversList.size()) {
-            throw new IllegalArgumentException("All lists should have equal size");
-        }
-        int length = sourceIds.size();
-        var recordIds = new ArrayList<Long>(length);
-        for (int i = 0; i < length; i++) {
-            long result = insertEdge(sourceIds.get(i), targetIds.get(i),
-                    receiversList.get(i), metadata.get(i));
-            recordIds.add(result);
-        }
-        return recordIds;
-    }
-
-    /**
      * Executes batch insert for 'edges' table.
      *
      * @param edges List of edges records to insert
