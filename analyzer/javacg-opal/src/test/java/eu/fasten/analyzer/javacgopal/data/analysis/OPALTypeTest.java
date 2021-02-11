@@ -22,10 +22,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaScope;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Objects;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -515,4 +522,41 @@ class OPALTypeTest {
         assertEquals(superInterface,
                 OPALType.extractSuperInterfaces(classHierarchy, currentType).get(0));
     }
+
+    @Test
+    void lineNumbersSouldBeAccurate() throws OPALException, IOException {
+
+        var cg = getRCG("linenumbertests/APIConsumerImpl.class");
+
+        assertLineNumber(cg,"/org.wso2.carbon.apimgt.impl/APIConsumerImpl.%3Cinit%3E()%2Fjava" +
+            ".lang%2FVoidType", 193, 195);
+        assertLineNumber(cg, "/org.wso2.carbon.apimgt.impl/APIConsumerImpl.%3Cinit%3E" +
+            "(%2Fjava.lang%2FString,APIMRegistryService)%2Fjava.lang%2FVoidType", 198, 202);
+
+        cg = getRCG("linenumbertests/ProcessIdUtil.class");
+
+        assertLineNumber(cg, "/org.apache.logging.log4j.util/ProcessIdUtil.getProcessId()%2Fjava" +
+            ".lang%2FString", 33, 49);
+
+    }
+
+    private void assertLineNumber(PartialCallGraph cg, final String uri, final int first,
+                                  final int last) {
+        for (final var type : cg.getClassHierarchy().get(JavaScope.internalTypes).values()) {
+            for (final var node : type.getMethods().values()) {
+                if (node.getUri().toString().equals(uri)) {
+                    assertEquals(first, node.getMetadata().get("first"));
+                    assertEquals(last, node.getMetadata().get("last"));
+                }
+            }
+        }
+    }
+
+    private PartialCallGraph getRCG(String s) throws OPALException {
+        return new PartialCallGraph(new CallGraphConstructor(
+            new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource(s)).getFile()), "",
+            "CHA"));
+    }
 }
+
