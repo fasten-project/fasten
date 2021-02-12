@@ -125,7 +125,10 @@ public class DataExtractor {
             logger.error("Could not extract release date", e);
             return null;
         }
-        String lastModified = connection.getHeaderField("Last-Modified");
+        var lastModified = connection.getHeaderField("Last-Modified");
+        if (lastModified == null) {
+            return null;
+        }
         Date releaseDate;
         try {
             releaseDate = new SimpleDateFormat("E, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH).parse(lastModified);
