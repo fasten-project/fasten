@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Modules extends TableImpl<ModulesRecord> {
 
-    private static final long serialVersionUID = -1972690541;
+    private static final long serialVersionUID = 398930114;
 
     /**
      * The reference instance of <code>public.modules</code>
@@ -140,15 +140,6 @@ public class Modules extends TableImpl<ModulesRecord> {
     @Override
     public List<UniqueKey<ModulesRecord>> getKeys() {
         return Arrays.<UniqueKey<ModulesRecord>>asList(Keys.MODULES_PKEY, Keys.UNIQUE_VERSION_NAMESPACE);
-    }
-
-    @Override
-    public List<ForeignKey<ModulesRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<ModulesRecord, ?>>asList(Keys.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY);
-    }
-
-    public PackageVersions packageVersions() {
-        return new PackageVersions(this, Keys.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY);
     }
 
     @Override

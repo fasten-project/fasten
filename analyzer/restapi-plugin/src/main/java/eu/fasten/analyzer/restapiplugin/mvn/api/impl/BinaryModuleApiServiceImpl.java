@@ -19,7 +19,9 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.api.BinaryModuleApiService;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -31,11 +33,16 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
     public ResponseEntity<String> getPackageBinaryModules(String package_name,
                                                           String package_version,
                                                           int offset,
-                                                          int limit) {
-        String result = KnowledgeBaseConnector.kbDao.getPackageBinaryModules(
-                package_name, package_version, offset, limit);
-        if (result == null) {
-            return new ResponseEntity<>("Package not found", HttpStatus.NOT_FOUND);
+                                                          int limit,
+                                                          String artifactRepo,
+                                                          Long date) {
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getPackageBinaryModules(
+                    package_name, package_version, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -44,9 +51,17 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
     @Override
     public ResponseEntity<String> getBinaryModuleMetadata(String package_name,
                                                           String package_version,
-                                                          String binary_module) {
-        String result = KnowledgeBaseConnector.kbDao.getBinaryModuleMetadata(
-                package_name, package_version, binary_module);
+                                                          String binary_module,
+                                                          String artifactRepo,
+                                                          Long date) {
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getBinaryModuleMetadata(
+                    package_name, package_version, binary_module);
+        } catch (PackageVersionNotFoundException e) {
+            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
         if (result == null) {
             return new ResponseEntity<>("Binary module not found", HttpStatus.NOT_FOUND);
         }
@@ -59,11 +74,16 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
                                                        String package_version,
                                                        String binary_module,
                                                        int offset,
-                                                       int limit) {
-        String result = KnowledgeBaseConnector.kbDao.getBinaryModuleFiles(
-                package_name, package_version, binary_module, offset, limit);
-        if (result == null) {
-            return new ResponseEntity<>("Package not found", HttpStatus.NOT_FOUND);
+                                                       int limit,
+                                                       String artifactRepo,
+                                                       Long date) {
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getBinaryModuleFiles(
+                    package_name, package_version, binary_module, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);

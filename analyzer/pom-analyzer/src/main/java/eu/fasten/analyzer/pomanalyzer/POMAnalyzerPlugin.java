@@ -21,6 +21,7 @@ package eu.fasten.analyzer.pomanalyzer;
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -67,6 +68,7 @@ public class POMAnalyzerPlugin extends Plugin {
         private String parentCoordinate = null;
         private boolean restartTransaction = false;
         private boolean processedRecord = false;
+        private String artifactRepository = null;
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -97,6 +99,7 @@ public class POMAnalyzerPlugin extends Plugin {
             packagingType = null;
             projectName = null;
             parentCoordinate = null;
+            artifactRepository = null;
             this.processedRecord = false;
             this.restartTransaction = false;
             logger.info("Consumed: " + record);
@@ -112,15 +115,20 @@ public class POMAnalyzerPlugin extends Plugin {
                 group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
                 version = payload.getString("version").replaceAll("[\\n\\t ]", "");
                 date = payload.optLong("date", -1L);
+                artifactRepository = payload.optString("artifactRepository", MavenUtilities.MAVEN_CENTRAL_REPO);
             } catch (JSONException e) {
                 logger.error("Malformed input: " + payload.toString(), e);
                 this.pluginError = e;
                 return;
             }
+            var repos = MavenUtilities.getRepos();
+            if (!artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
+                repos.addFirst(artifactRepository);
+            }
             var pomUrl = payload.optString("pomUrl", null);
             final var product = group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version;
-            var dataExtractor = new DataExtractor();
+            var dataExtractor = new DataExtractor(repos);
             try {
                 if (pomUrl != null) {
                     var mavenCoordinate = dataExtractor.getMavenCoordinate(pomUrl);
@@ -129,6 +137,12 @@ public class POMAnalyzerPlugin extends Plugin {
                         group = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[0];
                         artifact = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
                         version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
+                    }
+                }
+                if (date == -1) {
+                    var releaseDate = dataExtractor.extractReleaseDate(group, artifact, version, artifactRepository);
+                    if (releaseDate != null) {
+                        date = releaseDate;
                     }
                 }
                 repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
@@ -148,6 +162,7 @@ public class POMAnalyzerPlugin extends Plugin {
             } catch (RuntimeException e) {
                 logger.error("Error extracting data for " + product, e);
                 this.pluginError = e;
+                MavenUtilities.getRepos().remove(artifactRepository);
                 return;
             }
             int transactionRestartCount = 0;
@@ -160,7 +175,7 @@ public class POMAnalyzerPlugin extends Plugin {
                         try {
                             id = saveToDatabase(group + Constants.mvnCoordinateSeparator + artifact,
                                     version, repoUrl, commitTag, sourcesUrl, packagingType, date,
-                                    projectName, parentCoordinate, dependencyData, metadataDao);
+                                    projectName, parentCoordinate, dependencyData, artifactRepository, metadataDao);
                         } catch (RuntimeException e) {
                             logger.error("Error saving data to the database: '" + product + "'", e);
                             processedRecord = false;
@@ -185,6 +200,7 @@ public class POMAnalyzerPlugin extends Plugin {
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
                     && transactionRestartCount < Constants.transactionRestartLimit);
+            MavenUtilities.getRepos().remove(artifactRepository);
         }
 
         /**
@@ -206,7 +222,7 @@ public class POMAnalyzerPlugin extends Plugin {
         public long saveToDatabase(String product, String version, String repoUrl, String commitTag,
                                    String sourcesUrl, String packagingType, long timestamp,
                                    String projectName, String parentCoordinate,
-                                   DependencyData dependencyData, MetadataDao metadataDao) {
+                                   DependencyData dependencyData, String artifactRepository, MetadataDao metadataDao) {
             final var packageId = metadataDao.insertPackage(product, Constants.mvnForge,
                     projectName, repoUrl, null);
             var packageVersionMetadata = new JSONObject();
@@ -219,8 +235,9 @@ public class POMAnalyzerPlugin extends Plugin {
                     ? packagingType : "");
             packageVersionMetadata.put("parentCoordinate", (parentCoordinate != null)
                     ? parentCoordinate : "");
+            var artifactRepoId = artifactRepository != null ? metadataDao.insertArtifactRepository(artifactRepository) : null;
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    Constants.opalGenerator, version, null, this.getProperTimestamp(timestamp),
+                    Constants.opalGenerator, version, artifactRepoId, null, this.getProperTimestamp(timestamp),
                     packageVersionMetadata);
             for (var dep : dependencyData.dependencies) {
                 var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
@@ -258,6 +275,7 @@ public class POMAnalyzerPlugin extends Plugin {
             json.put("parentCoordinate", (parentCoordinate != null) ? parentCoordinate : "");
             json.put("dependencyData", dependencyData.toJSON());
             json.put("forge", Constants.mvnForge);
+            json.put("artifactRepository", artifactRepository);
             return Optional.of(json.toString());
         }
 

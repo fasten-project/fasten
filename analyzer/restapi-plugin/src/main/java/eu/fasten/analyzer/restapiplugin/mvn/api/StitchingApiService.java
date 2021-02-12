@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import org.json.JSONArray;
 import org.springframework.http.ResponseEntity;
 import java.util.List;
 
@@ -31,5 +32,7 @@ public interface StitchingApiService {
 
     ResponseEntity<String> getDirectedGraph(long packageVersionId, boolean needStitching, long timestamp);
 
+    ResponseEntity<String> batchIngestArtifacts(JSONArray jsonArtifacts);
+    
     ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise);
 }

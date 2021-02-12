@@ -43,15 +43,19 @@ public class ModuleApi {
     ResponseEntity<String> getPackageModules(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
                                              @RequestParam(required = false, defaultValue = "0") int offset,
-                                             @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getPackageModules(package_name, package_version, offset, limit);
+                                             @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+                                             @RequestParam(required = false) String artifactRepository,
+                                             @RequestParam(required = false) Long releaseDate) {
+        return service.getPackageModules(package_name, package_version, offset, limit, artifactRepository, releaseDate);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getModuleMetadata(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
-                                             @RequestBody String module_namespace) {
-        return service.getModuleMetadata(package_name, package_version, module_namespace);
+                                             @RequestBody String module_namespace,
+                                             @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
+                                             @RequestParam(required = false) Long releaseDate) {
+        return service.getModuleMetadata(package_name, package_version, module_namespace, artifactRepo, releaseDate);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/files", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -59,8 +63,10 @@ public class ModuleApi {
                                           @PathVariable("pkg_ver") String package_version,
                                           @RequestBody String module_namespace,
                                           @RequestParam(required = false, defaultValue = "0") int offset,
-                                          @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getModuleFiles(package_name, package_version, module_namespace, offset, limit);
+                                          @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+                                          @RequestParam(required = false) String artifactRepository,
+                                          @RequestParam(required = false) Long releaseDate) {
+        return service.getModuleFiles(package_name, package_version, module_namespace, offset, limit, artifactRepository, releaseDate);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/callables", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -68,7 +74,9 @@ public class ModuleApi {
                                               @PathVariable("pkg_ver") String package_version,
                                               @RequestBody String module_namespace,
                                               @RequestParam(required = false, defaultValue = "0") int offset,
-                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getModuleCallables(package_name, package_version, module_namespace, offset, limit);
+                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+                                              @RequestParam(required = false) String artifactRepository,
+                                              @RequestParam(required = false) Long releaseDate) {
+        return service.getModuleCallables(package_name, package_version, module_namespace, offset, limit, artifactRepository, releaseDate);
     }
 }

@@ -222,41 +222,43 @@ public class MavenResolver implements Runnable {
      * @param timestamp Timestamp for filtering dependency versions (-1 in order not to filter)
      * @param dbContext Database connection context (needed only for filtering by timestamp)
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
-     * @throws NoSuchElementException if pom file was not retrieved
      */
     public Set<Revision> resolveFullDependencySetOnline(String group, String artifact, String version,
-                                                          long timestamp, DSLContext dbContext) throws FileNotFoundException {
+                                                          long timestamp, DSLContext dbContext) {
         Set<Revision> dependencySet = new HashSet<>();
-
-        logger.debug("Downloading artifact's POM file");
-
-        var pomOpt = MavenUtilities.downloadPom(group, artifact, version);
-        var pom = pomOpt.orElseGet(() -> {
-            throw new RuntimeException("Could not download pom file");
-        });
-        if (!pom.exists()) {
-            throw new FileNotFoundException("Could not find file: " + pom.getAbsolutePath());
+        File tempDir;
+        try {
+            tempDir = Files.createTempDirectory("fasten-pom").toFile();
+        } catch (IOException e) {
+            logger.error("Unable to create a temp directory", e);
+            return null;
         }
-
-        File outputFile = null;
         try {
             logger.debug("Running 'mvn dependency:list'");
-
-            outputFile = Files.createTempFile("fasten", ".txt").toFile();
-
-            String[] cmd = new String[]{
-                    "mvn",
-                    "dependency:list",
-                    "-f", "\"" + pom.getAbsolutePath() + "\"",
-                    "-DoutputFile=" + outputFile.getAbsolutePath()
-            };
-            var process = new ProcessBuilder(cmd).start();
-            final var timeoutSeconds = 30;
-            var completed = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
+            var cmd = new String[]{
+                    "bash",
+                    "-c",
+                    "echo \"<project>\n" +
+                            "        <modelVersion>4.0.0</modelVersion>\n" +
+                            "        <groupId>eu.fasten-project</groupId>\n" +
+                            "        <artifactId>depresolver</artifactId>\n" +
+                            "        <version>1</version>\n" +
+                            "\n" +
+                            "        <dependencies>\n" +
+                            "                <dependency>\n" +
+                            "                        <groupId>GROUP</groupId>\n" +
+                            "                        <artifactId>ARTIFACT</artifactId>\n" +
+                            "                        <version>VERSION</version>\n" +
+                            "                </dependency>\n" +
+                            "        </dependencies>\n" +
+                            "</project>\" | sed -e \"s/GROUP/" + group +"/\" | sed -e \"s/ARTIFACT/" + artifact + "/\" | sed -e \"s/VERSION/" + version + "/\" > pom.xml " +
+                            "&& deps=$(mvn dependency:tree -DoutputType=tgf 2>&1| grep -v WARN | grep -Po \"[0-9]+ (([A-Za-z0-9.\\-_])*:){1,6}\"| " +
+                            "cut -f2 -d ' '| cut -f1,2,4 -d ':' | sort | uniq | grep -v 'depresolver') && echo $deps | tr ' ' '\\n' && rm pom.xml"};
+            var process = new ProcessBuilder(cmd).directory(tempDir).start();
+            var completed = process.waitFor(1, TimeUnit.MINUTES);
             if (!completed) {
-                MavenUtilities.forceDeleteFile(pom);
-                throw new RuntimeException("Maven resolution process timed out after "
-                        + timeoutSeconds + " seconds");
+                MavenUtilities.forceDeleteFile(tempDir);
+                throw new RuntimeException("Maven resolution process timed out after 60 seconds");
             }
             var exitValue = process.exitValue();
 
@@ -272,37 +274,13 @@ public class MavenResolver implements Runnable {
                 while ((bufferStr = stdError.readLine()) != null) {
                     logger.error("ERROR: " + bufferStr);
                 }
-                MavenUtilities.forceDeleteFile(pom);
+                MavenUtilities.forceDeleteFile(tempDir);
                 throw new RuntimeException("Maven resolution failed with exit code " + exitValue);
             }
-
-            logger.debug("Parsing Maven resolution output");
-            cmd = new String[]{
-                    "bash",
-                    "-c",
-                    "cat \"" + outputFile.getAbsolutePath() + "\" " +
-                            "| tail -n +3 | grep . | sed -e \"s/^[[:space:]]*//\" | sort | uniq " +
-                            "| grep -E \":compile$|:provided$|:runtime$|:test$|:system$|:import$\""};
-            process = new ProcessBuilder(cmd).start();
-            exitValue = process.waitFor();
-            stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            if (exitValue != 0) {
-                while ((bufferStr = stdInput.readLine()) != null) {
-                    logger.debug(bufferStr);
-                }
-                while ((bufferStr = stdError.readLine()) != null) {
-                    logger.error("ERROR: " + bufferStr);
-                }
-                MavenUtilities.forceDeleteFile(pom);
-                throw new RuntimeException("Maven resolution output parsing failed with exit code " + exitValue);
-            }
-            logger.debug("Maven resolution output parsing finished with exit code " + exitValue);
-
             while ((bufferStr = stdInput.readLine()) != null) {
                 var coordinates = bufferStr.split(Constants.mvnCoordinateSeparator);
                 try {
-                    dependencySet.add(new Revision(coordinates[0], coordinates[1], coordinates[3], new Timestamp(-1)));
+                    dependencySet.add(new Revision(coordinates[0], coordinates[1], coordinates[2], new Timestamp(-1)));
                 } catch (ArrayIndexOutOfBoundsException e) {
                     logger.error("Error parsing {} to a Maven coordinate", bufferStr, e);
                 }
@@ -317,9 +295,9 @@ public class MavenResolver implements Runnable {
             var coordinate = artifact + Constants.mvnCoordinateSeparator + group + Constants.mvnCoordinateSeparator + version;
             logger.error("Error resolving Maven artifact: " + coordinate, e);
         } finally {
-            MavenUtilities.forceDeleteFile(pom);
-            MavenUtilities.forceDeleteFile(outputFile);
+            MavenUtilities.forceDeleteFile(tempDir);
         }
+        dependencySet.remove(new Revision(group, artifact, version, new Timestamp(timestamp)));
         return dependencySet;
     }
 
@@ -331,7 +309,7 @@ public class MavenResolver implements Runnable {
      * @param version  Version of the artifact to resolve
      * @return A dependency set (including all transitive dependencies) of given Maven coordinate
      */
-    public Set<Revision> resolveFullDependencySetOnline(String group, String artifact, String version) throws FileNotFoundException {
+    public Set<Revision> resolveFullDependencySetOnline(String group, String artifact, String version) {
         return resolveFullDependencySetOnline(artifact, group, version, -1, null);
     }
 }

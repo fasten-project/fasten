@@ -44,29 +44,29 @@ public class ModuleApiServiceImplTest {
 
     @Test
     void getPackageModulesTest() {
-        var packageName = "pkg";
-        var version = "pkg ver";
+        var packageName = "group:artifact";
+        var version = "version";
         var response = "modules";
         Mockito.when(kbDao.getPackageModules(packageName, version, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getPackageModules(packageName, version, offset, limit);
+        var result = service.getPackageModules(packageName, version, offset, limit, null, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getPackageModules(packageName, version, offset, limit);
     }
 
     @Test
     void getModuleMetadataTest() {
-        var packageName = "pkg";
-        var version = "pkg ver";
+        var packageName = "group:artifact";
+        var version = "version";
         var module = "module";
         var response = "module metadata";
         Mockito.when(kbDao.getModuleMetadata(packageName, version, module)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getModuleMetadata(packageName, version, module);
+        var result = service.getModuleMetadata(packageName, version, module, null, null);
         assertEquals(expected, result);
 
         Mockito.when(kbDao.getModuleMetadata(packageName, version, module)).thenReturn(null);
-        result = service.getModuleMetadata(packageName, version, module);
+        result = service.getModuleMetadata(packageName, version, module, null, null);
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(2)).getModuleMetadata(packageName, version, module);
@@ -74,26 +74,26 @@ public class ModuleApiServiceImplTest {
 
     @Test
     void getModuleFilesTest() {
-        var packageName = "pkg";
-        var version = "pkg ver";
+        var packageName = "group:artifact";
+        var version = "version";
         var module = "module";
         var response = "module files";
         Mockito.when(kbDao.getModuleFiles(packageName, version, module, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getModuleFiles(packageName, version, module, offset, limit);
+        var result = service.getModuleFiles(packageName, version, module, offset, limit, null, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getModuleFiles(packageName, version, module, offset, limit);
     }
 
     @Test
     void getModuleCallablesTest() {
-        var packageName = "pkg";
-        var version = "pkg ver";
+        var packageName = "group:artifact";
+        var version = "version";
         var module = "module";
         var response = "module callables";
         Mockito.when(kbDao.getModuleCallables(packageName, version, module, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = service.getModuleCallables(packageName, version, module, offset, limit);
+        var result = service.getModuleCallables(packageName, version, module, offset, limit, null, null);
         assertEquals(expected, result);
         Mockito.verify(kbDao).getModuleCallables(packageName, version, module, offset, limit);
     }

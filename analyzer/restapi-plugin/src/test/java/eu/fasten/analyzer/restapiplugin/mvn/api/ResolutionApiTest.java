@@ -43,10 +43,10 @@ public class ResolutionApiTest {
         var transitive = true;
         var timestamp = -1L;
         var response = new ResponseEntity<>("dependencies", HttpStatus.OK);
-        Mockito.when(service.resolveDependencies(packageName, version, transitive, timestamp)).thenReturn(response);
-        var result = api.resolveDependencies(packageName, version, transitive, timestamp);
+        Mockito.when(service.resolveDependencies(packageName, version, transitive, timestamp, true)).thenReturn(response);
+        var result = api.resolveDependencies(packageName, version, transitive, timestamp, true);
         assertEquals(response, result);
-        Mockito.verify(service).resolveDependencies(packageName, version, transitive, timestamp);
+        Mockito.verify(service).resolveDependencies(packageName, version, transitive, timestamp, true);
     }
 
     @Test
