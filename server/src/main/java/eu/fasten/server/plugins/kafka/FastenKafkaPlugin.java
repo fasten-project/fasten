@@ -198,7 +198,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 .collect(Collectors.joining(", "));
         String allPartitions = messagesProcessed.stream().map((x) -> x.right).map(Object::toString)
                 .collect(Collectors.joining(", "));
-        logger.info("Committed offsets [" + allOffsets + "] of partitions [" + allPartitions + "].");
+
+        if (!records.isEmpty()) {
+            logger.info("Committed offsets [" + allOffsets + "] of partitions [" + allPartitions + "].");
+        }
 
 
         // If local storage is enabled, clear the correct partitions after offsets are committed.
