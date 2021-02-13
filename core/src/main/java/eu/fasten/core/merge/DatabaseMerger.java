@@ -214,6 +214,12 @@ public class DatabaseMerger {
     public DirectedGraph mergeWithCHA(final long artifactId) {
         final long totalTime = System.currentTimeMillis();
         final var callGraphData = fetchCallGraphData(artifactId, rocksDao);
+
+        if (callGraphData == null) {
+            logger.error("Empty call graph data");
+            return null;
+        }
+
         final var typeMap = createTypeMap(callGraphData, dbContext);
         final var arcs = getArcs(callGraphData, dbContext);
 
@@ -408,19 +414,15 @@ public class DatabaseMerger {
      */
     private Map<Long, Node> createTypeMap(final DirectedGraph callGraphData, final DSLContext dbContext) {
         var typeMap = new HashMap<Long, Node>();
-        try {
-            var nodesIds = callGraphData.nodes();
-            var callables = dbContext
-                    .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
-                    .from(Callables.CALLABLES)
-                    .where(Callables.CALLABLES.ID.in(nodesIds))
-                    .fetch();
+        var nodesIds = callGraphData.nodes();
+        var callables = dbContext
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.in(nodesIds))
+                .fetch();
 
-            callables.forEach(callable -> typeMap.put(callable.value1(),
-                    new Node(FastenJavaURI.create(callable.value2()).decanonicalize())));
-        } catch (NullPointerException e) {
-            logger.error("Empty call graph data");
-        }
+        callables.forEach(callable -> typeMap.put(callable.value1(),
+                new Node(FastenJavaURI.create(callable.value2()).decanonicalize())));
         return typeMap;
     }
 
