@@ -36,7 +36,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -220,7 +222,7 @@ public class DatabaseMerger {
         cloneNodesAndArcs(result, callGraphData);
 
         final long startTime = System.currentTimeMillis();
-        for (final var arc : arcs) {
+        arcs.forEach(arc -> {
             if (callGraphData.isExternal(arc.target)) {
                 if (!resolve(result, callGraphData, arc, typeMap.get(arc.target), false)) {
                     addEdge(result, callGraphData, arc.source, arc.target, false);
@@ -230,7 +232,7 @@ public class DatabaseMerger {
                     addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
                 }
             }
-        }
+        });
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
         logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
@@ -334,8 +336,7 @@ public class DatabaseMerger {
      * @param dbContext     DSL context
      * @return list of external and constructor calls
      */
-    private List<Arc> getArcs(final DirectedGraph callGraphData, final DSLContext dbContext) {
-        var arcsList = new ArrayList<Arc>();
+    private Stream<Arc> getArcs(final DirectedGraph callGraphData, final DSLContext dbContext) {
         Condition arcsCondition = null;
         for (var source : callGraphData.nodes()) {
             for (var target : callGraphData.successors(source)) {
@@ -352,12 +353,12 @@ public class DatabaseMerger {
                 }
             }
         }
-        dbContext.select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS)
+        return dbContext.select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS)
                 .from(Edges.EDGES)
                 .where(arcsCondition)
-                .fetch()
-                .forEach(arc -> arcsList.add(new Arc(arc.value1(), arc.value2(), arc.value3())));
-        return arcsList;
+                .fetchSize(10000)
+                .fetchStream()
+                .map(arc -> new Arc(arc.value1(), arc.value2(), arc.value3()));
     }
 
     /**
@@ -387,14 +388,14 @@ public class DatabaseMerger {
         var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
         var version = artifact.split(":")[2];
 
-        return dbContext
+        return Objects.requireNonNull(dbContext
                 .select(PackageVersions.PACKAGE_VERSIONS.ID)
                 .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
                 .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
                 .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
                 .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
                 .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                .fetchOne()
+                .fetchOne())
                 .component1();
     }
 
@@ -407,15 +408,19 @@ public class DatabaseMerger {
      */
     private Map<Long, Node> createTypeMap(final DirectedGraph callGraphData, final DSLContext dbContext) {
         var typeMap = new HashMap<Long, Node>();
-        var nodesIds = callGraphData.nodes();
-        var callables = dbContext
-                .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.ID.in(nodesIds))
-                .fetch();
+        try {
+            var nodesIds = callGraphData.nodes();
+            var callables = dbContext
+                    .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
+                    .from(Callables.CALLABLES)
+                    .where(Callables.CALLABLES.ID.in(nodesIds))
+                    .fetch();
 
-        callables.forEach(callable -> typeMap.put(callable.value1(),
-                new Node(FastenJavaURI.create(callable.value2()).decanonicalize())));
+            callables.forEach(callable -> typeMap.put(callable.value1(),
+                    new Node(FastenJavaURI.create(callable.value2()).decanonicalize())));
+        } catch (NullPointerException e) {
+            logger.error("Empty call graph data");
+        }
         return typeMap;
     }
 
