@@ -168,7 +168,10 @@ public class DatabaseMerger {
     public DirectedGraph mergeAllDeps() {
         List<DirectedGraph> depGraphs = new ArrayList<>();
         for (final var dep : this.dependencySet) {
-            depGraphs.add(mergeWithCHA(dep));
+            var merged = mergeWithCHA(dep);
+            if (merged != null) {
+                depGraphs.add(merged);
+            }
         }
         return augmentGraphs(depGraphs);
     }
