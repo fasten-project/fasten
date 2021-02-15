@@ -85,7 +85,7 @@ import it.unimi.dsi.lang.ObjectParser;
 public class SearchEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngine.class);
 
-	private static final int DEFAULT_LIMIT = 10; 
+	private static final int DEFAULT_LIMIT = 10;
 
 	/** Maximum number of stitched graphs in the cache. */
 	private static final int STITCHED_MAX_SIZE = 1024;
@@ -158,7 +158,7 @@ public class SearchEngine {
 	/** The filters whose conjunction will be applied by default when executing a query, unless otherwise
 	 *  specified (compare, e.g., {@link #fromCallable(long)} and {@link #fromCallable(long, LongPredicate)}). */
 	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
-	
+
 	/** LRU cache of stitched graphs. */
 	private final Object2ObjectLinkedOpenHashMap<String, DirectedGraph> stitchedGraphCache = new Object2ObjectLinkedOpenHashMap<>();
 
@@ -329,21 +329,26 @@ public class SearchEngine {
 		}
 	}
 
-	/** Use the given {@link DatabaseMerger} to get the stitched graph for the given artifact.
-	 * 
+	/**
+	 * Use the given {@link DatabaseMerger} to get the stitched graph for the given artifact.
+	 *
 	 * @param dm the {@link DatabaseMerger} to be used.
 	 * @param groupId the groupId of the artifact to be produced.
 	 * @param artifactId the artifactId of the artifact to be produced.
 	 * @param version the version of the artifact to be produced.
-	 * @return the stitched graph.
+	 * @return the stitched graph, or {@code null} if {@link DatabaseMerger#mergeWithCHA(long)} returns
+	 *         {@code null} (usually because the provided artifact is not present in the graph
+	 *         database).
 	 */
 	private DirectedGraph getStitchedGraph(final DatabaseMerger dm, final String groupId, final String artifactId, final String version) {
-		String identifier = groupId + ":" + artifactId + ":" + version;
+		final String identifier = groupId + ":" + artifactId + ":" + version;
 		DirectedGraph result = stitchedGraphCache.getAndMoveToFirst(identifier);
 		if (result == null) {
 			result = dm.mergeWithCHA(identifier);
-			stitchedGraphCache.putAndMoveToFirst(identifier, result);
-			if (stitchedGraphCache.size() > STITCHED_MAX_SIZE) stitchedGraphCache.removeLast();
+			if (result != null) {
+				stitchedGraphCache.putAndMoveToFirst(identifier, result);
+				if (stitchedGraphCache.size() > STITCHED_MAX_SIZE) stitchedGraphCache.removeLast();
+			}
 		}
 		return result;
 	}
@@ -479,6 +484,8 @@ public class SearchEngine {
 		final DatabaseMerger dm = new DatabaseMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, rocksDao);
 		final var stitchedGraph = getStitchedGraph(dm, groupId, artifactId, version);
 		stitchingTime += System.nanoTime();
+
+		if (stitchedGraph == null) throw new NullPointerException("mergeWithCHA() returned null");
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
