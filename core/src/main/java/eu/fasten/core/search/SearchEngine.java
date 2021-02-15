@@ -593,7 +593,7 @@ public class SearchEngine {
 		for (final var iterator = dependentIds.iterator(); iterator.hasNext();) {
 			final long dependentId = iterator.nextLong();
 
-			data = Util.getGroupArtifactVersion(revId, context);
+			data = Util.getGroupArtifactVersion(dependentId, context);
 			groupId = data[0];
 			artifactId = data[1];
 			version = data[2];
