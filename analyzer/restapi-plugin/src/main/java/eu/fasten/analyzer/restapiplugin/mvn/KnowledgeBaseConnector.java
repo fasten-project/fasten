@@ -101,7 +101,7 @@ public class KnowledgeBaseConnector {
     public void connectToKnowledgeBase() {
         logger.info("Establishing connection to the KnowledgeBase at " + kbUrl + ", user " + kbUser + "...");
         try {
-            dbContext = PostgresConnector.getDSLContext(kbUrl, kbUser);
+            dbContext = PostgresConnector.getDSLContext(kbUrl, kbUser, true);
             kbDao = new MetadataDao(dbContext);
         } catch (SQLException e) {
             logger.error("Couldn't connect to the KnowledgeBase", e);
@@ -128,7 +128,7 @@ public class KnowledgeBaseConnector {
         logger.info("Constructing dependency graph from " + depGraphPath);
         try {
             graphResolver = new GraphMavenResolver();
-            graphResolver.buildDependencyGraph(PostgresConnector.getDSLContext(kbUrl, kbUser), depGraphPath);
+            graphResolver.buildDependencyGraph(PostgresConnector.getDSLContext(kbUrl, kbUser, true), depGraphPath);
         } catch (Exception e) {
             logger.error("Couldn't construct dependency graph", e);
             System.exit(1);

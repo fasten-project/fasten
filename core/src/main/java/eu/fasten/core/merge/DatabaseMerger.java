@@ -365,7 +365,6 @@ public class DatabaseMerger {
         return dbContext.select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS)
                 .from(Edges.EDGES)
                 .where(arcsCondition)
-                .fetchSize(10000)
                 .fetchStream()
                 .map(arc -> new Arc(arc.value1(), arc.value2(), arc.value3()));
     }
