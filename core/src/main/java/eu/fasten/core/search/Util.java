@@ -22,6 +22,7 @@ import java.sql.SQLException;
 
 import org.jooq.DSLContext;
 import org.jooq.Record1;
+import org.jooq.Record2;
 import org.jooq.Record5;
 import org.jooq.conf.Settings;
 
@@ -74,6 +75,7 @@ public class Util {
 		return result.next() ? result.getLong(1) : -1;
 	}
 
+
 	/**
 	 * Returns the {@link FastenURI} of a given {@linkplain Callables#CALLABLES GID}.
 	 *
@@ -103,6 +105,7 @@ public class Util {
 			: FastenURI.create(singleRow.component1(), singleRow.component2(), singleRow.component3(), singleRow.component4());
 	}
 
+
 	/**
 	 * Given a FASTEN URI pointing at a revision and a database connection, returns the associated id in
 	 * the database.
@@ -126,6 +129,7 @@ public class Util {
 		return singleRow == null ? -1 : singleRow.component1().longValue();
 	}
 
+
 	/**
 	 * Returns the database id of the revision of a given {@linkplain Callables#CALLABLES GID}.
 	 *
@@ -140,4 +144,21 @@ public class Util {
 		return singleRow == null ? -1 : singleRow.component1().longValue();
 	}
 
+
+	/**
+	 * Returns the Maven group identifier, the artifact identifier, and the version of the revision with
+	 * given database identifier.
+	 *
+	 * @param revId the database identifier
+	 * @param context a database connection.
+	 * @return a String array of three elements containing the Maven group identifier, the artifact
+	 *         identifier, and the version of the revision with database identifier {@code revId}, or
+	 *         {@code null} if no such revision appears in the database.
+	 */
+	public static String[] getGroupArtifactVersion(final long revId, final DSLContext context) {
+		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(revId))).fetchOne();
+		if (record == null) return null;
+		final String[] a = record.component1().split(":");
+		return new String[] { a[0], a[1], record.component2() };
+	}
 }

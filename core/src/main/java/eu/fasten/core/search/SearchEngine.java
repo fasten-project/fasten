@@ -56,13 +56,13 @@ import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.HashCommon;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -160,7 +160,7 @@ public class SearchEngine {
 	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
 
 	/** LRU cache of stitched graphs. */
-	private final Object2ObjectLinkedOpenHashMap<String, DirectedGraph> stitchedGraphCache = new Object2ObjectLinkedOpenHashMap<>();
+	private final Long2ObjectLinkedOpenHashMap<DirectedGraph> stitchedGraphCache = new Long2ObjectLinkedOpenHashMap<>();
 
 	/** Time spent during resolution (dependency and dependents). */
 	private long resolveTime;
@@ -330,23 +330,20 @@ public class SearchEngine {
 	}
 
 	/**
-	 * Use the given {@link DatabaseMerger} to get the stitched graph for the given artifact.
+	 * Use the given {@link DatabaseMerger} to get the stitched graph for the given revision.
 	 *
 	 * @param dm the {@link DatabaseMerger} to be used.
-	 * @param groupId the groupId of the artifact to be produced.
-	 * @param artifactId the artifactId of the artifact to be produced.
-	 * @param version the version of the artifact to be produced.
-	 * @return the stitched graph, or {@code null} if {@link DatabaseMerger#mergeWithCHA(long)} returns
-	 *         {@code null} (usually because the provided artifact is not present in the graph
-	 *         database).
+	 * @param id the database identifier of a revision.
+	 * @return the stitched graph for the revision with database identifier {@code id}, or {@code null}
+	 *         if {@link DatabaseMerger#mergeWithCHA(long)} returns {@code null} (usually because the
+	 *         provided artifact is not present in the graph database).
 	 */
-	private DirectedGraph getStitchedGraph(final DatabaseMerger dm, final String groupId, final String artifactId, final String version) {
-		final String identifier = groupId + ":" + artifactId + ":" + version;
-		DirectedGraph result = stitchedGraphCache.getAndMoveToFirst(identifier);
+	private DirectedGraph getStitchedGraph(final DatabaseMerger dm, final long id) {
+		DirectedGraph result = stitchedGraphCache.getAndMoveToFirst(id);
 		if (result == null) {
-			result = dm.mergeWithCHA(identifier);
+			result = dm.mergeWithCHA(id);
 			if (result != null) {
-				stitchedGraphCache.putAndMoveToFirst(identifier, result);
+				stitchedGraphCache.putAndMoveToFirst(id, result);
 				if (stitchedGraphCache.size() > STITCHED_MAX_SIZE) stitchedGraphCache.removeLast();
 			}
 		}
@@ -469,7 +466,7 @@ public class SearchEngine {
 
 		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
 
-		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(rev)).fetchOne();
+		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
 		final String[] a = record.component1().split(":");
 		final String groupId = a[0];
 		final String artifactId = a[1];
@@ -482,7 +479,7 @@ public class SearchEngine {
 
 		stitchingTime -= System.nanoTime();
 		final DatabaseMerger dm = new DatabaseMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, rocksDao);
-		final var stitchedGraph = getStitchedGraph(dm, groupId, artifactId, version);
+		final var stitchedGraph = getStitchedGraph(dm, rev);
 		stitchingTime += System.nanoTime();
 
 		if (stitchedGraph == null) throw new NullPointerException("mergeWithCHA() returned null");
@@ -555,23 +552,22 @@ public class SearchEngine {
 	 * Computes the callables satisfying the given predicate and coreachable from the provided seed, in
 	 * the stitched graph associated with the provided revision, and returns them in a ranked list.
 	 *
-	 * @param rev the database id of a revision.
+	 * @param revId the database id of a revision.
 	 * @param seed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
 	 *            entire set of GIDs of the specified revision will be used as a seed.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> to(final long rev, LongCollection seed, final LongPredicate filter) throws RocksDBException {
+	public List<Result> to(final long revId, LongCollection seed, final LongPredicate filter) throws RocksDBException {
 		throwables.clear();
-		final var graph = rocksDao.getGraphData(rev);
+		final var graph = rocksDao.getGraphData(revId);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
 		if (seed == null) seed = graph.nodes();
 
-		Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(rev)).fetchOne();
-		String[] a = record.component1().split(":");
-		String groupId = a[0];
-		String artifactId = a[1];
-		String version = record.component2();
+		String[] data = Util.getGroupArtifactVersion(revId, context);
+		String groupId = data[0];
+		String artifactId = data[1];
+		String version = data[2];
 		resolveTime -= System.nanoTime();
 		final Set<Revision> s = resolver.resolveDependents(groupId, artifactId, version, -1, true);
 		final Set<Revision> dependentSet = new ObjectOpenHashSet<>();
@@ -588,8 +584,7 @@ public class SearchEngine {
 		LOGGER.debug("Found " + dependentSet.size() + " dependents");
 
 		final LongOpenHashSet dependentIds = LongOpenHashSet.toSet(dependentSet.stream().mapToLong(x -> x.id));
-		dependentIds.add(rev);
-		LOGGER.debug("Found " + dependentIds.size() + " dependents");
+		dependentIds.add(revId);
 
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
@@ -598,12 +593,10 @@ public class SearchEngine {
 		for (final var iterator = dependentIds.iterator(); iterator.hasNext();) {
 			final long dependentId = iterator.nextLong();
 
-			record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(dependentId)).fetchOne();
-
-			a = record.component1().split(":");
-			groupId = a[0];
-			artifactId = a[1];
-			version = record.component2();
+			data = Util.getGroupArtifactVersion(revId, context);
+			groupId = data[0];
+			artifactId = data[1];
+			version = data[2];
 
 			LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
 
@@ -616,7 +609,7 @@ public class SearchEngine {
 			LOGGER.debug("Found " + dependencySet.size() + " dependencies");
 
 			final LongOpenHashSet dependencyIds = LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-			if (dependentId != rev && !dependencyIds.contains(rev)) {
+			if (dependentId != revId && !dependencyIds.contains(revId)) {
 				LOGGER.debug("False dependent");
 				continue; // We cannot possibly reach the callable
 			}
@@ -628,7 +621,7 @@ public class SearchEngine {
 
 			DirectedGraph stitchedGraph = null;
 			try {
-				stitchedGraph = getStitchedGraph(dm, groupId, artifactId, version);
+				stitchedGraph = getStitchedGraph(dm, dependentId);
 			} catch(final Throwable t) {
 				throwables.add(t);
 				LOGGER.error("mergeWithCHA threw an exception", t);
@@ -668,6 +661,7 @@ public class SearchEngine {
 
 		final String jdbcURI = jsapResult.getString("jdbcURI");
 		final String database = jsapResult.getString("database");
+		@SuppressWarnings("unused")
 		final String rocksDb = jsapResult.getString("rocksDB");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
