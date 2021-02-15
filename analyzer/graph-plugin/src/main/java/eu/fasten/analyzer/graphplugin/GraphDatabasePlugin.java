@@ -28,9 +28,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.*;
-
-import org.apache.kafka.clients.consumer.ConsumerConfig;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -51,7 +52,7 @@ public class GraphDatabasePlugin extends Plugin {
     public static class GraphDBExtension implements KafkaPlugin, GraphDBConnector {
 
         private String consumerTopic = "fasten.MetadataDBExtension.out";
-        private Throwable pluginError = null;
+        private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(GraphDBExtension.class.getName());
         private static RocksDao rocksDao;
         private String outputPath;
@@ -85,11 +86,11 @@ public class GraphDatabasePlugin extends Plugin {
             this.pluginError = null;
             var json = new JSONObject(record);
             if (json.has("payload")) {
-		if (json.get("payload").toString().isEmpty()) {
-			logger.error("Empty payload");
-			setPluginError(new RuntimeException("Empty payload"));
-			return;
-		}
+                if (json.get("payload").toString().isEmpty()) {
+                    logger.error("Empty payload");
+                    setPluginError(new RuntimeException("Empty payload"));
+                    return;
+                }
                 json = json.getJSONObject("payload");
             }
             final var path = json.optString("dir");
@@ -180,12 +181,12 @@ public class GraphDatabasePlugin extends Plugin {
             rocksDao = null;
         }
 
-        public void setPluginError(Throwable throwable) {
+        public void setPluginError(Exception throwable) {
             this.pluginError = throwable;
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return this.pluginError;
         }
 

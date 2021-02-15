@@ -111,7 +111,7 @@ public class MetadataDatabasePythonPluginTest {
         Mockito.when(metadataDao.insertPackage(json.getString("product"), Constants.pypiForge)).thenReturn(packageId);
         long packageVersionId = 42;
         Mockito.when(metadataDao.insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),
-                Mockito.eq(json.getString("version")), Mockito.eq(null), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class))).thenReturn(packageVersionId);
+                Mockito.eq(json.getString("version")), Mockito.eq(null), Mockito.eq(null), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class))).thenReturn(packageVersionId);
         long fileId = 4;
         Mockito.when(metadataDao.insertFile(packageVersionId, "module/name.py")).thenReturn(fileId);
         Mockito.when(metadataDao.insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt())).thenReturn(List.of(64L, 65L, 66L));
@@ -123,7 +123,7 @@ public class MetadataDatabasePythonPluginTest {
         assertEquals(packageVersionId, id);
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), Constants.pypiForge);
         Mockito.verify(metadataDao).insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),
-                Mockito.eq(json.getString("version")), Mockito.eq(null), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class));
+                Mockito.eq(json.getString("version")), Mockito.eq(null), Mockito.eq(null), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class));
         Mockito.verify(metadataDao).insertFile(packageVersionId, "module/name.py");
         Mockito.verify(metadataDao).insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt());
         Mockito.verify(metadataDao).batchInsertEdges(Mockito.anyList());

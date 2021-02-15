@@ -23,7 +23,7 @@ import java.util.List;
 
 public interface ResolutionApiService {
 
-    ResponseEntity<String> resolveDependencies(String package_name, String version, boolean transitive, long timestamp);
+    ResponseEntity<String> resolveDependencies(String package_name, String version, boolean transitive, long timestamp, boolean useDepGraph);
 
     ResponseEntity<String> resolveDependents(String package_name, String version, boolean transitive, long timestamp);
 

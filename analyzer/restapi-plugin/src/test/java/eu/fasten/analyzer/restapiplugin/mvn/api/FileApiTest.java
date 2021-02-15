@@ -44,9 +44,9 @@ public class FileApiTest {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("package version files", HttpStatus.OK);
-        Mockito.when(service.getPackageFiles(packageName, version, offset, limit)).thenReturn(response);
-        var result = api.getPackageFiles(packageName, version, offset, limit);
+        Mockito.when(service.getPackageFiles(packageName, version, offset, limit, null, null)).thenReturn(response);
+        var result = api.getPackageFiles(packageName, version, offset, limit, null, null);
         assertEquals(response, result);
-        Mockito.verify(service).getPackageFiles(packageName, version, offset, limit);
+        Mockito.verify(service).getPackageFiles(packageName, version, offset, limit, null, null);
     }
 }

@@ -57,8 +57,10 @@ public class PackageApi {
 
     @GetMapping(value = "/{pkg}/{pkg_ver}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageVersion(@PathVariable("pkg") String package_name,
-                                             @PathVariable("pkg_ver") String package_version) {
-        return service.getPackageVersion(package_name, package_version);
+                                             @PathVariable("pkg_ver") String package_version,
+                                             @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
+                                             @RequestParam(required = false) Long releaseDate) {
+        return service.getPackageVersion(package_name, package_version, artifactRepo, releaseDate);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -71,8 +73,10 @@ public class PackageApi {
     ResponseEntity<String> getPackageCallgraph(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestParam(required = false, defaultValue = "0") int offset,
-                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        return service.getPackageCallgraph(package_name, package_version, offset, limit);
+                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+                                               @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
+                                               @RequestParam(required = false) Long releaseDate) {
+        return service.getPackageCallgraph(package_name, package_version, offset, limit, artifactRepo, releaseDate);
     }
 
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)

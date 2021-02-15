@@ -68,8 +68,8 @@ public class KafkaPluginConsumeBehaviourTest {
         setEnv("POD_INSTANCE_ID", "test_pod");
 
         LocalStorage localStorage = new LocalStorage("src/test/resources");
-        localStorage.clear();
-        localStorage.store("{key: 'Im a record!'}");
+        localStorage.clear(List.of(1));
+        localStorage.store("{key: 'Im a record!'}", 0);
 
         FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
         setupMocks(kafkaPlugin);
@@ -85,7 +85,7 @@ public class KafkaPluginConsumeBehaviourTest {
         setEnv("POD_INSTANCE_ID", "test_pod");
 
         LocalStorage localStorage = new LocalStorage("src/test/resources");
-        localStorage.clear();
+        localStorage.clear(List.of(0));
 
         FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 5, false, true, "src/test/resources"));
         setupMocks(kafkaPlugin);
@@ -99,7 +99,7 @@ public class KafkaPluginConsumeBehaviourTest {
         setEnv("POD_INSTANCE_ID", "test_pod");
 
         LocalStorage localStorage = new LocalStorage("src/test/resources");
-        localStorage.clear();
+        localStorage.clear(List.of(1));
 
         FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
         setupMocks(kafkaPlugin);
@@ -174,12 +174,12 @@ public class KafkaPluginConsumeBehaviourTest {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return null;
         }
 
         @Override
-        public void setPluginError(Throwable throwable) {
+        public void setPluginError(Exception throwable) {
 
         }
 

@@ -19,23 +19,36 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.api.ResolutionApiService;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.MavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import org.json.JSONArray;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import java.util.Set;
 
 @Service
 public class ResolutionApiServiceImpl implements ResolutionApiService {
 
     @Override
-    public ResponseEntity<String> resolveDependencies(String package_name, String version, boolean transitive, long timestamp) {
+    public ResponseEntity<String> resolveDependencies(String package_name, String version, boolean transitive, long timestamp, boolean useDepGraph) {
+        if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, version)) {
+            LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
         var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
-        var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(groupId,
-                artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
+        Set<Revision> depSet;
+        if (useDepGraph) {
+            depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(groupId,
+                    artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
+        } else {
+            var mavenResolver = new MavenResolver();
+            depSet = mavenResolver.resolveFullDependencySetOnline(groupId, artifactId, version, timestamp, KnowledgeBaseConnector.dbContext);
+        }
         var jsonArray = new JSONArray();
         depSet.stream().map(Revision::toJSON).peek(json -> {
             var group = json.getString("groupId");

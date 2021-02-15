@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import org.json.JSONArray;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -58,7 +59,13 @@ public class StitchingApi {
 
     @GetMapping(value = "/__INTERNAL__/packages/{pkg}/{pkg_ver}/vulnerabilities", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getTransitiveVulnerabilities(@PathVariable("pkg") String package_name,
-                                                        @PathVariable("pkg_ver") String package_version) {
-        return service.getTransitiveVulnerabilities(package_name, package_version);
+                                                        @PathVariable("pkg_ver") String package_version,
+                                                        @RequestParam(required = false, defaultValue = "false") boolean precise) {
+        return service.getTransitiveVulnerabilities(package_name, package_version, precise);
+    }
+
+    @PostMapping(value = "/__INTERNAL__/ingest/batch", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> batchIngestArtifacts(@RequestBody JSONArray jsonArtifacts) {
+        return service.batchIngestArtifacts(jsonArtifacts);
     }
 }

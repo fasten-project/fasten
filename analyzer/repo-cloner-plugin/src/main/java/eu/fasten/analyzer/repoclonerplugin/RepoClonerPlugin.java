@@ -29,8 +29,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.math3.util.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.math3.util.Pair;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -48,7 +48,7 @@ public class RepoClonerPlugin extends Plugin {
     public static class RepoCloner implements KafkaPlugin, DataWriter {
 
         private String consumerTopic = "fasten.POMAnalyzer.out";
-        private Throwable pluginError = null;
+        private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(RepoCloner.class.getName());
         private String repoPath = null;
         private String artifact = null;
@@ -237,7 +237,7 @@ public class RepoClonerPlugin extends Plugin {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return this.pluginError;
         }
 

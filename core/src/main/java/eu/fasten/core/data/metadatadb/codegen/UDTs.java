@@ -4,6 +4,7 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.udt.CallSite;
 import eu.fasten.core.data.metadatadb.codegen.udt.Receiver;
 
 import javax.annotation.processing.Generated;
@@ -21,6 +22,11 @@ import javax.annotation.processing.Generated;
 )
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class UDTs {
+
+    /**
+     * The type <code>public.call_site</code>
+     */
+    public static CallSite CALL_SITE = eu.fasten.core.data.metadatadb.codegen.udt.CallSite.CALL_SITE;
 
     /**
      * The type <code>public.receiver</code>

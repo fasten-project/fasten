@@ -25,21 +25,29 @@ public interface ModuleApiService {
     ResponseEntity<String> getPackageModules(String package_name,
                                              String package_version,
                                              int offset,
-                                             int limit);
+                                             int limit,
+                                             String artifactRepo,
+                                             Long date);
 
     ResponseEntity<String> getModuleMetadata(String package_name,
                                              String package_version,
-                                             String module_namespace);
+                                             String module_namespace,
+                                             String artifactRepo,
+                                             Long date);
 
     ResponseEntity<String> getModuleFiles(String package_name,
                                           String package_version,
                                           String module_namespace,
                                           int offset,
-                                          int limit);
+                                          int limit,
+                                          String artifactRepo,
+                                          Long date);
 
     ResponseEntity<String> getModuleCallables(String package_name,
-                                          String package_version,
-                                          String module_namespace,
-                                          int offset,
-                                          int limit);
+                                              String package_version,
+                                              String module_namespace,
+                                              int offset,
+                                              int limit,
+                                              String artifactRepo,
+                                              Long date);
 }

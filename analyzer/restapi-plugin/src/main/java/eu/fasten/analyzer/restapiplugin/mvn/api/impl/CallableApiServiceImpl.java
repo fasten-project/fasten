@@ -19,7 +19,9 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.api.CallableApiService;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,9 +35,17 @@ public class CallableApiServiceImpl implements CallableApiService {
     public ResponseEntity<String> getPackageCallables(String package_name,
                                                       String package_version,
                                                       int offset,
-                                                      int limit) {
-        String result = KnowledgeBaseConnector.kbDao.getPackageCallables(
-                package_name, package_version, offset, limit);
+                                                      int limit,
+                                                      String artifactRepo,
+                                                      Long date) {
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getPackageCallables(
+                    package_name, package_version, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -43,11 +53,14 @@ public class CallableApiServiceImpl implements CallableApiService {
     @Override
     public ResponseEntity<String> getCallableMetadata(String package_name,
                                                       String package_version,
-                                                      String fasten_uri) {
+                                                      String fasten_uri,
+                                                      String artifactRepo,
+                                                      Long date) {
         String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
                 package_name, package_version, fasten_uri);
         if (result == null) {
-            return new ResponseEntity<>("Callable not found", HttpStatus.NOT_FOUND);
+            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
