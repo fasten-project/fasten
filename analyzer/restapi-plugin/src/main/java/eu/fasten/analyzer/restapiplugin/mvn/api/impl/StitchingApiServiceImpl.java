@@ -51,6 +51,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
 
     @Override
     public ResponseEntity<String> getCallablesMetadata(List<String> fullFastenUris, boolean allAttributes, List<String> attributes) {
+        if (!allAttributes && attributes == null) {
+            return new ResponseEntity<>("Either 'allAttributes' must be 'true' or a list of 'attributes' must be provided", HttpStatus.BAD_REQUEST);
+        }
         Map<String, List<String>> packageVersionUris;
         try {
             packageVersionUris = fullFastenUris.stream().map(FastenUriUtils::parseFullFastenUri).collect(Collectors.toMap(
