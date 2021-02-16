@@ -277,7 +277,7 @@ public class FastenServer implements Runnable {
         String cleanURI = dbURL.substring(5);
         URI uri = URI.create(cleanURI);
         return PostgresConnector.getDSLContext("jdbc:postgresql://" + uri.getHost() + uri.getPath(),
-                uri.getUserInfo());
+                uri.getUserInfo(), true);
     }
 
     /**

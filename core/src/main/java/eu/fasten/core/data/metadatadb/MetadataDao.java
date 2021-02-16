@@ -938,7 +938,7 @@ public class MetadataDao {
                 .select(pv.VERSION, ar.REPOSITORY_BASE_URL)
                 .from(p)
                 .leftJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                .join(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
+                .leftJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
                 .orderBy(pv.CREATED_AT.sortDesc().nullsLast())
                 .limit(1)
@@ -993,7 +993,7 @@ public class MetadataDao {
                 .select(selectClause)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                .join(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
+                .leftJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
                 .limit(1)
                 .fetchOne();
