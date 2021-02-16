@@ -36,8 +36,9 @@ public class ResolutionApi {
     ResponseEntity<String> resolveDependencies(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestParam(required = false, defaultValue = "true") boolean transitive,
-                                               @RequestParam(required = false, defaultValue = "-1") long timestamp) {
-        return service.resolveDependencies(package_name, package_version, transitive, timestamp);
+                                               @RequestParam(required = false, defaultValue = "-1") long timestamp,
+                                               @RequestParam(required = false, defaultValue = "false") boolean useDepGraph) {
+        return service.resolveDependencies(package_name, package_version, transitive, timestamp, useDepGraph);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/resolve/dependents", produces = MediaType.APPLICATION_JSON_VALUE)

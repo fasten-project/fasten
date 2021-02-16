@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.api.StitchingApiService;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
@@ -50,6 +51,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
 
     @Override
     public ResponseEntity<String> getCallablesMetadata(List<String> fullFastenUris, boolean allAttributes, List<String> attributes) {
+        if (!allAttributes && attributes == null) {
+            return new ResponseEntity<>("Either 'allAttributes' must be 'true' or a list of 'attributes' must be provided", HttpStatus.BAD_REQUEST);
+        }
         Map<String, List<String>> packageVersionUris;
         try {
             packageVersionUris = fullFastenUris.stream().map(FastenUriUtils::parseFullFastenUri).collect(Collectors.toMap(
@@ -122,6 +126,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         DirectedGraph graph;
         if (needStitching) {
             var mavenCoordinate = KnowledgeBaseConnector.kbDao.getMavenCoordinate(packageVersionId);
+            if (mavenCoordinate == null) {
+                return new ResponseEntity<>("Package version ID not found", HttpStatus.NOT_FOUND);
+            }
             var groupId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[0];
             var artifactId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
             var version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
@@ -154,20 +161,39 @@ public class StitchingApiServiceImpl implements StitchingApiService {
     }
 
     @Override
-    public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version) {
+    public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise) {
+
+        if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, version)) {
+            LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+
         var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
 
         // Get all transitive dependencies
         var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(groupId, artifactId, version, -1L, KnowledgeBaseConnector.dbContext, true);
         var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
-        var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
+        var vulnerableDependencies = KnowledgeBaseConnector.kbDao.findVulnerablePackageVersions(depIds);
 
+        if (!precise) {
+            // Leave only those dependencies that are in any path from the artifact to any of its vulnerable dependencies
+            var vulnerablePathDeps = new HashSet<Revision>();
+            var source = new Revision(groupId, artifactId, version, new Timestamp(-1));
+            for (var vulnerableDependency : vulnerableDependencies) {
+                var target = revisionIdToRevision(depSet, vulnerableDependency);
+                if (target != null) {
+                    vulnerablePathDeps.addAll(KnowledgeBaseConnector.graphResolver.findAllRevisionsInThePath(source, target));
+                }
+            }
+            var vulnerableDepsIds = vulnerablePathDeps.stream().map(r -> r.id).collect(Collectors.toSet());
+            depIds = depIds.stream().filter(vulnerableDepsIds::contains).collect(Collectors.toSet());
+        }
+        var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
         // Get stitched (with dependencies) graph
         var graph = databaseMerger.mergeWithCHA(package_name + Constants.mvnCoordinateSeparator + version);
 
         // Find all vulnerable callables (nodes) in the graph
-        var vulnerableDependencies = KnowledgeBaseConnector.kbDao.findVulnerablePackageVersions(depIds);
         var vulnerabilities = KnowledgeBaseConnector.kbDao.findVulnerableCallables(vulnerableDependencies, graph.nodes());
 
         // Get all internal callables
@@ -224,6 +250,15 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         return new ResponseEntity<>(json.toString(), HttpStatus.OK);
     }
 
+    private Revision revisionIdToRevision(Collection<Revision> revisions, long id) {
+        for (var revision : revisions) {
+            if (revision.id == id) {
+                return revision;
+            }
+        }
+        return null;
+    }
+
     List<List<Long>> getPathsToVulnerableNode(DirectedGraph graph, long source, long target,
                                               Set<Long> visited, List<Long> path, List<List<Long>> vulnerablePaths) {
         if (path.isEmpty()) {
@@ -243,5 +278,18 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         }
         visited.remove(source);
         return vulnerablePaths;
+    }
+
+    public ResponseEntity<String> batchIngestArtifacts(JSONArray jsonArtifacts) {
+        for (int i = 0; i < jsonArtifacts.length(); i++) {
+            var json = jsonArtifacts.getJSONObject(i);
+            var groupId = json.getString("groupId");
+            var artifactId = json.getString("artifactId");
+            var version = json.getString("version");
+            var date = json.optLong("date", -1);
+            var artifactRepository = json.optString("artifactRepository", null);
+            LazyIngestionProvider.ingestArtifactIfNecessary(groupId + Constants.mvnCoordinateSeparator + artifactId, version, artifactRepository, date);
+        }
+        return new ResponseEntity<>("Ingested successfully", HttpStatus.OK);
     }
 }

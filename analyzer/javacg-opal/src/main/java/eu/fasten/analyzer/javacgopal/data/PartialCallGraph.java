@@ -112,12 +112,12 @@ public class PartialCallGraph {
      */
     public static ExtendedRevisionJavaCallGraph createExtendedRevisionJavaCallGraph(
             final MavenCoordinate coordinate, final String mainClass,
-            final String algorithm, final long timestamp)
+            final String algorithm, final long timestamp, final String artifactRepo)
             throws MissingArtifactException, OPALException {
 
         File file = null;
         try {
-            file = new MavenCoordinate.MavenResolver().downloadArtifact(coordinate);
+            file = new MavenCoordinate.MavenResolver().downloadArtifact(coordinate, artifactRepo);
             final var opalCG = new CallGraphConstructor(file, mainClass, algorithm);
 
             final var partialCallGraph = new PartialCallGraph(opalCG);

@@ -107,7 +107,7 @@ public class Merger implements Runnable {
                     DSLContext dbContext;
                     RocksDao rocksDao;
                     try {
-                        dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
+                        dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser, false);
                         rocksDao = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphDbDir);
                     } catch (SQLException | IllegalArgumentException e) {
                         logger.error("Could not connect to the metadata database: " + e.getMessage());

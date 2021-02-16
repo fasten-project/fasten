@@ -25,7 +25,6 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +38,23 @@ public class POMAnalyzerPluginTest {
     public void setup() {
         pomAnalyzer = new POMAnalyzerPlugin.POMAnalyzer();
         pomAnalyzer.setTopic("fasten.mvn.pkg");
+    }
+
+    @Test
+    public void consumeFromDifferentRepoTest() {
+        var record = new JSONObject("{" +
+                "\"payload\": {" +
+                "\"artifactId\": \"common\"," +
+                "\"groupId\": \"android.arch.core\"," +
+                "\"version\": \"1.1.1\"," +
+                "\"artifactRepository\": \"https://dl.google.com/android/maven2/\"" +
+                "}}").toString();
+        pomAnalyzer.consume(record);
+        var output = pomAnalyzer.produce();
+        assertTrue(output.isPresent());
+        System.out.println(output.get());
+        var expected = "{\"date\":1569025448000,\"repoUrl\":\"http://source.android.com\",\"groupId\":\"android.arch.core\",\"version\":\"1.1.1\",\"parentCoordinate\":\"\",\"artifactRepository\":\"https://dl.google.com/android/maven2/\",\"forge\":\"mvn\",\"sourcesUrl\":\"https://dl.google.com/android/maven2/android/arch/core/common/1.1.1/common-1.1.1-sources.jar\",\"artifactId\":\"common\",\"dependencyData\":{\"dependencyManagement\":{\"dependencies\":[]},\"dependencies\":[{\"versionConstraints\":[{\"isUpperHardRequirement\":false,\"isLowerHardRequirement\":false,\"upperBound\":\"4.12\",\"lowerBound\":\"4.12\"}],\"groupId\":\"junit\",\"scope\":\"test\",\"classifier\":\"\",\"artifactId\":\"junit\",\"exclusions\":[],\"optional\":false,\"type\":\"\"},{\"versionConstraints\":[{\"isUpperHardRequirement\":false,\"isLowerHardRequirement\":false,\"upperBound\":\"2.7.6\",\"lowerBound\":\"2.7.6\"}],\"groupId\":\"org.mockito\",\"scope\":\"test\",\"classifier\":\"\",\"artifactId\":\"mockito-core\",\"exclusions\":[],\"optional\":false,\"type\":\"\"},{\"versionConstraints\":[{\"isUpperHardRequirement\":false,\"isLowerHardRequirement\":false,\"upperBound\":\"26.1.0\",\"lowerBound\":\"26.1.0\"}],\"groupId\":\"com.android.support\",\"scope\":\"compile\",\"classifier\":\"\",\"artifactId\":\"support-annotations\",\"exclusions\":[],\"optional\":false,\"type\":\"\"}]},\"projectName\":\"Android Arch-Common\",\"commitTag\":\"\",\"packagingType\":\"jar\"}";
+        assertEquals(expected, output.get());
     }
 
     @Test
@@ -131,9 +147,12 @@ public class POMAnalyzerPluginTest {
                 "   ]\n" +
                 "}"));
         var commitTag = "f8a34a";
+        var artifactRepository = "maven central";
         final var packageId = 1L;
         Mockito.when(metadataDao.insertPackage("junit:junit", Constants.mvnForge, projectName, repoUrl, null))
                 .thenReturn(packageId);
+        final var artifactRepoId = -1L;
+        Mockito.when(metadataDao.insertArtifactRepository(artifactRepository)).thenReturn(artifactRepoId);
         final var packageVersionId = 0L;
         var packageVersionMetadata = new JSONObject();
         packageVersionMetadata.put("dependencyManagement",
@@ -142,12 +161,12 @@ public class POMAnalyzerPluginTest {
         packageVersionMetadata.put("sourcesUrl", sourcesUrl);
         packageVersionMetadata.put("packagingType", packagingType);
         packageVersionMetadata.put("parentCoordinate", "");
-        Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", null, null, packageVersionMetadata))
+        Mockito.when(metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, "4.12", artifactRepoId, null, null, packageVersionMetadata))
                 .thenReturn(packageVersionId);
         final var dependencyId = 16L;
         Mockito.when(metadataDao.insertPackage("org.hamcrest:hamcrest-core", Constants.mvnForge, null, null, null))
                 .thenReturn(dependencyId);
-        var result = pomAnalyzer.saveToDatabase("junit:junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, -1, projectName, null, dependencyData, metadataDao);
+        var result = pomAnalyzer.saveToDatabase("junit:junit", "4.12", repoUrl, commitTag, sourcesUrl, packagingType, -1, projectName, null, dependencyData, artifactRepository, metadataDao);
         assertEquals(packageVersionId, result);
     }
 

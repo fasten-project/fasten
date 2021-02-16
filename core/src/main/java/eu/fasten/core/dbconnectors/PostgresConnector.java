@@ -37,7 +37,7 @@ public class PostgresConnector {
      * @throws SQLException             if failed to set up connection
      * @throws IllegalArgumentException if database URL has incorrect format and cannot be parsed
      */
-    public static DSLContext getDSLContext(String dbUrl, String user)
+    public static DSLContext getDSLContext(String dbUrl, String user, boolean autocommit)
             throws SQLException, IllegalArgumentException {
         if (!new Driver().acceptsURL(dbUrl)) {
             throw new IllegalArgumentException("Could not parse database URI: " + dbUrl);
@@ -50,6 +50,7 @@ public class PostgresConnector {
             throw new IllegalArgumentException("No password for DB is provided");
         }
         var connection = DriverManager.getConnection(dbUrl, user, pass);
+        connection.setAutoCommit(autocommit);
         return DSL.using(connection, SQLDialect.POSTGRES);
     }
 }

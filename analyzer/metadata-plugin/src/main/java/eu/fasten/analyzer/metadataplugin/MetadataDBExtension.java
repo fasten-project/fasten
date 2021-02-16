@@ -19,20 +19,32 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCCallGraph;
-import eu.fasten.core.data.ExtendedRevisionPythonCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.ExtendedRevisionPythonCallGraph;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.sql.BatchUpdateException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
@@ -49,18 +61,23 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.BatchUpdateException;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
     protected String consumerTopic = "fasten.OPAL.out";
     private static DSLContext dslContext;
     protected boolean processedRecord = false;
-    protected Throwable pluginError = null;
+    protected Exception pluginError = null;
     protected final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
     protected boolean restartTransaction = false;
     protected GidGraph gidGraph = null;
     protected String outputPath;
+    private String artifactRepository = null;
 
     @Override
     public void setDBConnection(Map<String, DSLContext> dslContexts) {
@@ -106,8 +123,9 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
             }
         }
         try {
-            if (!consumedJson.has("forge"))
+            if (!consumedJson.has("forge")) {
                 throw new JSONException("forge");
+            }
             final String forge = consumedJson.get("forge").toString();
             callgraph = getExtendedRevisionCallGraph(forge, consumedJson);
         } catch (JSONException e) {
@@ -118,6 +136,8 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
             return;
         }
 
+        this.artifactRepository = consumedJson.optString("artifactRepository",
+                (callgraph instanceof ExtendedRevisionJavaCallGraph) ? MavenUtilities.getRepos().get(0) : null);
         var revision = callgraph.product + Constants.mvnCoordinateSeparator + callgraph.version;
 
         int transactionRestartCount = 0;
@@ -217,9 +237,11 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         // Insert package record
         final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge);
 
+        var artifactRepoId = artifactRepository != null ? metadataDao.insertArtifactRepository(artifactRepository) : null;
+
         // Insert package version record
         final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                callGraph.getCgGenerator(), callGraph.version, null,
+                callGraph.getCgGenerator(), callGraph.version, artifactRepoId, null,
                 getProperTimestamp(callGraph.timestamp), new JSONObject());
 
         var allCallables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId);
@@ -311,12 +333,12 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
     public void stop() {
     }
 
-    public void setPluginError(Throwable throwable) {
+    public void setPluginError(Exception throwable) {
         this.pluginError = throwable;
     }
 
     @Override
-    public Throwable getPluginError() {
+    public Exception getPluginError() {
         return this.pluginError;
     }
 

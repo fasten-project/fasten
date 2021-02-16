@@ -9,7 +9,7 @@ import java.util.Set;
 public class MavenStats {
 
     public static void main(String[] args) throws Exception {
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro");
+        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro", true);
         var resolver = new GraphMavenResolver();
         resolver.buildDependencyGraph(dbContext, args[0]);
         var dependencies = new HashMap<Revision, Set<Revision>>(GraphMavenResolver.dependencyGraph.vertexSet().size());

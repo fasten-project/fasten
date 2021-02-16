@@ -93,7 +93,7 @@ public class KafkaConsumeTimeoutTest {
 
         private final boolean blocking;
         private final long blockTime;
-        private Throwable error;
+        private Exception error;
 
         public DummyPlugin(boolean blocking, long blockTime) {
             this.blocking = blocking;
@@ -159,12 +159,12 @@ public class KafkaConsumeTimeoutTest {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return this.error;
         }
 
         @Override
-        public void setPluginError(Throwable error) {
+        public void setPluginError(Exception error) {
             this.error = error;
         }
 

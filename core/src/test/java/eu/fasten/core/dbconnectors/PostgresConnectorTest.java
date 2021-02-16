@@ -36,7 +36,7 @@ public class PostgresConnectorTest {
         assertDoesNotThrow(() ->
                 SystemLambda.withEnvironmentVariable(Constants.pgPasswordEnvVariable, KB_PASSWORD).execute(() ->
                         PostgresConnector.getDSLContext(
-                                postgreSQLContainer.getJdbcUrl(), postgreSQLContainer.getUsername())));
+                                postgreSQLContainer.getJdbcUrl(), postgreSQLContainer.getUsername(), true)));
     }
 
     @Test
@@ -45,7 +45,7 @@ public class PostgresConnectorTest {
 
         assertThrows(IllegalArgumentException.class, () ->
                 PostgresConnector.getDSLContext(
-                        postgreSQLContainer.getJdbcUrl(), postgreSQLContainer.getUsername()));
+                        postgreSQLContainer.getJdbcUrl(), postgreSQLContainer.getUsername(), true));
     }
 
     @Test
@@ -59,7 +59,7 @@ public class PostgresConnectorTest {
         assertThrows(SQLException.class, () ->
                 SystemLambda.withEnvironmentVariable(Constants.pgPasswordEnvVariable, wrongKbPassword).execute(() ->
                         PostgresConnector.getDSLContext(
-                                postgreSQLContainer.getJdbcUrl(), postgreSQLContainer.getUsername())));
+                                postgreSQLContainer.getJdbcUrl(), postgreSQLContainer.getUsername(), true)));
     }
 
     @AfterAll

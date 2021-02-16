@@ -26,11 +26,15 @@ public interface CallableApiService {
     ResponseEntity<String> getPackageCallables(String package_name,
                                                String package_version,
                                                int offset,
-                                               int limit);
+                                               int limit,
+                                               String artifactRepo,
+                                               Long date);
 
     ResponseEntity<String> getCallableMetadata(String package_name,
                                                String package_version,
-                                               String fasten_uri);
+                                               String fasten_uri,
+                                               String artifactRepo,
+                                               Long date);
 
     ResponseEntity<String> getCallables(List<Long> callableIds);
 }

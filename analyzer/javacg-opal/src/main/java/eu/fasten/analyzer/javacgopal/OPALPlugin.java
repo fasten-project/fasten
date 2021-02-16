@@ -26,11 +26,13 @@ import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
-import java.util.*;
-
-import org.apache.kafka.clients.consumer.ConsumerConfig;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -50,7 +52,7 @@ public class OPALPlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
         private String consumeTopic = "fasten.maven.pkg";
-        private Throwable pluginError;
+        private Exception pluginError;
         private ExtendedRevisionJavaCallGraph graph;
         private String outputPath;
 
@@ -69,14 +71,15 @@ public class OPALPlugin extends Plugin {
             if (kafkaConsumedJson.has("payload")) {
                 kafkaConsumedJson = kafkaConsumedJson.getJSONObject("payload");
             }
+            var artifactRepository = kafkaConsumedJson.optString("artifactRepository", null);
+            kafkaConsumedJson.remove("artifactRepository");
             final var mavenCoordinate = new MavenCoordinate(kafkaConsumedJson);
-
             long startTime = System.nanoTime();
             try {
                 // Generate CG and measure construction duration.
                 logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
-                        "", "CHA", kafkaConsumedJson.optLong("date", -1));
+                        "", "CHA", kafkaConsumedJson.optLong("date", -1), artifactRepository);
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms. 
 
@@ -150,11 +153,11 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return this.pluginError;
         }
 
-        public void setPluginError(Throwable throwable) {
+        public void setPluginError(Exception throwable) {
             this.pluginError = throwable;
         }
 

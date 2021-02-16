@@ -19,6 +19,7 @@
 package eu.fasten.core.maven;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -108,7 +109,7 @@ public class GraphMavenResolver implements Runnable {
 
         DSLContext dbContext;
         try {
-            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
+            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser, true);
         } catch (SQLException e) {
             logger.error("Could not connect to the database", e);
             return;
@@ -529,5 +530,38 @@ public class GraphMavenResolver implements Runnable {
             logger.error("Could not parse JSON for package version's metadata", e);
             return null;
         }
+    }
+
+    public Set<Revision> findAllRevisionsInThePath(Revision source, Revision target) {
+        var paths = getPaths(dependencyGraph, source, target, new HashSet<>(), new ArrayList<>(), new ArrayList<>());
+        var pathsNodes = new HashSet<Revision>();
+        for (var path : paths) {
+            for (var node : path) {
+                pathsNodes.add(node);
+            }
+        }
+        return pathsNodes;
+    }
+
+    private List<List<Revision>> getPaths(Graph<Revision, DependencyEdge> graph, Revision source, Revision target,
+                              Set<Revision> visited, List<Revision> path, List<List<Revision>> vulnerablePaths) {
+        if (path.isEmpty()) {
+            path.add(source);
+        }
+        if (source == target) {
+            vulnerablePaths.add(new ArrayList<>(path));
+            return vulnerablePaths;
+        }
+        visited.add(source);
+        for (var edge : graph.outgoingEdgesOf(source)) {
+            var node = edge.target;
+            if (!visited.contains(node)) {
+                path.add(node);
+                getPaths(graph, node, target, visited, path, vulnerablePaths);
+                path.remove(node);
+            }
+        }
+        visited.remove(source);
+        return vulnerablePaths;
     }
 }

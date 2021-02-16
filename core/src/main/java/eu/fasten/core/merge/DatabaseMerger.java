@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -44,7 +45,9 @@ import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jooq.Condition;
+import org.jooq.Cursor;
 import org.jooq.DSLContext;
+import org.jooq.Record3;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -166,7 +169,10 @@ public class DatabaseMerger {
     public DirectedGraph mergeAllDeps() {
         List<DirectedGraph> depGraphs = new ArrayList<>();
         for (final var dep : this.dependencySet) {
-            depGraphs.add(mergeWithCHA(dep));
+            var merged = mergeWithCHA(dep);
+            if (merged != null) {
+                depGraphs.add(merged);
+            }
         }
         return augmentGraphs(depGraphs);
     }
@@ -212,24 +218,37 @@ public class DatabaseMerger {
     public DirectedGraph mergeWithCHA(final long artifactId) {
         final long totalTime = System.currentTimeMillis();
         final var callGraphData = fetchCallGraphData(artifactId, rocksDao);
+
+        if (callGraphData == null) {
+            logger.error("Empty call graph data");
+            return null;
+        }
+
         final var typeMap = createTypeMap(callGraphData, dbContext);
-        final var arcs = getArcs(callGraphData, dbContext);
+
 
         var result = new ArrayImmutableDirectedGraph.Builder();
 
         cloneNodesAndArcs(result, callGraphData);
 
         final long startTime = System.currentTimeMillis();
-        for (final var arc : arcs) {
-            if (callGraphData.isExternal(arc.target)) {
-                if (!resolve(result, callGraphData, arc, typeMap.get(arc.target), false)) {
-                    addEdge(result, callGraphData, arc.source, arc.target, false);
-                }
-            } else {
-                if (!resolve(result, callGraphData, arc, typeMap.get(arc.source), callGraphData.isExternal(arc.source))) {
-                    addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
+
+        try (var cursor = getArcs(callGraphData, dbContext)) {
+            while (cursor.hasNext()) {
+                var arcRecord = cursor.fetchNext();
+                var arc = new Arc(arcRecord.value1(), arcRecord.value2(), arcRecord.value3());
+                if (callGraphData.isExternal(arc.target)) {
+                    if (!resolve(result, callGraphData, arc, typeMap.get(arc.target), false)) {
+                        addEdge(result, callGraphData, arc.source, arc.target, false);
+                    }
+                } else {
+                    if (!resolve(result, callGraphData, arc, typeMap.get(arc.source), callGraphData.isExternal(arc.source))) {
+                        addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
+                    }
                 }
             }
+        } catch (Exception e) {
+            logger.error("Unable to fetch data from metadata database");
         }
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
@@ -334,8 +353,7 @@ public class DatabaseMerger {
      * @param dbContext     DSL context
      * @return list of external and constructor calls
      */
-    private List<Arc> getArcs(final DirectedGraph callGraphData, final DSLContext dbContext) {
-        var arcsList = new ArrayList<Arc>();
+    private Cursor<Record3<Long, Long, ReceiverRecord[]>> getArcs(final DirectedGraph callGraphData, final DSLContext dbContext) {
         Condition arcsCondition = null;
         for (var source : callGraphData.nodes()) {
             for (var target : callGraphData.successors(source)) {
@@ -352,12 +370,12 @@ public class DatabaseMerger {
                 }
             }
         }
-        dbContext.select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS)
+        return dbContext.select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS)
                 .from(Edges.EDGES)
                 .where(arcsCondition)
-                .fetch()
-                .forEach(arc -> arcsList.add(new Arc(arc.value1(), arc.value2(), arc.value3())));
-        return arcsList;
+                .fetchSize(10000)
+                .fetchLazy();
+                //.map(arc -> new Arc(arc.value1(), arc.value2(), arc.value3()));
     }
 
     /**
@@ -387,14 +405,14 @@ public class DatabaseMerger {
         var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
         var version = artifact.split(":")[2];
 
-        return dbContext
+        return Objects.requireNonNull(dbContext
                 .select(PackageVersions.PACKAGE_VERSIONS.ID)
                 .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
                 .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
                 .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
                 .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
                 .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                .fetchOne()
+                .fetchOne())
                 .component1();
     }
 

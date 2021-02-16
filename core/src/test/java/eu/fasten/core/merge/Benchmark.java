@@ -96,7 +96,7 @@ public class Benchmark implements Runnable {
         root.setLevel(Level.INFO);
 
         try {
-            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
+            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser, true);
             rocksDao = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphDbDir);
         } catch (SQLException | IllegalArgumentException e) {
             logger.error("Could not connect to the metadata database: " + e.getMessage());

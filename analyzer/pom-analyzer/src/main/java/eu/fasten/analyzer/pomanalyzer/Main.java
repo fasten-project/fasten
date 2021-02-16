@@ -91,7 +91,7 @@ public class Main implements Runnable {
         var pomAnalyzer = new POMAnalyzerPlugin.POMAnalyzer();
         try {
             pomAnalyzer.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge,
-                    PostgresConnector.getDSLContext(dbUrl, dbUser))));
+                    PostgresConnector.getDSLContext(dbUrl, dbUser, true))));
         } catch (SQLException e) {
             System.err.println("Error connecting to the database:");
             e.printStackTrace(System.err);
