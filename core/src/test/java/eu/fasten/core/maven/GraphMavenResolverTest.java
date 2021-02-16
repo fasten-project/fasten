@@ -19,6 +19,7 @@
 package eu.fasten.core.maven;
 
 import eu.fasten.core.maven.data.*;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.apache.commons.math3.util.Pair;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,7 +75,7 @@ public class GraphMavenResolverTest {
         graph.addVertex(nodeC);
         graph.addEdge(nodeB2, nodeC, edgeB2C);
         var expected = List.of(nodeB);
-        var actual = graphMavenResolver.filterOptionalSuccessors(graph.outgoingEdgesOf(nodeA)).stream().map(e -> e.target).collect(Collectors.toList());
+        var actual = graphMavenResolver.filterOptionalSuccessors(new ObjectLinkedOpenHashSet<>(graph.outgoingEdgesOf(nodeA))).stream().map(e -> e.target).collect(Collectors.toList());
         assertEquals(expected, actual);
     }
 
@@ -96,7 +97,7 @@ public class GraphMavenResolverTest {
         graph.addVertex(nodeC);
         graph.addEdge(nodeB2, nodeC, edgeB2C);
         var expected = List.of(nodeB);
-        var actual = graphMavenResolver.filterSuccessorsByScope(graph.outgoingEdgesOf(nodeA), List.of("compile")).stream().map(e -> e.target).collect(Collectors.toList());
+        var actual = graphMavenResolver.filterSuccessorsByScope(new ObjectLinkedOpenHashSet<>(graph.outgoingEdgesOf(nodeA)), List.of("compile")).stream().map(e -> e.target).collect(Collectors.toList());
         assertEquals(expected, actual);
     }
 
@@ -118,7 +119,7 @@ public class GraphMavenResolverTest {
         graph.addVertex(nodeC);
         graph.addEdge(nodeB2, nodeC, edgeB2C);
         var expected = List.of(nodeB);
-        var actual = graphMavenResolver.filterSuccessorsByScope(graph.outgoingEdgesOf(nodeA), List.of("compile")).stream().map(e -> e.target).collect(Collectors.toList());
+        var actual = graphMavenResolver.filterSuccessorsByScope(new ObjectLinkedOpenHashSet<>(graph.outgoingEdgesOf(nodeA)), List.of("compile")).stream().map(e -> e.target).collect(Collectors.toList());
         assertEquals(expected, actual);
     }
 
@@ -134,7 +135,7 @@ public class GraphMavenResolverTest {
                 new Revision("a", "a", "1", new Timestamp(1)),
                 new Revision("b", "b", "2", new Timestamp(1))
         );
-        var actual = graphMavenResolver.resolveConflicts(new HashSet<>(depthRevision));
+        var actual = graphMavenResolver.resolveConflicts(new ObjectLinkedOpenHashSet<>(depthRevision));
         assertEquals(new HashSet<>(expected), new HashSet<>(actual));
     }
 

@@ -24,6 +24,7 @@ import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.jooq.DSLContext;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -95,12 +96,12 @@ public class StitchingApiServiceImplTest {
     @Test
     void resolveMultipleDependenciesTest() {
         var coordinates = List.of("group:artifact:version");
-        var revisions = Set.of(new Revision(1, "group", "artifact", "version", new Timestamp(-1)));
+        var revisions = new ObjectLinkedOpenHashSet<>(Set.of(new Revision(1, "group", "artifact", "version", new Timestamp(-1))));
         var id = 42L;
         Mockito.when(kbDao.getPackageVersionID("group:artifact", "version")).thenReturn(id);
         var virtualNode = new Revision(0, "pg", "pa", "pv", new Timestamp(-1));
         Mockito.when(resolver.addVirtualNode(revisions)).thenReturn(virtualNode);
-        var deps = Set.of(new Revision(2, "depgroup", "departifact", "depversion", new Timestamp(-1)));
+        var deps = new ObjectLinkedOpenHashSet<>(Set.of(new Revision(2, "depgroup", "departifact", "depversion", new Timestamp(-1))));
         Mockito.when(resolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbContext, true)).thenReturn(deps);
         var jsonArray = new JSONArray();
         KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl";

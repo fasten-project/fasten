@@ -26,6 +26,7 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.DatabaseMerger;
 import eu.fasten.core.utils.FastenUriUtils;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
@@ -105,7 +106,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             var id = KnowledgeBaseConnector.kbDao.getPackageVersionID(groupId + Constants.mvnCoordinateSeparator + artifactId, version);
             return new Revision(id, groupId, artifactId, version, new Timestamp(-1));
         }).collect(Collectors.toSet());
-        var virtualNode = KnowledgeBaseConnector.graphResolver.addVirtualNode(revisions);
+        var virtualNode = KnowledgeBaseConnector.graphResolver.addVirtualNode(new ObjectLinkedOpenHashSet<>(revisions));
         var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbContext, true);
         KnowledgeBaseConnector.graphResolver.removeVirtualNode(virtualNode);
         var jsonArray = new JSONArray();
