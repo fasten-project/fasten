@@ -65,7 +65,7 @@ public class StitchingApi {
     }
 
     @PostMapping(value = "/__INTERNAL__/ingest/batch", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> batchIngestArtifacts(@RequestBody JSONArray jsonArtifacts) {
-        return service.batchIngestArtifacts(jsonArtifacts);
+    ResponseEntity<String> batchIngestArtifacts(@RequestBody String jsonArtifacts) {
+        return service.batchIngestArtifacts(new JSONArray(jsonArtifacts));
     }
 }
