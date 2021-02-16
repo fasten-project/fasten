@@ -76,7 +76,10 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             var packageName = forgelessArtifact.split("\\$")[0];
             var version = forgelessArtifact.split("\\$")[1];
             var partialUris = packageVersionUris.get(artifact);
-            metadataMap.putAll(KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris));
+            var urisMetadata = KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris);
+            if (urisMetadata != null) {
+                metadataMap.putAll(urisMetadata);
+            }
         }
         var json = new JSONObject();
         for (var entry : metadataMap.entrySet()) {
