@@ -263,15 +263,15 @@ public class SearchEngine {
 				switch(commandAndArgs[1].toLowerCase()) {
 				case "pmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
-					predicate = predicateFactory.fastenURIMatches(uri -> uri.getProduct() != null && regExp.matcher(uri.getProduct()).matches());
+					predicate = predicateFactory.fastenURIMatches(uri -> matchRegexp(uri.getProduct(), regExp)); 
 					break;
 				case "vmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
-					predicate = predicateFactory.fastenURIMatches(uri -> uri.getVersion() != null && regExp.matcher(uri.getVersion()).matches());
+					predicate = predicateFactory.fastenURIMatches(uri -> matchRegexp(uri.getVersion(), regExp));
 					break;
 				case "xmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
-					predicate = predicateFactory.fastenURIMatches(uri -> uri.getPath() != null && regExp.matcher(uri.getPath()).matches());
+					predicate = predicateFactory.fastenURIMatches(uri -> matchRegexp(uri.getPath(), regExp));
 					break;
 				case "cmd": case "mmd": case "pmd":
 					final String key = commandAndArgs[2];
@@ -285,7 +285,7 @@ public class SearchEngine {
 				 	if (commandAndArgs.length == 3) predicate = predicateFactory.metadataContains(mds, key);
 				 	else {
 				 		regExp = Pattern.compile(commandAndArgs[3]);
-				 		predicate = predicateFactory.metadataContains(mds, key, regExp.asPredicate());
+				 		predicate = predicateFactory.metadataContains(mds, key, s -> matchRegexp(s, regExp));
 				 	}
 				 	break;
 				case "cmdjp": case "mmdjp": case "pmdjp":
@@ -298,7 +298,7 @@ public class SearchEngine {
 					default: throw new RuntimeException("Cannot happen");
 					}
 				 	regExp = Pattern.compile(commandAndArgs[3]);
-				 	predicate = predicateFactory.metadataQueryJSONPointer(mds, jsonPointer, regExp.asPredicate());
+				 	predicate = predicateFactory.metadataQueryJSONPointer(mds, jsonPointer, s -> matchRegexp(s, regExp));
 				 	break;
 				default:
 					throw new RuntimeException("Unknown type of predicate " + commandAndArgs[1]);
@@ -328,6 +328,18 @@ public class SearchEngine {
 			e.printStackTrace(System.err);
 			System.err.println(help);
 		}
+	}
+
+	/** Returns true if the given string fully matches the given regular expression (i.e., it matches it from start to end).
+	 * 
+	 * @param s the string.
+	 * @param regExp the regular expression.
+	 * @return true iff s is not null and it matches the regular expression from start to end.
+	 */
+	private boolean matchRegexp(String s, Pattern regExp) {
+		if (s == null) return false;
+		Matcher matcher = regExp.matcher(s);
+		return matcher.matches() && matcher.start() == 0 && matcher.end() == s.length();
 	}
 
 	/**
