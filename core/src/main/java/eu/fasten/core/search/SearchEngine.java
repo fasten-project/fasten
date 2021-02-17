@@ -207,6 +207,7 @@ public class SearchEngine {
 		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
 		resolver = new GraphMavenResolver();
 		resolver.buildDependencyGraph(null, resolverGraph);
+		resolver.setIgnoreMissing(true);
 		this.predicateFactory = new CachingPredicateFactory(context);
 	}
 
