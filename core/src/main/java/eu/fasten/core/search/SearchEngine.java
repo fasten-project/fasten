@@ -607,6 +607,12 @@ public class SearchEngine {
 			final long dependentId = iterator.nextLong();
 
 			data = Util.getGroupArtifactVersion(dependentId, context);
+
+			if (data == null) {
+				LOGGER.warn("Dependent with id " + dependentId + " not found in the database");
+				continue;
+			}
+
 			groupId = data[0];
 			artifactId = data[1];
 			version = data[2];
