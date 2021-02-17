@@ -263,7 +263,7 @@ public class SearchEngine {
 				switch(commandAndArgs[1].toLowerCase()) {
 				case "pmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
-					predicate = predicateFactory.fastenURIMatches(uri -> matchRegexp(uri.getProduct(), regExp)); 
+					predicate = predicateFactory.fastenURIMatches(uri -> matchRegexp(uri.getProduct(), regExp));
 					break;
 				case "vmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
@@ -331,14 +331,14 @@ public class SearchEngine {
 	}
 
 	/** Returns true if the given string fully matches the given regular expression (i.e., it matches it from start to end).
-	 * 
+	 *
 	 * @param s the string.
 	 * @param regExp the regular expression.
 	 * @return true iff s is not null and it matches the regular expression from start to end.
 	 */
-	private boolean matchRegexp(String s, Pattern regExp) {
+	private static boolean matchRegexp(final String s, final Pattern regExp) {
 		if (s == null) return false;
-		Matcher matcher = regExp.matcher(s);
+		final Matcher matcher = regExp.matcher(s);
 		return matcher.matches() && matcher.start() == 0 && matcher.end() == s.length();
 	}
 
