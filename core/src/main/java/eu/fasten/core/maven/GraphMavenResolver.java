@@ -67,6 +67,8 @@ public class GraphMavenResolver implements Runnable {
             defaultValue = "postgres")
     protected String dbUser;
 
+    private boolean ignoreMissing = false;
+
     static Graph<Revision, DependencyEdge> dependencyGraph;
     static Graph<Revision, DependencyEdge> dependentGraph;
 
@@ -87,6 +89,14 @@ public class GraphMavenResolver implements Runnable {
         types.add("jar");
         types.add("war");
         types.add("xar");
+    }
+
+    public boolean getIgnoreMissing() {
+        return ignoreMissing;
+    }
+
+    public void setIgnoreMissing(boolean ignoreMissing) {
+        this.ignoreMissing = ignoreMissing;
     }
 
     public static void main(String[] args) {
@@ -250,7 +260,11 @@ public class GraphMavenResolver implements Runnable {
         logger.debug("BFS from root: {}:{}:{}", groupId, artifactId, version);
 
         var excludeProducts = new ArrayList<Pair<Revision, MavenProduct>>();
-        var edges = dependencyGraph.outgoingEdgesOf(new Revision(groupId, artifactId, version, new Timestamp(timestamp)));
+        var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
+        if (!dependencyGraph.containsVertex(artifact)) {
+            throw new RuntimeException("Revision " + artifact + " is not in the dependency graph. Probably it is missing in the database");
+        }
+        var edges = dependencyGraph.outgoingEdgesOf(artifact);
         for (var exclusionEdge : edges.stream().filter(e -> !e.exclusions.isEmpty()).collect(Collectors.toList())) {
             for (var exclusion : exclusionEdge.exclusions) {
                 var product = new MavenProduct(exclusion.groupId, exclusion.artifactId);
@@ -260,7 +274,7 @@ public class GraphMavenResolver implements Runnable {
         var descendantsMap = new HashMap<Revision, Revision>();
         edges.forEach(e -> descendantsMap.put(e.target, e.source));
 
-        var successors = Graphs.successorListOf(dependencyGraph, new Revision(groupId, artifactId, version, new Timestamp(timestamp)));
+        var successors = Graphs.successorListOf(dependencyGraph, artifact);
         var workQueue = filterDependenciesByTimestamp(successors, timestamp).stream().
                 map(x -> new Pair<>(x, 1)).collect(Collectors.toCollection(ArrayDeque::new));
 
@@ -279,6 +293,13 @@ public class GraphMavenResolver implements Runnable {
             var rev = workQueue.poll();
             result.add(rev.getFirst());
             depthRevisions.add(rev);
+            if (!dependencyGraph.containsVertex(rev.getFirst())) {
+                if (ignoreMissing) {
+                    continue;
+                } else {
+                    throw new RuntimeException("Revision " + rev.getFirst() + " is not in the dependency graph. Probably it is missing in the database");
+                }
+            }
             var outgoingEdges = new ObjectLinkedOpenHashSet<>(dependencyGraph.outgoingEdgesOf(rev.getFirst()));
             for (var exclusionEdge : outgoingEdges.stream().filter(e -> !e.exclusions.isEmpty()).collect(Collectors.toList())) {
                 for (var exclusion : exclusionEdge.exclusions) {
@@ -335,8 +356,13 @@ public class GraphMavenResolver implements Runnable {
      */
     public ObjectLinkedOpenHashSet<Revision> dependentBFS(String groupId, String artifactId, String version, long timestamp,
                                                           boolean transitive) {
-        var workQueue = new ArrayDeque<>(filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph,
-                new Revision(groupId, artifactId, version, new Timestamp(timestamp))), timestamp));
+        var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
+
+        if (!dependentGraph.containsVertex(artifact)) {
+            throw new RuntimeException("Revision " + artifact + " is not in the dependents graph. Probably it is missing in the database");
+        }
+
+        var workQueue = new ArrayDeque<>(filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, artifact), timestamp));
 
         var result = new ObjectLinkedOpenHashSet<>(workQueue);
 
@@ -351,6 +377,13 @@ public class GraphMavenResolver implements Runnable {
                 logger.debug("Successors for {}:{}:{}: deps: {}, queue: {} items",
                         rev.groupId, rev.artifactId, rev.version,
                         workQueue.size(), workQueue.size());
+            }
+            if (!dependentGraph.containsVertex(rev)) {
+                if (ignoreMissing) {
+                    continue;
+                } else {
+                    throw new RuntimeException("Revision " + rev + " is not in the dependents graph. Probably it is missing in the database");
+                }
             }
             var dependents = filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, rev), timestamp);
             for (var dependent : dependents) {
@@ -545,9 +578,7 @@ public class GraphMavenResolver implements Runnable {
         var paths = getPaths(dependencyGraph, source, target, new ObjectLinkedOpenHashSet<>(), new ArrayList<>(), new ArrayList<>());
         var pathsNodes = new ObjectLinkedOpenHashSet<Revision>();
         for (var path : paths) {
-            for (var node : path) {
-                pathsNodes.add(node);
-            }
+            pathsNodes.addAll(path);
         }
         return pathsNodes;
     }
