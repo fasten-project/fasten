@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns="http://maven.apache.org/POM/4.0.0"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -69,96 +69,96 @@
             <groupId>org.eclipse.jdt</groupId>
             <artifactId>org.eclipse.jdt.annotation</artifactId>
             <version>2.0.0</version>
-        </dependency>        
+        </dependency>
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>law</artifactId>
             <version>2.7.1</version>
             <exclusions>
                 <exclusion>
-                     <groupId>org.apache.poi</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
+                    <groupId>org.apache.poi</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
                 <exclusion>
-                     <groupId>it.unimi.di.law</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.eclipse.jetty.aggregate</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.eclipse.jetty</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.mortbay.jetty</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.apache.httpcomponents</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>dnsjava</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>mx4j</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>gnu.getopt</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.wikidata.wdtk</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>net.java.dev.javacc</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.jacoco</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.softee</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>net.sf.jung</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.apache.commons</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.apache.hadoop</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.apache.tika</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>it.unimi.di</groupId>
-                     <artifactId>mg4j</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>it.unimi.di</groupId>
-                     <artifactId>mg4j-big</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.jgroups</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>info.bliki.wiki</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
+                    <groupId>it.unimi.di.law</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty.aggregate</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>dnsjava</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>mx4j</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>gnu.getopt</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.wikidata.wdtk</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>net.java.dev.javacc</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.softee</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>net.sf.jung</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tika</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>it.unimi.di</groupId>
+                    <artifactId>mg4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>it.unimi.di</groupId>
+                    <artifactId>mg4j-big</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jgroups</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>info.bliki.wiki</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -239,7 +239,6 @@
         </dependency>
 
 
-
         <!-- Integration tests -->
         <dependency>
             <groupId>org.testcontainers</groupId>
@@ -257,45 +256,45 @@
 
     <build>
         <plugins>
-            <!--            jOOQ code generation plugin-->
-            <!--            <plugin>-->
-            <!--                <groupId>org.jooq</groupId>-->
-            <!--                <artifactId>jooq-codegen-maven</artifactId>-->
-            <!--                <version>3.12.3</version>-->
-            <!--                <executions>-->
-            <!--                    <execution>-->
-            <!--                        <goals>-->
-            <!--                            <goal>generate</goal>-->
-            <!--                        </goals>-->
-            <!--                    </execution>-->
-            <!--                </executions>-->
-            <!--                <dependencies>-->
-            <!--                    <dependency>-->
-            <!--                        <groupId>org.postgresql</groupId>-->
-            <!--                        <artifactId>postgresql</artifactId>-->
-            <!--                        <version>9.4.1208</version>-->
-            <!--                    </dependency>-->
-            <!--                </dependencies>-->
-            <!--                <configuration>-->
-            <!--                    <jdbc>-->
-            <!--                        <driver>org.postgresql.Driver</driver>-->
-            <!--                        <url>jdbc:postgresql:postgres</url>-->
-            <!--                        <user>postgres</user>-->
-            <!--                        <password>pass123</password>-->
-            <!--                    </jdbc>-->
-            <!--                    <generator>-->
-            <!--                        <database>-->
-            <!--                            <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
-            <!--                            <includes>.*</includes>-->
-            <!--                            <inputSchema>public</inputSchema>-->
-            <!--                        </database>-->
-            <!--                        <target>-->
-            <!--                            <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>-->
-            <!--                            <directory>src/main/java</directory>-->
-            <!--                        </target>-->
-            <!--                    </generator>-->
-            <!--                </configuration>-->
-            <!--            </plugin>-->
+            <!-- jOOQ code generation plugin -->
+<!--            <plugin>-->
+<!--                <groupId>org.jooq</groupId>-->
+<!--                <artifactId>jooq-codegen-maven</artifactId>-->
+<!--                <version>3.12.3</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <goals>-->
+<!--                            <goal>generate</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--                <dependencies>-->
+<!--                    <dependency>-->
+<!--                        <groupId>org.postgresql</groupId>-->
+<!--                        <artifactId>postgresql</artifactId>-->
+<!--                        <version>9.4.1208</version>-->
+<!--                    </dependency>-->
+<!--                </dependencies>-->
+<!--                <configuration>-->
+<!--                    <jdbc>-->
+<!--                        <driver>org.postgresql.Driver</driver>-->
+<!--                        <url>jdbc:postgresql:fasten_java</url>-->
+<!--                        <user>postgres</user>-->
+<!--                        <password>pass123</password>-->
+<!--                    </jdbc>-->
+<!--                    <generator>-->
+<!--                        <database>-->
+<!--                            <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
+<!--                            <includes>.*</includes>-->
+<!--                            <inputSchema>public</inputSchema>-->
+<!--                        </database>-->
+<!--                        <target>-->
+<!--                            <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>-->
+<!--                            <directory>src/main/java</directory>-->
+<!--                        </target>-->
+<!--                    </generator>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
         </plugins>
     </build>
 
