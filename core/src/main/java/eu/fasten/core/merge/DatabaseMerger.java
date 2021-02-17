@@ -248,7 +248,7 @@ public class DatabaseMerger {
                 }
             }
         } catch (Exception e) {
-            logger.error("Unable to fetch data from metadata database");
+            logger.error("Unable to fetch data from metadata database", e);
         }
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
