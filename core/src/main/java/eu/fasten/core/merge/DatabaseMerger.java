@@ -64,6 +64,8 @@ public class DatabaseMerger {
     private final RocksDao rocksDao;
     private final Set<Long> dependencySet;
 
+    private boolean ignoreMissing;
+
     /**
      * Create instance of database merger from package names.
      *
@@ -82,6 +84,7 @@ public class DatabaseMerger {
         this.universalChildren = universalCHA.getRight();
         this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
 
+        this.ignoreMissing = false;
     }
 
     /**
@@ -101,6 +104,16 @@ public class DatabaseMerger {
         this.universalParents = universalCHA.getLeft();
         this.universalChildren = universalCHA.getRight();
         this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
+
+        this.ignoreMissing = false;
+    }
+
+    public boolean getIgnoreMissing() {
+        return ignoreMissing;
+    }
+
+    public void setIgnoreMissing(final boolean ignoreMissing) {
+        this.ignoreMissing = ignoreMissing;
     }
 
     /**
@@ -237,15 +250,22 @@ public class DatabaseMerger {
         while (cursor.hasNext()) {
             var arcRecord = cursor.fetchNext();
             var arc = new Arc(arcRecord.value1(), arcRecord.value2(), arcRecord.value3());
-            if (callGraphData.isExternal(arc.target)) {
-                var node = typeMap.containsKey(arc.target) ? typeMap.get(arc.target) : fetchMissingNode(arc.target, dbContext);
-                if (!resolve(result, callGraphData, arc, node, false)) {
-                    addEdge(result, callGraphData, arc.source, arc.target, false);
+            try {
+                if (callGraphData.isExternal(arc.target)) {
+                    var node = typeMap.containsKey(arc.target) ? typeMap.get(arc.target) : fetchMissingNode(arc.target, dbContext);
+                    if (!resolve(result, callGraphData, arc, node, false)) {
+                        addEdge(result, callGraphData, arc.source, arc.target, false);
+                    }
+                } else {
+                    var node = typeMap.containsKey(arc.source) ? typeMap.get(arc.source) : fetchMissingNode(arc.source, dbContext);
+                    if (!resolve(result, callGraphData, arc, node, callGraphData.isExternal(arc.source))) {
+                        addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
+                    }
                 }
-            } else {
-                var node = typeMap.containsKey(arc.source) ? typeMap.get(arc.source) : fetchMissingNode(arc.source, dbContext);
-                if (!resolve(result, callGraphData, arc, node, callGraphData.isExternal(arc.source))) {
-                    addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
+            } catch (RuntimeException e) {
+                logger.warn(e.getMessage());
+                if (!ignoreMissing) {
+                    throw e;
                 }
             }
         }
