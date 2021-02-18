@@ -158,7 +158,7 @@ public class SearchEngine {
 	/** The filters whose conjunction will be applied by default when executing a query, unless otherwise
 	 *  specified (compare, e.g., {@link #fromCallable(long)} and {@link #fromCallable(long, LongPredicate)}). */
 	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
-	/** A list parallel to {@link #predicateFilters} that contains the filter specs (readable format of the filters). */	
+	/** A list parallel to {@link #predicateFilters} that contains the filter specs (readable format of the filters). */
 	private final ObjectArrayList<String> predicateFiltersSpec = new ObjectArrayList<>();
 
 
@@ -507,6 +507,7 @@ public class SearchEngine {
 
 		stitchingTime -= System.nanoTime();
 		final DatabaseMerger dm = new DatabaseMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, rocksDao);
+		dm.setIgnoreMissing(true);
 		final var stitchedGraph = getStitchedGraph(dm, rev);
 		stitchingTime += System.nanoTime();
 
@@ -652,6 +653,7 @@ public class SearchEngine {
 
 			stitchingTime -= System.nanoTime();
 			final DatabaseMerger dm = new DatabaseMerger(dependencyIds, context, rocksDao);
+			dm.setIgnoreMissing(true);
 
 			DirectedGraph stitchedGraph = null;
 			try {
