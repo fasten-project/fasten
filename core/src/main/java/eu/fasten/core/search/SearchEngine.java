@@ -158,6 +158,9 @@ public class SearchEngine {
 	/** The filters whose conjunction will be applied by default when executing a query, unless otherwise
 	 *  specified (compare, e.g., {@link #fromCallable(long)} and {@link #fromCallable(long, LongPredicate)}). */
 	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
+	/** A list parallel to {@link #predicateFilters} that contains the filter specs (readable format of the filters). */	
+	private final ObjectArrayList<String> predicateFiltersSpec = new ObjectArrayList<>();
+
 
 	/** LRU cache of stitched graphs. */
 	private final Long2ObjectLinkedOpenHashMap<DirectedGraph> stitchedGraphCache = new Long2ObjectLinkedOpenHashMap<>();
@@ -220,6 +223,7 @@ public class SearchEngine {
 		final String help =
 				"\t$help                           Help on commands\n" +
 				"\t$clear                          Clear filters\n" +
+				"\t$f ?                            Print the current filter\n" +
 				"\t$f pmatches <REGEXP>            Add filter: package (a.k.a. product) matches <REGEXP>\n" +
 				"\t$f vmatches <REGEXP>            Add filter: version matches <REGEXP>\n" +
 				"\t$f xmatches <REGEXP>            Add filter: path (namespace + entity) matches <REGEXP>\n" +
@@ -254,6 +258,7 @@ public class SearchEngine {
 
 			case "clear":
 				predicateFilters.clear();
+				predicateFiltersSpec.clear();
 				break;
 
 			case "f":
@@ -300,23 +305,33 @@ public class SearchEngine {
 				 	regExp = Pattern.compile(commandAndArgs[3]);
 				 	predicate = predicateFactory.metadataQueryJSONPointer(mds, jsonPointer, s -> matchRegexp(s, regExp));
 				 	break;
+				case "?":
+					System.err.println(String.join(" && ", predicateFiltersSpec));
+					break;
 				default:
 					throw new RuntimeException("Unknown type of predicate " + commandAndArgs[1]);
 				}
-				if (predicate != null) predicateFilters.push(predicate);
+				if (predicate != null) {
+					predicateFilters.push(predicate);
+					predicateFiltersSpec.push(String.join(" ", Arrays.copyOfRange(commandAndArgs, 1, commandAndArgs.length)));
+				}
 				break;
 
 			case "and": case "or":
 				if (predicateFilters.size() < 2) throw new RuntimeException("At least two predicates must be present");
-				if ("and".equals(commandAndArgs[0].toLowerCase()))
+				if ("and".equals(commandAndArgs[0].toLowerCase())) {
 					predicateFilters.push(predicateFilters.pop().and(predicateFilters.pop()));
-				else
+					predicateFiltersSpec.push("(" + predicateFiltersSpec.pop() + " && " + predicateFiltersSpec.pop() + ")");
+				} else {
 					predicateFilters.push(predicateFilters.pop().or(predicateFilters.pop()));
+					predicateFiltersSpec.push("(" + predicateFiltersSpec.pop() + " || " + predicateFiltersSpec.pop() + ")");
+				}
 				break;
 
 			case "not":
 				if (predicateFilters.size() < 1) throw new RuntimeException("At least one predicates must be present");
 				predicateFilters.push(predicateFilters.pop().negate());
+				predicateFiltersSpec.push("!(" + predicateFiltersSpec.pop() + ")");
 				break;
 
 			default:
