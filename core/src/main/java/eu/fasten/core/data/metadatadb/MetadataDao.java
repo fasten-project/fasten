@@ -39,6 +39,8 @@ import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Result;
 import org.jooq.SelectField;
+import org.jooq.exception.DataAccessException;
+import org.jooq.impl.DSL;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -721,19 +723,15 @@ public class MetadataDao {
      * @param edges List of edges records to insert
      */
     public void batchInsertEdges(List<EdgesRecord> edges) {
-        Query batchQuery = context.insertInto(Edges.EDGES,
-                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES,
-                Edges.EDGES.METADATA)
-                .values((Long) null, (Long) null, (CallSiteRecord[]) null, (JSONB) null)
-                .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
-                .set(Edges.EDGES.CALL_SITES, Edges.EDGES.as("excluded").CALL_SITES)
-                .set(Edges.EDGES.METADATA, field("coalesce(edges.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class));
-        var batchBind = context.batch(batchQuery);
+        var insert = context.insertInto(Edges.EDGES,
+                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES, Edges.EDGES.METADATA);
         for (var edge : edges) {
-            batchBind = batchBind.bind(edge.getSourceId(), edge.getTargetId(),
-                    edge.getCallSites(), edge.getMetadata());
+            insert = insert.values(edge.getSourceId(), edge.getTargetId(), edge.getCallSites(), edge.getMetadata());
         }
-        batchBind.execute();
+        insert.onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
+                .set(Edges.EDGES.CALL_SITES, Edges.EDGES.as("excluded").CALL_SITES)
+                .set(Edges.EDGES.METADATA, field("coalesce(edges.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
+                .execute();
     }
 
     /**

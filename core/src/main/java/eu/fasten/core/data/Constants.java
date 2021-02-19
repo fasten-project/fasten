@@ -1,7 +1,5 @@
 package eu.fasten.core.data;
 
-import java.util.List;
-
 public class Constants {
 
     public static final String mvnCoordinateSeparator = ":";
