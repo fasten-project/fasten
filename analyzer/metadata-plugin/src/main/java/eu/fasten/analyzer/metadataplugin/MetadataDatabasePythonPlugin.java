@@ -67,10 +67,7 @@ public class MetadataDatabasePythonPlugin extends Plugin {
             var namespaces = new HashSet<String>();
             namespaces.addAll(pyGraph.getClassHierarchy().get(PythonScope.internal).keySet());
             namespaces.addAll(pyGraph.getClassHierarchy().get(PythonScope.external).keySet());
-            var namespaceMap = metadataDao.getNamespaceMap(new ArrayList<>(namespaces));
-            namespaceMap.keySet().forEach(namespaces::remove);
-            namespaceMap.putAll(metadataDao.insertNamespaces(namespaces));
-            return namespaceMap;
+            return metadataDao.insertNamespaces(namespaces);
         }
 
         public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph,

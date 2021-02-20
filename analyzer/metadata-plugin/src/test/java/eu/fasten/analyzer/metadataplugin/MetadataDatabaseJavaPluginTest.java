@@ -124,8 +124,7 @@ public class MetadataDatabaseJavaPluginTest {
         namespacesMap.put("/internal.package/BInterface", 3L);
         namespacesMap.put("/external.package/A", 2L);
         namespacesMap.put("/java.lang/Object", 4L);
-        Mockito.when(metadataDao.getNamespaceMap(Mockito.anyList())).thenReturn(namespacesMap);
-        Mockito.when(metadataDao.insertNamespaces(Mockito.anySet())).thenReturn(Map.of());
+        Mockito.when(metadataDao.insertNamespaces(Mockito.anySet())).thenReturn(namespacesMap);
         long packageId = 8;
         Mockito.when(metadataDao.insertPackage(json.getString("product"), Constants.mvnForge)).thenReturn(packageId);
         long packageVersionId = 42;

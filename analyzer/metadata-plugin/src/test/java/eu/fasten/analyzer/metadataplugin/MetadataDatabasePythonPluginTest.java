@@ -111,8 +111,7 @@ public class MetadataDatabasePythonPluginTest {
        var namespacesMap = new HashMap<String, Long>(2);
        namespacesMap.put("/module.name/", 1L);
        namespacesMap.put("//external//", 2L);
-       Mockito.when(metadataDao.getNamespaceMap(Mockito.anyList())).thenReturn(namespacesMap);
-       Mockito.when(metadataDao.insertNamespaces(Mockito.anySet())).thenReturn(Map.of());
+       Mockito.when(metadataDao.insertNamespaces(Mockito.anySet())).thenReturn(namespacesMap);
         Mockito.when(metadataDao.insertPackage(json.getString("product"), Constants.pypiForge)).thenReturn(packageId);
         long packageVersionId = 42;
         Mockito.when(metadataDao.insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),

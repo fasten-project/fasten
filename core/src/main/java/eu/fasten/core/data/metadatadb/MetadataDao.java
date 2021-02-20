@@ -1852,16 +1852,6 @@ public class MetadataDao {
         return ("dummy updateCg query OK!");
     }
 
-    public Map<String, Long> getNamespaceMap(Collection<String> namespaces) {
-        var result = context
-                .selectFrom(Namespaces.NAMESPACES)
-                .where(Namespaces.NAMESPACES.NAMESPACE.in(namespaces))
-                .fetch();
-        var map = new HashMap<String, Long>(result.size());
-        result.forEach(r -> map.put(r.getNamespace(), r.getId()));
-        return map;
-    }
-
     public Map<String, Long> insertNamespaces(Collection<String> namespaces) {
         var insert = context.insertInto(Namespaces.NAMESPACES, Namespaces.NAMESPACES.NAMESPACE);
         for (var namespace : namespaces) {

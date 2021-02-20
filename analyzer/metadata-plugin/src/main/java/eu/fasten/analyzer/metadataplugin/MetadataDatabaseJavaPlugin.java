@@ -102,10 +102,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     }
                 }
             }
-            var namespaceMap = metadataDao.getNamespaceMap(new ArrayList<>(namespaces));
-            namespaceMap.keySet().forEach(namespaces::remove);
-            namespaceMap.putAll(metadataDao.insertNamespaces(namespaces));
-            return namespaceMap;
+            return metadataDao.insertNamespaces(namespaces);
         }
 
         public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
