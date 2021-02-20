@@ -20,8 +20,10 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.jooq.DSLContext;
 import org.json.JSONArray;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,14 +54,17 @@ public class ResolutionApiServiceImplTest {
         var version = "version";
         var transitive = true;
         var timestamp = -1L;
-        var deps = Set.of(
+        var deps = new ObjectLinkedOpenHashSet<>(Set.of(
                 new Revision(1L, "g1", "a1", "v1", new Timestamp(-1)),
                 new Revision(2L, "g2", "a2", "v1", new Timestamp(-1)),
                 new Revision(3L, "g3", "a3", "v1", new Timestamp(-1))
-        );
+        ));
         Mockito.when(resolver.resolveDependencies(packageName.split(Constants.mvnCoordinateSeparator)[0], packageName.split(Constants.mvnCoordinateSeparator)[1], version, timestamp, KnowledgeBaseConnector.dbContext, transitive)).thenReturn(deps);
         KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl";
-        var result = service.resolveDependencies(packageName, version, transitive, timestamp);
+        var kbDaoMock = Mockito.mock(MetadataDao.class);
+        Mockito.when(kbDaoMock.assertPackageExistence(packageName, version)).thenReturn(true);
+        KnowledgeBaseConnector.kbDao = kbDaoMock;
+        var result = service.resolveDependencies(packageName, version, transitive, timestamp, true);
         var jsonArray = new JSONArray();
         deps.stream().map(Revision::toJSON).peek(json -> {
             var group = json.getString("groupId");
@@ -80,11 +85,11 @@ public class ResolutionApiServiceImplTest {
         var version = "version";
         var transitive = true;
         var timestamp = -1L;
-        var dependents = Set.of(
+        var dependents = new ObjectLinkedOpenHashSet<>(Set.of(
                 new Revision(1L, "g1", "a1", "v1", new Timestamp(-1)),
                 new Revision(2L, "g2", "a2", "v1", new Timestamp(-1)),
                 new Revision(3L, "g3", "a3", "v1", new Timestamp(-1))
-        );
+        ));
         Mockito.when(resolver.resolveDependents(packageName.split(Constants.mvnCoordinateSeparator)[0], packageName.split(Constants.mvnCoordinateSeparator)[1], version, timestamp, transitive)).thenReturn(dependents);
         KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl";
         var result = service.resolveDependents(packageName, version, transitive, timestamp);

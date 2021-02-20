@@ -90,7 +90,7 @@ public class Main implements Runnable {
         var metadataPlugin = getMetadataDBExtension();
         try {
             metadataPlugin.setDBConnection(new HashMap<>(Map.of(getForge(),
-                                           PostgresConnector.getDSLContext(dbUrl, dbUser))));
+                                           PostgresConnector.getDSLContext(dbUrl, dbUser, true))));
         } catch (IllegalArgumentException | SQLException e) {
             logger.error("Could not connect to the database", e);
             return;

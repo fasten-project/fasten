@@ -36,13 +36,9 @@ public class MavenResolverTest {
     }
 
     @Test
-    public void resolveFullDependencySetOnlineTest() throws FileNotFoundException {
+    public void resolveFullDependencySetOnlineTest() {
         var expected = Set.of(new Revision("org.hamcrest", "hamcrest-core", "1.3", new Timestamp(-1)));
-        try {
-            var actual = mavenResolver.resolveFullDependencySetOnline("junit", "junit", "4.12", -1, null);
-            assertEquals(expected, actual);
-        } catch (RuntimeException e) {
-            e.printStackTrace(System.err);
-        }
+        var actual = mavenResolver.resolveFullDependencySetOnline("junit", "junit", "4.12");
+        assertEquals(expected, actual);
     }
 }

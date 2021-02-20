@@ -141,7 +141,7 @@ public class Main implements Runnable {
         String cleanURI = dbURL.substring(5);
         URI uri = URI.create(cleanURI);
         return PostgresConnector.getDSLContext("jdbc:postgresql://" + uri.getHost() + uri.getPath(),
-                uri.getUserInfo());
+                uri.getUserInfo(), true);
     }
 
     public static void main(String[] args) {

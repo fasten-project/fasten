@@ -95,7 +95,7 @@ public class MetadataDatabaseCPlugin extends Plugin {
 
             // Insert package version record
             final long packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    CCallGraph.getCgGenerator(), CCallGraph.version, CCallGraph.architecture,
+                    CCallGraph.getCgGenerator(), CCallGraph.version, null, CCallGraph.architecture,
                     getProperTimestamp(CCallGraph.timestamp), new JSONObject());
 
             var namespaceMap = getNamespaceMap(callGraph, metadataDao);

@@ -26,21 +26,10 @@ import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.CallSiteRecord;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import eu.fasten.core.utils.FastenUriUtils;
 import org.apache.commons.math3.util.Pair;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.jooq.JSONFormat;
-import org.jooq.Query;
-import org.jooq.Record;
-import org.jooq.Record1;
-import org.jooq.Record2;
-import org.jooq.Result;
-import org.jooq.SelectField;
-import org.jooq.exception.DataAccessException;
-import org.jooq.impl.DSL;
+import org.jooq.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -140,6 +129,20 @@ public class MetadataDao {
         return recordIds;
     }
 
+    public long insertArtifactRepository(String repositoryBaseUrl) {
+        var result = context.insertInto(ArtifactRepositories.ARTIFACT_REPOSITORIES,
+                ArtifactRepositories.ARTIFACT_REPOSITORIES.REPOSITORY_BASE_URL)
+                .values(repositoryBaseUrl)
+                .onConflictOnConstraint(Keys.UNIQUE_ARTIFACT_REPOSITORIES).doUpdate()
+                .set(ArtifactRepositories.ARTIFACT_REPOSITORIES.REPOSITORY_BASE_URL,
+                        ArtifactRepositories.ARTIFACT_REPOSITORIES.as("excluded").REPOSITORY_BASE_URL)
+                .returning(ArtifactRepositories.ARTIFACT_REPOSITORIES.ID).fetchOne();
+        if (result == null) {
+            return -1;
+        }
+        return result.getId();
+    }
+
     /**
      * Inserts a record in 'package_versions' table in the database.
      *
@@ -151,17 +154,18 @@ public class MetadataDao {
      * @param metadata     Metadata of the package version
      * @return ID of the new record
      */
-    public long insertPackageVersion(long packageId, String cgGenerator, String version,
+    public long insertPackageVersion(long packageId, String cgGenerator, String version, Long artifactRepositoryId,
                                      String architecture, Timestamp createdAt, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
                 PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID,
                 PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
                 PackageVersions.PACKAGE_VERSIONS.VERSION,
+                PackageVersions.PACKAGE_VERSIONS.ARTIFACT_REPOSITORY_ID,
                 PackageVersions.PACKAGE_VERSIONS.ARCHITECTURE,
                 PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
                 PackageVersions.PACKAGE_VERSIONS.METADATA)
-                .values(packageId, cgGenerator, version, architecture, createdAt, metadataJsonb)
+                .values(packageId, cgGenerator, version, artifactRepositoryId, architecture, createdAt, metadataJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_PACKAGE_VERSION_GENERATOR).doUpdate()
                 .set(PackageVersions.PACKAGE_VERSIONS.CREATED_AT,
                         PackageVersions.PACKAGE_VERSIONS.as("excluded").CREATED_AT)
@@ -185,8 +189,9 @@ public class MetadataDao {
      * @throws IllegalArgumentException if lists are not of the same size
      */
     public List<Long> insertPackageVersions(long packageId, List<String> cgGenerators,
-                                            List<String> versions, List<String> architectures,
-                                            List<Timestamp> createdAt, List<JSONObject> metadata)
+                                            List<String> versions, List<Long> artifactRepositoriesIds,
+                                            List<String> architectures, List<Timestamp> createdAt,
+                                            List<JSONObject> metadata)
             throws IllegalArgumentException {
         if (cgGenerators.size() != versions.size() || versions.size() != createdAt.size()
                 || createdAt.size() != metadata.size() || metadata.size() != architectures.size()) {
@@ -196,7 +201,7 @@ public class MetadataDao {
         var recordIds = new ArrayList<Long>(length);
         for (int i = 0; i < length; i++) {
             long result = insertPackageVersion(packageId, cgGenerators.get(i), versions.get(i),
-                    architectures.get(i), createdAt.get(i), metadata.get(i));
+                    artifactRepositoriesIds.get(i), architectures.get(i), createdAt.get(i), metadata.get(i));
             recordIds.add(result);
         }
         return recordIds;
@@ -852,13 +857,43 @@ public class MetadataDao {
         return ids;
     }
 
+    public long insertIngestedArtifact(String packageName, String version, Timestamp timestamp) {
+        var result = context
+                .insertInto(IngestedArtifacts.INGESTED_ARTIFACTS,
+                        IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
+                        IngestedArtifacts.INGESTED_ARTIFACTS.VERSION,
+                        IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP)
+                .values(packageName, version, timestamp)
+                .onConflictOnConstraint(Keys.UNIQUE_INGESTED_ARTIFACTS).doUpdate()
+                .set(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").PACKAGE_NAME)
+                .set(IngestedArtifacts.INGESTED_ARTIFACTS.VERSION, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").VERSION)
+                .set(IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").TIMESTAMP)
+                .returning(IngestedArtifacts.INGESTED_ARTIFACTS.ID)
+                .fetchOne();
+        if (result == null) {
+            return -1;
+        }
+        return result.getId();
+    }
+
+    public boolean isArtifactIngested(String packageName, String version) {
+        var result = context
+                .select(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
+                        IngestedArtifacts.INGESTED_ARTIFACTS.VERSION)
+                .from(IngestedArtifacts.INGESTED_ARTIFACTS)
+                .where(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME.eq(packageName))
+                .and(IngestedArtifacts.INGESTED_ARTIFACTS.VERSION.eq(version))
+                .fetch();
+        return !result.isEmpty();
+    }
+
     protected Condition packageVersionWhereClause(String name, String version) {
         return trueCondition()
                 .and(Packages.PACKAGES.PACKAGE_NAME.equalIgnoreCase(name))
                 .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equalIgnoreCase(version));
     }
 
-    protected boolean assertPackageExistence(String name, String version) {
+    public boolean assertPackageExistence(String name, String version) {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
 
@@ -872,7 +907,7 @@ public class MetadataDao {
         return selectPackage != null;
     }
 
-    protected boolean assertModulesExistence(String name, String version, String namespace) {
+    public boolean assertModulesExistence(String name, String version, String namespace) {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
@@ -896,13 +931,15 @@ public class MetadataDao {
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
 
         // Building and executing the query
         Record queryResult = this.context
                 .select(p.fields())
-                .select(pv.VERSION)
+                .select(pv.VERSION, ar.REPOSITORY_BASE_URL)
                 .from(p)
                 .leftJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .leftJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
                 .orderBy(pv.CREATED_AT.sortDesc().nullsLast())
                 .limit(1)
@@ -942,13 +979,14 @@ public class MetadataDao {
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
 
         // Select clause
         SelectField<?>[] selectClause;
         if (metadataOnly) {
             selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, pv.METADATA};
         } else {
-            selectClause = pv.fields();
+            selectClause = new SelectField[]{pv.ID, pv.PACKAGE_ID, pv.VERSION, pv.CG_GENERATOR, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.METADATA, pv.CREATED_AT};
         }
 
         // Building and executing the query
@@ -956,6 +994,7 @@ public class MetadataDao {
                 .select(selectClause)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .leftJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
                 .limit(1)
                 .fetchOne();
@@ -988,12 +1027,14 @@ public class MetadataDao {
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
 
         // Query
-        Result<Record> queryResult = context
-                .select(pv.fields())
+        var queryResult = context
+                .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.CREATED_AT)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
                 .offset(offset)
                 .limit(limit)
@@ -1013,9 +1054,11 @@ public class MetadataDao {
      * @param limit
      * @return All package version dependencies.
      */
-    public String getPackageDependencies(String packageName, String packageVersion, int offset, int limit) {
+    public String getPackageDependencies(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
 
-        if (!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1041,9 +1084,11 @@ public class MetadataDao {
     public String getPackageModules(String packageName,
                                     String packageVersion,
                                     int offset,
-                                    int limit) {
+                                    int limit) throws PackageVersionNotFoundException {
 
-        if (!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1074,7 +1119,11 @@ public class MetadataDao {
 
     public String getModuleMetadata(String packageName,
                                     String packageVersion,
-                                    String moduleNamespace) {
+                                    String moduleNamespace) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1108,7 +1157,10 @@ public class MetadataDao {
                                  String packageVersion,
                                  String moduleNamespace,
                                  int offset,
-                                 int limit) {
+                                 int limit) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         if (!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
@@ -1142,7 +1194,10 @@ public class MetadataDao {
                                      String packageVersion,
                                      String moduleNamespace,
                                      int offset,
-                                     int limit) {
+                                     int limit) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         if (!assertModulesExistence(packageName, packageVersion, moduleNamespace)) return null;
 
@@ -1200,8 +1255,10 @@ public class MetadataDao {
         return json.toString();
     }
 
-    public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) {
-        if (!assertPackageExistence(packageName, packageVersion)) return null;
+    public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1233,7 +1290,11 @@ public class MetadataDao {
 
     public String getBinaryModuleMetadata(String packageName,
                                           String packageVersion,
-                                          String binaryModule) {
+                                          String binaryModule) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
@@ -1267,8 +1328,10 @@ public class MetadataDao {
                                        String packageVersion,
                                        String binaryModule,
                                        int offset,
-                                       int limit) {
-        if (!assertPackageExistence(packageName, packageVersion)) return null;
+                                       int limit) throws PackageVersionNotFoundException {
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1294,9 +1357,11 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getPackageCallables(String packageName, String packageVersion, int offset, int limit) {
+    public String getPackageCallables(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
 
-        if (!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1437,9 +1502,11 @@ public class MetadataDao {
         return map;
     }
 
-    public String getPackageFiles(String packageName, String packageVersion, int offset, int limit) {
+    public String getPackageFiles(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
 
-        if (!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1474,9 +1541,11 @@ public class MetadataDao {
                                   String packageVersion,
                                   boolean idsOnly,
                                   int offset,
-                                  int limit) {
+                                  int limit) throws PackageVersionNotFoundException {
 
-        if (!assertPackageExistence(packageName, packageVersion)) return null;
+        if (!assertPackageExistence(packageName, packageVersion)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + packageVersion);
+        }
 
         // Tables
         Packages p = Packages.PACKAGES;
@@ -1505,7 +1574,6 @@ public class MetadataDao {
                 .offset(offset)
                 .limit(limit)
                 .fetch();
-
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));

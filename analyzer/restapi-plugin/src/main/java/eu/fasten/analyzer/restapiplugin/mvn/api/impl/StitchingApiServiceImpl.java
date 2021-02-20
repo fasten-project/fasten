@@ -19,12 +19,14 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.api.StitchingApiService;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.DatabaseMerger;
 import eu.fasten.core.utils.FastenUriUtils;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
@@ -50,6 +52,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
 
     @Override
     public ResponseEntity<String> getCallablesMetadata(List<String> fullFastenUris, boolean allAttributes, List<String> attributes) {
+        if (!allAttributes && attributes == null) {
+            return new ResponseEntity<>("Either 'allAttributes' must be 'true' or a list of 'attributes' must be provided", HttpStatus.BAD_REQUEST);
+        }
         Map<String, List<String>> packageVersionUris;
         try {
             packageVersionUris = fullFastenUris.stream().map(FastenUriUtils::parseFullFastenUri).collect(Collectors.toMap(
@@ -71,7 +76,10 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             var packageName = forgelessArtifact.split("\\$")[0];
             var version = forgelessArtifact.split("\\$")[1];
             var partialUris = packageVersionUris.get(artifact);
-            metadataMap.putAll(KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris));
+            var urisMetadata = KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris);
+            if (urisMetadata != null) {
+                metadataMap.putAll(urisMetadata);
+            }
         }
         var json = new JSONObject();
         for (var entry : metadataMap.entrySet()) {
@@ -101,7 +109,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             var id = KnowledgeBaseConnector.kbDao.getPackageVersionID(groupId + Constants.mvnCoordinateSeparator + artifactId, version);
             return new Revision(id, groupId, artifactId, version, new Timestamp(-1));
         }).collect(Collectors.toSet());
-        var virtualNode = KnowledgeBaseConnector.graphResolver.addVirtualNode(revisions);
+        var virtualNode = KnowledgeBaseConnector.graphResolver.addVirtualNode(new ObjectLinkedOpenHashSet<>(revisions));
         var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbContext, true);
         KnowledgeBaseConnector.graphResolver.removeVirtualNode(virtualNode);
         var jsonArray = new JSONArray();
@@ -122,6 +130,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         DirectedGraph graph;
         if (needStitching) {
             var mavenCoordinate = KnowledgeBaseConnector.kbDao.getMavenCoordinate(packageVersionId);
+            if (mavenCoordinate == null) {
+                return new ResponseEntity<>("Package version ID not found", HttpStatus.NOT_FOUND);
+            }
             var groupId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[0];
             var artifactId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
             var version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
@@ -155,6 +166,12 @@ public class StitchingApiServiceImpl implements StitchingApiService {
 
     @Override
     public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise) {
+
+        if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, version)) {
+            LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+
         var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
 
@@ -265,5 +282,18 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         }
         visited.remove(source);
         return vulnerablePaths;
+    }
+
+    public ResponseEntity<String> batchIngestArtifacts(JSONArray jsonArtifacts) {
+        for (int i = 0; i < jsonArtifacts.length(); i++) {
+            var json = jsonArtifacts.getJSONObject(i);
+            var groupId = json.getString("groupId");
+            var artifactId = json.getString("artifactId");
+            var version = json.getString("version");
+            var date = json.optLong("date", -1);
+            var artifactRepository = json.optString("artifactRepository", null);
+            LazyIngestionProvider.ingestArtifactIfNecessary(groupId + Constants.mvnCoordinateSeparator + artifactId, version, artifactRepository, date);
+        }
+        return new ResponseEntity<>("Ingested successfully", HttpStatus.OK);
     }
 }

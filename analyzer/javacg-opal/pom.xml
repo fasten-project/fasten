@@ -176,6 +176,16 @@
                                 <excludes>
 <!--                                    <exclude>org.slf4j:slf4j-simple:*</exclude>-->
 <!--                                    <exclude>org.slf4j:slf4j-api:*</exclude>-->
+                                    <exclude>org.rocksdb:*</exclude>
+                                    <exclude>org.jooq:*</exclude>
+                                    <exclude>it.unimi.dsi:webgraph-big:*</exclude>
+                                    <exclude>it.unimi.dsi:webgraph:*</exclude>
+                                    <exclude>it.unimi.dsi:sux4j:*</exclude>
+                                    <exclude>org.postgresql:*</exclude>
+                                    <exclude>com.github.zafarkhaja:*</exclude>
+                                    <exlude>org.apache.maven:*</exlude>
+                                    <exlude>org.apache.maven.resolver:*</exlude>
+                                    <exclude>org.apache.maven.wagon:*</exclude>
                                 </excludes>
                             </artifactSet>
                             <transformers>

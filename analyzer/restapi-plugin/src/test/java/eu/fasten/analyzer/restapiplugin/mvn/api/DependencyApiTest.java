@@ -45,9 +45,9 @@ public class DependencyApiTest {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("package version dependencies", HttpStatus.OK);
-        Mockito.when(service.getPackageDependencies(packageName, version, offset, limit)).thenReturn(response);
-        var result = api.getPackageDependencies(packageName, version, offset, limit);
+        Mockito.when(service.getPackageDependencies(packageName, version, offset, limit, null, null)).thenReturn(response);
+        var result = api.getPackageDependencies(packageName, version, offset, limit, null, null);
         assertEquals(response, result);
-        Mockito.verify(service).getPackageDependencies(packageName, version, offset, limit);
+        Mockito.verify(service).getPackageDependencies(packageName, version, offset, limit, null, null);
     }
 }

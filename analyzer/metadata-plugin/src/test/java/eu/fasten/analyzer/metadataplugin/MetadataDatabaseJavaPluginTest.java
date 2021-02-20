@@ -129,7 +129,7 @@ public class MetadataDatabaseJavaPluginTest {
         Mockito.when(metadataDao.insertPackage(json.getString("product"), Constants.mvnForge)).thenReturn(packageId);
         long packageVersionId = 42;
         Mockito.when(metadataDao.insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),
-                Mockito.eq(json.getString("version")), Mockito.eq(null), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class))).thenReturn(packageVersionId);
+                Mockito.eq(json.getString("version")), Mockito.eq(null), Mockito.eq(null), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class))).thenReturn(packageVersionId);
         long fileId = 4;
         Mockito.when(metadataDao.insertFile(packageVersionId, "B.java")).thenReturn(fileId);
         Mockito.when(metadataDao.insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt())).thenReturn(List.of(64L, 65L));
@@ -140,7 +140,7 @@ public class MetadataDatabaseJavaPluginTest {
         assertEquals(packageVersionId, id);
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), Constants.mvnForge);
         Mockito.verify(metadataDao).insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),
-                Mockito.eq(json.getString("version")), Mockito.eq(null), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class));
+                Mockito.eq(json.getString("version")), Mockito.eq(null), Mockito.eq(null), Mockito.eq(new Timestamp(json.getLong("timestamp") * 1000)), Mockito.any(JSONObject.class));
         Mockito.verify(metadataDao).insertFile(packageVersionId, "B.java");
         Mockito.verify(metadataDao).insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt());
         Mockito.verify(metadataDao).batchInsertEdges(Mockito.anyList());

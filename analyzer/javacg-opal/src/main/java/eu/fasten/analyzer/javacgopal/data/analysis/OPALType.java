@@ -129,7 +129,6 @@ public class OPALType {
             superClassesURIs = new LinkedList<>();
         }
 
-        final var methodsMap = getMethodMaps(type.getMethods());
         return Map.of(OPALMethod.getTypeURI(klass),
                 new JavaType(type.getSourceFileName(), toURIMethods(type.getMethods()),
                         superClassesURIs, toURIInterfaces(type.getSuperInterfaces()),
@@ -251,9 +250,18 @@ public class OPALType {
      * @return last line of the method
      */
     private static Object getFirstLine(Method method) {
-        return method.body().nonEmpty()
-                ? method.body().get().firstLineNumber().getOrElse(() -> "")
-                : "notFound";
+
+        if (method != null) {
+            if (method.body().isDefined()) {
+                if (method.body().get().lineNumberTable() != null)
+                    if(method.body().get().lineNumberTable().isDefined()) {
+                    return method.body().get().lineNumberTable().get().lineNumbers().head()
+                        .lineNumber();
+                }
+            }
+        }
+        return "notFound";
+
     }
 
     /**
@@ -263,9 +271,16 @@ public class OPALType {
      * @return last line of the method
      */
     private static Object getLastLine(Method method) {
-        return method.body().nonEmpty()
-                ? method.body().get().lineNumber(method.body().get().codeSize()).getOrElse(() -> "")
-                : "notFound";
+        if (method != null) {
+            if (method.body().isDefined()) {
+                if (method.body().get().lineNumberTable() != null)
+                    if(method.body().get().lineNumberTable().isDefined()) {
+                        return method.body().get().lineNumberTable().get().lineNumbers().last()
+                            .lineNumber();
+                    }
+            }
+        }
+        return "notFound";
     }
 
     /**

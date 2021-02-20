@@ -22,10 +22,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaScope;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Objects;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -36,6 +43,8 @@ import org.opalj.br.ClassHierarchy;
 import org.opalj.br.Code;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.FieldType;
+import org.opalj.br.LineNumber;
+import org.opalj.br.LineNumberTable;
 import org.opalj.br.Method;
 import org.opalj.br.MethodDescriptor;
 import org.opalj.br.ObjectType;
@@ -359,8 +368,8 @@ class OPALTypeTest {
         Mockito.when(method.instructionsOption()).thenReturn(Option.empty());
 
         node = OPALType.toURIMethods(methods).get(123);
-        Assertions.assertEquals("", node.getMetadata().get("first"));
-        Assertions.assertEquals("", node.getMetadata().get("last"));
+        Assertions.assertEquals(10, node.getMetadata().get("first"));
+        Assertions.assertEquals(30, node.getMetadata().get("last"));
         Assertions.assertEquals(false, node.getMetadata().get("defined"));
         Assertions.assertEquals("public", node.getMetadata().get("access"));
     }
@@ -428,9 +437,13 @@ class OPALTypeTest {
         Mockito.when(classFile.thisType()).thenReturn(type);
 
         var code = Mockito.mock(Code.class);
-        Mockito.when(code.firstLineNumber()).thenReturn(Option.apply(10));
-        Mockito.when(code.lineNumber(20)).thenReturn(Option.apply(30));
-        Mockito.when(code.codeSize()).thenReturn(20);
+        var lineNumberTable = Mockito.mock(LineNumberTable.class);
+        LineNumber[] lineNumber = new LineNumber[2];
+        lineNumber[0] = new LineNumber(0,10);
+        lineNumber[1] = new LineNumber(1,30);
+        var lineNumbers = new RefArray<LineNumber>(lineNumber);
+        Mockito.when(code.lineNumberTable()).thenReturn(Option.apply(lineNumberTable));
+        Mockito.when(code.lineNumberTable().get().lineNumbers()).thenReturn(lineNumbers);
 
         var method = Mockito.mock(Method.class);
         Mockito.when(method.descriptor()).thenReturn(descriptor);
@@ -509,4 +522,41 @@ class OPALTypeTest {
         assertEquals(superInterface,
                 OPALType.extractSuperInterfaces(classHierarchy, currentType).get(0));
     }
+
+    @Test
+    void lineNumbersSouldBeAccurate() throws OPALException, IOException {
+
+        var cg = getRCG("linenumbertests/APIConsumerImpl.class");
+
+        assertLineNumber(cg,"/org.wso2.carbon.apimgt.impl/APIConsumerImpl.%3Cinit%3E()%2Fjava" +
+            ".lang%2FVoidType", 193, 195);
+        assertLineNumber(cg, "/org.wso2.carbon.apimgt.impl/APIConsumerImpl.%3Cinit%3E" +
+            "(%2Fjava.lang%2FString,APIMRegistryService)%2Fjava.lang%2FVoidType", 198, 202);
+
+        cg = getRCG("linenumbertests/ProcessIdUtil.class");
+
+        assertLineNumber(cg, "/org.apache.logging.log4j.util/ProcessIdUtil.getProcessId()%2Fjava" +
+            ".lang%2FString", 33, 49);
+
+    }
+
+    private void assertLineNumber(PartialCallGraph cg, final String uri, final int first,
+                                  final int last) {
+        for (final var type : cg.getClassHierarchy().get(JavaScope.internalTypes).values()) {
+            for (final var node : type.getMethods().values()) {
+                if (node.getUri().toString().equals(uri)) {
+                    assertEquals(first, node.getMetadata().get("first"));
+                    assertEquals(last, node.getMetadata().get("last"));
+                }
+            }
+        }
+    }
+
+    private PartialCallGraph getRCG(String s) throws OPALException {
+        return new PartialCallGraph(new CallGraphConstructor(
+            new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource(s)).getFile()), "",
+            "CHA"));
+    }
 }
+

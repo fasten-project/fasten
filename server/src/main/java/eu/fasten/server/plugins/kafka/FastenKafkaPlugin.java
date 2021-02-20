@@ -76,7 +76,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final LocalStorage localStorage;
 
     // Executor service which creates a thread pool and re-uses threads when possible.
-    private final ExecutorService exexcutorService = Executors.newCachedThreadPool();
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     /**
      * Constructs a FastenKafkaConsumer.
@@ -91,7 +91,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         if (enableKafka) {
             this.connection = new KafkaConsumer<>(consumerProperties);
-            this.producer = new KafkaProducer(producerProperties);
+            this.producer = new KafkaProducer<>(producerProperties);
         }
 
         this.skipOffsets = skipOffsets;
@@ -198,7 +198,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 .collect(Collectors.joining(", "));
         String allPartitions = messagesProcessed.stream().map((x) -> x.right).map(Object::toString)
                 .collect(Collectors.joining(", "));
-        logger.info("Committed offsets [" + allOffsets + "] of partitions [" + allPartitions + "].");
+
+        if (!records.isEmpty()) {
+            logger.info("Committed offsets [" + allOffsets + "] of partitions [" + allPartitions + "].");
+        }
 
 
         // If local storage is enabled, clear the correct partitions after offsets are committed.
@@ -475,12 +478,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      *                Based on: https://stackoverflow.com/questions/1164301/how-do-i-call-some-blocking-method-with-a-timeout-in-java
      */
     public void consumeWithTimeout(String input, long timeout, boolean exitOnTimeout) {
-        Runnable consumeTask = () -> {
-            plugin.consume(input);
-        };
+        Runnable consumeTask = () -> plugin.consume(input);
 
         // Submit the consume task to a thread.
-        Future futureConsumeTask = exexcutorService.submit(consumeTask);
+        var futureConsumeTask = executorService.submit(consumeTask);
 
         try {
             futureConsumeTask.get(timeout, TimeUnit.SECONDS);

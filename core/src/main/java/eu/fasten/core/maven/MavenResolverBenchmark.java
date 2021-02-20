@@ -68,7 +68,7 @@ public class MavenResolverBenchmark implements Runnable {
         }
         DSLContext dbContext;
         try {
-            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser);
+            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser, true);
         } catch (SQLException e) {
             logger.error("Could not connect to the database", e);
             return;

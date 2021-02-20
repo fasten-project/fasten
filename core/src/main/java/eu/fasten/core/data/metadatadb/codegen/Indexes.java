@@ -4,12 +4,14 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
@@ -41,6 +43,8 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index ARTIFACT_REPOSITORIES_PKEY = Indexes0.ARTIFACT_REPOSITORIES_PKEY;
+    public static final Index UNIQUE_ARTIFACT_REPOSITORIES = Indexes0.UNIQUE_ARTIFACT_REPOSITORIES;
     public static final Index UNIQUE_BINARY_MODULE_FILE = Indexes0.UNIQUE_BINARY_MODULE_FILE;
     public static final Index BINARY_MODULES_PKEY = Indexes0.BINARY_MODULES_PKEY;
     public static final Index UNIQUE_VERSION_NAME = Indexes0.UNIQUE_VERSION_NAME;
@@ -50,6 +54,8 @@ public class Indexes {
     public static final Index UNIQUE_SOURCE_TARGET = Indexes0.UNIQUE_SOURCE_TARGET;
     public static final Index FILES_PKEY = Indexes0.FILES_PKEY;
     public static final Index UNIQUE_VERSION_PATH = Indexes0.UNIQUE_VERSION_PATH;
+    public static final Index INGESTED_ARTIFACTS_PKEY = Indexes0.INGESTED_ARTIFACTS_PKEY;
+    public static final Index UNIQUE_INGESTED_ARTIFACTS = Indexes0.UNIQUE_INGESTED_ARTIFACTS;
     public static final Index UNIQUE_MODULE_FILE = Indexes0.UNIQUE_MODULE_FILE;
     public static final Index MODULES_PKEY = Indexes0.MODULES_PKEY;
     public static final Index UNIQUE_VERSION_NAMESPACE = Indexes0.UNIQUE_VERSION_NAMESPACE;
@@ -66,6 +72,8 @@ public class Indexes {
     // -------------------------------------------------------------------------
 
     private static class Indexes0 {
+        public static Index ARTIFACT_REPOSITORIES_PKEY = Internal.createIndex("artifact_repositories_pkey", ArtifactRepositories.ARTIFACT_REPOSITORIES, new OrderField[] { ArtifactRepositories.ARTIFACT_REPOSITORIES.ID }, true);
+        public static Index UNIQUE_ARTIFACT_REPOSITORIES = Internal.createIndex("unique_artifact_repositories", ArtifactRepositories.ARTIFACT_REPOSITORIES, new OrderField[] { ArtifactRepositories.ARTIFACT_REPOSITORIES.REPOSITORY_BASE_URL }, true);
         public static Index UNIQUE_BINARY_MODULE_FILE = Internal.createIndex("unique_binary_module_file", BinaryModuleContents.BINARY_MODULE_CONTENTS, new OrderField[] { BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID, BinaryModuleContents.BINARY_MODULE_CONTENTS.FILE_ID }, true);
         public static Index BINARY_MODULES_PKEY = Internal.createIndex("binary_modules_pkey", BinaryModules.BINARY_MODULES, new OrderField[] { BinaryModules.BINARY_MODULES.ID }, true);
         public static Index UNIQUE_VERSION_NAME = Internal.createIndex("unique_version_name", BinaryModules.BINARY_MODULES, new OrderField[] { BinaryModules.BINARY_MODULES.PACKAGE_VERSION_ID, BinaryModules.BINARY_MODULES.NAME }, true);
@@ -75,6 +83,8 @@ public class Indexes {
         public static Index UNIQUE_SOURCE_TARGET = Internal.createIndex("unique_source_target", Edges.EDGES, new OrderField[] { Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID }, true);
         public static Index FILES_PKEY = Internal.createIndex("files_pkey", Files.FILES, new OrderField[] { Files.FILES.ID }, true);
         public static Index UNIQUE_VERSION_PATH = Internal.createIndex("unique_version_path", Files.FILES, new OrderField[] { Files.FILES.PACKAGE_VERSION_ID, Files.FILES.PATH }, true);
+        public static Index INGESTED_ARTIFACTS_PKEY = Internal.createIndex("ingested_artifacts_pkey", IngestedArtifacts.INGESTED_ARTIFACTS, new OrderField[] { IngestedArtifacts.INGESTED_ARTIFACTS.ID }, true);
+        public static Index UNIQUE_INGESTED_ARTIFACTS = Internal.createIndex("unique_ingested_artifacts", IngestedArtifacts.INGESTED_ARTIFACTS, new OrderField[] { IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME, IngestedArtifacts.INGESTED_ARTIFACTS.VERSION }, true);
         public static Index UNIQUE_MODULE_FILE = Internal.createIndex("unique_module_file", ModuleContents.MODULE_CONTENTS, new OrderField[] { ModuleContents.MODULE_CONTENTS.MODULE_ID, ModuleContents.MODULE_CONTENTS.FILE_ID }, true);
         public static Index MODULES_PKEY = Internal.createIndex("modules_pkey", Modules.MODULES, new OrderField[] { Modules.MODULES.ID }, true);
         public static Index UNIQUE_VERSION_NAMESPACE = Internal.createIndex("unique_version_namespace", Modules.MODULES, new OrderField[] { Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE_ID }, true);

@@ -73,10 +73,10 @@ class PackageApiTest {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("package version", HttpStatus.OK);
-        Mockito.when(service.getPackageVersion(packageName, version)).thenReturn(response);
-        var result = api.getPackageVersion(packageName, version);
+        Mockito.when(service.getPackageVersion(packageName, version, null, null)).thenReturn(response);
+        var result = api.getPackageVersion(packageName, version, null, null);
         assertEquals(response, result);
-        Mockito.verify(service).getPackageVersion(packageName, version);
+        Mockito.verify(service).getPackageVersion(packageName, version, null, null);
     }
 
     @Test
@@ -95,10 +95,10 @@ class PackageApiTest {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("package version callgraph", HttpStatus.OK);
-        Mockito.when(service.getPackageCallgraph(packageName, version, offset, limit)).thenReturn(response);
-        var result = api.getPackageCallgraph(packageName, version, offset, limit);
+        Mockito.when(service.getPackageCallgraph(packageName, version, offset, limit, null, null)).thenReturn(response);
+        var result = api.getPackageCallgraph(packageName, version, offset, limit, null, null);
         assertEquals(response, result);
-        Mockito.verify(service).getPackageCallgraph(packageName, version, offset, limit);
+        Mockito.verify(service).getPackageCallgraph(packageName, version, offset, limit, null, null);
     }
 
     @Test

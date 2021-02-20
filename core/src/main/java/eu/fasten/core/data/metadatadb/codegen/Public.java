@@ -4,12 +4,14 @@
 package eu.fasten.core.data.metadatadb.codegen;
 
 
+import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
@@ -44,12 +46,17 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = 1809997373;
+    private static final long serialVersionUID = 556733535;
 
     /**
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * The table <code>public.artifact_repositories</code>.
+     */
+    public final ArtifactRepositories ARTIFACT_REPOSITORIES = eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories.ARTIFACT_REPOSITORIES;
 
     /**
      * The table <code>public.binary_module_contents</code>.
@@ -80,6 +87,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.files</code>.
      */
     public final Files FILES = eu.fasten.core.data.metadatadb.codegen.tables.Files.FILES;
+
+    /**
+     * The table <code>public.ingested_artifacts</code>.
+     */
+    public final IngestedArtifacts INGESTED_ARTIFACTS = eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts.INGESTED_ARTIFACTS;
 
     /**
      * The table <code>public.module_contents</code>.
@@ -133,9 +145,11 @@ public class Public extends SchemaImpl {
 
     private final List<Sequence<?>> getSequences0() {
         return Arrays.<Sequence<?>>asList(
+            Sequences.ARTIFACT_REPOSITORIES_ID_SEQ,
             Sequences.BINARY_MODULES_ID_SEQ,
             Sequences.CALLABLES_ID_SEQ,
             Sequences.FILES_ID_SEQ,
+            Sequences.INGESTED_ARTIFACTS_ID_SEQ,
             Sequences.MODULES_ID_SEQ,
             Sequences.NAMESPACES_ID_SEQ,
             Sequences.PACKAGE_VERSIONS_ID_SEQ,
@@ -151,12 +165,14 @@ public class Public extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
+            ArtifactRepositories.ARTIFACT_REPOSITORIES,
             BinaryModuleContents.BINARY_MODULE_CONTENTS,
             BinaryModules.BINARY_MODULES,
             Callables.CALLABLES,
             Dependencies.DEPENDENCIES,
             Edges.EDGES,
             Files.FILES,
+            IngestedArtifacts.INGESTED_ARTIFACTS,
             ModuleContents.MODULE_CONTENTS,
             Modules.MODULES,
             Namespaces.NAMESPACES,

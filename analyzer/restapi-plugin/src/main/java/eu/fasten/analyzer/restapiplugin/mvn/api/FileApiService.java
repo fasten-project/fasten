@@ -25,5 +25,7 @@ public interface FileApiService {
     ResponseEntity<String> getPackageFiles(String package_name,
                                            String package_version,
                                            int offset,
-                                           int limit);
+                                           int limit,
+                                           String artifactRepo,
+                                           Long date);
 }

@@ -71,7 +71,7 @@ public class CallGraphAnalysisExample {
 		final String version = jsapResult.getString("version");
 
 		// Connect to the Postgres database (you'll need to set the password as a system variable)
-		final var context = PostgresConnector.getDSLContext(jsapResult.getString("postgres"), jsapResult.getString("db"));
+		final var context = PostgresConnector.getDSLContext(jsapResult.getString("postgres"), jsapResult.getString("db"), true);
 		// Connect to the graph database
 		final var rocksDao = new eu.fasten.core.data.graphdb.RocksDao(jsapResult.getString("rocksdb"), true);
 
