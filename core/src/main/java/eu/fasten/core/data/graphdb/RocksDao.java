@@ -22,12 +22,17 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.dbconnectors.PostgresConnector;
 import org.apache.commons.io.FileUtils;
+import org.jooq.DSLContext;
+import org.jooq.Record1;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
@@ -74,7 +79,7 @@ public class RocksDao implements Closeable {
     private final RocksDB rocksDb;
     private final ColumnFamilyHandle defaultHandle;
     private Kryo kryo;
-    private final Logger logger = LoggerFactory.getLogger(RocksDao.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(RocksDao.class.getName());
 
     /**
      * Constructor of RocksDao (Database Access Object).
@@ -328,6 +333,22 @@ public class RocksDao implements Closeable {
             logger.warn("Graph with index " + index + " could not be found");
             return null;
         }
+    }
+
+    /**
+     * Deletes a graph from the graph database based on its index.
+     *
+     * @param index Index of thr graph (package_version.id)
+     * @return true if deleted successfully, false otherwise
+     */
+    public boolean deleteCallGraph(long index) {
+        try {
+            rocksDb.delete(defaultHandle, Longs.toByteArray(index));
+        } catch (RocksDBException e) {
+            logger.error("Could not delete graph with index " + index, e);
+            return false;
+        }
+        return true;
     }
 
     @Override

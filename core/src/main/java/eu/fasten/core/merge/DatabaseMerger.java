@@ -64,6 +64,8 @@ public class DatabaseMerger {
     private final RocksDao rocksDao;
     private final Set<Long> dependencySet;
 
+    private boolean ignoreMissing;
+
     /**
      * Create instance of database merger from package names.
      *
@@ -82,6 +84,7 @@ public class DatabaseMerger {
         this.universalChildren = universalCHA.getRight();
         this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
 
+        this.ignoreMissing = false;
     }
 
     /**
@@ -101,6 +104,16 @@ public class DatabaseMerger {
         this.universalParents = universalCHA.getLeft();
         this.universalChildren = universalCHA.getRight();
         this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
+
+        this.ignoreMissing = false;
+    }
+
+    public boolean getIgnoreMissing() {
+        return ignoreMissing;
+    }
+
+    public void setIgnoreMissing(final boolean ignoreMissing) {
+        this.ignoreMissing = ignoreMissing;
     }
 
     /**
@@ -233,23 +246,30 @@ public class DatabaseMerger {
 
         final long startTime = System.currentTimeMillis();
 
-        try (var cursor = getArcs(callGraphData, dbContext)) {
-            while (cursor.hasNext()) {
-                var arcRecord = cursor.fetchNext();
-                var arc = new Arc(arcRecord.value1(), arcRecord.value2(), arcRecord.value3());
+        var cursor = getArcs(callGraphData, dbContext);
+        while (cursor.hasNext()) {
+            var arcRecord = cursor.fetchNext();
+            var arc = new Arc(arcRecord.value1(), arcRecord.value2(), arcRecord.value3());
+            try {
                 if (callGraphData.isExternal(arc.target)) {
-                    if (!resolve(result, callGraphData, arc, typeMap.get(arc.target), false)) {
+                    var node = typeMap.containsKey(arc.target) ? typeMap.get(arc.target) : fetchMissingNode(arc.target, dbContext);
+                    if (!resolve(result, callGraphData, arc, node, false)) {
                         addEdge(result, callGraphData, arc.source, arc.target, false);
                     }
                 } else {
-                    if (!resolve(result, callGraphData, arc, typeMap.get(arc.source), callGraphData.isExternal(arc.source))) {
+                    var node = typeMap.containsKey(arc.source) ? typeMap.get(arc.source) : fetchMissingNode(arc.source, dbContext);
+                    if (!resolve(result, callGraphData, arc, node, callGraphData.isExternal(arc.source))) {
                         addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
                     }
                 }
+            } catch (RuntimeException e) {
+                logger.warn(e.getMessage());
+                if (!ignoreMissing) {
+                    throw e;
+                }
             }
-        } catch (Exception e) {
-            logger.error("Unable to fetch data from metadata database");
         }
+
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
         logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
@@ -375,7 +395,6 @@ public class DatabaseMerger {
                 .where(arcsCondition)
                 .fetchSize(10000)
                 .fetchLazy();
-                //.map(arc -> new Arc(arc.value1(), arc.value2(), arc.value3()));
     }
 
     /**
@@ -435,6 +454,27 @@ public class DatabaseMerger {
         callables.forEach(callable -> typeMap.put(callable.value1(),
                 new Node(FastenJavaURI.create(callable.value2()).decanonicalize())));
         return typeMap;
+    }
+
+    /**
+     * Tries to fetch a FastenURI from a metadata database with a given callable ID or throws
+     * a new RuntimeException if no callable is found.
+     *
+     * @param callableId ID of a callable to fetch
+     * @param dbContext  DSL context
+     * @return Node
+     */
+    private Node fetchMissingNode(final Long callableId, final DSLContext dbContext) {
+        var callable = dbContext
+                .select(Callables.CALLABLES.FASTEN_URI)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.eq(callableId))
+                .fetchOne();
+        if (callable == null) {
+            throw new RuntimeException("Callable with ID " + callableId
+                    + " couldn't be found in the metadata database");
+        }
+        return new Node(FastenJavaURI.create(callable.value1()).decanonicalize());
     }
 
     /**
