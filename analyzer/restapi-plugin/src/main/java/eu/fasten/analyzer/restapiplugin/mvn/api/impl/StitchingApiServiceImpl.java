@@ -196,6 +196,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
         // Get stitched (with dependencies) graph
         var graph = databaseMerger.mergeWithCHA(package_name + Constants.mvnCoordinateSeparator + version);
+        if (graph == null) {
+            return new ResponseEntity<>("Callgraph not found in the graph database", HttpStatus.NOT_FOUND);
+        }
 
         // Find all vulnerable callables (nodes) in the graph
         var vulnerabilities = KnowledgeBaseConnector.kbDao.findVulnerableCallables(vulnerableDependencies, graph.nodes());
