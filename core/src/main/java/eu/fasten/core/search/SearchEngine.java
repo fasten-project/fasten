@@ -715,7 +715,7 @@ public class SearchEngine {
 		 * collector which clashes with RocksDB's JNI usage of the variable.
 		 */
 
-		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, "/mnt/fasten/graphdb", resolverGraph, null);
+		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, "/mnt/fasten/graphdb.old", resolverGraph, null);
 		final DSLContext context = searchEngine.context;
 		context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
 
