@@ -105,16 +105,7 @@ public class Test {
 		/* WARNING
 		 *
 		 * As of JDK 11.0.10, replacing the constant string below with the parameter "rocksDb" causes
-		 * a JVM crash with the following stack trace:
-		 *
-		 * Stack: [0x00007fd5aa29d000,0x00007fd5aa39e000],  sp=0x00007fd5aa39c4a0,  free space=1021k
-		 * Native frames: (J=compiled Java code, A=aot compiled Java code, j=interpreted, Vv=VM code, C=native code)
-		 * V  [libjvm.so+0x5ad8a1]  AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<1097812ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 1097812ul>::oop_access_barrier(void*)+0x1
-		 * C  [librocksdbjni8408394154336339736.so+0x22aefc]  rocksdb_open_helper(JNIEnv_*, long, _jstring*, _jobjectArray*, _jlongArray*, std::function<rocksdb::Status (rocksdb::DBOptions const&, std::string const&, std::vector<rocksdb::ColumnFamilyDescriptor, std::allocator<rocksdb::ColumnFamilyDescriptor> > const&, std::vector<rocksdb::ColumnFamilyHandle*, std::allocator<rocksdb::ColumnFamilyHandle*> >*, rocksdb::DB**)>)+0x3c
-		 * C  [librocksdbjni8408394154336339736.so+0x22b371]  Java_org_rocksdb_RocksDB_openROnly__JLjava_lang_String_2_3_3B_3JZ+0x41
-		 *
-		 * The most likely explanation is some kind of aggressive early collection of the variable rocksDb by the G1
-		 * collector which clashes with RocksDB's JNI usage of the variable.
+		 * a JVM crash.
 		 */
 
 		final Test searchEngine = new Test(rocksDb);
