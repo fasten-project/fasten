@@ -30,15 +30,20 @@ import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class StitchingApiServiceImpl implements StitchingApiService {
+
+    private static final Logger logger = LoggerFactory.getLogger(StitchingApiServiceImpl.class);
 
     @Override
     public ResponseEntity<String> resolveCallablesToUris(List<Long> gidList) {
@@ -167,6 +172,9 @@ public class StitchingApiServiceImpl implements StitchingApiService {
     @Override
     public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise) {
 
+        final long totalTime = System.currentTimeMillis();
+        long stepTime = System.currentTimeMillis();
+
         if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, version)) {
             LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
@@ -179,6 +187,10 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         var depSet = KnowledgeBaseConnector.graphResolver.resolveDependencies(groupId, artifactId, version, -1L, KnowledgeBaseConnector.dbContext, true);
         var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
         var vulnerableDependencies = KnowledgeBaseConnector.kbDao.findVulnerablePackageVersions(depIds);
+
+        logger.info("Created depSet, depIds, vulnerableDependencies in {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - stepTime) / 1000d));
+        stepTime = System.currentTimeMillis();
 
         if (!precise) {
             // Leave only those dependencies that are in any path from the artifact to any of its vulnerable dependencies
@@ -200,11 +212,23 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             return new ResponseEntity<>("Callgraph not found in the graph database", HttpStatus.NOT_FOUND);
         }
 
+        logger.info("Retrieved graph in {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - stepTime) / 1000d));
+        stepTime = System.currentTimeMillis();
+
         // Find all vulnerable callables (nodes) in the graph
         var vulnerabilities = KnowledgeBaseConnector.kbDao.findVulnerableCallables(vulnerableDependencies, graph.nodes());
 
+        logger.info("Retrieved vulnerabilities in {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - stepTime) / 1000d));
+        stepTime = System.currentTimeMillis();
+
         // Get all internal callables
         var internalCallables = KnowledgeBaseConnector.kbDao.getPackageInternalCallableIDs(package_name, version);
+
+        logger.info("Retrieved internal callables in {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - stepTime) / 1000d));
+        stepTime = System.currentTimeMillis();
 
         // Find all paths between any internal node and any vulnerable node in the graph
         var vulnerablePaths = new ArrayList<List<Long>>();
@@ -213,6 +237,10 @@ public class StitchingApiServiceImpl implements StitchingApiService {
                 vulnerablePaths.addAll(getPathsToVulnerableNode(graph, internal, vulnerable, new HashSet<>(), new ArrayList<>(), new ArrayList<>()));
             }
         }
+
+        logger.info("Retrieved vulnerable paths in {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - stepTime) / 1000d));
+        stepTime = System.currentTimeMillis();
 
         // Group vulnerable path by the vulnerabilities
         var vulnerabilitiesMap = new HashMap<String, List<List<Long>>>();
@@ -232,6 +260,10 @@ public class StitchingApiServiceImpl implements StitchingApiService {
                 }
             }
         }
+
+        logger.info("Grouped vulnerable paths in {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - stepTime) / 1000d));
+        stepTime = System.currentTimeMillis();
 
         // Get FASTEN URIs of all callables in all vulnerable paths
         var pathNodes = new HashSet<Long>();
@@ -254,6 +286,12 @@ public class StitchingApiServiceImpl implements StitchingApiService {
             }
             json.put(entry.getKey(), pathsJson);
         }
+
+        logger.info("Generated JSON in {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - stepTime) / 1000d));
+        logger.info("Total Stitching Time: {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - totalTime) / 1000d));
+
         return new ResponseEntity<>(json.toString(), HttpStatus.OK);
     }
 
