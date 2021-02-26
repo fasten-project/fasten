@@ -30,15 +30,20 @@ import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class StitchingApiServiceImpl implements StitchingApiService {
+
+    private static final Logger logger = LoggerFactory.getLogger(StitchingApiServiceImpl.class);
 
     @Override
     public ResponseEntity<String> resolveCallablesToUris(List<Long> gidList) {
