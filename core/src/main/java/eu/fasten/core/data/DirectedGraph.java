@@ -26,6 +26,8 @@ import java.util.function.Supplier;
 import org.jgrapht.GraphType;
 import org.jgrapht.graph.DefaultGraphType;
 
+import it.unimi.dsi.fastutil.longs.LongIterable;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -39,14 +41,22 @@ import it.unimi.dsi.fastutil.objects.ObjectSets;
  * <p>
  * Nodes in the graph are given by 64-bit (long) arbitrary identifiers. The set of nodes can be
  * recovered with {@link #nodes()}, and the set of external nodes with {@link #externalNodes()}.
+ * Implementations must guarantee that predecessors and successors are enumerated always in the same
+ * order.
  *
  * <p>
  * This class implements the read-only methods of JGraphT's {@link Graph} interface. Arcs are
  * represented as two-elements arrays of longs containing the source and the target of the arc.
  * Mutation methods will throw an {@link UnsupportedOperationException}.
+ *
+ * <p>
+ * The iterator returned by {@link #nodes()} provides no guarantee about returning the nodes in a
+ * fixed order. However, this class implements {@link LongIterable} and implementations must
+ * guarantee that the associated {@link #iterator() LongIterator} enumerates the nodes in a fixed
+ * order. This feature can be used to enumerate all arcs in a fixed order.
  */
 
-public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair> {
+public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, LongIterable {
 	/**
 	 * The number of nodes in the graph.
 	 *
@@ -167,6 +177,11 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair> {
 			@Override
 			public LongSet nodes() {
 				return DirectedGraph.this.nodes();
+			}
+
+			@Override
+			public LongIterator iterator() {
+				return DirectedGraph.this.iterator();
 			}
 
 			@Override

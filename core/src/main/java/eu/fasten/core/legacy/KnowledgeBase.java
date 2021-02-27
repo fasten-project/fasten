@@ -388,6 +388,11 @@ public class KnowledgeBase implements Serializable, Closeable {
 			}
 			return (int)(h ^ h >>> 32);
 		}
+
+		@Override
+		public LongIterator iterator() {
+			return LongIterators.wrap(LID2GID);
+		}
 	}
 
 	/**
