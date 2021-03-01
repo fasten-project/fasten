@@ -80,10 +80,30 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 		
 		/** Source and target of the arc. */
 		public long source, target;
-		/** The datav associated with the arc. */
+		/** The data associated with the arc. */
 		public T data;
 	}
-	
+
+	/** A class representing a node with some associated data.
+	 * 
+	 *  @param T the type of associated data.
+	 */
+	public static final class Node<T> {
+		/** Build a node with associated data.
+		 * 
+		 * @param node the node.
+		 * @param data the associated data.
+		 */
+		public Node(long node, T data) {
+			this.node = node;
+		}
+		
+		/** The node. */
+		public long node;
+		/** The data associated with the node. */
+		public T data;
+	}
+
 	/**
 	 * The number of nodes in the graph.
 	 *
@@ -419,6 +439,32 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 			public Arc<T> next() {
 				if (!hasNext()) throw new NoSuchElementException();
 				return new Arc<T>(currentNode, successors.nextLong(), dataIterator.next());
+			}
+			
+		};
+	}
+
+	/** A method that returns the nodes (in the same order as with {@link #iterator()}), each associated with the data provided by the 
+	 *  given <code>dataIterator</code>.
+	 * 
+	 * @param <T> the type of the data associated with each node.
+	 * @param dataIterator the iterator providing node data.
+	 * @return an iterator providing nodes with data.
+	 */
+	default <T> Iterator<Node<T>> getNodesWithData(final Iterator<T> dataIterator) {
+		LongIterator nodeIterator = iterator();
+		
+		return new Iterator<Node<T>>() {
+			
+			@Override
+			public boolean hasNext() {
+				return nodeIterator.hasNext();
+			}
+
+			@Override
+			public Node<T> next() {
+				if (!hasNext()) throw new NoSuchElementException();
+				return new Node<T>(nodeIterator.nextLong(), dataIterator.next());
 			}
 			
 		};
