@@ -57,6 +57,30 @@ import it.unimi.dsi.fastutil.objects.ObjectSets;
  */
 
 public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, LongIterable {
+	
+	/** A class representing an arc with some associated data.
+	 * 
+	 *  @param T the type of associated data.
+	 */
+	public static final class Arc<T> {
+		/** Build an arc with given source, target and data.
+		 * 
+		 * @param source the source of the arc.
+		 * @param target the target of the arc.
+		 * @param data the associated data.
+		 */
+		public Arc(long source, long target, T data) {
+			this.source = source;
+			this.target = target;
+			this.data = data;
+		}
+		
+		/** Source and target of the arc. */
+		public long source, target;
+		/** The datav associated with the arc. */
+		public T data;
+	}
+	
 	/**
 	 * The number of nodes in the graph.
 	 *
@@ -362,4 +386,6 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 		if (weight == 1) return;
 		throw new UnsupportedOperationException();
 	}
+	
+	
 }
