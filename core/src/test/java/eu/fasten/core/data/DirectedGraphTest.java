@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.data.DirectedGraph.Arc;
+import eu.fasten.core.data.DirectedGraph.Node;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -170,6 +171,9 @@ public class DirectedGraphTest {
 		}
 
 		assertEquals(transposeTranspose.externalNodes(), transpose.externalNodes());
+
+		final Iterator<Node<Long>> nodesWithData = graph.getNodesWithData(graph.iterator());
+		nodesWithData.forEachRemaining(n -> assertEquals(n.node, n.data));
 
 		final LongList sums = new LongArrayList();
 		for(final LongIterator nodes = graph.iterator(); nodes.hasNext();) {
