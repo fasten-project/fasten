@@ -20,6 +20,8 @@ package eu.fasten.core.data;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -28,6 +30,7 @@ import org.jgrapht.graph.DefaultGraphType;
 
 import it.unimi.dsi.fastutil.longs.LongIterable;
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongIterators;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -387,5 +390,37 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 		throw new UnsupportedOperationException();
 	}
 	
-	
+	/** A method that returns the arcs (sources have the order that this {@link #iterator()} would give,
+	 *  targets the same order as in {@link #successors()}), each associated with the data provided by the 
+	 *  given <code>dataIterator</code>.
+	 * 
+	 * @param <T> the type of the data associated with each arc.
+	 * @param dataIterator the iterator providing arc data.
+	 * @return an iterator providing arcs with data.
+	 */
+	default <T> Iterator<Arc<T>> getArcsWithData(final Iterator<T> dataIterator) {
+		LongIterator nodeIterator = iterator();
+		
+		return new Iterator<Arc<T>>() {
+			LongIterator successors = LongIterators.EMPTY_ITERATOR;
+			long currentNode = -1;
+			
+			@Override
+			public boolean hasNext() {
+				while (!successors.hasNext()) {
+					if (!nodeIterator.hasNext()) return false;
+					currentNode = nodeIterator.nextLong();
+					successors = successors(currentNode).iterator();
+				}			
+				return true;
+			}
+
+			@Override
+			public Arc<T> next() {
+				if (!hasNext()) throw new NoSuchElementException();
+				return new Arc<T>(currentNode, successors.nextLong(), dataIterator.next());
+			}
+			
+		};
+	}
 }
