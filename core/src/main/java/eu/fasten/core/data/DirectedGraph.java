@@ -96,6 +96,7 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 		 */
 		public Node(long node, T data) {
 			this.node = node;
+			this.data = data;
 		}
 		
 		/** The node. */
