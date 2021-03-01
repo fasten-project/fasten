@@ -26,7 +26,9 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrays;
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongIterators;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -195,6 +197,14 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph, Serializable 
 	@Override
 	public LongSet nodes() {
 		return GID2Offset.keySet();
+	}
+
+	@Override
+	public LongIterator iterator() {
+		// This is expensive, but this class is oriented towards small graphs.
+		final long[] a = GID2Offset.keySet().toLongArray();
+		LongArrays.parallelQuickSort(a);
+		return LongIterators.wrap(a);
 	}
 
 	@Override

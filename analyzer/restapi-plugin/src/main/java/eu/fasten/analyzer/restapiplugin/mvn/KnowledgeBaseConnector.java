@@ -22,7 +22,6 @@ import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
-import eu.fasten.core.maven.GraphMavenResolver;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -50,10 +49,7 @@ public class KnowledgeBaseConnector {
 
     public static String rcgBaseUrl;
 
-    /**
-     * Dependency graph resolver for Maven
-     */
-    public static GraphMavenResolver graphResolver;
+    public static String dependencyGraphPath;
 
     /**
      * Database connection context
@@ -124,16 +120,8 @@ public class KnowledgeBaseConnector {
      * Retrieves the dependency graph if possible, otherwise constructs the graph from database.
      */
     @PostConstruct
-    public void retrieveDependencyGraph() {
-        logger.info("Constructing dependency graph from " + depGraphPath);
-        try {
-            graphResolver = new GraphMavenResolver();
-            graphResolver.buildDependencyGraph(PostgresConnector.getDSLContext(kbUrl, kbUser, true), depGraphPath);
-        } catch (Exception e) {
-            logger.error("Couldn't construct dependency graph", e);
-            System.exit(1);
-        }
-        logger.info("Successfully constructed dependency graph");
+    public void setDependencyGraphPath() {
+        KnowledgeBaseConnector.dependencyGraphPath = depGraphPath;
     }
 
     /**

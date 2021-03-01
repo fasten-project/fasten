@@ -18,10 +18,13 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
+@Lazy
 @RestController
 @RequestMapping("/mvn/packages")
 public class ResolutionApi {
@@ -47,5 +50,24 @@ public class ResolutionApi {
                                              @RequestParam(required = false, defaultValue = "true") boolean transitive,
                                              @RequestParam(required = false, defaultValue = "-1") long timestamp) {
         return service.resolveDependents(package_name, package_version, transitive, timestamp);
+    }
+
+    @PostMapping(value = "/resolve_dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> resolveMultipleDependencies(@RequestBody List<String> mavenCoordinates) {
+        return service.resolveMultipleDependencies(mavenCoordinates);
+    }
+
+    @GetMapping(value = "/__INTERNAL__/packages/{pkg_version_id}/directedgraph", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> getDirectedGraph(@PathVariable("pkg_version_id") long packageVersionId,
+                                            @RequestParam(required = false, defaultValue = "false") boolean needStitching,
+                                            @RequestParam(required = false, defaultValue = "-1") long timestamp) {
+        return service.getDirectedGraph(packageVersionId, needStitching, timestamp);
+    }
+
+    @GetMapping(value = "/__INTERNAL__/packages/{pkg}/{pkg_ver}/vulnerabilities", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<String> getTransitiveVulnerabilities(@PathVariable("pkg") String package_name,
+                                                        @PathVariable("pkg_ver") String package_version,
+                                                        @RequestParam(required = false, defaultValue = "false") boolean precise) {
+        return service.getTransitiveVulnerabilities(package_name, package_version, precise);
     }
 }

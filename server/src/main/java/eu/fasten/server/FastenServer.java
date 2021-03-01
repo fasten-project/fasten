@@ -161,6 +161,7 @@ public class FastenServer implements Runnable {
     @Override
     public void run() {
         setLoggingLevel();
+        if (!deployMode){ showSysInfo(); }
 
         logger.debug("Loading plugins from: {}", pluginPath);
 
@@ -336,6 +337,15 @@ public class FastenServer implements Runnable {
             root.setLevel(Level.DEBUG);
             logger.info("FASTEN server started in development mode");
         }
+    }
+
+    /**
+     * Shows system info. It can be useful for debugging purpose.
+     */
+    private void showSysInfo() {
+        logger.info("************************System Info***************************");
+        logger.info("Max Heap size: " + Runtime.getRuntime().maxMemory() + " Bytes");
+        logger.info("**************************************************************");
     }
 
     public static void main(String[] args) {

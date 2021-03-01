@@ -57,25 +57,4 @@ public class StitchingApiTest {
         Mockito.verify(service).getCallablesMetadata(uris, true, null);
     }
 
-    @Test
-    void resolveMultipleDependenciesTest() {
-        var deps = List.of("dep1", "dep2", "dep3");
-        var response = new ResponseEntity<>("transitive depset", HttpStatus.OK);
-        Mockito.when(service.resolveMultipleDependencies(deps)).thenReturn(response);
-        var result = api.resolveMultipleDependencies(deps);
-        assertEquals(response, result);
-        Mockito.verify(service).resolveMultipleDependencies(deps);
-    }
-
-    @Test
-    void getDirectedGraphTest() {
-        var id = 42L;
-        var stitch = true;
-        var timestamp = -1L;
-        var response = new ResponseEntity<>("directed graph", HttpStatus.OK);
-        Mockito.when(service.getDirectedGraph(id, stitch, timestamp)).thenReturn(response);
-        var result = api.getDirectedGraph(id, stitch, timestamp);
-        assertEquals(response, result);
-        Mockito.verify(service).getDirectedGraph(id, stitch, timestamp);
-    }
 }

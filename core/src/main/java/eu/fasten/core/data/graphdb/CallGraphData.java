@@ -7,6 +7,8 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.GOV3LongFunction;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongIterators;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -79,6 +81,11 @@ public class CallGraphData implements DirectedGraph {
 	@Override
 	public LongSet nodes() {
 		return nodes;
+	}
+
+	@Override
+	public LongIterator iterator() {
+		return LongIterators.wrap(LID2GID);
 	}
 
 	@Override

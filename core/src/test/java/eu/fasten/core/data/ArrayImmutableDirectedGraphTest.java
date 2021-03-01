@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 public class ArrayImmutableDirectedGraphTest {
@@ -59,6 +60,11 @@ public class ArrayImmutableDirectedGraphTest {
         final ArrayImmutableDirectedGraph graph = builder.build();
         assertEquals(4, graph.numNodes());
         assertEquals(5, graph.numArcs());
+		final LongIterator iterator = graph.iterator();
+		assertEquals(12, iterator.nextLong());
+		assertEquals(34, iterator.nextLong());
+		assertEquals(56, iterator.nextLong());
+		assertEquals(78, iterator.nextLong());
         assertEquals(new LongOpenHashSet(new long[]{34, 56}), new LongOpenHashSet(graph.successors(12)));
         assertEquals(new LongOpenHashSet(new long[]{12, 34, 78}), new LongOpenHashSet(graph.successors(56)));
         assertEquals(new LongOpenHashSet(new long[]{56, 78}), graph.externalNodes());

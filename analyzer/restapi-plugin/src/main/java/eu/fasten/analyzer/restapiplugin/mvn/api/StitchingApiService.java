@@ -28,11 +28,5 @@ public interface StitchingApiService {
 
     ResponseEntity<String> getCallablesMetadata(List<String> fastenUris, boolean allAttributes, List<String> attributes);
 
-    ResponseEntity<String> resolveMultipleDependencies(List<String> mavenCoordinates);
-
-    ResponseEntity<String> getDirectedGraph(long packageVersionId, boolean needStitching, long timestamp);
-
     ResponseEntity<String> batchIngestArtifacts(JSONArray jsonArtifacts);
-    
-    ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise);
 }

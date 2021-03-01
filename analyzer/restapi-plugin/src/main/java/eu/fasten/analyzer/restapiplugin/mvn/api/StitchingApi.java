@@ -45,25 +45,6 @@ public class StitchingApi {
         return service.getCallablesMetadata(fastenUris, allAttributes, attributes);
     }
 
-    @PostMapping(value = "/resolve_dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> resolveMultipleDependencies(@RequestBody List<String> mavenCoordinates) {
-        return service.resolveMultipleDependencies(mavenCoordinates);
-    }
-
-    @GetMapping(value = "/__INTERNAL__/packages/{pkg_version_id}/directedgraph", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getDirectedGraph(@PathVariable("pkg_version_id") long packageVersionId,
-                                            @RequestParam(required = false, defaultValue = "false") boolean needStitching,
-                                            @RequestParam(required = false, defaultValue = "-1") long timestamp) {
-        return service.getDirectedGraph(packageVersionId, needStitching, timestamp);
-    }
-
-    @GetMapping(value = "/__INTERNAL__/packages/{pkg}/{pkg_ver}/vulnerabilities", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getTransitiveVulnerabilities(@PathVariable("pkg") String package_name,
-                                                        @PathVariable("pkg_ver") String package_version,
-                                                        @RequestParam(required = false, defaultValue = "false") boolean precise) {
-        return service.getTransitiveVulnerabilities(package_name, package_version, precise);
-    }
-
     @PostMapping(value = "/__INTERNAL__/ingest/batch", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> batchIngestArtifacts(@RequestBody String jsonArtifacts) {
         return service.batchIngestArtifacts(new JSONArray(jsonArtifacts));

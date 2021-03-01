@@ -235,7 +235,14 @@ public class POMAnalyzerPlugin extends Plugin {
                     ? packagingType : "");
             packageVersionMetadata.put("parentCoordinate", (parentCoordinate != null)
                     ? parentCoordinate : "");
-            var artifactRepoId = artifactRepository != null ? metadataDao.insertArtifactRepository(artifactRepository) : null;
+            Long artifactRepoId;
+            if (artifactRepository == null) {
+                artifactRepoId = null;
+            } else if (artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
+                artifactRepoId = -1L;
+            } else {
+                artifactRepoId = metadataDao.insertArtifactRepository(artifactRepository);
+            }
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
                     Constants.opalGenerator, version, artifactRepoId, null, this.getProperTimestamp(timestamp),
                     packageVersionMetadata);

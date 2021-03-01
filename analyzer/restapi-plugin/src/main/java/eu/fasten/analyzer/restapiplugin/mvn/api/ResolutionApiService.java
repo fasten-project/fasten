@@ -27,4 +27,10 @@ public interface ResolutionApiService {
 
     ResponseEntity<String> resolveDependents(String package_name, String version, boolean transitive, long timestamp);
 
+    ResponseEntity<String> resolveMultipleDependencies(List<String> mavenCoordinates);
+
+    ResponseEntity<String> getDirectedGraph(long packageVersionId, boolean needStitching, long timestamp);
+
+    ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise);
+
 }
