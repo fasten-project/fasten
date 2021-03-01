@@ -26,10 +26,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Collections;
+import java.util.Iterator;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.fasten.core.data.DirectedGraph.Arc;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -175,5 +177,7 @@ public class DirectedGraphTest {
 			graph.successors(x).forEach(e -> sums.add(x + e));
 		}
 
+		final Iterator<Arc<Long>> arcsWithData = graph.getArcsWithData(sums.iterator());
+		arcsWithData.forEachRemaining(a -> assertEquals(a.data, a.source + a.target));
 	}
 }
