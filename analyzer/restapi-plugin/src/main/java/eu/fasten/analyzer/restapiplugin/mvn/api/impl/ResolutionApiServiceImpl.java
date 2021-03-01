@@ -31,6 +31,8 @@ import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +45,7 @@ import java.util.stream.Collectors;
 @Service
 public class ResolutionApiServiceImpl implements ResolutionApiService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ResolutionApiServiceImpl.class);
     private GraphMavenResolver graphResolver;
 
     public ResolutionApiServiceImpl() {
@@ -192,6 +195,8 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         var depSet = this.graphResolver.resolveDependencies(groupId, artifactId, version, -1L, KnowledgeBaseConnector.dbContext, true);
         var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
         var vulnerableDependencies = KnowledgeBaseConnector.kbDao.findVulnerablePackageVersions(depIds);
+
+        logger.info("Created depSet ({}), depIds ({}), vulnerableDependencies ({})", depSet.size(), depIds.size(), vulnerableDependencies.size());
 
         if (!precise) {
             // Leave only those dependencies that are in any path from the artifact to any of its vulnerable dependencies
