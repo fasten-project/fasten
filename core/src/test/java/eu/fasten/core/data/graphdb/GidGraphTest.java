@@ -20,7 +20,7 @@ public class GidGraphTest {
                 "\"edges\": [[1, 2], [2, 3]]" +
                 "}");
         var graph = GidGraph.getGraph(json);
-        assertEquals(json.toString(), graph.toJSONString());
+        assertEquals(json.toString(), graph.toJSON().toString());
     }
 
     @Test

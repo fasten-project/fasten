@@ -47,6 +47,51 @@ public class RocksDaoTest {
     }
 
     @Test
+    public void extendedGidGraphTest() throws IOException, RocksDBException {
+        var json = new JSONObject("{\n" +
+                "\t\"index\": 1,\n" +
+                "\t\"product\": \"test\",\n" +
+                "\t\"version\": \"0.0.1\",\n" +
+                "\t\"nodes\": [0, 1, 2],\n" +
+                "\t\"numInternalNodes\": 2,\n" +
+                "\t\"edges\": [[0, 1], [1, 2]],\n" +
+                "\t\"edges_info\": {\n" +
+                "\t\t\"[0, 1]\": [\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"line\": 5,\n" +
+                "\t\t\t\t\"call_type\": \"static\",\n" +
+                "\t\t\t\t\"receiver_namespace\": \"/java.lang/String\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"line\": 12,\n" +
+                "\t\t\t\t\"call_type\": \"interface\",\n" +
+                "\t\t\t\t\"receiver_namespace\": \"/product/Interface\"\n" +
+                "\t\t\t}\n" +
+                "\t\t],\n" +
+                "\t\t\"[1, 2]\": [\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"line\": 25,\n" +
+                "\t\t\t\t\"call_type\": \"dynamic\",\n" +
+                "\t\t\t\t\"receiver_namespace\": \"/java.lang/Object\"\n" +
+                "\t\t\t},\n" +
+                "\t\t]\n" +
+                "\t}\n" +
+                "}");
+        var graph = ExtendedGidGraph.getGraph(json);
+        rocksDao.saveToRocksDb(graph);
+        var graphData = rocksDao.getGraphData(graph.getIndex());
+        assertEquals(graph.getNumInternalNodes(), graphData.nodes().size() - graphData.externalNodes().size());
+        assertEquals(graph.getNodes().size(), graphData.nodes().size());
+        assertEquals(new LongOpenHashSet(graph.getNodes()), graphData.nodes());
+        assertEquals(new LongArrayList(List.of(1L)), graphData.successors(0L));
+        assertEquals(new LongArrayList(List.of(2L)), graphData.successors(1L));
+        assertEquals(new LongArrayList(List.of(0L)), graphData.predecessors(1L));
+        assertEquals(new LongArrayList(List.of(1L)), graphData.predecessors(2L));
+        assertEquals(graph.getEdges().size(), graphData.numArcs());
+        assertEquals(new LongOpenHashSet(List.of(2L)), graphData.externalNodes());
+    }
+
+    @Test
     public void databaseTest1() throws IOException, RocksDBException {
         var json = new JSONObject("{" +
                 "\"index\": 1," +

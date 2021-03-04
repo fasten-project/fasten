@@ -87,9 +87,9 @@ public class GidGraph {
     /**
      * Converts the Graph object into JSON string.
      *
-     * @return JSON representation of the graph as a String
+     * @return JSON representation of the graph
      */
-    public String toJSONString() {
+    public JSONObject toJSON() {
         var json = new JSONObject();
         json.put("index", getIndex());
         json.put("product", getProduct());
@@ -97,7 +97,7 @@ public class GidGraph {
         json.put("nodes", getNodes());
         json.put("numInternalNodes", getNumInternalNodes());
         json.put("edges", getEdges());
-        return json.toString();
+        return json;
     }
 
     /**
@@ -158,7 +158,18 @@ public class GidGraph {
     }
 
     @Override
+    public int hashCode() {
+        int result = (int) (index ^ (index >>> 32));
+        result = 31 * result + (product != null ? product.hashCode() : 0);
+        result = 31 * result + (version != null ? version.hashCode() : 0);
+        result = 31 * result + (nodes != null ? nodes.hashCode() : 0);
+        result = 31 * result + numInternalNodes;
+        result = 31 * result + (edges != null ? edges.hashCode() : 0);
+        return result;
+    }
+
+    @Override
     public String toString() {
-        return this.toJSONString();
+        return this.toJSON().toString();
     }
 }
