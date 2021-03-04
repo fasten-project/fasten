@@ -21,6 +21,7 @@ package eu.fasten.core.data;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import eu.fasten.core.utils.FastenUriUtils;
+import it.unimi.dsi.fastutil.Hash;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -33,7 +34,8 @@ import org.json.JSONException;
  *
  * @implNote each method in the revision has a unique id in this CHA.
  */
-public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map<JavaScope, Map<FastenURI, JavaType>>> {
+public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map<JavaScope,
+    BiMap<FastenURI, JavaType>>> {
     static {
         classHierarchyJSONKey = "cha";
     }
@@ -44,7 +46,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *
      * @param builder builder for {@link ExtendedRevisionJavaCallGraph}
      */
-    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<Map<JavaScope, Map<FastenURI, JavaType>>> builder) {
+    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<Map<JavaScope, BiMap<FastenURI,
+        JavaType>>> builder) {
         super(builder);
     }
 
@@ -64,7 +67,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      */
     public ExtendedRevisionJavaCallGraph(final String forge, final String product, final String version,
                                      final long timestamp, int nodeCount, final String cgGenerator,
-                                     final Map<JavaScope, Map<FastenURI, JavaType>> classHierarchy,
+                                     final Map<JavaScope, BiMap<FastenURI, JavaType>> classHierarchy,
                                      final Graph graph) {
         super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
     }
@@ -95,22 +98,31 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *
      * @param cha JSONObject of a cha.
      */
-    public Map<JavaScope, Map<FastenURI, JavaType>> getCHAFromJSON(final JSONObject cha) {
-        final Map<FastenURI, JavaType> internals = new HashMap<>();
-        final Map<FastenURI, JavaType> externals = new HashMap<>();
-        final Map<FastenURI, JavaType> resolved = new HashMap<>();
+    public Map<JavaScope, BiMap<FastenURI, JavaType>> getCHAFromJSON(final JSONObject cha) {
+        final BiMap<FastenURI, JavaType> internals = HashBiMap.create();
+        final BiMap<FastenURI, JavaType> externals = HashBiMap.create();
+        final BiMap<FastenURI, JavaType> resolved = HashBiMap.create();
 
         final var internalTypes = cha.getJSONObject("internalTypes");
         for (final var key : internalTypes.keySet()) {
-            internals.put(FastenURI.create(key), new JavaType(internalTypes.getJSONObject(key)));
+            final var internalType = new JavaType(internalTypes.getJSONObject(key));
+            if (!internals.inverse().containsKey(internalType)) {
+                internals.put(FastenURI.create(key), internalType);
+            }
         }
         final var externalTypes = cha.getJSONObject("externalTypes");
         for (final var key : externalTypes.keySet()) {
-            externals.put(FastenURI.create(key), new JavaType(externalTypes.getJSONObject(key)));
+            final var externalType = new JavaType(externalTypes.getJSONObject(key));
+            if (!internals.inverse().containsKey(externalType)) {
+                externals.put(FastenURI.create(key), externalType);
+            }
         }
         final var resolvedTypes = cha.getJSONObject("resolvedTypes");
         for (final var key : resolvedTypes.keySet()) {
-            resolved.put(FastenURI.create(key), new JavaType(resolvedTypes.getJSONObject(key)));
+            final var resolvedType = new JavaType(resolvedTypes.getJSONObject(key));
+            if (!internals.inverse().containsKey(resolvedType)) {
+                resolved.put(FastenURI.create(key), resolvedType);
+            }
         }
 
         return Map.of(JavaScope.internalTypes, internals,
@@ -229,7 +241,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * @param cha class hierarchy
      * @return the JSON representation
      */
-    public JSONObject classHierarchyToJSON(final Map<JavaScope, Map<FastenURI, JavaType>> cha) {
+    public JSONObject classHierarchyToJSON(final Map<JavaScope, BiMap<FastenURI, JavaType>> cha) {
         final var result = new JSONObject();
         final var internalTypes = new JSONObject();
         final var externalTypes = new JSONObject();

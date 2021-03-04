@@ -51,8 +51,8 @@ public class LocalMerger {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalMerger.class);
 
-    private final Map<String, Set<String>> universalParents;
-    private final Map<String, Set<String>> universalChildren;
+    private final Map<String, List<String>> universalParents;
+    private final Map<String, List<String>> universalChildren;
     private final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary;
     private final List<ExtendedRevisionJavaCallGraph> dependencySet;
     private final BiMap<Long, String> allUris;
@@ -104,8 +104,8 @@ public class LocalMerger {
          *
          * @return CHA hashmap
          */
-        private HashMap<FastenURI, JavaType> toHashMap() {
-            var result = new HashMap<FastenURI, JavaType>();
+        private BiMap<FastenURI, JavaType> toHashMap() {
+            BiMap<FastenURI, JavaType> result = HashBiMap.create();
             this.CHA.forEach((key, value) -> result.put(FastenURI.create(key), value));
             return result;
         }
@@ -442,7 +442,7 @@ public class LocalMerger {
      * @param dependencies dependencies including the artifact to resolve
      * @return universal CHA
      */
-    private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA(
+    private Pair<Map<String, List<String>>, Map<String, List<String>>> createUniversalCHA(
             final List<ExtendedRevisionJavaCallGraph> dependencies) {
         final var allPackages = new ArrayList<>(dependencies);
 
@@ -459,15 +459,15 @@ public class LocalMerger {
                         type.getValue().getSuperInterfaces());
             }
         }
-        final Map<String, Set<String>> universalParents = new HashMap<>();
-        final Map<String, Set<String>> universalChildren = new HashMap<>();
+        final Map<String, List<String>> universalParents = new HashMap<>();
+        final Map<String, List<String>> universalChildren = new HashMap<>();
         for (final var type : result.vertexSet()) {
 
-            final var children = new HashSet<>(Collections.singletonList(type));
+            final var children = new ArrayList<>(Collections.singletonList(type));
             children.addAll(getAllChildren(result, type));
             universalChildren.put(type, children);
 
-            final var parents = new HashSet<>(Collections.singletonList(type));
+            final var parents = new ArrayList<>(Collections.singletonList(type));
             parents.addAll(getAllParents(result, type));
             universalParents.put(type, parents);
         }

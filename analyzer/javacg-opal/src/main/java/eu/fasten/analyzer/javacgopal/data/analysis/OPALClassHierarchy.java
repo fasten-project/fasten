@@ -18,6 +18,8 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
@@ -78,11 +80,10 @@ public class OPALClassHierarchy {
      * @param projectHierarchy OPAL class hierarchy
      * @return A {@link Map} of {@link FastenURI} and {@link JavaType}
      */
-    public Map<JavaScope, Map<FastenURI, JavaType>> asURIHierarchy(ClassHierarchy projectHierarchy) {
+    public Map<JavaScope, BiMap<FastenURI, JavaType>> asURIHierarchy(ClassHierarchy projectHierarchy) {
 
-        final Map<FastenURI, JavaType> internalResult = new HashMap<>();
-        final Map<FastenURI, JavaType> externalResult = new HashMap<>();
-
+        final BiMap<FastenURI, JavaType> internalResult = HashBiMap.create();
+        final BiMap<FastenURI, JavaType> externalResult = HashBiMap.create();
         final var internals = this.getInternalCHA();
         for (final var aClass : internals.keySet()) {
             internalResult.putAll(OPALType.getType(internals.get(aClass), aClass));
@@ -94,7 +95,7 @@ public class OPALClassHierarchy {
         }
 
         return Map.of(JavaScope.internalTypes, internalResult, JavaScope.externalTypes, externalResult,
-                JavaScope.resolvedTypes, new HashMap<>());
+                JavaScope.resolvedTypes, HashBiMap.create());
     }
 
     /**

@@ -1,5 +1,6 @@
 package eu.fasten.core.data;
 
+import com.google.common.collect.BiMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,7 +121,7 @@ public class JSONUtils {
      * @param result the StringBuilder to append information.
      */
     private static void appendCha(StringBuilder result, final Map<JavaScope,
-        Map<FastenURI, JavaType>> cha) {
+        BiMap<FastenURI, JavaType>> cha) {
         result.append("\"cha\":{\"externalTypes\":{");
         for (final var entry : cha.get(JavaScope.externalTypes).entrySet()) {
             appendType(result, entry.getKey().toString(), entry.getValue());

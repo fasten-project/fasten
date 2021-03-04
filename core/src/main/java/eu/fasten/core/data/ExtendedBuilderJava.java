@@ -18,12 +18,14 @@
 
 package eu.fasten.core.data;
 
+import com.google.common.collect.BiMap;
 import java.util.Map;
 
 /**
  * Builder for {@link ExtendedRevisionJavaCallGraph}.
  */
-public final class ExtendedBuilderJava extends ExtendedBuilder<Map<JavaScope, Map<FastenURI, JavaType>>> {
+public final class ExtendedBuilderJava extends ExtendedBuilder<Map<JavaScope, BiMap<FastenURI,
+    JavaType>>> {
 
     public ExtendedBuilderJava nodeCount(final int nodeCount) {
         this.nodeCount = nodeCount;
@@ -60,7 +62,7 @@ public final class ExtendedBuilderJava extends ExtendedBuilder<Map<JavaScope, Ma
         return this;
     }
 
-    public ExtendedBuilderJava classHierarchy(final Map<JavaScope, Map<FastenURI, JavaType>> cha) {
+    public ExtendedBuilderJava classHierarchy(final Map<JavaScope, BiMap<FastenURI, JavaType>> cha) {
         this.classHierarchy = cha;
         return this;
     }
