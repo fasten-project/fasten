@@ -54,7 +54,7 @@ public class GraphDatabasePluginTest {
         var graph = GidGraph.getGraph(json.getJSONObject("payload"));
         graphDBExtension.setRocksDao(rocksDao);
         graphDBExtension.consume(json.toString());
-        Mockito.verify(rocksDao).saveToRocksDb(graph.getIndex(), graph.getNodes(), graph.getNumInternalNodes(), graph.getEdges());
+        Mockito.verify(rocksDao).saveToRocksDb(graph);
     }
 
     @Test

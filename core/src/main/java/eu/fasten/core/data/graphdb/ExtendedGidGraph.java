@@ -1,6 +1,6 @@
 package eu.fasten.core.data.graphdb;
 
-import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
+import eu.fasten.core.data.JavaCallSite;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import org.apache.commons.math3.util.Pair;
@@ -8,10 +8,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.*;
+import java.util.stream.Collectors;
+import static eu.fasten.core.data.JavaCallSite.getReceiverType;
 
 public class ExtendedGidGraph extends GidGraph {
 
-    private final Map<Pair<Long, Long>, List<ReceiverRecord>> edgesInfo = new HashMap<>();
+    private final Map<Pair<Long, Long>, List<JavaCallSite>> edgesInfo = new HashMap<>();
 
     /**
      * Constructor for Graph.
@@ -26,10 +28,11 @@ public class ExtendedGidGraph extends GidGraph {
      */
     public ExtendedGidGraph(long index, String product, String version, List<Long> nodes, int numInternalNodes, List<EdgesRecord> edges) {
         super(index, product, version, nodes, numInternalNodes, edges);
-        edges.forEach(e -> edgesInfo.put(new Pair<>(e.getSourceId(), e.getTargetId()), Arrays.asList(e.getReceivers())));
+        edges.forEach(e -> edgesInfo.put(new Pair<>(e.getSourceId(), e.getTargetId()),
+                Arrays.stream(e.getReceivers()).map(r -> new JavaCallSite(r.getReceiverUri(), r.getType())).collect(Collectors.toList())));
     }
 
-    public Map<Pair<Long, Long>, List<ReceiverRecord>> getEdgesInfo() {
+    public Map<Pair<Long, Long>, List<JavaCallSite>> getEdgesInfo() {
         return this.edgesInfo;
     }
 
@@ -42,9 +45,8 @@ public class ExtendedGidGraph extends GidGraph {
             var infoArray = new JSONArray();
             info.forEach(r -> {
                 var callSiteJson = new JSONObject();
-                callSiteJson.put("receiver_namespace", r.getReceiverUri());
-                callSiteJson.put("line", r.getLine());
-                callSiteJson.put("call_type", r.getType().getLiteral());
+                callSiteJson.put("receiver_namespace", r.getReceiverNamespace());
+                callSiteJson.put("call_type", r.getCallType().getLiteral());
                 infoArray.put(callSiteJson);
             });
             edgesInfoJson.put(edgeStr, infoArray);
@@ -82,7 +84,7 @@ public class ExtendedGidGraph extends GidGraph {
             for (int i = 0; i < infoArray.length(); i++) {
                 var callSiteJson = infoArray.getJSONObject(i);
                 var callSite = new ReceiverRecord(
-                        callSiteJson.getInt("line"),
+                        -1,
                         getReceiverType(callSiteJson.getString("call_type")),
                         callSiteJson.getString("receiver_namespace")
                 );
@@ -91,22 +93,5 @@ public class ExtendedGidGraph extends GidGraph {
             edgesList.add(new EdgesRecord(source, target, callSites, null));
         });
         return new ExtendedGidGraph(gidGraph.getIndex(), gidGraph.getProduct(), gidGraph.getVersion(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), edgesList);
-    }
-
-    private static ReceiverType getReceiverType(String type) {
-        switch (type) {
-            case "static":
-                return ReceiverType.static_;
-            case "dynamic":
-                return ReceiverType.dynamic;
-            case "virtual":
-                return ReceiverType.virtual;
-            case "interface":
-                return ReceiverType.interface_;
-            case "special":
-                return ReceiverType.special;
-            default:
-                throw new IllegalArgumentException("Unknown call type: " + type);
-        }
     }
 }
