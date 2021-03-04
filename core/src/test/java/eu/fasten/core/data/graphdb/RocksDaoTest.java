@@ -58,19 +58,16 @@ public class RocksDaoTest {
                 "\t\"edges_info\": {\n" +
                 "\t\t\"[0, 1]\": [\n" +
                 "\t\t\t{\n" +
-                "\t\t\t\t\"line\": 5,\n" +
                 "\t\t\t\t\"call_type\": \"static\",\n" +
                 "\t\t\t\t\"receiver_namespace\": \"/java.lang/String\"\n" +
                 "\t\t\t},\n" +
                 "\t\t\t{\n" +
-                "\t\t\t\t\"line\": 12,\n" +
                 "\t\t\t\t\"call_type\": \"interface\",\n" +
                 "\t\t\t\t\"receiver_namespace\": \"/product/Interface\"\n" +
                 "\t\t\t}\n" +
                 "\t\t],\n" +
                 "\t\t\"[1, 2]\": [\n" +
                 "\t\t\t{\n" +
-                "\t\t\t\t\"line\": 25,\n" +
                 "\t\t\t\t\"call_type\": \"dynamic\",\n" +
                 "\t\t\t\t\"receiver_namespace\": \"/java.lang/Object\"\n" +
                 "\t\t\t},\n" +
