@@ -194,7 +194,7 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>3.14.4</version>
+            <version>3.14.8</version>
         </dependency>
         <dependency>
             <!-- This dependency can be removed once jOOQ v3.15 is out,
