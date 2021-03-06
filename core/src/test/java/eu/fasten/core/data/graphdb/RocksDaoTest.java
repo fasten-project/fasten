@@ -49,30 +49,36 @@ public class RocksDaoTest {
     @Test
     public void extendedGidGraphTest() throws IOException, RocksDBException {
         var json = new JSONObject("{\n" +
-                "\t\"index\": 1,\n" +
-                "\t\"product\": \"test\",\n" +
-                "\t\"version\": \"0.0.1\",\n" +
-                "\t\"nodes\": [0, 1, 2],\n" +
-                "\t\"numInternalNodes\": 2,\n" +
-                "\t\"edges\": [[0, 1], [1, 2]],\n" +
-                "\t\"edges_info\": {\n" +
-                "\t\t\"[0, 1]\": [\n" +
-                "\t\t\t{\n" +
-                "\t\t\t\t\"call_type\": \"static\",\n" +
-                "\t\t\t\t\"receiver_namespace\": \"/java.lang/String\"\n" +
-                "\t\t\t},\n" +
-                "\t\t\t{\n" +
-                "\t\t\t\t\"call_type\": \"interface\",\n" +
-                "\t\t\t\t\"receiver_namespace\": \"/product/Interface\"\n" +
-                "\t\t\t}\n" +
-                "\t\t],\n" +
-                "\t\t\"[1, 2]\": [\n" +
-                "\t\t\t{\n" +
-                "\t\t\t\t\"call_type\": \"dynamic\",\n" +
-                "\t\t\t\t\"receiver_namespace\": \"/java.lang/Object\"\n" +
-                "\t\t\t},\n" +
-                "\t\t]\n" +
-                "\t}\n" +
+                "   \"index\": 1,\n" +
+                "   \"product\": \"test\",\n" +
+                "   \"version\": \"0.0.1\",\n" +
+                "   \"nodes\":[0, 1, 2],\n" +
+                "   \"numInternalNodes\": 2,\n" +
+                "   \"edges\": [\n" +
+                "      [0, 1],\n" +
+                "      [1, 2]\n" +
+                "   ],\n" +
+                "   \"edges_info\": {\n" +
+                "      \"[0, 1]\": [\n" +
+                "         {\n" +
+                "            \"line\": 5,\n" +
+                "            \"call_type\": \"static\",\n" +
+                "            \"receiver_namespace\": \"/java.lang/String\"\n" +
+                "         },\n" +
+                "         {\n" +
+                "            \"line\": 12,\n" +
+                "            \"call_type\":\"interface\",\n" +
+                "            \"receiver_namespace\": \"/product/Interface\"\n" +
+                "         }\n" +
+                "      ],\n" +
+                "      \"[1, 2]\": [\n" +
+                "         {\n" +
+                "            \"line\": 25,\n" +
+                "            \"call_type\": \"dynamic\",\n" +
+                "            \"receiver_namespace\": \"/java.lang/Object\"\n" +
+                "         } \n" +
+                "      ]\n" +
+                "   }\n" +
                 "}");
         var graph = ExtendedGidGraph.getGraph(json);
         rocksDao.saveToRocksDb(graph);
