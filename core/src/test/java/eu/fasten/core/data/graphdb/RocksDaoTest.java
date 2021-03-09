@@ -29,22 +29,25 @@ import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class RocksDaoTest {
 
+    private File rocksDaoDir;
     private RocksDao rocksDao;
 
     @BeforeEach
-    public void setUp() throws RocksDBException {
-        rocksDao = new RocksDao("graphDB", false);
+    public void setUp() throws RocksDBException, IOException {
+        rocksDaoDir = Files.createTempDirectory(RocksDaoTest.class.getSimpleName()).toFile();
+        rocksDao = new RocksDao(rocksDaoDir.toString(), false);
     }
 
     @AfterEach
     public void tearDown() throws IOException {
         rocksDao.close();
-        FileUtils.deleteDirectory(new File("graphDB"));
+        FileUtils.deleteDirectory(rocksDaoDir);
     }
 
     @Test

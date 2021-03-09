@@ -18,6 +18,7 @@
 
 package eu.fasten.core.data.graphdb;
 
+import static eu.fasten.core.utils.VariableLengthByteCoder.decode;
 import static eu.fasten.core.utils.VariableLengthByteCoder.encode;
 
 import java.io.Closeable;
@@ -63,10 +64,12 @@ import eu.fasten.core.data.ArrayImmutableDirectedGraph.Builder;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.GOV3LongFunction;
+import eu.fasten.core.data.graphdb.RocksDao.ReceiverRecord.Type;
 import eu.fasten.core.index.BVGraphSerializer;
 import eu.fasten.core.index.LayeredLabelPropagation;
 import eu.fasten.core.legacy.KnowledgeBase;
 import it.unimi.dsi.Util;
+import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -122,6 +125,11 @@ public class RocksDao implements Closeable {
         public final int line;
         public final Type type;
         public final String receiverUri;
+        
+        @Override
+        public String toString() {
+            return "{line: " + line + ", type: " + type + ", uri: " + receiverUri + "}";
+        }
     }
     
     /**
@@ -175,7 +183,7 @@ public class RocksDao implements Closeable {
             Map<Pair<Long, Long>, List<eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord>> edgesInfo = extendedGidGraph.getEdgesInfo();
             Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
             
-            // Gather data by source and store it in a RocksDao.ReceiverRecord.
+            // Gather data by source and store it in lists of RocksDao.ReceiverRecord.
             edgesInfo.forEach((pair, record) -> {
                 map.compute(pair.getFirst(), (k, list) -> {
                     if (list == null) return record.stream().map(r -> new ReceiverRecord(r)).collect(Collectors.toList());
@@ -183,10 +191,12 @@ public class RocksDao implements Closeable {
                     return list;
                 });
             });
-            
+   
+            // Serialize map in compact form, following the standard node enumeration order
             final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
             for(LongIterator iterator = graph.iterator(); iterator.hasNext();) {
                 List<ReceiverRecord> list = map.get(iterator.nextLong());
+                // TODO: is this acceptable behavior?
                 if (list == null) encode(0, fbaos); // no data
                 else {
                     // Encode list length
@@ -402,6 +412,8 @@ public class RocksDao implements Closeable {
             final Input input = new Input(buffer);
             assert kryo != null;
 
+            DirectedGraph graph;
+            
             final boolean compressed = kryo.readObject(input, Boolean.class);
             if (compressed) {
                 final var graphs = new ImmutableGraph[]{
@@ -415,11 +427,45 @@ public class RocksDao implements Closeable {
                 };
                 final long[] LID2GID = kryo.readObject(input, long[].class);
                 final GOV3LongFunction GID2LID = kryo.readObject(input, GOV3LongFunction.class);
-                return new CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
+                graph = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
                         LID2GID, GID2LID, numInternal, buffer.length);
             } else {
-                return kryo.readObject(input, ArrayImmutableDirectedGraph.class);
+                graph = kryo.readObject(input, ArrayImmutableDirectedGraph.class);
             }
+
+            final byte[] metadata = rocksDb.get(metadataHandle, Longs.toByteArray(index));
+            if (metadata != null) {
+                Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
+                // Deserialize map following the standard node enumeration order
+                final FastByteArrayInputStream fbais = new FastByteArrayInputStream(metadata);
+
+                try {
+                    for (LongIterator iterator = graph.iterator(); iterator.hasNext();) {
+                        final long node = iterator.nextLong();
+                        final long length = decode(fbais);
+                        if (length == 0) map.put(node, Collections.emptyList());
+                        else {
+                            ArrayList<ReceiverRecord> list = new ArrayList<>();
+                            for (long i = 0; i < length; i++) {
+                                final int line = (int)decode(fbais);
+                                final var type = Type.values()[(int)decode(fbais)];
+                                final int uriLength = (int)decode(fbais);
+                                final byte[] uriBytes = new byte[uriLength];
+                                fbais.read(uriBytes);
+                                list.add(new ReceiverRecord(line, type, new String(uriBytes, StandardCharsets.UTF_8)));
+                            }
+                            map.put(node, list);
+                        }
+                    }
+                } catch (IOException cantHappen) {
+                    // Not really I/O
+                    throw new RuntimeException(cantHappen.getCause());
+                }
+                
+                System.err.println(map);
+            }
+        
+            return graph;
         } catch (final NullPointerException e) {
             logger.warn("Graph with index " + index + " could not be found");
             return null;
