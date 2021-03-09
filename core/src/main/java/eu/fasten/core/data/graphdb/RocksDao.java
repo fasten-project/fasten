@@ -18,19 +18,27 @@
 
 package eu.fasten.core.data.graphdb;
 
+import static eu.fasten.core.utils.VariableLengthByteCoder.encode;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.math3.util.Pair;
+import org.eclipse.jdt.annotation.NonNull;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.rocksdb.ColumnFamilyDescriptor;
@@ -63,6 +71,7 @@ import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongIterators;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -77,12 +86,44 @@ import it.unimi.dsi.webgraph.Transform;
 
 public class RocksDao implements Closeable {
 
-	private final static byte[] METADATA_COLUMN_FAMILY = "metadata".getBytes();
+    private final static byte[] METADATA_COLUMN_FAMILY = "metadata".getBytes();
     private final RocksDB rocksDb;
     private final ColumnFamilyHandle defaultHandle, metadataHandle;
     private Kryo kryo;
     private final static Logger logger = LoggerFactory.getLogger(RocksDao.class.getName());
 
+    /** This class represent compactly a receiver record. The {@link Type} enum
+     * matches closely the jOOQ-generated one in {@link eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord}.
+     * 
+     * <p>Since this class is intended for internal use only, and all fields are public, final and immutable, no
+     * getters/setters are provided. 
+     */
+    public static final class ReceiverRecord {
+        public static enum Type {
+            STATIC,
+            DYNAMIC,
+            VIRTUAL,
+            INTERFACE,
+            SPECIAL
+        }
+
+        public ReceiverRecord(int line, Type type, String receiverUri) {
+            this.line = line;
+            this.type = type;
+            this.receiverUri = receiverUri;
+        }
+        
+        public ReceiverRecord(eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord record) {
+            this.line = record.getLine().intValue();
+            this.type = Type.valueOf(record.getType().getLiteral().toUpperCase());
+            this.receiverUri = record.getReceiverUri();
+        }
+        
+        public final int line;
+        public final Type type;
+        public final String receiverUri;
+    }
+    
     /**
      * Constructor of RocksDao (Database Access Object).
      *
@@ -127,11 +168,41 @@ public class RocksDao implements Closeable {
     }
 
     public void saveToRocksDb(final GidGraph gidGraph) throws IOException, RocksDBException {
-    	DirectedGraph graph = saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
+        // Save and obtain graph
+        DirectedGraph graph = saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
         if (gidGraph instanceof ExtendedGidGraph) {
             ExtendedGidGraph extendedGidGraph = (ExtendedGidGraph)gidGraph;
-        }
-        
+            Map<Pair<Long, Long>, List<eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord>> edgesInfo = extendedGidGraph.getEdgesInfo();
+            Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
+            
+            // Gather data by source and store it in a RocksDao.ReceiverRecord.
+            edgesInfo.forEach((pair, record) -> {
+                map.compute(pair.getFirst(), (k, list) -> {
+                    if (list == null) return record.stream().map(r -> new ReceiverRecord(r)).collect(Collectors.toList());
+                    for (var r : record) list.add(new ReceiverRecord(r));
+                    return list;
+                });
+            });
+            
+            final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
+            for(LongIterator iterator = graph.iterator(); iterator.hasNext();) {
+                List<ReceiverRecord> list = map.get(iterator.nextLong());
+                if (list == null) encode(0, fbaos); // no data
+                else {
+                    // Encode list length
+                    encode(list.size(), fbaos);
+                    // Encode elements
+                    for(var r: list) {
+                        encode(r.line, fbaos);
+                        encode(r.type.ordinal(), fbaos);
+                        byte[] bytes = r.receiverUri.getBytes(StandardCharsets.UTF_8);
+                        encode(bytes.length, fbaos);
+                        fbaos.write(bytes);
+                    }
+                }
+            }
+            rocksDb.put(metadataHandle, Longs.toByteArray(gidGraph.getIndex()), 0, 8, fbaos.array, 0, fbaos.length);            
+        }        
     }
 
     /**

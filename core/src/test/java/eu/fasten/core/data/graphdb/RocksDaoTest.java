@@ -19,6 +19,7 @@
 package eu.fasten.core.data.graphdb;
 
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONObject;
@@ -71,6 +72,18 @@ public class RocksDaoTest {
                 "            \"receiver_namespace\": \"/product/Interface\"\n" +
                 "         }\n" +
                 "      ],\n" +
+                "      \"[0, 2]\": [\n" +
+                "         {\n" +
+                "            \"line\": 12,\n" +
+                "            \"call_type\": \"static\",\n" +
+                "            \"receiver_namespace\": \"/java.lang/String\"\n" +
+                "         },\n" +
+                "         {\n" +
+                "            \"line\": 13,\n" +
+                "            \"call_type\":\"virtual\",\n" +
+                "            \"receiver_namespace\": \"/product/Interface\"\n" +
+                "         }\n" +
+                "      ],\n" +
                 "      \"[1, 2]\": [\n" +
                 "         {\n" +
                 "            \"line\": 25,\n" +
@@ -86,10 +99,10 @@ public class RocksDaoTest {
         assertEquals(graph.getNumInternalNodes(), graphData.nodes().size() - graphData.externalNodes().size());
         assertEquals(graph.getNodes().size(), graphData.nodes().size());
         assertEquals(new LongOpenHashSet(graph.getNodes()), graphData.nodes());
-        assertEquals(new LongArrayList(List.of(1L)), graphData.successors(0L));
+        assertEquals(LongList.of(1L, 2L), graphData.successors(0L));
         assertEquals(new LongArrayList(List.of(2L)), graphData.successors(1L));
         assertEquals(new LongArrayList(List.of(0L)), graphData.predecessors(1L));
-        assertEquals(new LongArrayList(List.of(1L)), graphData.predecessors(2L));
+        assertEquals(LongList.of(0L, 1L), graphData.predecessors(2L));
         assertEquals(graph.getEdges().size(), graphData.numArcs());
         assertEquals(new LongOpenHashSet(List.of(2L)), graphData.externalNodes());
     }
