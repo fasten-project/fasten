@@ -18,8 +18,10 @@
 
 package eu.fasten.core.data.graphdb;
 
-import static eu.fasten.core.utils.VariableLengthByteCoder.decode;
-import static eu.fasten.core.utils.VariableLengthByteCoder.encode;
+import static eu.fasten.core.utils.VariableLengthByteCoder.readLong;
+import static eu.fasten.core.utils.VariableLengthByteCoder.readString;
+import static eu.fasten.core.utils.VariableLengthByteCoder.writeLong;
+import static eu.fasten.core.utils.VariableLengthByteCoder.writeString;
 
 import java.io.Closeable;
 import java.io.File;
@@ -65,6 +67,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.GOV3LongFunction;
+import eu.fasten.core.data.graphdb.GraphMetadata.NodeData;
 import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
 import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type;
 import eu.fasten.core.index.BVGraphSerializer;
@@ -145,26 +148,10 @@ public class RocksDao implements Closeable {
         // Save and obtain graph
         DirectedGraph graph = saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
         if (gidGraph instanceof ExtendedGidGraph) {
-            ExtendedGidGraph extendedGidGraph = (ExtendedGidGraph)gidGraph;
+            final ExtendedGidGraph extendedGidGraph = (ExtendedGidGraph)gidGraph;
             
-            Map<Long, String> gidToUriMap = extendedGidGraph.getGidToUriMap();
-            
-            // Serialize map in compact form, following the standard node enumeration order
-            final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
-            for(LongIterator iterator = graph.iterator(); iterator.hasNext();) {
-                FastenJavaURI uri = FastenJavaURI.create(gidToUriMap.get(iterator.nextLong())).decanonicalize();
-                String type = "/" + uri.getNamespace() + "/" + uri.getClassName();
-                String signature = StringUtils.substringAfter(uri.getEntity(), ".");
-                byte[] bytes = type.getBytes(StandardCharsets.UTF_8);
-                encode(bytes.length, fbaos);
-                fbaos.write(bytes);
-                bytes = signature.getBytes(StandardCharsets.UTF_8);
-                encode(bytes.length, fbaos);
-                fbaos.write(bytes);
-            }
-
-            Map<Pair<Long, Long>, List<eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord>> edgesInfo = extendedGidGraph.getEdgesInfo();
-            Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
+            final Map<Pair<Long, Long>, List<eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord>> edgesInfo = extendedGidGraph.getEdgesInfo();
+            final Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
             
             // Gather data by source and store it in lists of RocksDao.ReceiverRecord.
             edgesInfo.forEach((pair, record) -> {
@@ -174,22 +161,29 @@ public class RocksDao implements Closeable {
                     return list;
                 });
             });
-   
-            // Serialize map in compact form, following the standard node enumeration order
+
+            final Map<Long, String> gidToUriMap = extendedGidGraph.getGidToUriMap();
+            
+            // Serialize information in compact form, following the standard node enumeration order
+            final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
             for(LongIterator iterator = graph.iterator(); iterator.hasNext();) {
-                List<ReceiverRecord> list = map.get(iterator.nextLong());
+                final long node = iterator.nextLong();
+ 
+                FastenJavaURI uri = FastenJavaURI.create(gidToUriMap.get(node)).decanonicalize();
+                writeString("/" + uri.getNamespace() + "/" + uri.getClassName(), fbaos);
+                writeString(StringUtils.substringAfter(uri.getEntity(), "."), fbaos);
+
+            	List<ReceiverRecord> list = map.get(node);
                 // TODO: is this acceptable behavior?
-                if (list == null) encode(0, fbaos); // no data
+                if (list == null) writeLong(0, fbaos); // no data
                 else {
                     // Encode list length
-                    encode(list.size(), fbaos);
+                    writeLong(list.size(), fbaos);
                     // Encode elements
                     for(var r: list) {
-                        encode(r.line, fbaos);
-                        encode(r.type.ordinal(), fbaos);
-                        byte[] bytes = r.receiverUri.getBytes(StandardCharsets.UTF_8);
-                        encode(bytes.length, fbaos);
-                        fbaos.write(bytes);
+                        writeLong(r.line, fbaos);
+                        writeLong(r.type.ordinal(), fbaos);
+                        writeString(r.receiverUri, fbaos);
                     }
                 }
             }
@@ -430,45 +424,35 @@ public class RocksDao implements Closeable {
     public GraphMetadata getGraphMetadata(final long index, final DirectedGraph graph) throws RocksDBException {
         final byte[] metadata = rocksDb.get(metadataHandle, Longs.toByteArray(index));
         if (metadata != null) {
-            Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
-            Long2ObjectOpenHashMap<Pair<String, String>> gid2URI = new Long2ObjectOpenHashMap<>();
+            Long2ObjectOpenHashMap<NodeData> map = new Long2ObjectOpenHashMap<>();
+
             // Deserialize map following the standard node enumeration order
             final FastByteArrayInputStream fbais = new FastByteArrayInputStream(metadata);
 
             try {
                 for (LongIterator iterator = graph.iterator(); iterator.hasNext();) {
                     final long node = iterator.nextLong();
-                    final int typeLength = (int)decode(fbais);
-                    final byte[] typeBytes = new byte[typeLength];
-                    fbais.read(typeBytes);
-                    final int signatureLength = (int)decode(fbais);
-                    final byte[] signatureBytes = new byte[signatureLength];
-                    fbais.read(signatureBytes);
-                    gid2URI.put(node, new Pair<>(new String(typeBytes, StandardCharsets.UTF_8),new String(signatureBytes, StandardCharsets.UTF_8)));                	
-                }
-
-                for (LongIterator iterator = graph.iterator(); iterator.hasNext();) {
-                    final long node = iterator.nextLong();
-                    final long length = decode(fbais);
-                    if (length == 0) map.put(node, Collections.emptyList());
+                    
+                    final String typeUri = readString(fbais);
+                    final String signature = readString(fbais);
+                    
+                    final long length = readLong(fbais);
+                    List<ReceiverRecord> list;
+                    if (length == 0) list = Collections.emptyList();
                     else {
-                        ArrayList<ReceiverRecord> list = new ArrayList<>();
+                        list = new ArrayList<>();
                         for (long i = 0; i < length; i++) {
-                            final int line = (int)decode(fbais);
-                            final var type = Type.values()[(int)decode(fbais)];
-                            final int uriLength = (int)decode(fbais);
-                            final byte[] uriBytes = new byte[uriLength];
-                            fbais.read(uriBytes);
-                            list.add(new ReceiverRecord(line, type, new String(uriBytes, StandardCharsets.UTF_8)));
+							list.add(new ReceiverRecord((int)readLong(fbais), Type.values()[(int)readLong(fbais)], readString(fbais)));
                         }
-                        map.put(node, list);
                     }
+                    
+                    map.put(node, new NodeData(typeUri, signature, list));
                 }
             } catch (IOException cantHappen) {
                 // Not really I/O
                 throw new RuntimeException(cantHappen.getCause());
             }
-            return new GraphMetadata(map, gid2URI);
+            return new GraphMetadata(map);
         }
         return null;
     }

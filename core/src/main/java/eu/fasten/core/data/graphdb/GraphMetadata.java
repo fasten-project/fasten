@@ -20,13 +20,51 @@ package eu.fasten.core.data.graphdb;
 
 import java.util.List;
 
-import org.apache.commons.math3.util.Pair;
-
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 public class GraphMetadata {
-    /** This class represent compactly a receiver record. The {@link Type} enum
+	/** This class represent the data associated to a node. The FASTEN Java URI
+	 *  is split into the type part, and the signature part. 
+     * 
+     * <p>Since this class is intended for internal use only, and all fields are public, final and immutable, no
+     * getters/setters are provided. 
+     */
+	public static final class NodeData {
+		public final String typeUri;
+		public final String signature;
+		public final List<ReceiverRecord> receiverRecords;
+
+		public NodeData(String typeUri, String signature, List<ReceiverRecord> receiverRecords) {
+			this.typeUri = typeUri;
+			this.signature = signature;
+			this.receiverRecords = receiverRecords;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			NodeData other = (NodeData)obj;
+			if (!typeUri.equals(other.typeUri)) return false;
+			if (!signature.equals(other.signature)) return false;
+			if (!receiverRecords.equals(other.receiverRecords)) return false;
+			return true;
+		}
+
+		@Override
+		public int hashCode() {
+			return typeUri.hashCode() ^ signature.hashCode() ^ receiverRecords.hashCode();
+		}
+		
+		@Override
+		public String toString() {
+			return "[" + typeUri + ", " + signature + ", " + receiverRecords + "]";
+		}
+	}
+
+	/** This class represent compactly a receiver record. The {@link Type} enum
      * matches closely the jOOQ-generated one in {@link eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord}.
      * 
      * <p>Since this class is intended for internal use only, and all fields are public, final and immutable, no
@@ -81,11 +119,10 @@ public class GraphMetadata {
         
     }
 
-	public Long2ObjectOpenHashMap<List<ReceiverRecord>> receiverInfo;
-	public Long2ObjectOpenHashMap<Pair<String, String>> signatureTypeUri;
+    /** For each node, the associated receiver info. */
+	public final Long2ObjectOpenHashMap<NodeData> gid2NodeData;
 
-	public GraphMetadata(Long2ObjectOpenHashMap<List<ReceiverRecord>> receiverInfo, Long2ObjectOpenHashMap<Pair<String, String>> signatureTypeUri) {
-		this.receiverInfo = receiverInfo;
-		this.signatureTypeUri = signatureTypeUri;
+	public GraphMetadata(Long2ObjectOpenHashMap<NodeData> gid2NodeData) {
+		this.gid2NodeData = gid2NodeData;
 	}
 }

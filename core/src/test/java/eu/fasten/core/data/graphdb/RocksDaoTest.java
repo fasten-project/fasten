@@ -109,9 +109,9 @@ public class RocksDaoTest {
                 "      ]\n" +
                 "   },\n" +
                 "   \"gid_to_uri\": {\n" +
-                "   \t\t\"0\": \"/java.lang/String.get()\",\n" +
-                "   \t\t\"1\": \"/java.lang/Object.hashCode()\",\n" +
-                "   \t\t\"2\": \"/my.package/Klass.method(int)\"\n" +
+                "   \t\t\"0\": \"/java.lang/String.get()long\",\n" +
+                "   \t\t\"1\": \"/java.lang/Object.hashCode()int\",\n" +
+                "   \t\t\"2\": \"/my.package/Klass.method(int)int\"\n" +
                 "   }\n" +
                 "}");
         var graph = ExtendedGidGraph.getGraph(json);
@@ -129,19 +129,21 @@ public class RocksDaoTest {
         assertEquals(new HashSet<>(graph.getNodes()), graph.getGidToUriMap().keySet());
 
         GraphMetadata graphMetadata = rocksDao.getGraphMetadata(graph.getIndex(), graphData);
-        assertEquals(Set.of(new ReceiverRecord(5, STATIC, "/java.lang/String"),
+        assertEquals(
+        		new GraphMetadata.NodeData("/java.lang/String", "get()/java.lang/long",
+        		List.of(new ReceiverRecord(5, STATIC, "/java.lang/String"),
         		new ReceiverRecord(12, INTERFACE, "/product/Interface"),
         		new ReceiverRecord(12, STATIC, "/java.lang/String"),
-        		new ReceiverRecord(13, VIRTUAL, "/product/Interface")), 
-        		new HashSet<>(graphMetadata.receiverInfo.get(0)));
-        assertEquals(Set.of(new ReceiverRecord(25, DYNAMIC, "/java.lang/Object")), 
-        		new HashSet<>(graphMetadata.receiverInfo.get(1)));    
+        		new ReceiverRecord(13, VIRTUAL, "/product/Interface"))), 
+        		graphMetadata.gid2NodeData.get(0));
         assertEquals(
-        		new Long2ObjectArrayMap<Pair<String,String>>(
-        				new long[] {0, 1, 2 }, new Pair[] {
-        		new Pair<>("/java.lang/String", "get()"), new Pair<>("/java.lang/Object", "hashCode()"),
-        		new Pair<>("/my.package/Klass", "method(int)")}),
-        		graphMetadata.signatureTypeUri);    
+        		new GraphMetadata.NodeData("/java.lang/Object", "hashCode()/java.lang/int",
+        		List.of(new ReceiverRecord(25, DYNAMIC, "/java.lang/Object"))), 
+        		graphMetadata.gid2NodeData.get(1));    
+        assertEquals(
+        		new GraphMetadata.NodeData("/my.package/Klass", "method(/my.package/int)/my.package/int",
+        		List.of()), 
+        		graphMetadata.gid2NodeData.get(2));    
     }
 
     @Test
