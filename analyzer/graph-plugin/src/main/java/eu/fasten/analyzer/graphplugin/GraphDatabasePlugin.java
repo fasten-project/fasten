@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.graphplugin;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.graphdb.ExtendedGidGraph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.plugins.GraphDBConnector;
@@ -112,7 +113,11 @@ public class GraphDatabasePlugin extends Plugin {
                 }
             } else {
                 try {
-                    gidGraph = GidGraph.getGraph(json);
+                    if (json.has("edges_info")) {
+                        gidGraph = ExtendedGidGraph.getGraph(json);
+                    } else {
+                        gidGraph = GidGraph.getGraph(json);
+                    }
                 } catch (JSONException e) {
                     logger.error("Could not parse GID graph", e);
                     setPluginError(e);
@@ -140,8 +145,7 @@ public class GraphDatabasePlugin extends Plugin {
             outputPath = File.separator + firstLetter + File.separator
                     + artifactId + File.separator + product + ".json";
             try {
-                rocksDao.saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(),
-                        gidGraph.getNumInternalNodes(), gidGraph.getEdges());
+                rocksDao.saveToRocksDb(gidGraph);
             } catch (RocksDBException | IOException e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
                 setPluginError(e);

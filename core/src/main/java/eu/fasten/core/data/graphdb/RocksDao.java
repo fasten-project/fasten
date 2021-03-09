@@ -121,6 +121,13 @@ public class RocksDao implements Closeable {
         kryo.register(GOV3LongFunction.class, new JavaSerializer());
     }
 
+    public void saveToRocksDb(final GidGraph gidGraph) throws IOException, RocksDBException {
+        if (gidGraph instanceof ExtendedGidGraph) {
+            System.out.println("GID Graph has the edges info for stitching");
+        }
+        saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
+    }
+
     /**
      * Inserts graph (nodes and edges) into RocksDB database.
      *
