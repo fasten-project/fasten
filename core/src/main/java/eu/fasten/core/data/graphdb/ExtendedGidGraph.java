@@ -34,6 +34,7 @@ import java.util.Map;
 public class ExtendedGidGraph extends GidGraph {
 
     private final Map<Pair<Long, Long>, List<ReceiverRecord>> edgesInfo = new HashMap<>();
+    private final Map<Long, String> gidToUriMap;
 
     /**
      * Constructor for Graph.
@@ -46,13 +47,18 @@ public class ExtendedGidGraph extends GidGraph {
      * @param numInternalNodes Number of internal nodes in nodes list
      * @param edges            List of edges of the graph with pairs for Global IDs
      */
-    public ExtendedGidGraph(long index, String product, String version, List<Long> nodes, int numInternalNodes, List<EdgesRecord> edges) {
+    public ExtendedGidGraph(long index, String product, String version, List<Long> nodes, int numInternalNodes, List<EdgesRecord> edges, Map<Long, String> gid2UriMap) {
         super(index, product, version, nodes, numInternalNodes, edges);
+        this.gidToUriMap = gid2UriMap;
         edges.forEach(e -> edgesInfo.put(new Pair<>(e.getSourceId(), e.getTargetId()), Arrays.asList(e.getReceivers().clone())));
     }
 
     public Map<Pair<Long, Long>, List<ReceiverRecord>> getEdgesInfo() {
         return this.edgesInfo;
+    }
+
+    public Map<Long, String> getGidToUriMap() {
+        return gidToUriMap;
     }
 
     @Override
@@ -72,6 +78,9 @@ public class ExtendedGidGraph extends GidGraph {
             edgesInfoJson.put(edgeStr, infoArray);
         });
         json.put("edges_info", edgesInfoJson);
+        var gidToUriJson = new JSONObject();
+        this.gidToUriMap.forEach((k, v) -> gidToUriJson.put(String.valueOf(k), v));
+        json.put("gid_to_uri", gidToUriJson);
         return json;
     }
 
@@ -81,13 +90,15 @@ public class ExtendedGidGraph extends GidGraph {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         ExtendedGidGraph that = (ExtendedGidGraph) o;
-        return edgesInfo != null ? edgesInfo.equals(that.edgesInfo) : that.edgesInfo == null;
+        return gidToUriMap.equals(that.gidToUriMap)
+                && edgesInfo != null ? edgesInfo.equals(that.edgesInfo) : that.edgesInfo == null;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (edgesInfo != null ? edgesInfo.hashCode() : 0);
+        result = 31 * result + (gidToUriMap != null ? gidToUriMap.hashCode() : 0);
         return result;
     }
 
@@ -112,7 +123,11 @@ public class ExtendedGidGraph extends GidGraph {
             }
             edgesList.add(new EdgesRecord(source, target, callSites, null));
         });
-        return new ExtendedGidGraph(gidGraph.getIndex(), gidGraph.getProduct(), gidGraph.getVersion(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), edgesList);
+        var gid2uriMap = new HashMap<Long, String>(gidGraph.getNodes().size());
+        var gidToUriJson = jsonGraph.getJSONObject("gid_to_uri");
+        gidToUriJson.keySet().forEach(k -> gid2uriMap.put(Long.parseLong(k), gidToUriJson.getString(k)));
+        return new ExtendedGidGraph(gidGraph.getIndex(), gidGraph.getProduct(), gidGraph.getVersion(),
+                gidGraph.getNodes(), gidGraph.getNumInternalNodes(), edgesList, gid2uriMap);
     }
 
     private static ReceiverType getReceiverType(String type) {

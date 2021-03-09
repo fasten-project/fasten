@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -78,6 +79,11 @@ public class RocksDaoTest {
                 "            \"receiver_namespace\": \"/java.lang/Object\"\n" +
                 "         } \n" +
                 "      ]\n" +
+                "   },\n" +
+                "   \"gid_to_uri\": {\n" +
+                "   \t\t\"0\": \"fasten_uri1\",\n" +
+                "   \t\t\"1\": \"fasten_uri2\",\n" +
+                "   \t\t\"2\": \"fasten_uri3\"\n" +
                 "   }\n" +
                 "}");
         var graph = ExtendedGidGraph.getGraph(json);
@@ -92,6 +98,7 @@ public class RocksDaoTest {
         assertEquals(new LongArrayList(List.of(1L)), graphData.predecessors(2L));
         assertEquals(graph.getEdges().size(), graphData.numArcs());
         assertEquals(new LongOpenHashSet(List.of(2L)), graphData.externalNodes());
+        assertEquals(new HashSet<>(graph.getNodes()), graph.getGidToUriMap().keySet());
     }
 
     @Test
