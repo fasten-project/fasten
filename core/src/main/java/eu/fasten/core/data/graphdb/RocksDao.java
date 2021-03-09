@@ -36,6 +36,7 @@ import org.jooq.Record1;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.CompressionType;
 import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -76,8 +77,9 @@ import it.unimi.dsi.webgraph.Transform;
 
 public class RocksDao implements Closeable {
 
+	private final static byte[] METADATA_COLUMN_FAMILY = "metadata".getBytes();
     private final RocksDB rocksDb;
-    private final ColumnFamilyHandle defaultHandle;
+    private final ColumnFamilyHandle defaultHandle, metadataHandle;
     private Kryo kryo;
     private final static Logger logger = LoggerFactory.getLogger(RocksDao.class.getName());
 
@@ -89,17 +91,20 @@ public class RocksDao implements Closeable {
      */
     public RocksDao(final String dbDir, final boolean readOnly) throws RocksDBException {
         RocksDB.loadLibrary();
-        final ColumnFamilyOptions cfOptions = new ColumnFamilyOptions();
+                final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
+                final ColumnFamilyOptions metadataOptions = new ColumnFamilyOptions().setCompressionType(CompressionType.ZSTD_COMPRESSION);
         @SuppressWarnings("resource") final DBOptions dbOptions = new DBOptions()
                 .setCreateIfMissing(true)
                 .setCreateMissingColumnFamilies(true);
-        final List<ColumnFamilyDescriptor> cfDescriptors = Collections.singletonList(
-                new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, cfOptions));
+                final List<ColumnFamilyDescriptor> cfDescriptors = List.of(
+                    new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), 
+                    new ColumnFamilyDescriptor(METADATA_COLUMN_FAMILY, metadataOptions));
         final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
         this.rocksDb = readOnly
                 ? RocksDB.openReadOnly(dbOptions, dbDir, cfDescriptors, columnFamilyHandles)
                 : RocksDB.open(dbOptions, dbDir, cfDescriptors, columnFamilyHandles);
         this.defaultHandle = columnFamilyHandles.get(0);
+        this.metadataHandle = columnFamilyHandles.get(1);
         initKryo();
     }
 
@@ -122,10 +127,11 @@ public class RocksDao implements Closeable {
     }
 
     public void saveToRocksDb(final GidGraph gidGraph) throws IOException, RocksDBException {
+    	DirectedGraph graph = saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
         if (gidGraph instanceof ExtendedGidGraph) {
-            System.out.println("GID Graph has the edges info for stitching");
+            ExtendedGidGraph extendedGidGraph = (ExtendedGidGraph)gidGraph;
         }
-        saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
+        
     }
 
     /**
@@ -135,14 +141,15 @@ public class RocksDao implements Closeable {
      * @param nodes       List of GID nodes (first internal nodes, then external nodes)
      * @param numInternal Number of internal nodes in nodes list
      * @param edges       List of edges (pairs of GIDs)
+     * @return the stored {@link DirectedGraph}, or {@code null} if the provided index key is already present. 
      * @throws IOException      if there was a problem writing to files
      * @throws RocksDBException if there was a problem inserting in the database
      */
-    public void saveToRocksDb(final long index, List<Long> nodes, int numInternal, final List<List<Long>> edges)
+    public DirectedGraph saveToRocksDb(final long index, List<Long> nodes, int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
         if (this.getGraphData(index) != null) {
             logger.info("Graph with index {} is already in the database", index);
-            return;
+            return null;
         }
         var internalIds = new LongArrayList(numInternal);
         var externalIds = new LongArrayList(nodes.size() - numInternal);
@@ -190,6 +197,7 @@ public class RocksDao implements Closeable {
             bbo.flush();
             // Write to DB
             rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
+            return graph;
         } else {
             /*
              * In this case we compress the graph: first, we remap GIDs into a compact temporary ID space
@@ -253,7 +261,8 @@ public class RocksDao implements Closeable {
             final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
             final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
             kryo.writeObject(bbo, Boolean.TRUE);
-            kryo.writeObject(bbo, BVGraph.load(file.toString()));
+            final ImmutableGraph storedGraph = BVGraph.load(file.toString());
+            kryo.writeObject(bbo, storedGraph);
 
             // Compute LIDs according to the current node numbering based on the LLP permutation
             final long[] LID2GID = new long[temporary2GID.length];
@@ -269,7 +278,8 @@ public class RocksDao implements Closeable {
             propertyFile = new FileInputStream(file + BVGraph.PROPERTIES_EXTENSION);
             transposeProperties.load(propertyFile);
             propertyFile.close();
-            kryo.writeObject(bbo, BVGraph.load(file.toString()));
+            final ImmutableGraph storedTranspose = BVGraph.load(file.toString());
+            kryo.writeObject(bbo, storedTranspose);
             kryo.writeObject(bbo, numInternal);
             // Write out properties
             kryo.writeObject(bbo, graphProperties);
@@ -302,6 +312,9 @@ public class RocksDao implements Closeable {
                     file.delete();
                 }
             }
+            return new CallGraphData(storedGraph, storedTranspose, graphProperties, transposeProperties,
+                    LID2GID, GID2LID, numInternal, fbaos.length);
+
         }
     }
 
