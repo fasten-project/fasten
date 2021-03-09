@@ -41,11 +41,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.BatchUpdateException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
@@ -267,9 +263,12 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         callablesIds.addAll(internalNodesSet);
         callablesIds.addAll(externalNodesSet);
 
+        var gid2uriMap = new HashMap<Long, String>(callablesIds.size());
+        callables.forEach(c -> gid2uriMap.put(lidToGidMap.get(c.getId().longValue()), c.getFastenUri()));
+
         // Create a GID Graph for production
         this.gidGraph = new ExtendedGidGraph(packageVersionId, callGraph.product, callGraph.version,
-                callablesIds, numInternal, edges);
+                callablesIds, numInternal, edges, gid2uriMap);
         return packageVersionId;
     }
 

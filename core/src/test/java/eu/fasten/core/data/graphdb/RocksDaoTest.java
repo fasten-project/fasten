@@ -105,6 +105,11 @@ public class RocksDaoTest {
                 "            \"receiver_namespace\": \"/java.lang/Object\"\n" +
                 "         } \n" +
                 "      ]\n" +
+                "   },\n" +
+                "   \"gid_to_uri\": {\n" +
+                "   \t\t\"0\": \"fasten_uri1\",\n" +
+                "   \t\t\"1\": \"fasten_uri2\",\n" +
+                "   \t\t\"2\": \"fasten_uri3\"\n" +
                 "   }\n" +
                 "}");
         var graph = ExtendedGidGraph.getGraph(json);
@@ -119,6 +124,7 @@ public class RocksDaoTest {
         assertEquals(LongList.of(0L, 1L), graphData.predecessors(2L));
         assertEquals(graph.getEdges().size(), graphData.numArcs());
         assertEquals(new LongOpenHashSet(List.of(2L)), graphData.externalNodes());
+        assertEquals(new HashSet<>(graph.getNodes()), graph.getGidToUriMap().keySet());
 
         GraphMetadata graphMetadata = rocksDao.getGraphMetadata(graph.getIndex(), graphData);
         assertEquals(Set.of(new ReceiverRecord(5, STATIC, "/java.lang/String"),
