@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.eclipse.jdt.annotation.NonNull;
 import org.jooq.DSLContext;
@@ -62,6 +63,7 @@ import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.ArrayImmutableDirectedGraph.Builder;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.GOV3LongFunction;
 import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
 import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type;
@@ -144,6 +146,23 @@ public class RocksDao implements Closeable {
         DirectedGraph graph = saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
         if (gidGraph instanceof ExtendedGidGraph) {
             ExtendedGidGraph extendedGidGraph = (ExtendedGidGraph)gidGraph;
+            
+            Map<Long, String> gidToUriMap = extendedGidGraph.getGidToUriMap();
+            
+            // Serialize map in compact form, following the standard node enumeration order
+            final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
+            for(LongIterator iterator = graph.iterator(); iterator.hasNext();) {
+                FastenJavaURI uri = FastenJavaURI.create(gidToUriMap.get(iterator.nextLong())).decanonicalize();
+                String type = "/" + uri.getNamespace() + "/" + uri.getClassName();
+                String signature = StringUtils.substringAfter(uri.getEntity(), ".");
+                byte[] bytes = type.getBytes(StandardCharsets.UTF_8);
+                encode(bytes.length, fbaos);
+                fbaos.write(bytes);
+                bytes = signature.getBytes(StandardCharsets.UTF_8);
+                encode(bytes.length, fbaos);
+                fbaos.write(bytes);
+            }
+
             Map<Pair<Long, Long>, List<eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord>> edgesInfo = extendedGidGraph.getEdgesInfo();
             Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
             
@@ -157,7 +176,6 @@ public class RocksDao implements Closeable {
             });
    
             // Serialize map in compact form, following the standard node enumeration order
-            final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
             for(LongIterator iterator = graph.iterator(); iterator.hasNext();) {
                 List<ReceiverRecord> list = map.get(iterator.nextLong());
                 // TODO: is this acceptable behavior?
@@ -413,10 +431,22 @@ public class RocksDao implements Closeable {
         final byte[] metadata = rocksDb.get(metadataHandle, Longs.toByteArray(index));
         if (metadata != null) {
             Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
+            Long2ObjectOpenHashMap<Pair<String, String>> gid2URI = new Long2ObjectOpenHashMap<>();
             // Deserialize map following the standard node enumeration order
             final FastByteArrayInputStream fbais = new FastByteArrayInputStream(metadata);
 
             try {
+                for (LongIterator iterator = graph.iterator(); iterator.hasNext();) {
+                    final long node = iterator.nextLong();
+                    final int typeLength = (int)decode(fbais);
+                    final byte[] typeBytes = new byte[typeLength];
+                    fbais.read(typeBytes);
+                    final int signatureLength = (int)decode(fbais);
+                    final byte[] signatureBytes = new byte[signatureLength];
+                    fbais.read(signatureBytes);
+                    gid2URI.put(node, new Pair<>(new String(typeBytes, StandardCharsets.UTF_8),new String(signatureBytes, StandardCharsets.UTF_8)));                	
+                }
+
                 for (LongIterator iterator = graph.iterator(); iterator.hasNext();) {
                     final long node = iterator.nextLong();
                     final long length = decode(fbais);
@@ -438,7 +468,7 @@ public class RocksDao implements Closeable {
                 // Not really I/O
                 throw new RuntimeException(cantHappen.getCause());
             }
-            return new GraphMetadata(map, null);
+            return new GraphMetadata(map, gid2URI);
         }
         return null;
     }

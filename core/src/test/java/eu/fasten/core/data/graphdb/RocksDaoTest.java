@@ -18,10 +18,12 @@
 
 package eu.fasten.core.data.graphdb;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.math3.util.Pair;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,9 +109,9 @@ public class RocksDaoTest {
                 "      ]\n" +
                 "   },\n" +
                 "   \"gid_to_uri\": {\n" +
-                "   \t\t\"0\": \"fasten_uri1\",\n" +
-                "   \t\t\"1\": \"fasten_uri2\",\n" +
-                "   \t\t\"2\": \"fasten_uri3\"\n" +
+                "   \t\t\"0\": \"/java.lang/String.get()\",\n" +
+                "   \t\t\"1\": \"/java.lang/Object.hashCode()\",\n" +
+                "   \t\t\"2\": \"/my.package/Klass.method(int)\"\n" +
                 "   }\n" +
                 "}");
         var graph = ExtendedGidGraph.getGraph(json);
@@ -134,6 +136,12 @@ public class RocksDaoTest {
         		new HashSet<>(graphMetadata.receiverInfo.get(0)));
         assertEquals(Set.of(new ReceiverRecord(25, DYNAMIC, "/java.lang/Object")), 
         		new HashSet<>(graphMetadata.receiverInfo.get(1)));    
+        assertEquals(
+        		new Long2ObjectArrayMap<Pair<String,String>>(
+        				new long[] {0, 1, 2 }, new Pair[] {
+        		new Pair<>("/java.lang/String", "get()"), new Pair<>("/java.lang/Object", "hashCode()"),
+        		new Pair<>("/my.package/Klass", "method(int)")}),
+        		graphMetadata.signatureTypeUri);    
     }
 
     @Test

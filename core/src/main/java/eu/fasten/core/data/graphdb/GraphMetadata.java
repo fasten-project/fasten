@@ -20,8 +20,9 @@ package eu.fasten.core.data.graphdb;
 
 import java.util.List;
 
+import org.apache.commons.math3.util.Pair;
+
 import it.unimi.dsi.fastutil.HashCommon;
-import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 public class GraphMetadata {
