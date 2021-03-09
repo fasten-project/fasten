@@ -35,7 +35,6 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.util.Pair;
@@ -64,7 +63,8 @@ import eu.fasten.core.data.ArrayImmutableDirectedGraph.Builder;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.GOV3LongFunction;
-import eu.fasten.core.data.graphdb.RocksDao.ReceiverRecord.Type;
+import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
+import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type;
 import eu.fasten.core.index.BVGraphSerializer;
 import eu.fasten.core.index.LayeredLabelPropagation;
 import eu.fasten.core.legacy.KnowledgeBase;
@@ -95,42 +95,6 @@ public class RocksDao implements Closeable {
     private Kryo kryo;
     private final static Logger logger = LoggerFactory.getLogger(RocksDao.class.getName());
 
-    /** This class represent compactly a receiver record. The {@link Type} enum
-     * matches closely the jOOQ-generated one in {@link eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord}.
-     * 
-     * <p>Since this class is intended for internal use only, and all fields are public, final and immutable, no
-     * getters/setters are provided. 
-     */
-    public static final class ReceiverRecord {
-        public static enum Type {
-            STATIC,
-            DYNAMIC,
-            VIRTUAL,
-            INTERFACE,
-            SPECIAL
-        }
-
-        public ReceiverRecord(int line, Type type, String receiverUri) {
-            this.line = line;
-            this.type = type;
-            this.receiverUri = receiverUri;
-        }
-        
-        public ReceiverRecord(eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord record) {
-            this.line = record.getLine().intValue();
-            this.type = Type.valueOf(record.getType().getLiteral().toUpperCase());
-            this.receiverUri = record.getReceiverUri();
-        }
-        
-        public final int line;
-        public final Type type;
-        public final String receiverUri;
-        
-        @Override
-        public String toString() {
-            return "{line: " + line + ", type: " + type + ", uri: " + receiverUri + "}";
-        }
-    }
     
     /**
      * Constructor of RocksDao (Database Access Object).
@@ -412,8 +376,6 @@ public class RocksDao implements Closeable {
             final Input input = new Input(buffer);
             assert kryo != null;
 
-            DirectedGraph graph;
-            
             final boolean compressed = kryo.readObject(input, Boolean.class);
             if (compressed) {
                 final var graphs = new ImmutableGraph[]{
@@ -427,51 +389,62 @@ public class RocksDao implements Closeable {
                 };
                 final long[] LID2GID = kryo.readObject(input, long[].class);
                 final GOV3LongFunction GID2LID = kryo.readObject(input, GOV3LongFunction.class);
-                graph = new CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
+                return new CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
                         LID2GID, GID2LID, numInternal, buffer.length);
             } else {
-                graph = kryo.readObject(input, ArrayImmutableDirectedGraph.class);
+                return kryo.readObject(input, ArrayImmutableDirectedGraph.class);
             }
-
-            final byte[] metadata = rocksDb.get(metadataHandle, Longs.toByteArray(index));
-            if (metadata != null) {
-                Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
-                // Deserialize map following the standard node enumeration order
-                final FastByteArrayInputStream fbais = new FastByteArrayInputStream(metadata);
-
-                try {
-                    for (LongIterator iterator = graph.iterator(); iterator.hasNext();) {
-                        final long node = iterator.nextLong();
-                        final long length = decode(fbais);
-                        if (length == 0) map.put(node, Collections.emptyList());
-                        else {
-                            ArrayList<ReceiverRecord> list = new ArrayList<>();
-                            for (long i = 0; i < length; i++) {
-                                final int line = (int)decode(fbais);
-                                final var type = Type.values()[(int)decode(fbais)];
-                                final int uriLength = (int)decode(fbais);
-                                final byte[] uriBytes = new byte[uriLength];
-                                fbais.read(uriBytes);
-                                list.add(new ReceiverRecord(line, type, new String(uriBytes, StandardCharsets.UTF_8)));
-                            }
-                            map.put(node, list);
-                        }
-                    }
-                } catch (IOException cantHappen) {
-                    // Not really I/O
-                    throw new RuntimeException(cantHappen.getCause());
-                }
-                
-                System.err.println(map);
-            }
-        
-            return graph;
         } catch (final NullPointerException e) {
             logger.warn("Graph with index " + index + " could not be found");
             return null;
         }
     }
 
+    /**
+     * Retrieves graph metadata from RocksDB database.
+     *
+     * @param index index of the graph
+     * @param graph the graph associated with {@code} index
+     * @return the metadata associated with the graph, or {@code null}
+     * if no metadata record exists for the provided graph
+     * @throws RocksDBException if there was problem retrieving data from RocksDB
+     */
+    public GraphMetadata getGraphMetadata(final long index, final DirectedGraph graph) throws RocksDBException {
+        final byte[] metadata = rocksDb.get(metadataHandle, Longs.toByteArray(index));
+        if (metadata != null) {
+            Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
+            // Deserialize map following the standard node enumeration order
+            final FastByteArrayInputStream fbais = new FastByteArrayInputStream(metadata);
+
+            try {
+                for (LongIterator iterator = graph.iterator(); iterator.hasNext();) {
+                    final long node = iterator.nextLong();
+                    final long length = decode(fbais);
+                    if (length == 0) map.put(node, Collections.emptyList());
+                    else {
+                        ArrayList<ReceiverRecord> list = new ArrayList<>();
+                        for (long i = 0; i < length; i++) {
+                            final int line = (int)decode(fbais);
+                            final var type = Type.values()[(int)decode(fbais)];
+                            final int uriLength = (int)decode(fbais);
+                            final byte[] uriBytes = new byte[uriLength];
+                            fbais.read(uriBytes);
+                            list.add(new ReceiverRecord(line, type, new String(uriBytes, StandardCharsets.UTF_8)));
+                        }
+                        map.put(node, list);
+                    }
+                }
+            } catch (IOException cantHappen) {
+                // Not really I/O
+                throw new RuntimeException(cantHappen.getCause());
+            }
+            return new GraphMetadata(map, null);
+        }
+        return null;
+    }
+
+    
+    
     /**
      * Deletes a graph from the graph database based on its index.
      *

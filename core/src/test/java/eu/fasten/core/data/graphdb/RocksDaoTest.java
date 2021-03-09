@@ -27,10 +27,20 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
+
+import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.DYNAMIC;
+import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.INTERFACE;
+import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.STATIC;
+import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.VIRTUAL;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class RocksDaoTest {
@@ -60,6 +70,7 @@ public class RocksDaoTest {
                 "   \"numInternalNodes\": 2,\n" +
                 "   \"edges\": [\n" +
                 "      [0, 1],\n" +
+                "      [0, 2],\n" +
                 "      [1, 2]\n" +
                 "   ],\n" +
                 "   \"edges_info\": {\n" +
@@ -108,6 +119,15 @@ public class RocksDaoTest {
         assertEquals(LongList.of(0L, 1L), graphData.predecessors(2L));
         assertEquals(graph.getEdges().size(), graphData.numArcs());
         assertEquals(new LongOpenHashSet(List.of(2L)), graphData.externalNodes());
+
+        GraphMetadata graphMetadata = rocksDao.getGraphMetadata(graph.getIndex(), graphData);
+        assertEquals(Set.of(new ReceiverRecord(5, STATIC, "/java.lang/String"),
+        		new ReceiverRecord(12, INTERFACE, "/product/Interface"),
+        		new ReceiverRecord(12, STATIC, "/java.lang/String"),
+        		new ReceiverRecord(13, VIRTUAL, "/product/Interface")), 
+        		new HashSet<>(graphMetadata.receiverInfo.get(0)));
+        assertEquals(Set.of(new ReceiverRecord(25, DYNAMIC, "/java.lang/Object")), 
+        		new HashSet<>(graphMetadata.receiverInfo.get(1)));    
     }
 
     @Test
