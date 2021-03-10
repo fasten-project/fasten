@@ -17,6 +17,7 @@
 
 package eu.fasten.core.utils;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -178,10 +179,10 @@ public class VariableLengthByteCoder {
 	}
 
 	/**
-	 * Encodes a byte array by writing its length using {@link #writeLong(long, OutputStream)}, and then
+	 * Writes a byte array by encoding its length using {@link #writeLong(long, OutputStream)}, and then
 	 * writing the array.
 	 *
-	 * @param x a byte array.
+	 * @param array a byte array.
 	 * @param os an output stream.
 	 */
 	public static void writeByteArray(final byte[] array, final OutputStream os) throws IOException {
@@ -190,33 +191,32 @@ public class VariableLengthByteCoder {
 	}
 
 	/**
-	 * Decodes a byte array written by {@link #writeByteArray(byte[], OutputStream)}.
+	 * Reads a byte array written by {@link #writeByteArray(byte[], OutputStream)}.
 	 *
-	 * @param os an output stream.
+	 * @param is an input stream.
 	 * @return the next byte array written by {@link #writeByteArray(byte[], OutputStream)}.
 	 */
 	public static byte[] readByteArray(final InputStream is) throws IOException {
 		final long length = readLong(is);
 		if (length > Integer.MAX_VALUE) throw new IOException();
 		byte[] array = new byte[(int)length];
-		is.read(array);
+		if (is.read(array) < array.length) throw new EOFException();
 		return array;
 	}
 
 	/**
-	 * Encodes a string by encoding it in UTF-8 and writing the result byte array using
+	 * Writes a string by encoding it in UTF-8 and writing the result byte array using
 	 * {@link #writeByteArray(byte[], OutputStream)}.
 	 *
-	 * @param x a string.
+	 * @param s a string.
 	 * @param os an output stream.
 	 */
 	public static void writeString(final String s, final OutputStream os) throws IOException {
-		byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
-		writeByteArray(bytes, os);
+		writeByteArray(s.getBytes(StandardCharsets.UTF_8), os);
 	}
 
 	/**
-	 * Decodes a strings written by {@link #writeString(String, OutputStream)}.
+	 * Reads a string written by {@link #writeString(String, OutputStream)}.
 	 *
 	 * @param is an input stream.
 	 * @return the next string written by {@link #writeString(String, OutputStream)}.
