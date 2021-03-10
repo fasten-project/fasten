@@ -47,6 +47,11 @@ public class JavaType {
      * Classes that this type inherits from in the order of instantiation.
      */
     private final LinkedList<FastenURI> superClasses;
+    private final Map<String, JavaNode> definedMethods;
+
+    public Map<String, JavaNode> getDefinedMethods() {
+        return definedMethods;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -108,19 +113,22 @@ public class JavaType {
 
     /**
      * Creates {@link JavaType} for the given data.
-     *
-     * @param sourceFile      the name of this type's source file
+     *  @param sourceFile      the name of this type's source file
      * @param methods         a map of methods in this type with their indexed by their ids.
+     * @param defineds        a map of all defined methods of a type to their signature.
      * @param superClasses    classes that this type extends.
      * @param superInterfaces interfaces that this type implements.
      * @param access          access modifier
-     * @param isFinal         true if the JavaType is final
+     * @param isFinal         true if the Type is final
      */
-    public JavaType(final String sourceFile, final BiMap<Integer, JavaNode> methods, final LinkedList<FastenURI> superClasses,
-                final List<FastenURI> superInterfaces, final String access,
-                final boolean isFinal) {
+    public JavaType(final String sourceFile, final BiMap<Integer, JavaNode> methods,
+                    final Map<String, JavaNode> defineds,
+                    final LinkedList<FastenURI> superClasses,
+                    final List<FastenURI> superInterfaces, final String access,
+                    final boolean isFinal) {
         this.sourceFileName = sourceFile;
         this.methods = methods;
+        this.definedMethods = defineds;
         this.superClasses = superClasses;
         this.superInterfaces = superInterfaces;
         this.access = access;
@@ -138,10 +146,19 @@ public class JavaType {
 
         final var methodsJson = type.getJSONObject("methods");
         this.methods = HashBiMap.create();
+        this.definedMethods = new HashMap<>();
         for (final var methodKey : methodsJson.keySet()) {
             final var nodeJson = methodsJson.getJSONObject(methodKey);
-            this.methods.put(Integer.parseInt(methodKey),
-                    new JavaNode(FastenURI.create(nodeJson.getString("uri")), nodeJson.getJSONObject("metadata").toMap()));
+
+            final var metadata = nodeJson.getJSONObject("metadata");
+            final var uri = FastenURI.create(nodeJson.getString("uri"));
+            final var node = new JavaNode(uri, metadata.toMap());
+            this.methods.put(Integer.parseInt(methodKey), node);
+            if (!metadata.isEmpty()) {
+                if (metadata.getBoolean("defined")){
+                    definedMethods.put(node.getSignature(), node);
+                }
+            }
         }
 
         final var superClassesJSON = type.getJSONArray("superClasses");
@@ -159,20 +176,6 @@ public class JavaType {
         }
         this.access = type.getString("access");
         this.isFinal = type.getBoolean("final");
-    }
-
-    /**
-     * Creates an empty {@link JavaType} with a source file specified.
-     *
-     * @param sourceFileName source file name
-     */
-    public JavaType(final String sourceFileName) {
-        this.sourceFileName = sourceFileName;
-        this.methods = HashBiMap.create();
-        this.superClasses = new LinkedList<>();
-        this.superInterfaces = new ArrayList<>();
-        this.access = "";
-        this.isFinal = false;
     }
 
     public String getSourceFileName() {
@@ -207,7 +210,7 @@ public class JavaType {
      * @return newly added method id, or an old id, of method already exists
      */
     public int addMethod(final JavaNode node, final int key) {
-        if (this.methods.containsValue(node)) {
+        if (this.methods.inverse().containsKey(node)) {
             return this.methods.inverse().get(node);
         } else {
             this.methods.put(key, node);

@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
+import com.google.common.collect.BiMap;
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
@@ -33,16 +34,28 @@ import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
 import org.opalj.br.analyses.Project;
+import org.opalj.tac.AITACode;
+import org.opalj.tac.ComputeTACAIKey$;
+import org.opalj.tac.DUVar;
+import org.opalj.tac.Stmt;
+import org.opalj.tac.TACMethodParameter;
 import org.opalj.tac.cg.CallGraph;
+import org.opalj.value.ValueInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Function1;
 import scala.collection.JavaConverters;
 
 /**
@@ -53,7 +66,7 @@ public class PartialCallGraph {
 
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
-    private final Map<JavaScope, Map<FastenURI, JavaType>> classHierarchy;
+    private final Map<JavaScope, BiMap<String, JavaType>> classHierarchy;
     private final Graph graph;
     private final int nodeCount;
 
@@ -69,7 +82,7 @@ public class PartialCallGraph {
         try {
             final var cha = createInternalCHA(constructor.getProject());
 
-            createGraphWithExternalCHA(constructor.getCallGraph(), cha);
+            createGraphWithExternalCHA(constructor, cha);
 
             this.nodeCount = cha.getNodeCount();
             this.classHierarchy = cha.asURIHierarchy(constructor.getProject().classHierarchy());
@@ -88,7 +101,7 @@ public class PartialCallGraph {
         }
     }
 
-    public Map<JavaScope, Map<FastenURI, JavaType>> getClassHierarchy() {
+    public Map<JavaScope, BiMap<String, JavaType>> getClassHierarchy() {
         return classHierarchy;
     }
 
@@ -107,8 +120,6 @@ public class PartialCallGraph {
      * @param coordinate maven coordinate of the revision to be processed
      * @param timestamp  timestamp of the revision release
      * @return RevisionCallGraph of the given coordinate.
-     * @throws FileNotFoundException in case there is no jar file for the given coordinate on the
-     *                               Maven central it throws this exception.
      */
     public static ExtendedRevisionJavaCallGraph createExtendedRevisionJavaCallGraph(
             final MavenCoordinate coordinate, final String mainClass,
@@ -193,25 +204,62 @@ public class PartialCallGraph {
      * declared in the package that call external methods and add them to externalCHA of
      * a call hierarchy. Build a graph for both internal and external calls in parallel.
      *
-     * @param cg  call graph from OPAL generator
+     * @param cgConstructor  call graph from OPAL generator
      * @param cha class hierarchy
      */
-    private void createGraphWithExternalCHA(final CallGraph cg, final OPALClassHierarchy cha) {
+    private void createGraphWithExternalCHA(final CallGraphConstructor cgConstructor,
+                                            final OPALClassHierarchy cha) {
+        final var cg = cgConstructor.getCallGraph();
+        final var tac = cgConstructor.getProject().get(ComputeTACAIKey$.MODULE$);
         for (final var sourceDeclaration : JavaConverters
-                .asJavaIterable(cg.reachableMethods().toIterable())) {
+            .asJavaIterable(cg.reachableMethods().toIterable())) {
+            final List<Integer> incompeletes = new ArrayList<>();
+            if (cg.incompleteCallSitesOf(sourceDeclaration) != null) {
+                JavaConverters.asJavaIterator(cg.incompleteCallSitesOf(sourceDeclaration))
+                    .forEachRemaining(pc -> incompeletes.add((int) pc));
+            }
+            final Set<Integer> visitedPCs = new HashSet<>();
 
             if (sourceDeclaration.hasMultipleDefinedMethods()) {
                 for (final var source : JavaConverters
-                        .asJavaIterable(sourceDeclaration.definedMethods())) {
-                    cha.appendGraph(source, cg.calleesOf(sourceDeclaration), graph);
+                    .asJavaIterable(sourceDeclaration.definedMethods())) {
+                    cha.appendGraph(source, cg.calleesOf(sourceDeclaration),
+                        getStmts(tac, sourceDeclaration.definedMethod()), graph, incompeletes,
+                        visitedPCs);
                 }
             } else if (sourceDeclaration.hasSingleDefinedMethod()) {
-                cha.appendGraph(sourceDeclaration.definedMethod(),
-                        cg.calleesOf(sourceDeclaration), graph);
+                final var definedMethod = sourceDeclaration.definedMethod();
+                cha.appendGraph(definedMethod, cg.calleesOf(sourceDeclaration),
+                    getStmts(tac, definedMethod), graph, incompeletes, visitedPCs);
 
             } else if (sourceDeclaration.isVirtualOrHasSingleDefinedMethod()) {
-                cha.appendGraph(sourceDeclaration, cg.calleesOf(sourceDeclaration), graph);
+
+                cha.appendGraph(sourceDeclaration, cg.calleesOf(sourceDeclaration), getStmts(tac,
+                    null), graph, incompeletes, visitedPCs);
+            }
+            if (!incompeletes.isEmpty()) {
+                logger.warn("There is an incomplete call site " +
+                    "that OPAL did not take care of. source: " + sourceDeclaration + "PCs: "+ incompeletes);
+
             }
         }
+    }
+
+    private Stmt<DUVar<ValueInformation>>[] getStmts(Function1<Method, AITACode<TACMethodParameter, ValueInformation>> tac,
+                                                     Method definedSource) {
+        Stmt<DUVar<ValueInformation>>[] stmts = null;
+        if (definedSource != null) {
+            AITACode<TACMethodParameter, ValueInformation> sourceTac = null;
+            try {
+                sourceTac = tac.apply(definedSource);
+
+            }catch (NoSuchElementException e){
+                logger.warn("couldn't find the stmt");
+            }
+            if (sourceTac != null) {
+                stmts = sourceTac.stmts();
+            }
+        }
+        return stmts;
     }
 }

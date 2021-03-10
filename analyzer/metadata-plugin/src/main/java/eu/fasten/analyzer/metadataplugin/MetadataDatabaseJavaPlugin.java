@@ -88,7 +88,8 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             // Insert all modules, files, module contents and extract callables from internal types
             for (var fastenUri : internalTypes.keySet()) {
                 var type = internalTypes.get(fastenUri);
-                var moduleId = insertModule(type, fastenUri, packageVersionId, metadataDao);
+                var moduleId = insertModule(type, FastenURI.create(fastenUri), packageVersionId,
+                    metadataDao);
                 var fileId = metadataDao.insertFile(packageVersionId, type.getSourceFileName());
                 metadataDao.insertModuleContent(moduleId, fileId);
                 callables.addAll(extractCallablesFromType(type, moduleId, true));
