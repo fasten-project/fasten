@@ -23,8 +23,13 @@ import java.util.List;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
+/** This class provides the metadata associated with the nodes of a callgraph. Those data are represented as maps from
+ *  node GID to {@link NodeData}. They are stored by the {@link RocksDao} class in a suitable column family of the RocksDB,
+ *  and can be recovered after reading the graph 
+ *  using {@link RocksDao#getGraphMetadata(long, eu.fasten.core.data.DirectedGraph)}, if needed.
+ */
 public class GraphMetadata {
-	/** This class represent the data associated to a node. The FASTEN Java URI
+	/** This class represent the data associated with a node. The FASTEN Java URI
 	 *  is split into the type part, and the signature part. 
      * 
      * <p>Since this class is intended for internal use only, and all fields are public, final and immutable, no
