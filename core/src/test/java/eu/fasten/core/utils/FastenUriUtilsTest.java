@@ -68,6 +68,20 @@ public class FastenUriUtilsTest {
     }
 
     @Test
+    void parseFullFastenUriTest() {
+        var fullUri = "fasten://mvn!com.google.guava:guava$24.1-jre/com.google.common.collect/Synchronized$SynchronizedList.set(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FObject)%2Fjava.lang%2FObject";
+        var forge = "mvn";
+        var packageName = "com.google.guava:guava";
+        var version = "24.1-jre";
+        var uri = "/com.google.common.collect/Synchronized$SynchronizedList.set(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FObject)%2Fjava.lang%2FObject";
+        var result = FastenUriUtils.parseFullFastenUri(fullUri);
+        assertEquals(forge, result.get(0));
+        assertEquals(packageName, result.get(1));
+        assertEquals(version, result.get(2));
+        assertEquals(uri, result.get(3));
+    }
+
+    @Test
     void testParsePartialFastenUriSuccess() {
 
         var partialUri = "/junit.awtui/AboutDialog.<init>(/java.awt/Frame)/java.lang/VoidType";

@@ -48,7 +48,7 @@ public class FastenUriUtils {
         var forge = fullFastenUri.split("!")[0];
         fullFastenUri = Arrays.stream(fullFastenUri.split("!")).skip(1).collect(Collectors.joining("!"));
         var packageName = fullFastenUri.split("\\$")[0];
-        var versionAndPartialUri = fullFastenUri.split("\\$")[1];
+        var versionAndPartialUri = Arrays.stream(fullFastenUri.split("\\$")).skip(1).collect(Collectors.joining("$"));
         var version = versionAndPartialUri.split("/")[0];
         var partialUri = Arrays.stream(versionAndPartialUri.split("/")).skip(1).collect(Collectors.joining("/"));
         if (!partialUri.startsWith("/")) {
