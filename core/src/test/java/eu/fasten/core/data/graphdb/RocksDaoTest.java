@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -49,30 +50,41 @@ public class RocksDaoTest {
     @Test
     public void extendedGidGraphTest() throws IOException, RocksDBException {
         var json = new JSONObject("{\n" +
-                "\t\"index\": 1,\n" +
-                "\t\"product\": \"test\",\n" +
-                "\t\"version\": \"0.0.1\",\n" +
-                "\t\"nodes\": [0, 1, 2],\n" +
-                "\t\"numInternalNodes\": 2,\n" +
-                "\t\"edges\": [[0, 1], [1, 2]],\n" +
-                "\t\"edges_info\": {\n" +
-                "\t\t\"[0, 1]\": [\n" +
-                "\t\t\t{\n" +
-                "\t\t\t\t\"call_type\": \"static\",\n" +
-                "\t\t\t\t\"receiver_namespace\": \"/java.lang/String\"\n" +
-                "\t\t\t},\n" +
-                "\t\t\t{\n" +
-                "\t\t\t\t\"call_type\": \"interface\",\n" +
-                "\t\t\t\t\"receiver_namespace\": \"/product/Interface\"\n" +
-                "\t\t\t}\n" +
-                "\t\t],\n" +
-                "\t\t\"[1, 2]\": [\n" +
-                "\t\t\t{\n" +
-                "\t\t\t\t\"call_type\": \"dynamic\",\n" +
-                "\t\t\t\t\"receiver_namespace\": \"/java.lang/Object\"\n" +
-                "\t\t\t},\n" +
-                "\t\t]\n" +
-                "\t}\n" +
+                "   \"index\": 1,\n" +
+                "   \"product\": \"test\",\n" +
+                "   \"version\": \"0.0.1\",\n" +
+                "   \"nodes\":[0, 1, 2],\n" +
+                "   \"numInternalNodes\": 2,\n" +
+                "   \"edges\": [\n" +
+                "      [0, 1],\n" +
+                "      [1, 2]\n" +
+                "   ],\n" +
+                "   \"edges_info\": {\n" +
+                "      \"[0, 1]\": [\n" +
+                "         {\n" +
+                "            \"line\": 5,\n" +
+                "            \"call_type\": \"static\",\n" +
+                "            \"receiver_namespace\": \"/java.lang/String\"\n" +
+                "         },\n" +
+                "         {\n" +
+                "            \"line\": 12,\n" +
+                "            \"call_type\":\"interface\",\n" +
+                "            \"receiver_namespace\": \"/product/Interface\"\n" +
+                "         }\n" +
+                "      ],\n" +
+                "      \"[1, 2]\": [\n" +
+                "         {\n" +
+                "            \"line\": 25,\n" +
+                "            \"call_type\": \"dynamic\",\n" +
+                "            \"receiver_namespace\": \"/java.lang/Object\"\n" +
+                "         } \n" +
+                "      ]\n" +
+                "   },\n" +
+                "   \"gid_to_uri\": {\n" +
+                "   \t\t\"0\": \"fasten_uri1\",\n" +
+                "   \t\t\"1\": \"fasten_uri2\",\n" +
+                "   \t\t\"2\": \"fasten_uri3\"\n" +
+                "   }\n" +
                 "}");
         var graph = ExtendedGidGraph.getGraph(json);
         rocksDao.saveToRocksDb(graph);
@@ -86,6 +98,7 @@ public class RocksDaoTest {
         assertEquals(new LongArrayList(List.of(1L)), graphData.predecessors(2L));
         assertEquals(graph.getEdges().size(), graphData.numArcs());
         assertEquals(new LongOpenHashSet(List.of(2L)), graphData.externalNodes());
+        assertEquals(new HashSet<>(graph.getNodes()), graph.getGidToUriMap().keySet());
     }
 
     @Test
