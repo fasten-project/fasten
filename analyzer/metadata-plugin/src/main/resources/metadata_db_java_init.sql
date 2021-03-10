@@ -51,10 +51,10 @@ CREATE TABLE dependencies
     metadata           JSONB
 );
 
-CREATE TABLE namespaces
+CREATE TABLE types
 (
     id        BIGSERIAL PRIMARY KEY,
-    namespace TEXT NOT NULL
+    type TEXT NOT NULL
 );
 
 CREATE TYPE ACCESS AS ENUM ('private', 'public', 'packagePrivate', 'static', 'protected');
@@ -63,7 +63,7 @@ CREATE TABLE modules
 (
     id                 BIGSERIAL PRIMARY KEY,
     package_version_id BIGINT NOT NULL REFERENCES package_versions (id),
-    namespace_id       BIGINT NOT NULL REFERENCES namespaces (id),
+    type_id            BIGINT NOT NULL REFERENCES namespaces (id),
     final              BOOLEAN,
     access             ACCESS,
     super_classes      BIGINT[],
@@ -122,12 +122,12 @@ CREATE TYPE CALL_TYPE AS ENUM ('static', 'dynamic', 'virtual', 'interface', 'spe
 
 CREATE TYPE CALL_SITE AS
 (
-    line                  INTEGER,
-    call_type             CALL_TYPE,
-    receiver_namespace_id BIGINT
+    line        INTEGER,
+    call_type   CALL_TYPE,
+    type_id     BIGINT
 );
 
-CREATE TABLE edges
+CREATE TABLE call_sites
 (
     source_id  BIGINT NOT NULL REFERENCES callables (id),
     target_id  BIGINT NOT NULL REFERENCES callables (id),
@@ -173,7 +173,7 @@ CREATE UNIQUE INDEX CONCURRENTLY unique_version_dependency_range ON dependencies
 ALTER TABLE dependencies
     ADD CONSTRAINT unique_version_dependency_range UNIQUE USING INDEX unique_version_dependency_range;
 
-CREATE UNIQUE INDEX CONCURRENTLY unique_version_namespace ON modules USING btree (package_version_id, namespace_id);
+CREATE UNIQUE INDEX CONCURRENTLY unique_version_namespace ON modules USING btree (package_version_id, type_id);
 ALTER TABLE modules
     ADD CONSTRAINT unique_version_namespace UNIQUE USING INDEX unique_version_namespace;
 
@@ -205,9 +205,9 @@ ALTER TABLE callables
     ADD CONSTRAINT check_module_id CHECK ((module_id = -1 AND is_internal_call IS false) OR
                                           (module_id IS NOT NULL AND is_internal_call IS true));
 
-CREATE UNIQUE INDEX CONCURRENTLY unique_namespaces ON namespaces USING btree (namespace);
-ALTER TABLE namespaces
-    ADD CONSTRAINT unique_namespaces UNIQUE USING INDEX unique_namespaces;
+CREATE UNIQUE INDEX CONCURRENTLY unique_types ON types USING btree (type);
+ALTER TABLE types
+    ADD CONSTRAINT unique_types UNIQUE USING INDEX unique_types;
 
 INSERT INTO packages (id, package_name, forge)
 VALUES (-1, 'external_callables_library', 'mvn')
@@ -221,7 +221,7 @@ INSERT INTO package_versions (id, package_id, version, cg_generator, artifact_re
 VALUES (-1, -1, '0.0.1', 'OPAL', -1)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO namespaces (id, namespace)
+INSERT INTO types (id, type)
 VALUES (-1, 'global_external_callables')
 ON CONFLICT DO NOTHING;
 
