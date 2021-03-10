@@ -95,7 +95,7 @@ public class OPALType {
      * @param klass            object type
      * @return map of FastenURI and corresponding Types
      */
-    public static Map<FastenURI, JavaType> getType(ClassHierarchy projectHierarchy,
+    public static Map<String, JavaType> getType(ClassHierarchy projectHierarchy,
                                                final Map<DeclaredMethod, Integer> methods,
                                                final ObjectType klass) {
         final var superTypes = extractSuperClasses(projectHierarchy, klass);
@@ -107,8 +107,8 @@ public class OPALType {
             superClassesURIs = new LinkedList<>();
         }
 
-        return Map.of(OPALMethod.getTypeURI(klass),
-                new JavaType("", toURIDeclaredMethods(methods), superClassesURIs,
+        return Map.of(OPALMethod.getTypeURI(klass).toString(),
+                new JavaType("", toURIDeclaredMethods(methods), new HashMap<>(),superClassesURIs,
                         toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass)),
                         "", false));
     }
@@ -121,7 +121,7 @@ public class OPALType {
      * @param klass object type
      * @return map of FastenURI and corresponding Types
      */
-    public static Map<FastenURI, JavaType> getType(final OPALType type, final ObjectType klass) {
+    public static Pair<String, JavaType> getType(final OPALType type, final ObjectType klass) {
         final LinkedList<FastenURI> superClassesURIs;
         if (type.getSuperClasses() != null) {
             superClassesURIs = toURIClasses(type.getSuperClasses());
@@ -129,10 +129,11 @@ public class OPALType {
             superClassesURIs = new LinkedList<>();
         }
 
-        return Map.of(OPALMethod.getTypeURI(klass),
-                new JavaType(type.getSourceFileName(), toURIMethods(type.getMethods()),
-                        superClassesURIs, toURIInterfaces(type.getSuperInterfaces()),
-                        type.access, type.isFinal));
+        final var methodMaps = getMethodMaps(type.methods);
+        return MutablePair.of(OPALMethod.getTypeURI(klass).toString(),
+            new JavaType(type.sourceFileName, methodMaps.getRight(),
+                methodMaps.getLeft(), superClassesURIs, toURIInterfaces(type.superInterfaces),
+                type.access, type.isFinal));
     }
 
     /**

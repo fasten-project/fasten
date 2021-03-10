@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * Builder for {@link ExtendedRevisionJavaCallGraph}.
  */
-public final class ExtendedBuilderJava extends ExtendedBuilder<Map<JavaScope, BiMap<FastenURI,
+public final class ExtendedBuilderJava extends ExtendedBuilder<Map<JavaScope, BiMap<String,
     JavaType>>> {
 
     public ExtendedBuilderJava nodeCount(final int nodeCount) {
@@ -62,7 +62,7 @@ public final class ExtendedBuilderJava extends ExtendedBuilder<Map<JavaScope, Bi
         return this;
     }
 
-    public ExtendedBuilderJava classHierarchy(final Map<JavaScope, BiMap<FastenURI, JavaType>> cha) {
+    public ExtendedBuilderJava classHierarchy(final Map<JavaScope, BiMap<String, JavaType>> cha) {
         this.classHierarchy = cha;
         return this;
     }

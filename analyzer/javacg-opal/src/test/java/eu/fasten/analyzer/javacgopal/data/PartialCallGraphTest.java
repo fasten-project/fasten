@@ -87,7 +87,7 @@ class PartialCallGraphTest {
         // Check internal types
         // -------
         var SSTTInternalType = cha.get(JavaScope.internalTypes)
-                .get(FastenURI.create("/name.space/SingleSourceToTarget"));
+                .get("/name.space/SingleSourceToTarget");
 
         // Check filename
         Assertions.assertEquals("name/space/SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
@@ -111,7 +111,7 @@ class PartialCallGraphTest {
         // Check external types
         // -------
         var SSTTExternalType = cha.get(JavaScope.externalTypes)
-                .get(FastenURI.create("/java.lang/Object"));
+                .get("/java.lang/Object");
 
         // Check super interfaces and classes
         Assertions.assertEquals(0, SSTTExternalType.getSuperInterfaces().size());
@@ -145,7 +145,7 @@ class PartialCallGraphTest {
         assertTrue(internalCalls.get(call).get("0") instanceof HashMap);
         assertEquals(6, ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("line"));
         assertEquals("invokestatic", ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("type"));
-        assertEquals("/name.space/SingleSourceToTarget",
+        assertEquals("[/name.space/SingleSourceToTarget]",
                 ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("receiver"));
     }
 

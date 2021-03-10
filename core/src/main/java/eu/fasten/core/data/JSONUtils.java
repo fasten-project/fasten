@@ -121,22 +121,22 @@ public class JSONUtils {
      * @param result the StringBuilder to append information.
      */
     private static void appendCha(StringBuilder result, final Map<JavaScope,
-        BiMap<FastenURI, JavaType>> cha) {
+        BiMap<String, JavaType>> cha) {
         result.append("\"cha\":{\"externalTypes\":{");
         for (final var entry : cha.get(JavaScope.externalTypes).entrySet()) {
-            appendType(result, entry.getKey().toString(), entry.getValue());
+            appendType(result, entry.getKey(), entry.getValue());
         }
         removeLastIfNotEmpty(result, cha.get(JavaScope.externalTypes).size());
 
         result.append("},\"internalTypes\":{");
         for (final var entry : cha.get(JavaScope.internalTypes).entrySet()) {
-            appendType(result, entry.getKey().toString(), entry.getValue());
+            appendType(result, entry.getKey(), entry.getValue());
         }
         removeLastIfNotEmpty(result, cha.get(JavaScope.internalTypes).size());
 
         result.append("},\"resolvedTypes\":{");
         for (final var entry : cha.get(JavaScope.resolvedTypes).entrySet()) {
-            appendType(result, entry.getKey().toString(), entry.getValue());
+            appendType(result, entry.getKey(), entry.getValue());
         }
         removeLastIfNotEmpty(result, cha.get(JavaScope.resolvedTypes).size());
 

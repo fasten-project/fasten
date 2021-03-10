@@ -21,7 +21,6 @@ package eu.fasten.core.data;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import eu.fasten.core.utils.FastenUriUtils;
-import it.unimi.dsi.fastutil.Hash;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -35,7 +34,7 @@ import org.json.JSONException;
  * @implNote each method in the revision has a unique id in this CHA.
  */
 public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map<JavaScope,
-    BiMap<FastenURI, JavaType>>> {
+    BiMap<String, JavaType>>> {
     static {
         classHierarchyJSONKey = "cha";
     }
@@ -46,7 +45,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *
      * @param builder builder for {@link ExtendedRevisionJavaCallGraph}
      */
-    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<Map<JavaScope, BiMap<FastenURI,
+    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<Map<JavaScope, BiMap<String,
         JavaType>>> builder) {
         super(builder);
     }
@@ -66,9 +65,9 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     public ExtendedRevisionJavaCallGraph(final String forge, final String product, final String version,
-                                     final long timestamp, int nodeCount, final String cgGenerator,
-                                     final Map<JavaScope, BiMap<FastenURI, JavaType>> classHierarchy,
-                                     final Graph graph) {
+                                         final long timestamp, int nodeCount, final String cgGenerator,
+                                         final Map<JavaScope,BiMap<String, JavaType>> classHierarchy,
+                                         final Graph graph) {
         super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
     }
 
@@ -98,36 +97,30 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *
      * @param cha JSONObject of a cha.
      */
-    public Map<JavaScope, BiMap<FastenURI, JavaType>> getCHAFromJSON(final JSONObject cha) {
-        final BiMap<FastenURI, JavaType> internals = HashBiMap.create();
-        final BiMap<FastenURI, JavaType> externals = HashBiMap.create();
-        final BiMap<FastenURI, JavaType> resolved = HashBiMap.create();
+    public Map<JavaScope, BiMap<String, JavaType>> getCHAFromJSON(final JSONObject cha) {
+        final BiMap<String, JavaType> internals = HashBiMap.create();
+        final BiMap<String, JavaType> externals = HashBiMap.create();
+        final BiMap<String, JavaType> resolved = HashBiMap.create();
 
         final var internalTypes = cha.getJSONObject("internalTypes");
         for (final var key : internalTypes.keySet()) {
-            final var internalType = new JavaType(internalTypes.getJSONObject(key));
-            if (!internals.inverse().containsKey(internalType)) {
-                internals.put(FastenURI.create(key), internalType);
-            }
+            internals.forcePut(FastenURI.create(key).toString(),
+                new JavaType(internalTypes.getJSONObject(key)));
         }
         final var externalTypes = cha.getJSONObject("externalTypes");
         for (final var key : externalTypes.keySet()) {
-            final var externalType = new JavaType(externalTypes.getJSONObject(key));
-            if (!internals.inverse().containsKey(externalType)) {
-                externals.put(FastenURI.create(key), externalType);
-            }
+            externals.forcePut(FastenURI.create(key).toString(),
+                new JavaType(externalTypes.getJSONObject(key)));
         }
         final var resolvedTypes = cha.getJSONObject("resolvedTypes");
         for (final var key : resolvedTypes.keySet()) {
-            final var resolvedType = new JavaType(resolvedTypes.getJSONObject(key));
-            if (!internals.inverse().containsKey(resolvedType)) {
-                resolved.put(FastenURI.create(key), resolvedType);
-            }
+            resolved.forcePut(FastenURI.create(key).toString(),
+                new JavaType(resolvedTypes.getJSONObject(key)));
         }
 
         return Map.of(JavaScope.internalTypes, internals,
-                JavaScope.externalTypes, externals,
-                JavaScope.resolvedTypes, resolved);
+            JavaScope.externalTypes, externals,
+            JavaScope.resolvedTypes, resolved);
     }
 
     /**
@@ -136,7 +129,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
     @Override
-    public Map<Integer, JavaNode> mapOfAllMethods() {
+    public Map<Integer, JavaNode>  mapOfAllMethods() {
         Map<Integer, JavaNode> result = new HashMap<>();
         for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
             result.putAll(aClass.getValue().getMethods());
@@ -169,11 +162,12 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         return result;
     }
 
-    private void putMethodsOfType(final BiMap<Integer, String> result, final FastenURI type,
+    private void putMethodsOfType(final BiMap<Integer, String> result, final String type,
                                   final Map<Integer, JavaNode> methods) {
         for (final var nodeEntry : methods.entrySet()) {
-            final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, type.getProduct(),
-                type.getVersion(), nodeEntry.getValue().getUri().toString());
+            final var typeUri = FastenURI.create(type);
+            final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, typeUri.getProduct(),
+                typeUri.getVersion(), nodeEntry.getValue().getUri().toString());
             if (!result.inverse().containsKey(fullUri)) {
                 result.put(nodeEntry.getKey(), fullUri);
             }
@@ -219,17 +213,17 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         final Map<Integer, String> result = new HashMap<>();
         for (final var aClass : classHierarchy.get(JavaScope.internalTypes).entrySet()) {
             for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
-                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+                result.put(nodeEntry.getKey(), aClass.getKey());
             }
         }
         for (final var aClass : classHierarchy.get(JavaScope.externalTypes).entrySet()) {
             for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
-                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+                result.put(nodeEntry.getKey(), aClass.getKey());
             }
         }
         for (final var aClass : classHierarchy.get(JavaScope.resolvedTypes).entrySet()) {
             for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
-                result.put(nodeEntry.getKey(), aClass.getKey().toString());
+                result.put(nodeEntry.getKey(), aClass.getKey());
             }
         }
         return result;
@@ -241,20 +235,20 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * @param cha class hierarchy
      * @return the JSON representation
      */
-    public JSONObject classHierarchyToJSON(final Map<JavaScope, BiMap<FastenURI, JavaType>> cha) {
+    public JSONObject classHierarchyToJSON(final Map<JavaScope, BiMap<String, JavaType>> cha) {
         final var result = new JSONObject();
         final var internalTypes = new JSONObject();
         final var externalTypes = new JSONObject();
         final var resolvedTypes = new JSONObject();
 
         for (final var entry : cha.get(JavaScope.internalTypes).entrySet()) {
-            internalTypes.put(entry.getKey().toString(), entry.getValue().toJSON());
+            internalTypes.put(entry.getKey(), entry.getValue().toJSON());
         }
         for (final var entry : cha.get(JavaScope.externalTypes).entrySet()) {
-            externalTypes.put(entry.getKey().toString(), entry.getValue().toJSON());
+            externalTypes.put(entry.getKey(), entry.getValue().toJSON());
         }
         for (final var entry : cha.get(JavaScope.resolvedTypes).entrySet()) {
-            resolvedTypes.put(entry.getKey().toString(), entry.getValue().toJSON());
+            resolvedTypes.put(entry.getKey(), entry.getValue().toJSON());
         }
         result.put("internalTypes", internalTypes);
         result.put("externalTypes", externalTypes);
