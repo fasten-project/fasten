@@ -130,20 +130,20 @@ public class RocksDaoTest {
 
         GraphMetadata graphMetadata = rocksDao.getGraphMetadata(graph.getIndex(), graphData);
         assertEquals(
-        		new GraphMetadata.NodeData("/java.lang/String", "get()/java.lang/long",
-        		List.of(new ReceiverRecord(5, STATIC, "/java.lang/String"),
-        		new ReceiverRecord(12, INTERFACE, "/product/Interface"),
-        		new ReceiverRecord(12, STATIC, "/java.lang/String"),
-        		new ReceiverRecord(13, VIRTUAL, "/product/Interface"))), 
-        		graphMetadata.gid2NodeData.get(0));
+                new GraphMetadata.NodeMetadata("/java.lang/String", "get()/java.lang/long",
+                List.of(new ReceiverRecord(5, STATIC, "/java.lang/String"),
+                new ReceiverRecord(12, INTERFACE, "/product/Interface"),
+                new ReceiverRecord(12, STATIC, "/java.lang/String"),
+                new ReceiverRecord(13, VIRTUAL, "/product/Interface"))), 
+                graphMetadata.gid2NodeMetadata.get(0));
         assertEquals(
-        		new GraphMetadata.NodeData("/java.lang/Object", "hashCode()/java.lang/int",
-        		List.of(new ReceiverRecord(25, DYNAMIC, "/java.lang/Object"))), 
-        		graphMetadata.gid2NodeData.get(1));    
+                new GraphMetadata.NodeMetadata("/java.lang/Object", "hashCode()/java.lang/int",
+                List.of(new ReceiverRecord(25, DYNAMIC, "/java.lang/Object"))), 
+                graphMetadata.gid2NodeMetadata.get(1));    
         assertEquals(
-        		new GraphMetadata.NodeData("/my.package/Klass", "method(/my.package/int)/my.package/int",
-        		List.of()), 
-        		graphMetadata.gid2NodeData.get(2));    
+                new GraphMetadata.NodeMetadata("/my.package/Klass", "method(/my.package/int)/my.package/int",
+                List.of()), 
+                graphMetadata.gid2NodeMetadata.get(2));    
     }
 
     @Test

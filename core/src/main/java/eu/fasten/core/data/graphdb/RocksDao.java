@@ -67,7 +67,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.GOV3LongFunction;
-import eu.fasten.core.data.graphdb.GraphMetadata.NodeData;
+import eu.fasten.core.data.graphdb.GraphMetadata.NodeMetadata;
 import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
 import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type;
 import eu.fasten.core.index.BVGraphSerializer;
@@ -148,14 +148,15 @@ public class RocksDao implements Closeable {
         // Save and obtain graph
         DirectedGraph graph = saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
         if (gidGraph instanceof ExtendedGidGraph) {
+            // Save metadata
             final ExtendedGidGraph extendedGidGraph = (ExtendedGidGraph)gidGraph;
             
             final Map<Pair<Long, Long>, List<eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord>> edgesInfo = extendedGidGraph.getEdgesInfo();
             final Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
             
-            // Gather data by source and store it in lists of RocksDao.ReceiverRecord.
+            // Gather data by source and store it in lists of GraphMetadata.ReceiverRecord.
             edgesInfo.forEach((pair, record) -> {
-                map.compute(pair.getFirst(), (k, list) -> {
+                map.compute(pair.getFirst().longValue(), (k, list) -> {
                     if (list == null) return record.stream().map(r -> new ReceiverRecord(r)).collect(Collectors.toList());
                     for (var r : record) list.add(new ReceiverRecord(r));
                     return list;
@@ -169,7 +170,7 @@ public class RocksDao implements Closeable {
             for(LongIterator iterator = graph.iterator(); iterator.hasNext();) {
                 final long node = iterator.nextLong();
  
-                FastenJavaURI uri = FastenJavaURI.create(gidToUriMap.get(node)).decanonicalize();
+                final FastenJavaURI uri = FastenJavaURI.create(gidToUriMap.get(node)).decanonicalize();
                 writeString("/" + uri.getNamespace() + "/" + uri.getClassName(), fbaos);
                 writeString(StringUtils.substringAfter(uri.getEntity(), "."), fbaos);
 
@@ -424,16 +425,16 @@ public class RocksDao implements Closeable {
     public GraphMetadata getGraphMetadata(final long index, final DirectedGraph graph) throws RocksDBException {
         final byte[] metadata = rocksDb.get(metadataHandle, Longs.toByteArray(index));
         if (metadata != null) {
-            Long2ObjectOpenHashMap<NodeData> map = new Long2ObjectOpenHashMap<>();
+            Long2ObjectOpenHashMap<NodeMetadata> map = new Long2ObjectOpenHashMap<>();
 
-            // Deserialize map following the standard node enumeration order
             final FastByteArrayInputStream fbais = new FastByteArrayInputStream(metadata);
 
             try {
+                // Deserialize map following the standard node enumeration order
                 for (LongIterator iterator = graph.iterator(); iterator.hasNext();) {
                     final long node = iterator.nextLong();
                     
-                    final String typeUri = readString(fbais);
+                    final String type = readString(fbais);
                     final String signature = readString(fbais);
                     
                     final long length = readLong(fbais);
@@ -441,12 +442,12 @@ public class RocksDao implements Closeable {
                     if (length == 0) list = Collections.emptyList();
                     else {
                         list = new ArrayList<>();
-                        for (long i = 0; i < length; i++) {
+                        for (long i = 0; i < length; i++) 
 							list.add(new ReceiverRecord((int)readLong(fbais), Type.values()[(int)readLong(fbais)], readString(fbais)));
-                        }
                     }
                     
-                    map.put(node, new NodeData(typeUri, signature, list));
+                    // Make the list immutable
+                    map.put(node, new NodeMetadata(type, signature, List.copyOf(list)));
                 }
             } catch (IOException cantHappen) {
                 // Not really I/O

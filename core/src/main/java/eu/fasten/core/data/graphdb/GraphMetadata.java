@@ -23,57 +23,66 @@ import java.util.List;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
-/** This class provides the metadata associated with the nodes of a callgraph. Those data are represented as maps from
- *  node GID to {@link NodeData}. They are stored by the {@link RocksDao} class in a suitable column family of the RocksDB,
- *  and can be recovered after reading the graph 
- *  using {@link RocksDao#getGraphMetadata(long, eu.fasten.core.data.DirectedGraph)}, if needed.
+/**
+ * This class contains the metadata associated with the nodes of a call graph.
+ * Such metadata is stored by the {@link RocksDao} class in a suitable column family of the RocksDB
+ * database, and can be recovered after reading the graph using
+ * {@link RocksDao#getGraphMetadata(long, eu.fasten.core.data.DirectedGraph)}, if needed.
  */
+
 public class GraphMetadata {
-	/** This class represent the data associated with a node. The FASTEN Java URI
-	 *  is split into the type part, and the signature part. 
+    /**
+     * This class represent the metadata associated with a node. The FASTEN Java URI is split into the
+     * type part, and the signature part.
      * 
-     * <p>Since this class is intended for internal use only, and all fields are public, final and immutable, no
-     * getters/setters are provided. 
+     * <p>
+     * Since this class is intended for internal use only, and all fields are public, final and
+     * immutable, no getters/setters are provided.
      */
-	public static final class NodeData {
-		public final String typeUri;
-		public final String signature;
-		public final List<ReceiverRecord> receiverRecords;
+    public static final class NodeMetadata {
+        /** The type part of the FASTEN Java URI of the node (up to the dot). */
+        public final String type;
+        /** The signature part of the FASTEN Java URI of the node (after the dot). */
+        public final String signature;
+        /** The list of receivers. */
+        public final List<ReceiverRecord> receiverRecords;
 
-		public NodeData(String typeUri, String signature, List<ReceiverRecord> receiverRecords) {
-			this.typeUri = typeUri;
-			this.signature = signature;
-			this.receiverRecords = receiverRecords;
-		}
+        public NodeMetadata(String type, String signature, List<ReceiverRecord> receiverRecords) {
+            this.type = type;
+            this.signature = signature;
+            this.receiverRecords = receiverRecords;
+        }
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) return true;
-			if (obj == null) return false;
-			if (getClass() != obj.getClass()) return false;
-			NodeData other = (NodeData)obj;
-			if (!typeUri.equals(other.typeUri)) return false;
-			if (!signature.equals(other.signature)) return false;
-			if (!receiverRecords.equals(other.receiverRecords)) return false;
-			return true;
-		}
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null) return false;
+            if (getClass() != obj.getClass()) return false;
+            NodeMetadata other = (NodeMetadata)obj;
+            if (!type.equals(other.type)) return false;
+            if (!signature.equals(other.signature)) return false;
+            if (!receiverRecords.equals(other.receiverRecords)) return false;
+            return true;
+        }
 
-		@Override
-		public int hashCode() {
-			return typeUri.hashCode() ^ signature.hashCode() ^ receiverRecords.hashCode();
-		}
-		
-		@Override
-		public String toString() {
-			return "[" + typeUri + ", " + signature + ", " + receiverRecords + "]";
-		}
-	}
+        @Override
+        public int hashCode() {
+            return type.hashCode() ^ signature.hashCode() ^ receiverRecords.hashCode();
+        }
+        
+        @Override
+        public String toString() {
+            return "[" + type + ", " + signature + ", " + receiverRecords + "]";
+        }
+    }
 
-	/** This class represent compactly a receiver record. The {@link Type} enum
-     * matches closely the jOOQ-generated one in {@link eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord}.
+    /**
+     * This class represent compactly a receiver record. The {@link Type} enum matches closely the
+     * jOOQ-generated one in {@link eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord}.
      * 
-     * <p>Since this class is intended for internal use only, and all fields are public, final and immutable, no
-     * getters/setters are provided. 
+     * <p>
+     * Since this class is intended for internal use only, and all fields are public, final and
+     * immutable, no getters/setters are provided.
      */
     public static final class ReceiverRecord {
         public static enum Type {
@@ -105,29 +114,29 @@ public class GraphMetadata {
             return "{line: " + line + ", type: " + type + ", uri: " + receiverUri + "}";
         }
 
-		@Override
-		public int hashCode() {
-			return HashCommon.mix(line + type.ordinal() + receiverUri.hashCode());
-		}
+        @Override
+        public int hashCode() {
+            return HashCommon.mix(line + type.ordinal() + receiverUri.hashCode());
+        }
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) return true;
-			if (obj == null) return false;
-			if (getClass() != obj.getClass()) return false;
-			ReceiverRecord other = (ReceiverRecord)obj;
-			if (line != other.line) return false;
-			if (type != other.type) return false;
-			if (! receiverUri.equals(other.receiverUri)) return false;
-			return true;
-		}
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null) return false;
+            if (getClass() != obj.getClass()) return false;
+            ReceiverRecord other = (ReceiverRecord)obj;
+            if (line != other.line) return false;
+            if (type != other.type) return false;
+            if (! receiverUri.equals(other.receiverUri)) return false;
+            return true;
+        }
         
     }
 
-    /** For each node, the associated receiver info. */
-	public final Long2ObjectOpenHashMap<NodeData> gid2NodeData;
+    /** For each node, the associated metadata. */
+    public final Long2ObjectOpenHashMap<NodeMetadata> gid2NodeMetadata;
 
-	public GraphMetadata(Long2ObjectOpenHashMap<NodeData> gid2NodeData) {
-		this.gid2NodeData = gid2NodeData;
-	}
+    public GraphMetadata(Long2ObjectOpenHashMap<NodeMetadata> gid2NodeData) {
+        this.gid2NodeMetadata = gid2NodeData;
+    }
 }
