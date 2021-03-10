@@ -53,7 +53,7 @@ CREATE TABLE dependencies
 
 CREATE TABLE types
 (
-    id        BIGSERIAL PRIMARY KEY,
+    id   BIGSERIAL PRIMARY KEY,
     type TEXT NOT NULL
 );
 
@@ -122,9 +122,9 @@ CREATE TYPE CALL_TYPE AS ENUM ('static', 'dynamic', 'virtual', 'interface', 'spe
 
 CREATE TYPE CALL_SITE AS
 (
-    line        INTEGER,
-    call_type   CALL_TYPE,
-    type_id     BIGINT
+    line      INTEGER,
+    call_type CALL_TYPE,
+    type_id   BIGINT
 );
 
 CREATE TABLE call_sites
@@ -225,6 +225,6 @@ INSERT INTO types (id, type)
 VALUES (-1, 'global_external_callables')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO modules (id, package_version_id, namespace_id)
+INSERT INTO modules (id, package_version_id, type_id)
 VALUES (-1, -1, -1)
 ON CONFLICT DO NOTHING;
