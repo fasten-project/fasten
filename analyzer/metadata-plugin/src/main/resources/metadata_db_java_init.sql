@@ -120,19 +120,14 @@ CREATE TABLE callables
 
 CREATE TYPE CALL_TYPE AS ENUM ('static', 'dynamic', 'virtual', 'interface', 'special');
 
-CREATE TYPE CALL_SITE AS
-(
-    line      INTEGER,
-    call_type CALL_TYPE,
-    type_id   BIGINT
-);
-
 CREATE TABLE call_sites
 (
-    source_id  BIGINT NOT NULL REFERENCES callables (id),
-    target_id  BIGINT NOT NULL REFERENCES callables (id),
-    call_sites CALL_SITE[],
-    metadata   JSONB
+    source_id           BIGINT NOT NULL REFERENCES callables (id),
+    target_id           BIGINT NOT NULL REFERENCES callables (id),
+    line                INTEGER,
+    call_type           CALL_TYPE,
+    receiver_type_ids   BIGINT[],
+    metadata            JSONB
 );
 
 -- CREATE INDEX CONCURRENTLY package_versions_package_id ON package_versions USING btree (package_id);
