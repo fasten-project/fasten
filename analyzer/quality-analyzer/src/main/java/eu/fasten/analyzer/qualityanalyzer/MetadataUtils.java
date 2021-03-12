@@ -143,7 +143,7 @@ public class MetadataUtils {
         if(fileId == null ) {
             logger.error("Could not fetch fileID for package version id = " + pckVersionId +
                     " and filename = " + filename);
-            throw new IllegalStateException("Could not find package version id");
+            throw new IllegalStateException("Could not find file id");
         }
 
         JSONObject tailored = new JSONObject(payload, new String[] {
