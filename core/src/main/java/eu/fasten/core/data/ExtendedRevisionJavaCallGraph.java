@@ -338,20 +338,12 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *         {@code erjcg}.
      */
     public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
-//        final var builder = new ArrayImmutableDirectedGraph.Builder();
-//        for (final int x : erjcg.mapOfAllMethods().keySet()) builder.addInternalNode(x);
-//
-//        for (final List<Integer> l : erjcg.getGraph().getExternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
-//        for (final List<Integer> l : erjcg.getGraph().getInternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
-//        for (final List<Integer> l : erjcg.getGraph().getResolvedCalls().keySet()) builder.addArc(l.get(0), l.get(1));
-//
-//        return builder.build();
-        DirectedGraph g = new FastenDefaultDirectedGraph(LongLongPair.class);
-        for (final long x : erjcg.mapOfAllMethods().keySet()) g.addVertex(x);
+        FastenDefaultDirectedGraph dg = new FastenDefaultDirectedGraph();
+        for (final long x : erjcg.mapOfAllMethods().keySet()) dg.addInternalNode(x);
 
-        for (final List<Integer> l : erjcg.getGraph().getExternalCalls().keySet()) g.addEdge(l.get(0).longValue(), l.get(1).longValue());
-        for (final List<Integer> l : erjcg.getGraph().getInternalCalls().keySet()) g.addEdge(l.get(0).longValue(), l.get(1).longValue());
-        for (final List<Integer> l : erjcg.getGraph().getResolvedCalls().keySet()) g.addEdge(l.get(0).longValue(), l.get(1).longValue());
-        return g;
+        for (final List<Integer> l : erjcg.getGraph().getExternalCalls().keySet()) dg.addEdge(l.get(0).longValue(), l.get(1).longValue());
+        for (final List<Integer> l : erjcg.getGraph().getInternalCalls().keySet()) dg.addEdge(l.get(0).longValue(), l.get(1).longValue());
+        for (final List<Integer> l : erjcg.getGraph().getResolvedCalls().keySet()) dg.addEdge(l.get(0).longValue(), l.get(1).longValue());
+        return dg;
     }
 }

@@ -29,7 +29,6 @@ import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
-import it.unimi.dsi.fastutil.longs.LongLongPair;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.Graphs;
@@ -151,7 +150,7 @@ public class LocalMerger {
      * @return merged call graph
      */
     public DirectedGraph mergeAllDeps() {
-        final var result = new FastenDefaultDirectedGraph(LongLongPair.class);
+        final var result = new FastenDefaultDirectedGraph();
         var offset = 0l;
         for (final var dep : this.dependencySet) {
             final var merged = mergeWithCHA(dep);
@@ -162,7 +161,7 @@ public class LocalMerger {
         return result;
     }
 
-    private void addThisMergeToResult(DirectedGraph result,
+    private void addThisMergeToResult(FastenDefaultDirectedGraph result,
                                       final DirectedGraph directedMerge,
                                       final BiMap<Integer, String> uris,
                                       final Long offset) {
@@ -192,11 +191,21 @@ public class LocalMerger {
         }
     }
 
-    private void addEdge(final DirectedGraph result,
+    private void addEdge(final FastenDefaultDirectedGraph result,
                          final DirectedGraph callGraphData,
                          final long source, final long target) {
-        result.addVertex(source);
-        result.addVertex(target);
+        if(callGraphData.containsVertex(source) && callGraphData.isInternal(source)) {
+            result.addInternalNode(source);
+        }
+        else {
+            result.addExternalNode(source);
+        }
+        if(callGraphData.containsVertex(target) && callGraphData.isInternal(target)) {
+            result.addInternalNode(target);
+        }
+        else {
+            result.addExternalNode(target);
+        }
         result.addEdge(source, target);
     }
 

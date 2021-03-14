@@ -14,8 +14,15 @@ import java.util.stream.Collectors;
 
 public class FastenDefaultDirectedGraph extends DefaultDirectedGraph<Long, LongLongPair> implements DirectedGraph, Serializable {
 
+    private final LongSet externalNodes;
+
+    public FastenDefaultDirectedGraph() {
+        this(LongLongPair.class);
+    }
+
     public FastenDefaultDirectedGraph(Class<? extends LongLongPair> edgeClass) {
         super(edgeClass);
+        externalNodes = new LongOpenHashSet();
     }
 
     @Override
@@ -30,13 +37,14 @@ public class FastenDefaultDirectedGraph extends DefaultDirectedGraph<Long, LongL
 
     @Override
     public LongList successors(long node) {
-        return new LongArrayList(this.outgoingEdgesOf(node).stream().map(e -> e.rightLong()).collect(Collectors.toList()));
+        return new LongArrayList(
+                this.outgoingEdgesOf(node).stream().map(LongLongPair::rightLong).collect(Collectors.toList()));
     }
 
     @Override
     public LongList predecessors(long node) {
-        return new LongArrayList(this.incomingEdgesOf(node).stream().map(e -> e.leftLong()).collect(Collectors.toList()));
-
+        return new LongArrayList(
+                this.incomingEdgesOf(node).stream().map(LongLongPair::leftLong).collect(Collectors.toList()));
     }
 
     @Override
@@ -46,17 +54,17 @@ public class FastenDefaultDirectedGraph extends DefaultDirectedGraph<Long, LongL
 
     @Override
     public LongSet externalNodes() {
-        throw new UnsupportedOperationException();
+        return this.externalNodes;
     }
 
     @Override
     public boolean isInternal(long node) {
-        throw new UnsupportedOperationException();
+        return !isExternal(node);
     }
 
     @Override
     public boolean isExternal(long node) {
-        throw new UnsupportedOperationException();
+        return externalNodes.contains(node);
     }
 
     @Override
@@ -74,5 +82,25 @@ public class FastenDefaultDirectedGraph extends DefaultDirectedGraph<Long, LongL
         else {
             return null;
         }
+    }
+
+    public boolean addInternalNode(long node) {
+        return addVertex(node);
+    }
+
+    public boolean addExternalNode(long node) {
+        boolean result = addVertex(node);
+        if(result) {
+            externalNodes.add(node);
+        }
+        return result;
+    }
+
+    public boolean removeVertex(long node) {
+        boolean result = super.removeVertex(node);
+        if(result) {
+            externalNodes.remove(node);
+        }
+        return result;
     }
 }

@@ -51,10 +51,14 @@ public class MergerEfficiencyTests {
 
         double secondsTaken = (timeAfter - timeBefore) / 1e9;
         DecimalFormat df = new DecimalFormat("###.###");
+        int numNodes = result.numNodes();
+        long numEdges = result.numArcs();
         System.out.println("CPU time used for merging: " + df.format(secondsTaken) + " seconds.");
-        System.out.println("Merged graph has " + result.numNodes() + " nodes and " + result.numArcs() + " edges.");
+        System.out.println("Merged graph has " + numNodes + " nodes and " + numEdges + " edges.");
 
         Assertions.assertTrue(
                 secondsTaken < 25, "CPU time used for merging should be less than 25 seconds, but was " + secondsTaken);
+        Assertions.assertEquals(49104, numNodes);
+        Assertions.assertEquals(611314, numEdges);
     }
 }
