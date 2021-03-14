@@ -211,10 +211,10 @@ public class LocalMerger {
         final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
         final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
 
-        artifact.getGraph().getInternalCalls().entrySet().parallelStream().forEach(arc ->
+        artifact.getGraph().getInternalCalls().entrySet().stream().forEach(arc ->
             processArc(artifact, universalParents, universalChildren, typeDictionary, result,
                 externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, true));
-        artifact.getGraph().getExternalCalls().entrySet().parallelStream().forEach(arc ->
+        artifact.getGraph().getExternalCalls().entrySet().stream().forEach(arc ->
             processArc(artifact, universalParents, universalChildren, typeDictionary, result,
                 externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, false));
 
