@@ -223,3 +223,5 @@ ON CONFLICT DO NOTHING;
 INSERT INTO modules (id, package_version_id, type_id)
 VALUES (-1, -1, -1)
 ON CONFLICT DO NOTHING;
+
+CREATE INDEX CONCURRENTLY 'idx_callables_fasten_uri' ON callables USING btree (digest(fasten_uri,  'sha1'::text));
