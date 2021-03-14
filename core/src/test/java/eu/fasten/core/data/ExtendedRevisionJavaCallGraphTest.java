@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Objects;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -37,10 +38,9 @@ class ExtendedRevisionJavaCallGraphTest {
     private static ExtendedRevisionJavaCallGraph graph;
 
     @BeforeAll
-    static void setUp() throws IOException {
+    static void setUp() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCG.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testRCG.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -53,10 +53,9 @@ class ExtendedRevisionJavaCallGraphTest {
     }
 
     @Test
-    void toJSON() throws FileNotFoundException {
+    void toJSON() throws FileNotFoundException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCG.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testRCG.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -106,10 +105,9 @@ class ExtendedRevisionJavaCallGraphTest {
     }
 
     @Test
-    void isCallGraphEmptyEmptyInternal() throws IOException {
+    void isCallGraphEmptyEmptyInternal() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyInternal.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testRCGEmptyInternal.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -119,10 +117,9 @@ class ExtendedRevisionJavaCallGraphTest {
     }
 
     @Test
-    void isCallGraphEmptyEmptyExternal() throws IOException {
+    void isCallGraphEmptyEmptyExternal() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyExternal.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testRCGEmptyExternal.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -132,10 +129,9 @@ class ExtendedRevisionJavaCallGraphTest {
     }
 
     @Test
-    void isCallGraphEmptyEmptyResolved() throws IOException {
+    void isCallGraphEmptyEmptyResolved() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyResolved.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testRCGEmptyResolved.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -145,10 +141,9 @@ class ExtendedRevisionJavaCallGraphTest {
     }
 
     @Test
-    void isCallGraphEmptyEmptyAll() throws IOException {
+    void isCallGraphEmptyEmptyAll() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyAll.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testRCGEmptyAll.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -168,10 +163,10 @@ class ExtendedRevisionJavaCallGraphTest {
     }
 
     @Test
-    void mapOfFullURIStrings() throws FileNotFoundException {
+    void mapOfFullURIStrings() throws FileNotFoundException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("merge/merged_cg_test.json"))
-                .getFile());
+                .getResource("merge/merged_cg_test.json")).toURI().getPath());
+
         JSONTokener tokener = new JSONTokener(new FileReader(file));
         var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
         var mapURI = cg.mapOfFullURIStrings();
