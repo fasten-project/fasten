@@ -594,9 +594,7 @@ public class LocalMerger {
                 new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
                         depType.getSuperClasses(), depType.getSuperInterfaces(),
                         depType.getAccess(), depType.isFinal()));
-        final var index = type.addMethod(
-                new JavaNode(target.getUri(),
-                        target.getMetadata()),
+        final var index = type.addMethod(target,
                 cgha.nodeCount);
         cgha.CHA.put(keyType, type);
         return index;
