@@ -21,6 +21,8 @@ package eu.fasten.core.data;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import eu.fasten.core.utils.FastenUriUtils;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -339,9 +341,9 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         final var builder = new ArrayImmutableDirectedGraph.Builder();
         for (final int x : erjcg.mapOfAllMethods().keySet()) builder.addInternalNode(x);
 
-        for (final List<Integer> l : erjcg.getGraph().getExternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
-        for (final List<Integer> l : erjcg.getGraph().getInternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
-        for (final List<Integer> l : erjcg.getGraph().getResolvedCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+        for (final IntIntPair l : erjcg.getGraph().getExternalCalls().keySet()) builder.addArc(l.firstInt(), l.secondInt());
+        for (final IntIntPair l : erjcg.getGraph().getInternalCalls().keySet()) builder.addArc(l.firstInt(), l.secondInt());
+        for (final IntIntPair l : erjcg.getGraph().getResolvedCalls().keySet()) builder.addArc(l.firstInt(), l.secondInt());
 
         return builder.build();
     }
