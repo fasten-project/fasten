@@ -3,6 +3,7 @@ package eu.fasten.core.data;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.longs.LongLongMutablePair;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -61,5 +62,17 @@ public class FastenDefaultDirectedGraph extends DefaultDirectedGraph<Long, LongL
     @Override
     public LongIterator iterator() {
         return this.nodes().iterator();
+    }
+
+    @Override
+    public LongLongPair addEdge(Long source, Long target) {
+        LongLongPair edge = new LongLongMutablePair(source, target);
+        boolean result = this.addEdge(source, target, edge);
+        if(result) {
+            return edge;
+        }
+        else {
+            return null;
+        }
     }
 }

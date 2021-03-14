@@ -20,9 +20,7 @@ package eu.fasten.core.merge;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.FastenDefaultDirectedGraph;
@@ -31,15 +29,6 @@ import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-
-import it.unimi.dsi.fastutil.longs.LongLongMutablePair;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -48,6 +37,13 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class LocalMerger {
 
@@ -201,7 +197,7 @@ public class LocalMerger {
                          final long source, final long target) {
         result.addVertex(source);
         result.addVertex(target);
-        result.addEdge(source, target, new LongLongMutablePair(source, target));
+        result.addEdge(source, target);
     }
 
     /**

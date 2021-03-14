@@ -21,11 +21,13 @@ package eu.fasten.core.data;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import eu.fasten.core.utils.FastenUriUtils;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
-import org.json.JSONObject;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * For each class in the revision, class hierarchy keeps a {@link JavaType} that is accessible by
@@ -336,15 +338,20 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *         {@code erjcg}.
      */
     public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
-        final var builder = new ArrayImmutableDirectedGraph.Builder();
-        for (final int x : erjcg.mapOfAllMethods().keySet()) builder.addInternalNode(x);
+//        final var builder = new ArrayImmutableDirectedGraph.Builder();
+//        for (final int x : erjcg.mapOfAllMethods().keySet()) builder.addInternalNode(x);
+//
+//        for (final List<Integer> l : erjcg.getGraph().getExternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+//        for (final List<Integer> l : erjcg.getGraph().getInternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+//        for (final List<Integer> l : erjcg.getGraph().getResolvedCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+//
+//        return builder.build();
+        DirectedGraph g = new FastenDefaultDirectedGraph(LongLongPair.class);
+        for (final long x : erjcg.mapOfAllMethods().keySet()) g.addVertex(x);
 
-        for (final List<Integer> l : erjcg.getGraph().getExternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
-        for (final List<Integer> l : erjcg.getGraph().getInternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
-        for (final List<Integer> l : erjcg.getGraph().getResolvedCalls().keySet()) builder.addArc(l.get(0), l.get(1));
-
-        return builder.build();
+        for (final List<Integer> l : erjcg.getGraph().getExternalCalls().keySet()) g.addEdge(l.get(0).longValue(), l.get(1).longValue());
+        for (final List<Integer> l : erjcg.getGraph().getInternalCalls().keySet()) g.addEdge(l.get(0).longValue(), l.get(1).longValue());
+        for (final List<Integer> l : erjcg.getGraph().getResolvedCalls().keySet()) g.addEdge(l.get(0).longValue(), l.get(1).longValue());
+        return g;
     }
-
-
 }
