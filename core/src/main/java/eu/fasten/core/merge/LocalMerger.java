@@ -355,9 +355,7 @@ public class LocalMerger {
             .getOrDefault(depTypeUri, new ArrayList<>())) {
 
             foundTarget = resolveToDynamics(result, call, dep.getClassHierarchy().get(JavaScope.internalTypes)
-                    .get(depTypeUri), dep.product + "$" + dep.version,
-                depTypeUri,
-                isCallback);
+                    .get(depTypeUri), dep.productVersion, depTypeUri, isCallback);
         }
         return foundTarget;
     }

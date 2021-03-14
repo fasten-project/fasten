@@ -71,6 +71,11 @@ public abstract class ExtendedRevisionCallGraph<A> {
     public String version;
 
     /**
+     * The product concatenated with version, separated by $.
+     */
+    public String productVersion;
+
+    /**
      * The timestamp (if specified, or -1) in seconds from UNIX Epoch.
      */
     public long timestamp;
@@ -104,6 +109,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
         this.forge = builder.getForge();
         this.product = builder.getProduct();
         this.version = builder.getVersion();
+        this.productVersion = this.product + "$" + this.version;
         this.timestamp = builder.getTimeStamp();
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
@@ -133,6 +139,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
         this.forge = forge;
         this.product = product;
         this.version = version;
+        this.productVersion = this.product + "$" + this.version;
         this.timestamp = timestamp;
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
@@ -158,6 +165,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
         this.forge = json.getString("forge");
         this.product = json.getString("product");
         this.version = json.getString("version");
+        this.productVersion = this.product + "$" + this.version;
         this.timestamp = getTimeStamp(json);
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
