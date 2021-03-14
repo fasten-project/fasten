@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import org.jgrapht.graph.DefaultDirectedGraph;
 
@@ -39,7 +40,7 @@ public class FastenDefaultDirectedGraph extends DefaultDirectedGraph<Long, LongL
 
     @Override
     public LongSet nodes() {
-        return (LongSet) this.vertexSet();
+        return new LongOpenHashSet(this.vertexSet());
     }
 
     @Override

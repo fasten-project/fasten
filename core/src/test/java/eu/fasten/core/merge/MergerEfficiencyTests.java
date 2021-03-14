@@ -32,6 +32,7 @@ public class MergerEfficiencyTests {
                         ExtendedRevisionJavaCallGraph rcg = null;
                     try {
                         rcg = new ExtendedRevisionJavaCallGraph(new JSONObject(Files.readString(path)));
+                        System.out.println("Read " + path + " (" + rcg.getNodeCount() + " nodes).");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
