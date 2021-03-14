@@ -25,6 +25,7 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.FastenDefaultDirectedGraph;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaNode;
@@ -37,6 +38,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+
+import it.unimi.dsi.fastutil.longs.LongLongMutablePair;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.Graphs;
@@ -151,7 +155,7 @@ public class LocalMerger {
      * @return merged call graph
      */
     public DirectedGraph mergeAllDeps() {
-        final var result = new ArrayImmutableDirectedGraph.Builder();
+        final var result = new FastenDefaultDirectedGraph(LongLongPair.class);
         var offset = 0l;
         for (final var dep : this.dependencySet) {
             final var merged = mergeWithCHA(dep);
@@ -159,10 +163,10 @@ public class LocalMerger {
             addThisMergeToResult(result, directedMerge, merged.mapOfFullURIStrings(), offset);
             offset = offset + allUris.size();
         }
-        return result.build();
+        return result;
     }
 
-    private void addThisMergeToResult(ArrayImmutableDirectedGraph.Builder result,
+    private void addThisMergeToResult(DirectedGraph result,
                                       final DirectedGraph directedMerge,
                                       final BiMap<Integer, String> uris,
                                       final Long offset) {
@@ -192,32 +196,12 @@ public class LocalMerger {
         }
     }
 
-    private void addEdge(final ArrayImmutableDirectedGraph.Builder result,
+    private void addEdge(final DirectedGraph result,
                          final DirectedGraph callGraphData,
-                         final Long source, final Long target) {
-
-        try {
-            if (callGraphData.nodes().contains(source.longValue())
-                && callGraphData.isInternal(source)) {
-                result.addInternalNode(source);
-            } else {
-                result.addExternalNode(source);
-            }
-        } catch (IllegalArgumentException ignored) {
-        }
-        try {
-            if (callGraphData.nodes().contains(target.longValue())
-                && callGraphData.isInternal(target)) {
-                result.addInternalNode(target);
-            } else {
-                result.addExternalNode(target);
-            }
-        } catch (IllegalArgumentException ignored) {
-        }
-        try {
-            result.addArc(source, target);
-        } catch (IllegalArgumentException ignored) {
-        }
+                         final long source, final long target) {
+        result.addVertex(source);
+        result.addVertex(target);
+        result.addEdge(source, target, new LongLongMutablePair(source, target));
     }
 
     /**

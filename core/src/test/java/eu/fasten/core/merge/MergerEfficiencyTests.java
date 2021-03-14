@@ -45,14 +45,15 @@ public class MergerEfficiencyTests {
 
         long timeBefore = threadMXBean.getCurrentThreadCpuTime();
         var merger = new LocalMerger(depSet);
-        merger.mergeAllDeps();
+        var result = merger.mergeAllDeps();
         long timeAfter = threadMXBean.getCurrentThreadCpuTime();
 
         double secondsTaken = (timeAfter - timeBefore) / 1e9;
         DecimalFormat df = new DecimalFormat("###.###");
         System.out.println("CPU time used for merging: " + df.format(secondsTaken) + " seconds.");
+        System.out.println("Merged graph has " + result.numNodes() + " nodes and " + result.numArcs() + " edges.");
 
         Assertions.assertTrue(
-                secondsTaken < 21, "CPU time used for merging should be less than 21 seconds, but was " + secondsTaken);
+                secondsTaken < 25, "CPU time used for merging should be less than 25 seconds, but was " + secondsTaken);
     }
 }
