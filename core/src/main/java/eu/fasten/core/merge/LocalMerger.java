@@ -593,13 +593,16 @@ public class LocalMerger {
                                 final JavaType depType,
                                 final String depTypeUri) {
         final var keyType = "//" + product + depTypeUri;
-        final var type = cgha.CHA.getOrDefault(keyType,
-                new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
-                        depType.getSuperClasses(), depType.getSuperInterfaces(),
-                        depType.getAccess(), depType.isFinal()));
+        var type = cgha.CHA.get(keyType);
+        if(type == null) {
+            type = cgha.CHA.getOrDefault(keyType,
+                    new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
+                            depType.getSuperClasses(), depType.getSuperInterfaces(),
+                            depType.getAccess(), depType.isFinal()));
+            cgha.CHA.put(keyType, type);
+        }
         final var index = type.addMethod(target,
                 cgha.nodeCount);
-        cgha.CHA.put(keyType, type);
         return index;
     }
 
