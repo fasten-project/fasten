@@ -174,7 +174,7 @@ public class LocalMerger {
     private void addThisMergeToResult(FastenDefaultDirectedGraph result,
                                       final DirectedGraph directedMerge,
                                       final BiMap<Integer, String> uris,
-                                      final Long offset) {
+                                      final long offset) {
 
         for (final var node : directedMerge.nodes()) {
             for (final var successor : directedMerge.successors(node)) {
@@ -190,13 +190,13 @@ public class LocalMerger {
         }
     }
 
-    private Long updateNode(final Long node, final Long offset,
+    private long updateNode(final long node, final long offset,
                             final BiMap<Integer, String> uris) {
-        if (this.allUris.inverse().containsKey(uris.get(node.intValue()))) {
-            return this.allUris.inverse().get(uris.get(node.intValue()));
+        if (this.allUris.inverse().containsKey(uris.get((int)node))) {
+            return this.allUris.inverse().get(uris.get((int)node));
         }else{
             final var updatedNode = node + offset;
-            this.allUris.put(updatedNode, uris.get(node.intValue()));
+            this.allUris.put(updatedNode, uris.get((int)node));
             return updatedNode;
         }
     }
