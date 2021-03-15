@@ -91,7 +91,7 @@ public class OPALClassHierarchy {
      * @param projectHierarchy OPAL class hierarchy
      * @return A {@link Map} of {@link FastenURI} and {@link JavaType}
      */
-    public EnumMap<JavaScope, BiMap<String, JavaType>> asURIHierarchy(ClassHierarchy projectHierarchy) {
+    public EnumMap<JavaScope, Map<String, JavaType>> asURIHierarchy(ClassHierarchy projectHierarchy) {
 
         final BiMap<String, JavaType> internalResult = HashBiMap.create();
         final BiMap<String, JavaType> externalResult = HashBiMap.create();

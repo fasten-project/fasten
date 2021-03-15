@@ -124,7 +124,7 @@ public class JSONUtils {
      * @param result the StringBuilder to append information.
      */
     private static void appendCha(StringBuilder result, final Map<JavaScope,
-        BiMap<String, JavaType>> cha) {
+        Map<String, JavaType>> cha) {
         result.append("\"cha\":{\"externalTypes\":{");
         for (final var entry : cha.get(JavaScope.externalTypes).entrySet()) {
             appendType(result, entry.getKey(), entry.getValue());

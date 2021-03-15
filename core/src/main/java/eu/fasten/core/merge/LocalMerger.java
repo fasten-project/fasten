@@ -260,19 +260,8 @@ public class LocalMerger {
             nodeKey = sourceKey;
         }
         resolve(universalParents, universalChildren, typeDictionary, result, arc,
-            nodeKey, type, getTypeUri(artifact, isInternal, type), isCallBack);
+            nodeKey, type, isCallBack);
 
-    }
-
-    private String getTypeUri(ExtendedRevisionJavaCallGraph toResolve, boolean isInternal,
-                              JavaType type) {
-        if (isInternal){
-            return toResolve.getClassHierarchy().get(JavaScope.internalTypes)
-                .inverse().get(type);
-        } else{
-            return toResolve.getClassHierarchy().get(JavaScope.externalTypes)
-                .inverse().get(type);
-        }
     }
 
     private JavaType getType(
@@ -305,7 +294,6 @@ public class LocalMerger {
                          final Map.Entry<IntIntPair, Map<Object, Object>> arc,
                          final int nodeKey,
                          final JavaType type,
-                         final String typeUri,
                          final boolean isCallback) {
 
         var call = new Call(arc, type.getMethods().get(nodeKey));
@@ -321,7 +309,7 @@ public class LocalMerger {
 
             } else if (callSite.get("type").equals("invokespecial")) {
 
-                resolveSpecials(result, call, typeDictionary, universalParents, typeUri,
+                resolveSpecials(result, call, typeDictionary, universalParents, type.getUri(),
                     isCallback);
 
             } else if (callSite.get("type").equals("invokedynamic")) {
@@ -602,7 +590,7 @@ public class LocalMerger {
             final var keyType = "//" + product + depTypeUri;
             var type = cha.get(keyType);
             if(type == null) {
-                type = new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
+                type = new JavaType(keyType, depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
                         depType.getSuperClasses(), depType.getSuperInterfaces(),
                         depType.getAccess(), depType.isFinal());
                 cha.put(keyType, type);

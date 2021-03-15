@@ -40,7 +40,7 @@ import java.util.Map;
  * @implNote each method in the revision has a unique id in this CHA.
  */
 public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<EnumMap<JavaScope,
-    BiMap<String, JavaType>>> {
+    Map<String, JavaType>>> {
     static {
         classHierarchyJSONKey = "cha";
     }
@@ -51,7 +51,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      *
      * @param builder builder for {@link ExtendedRevisionJavaCallGraph}
      */
-    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<EnumMap<JavaScope, BiMap<String,
+    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<EnumMap<JavaScope, Map<String,
         JavaType>>> builder) {
         super(builder);
     }
@@ -72,7 +72,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      */
     public ExtendedRevisionJavaCallGraph(final String forge, final String product, final String version,
                                          final long timestamp, int nodeCount, final String cgGenerator,
-                                         final EnumMap<JavaScope,BiMap<String, JavaType>> classHierarchy,
+                                         final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
                                          final Graph graph) {
         super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
     }
@@ -103,25 +103,23 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      *
      * @param cha JSONObject of a cha.
      */
-    public EnumMap<JavaScope, BiMap<String, JavaType>> getCHAFromJSON(final JSONObject cha) {
-        final BiMap<String, JavaType> internals = HashBiMap.create();
-        final BiMap<String, JavaType> externals = HashBiMap.create();
-        final BiMap<String, JavaType> resolved = HashBiMap.create();
+    public EnumMap<JavaScope, Map<String, JavaType>> getCHAFromJSON(final JSONObject cha) {
+        final Map<String, JavaType> internals = new HashMap<>();
+        final Map<String, JavaType> externals = new HashMap<>();
+        final Map<String, JavaType> resolved = new HashMap<>();
 
         final var internalTypes = cha.getJSONObject("internalTypes");
         for (final var key : internalTypes.keySet()) {
-            internals.forcePut(FastenURI.create(key).toString(),
-                new JavaType(internalTypes.getJSONObject(key)));
+            internals.put(key,
+                new JavaType(key, internalTypes.getJSONObject(key)));
         }
         final var externalTypes = cha.getJSONObject("externalTypes");
         for (final var key : externalTypes.keySet()) {
-            externals.forcePut(FastenURI.create(key).toString(),
-                new JavaType(externalTypes.getJSONObject(key)));
+            externals.put(key, new JavaType(key, externalTypes.getJSONObject(key)));
         }
         final var resolvedTypes = cha.getJSONObject("resolvedTypes");
         for (final var key : resolvedTypes.keySet()) {
-            resolved.forcePut(FastenURI.create(key).toString(),
-                new JavaType(resolvedTypes.getJSONObject(key)));
+            resolved.put(key, new JavaType(key, resolvedTypes.getJSONObject(key)));
         }
 
         return new EnumMap<>(Map.of(JavaScope.internalTypes, internals,
@@ -240,7 +238,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      * @param cha class hierarchy
      * @return the JSON representation
      */
-    public JSONObject classHierarchyToJSON(final EnumMap<JavaScope, BiMap<String, JavaType>> cha) {
+    public JSONObject classHierarchyToJSON(final EnumMap<JavaScope, Map<String, JavaType>> cha) {
         final var result = new JSONObject();
         final var internalTypes = new JSONObject();
         final var externalTypes = new JSONObject();

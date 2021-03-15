@@ -33,6 +33,9 @@ import org.json.JSONObject;
  */
 public class JavaType {
 
+	/** The FASTEN URI of this Java type. */
+	private final String uri;
+
     /**
      * The source file name of this type.
      */
@@ -51,49 +54,6 @@ public class JavaType {
 
     public Map<String, JavaNode> getDefinedMethods() {
         return definedMethods;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        JavaType javaType = (JavaType) o;
-
-        if (isFinal != javaType.isFinal) {
-            return false;
-        }
-        if (sourceFileName != null ? !sourceFileName.equals(javaType.sourceFileName) :
-            javaType.sourceFileName != null) {
-            return false;
-        }
-        if (methods != null ? !methods.equals(javaType.methods) : javaType.methods != null) {
-            return false;
-        }
-        if (superClasses != null ? !superClasses.equals(javaType.superClasses) :
-            javaType.superClasses != null) {
-            return false;
-        }
-        if (superInterfaces != null ? !superInterfaces.equals(javaType.superInterfaces) :
-            javaType.superInterfaces != null) {
-            return false;
-        }
-        return access != null ? access.equals(javaType.access) : javaType.access == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = sourceFileName != null ? sourceFileName.hashCode() : 0;
-        result = 31 * result + (methods != null ? methods.hashCode() : 0);
-        result = 31 * result + (superClasses != null ? superClasses.hashCode() : 0);
-        result = 31 * result + (superInterfaces != null ? superInterfaces.hashCode() : 0);
-        result = 31 * result + (access != null ? access.hashCode() : 0);
-        result = 31 * result + (isFinal ? 1 : 0);
-        return result;
     }
 
     /**
@@ -121,11 +81,12 @@ public class JavaType {
      * @param access          access modifier
      * @param isFinal         true if the Type is final
      */
-    public JavaType(final String sourceFile, final BiMap<Integer, JavaNode> methods,
+    public JavaType(final String uri, final String sourceFile, final BiMap<Integer, JavaNode> methods,
                     final Map<String, JavaNode> defineds,
                     final LinkedList<FastenURI> superClasses,
                     final List<FastenURI> superInterfaces, final String access,
                     final boolean isFinal) {
+        this.uri = uri;
         this.sourceFileName = sourceFile;
         this.methods = methods;
         this.definedMethods = defineds;
@@ -141,7 +102,8 @@ public class JavaType {
      * @param type JSONObject of a type including its source file name, map of methods, super
      *             classes and super interfaces.
      */
-    public JavaType(final JSONObject type) {
+    public JavaType(final String uri, final JSONObject type) {
+        this.uri = uri;
         this.sourceFileName = type.getString("sourceFile");
 
         final var methodsJson = type.getJSONObject("methods");
@@ -151,8 +113,7 @@ public class JavaType {
             final var nodeJson = methodsJson.getJSONObject(methodKey);
 
             final var metadata = nodeJson.getJSONObject("metadata");
-            final var uri = FastenURI.create(nodeJson.getString("uri"));
-            final var node = new JavaNode(uri, metadata.toMap());
+            final var node = new JavaNode(FastenURI.create(nodeJson.getString("uri")), metadata.toMap());
             this.methods.put(Integer.parseInt(methodKey), node);
             if (!metadata.isEmpty()) {
                 if (metadata.getBoolean("defined")){
@@ -178,6 +139,10 @@ public class JavaType {
         this.isFinal = type.getBoolean("final");
     }
 
+    public String getUri() {
+        return uri;
+    }
+    
     public String getSourceFileName() {
         return sourceFileName;
     }

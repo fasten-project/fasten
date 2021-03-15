@@ -107,8 +107,9 @@ public class OPALType {
             superClassesURIs = new LinkedList<>();
         }
 
-        return Map.of(OPALMethod.getTypeURI(klass).toString(),
-                new JavaType("", toURIDeclaredMethods(methods), new HashMap<>(),superClassesURIs,
+        String uri = OPALMethod.getTypeURI(klass).toString();
+		return Map.of(uri,
+                new JavaType(uri, "", toURIDeclaredMethods(methods), new HashMap<>(),superClassesURIs,
                         toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass)),
                         "", false));
     }
@@ -130,8 +131,9 @@ public class OPALType {
         }
 
         final var methodMaps = getMethodMaps(type.methods);
-        return MutablePair.of(OPALMethod.getTypeURI(klass).toString(),
-            new JavaType(type.sourceFileName, methodMaps.getRight(),
+        final String uri = OPALMethod.getTypeURI(klass).toString();
+		return MutablePair.of(uri,
+            new JavaType(uri, type.sourceFileName, methodMaps.getRight(),
                 methodMaps.getLeft(), superClassesURIs, toURIInterfaces(type.superInterfaces),
                 type.access, type.isFinal));
     }

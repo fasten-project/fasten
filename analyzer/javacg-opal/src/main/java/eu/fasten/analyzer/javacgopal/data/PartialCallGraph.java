@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import com.google.common.collect.BiMap;
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
@@ -67,7 +66,7 @@ public class PartialCallGraph {
 
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
-    private final EnumMap<JavaScope, BiMap<String, JavaType>> classHierarchy;
+    private final EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
     private final Graph graph;
     private final int nodeCount;
 
@@ -102,7 +101,7 @@ public class PartialCallGraph {
         }
     }
 
-    public EnumMap<JavaScope, BiMap<String, JavaType>> getClassHierarchy() {
+    public EnumMap<JavaScope, Map<String, JavaType>> getClassHierarchy() {
         return classHierarchy;
     }
 
