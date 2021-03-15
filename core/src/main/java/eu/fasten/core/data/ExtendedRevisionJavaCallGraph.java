@@ -179,12 +179,12 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         }
     }
 
-    private void putMethodsOfType(final BiMap<Integer, String> result, final Int2ObjectMap<JavaNode> methods) {
-        for (final var nodeEntry : methods.int2ObjectEntrySet()) {
+    private void putMethodsOfType(final BiMap<Integer, String> result, final Map<Integer, JavaNode> methods) {
+        for (final var nodeEntry : methods.entrySet()) {
             final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, this.product,
                 this.version, nodeEntry.getValue().getUri().toString());
             if (!result.inverse().containsKey(fullUri)) {
-                result.put(nodeEntry.getIntKey(), fullUri);
+                result.put(nodeEntry.getKey(), fullUri);
             }
         }
     }
@@ -216,18 +216,18 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     public Int2ObjectMap<String> nodeIDtoTypeNameMap() {
         final Int2ObjectMap<String> result = new Int2ObjectOpenHashMap<>();
         for (final var aClass : classHierarchy.get(JavaScope.internalTypes).entrySet()) {
-            for (final var nodeEntry : aClass.getValue().getMethods().int2ObjectEntrySet()) {
-                result.put(nodeEntry.getIntKey(), aClass.getKey());
+            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey());
             }
         }
         for (final var aClass : classHierarchy.get(JavaScope.externalTypes).entrySet()) {
-            for (final var nodeEntry : aClass.getValue().getMethods().int2ObjectEntrySet()) {
-                result.put(nodeEntry.getIntKey(), aClass.getKey());
+            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey());
             }
         }
         for (final var aClass : classHierarchy.get(JavaScope.resolvedTypes).entrySet()) {
-            for (final var nodeEntry : aClass.getValue().getMethods().int2ObjectEntrySet()) {
-                result.put(nodeEntry.getIntKey(), aClass.getKey());
+            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
+                result.put(nodeEntry.getKey(), aClass.getKey());
             }
         }
         return result;

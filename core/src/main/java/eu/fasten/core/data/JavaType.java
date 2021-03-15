@@ -18,11 +18,8 @@
 
 package eu.fasten.core.data;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -44,8 +41,8 @@ public class JavaType {
     /**
      * Methods of this type and their unique ids (unique within the same artifact).
      */
-    private final Int2ObjectMap<JavaNode> methods;
-    private final Object2IntMap<JavaNode> inverseMethods;
+    private final BiMap<Integer, JavaNode> methods;
+
     /**
      * Classes that this type inherits from in the order of instantiation.
      */
@@ -124,15 +121,14 @@ public class JavaType {
      * @param access          access modifier
      * @param isFinal         true if the Type is final
      */
-    public JavaType(final String sourceFile, 
+    public JavaType(final String sourceFile, final BiMap<Integer, JavaNode> methods,
+                    final Map<String, JavaNode> defineds,
                     final LinkedList<FastenURI> superClasses,
                     final List<FastenURI> superInterfaces, final String access,
                     final boolean isFinal) {
         this.sourceFileName = sourceFile;
-        this.methods = new Int2ObjectOpenHashMap<>();
-        this.inverseMethods = new Object2IntOpenHashMap<>();
-        inverseMethods.defaultReturnValue(-1);
-        this.definedMethods = new HashMap<>();
+        this.methods = methods;
+        this.definedMethods = defineds;
         this.superClasses = superClasses;
         this.superInterfaces = superInterfaces;
         this.access = access;
@@ -149,9 +145,7 @@ public class JavaType {
         this.sourceFileName = type.getString("sourceFile");
 
         final var methodsJson = type.getJSONObject("methods");
-        this.methods = new Int2ObjectOpenHashMap<>();
-        this.inverseMethods = new Object2IntOpenHashMap<>();
-        inverseMethods.defaultReturnValue(-1);
+        this.methods = HashBiMap.create();
         this.definedMethods = new HashMap<>();
         for (final var methodKey : methodsJson.keySet()) {
             final var nodeJson = methodsJson.getJSONObject(methodKey);
@@ -159,9 +153,7 @@ public class JavaType {
             final var metadata = nodeJson.getJSONObject("metadata");
             final var uri = FastenURI.create(nodeJson.getString("uri"));
             final var node = new JavaNode(uri, metadata.toMap());
-            final int mk = Integer.parseInt(methodKey);
-            this.methods.put(mk, node);
-            this.inverseMethods.put(node, mk);
+            this.methods.put(Integer.parseInt(methodKey), node);
             if (!metadata.isEmpty()) {
                 if (metadata.getBoolean("defined")){
                     definedMethods.put(node.getSignature(), node);
@@ -190,7 +182,7 @@ public class JavaType {
         return sourceFileName;
     }
 
-    public Int2ObjectMap<JavaNode> getMethods() {
+    public Map<Integer, JavaNode> getMethods() {
         return this.methods;
     }
 
@@ -218,12 +210,12 @@ public class JavaType {
      * @return newly added method id, or an old id, of method already exists
      */
     public int addMethod(final JavaNode node, final int key) {
-        assert key != -1; // -1 is used as default return value
-        final int index = inverseMethods.getInt(node);
-        if (index != -1) return index;
-        this.methods.put(key, node);
-        this.inverseMethods.put(node, key);
-        return key;
+        if (this.methods.inverse().containsKey(node)) {
+            return this.methods.inverse().get(node);
+        } else {
+            this.methods.put(key, node);
+            return key;
+        }
     }
 
     /**
@@ -231,13 +223,13 @@ public class JavaType {
      *
      * @param map map of id-s and corresponding JavaNodes
      */
-    public static Int2ObjectMap<JSONObject> toMapOfString(final Int2ObjectMap<JavaNode> map) {
-        final Int2ObjectMap<JSONObject> methods = new Int2ObjectOpenHashMap<>();
-        for (final var entry : map.int2ObjectEntrySet()) {
+    public static Map<Integer, JSONObject> toMapOfString(final Map<Integer, JavaNode> map) {
+        final Map<Integer, JSONObject> methods = new HashMap<>();
+        for (final var entry : map.entrySet()) {
             final JSONObject node = new JSONObject();
             node.put("uri", entry.getValue().getUri());
             node.put("metadata", new JSONObject(entry.getValue().getMetadata()));
-            methods.put(entry.getIntKey(), node);
+            methods.put(entry.getKey(), node);
         }
         return methods;
     }
@@ -261,8 +253,8 @@ public class JavaType {
      * @param signature method signature
      * @return optional map of all defined methods
      */
-    public Optional<Int2ObjectMap.Entry<JavaNode>> getDefined(String signature) {
-        return methods.int2ObjectEntrySet()
+    public Optional<Map.Entry<Integer, JavaNode>> getDefined(String signature) {
+        return methods.entrySet()
                 .stream()
                 .filter(node -> (Boolean) node.getValue().metadata.get("defined"))
                 .filter(node -> node.getValue().getSignature().equals(signature))

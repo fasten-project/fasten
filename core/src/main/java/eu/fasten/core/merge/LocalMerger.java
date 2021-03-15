@@ -162,6 +162,7 @@ public class LocalMerger {
     public DirectedGraph mergeAllDeps() {
         final var result = new FastenDefaultDirectedGraph();
         var offset = 0l;
+        Collections.sort(dependencySet, (x,y) -> x.productVersion.compareTo(y.productVersion));
         for (final var dep : this.dependencySet) {
             final var merged = mergeWithCHA(dep);
             final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
@@ -605,7 +606,7 @@ public class LocalMerger {
         final var keyType = "//" + product + depTypeUri;
         var type = cgha.CHA.get(keyType);
         if(type == null) {
-            type = new JavaType(depType.getSourceFileName(), 
+            type = new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
                             depType.getSuperClasses(), depType.getSuperInterfaces(),
                             depType.getAccess(), depType.isFinal());
             cgha.CHA.put(keyType, type);

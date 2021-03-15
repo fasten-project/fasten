@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package eu.fasten.analyzer.javacgopal.sourceanalyzer;
+package eu.fasten.analyzer.sourceanalyzer;
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
