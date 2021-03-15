@@ -342,9 +342,9 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         FastenDefaultDirectedGraph dg = new FastenDefaultDirectedGraph();
         for (final long x : erjcg.mapOfAllMethods().keySet()) dg.addInternalNode(x);
 
-        for (final IntIntPair l : erjcg.getGraph().getExternalCalls().keySet()) builder.addArc(l.firstInt(), l.secondInt());
-        for (final IntIntPair l : erjcg.getGraph().getInternalCalls().keySet()) builder.addArc(l.firstInt(), l.secondInt());
-        for (final IntIntPair l : erjcg.getGraph().getResolvedCalls().keySet()) builder.addArc(l.firstInt(), l.secondInt());
+        for (final IntIntPair l : erjcg.getGraph().getExternalCalls().keySet()) dg.addEdge((long)l.firstInt(), (long)l.secondInt());
+        for (final IntIntPair l : erjcg.getGraph().getInternalCalls().keySet()) dg.addEdge((long)l.firstInt(), (long)l.secondInt());
+        for (final IntIntPair l : erjcg.getGraph().getResolvedCalls().keySet()) dg.addEdge((long)l.firstInt(), (long)l.secondInt());
         return dg;
     }
 }
