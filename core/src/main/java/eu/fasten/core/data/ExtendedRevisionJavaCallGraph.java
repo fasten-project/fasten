@@ -21,6 +21,8 @@ package eu.fasten.core.data;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import eu.fasten.core.utils.FastenUriUtils;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import org.json.JSONException;
@@ -132,8 +134,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
     @Override
-    public Map<Integer, JavaNode>  mapOfAllMethods() {
-        Map<Integer, JavaNode> result = new HashMap<>();
+    public Int2ObjectMap<JavaNode> mapOfAllMethods() {
+        Int2ObjectMap<JavaNode> result = new Int2ObjectOpenHashMap<>();
         for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
             result.putAll(aClass.getValue().getMethods());
         }
@@ -177,8 +179,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         }
     }
 
-    private void putMethodsOfType(final BiMap<Integer, String> result, final Map<Integer,
-        JavaNode> methods) {
+    private void putMethodsOfType(final BiMap<Integer, String> result, final Int2ObjectMap<JavaNode> methods) {
         for (final var nodeEntry : methods.entrySet()) {
             final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, this.product,
                 this.version, nodeEntry.getValue().getUri().toString());
@@ -188,8 +189,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         }
     }
 
-    public Map<Integer, JavaType> externalNodeIdToTypeMap() {
-        final Map<Integer, JavaType> result = new HashMap<>();
+    public Int2ObjectMap<JavaType> externalNodeIdToTypeMap() {
+        final Int2ObjectMap<JavaType> result = new Int2ObjectOpenHashMap<>();
         this.classHierarchy.get(JavaScope.externalTypes).values().parallelStream().forEach(type -> {
             for (final var key : type.getMethods().keySet()) {
                 synchronized (result) {
@@ -200,8 +201,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         return result;
     }
 
-    public Map<Integer, JavaType> internalNodeIdToTypeMap() {
-        final Map<Integer, JavaType> result = new HashMap<>();
+    public Int2ObjectMap<JavaType> internalNodeIdToTypeMap() {
+        final Int2ObjectMap<JavaType> result = new Int2ObjectOpenHashMap<>();
         this.classHierarchy.get(JavaScope.internalTypes).values().parallelStream().forEach(type -> {
             for (final var key : type.getMethods().keySet()) {
                 synchronized (result) {
@@ -212,8 +213,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         return result;
     }
 
-    public Map<Integer, String> nodeIDtoTypeNameMap() {
-        final Map<Integer, String> result = new HashMap<>();
+    public Int2ObjectMap<String> nodeIDtoTypeNameMap() {
+        final Int2ObjectMap<String> result = new Int2ObjectOpenHashMap<>();
         for (final var aClass : classHierarchy.get(JavaScope.internalTypes).entrySet()) {
             for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
                 result.put(nodeEntry.getKey(), aClass.getKey());

@@ -29,6 +29,7 @@ import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 
 import java.util.ArrayList;
@@ -244,8 +245,8 @@ public class LocalMerger {
                             final Map<String, List<String>> universalChildren,
                             final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
                             final CGHA result,
-                            final Map<Integer, JavaType> externalNodeIdToTypeMap,
-                            final Map<Integer, JavaType> internalNodeIdToTypeMap,
+                            final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
+                            final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
                             final Map.Entry<IntIntPair, Map<Object, Object>> arc,
                             final boolean isInternal) {
         final var targetKey = arc.getKey().secondInt();
@@ -278,10 +279,10 @@ public class LocalMerger {
     }
 
     private JavaType getType(
-        final Map<Integer, JavaType> externalNodeIdToTypeMap,
-        final Map<Integer, JavaType> internalNodeIdToTypeMap,
+        final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
+        final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
         final boolean isInternal,
-        final Integer targetKey) {
+        final int targetKey) {
 
         if (isInternal) {
             return internalNodeIdToTypeMap.get(targetKey);
@@ -305,7 +306,7 @@ public class LocalMerger {
                          final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
                          final CGHA result,
                          final Map.Entry<IntIntPair, Map<Object, Object>> arc,
-                         final Integer nodeKey,
+                         final int nodeKey,
                          final JavaType type,
                          final String typeUri,
                          final boolean isCallback) {
@@ -604,7 +605,7 @@ public class LocalMerger {
         final var keyType = "//" + product + depTypeUri;
         var type = cgha.CHA.get(keyType);
         if(type == null) {
-            type = new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
+            type = new JavaType(depType.getSourceFileName(), 
                             depType.getSuperClasses(), depType.getSuperInterfaces(),
                             depType.getAccess(), depType.isFinal());
             cgha.CHA.put(keyType, type);
