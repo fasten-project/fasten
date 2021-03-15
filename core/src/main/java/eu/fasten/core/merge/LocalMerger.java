@@ -20,11 +20,10 @@ package eu.fasten.core.merge;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.FastenDefaultDirectedGraph;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaNode;
@@ -46,6 +45,13 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class LocalMerger {
 
@@ -153,7 +159,7 @@ public class LocalMerger {
      * @return merged call graph
      */
     public DirectedGraph mergeAllDeps() {
-        final var result = new ArrayImmutableDirectedGraph.Builder();
+        final var result = new FastenDefaultDirectedGraph();
         var offset = 0l;
         for (final var dep : this.dependencySet) {
             final var merged = mergeWithCHA(dep);
@@ -161,10 +167,10 @@ public class LocalMerger {
             addThisMergeToResult(result, directedMerge, merged.mapOfFullURIStrings(), offset);
             offset = offset + allUris.size();
         }
-        return result.build();
+        return result;
     }
 
-    private void addThisMergeToResult(ArrayImmutableDirectedGraph.Builder result,
+    private void addThisMergeToResult(FastenDefaultDirectedGraph result,
                                       final DirectedGraph directedMerge,
                                       final BiMap<Integer, String> uris,
                                       final Long offset) {
@@ -194,32 +200,22 @@ public class LocalMerger {
         }
     }
 
-    private void addEdge(final ArrayImmutableDirectedGraph.Builder result,
+    private void addEdge(final FastenDefaultDirectedGraph result,
                          final DirectedGraph callGraphData,
-                         final Long source, final Long target) {
-
-        try {
-            if (callGraphData.nodes().contains(source.longValue())
-                && callGraphData.isInternal(source)) {
-                result.addInternalNode(source);
-            } else {
-                result.addExternalNode(source);
-            }
-        } catch (IllegalArgumentException ignored) {
+                         final long source, final long target) {
+        if(callGraphData.containsVertex(source) && callGraphData.isInternal(source)) {
+            result.addInternalNode(source);
         }
-        try {
-            if (callGraphData.nodes().contains(target.longValue())
-                && callGraphData.isInternal(target)) {
-                result.addInternalNode(target);
-            } else {
-                result.addExternalNode(target);
-            }
-        } catch (IllegalArgumentException ignored) {
+        else {
+            result.addExternalNode(source);
         }
-        try {
-            result.addArc(source, target);
-        } catch (IllegalArgumentException ignored) {
+        if(callGraphData.containsVertex(target) && callGraphData.isInternal(target)) {
+            result.addInternalNode(target);
         }
+        else {
+            result.addExternalNode(target);
+        }
+        result.addEdge(source, target);
     }
 
     /**
@@ -233,10 +229,10 @@ public class LocalMerger {
         final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
         final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
 
-        artifact.getGraph().getInternalCalls().entrySet().parallelStream().forEach(arc ->
+        artifact.getGraph().getInternalCalls().entrySet().stream().forEach(arc ->
             processArc(artifact, universalParents, universalChildren, typeDictionary, result,
                 externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, true));
-        artifact.getGraph().getExternalCalls().entrySet().parallelStream().forEach(arc ->
+        artifact.getGraph().getExternalCalls().entrySet().stream().forEach(arc ->
             processArc(artifact, universalParents, universalChildren, typeDictionary, result,
                 externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, false));
 
@@ -377,9 +373,7 @@ public class LocalMerger {
             .getOrDefault(depTypeUri, new ArrayList<>())) {
 
             foundTarget = resolveToDynamics(result, call, dep.getClassHierarchy().get(JavaScope.internalTypes)
-                    .get(depTypeUri), dep.product + "$" + dep.version,
-                depTypeUri,
-                isCallback);
+                    .get(depTypeUri), dep.productVersion, depTypeUri, isCallback);
         }
         return foundTarget;
     }
@@ -608,15 +602,15 @@ public class LocalMerger {
                                 final JavaType depType,
                                 final String depTypeUri) {
         final var keyType = "//" + product + depTypeUri;
-        final var type = cgha.CHA.getOrDefault(keyType,
-                new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
-                        depType.getSuperClasses(), depType.getSuperInterfaces(),
-                        depType.getAccess(), depType.isFinal()));
-        final var index = type.addMethod(
-                new JavaNode(target.getUri(),
-                        target.getMetadata()),
+        var type = cgha.CHA.get(keyType);
+        if(type == null) {
+            type = new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
+                            depType.getSuperClasses(), depType.getSuperInterfaces(),
+                            depType.getAccess(), depType.isFinal());
+            cgha.CHA.put(keyType, type);
+        }
+        final var index = type.addMethod(target,
                 cgha.nodeCount);
-        cgha.CHA.put(keyType, type);
         return index;
     }
 

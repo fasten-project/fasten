@@ -30,6 +30,7 @@ import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.merge.LocalMerger;
 import eu.fasten.core.merge.CallGraphUtils;
 import java.io.File;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,10 +55,10 @@ import org.junit.jupiter.api.Test;
 public class CGandStitchingTest {
 
     public static ExtendedRevisionJavaCallGraph getRCG(final String path, final String product,
-                                                       final String version) throws OPALException {
+                                                       final String version) throws OPALException, URISyntaxException {
         final var file =
             new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource(path)).getFile());
+                .getResource(path)).toURI().getPath());
 
         return getRCG(file, product, version);
     }
@@ -77,7 +78,7 @@ public class CGandStitchingTest {
     }
 
     @Test
-    public void staticInitializer() throws OPALException {
+    public void staticInitializer() throws OPALException, URISyntaxException {
         final var importer = getRCG("merge/staticInitializer/Importer.class","importer","0.0.0");
         final var imported = getRCG("merge/staticInitializer/Imported.class", "imported", "1.1.1");
         Assertions.assertEquals("/merge.staticInitializer/Importer.<init>()/java.lang/VoidType '->'\n" +
@@ -113,7 +114,7 @@ public class CGandStitchingTest {
     }
 
     @Test
-    public void edgeExplosion() throws OPALException {
+    public void edgeExplosion() throws OPALException, URISyntaxException {
         final List<ExtendedRevisionJavaCallGraph> deps = getDepSet("merge/hashCode");
 
         final var user =
@@ -147,11 +148,11 @@ public class CGandStitchingTest {
 
     }
 
-    private List<ExtendedRevisionJavaCallGraph> getDepSet(final String path) throws OPALException {
+    private List<ExtendedRevisionJavaCallGraph> getDepSet(final String path) throws OPALException, URISyntaxException {
         final List<ExtendedRevisionJavaCallGraph> result = new ArrayList<>();
 
         final var depFiles = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-            .getResource(path)).getFile()).listFiles(f -> f.getPath().endsWith(".class"));
+            .getResource(path)).toURI().getPath()).listFiles(f -> f.getPath().endsWith(".class"));
         for (final var depFile : depFiles) {
             if (!depFile.getName().contains(" ") ) {
                 result.add(getRCG(depFile, depFile.getName(), "0.0.0"));
@@ -197,7 +198,7 @@ public class CGandStitchingTest {
         try {
             return getRCG(base+"/"+artifact+"/target/"+artifact+"-"+version+"-SNAPSHOT.jar", artifact,
                 version);
-        } catch (OPALException e) {
+        } catch (OPALException | URISyntaxException e) {
             e.printStackTrace();
         }
         return null;
@@ -281,7 +282,7 @@ public class CGandStitchingTest {
 
 
     @Test
-    public void virtualReceiverTypes() throws OPALException {
+    public void virtualReceiverTypes() throws OPALException, URISyntaxException {
         var cg = getRCG("merge/hashCode/complex/User.class","importer","0.0.0");
         asserReceiver(cg, "invokedynamic","[/merge.hashCode.complex/Child]");
         cg = getRCG("merge/hashCode/interFace/User.class","importer","0.0.0");
@@ -303,7 +304,7 @@ public class CGandStitchingTest {
     }
 
     @Test
-    public void missingEdges() throws OPALException {
+    public void missingEdges() throws OPALException, URISyntaxException {
         final var cg = getRCG("merge/missingEdge/User.class","importer","0.0.0");
         assertTrue(toString(cg).contains("/merge.missingEdge/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
             "/merge.missingEdge/Child.hashCode()/java.lang/IntegerType"));

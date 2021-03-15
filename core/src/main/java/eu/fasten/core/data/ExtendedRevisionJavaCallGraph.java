@@ -22,12 +22,13 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import eu.fasten.core.utils.FastenUriUtils;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
-import org.json.JSONObject;
-import org.json.JSONException;
+import java.util.Map;
 
 /**
  * For each class in the revision, class hierarchy keeps a {@link JavaType} that is accessible by
@@ -338,15 +339,12 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *         {@code erjcg}.
      */
     public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
-        final var builder = new ArrayImmutableDirectedGraph.Builder();
-        for (final int x : erjcg.mapOfAllMethods().keySet()) builder.addInternalNode(x);
+        FastenDefaultDirectedGraph dg = new FastenDefaultDirectedGraph();
+        for (final long x : erjcg.mapOfAllMethods().keySet()) dg.addInternalNode(x);
 
         for (final IntIntPair l : erjcg.getGraph().getExternalCalls().keySet()) builder.addArc(l.firstInt(), l.secondInt());
         for (final IntIntPair l : erjcg.getGraph().getInternalCalls().keySet()) builder.addArc(l.firstInt(), l.secondInt());
         for (final IntIntPair l : erjcg.getGraph().getResolvedCalls().keySet()) builder.addArc(l.firstInt(), l.secondInt());
-
-        return builder.build();
+        return dg;
     }
-
-
 }
