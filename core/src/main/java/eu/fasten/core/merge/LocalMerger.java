@@ -175,14 +175,10 @@ public class LocalMerger {
         final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
 
         for (final var node : directedMerge.nodes()) {
-            if(!directedMerge.isExternal(node)) {
-                for (final var successor : directedMerge.successors(node)) {
-                    if(!directedMerge.isExternal(successor)) {
-                        final var updatedNode = updateNode(node, offset, uris);
-                        final var updatedSuccessor = updateNode(successor, offset, uris);
-                        addEdge(result, updatedNode, updatedSuccessor);
-                    }
-                }
+            for (final var successor : directedMerge.successors(node)) {
+                final var updatedNode = updateNode(node, offset, uris);
+                final var updatedSuccessor = updateNode(successor, offset, uris);
+                addEdge(result, directedMerge, updatedNode, updatedSuccessor);
             }
         }
         return directedMerge.numNodes();
@@ -203,9 +199,20 @@ public class LocalMerger {
     }
 
     private void addEdge(final FastenDefaultDirectedGraph result,
+                         final DirectedGraph directedMerge,
                          final long source, final long target) {
-        result.addInternalNode(source);
-        result.addInternalNode(target);
+        if(directedMerge.isInternal(source)) {
+            result.addInternalNode(source);
+        }
+        else {
+            result.addExternalNode(source);
+        }
+        if(directedMerge.isInternal(target)) {
+            result.addInternalNode(target);
+        }
+        else {
+            result.addExternalNode(target);
+        }
         result.addEdge(source, target);
     }
 

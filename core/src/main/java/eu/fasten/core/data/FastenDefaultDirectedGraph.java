@@ -59,7 +59,7 @@ public class FastenDefaultDirectedGraph extends DefaultDirectedGraph<Long, LongL
 
     @Override
     public boolean isInternal(long node) {
-        return !isExternal(node);
+        return this.containsVertex(node) && !isExternal(node);
     }
 
     @Override
