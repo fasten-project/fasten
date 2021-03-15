@@ -180,11 +180,11 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     }
 
     private void putMethodsOfType(final BiMap<Integer, String> result, final Int2ObjectMap<JavaNode> methods) {
-        for (final var nodeEntry : methods.entrySet()) {
+        for (final var nodeEntry : methods.int2ObjectEntrySet()) {
             final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, this.product,
                 this.version, nodeEntry.getValue().getUri().toString());
             if (!result.inverse().containsKey(fullUri)) {
-                result.put(nodeEntry.getKey(), fullUri);
+                result.put(nodeEntry.getIntKey(), fullUri);
             }
         }
     }
@@ -192,11 +192,11 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     public Int2ObjectMap<JavaType> externalNodeIdToTypeMap() {
         final Int2ObjectMap<JavaType> result = new Int2ObjectOpenHashMap<>();
         this.classHierarchy.get(JavaScope.externalTypes).values().parallelStream().forEach(type -> {
-            for (final var key : type.getMethods().keySet()) {
+            type.getMethods().keySet().forEach(key -> {
                 synchronized (result) {
                     result.put(key, type);
                 }
-            }
+            });
         });
         return result;
     }
@@ -204,11 +204,11 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     public Int2ObjectMap<JavaType> internalNodeIdToTypeMap() {
         final Int2ObjectMap<JavaType> result = new Int2ObjectOpenHashMap<>();
         this.classHierarchy.get(JavaScope.internalTypes).values().parallelStream().forEach(type -> {
-            for (final var key : type.getMethods().keySet()) {
+            type.getMethods().keySet().forEach(key -> {
                 synchronized (result) {
                     result.put(key, type);
                 }
-            }
+            });
         });
         return result;
     }
@@ -216,18 +216,18 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
     public Int2ObjectMap<String> nodeIDtoTypeNameMap() {
         final Int2ObjectMap<String> result = new Int2ObjectOpenHashMap<>();
         for (final var aClass : classHierarchy.get(JavaScope.internalTypes).entrySet()) {
-            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
-                result.put(nodeEntry.getKey(), aClass.getKey());
+            for (final var nodeEntry : aClass.getValue().getMethods().int2ObjectEntrySet()) {
+                result.put(nodeEntry.getIntKey(), aClass.getKey());
             }
         }
         for (final var aClass : classHierarchy.get(JavaScope.externalTypes).entrySet()) {
-            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
-                result.put(nodeEntry.getKey(), aClass.getKey());
+            for (final var nodeEntry : aClass.getValue().getMethods().int2ObjectEntrySet()) {
+                result.put(nodeEntry.getIntKey(), aClass.getKey());
             }
         }
         for (final var aClass : classHierarchy.get(JavaScope.resolvedTypes).entrySet()) {
-            for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
-                result.put(nodeEntry.getKey(), aClass.getKey());
+            for (final var nodeEntry : aClass.getValue().getMethods().int2ObjectEntrySet()) {
+                result.put(nodeEntry.getIntKey(), aClass.getKey());
             }
         }
         return result;
