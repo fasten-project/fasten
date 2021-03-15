@@ -1,6 +1,9 @@
 package eu.fasten.core.data;
 
 import com.google.common.collect.BiMap;
+
+import it.unimi.dsi.fastutil.ints.IntIntPair;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,9 +93,9 @@ public class JSONUtils {
      * @param result the StringBuilder to append the information.
      */
     private static void appendCall(StringBuilder result,
-                                   final Map.Entry<List<Integer>, Map<Object, Object>> entry) {
-        result.append("[").append(quote(entry.getKey().get(0).toString())).append(",");
-        result.append(quote(entry.getKey().get(1).toString())).append(",{");
+                                   final Map.Entry<IntIntPair, Map<Object, Object>> entry) {
+        result.append("[").append(quote(entry.getKey().first().toString())).append(",");
+        result.append(quote(entry.getKey().second().toString())).append(",{");
         appendCallableMetadataJson(result, entry.getValue());
         result.append("}],");
     }

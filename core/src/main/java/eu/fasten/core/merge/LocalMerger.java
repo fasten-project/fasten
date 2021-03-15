@@ -29,6 +29,16 @@ import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.Graphs;
@@ -78,7 +88,7 @@ public class LocalMerger {
      */
     public static class CGHA {
 
-        private final Map<List<Integer>, Map<Object, Object>> graph;
+        private final Map<IntIntPair, Map<Object, Object>> graph;
         private final BiMap<String, JavaType> CHA;
         private int nodeCount;
 
@@ -103,7 +113,7 @@ public class LocalMerger {
      */
     public static class Call {
 
-        private final List<Integer> indices;
+        private final IntIntPair indices;
         private final Map<Object, Object> metadata;
         private final JavaNode target;
 
@@ -114,7 +124,7 @@ public class LocalMerger {
          * @param metadata call metadata
          * @param target   target node
          */
-        public Call(final List<Integer> indices, Map<Object, Object> metadata,
+        public Call(final IntIntPair indices, Map<Object, Object> metadata,
                     final JavaNode target) {
             this.indices = indices;
             this.metadata = metadata;
@@ -127,7 +137,7 @@ public class LocalMerger {
             this.target = node;
         }
 
-        public Call(final Map.Entry<List<Integer>, Map<Object, Object>> arc,
+        public Call(final Map.Entry<IntIntPair, Map<Object, Object>> arc,
                     final JavaNode target) {
             this.indices = arc.getKey();
             this.metadata = arc.getValue();
@@ -235,15 +245,15 @@ public class LocalMerger {
                             final Map<String, List<String>> universalChildren,
                             final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
                             final CGHA result,
-                            final Map<Integer, JavaType> externalNodeIdToTypeMap,
-                            final Map<Integer, JavaType> internalNodeIdToTypeMap,
-                            final Map.Entry<List<Integer>, Map<Object, Object>> arc,
+                            final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
+                            final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
+                            final Map.Entry<IntIntPair, Map<Object, Object>> arc,
                             final boolean isInternal) {
-        final var targetKey = arc.getKey().get(1);
-        final var sourceKey = arc.getKey().get(0);
+        final var targetKey = arc.getKey().secondInt();
+        final var sourceKey = arc.getKey().firstInt();
 
         boolean isCallBack = false;
-        Integer nodeKey = targetKey;
+        int nodeKey = targetKey;
         JavaType type =
             getType(externalNodeIdToTypeMap, internalNodeIdToTypeMap, isInternal, targetKey);
 
@@ -269,10 +279,10 @@ public class LocalMerger {
     }
 
     private JavaType getType(
-        final Map<Integer, JavaType> externalNodeIdToTypeMap,
-        final Map<Integer, JavaType> internalNodeIdToTypeMap,
+        final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
+        final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
         final boolean isInternal,
-        final Integer targetKey) {
+        final int targetKey) {
 
         if (isInternal) {
             return internalNodeIdToTypeMap.get(targetKey);
@@ -295,8 +305,8 @@ public class LocalMerger {
                          final Map<String, List<String>> universalChildren,
                          final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
                          final CGHA result,
-                         final Map.Entry<List<Integer>, Map<Object, Object>> arc,
-                         final Integer nodeKey,
+                         final Map.Entry<IntIntPair, Map<Object, Object>> arc,
+                         final int nodeKey,
                          final JavaType type,
                          final String typeUri,
                          final boolean isCallback) {
@@ -571,9 +581,9 @@ public class LocalMerger {
             cgha.nodeCount++;
         }
         if (isCallback) {
-            cgha.graph.put(Arrays.asList(addedKey, call.indices.get(1)), call.metadata);
+            cgha.graph.put(IntIntPair.of(addedKey, call.indices.secondInt()), call.metadata);
         } else {
-            cgha.graph.put(Arrays.asList(call.indices.get(0), addedKey), call.metadata);
+            cgha.graph.put(IntIntPair.of(call.indices.firstInt(), addedKey), call.metadata);
         }
     }
 
@@ -595,7 +605,7 @@ public class LocalMerger {
         final var keyType = "//" + product + depTypeUri;
         var type = cgha.CHA.get(keyType);
         if(type == null) {
-            type = new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
+            type = new JavaType(depType.getSourceFileName(), 
                             depType.getSuperClasses(), depType.getSuperInterfaces(),
                             depType.getAccess(), depType.isFinal());
             cgha.CHA.put(keyType, type);
