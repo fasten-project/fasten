@@ -197,7 +197,7 @@ public class LocalMerger {
                          final Long source, final Long target) {
 
         try {
-            if (new HashSet<>(callGraphData.nodes()).contains(source)
+            if (callGraphData.nodes().contains(source.longValue())
                 && callGraphData.isInternal(source)) {
                 result.addInternalNode(source);
             } else {
@@ -206,7 +206,7 @@ public class LocalMerger {
         } catch (IllegalArgumentException ignored) {
         }
         try {
-            if (new HashSet<>(callGraphData.nodes()).contains(target)
+            if (callGraphData.nodes().contains(target.longValue())
                 && callGraphData.isInternal(target)) {
                 result.addInternalNode(target);
             } else {
@@ -610,9 +610,7 @@ public class LocalMerger {
                 new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
                         depType.getSuperClasses(), depType.getSuperInterfaces(),
                         depType.getAccess(), depType.isFinal()));
-        final var index = type.addMethod(
-                new JavaNode(target.getUri(),
-                        target.getMetadata()),
+        final var index = type.addMethod(target,
                 cgha.nodeCount);
         cgha.CHA.put(keyType, type);
         return index;

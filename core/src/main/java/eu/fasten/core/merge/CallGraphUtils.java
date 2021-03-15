@@ -98,17 +98,30 @@ public class CallGraphUtils {
      * @return list of node pairs
      */
     public static Map<String, List<Pair<String, String>>> convertToNodePairs(
-            final ExtendedRevisionJavaCallGraph ercg) {
+        final ExtendedRevisionJavaCallGraph ercg) {
 
-        final Map<String, List<Pair<String, String>>> result = new HashMap<>();
+        return convertToNodePairs(ercg, true, true);
+    }
+
+    public static Map<String, List<Pair<String, String>>> convertToNodePairs(
+        final ExtendedRevisionJavaCallGraph ercg, final boolean includeExternals,
+        final boolean includeInternals) {
+
+        final Map<String, List<Pair<String, String>>> result =
+            new HashMap<>();
         final var methods = ercg.mapOfAllMethods();
         final var types = ercg.nodeIDtoTypeNameMap();
+        if (includeInternals) {
+            result.put("internalTypes",
+                getEdges(ercg.getGraph().getInternalCalls(), methods, types));
+        }
+        result.put("resolvedTypes",
+            getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
 
-        result.put("internalTypes", getEdges(ercg.getGraph().getInternalCalls(), methods, types));
-
-        result.put("externalTypes", getEdges(ercg.getGraph().getExternalCalls(), methods, types));
-
-        result.put("resolvedTypes", getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
+        if (includeExternals) {
+            result.put("externalTypes",
+                getEdges(ercg.getGraph().getExternalCalls(), methods, types));
+        }
 
         return result;
     }
@@ -219,4 +232,16 @@ public class CallGraphUtils {
         }
         return escapedData;
     }
+
+    public static String getString(final Map<String,
+        List<Pair<String, String>>> nodePairs) {
+        StringBuilder result = new StringBuilder();
+        for (final var scope : nodePairs.entrySet()) {
+            result.append(toStringEdges(
+                nodePairs.get(scope.getKey())));
+        }
+
+        return result.toString();
+    }
+
 }
