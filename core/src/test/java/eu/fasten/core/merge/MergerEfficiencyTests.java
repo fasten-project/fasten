@@ -61,4 +61,20 @@ public class MergerEfficiencyTests {
         Assertions.assertEquals(49104, numNodes);
         Assertions.assertEquals(611314, numEdges);
     }
+
+    @Test
+    public void localMergerRepeatedEfficiencyTests() {
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+
+        for(int k = 10; k -- != 0;) {
+            long timeBefore = threadMXBean.getCurrentThreadCpuTime();
+            var merger = new LocalMerger(depSet);
+            var result = merger.mergeAllDeps();
+            long timeAfter = threadMXBean.getCurrentThreadCpuTime();
+
+            double secondsTaken = (timeAfter - timeBefore) / 1e9;
+            DecimalFormat df = new DecimalFormat("###.###");
+            System.out.println("CPU time used for merging: " + df.format(secondsTaken) + " seconds.");
+        }
+    }
 }
