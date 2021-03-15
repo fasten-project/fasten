@@ -28,6 +28,7 @@ import eu.fasten.core.data.FastenURI;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +91,7 @@ public class OPALClassHierarchy {
      * @param projectHierarchy OPAL class hierarchy
      * @return A {@link Map} of {@link FastenURI} and {@link JavaType}
      */
-    public Map<JavaScope, BiMap<String, JavaType>> asURIHierarchy(ClassHierarchy projectHierarchy) {
+    public EnumMap<JavaScope, BiMap<String, JavaType>> asURIHierarchy(ClassHierarchy projectHierarchy) {
 
         final BiMap<String, JavaType> internalResult = HashBiMap.create();
         final BiMap<String, JavaType> externalResult = HashBiMap.create();
@@ -105,8 +106,8 @@ public class OPALClassHierarchy {
                     .putAll(OPALType.getType(projectHierarchy, externals.get(aClass), aClass));
         }
 
-        return Map.of(JavaScope.internalTypes, internalResult, JavaScope.externalTypes, externalResult,
-                JavaScope.resolvedTypes, HashBiMap.create());
+        return new EnumMap<>(Map.of(JavaScope.internalTypes, internalResult, JavaScope.externalTypes, externalResult,
+                JavaScope.resolvedTypes, HashBiMap.create()));
     }
 
     /**

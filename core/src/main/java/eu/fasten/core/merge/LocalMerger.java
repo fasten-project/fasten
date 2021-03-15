@@ -626,7 +626,7 @@ public class LocalMerger {
      */
     private static ExtendedRevisionJavaCallGraph buildRCG(final ExtendedRevisionJavaCallGraph artifact,
                                                           final CGHA result) {
-        final var cha = new HashMap<>(artifact.getClassHierarchy());
+        final var cha = artifact.getClassHierarchy();
         cha.put(JavaScope.resolvedTypes, result.CHA);
         return ExtendedRevisionJavaCallGraph.extendedBuilder().forge(artifact.forge)
             .cgGenerator(artifact.getCgGenerator())

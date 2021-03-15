@@ -19,12 +19,14 @@
 package eu.fasten.core.data;
 
 import com.google.common.collect.BiMap;
+
+import java.util.EnumMap;
 import java.util.Map;
 
 /**
  * Builder for {@link ExtendedRevisionJavaCallGraph}.
  */
-public final class ExtendedBuilderJava extends ExtendedBuilder<Map<JavaScope, BiMap<String,
+public final class ExtendedBuilderJava extends ExtendedBuilder<EnumMap<JavaScope, BiMap<String,
     JavaType>>> {
 
     public ExtendedBuilderJava nodeCount(final int nodeCount) {
@@ -62,7 +64,7 @@ public final class ExtendedBuilderJava extends ExtendedBuilder<Map<JavaScope, Bi
         return this;
     }
 
-    public ExtendedBuilderJava classHierarchy(final Map<JavaScope, BiMap<String, JavaType>> cha) {
+    public ExtendedBuilderJava classHierarchy(final EnumMap<JavaScope, BiMap<String, JavaType>> cha) {
         this.classHierarchy = cha;
         return this;
     }

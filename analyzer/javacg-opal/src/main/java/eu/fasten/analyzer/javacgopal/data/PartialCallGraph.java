@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -66,7 +67,7 @@ public class PartialCallGraph {
 
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
-    private final Map<JavaScope, BiMap<String, JavaType>> classHierarchy;
+    private final EnumMap<JavaScope, BiMap<String, JavaType>> classHierarchy;
     private final Graph graph;
     private final int nodeCount;
 
@@ -101,7 +102,7 @@ public class PartialCallGraph {
         }
     }
 
-    public Map<JavaScope, BiMap<String, JavaType>> getClassHierarchy() {
+    public EnumMap<JavaScope, BiMap<String, JavaType>> getClassHierarchy() {
         return classHierarchy;
     }
 

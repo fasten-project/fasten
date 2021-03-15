@@ -18,12 +18,13 @@
 
 package eu.fasten.core.data;
 
+import java.util.EnumMap;
 import java.util.Map;
 
 /**
  * Builder for {@link ExtendedRevisionPythonCallGraph}.
  */
-public final class ExtendedBuilderPython extends ExtendedBuilder<Map<PythonScope, Map<String, PythonType>>> {
+public final class ExtendedBuilderPython extends ExtendedBuilder<EnumMap<PythonScope, Map<String, PythonType>>> {
     public ExtendedBuilderPython nodeCount(final int nodeCount) {
         this.nodeCount = nodeCount;
         return this;
@@ -59,7 +60,7 @@ public final class ExtendedBuilderPython extends ExtendedBuilder<Map<PythonScope
         return this;
     }
 
-    public ExtendedBuilderPython classHierarchy(final Map<PythonScope, Map<String, PythonType>> cha) {
+    public ExtendedBuilderPython classHierarchy(final EnumMap<PythonScope, Map<String, PythonType>> cha) {
         this.classHierarchy = cha;
         return this;
     }
