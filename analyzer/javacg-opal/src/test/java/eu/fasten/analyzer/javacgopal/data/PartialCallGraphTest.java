@@ -37,6 +37,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 import eu.fasten.core.maven.utils.MavenUtilities;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -137,10 +139,8 @@ class PartialCallGraphTest {
         // Check internal calls
         var internalCalls = graph.getInternalCalls();
 
-        var call = new ArrayList<Integer>();
-        call.add(1);
-        call.add(2);
-
+        var call = IntIntPair.of(1, 2);
+        
         assertNotNull(internalCalls.get(call).get("0"));
         assertTrue(internalCalls.get(call).get("0") instanceof HashMap);
         assertEquals(6, ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("line"));
