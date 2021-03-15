@@ -161,62 +161,51 @@ public class LocalMerger {
      */
     public DirectedGraph mergeAllDeps() {
         final var result = new FastenDefaultDirectedGraph();
-        var offset = 0l;
-        Collections.sort(dependencySet, (x,y) -> x.productVersion.compareTo(y.productVersion));
+        var offset = 0L;
         for (final var dep : this.dependencySet) {
-            final var merged = mergeWithCHA(dep);
-            final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
-            addThisMergeToResult(result, directedMerge, merged.mapOfFullURIStrings(), offset);
-            offset = offset + allUris.size();
+            offset = offset + addThisMergeToResult(result, mergeWithCHA(dep), offset);
         }
         return result;
     }
 
-    private void addThisMergeToResult(FastenDefaultDirectedGraph result,
-                                      final DirectedGraph directedMerge,
-                                      final BiMap<Integer, String> uris,
+    private long addThisMergeToResult(FastenDefaultDirectedGraph result,
+                                      final ExtendedRevisionJavaCallGraph merged,
                                       final long offset) {
+        final var uris = merged.mapOfFullURIStrings();
+        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
 
         for (final var node : directedMerge.nodes()) {
-            for (final var successor : directedMerge.successors(node)) {
-                //check if they are not external edges
-                if (uris.containsKey(node.intValue())) {
-                    if (uris.containsKey(successor.intValue())) {
+            if(!directedMerge.isExternal(node)) {
+                for (final var successor : directedMerge.successors(node)) {
+                    if(!directedMerge.isExternal(successor)) {
                         final var updatedNode = updateNode(node, offset, uris);
                         final var updatedSuccessor = updateNode(successor, offset, uris);
-                        addEdge(result, directedMerge, updatedNode, updatedSuccessor);
+                        addEdge(result, updatedNode, updatedSuccessor);
                     }
                 }
             }
         }
+        return directedMerge.numNodes();
     }
 
     private long updateNode(final long node, final long offset,
                             final BiMap<Integer, String> uris) {
-        if (this.allUris.inverse().containsKey(uris.get((int)node))) {
-            return this.allUris.inverse().get(uris.get((int)node));
-        }else{
+        var uri = uris.get((int) node);
+
+        if (allUris.containsValue(uri)) {
+            return allUris.inverse().get(uri);
+        }
+        else {
             final var updatedNode = node + offset;
-            this.allUris.put(updatedNode, uris.get((int)node));
+            this.allUris.put(updatedNode, uri);
             return updatedNode;
         }
     }
 
     private void addEdge(final FastenDefaultDirectedGraph result,
-                         final DirectedGraph callGraphData,
                          final long source, final long target) {
-        if(callGraphData.containsVertex(source) && callGraphData.isInternal(source)) {
-            result.addInternalNode(source);
-        }
-        else {
-            result.addExternalNode(source);
-        }
-        if(callGraphData.containsVertex(target) && callGraphData.isInternal(target)) {
-            result.addInternalNode(target);
-        }
-        else {
-            result.addExternalNode(target);
-        }
+        result.addInternalNode(source);
+        result.addInternalNode(target);
         result.addEdge(source, target);
     }
 

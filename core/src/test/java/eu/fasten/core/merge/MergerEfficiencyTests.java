@@ -53,13 +53,14 @@ public class MergerEfficiencyTests {
         DecimalFormat df = new DecimalFormat("###.###");
         int numNodes = result.numNodes();
         long numEdges = result.numArcs();
+
         System.out.println("CPU time used for merging: " + df.format(secondsTaken) + " seconds.");
         System.out.println("Merged graph has " + numNodes + " nodes and " + numEdges + " edges.");
 
         Assertions.assertTrue(
                 secondsTaken < 25, "CPU time used for merging should be less than 25 seconds, but was " + secondsTaken);
-        Assertions.assertEquals(49104, numNodes);
-        Assertions.assertEquals(611314, numEdges);
+        Assertions.assertEquals(49162, numNodes);
+        Assertions.assertEquals(646759, numEdges);
     }
 
     @Test

@@ -337,16 +337,21 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      * identifiers the local identifiers.
      *
      * @param erjcg an {@link ExtendedRevisionJavaCallGraph}.
-     * @return a directed graph with internal nodes only, based on the local identifiers of
-     *         {@code erjcg}.
+     * @return a directed graph based on the local identifiers of {@code erjcg}.
      */
     public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
         FastenDefaultDirectedGraph dg = new FastenDefaultDirectedGraph();
-        for (final long x : erjcg.mapOfAllMethods().keySet()) dg.addInternalNode(x);
+        erjcg.getClassHierarchy().get(JavaScope.internalTypes).entrySet().
+                stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addInternalNode(m)));
+        erjcg.getClassHierarchy().get(JavaScope.resolvedTypes).entrySet().
+                stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addInternalNode(m)));
+        erjcg.getClassHierarchy().get(JavaScope.externalTypes).entrySet().
+                stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addExternalNode(m)));
 
-        for (final IntIntPair l : erjcg.getGraph().getExternalCalls().keySet()) dg.addEdge((long)l.firstInt(), (long)l.secondInt());
-        for (final IntIntPair l : erjcg.getGraph().getInternalCalls().keySet()) dg.addEdge((long)l.firstInt(), (long)l.secondInt());
-        for (final IntIntPair l : erjcg.getGraph().getResolvedCalls().keySet()) dg.addEdge((long)l.firstInt(), (long)l.secondInt());
+        erjcg.getGraph().getInternalCalls().keySet().forEach(p -> dg.addEdge((long)p.firstInt(), (long)p.secondInt()));
+        erjcg.getGraph().getResolvedCalls().keySet().forEach(p -> dg.addEdge((long)p.firstInt(), (long)p.secondInt()));
+        erjcg.getGraph().getExternalCalls().keySet().forEach(p -> dg.addEdge((long)p.firstInt(), (long)p.secondInt()));
+
         return dg;
     }
 }
