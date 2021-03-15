@@ -569,18 +569,15 @@ public class LocalMerger {
      * @param depTypeUri dependency type uri
      * @param isCallback true if the call is a callback
      */
-    private synchronized void addEdge(final CGHA cgha, final Call call,
+    private void addEdge(final CGHA cgha, final Call call,
                                       final String product,
                                       final JavaType depType,
                                       final String depTypeUri, boolean isCallback) {
         final int addedKey = addToCHA(cgha, call.target, product, depType, depTypeUri);
-        if (addedKey == cgha.nodeCount) {
-            cgha.nodeCount++;
-        }
-        if (isCallback) {
-            cgha.graph.put(IntIntPair.of(addedKey, call.indices.secondInt()), call.metadata);
-        } else {
-            cgha.graph.put(IntIntPair.of(call.indices.firstInt(), addedKey), call.metadata);
+        final IntIntPair edge = isCallback ? IntIntPair.of(addedKey, call.indices.secondInt())
+             : IntIntPair.of(call.indices.firstInt(), addedKey);
+        synchronized(cgha.graph) {
+            cgha.graph.put(edge, call.metadata);
         }
     }
 
@@ -599,16 +596,22 @@ public class LocalMerger {
                                 final String product,
                                 final JavaType depType,
                                 final String depTypeUri) {
-        final var keyType = "//" + product + depTypeUri;
-        var type = cgha.CHA.get(keyType);
-        if(type == null) {
-            type = new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
-                            depType.getSuperClasses(), depType.getSuperInterfaces(),
-                            depType.getAccess(), depType.isFinal());
-            cgha.CHA.put(keyType, type);
+        final BiMap<String, JavaType> cha = cgha.CHA;
+        final int index;
+        synchronized(cha) {
+            final var keyType = "//" + product + depTypeUri;
+            var type = cha.get(keyType);
+            if(type == null) {
+                type = new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
+                        depType.getSuperClasses(), depType.getSuperInterfaces(),
+                        depType.getAccess(), depType.isFinal());
+                cha.put(keyType, type);
+            }
+            index = type.addMethod(target, cgha.nodeCount);
+            if (index == cgha.nodeCount) {
+                cgha.nodeCount++;
+            }
         }
-        final var index = type.addMethod(target,
-                cgha.nodeCount);
         return index;
     }
 
