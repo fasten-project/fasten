@@ -28,6 +28,8 @@ import java.util.Set;
 
 import org.json.JSONObject;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -48,7 +50,7 @@ public class JavaType {
     /**
      * Methods of this type and their unique ids (unique within the same artifact).
      */
-    private final Map<Integer, JavaNode> methods;
+    private final Int2ObjectMap<JavaNode> methods;
     private final Object2IntMap<JavaNode> javaNodes;
 
     /**
@@ -86,7 +88,7 @@ public class JavaType {
      * @param access          access modifier
      * @param isFinal         true if the Type is final
      */
-    public JavaType(final String uri, final String sourceFile, final Map<Integer, JavaNode> methods,
+    public JavaType(final String uri, final String sourceFile, final Int2ObjectMap<JavaNode> methods,
                     final Map<String, JavaNode> defineds,
                     final LinkedList<FastenURI> superClasses,
                     final List<FastenURI> superInterfaces, final String access,
@@ -115,7 +117,7 @@ public class JavaType {
         this.sourceFileName = type.getString("sourceFile");
 
         final var methodsJson = type.getJSONObject("methods");
-        this.methods = new HashMap<>();
+        this.methods = new Int2ObjectOpenHashMap<>();
         this.javaNodes = new Object2IntOpenHashMap<>();
         javaNodes.defaultReturnValue(-1);
         this.definedMethods = new HashMap<>();
@@ -159,7 +161,7 @@ public class JavaType {
         return sourceFileName;
     }
 
-    public Map<Integer, JavaNode> getMethods() {
+    public Int2ObjectMap<JavaNode> getMethods() {
         return this.methods;
     }
 
@@ -200,8 +202,8 @@ public class JavaType {
      *
      * @param map map of id-s and corresponding JavaNodes
      */
-    public static Map<Integer, JSONObject> toMapOfString(final Map<Integer, JavaNode> map) {
-        final Map<Integer, JSONObject> methods = new HashMap<>();
+    public static Int2ObjectMap<JSONObject> toMapOfString(final Int2ObjectMap<JavaNode> map) {
+        final Int2ObjectMap<JSONObject> methods = new Int2ObjectOpenHashMap<>();
         for (final var entry : map.entrySet()) {
             final JSONObject node = new JSONObject();
             node.put("uri", entry.getValue().getUri());

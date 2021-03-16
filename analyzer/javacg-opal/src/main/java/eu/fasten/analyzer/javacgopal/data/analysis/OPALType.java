@@ -25,6 +25,8 @@ import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.Node;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 import java.util.ArrayList;
@@ -149,9 +151,9 @@ public class OPALType {
      * @return A Map in which the unique id of each method in the artifact is the key and the
      * {@link FastenURI} of the method is the value.
      */
-    public static Pair<Map<String, JavaNode>, Map<Integer, JavaNode>> getMethodMaps(final Map<Method,
+    public static Pair<Map<String, JavaNode>, Int2ObjectMap<JavaNode>> getMethodMaps(final Map<Method,
             Integer> methods) {
-        final Map<Integer, JavaNode> nodes = new HashMap<>();
+        final Int2ObjectMap<JavaNode> nodes = new Int2ObjectOpenHashMap<>();
         final Map<String, JavaNode> defs = new HashMap<>();
 
         for (final var entry : methods.entrySet()) {
@@ -177,9 +179,9 @@ public class OPALType {
      * @param methods map of methods to convert
      * @return BiMap of Nodes
      */
-    public static Map<Integer, JavaNode> toURIDeclaredMethods(
+    public static Int2ObjectMap<JavaNode> toURIDeclaredMethods(
             final Map<DeclaredMethod, Integer> methods) {
-        final Map<Integer, JavaNode> result = new HashMap<>();
+        final Int2ObjectMap<JavaNode> result = new Int2ObjectOpenHashMap<>();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
@@ -223,8 +225,8 @@ public class OPALType {
      * @return A Map in which the unique id of each method in the artifact is the key and the
      * {@link FastenURI} of the method is the value.
      */
-    public static BiMap<Integer, JavaNode> toURIMethods(final Map<Method, Integer> methods) {
-        final BiMap<Integer, JavaNode> result = HashBiMap.create();
+    public static Int2ObjectMap<JavaNode> toURIMethods(final Map<Method, Integer> methods) {
+        final Int2ObjectMap<JavaNode> result = new Int2ObjectOpenHashMap<>();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();

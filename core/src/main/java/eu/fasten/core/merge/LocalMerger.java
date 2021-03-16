@@ -30,6 +30,7 @@ import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
@@ -591,7 +592,7 @@ public class LocalMerger {
             final var keyType = "//" + product + depTypeUri;
             var type = cha.get(keyType);
             if(type == null) {
-                type = new JavaType(keyType, depType.getSourceFileName(), new HashMap<>(), new HashMap<>(),
+                type = new JavaType(keyType, depType.getSourceFileName(), new Int2ObjectOpenHashMap<>(), new HashMap<>(),
                         depType.getSuperClasses(), depType.getSuperInterfaces(),
                         depType.getAccess(), depType.isFinal());
                 cha.put(keyType, type);
