@@ -91,7 +91,7 @@ public class LocalMerger {
     public static class CGHA {
 
         private final Map<IntIntPair, Map<Object, Object>> graph;
-        private final BiMap<String, JavaType> CHA;
+        private final Map<String, JavaType> CHA;
         private int nodeCount;
 
         /**
@@ -103,7 +103,7 @@ public class LocalMerger {
             this.graph = toResolve.getGraph().getResolvedCalls();
             var classHierarchy = HashBiMap.create(toResolve.getClassHierarchy()
                     .getOrDefault(JavaScope.resolvedTypes, HashBiMap.create()));
-            this.CHA = HashBiMap.create();
+            this.CHA = new HashMap<>();
             classHierarchy.forEach(this.CHA::put);
             this.nodeCount = toResolve.getNodeCount();
         }
@@ -563,7 +563,7 @@ public class LocalMerger {
                                 final String product,
                                 final JavaType depType,
                                 final String depTypeUri) {
-        final BiMap<String, JavaType> cha = cgha.CHA;
+        final var cha = cgha.CHA;
         final int index;
         synchronized(cha) {
             final var keyType = "//" + product + depTypeUri;
