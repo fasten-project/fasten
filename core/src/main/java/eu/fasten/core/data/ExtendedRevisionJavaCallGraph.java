@@ -337,7 +337,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      * @param erjcg an {@link ExtendedRevisionJavaCallGraph}.
      * @return a directed graph based on the local identifiers of {@code erjcg}.
      */
-    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
+    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg,
+                                                     boolean onlyResolved) {
         FastenDefaultDirectedGraph dg = new FastenDefaultDirectedGraph();
         erjcg.getClassHierarchy().get(JavaScope.internalTypes).entrySet().
                 stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addInternalNode(m)));
@@ -346,10 +347,17 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
         erjcg.getClassHierarchy().get(JavaScope.externalTypes).entrySet().
                 stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addExternalNode(m)));
 
-        erjcg.getGraph().getInternalCalls().keySet().forEach(p -> dg.addEdge((long)p.firstInt(), (long)p.secondInt()));
+        if (!onlyResolved) {
+            erjcg.getGraph().getInternalCalls().keySet()
+                .forEach(p -> dg.addEdge((long) p.firstInt(), (long) p.secondInt()));
+            erjcg.getGraph().getExternalCalls().keySet()
+                .forEach(p -> dg.addEdge((long) p.firstInt(), (long) p.secondInt()));
+        }
         erjcg.getGraph().getResolvedCalls().keySet().forEach(p -> dg.addEdge((long)p.firstInt(), (long)p.secondInt()));
-        erjcg.getGraph().getExternalCalls().keySet().forEach(p -> dg.addEdge((long)p.firstInt(), (long)p.secondInt()));
 
         return dg;
+    }
+    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
+        return toLocalDirectedGraph(erjcg,true);
     }
 }
