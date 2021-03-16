@@ -1,12 +1,10 @@
 package eu.fasten.core.data;
 
-import com.google.common.collect.BiMap;
-
-import it.unimi.dsi.fastutil.ints.IntIntPair;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import it.unimi.dsi.fastutil.ints.IntIntPair;
 
 public class JSONUtils {
     /**

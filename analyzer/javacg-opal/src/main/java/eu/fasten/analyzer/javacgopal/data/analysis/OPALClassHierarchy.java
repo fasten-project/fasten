@@ -18,8 +18,6 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
@@ -93,12 +91,12 @@ public class OPALClassHierarchy {
      */
     public EnumMap<JavaScope, Map<String, JavaType>> asURIHierarchy(ClassHierarchy projectHierarchy) {
 
-        final BiMap<String, JavaType> internalResult = HashBiMap.create();
-        final BiMap<String, JavaType> externalResult = HashBiMap.create();
+        final Map<String, JavaType> internalResult = new HashMap<>();
+        final Map<String, JavaType> externalResult = new HashMap<>();
         final var internals = this.getInternalCHA();
         for (final var aClass : internals.keySet()) {
             final var klass = OPALType.getType(internals.get(aClass), aClass);
-            internalResult.forcePut(klass.getLeft(), klass.getRight());
+            internalResult.put(klass.getLeft(), klass.getRight());
         }
         final var externals = this.getExternalCHA();
         for (final var aClass : externals.keySet()) {
@@ -107,7 +105,7 @@ public class OPALClassHierarchy {
         }
 
         return new EnumMap<>(Map.of(JavaScope.internalTypes, internalResult, JavaScope.externalTypes, externalResult,
-                JavaScope.resolvedTypes, HashBiMap.create()));
+                JavaScope.resolvedTypes, new HashMap<>()));
     }
 
     /**

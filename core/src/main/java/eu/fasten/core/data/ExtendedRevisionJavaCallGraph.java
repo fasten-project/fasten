@@ -18,20 +18,19 @@
 
 package eu.fasten.core.data;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import eu.fasten.core.utils.FastenUriUtils;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntIntPair;
-import it.unimi.dsi.fastutil.longs.LongLongPair;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+
+import eu.fasten.core.utils.FastenUriUtils;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 /**
  * For each class in the revision, class hierarchy keeps a {@link JavaType} that is accessible by

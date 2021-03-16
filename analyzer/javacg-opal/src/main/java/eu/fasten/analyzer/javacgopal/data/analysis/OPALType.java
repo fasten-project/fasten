@@ -18,8 +18,6 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaType;
@@ -173,11 +171,11 @@ public class OPALType {
     }
 
     /**
-     * Convert a map of {@link DeclaredMethod} to a BiMap of
+     * Convert a map of {@link DeclaredMethod} to a Map of
      * {@link Node}.
      *
      * @param methods map of methods to convert
-     * @return BiMap of Nodes
+     * @return Map of Nodes
      */
     public static Int2ObjectMap<JavaNode> toURIDeclaredMethods(
             final Map<DeclaredMethod, Integer> methods) {

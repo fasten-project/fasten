@@ -18,8 +18,6 @@
 
 package eu.fasten.core.data;
 
-import com.google.common.collect.BiMap;
-
 import java.util.EnumMap;
 import java.util.Map;
 
