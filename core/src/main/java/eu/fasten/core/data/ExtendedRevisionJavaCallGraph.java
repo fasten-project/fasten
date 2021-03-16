@@ -355,6 +355,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
 
         return dg;
     }
+
     public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
         return toLocalDirectedGraph(erjcg,true);
     }
