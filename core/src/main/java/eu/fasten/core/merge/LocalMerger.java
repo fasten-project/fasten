@@ -41,6 +41,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.Graphs;
@@ -90,9 +94,9 @@ public class LocalMerger {
      */
     public static class CGHA {
 
-        private final Map<IntIntPair, Map<Object, Object>> graph;
-        private final Map<String, JavaType> CHA;
-        private int nodeCount;
+        private final ConcurrentMap<IntIntPair, Map<Object, Object>> graph;
+        private final ConcurrentMap<String, JavaType> CHA;
+        private AtomicInteger nodeCount;
 
         /**
          * Create CGHA object from an {@link ExtendedRevisionCallGraph}.
@@ -100,12 +104,12 @@ public class LocalMerger {
          * @param toResolve call graph
          */
         public CGHA(final ExtendedRevisionJavaCallGraph toResolve) {
-            this.graph = toResolve.getGraph().getResolvedCalls();
+            this.graph = new ConcurrentHashMap<>(toResolve.getGraph().getResolvedCalls());
             var classHierarchy = HashBiMap.create(toResolve.getClassHierarchy()
                     .getOrDefault(JavaScope.resolvedTypes, HashBiMap.create()));
-            this.CHA = new HashMap<>();
+            this.CHA = new ConcurrentHashMap<>();
             classHierarchy.forEach(this.CHA::put);
-            this.nodeCount = toResolve.getNodeCount();
+            this.nodeCount = new AtomicInteger(toResolve.getNodeCount());
         }
 
     }
@@ -543,9 +547,7 @@ public class LocalMerger {
         final int addedKey = addToCHA(cgha, call.target, product, depType, depTypeUri);
         final IntIntPair edge = isCallback ? IntIntPair.of(addedKey, call.indices.secondInt())
              : IntIntPair.of(call.indices.firstInt(), addedKey);
-        synchronized(cgha.graph) {
-            cgha.graph.put(edge, call.metadata);
-        }
+        cgha.graph.put(edge, call.metadata);
     }
 
     /**
@@ -564,21 +566,21 @@ public class LocalMerger {
                                 final JavaType depType,
                                 final String depTypeUri) {
         final var cha = cgha.CHA;
-        final int index;
-        synchronized(cha) {
-            final var keyType = "//" + product + depTypeUri;
-            var type = cha.get(keyType);
-            if(type == null) {
-                type = new JavaType(keyType, depType.getSourceFileName(), new Int2ObjectOpenHashMap<>(), new HashMap<>(),
+        final var type = cha.computeIfAbsent("//" + product + depTypeUri, x -> 
+                new JavaType(x, depType.getSourceFileName(), new Int2ObjectOpenHashMap<>(), new HashMap<>(),
                         depType.getSuperClasses(), depType.getSuperInterfaces(),
-                        depType.getAccess(), depType.isFinal());
-                cha.put(keyType, type);
-            }
-            index = type.addMethod(target, cgha.nodeCount);
-            if (index == cgha.nodeCount) {
-                cgha.nodeCount++;
+                        depType.getAccess(), depType.isFinal()));
+        
+        final int index;
+        synchronized(type) {
+            index = type.getMethodKey(target);
+            if (index == -1) {
+                final int nodeCount = cgha.nodeCount.getAndIncrement();
+                type.addMethod(target, nodeCount);
+                return nodeCount;
             }
         }
+        
         return index;
     }
 
@@ -603,7 +605,7 @@ public class LocalMerger {
             .graph(new Graph(artifact.getGraph().getInternalCalls(),
                 artifact.getGraph().getExternalCalls(),
                 result.graph))
-            .nodeCount(result.nodeCount)
+            .nodeCount(result.nodeCount.get())
             .build();
     }
 }
