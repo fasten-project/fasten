@@ -18,15 +18,19 @@
 
 package eu.fasten.core.data;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+
 import org.json.JSONObject;
+
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 /**
  * Each type is a class or an interface.
@@ -44,7 +48,8 @@ public class JavaType {
     /**
      * Methods of this type and their unique ids (unique within the same artifact).
      */
-    private final BiMap<Integer, JavaNode> methods;
+    private final Map<Integer, JavaNode> methods;
+    private final Object2IntMap<JavaNode> javaNodes;
 
     /**
      * Classes that this type inherits from in the order of instantiation.
@@ -81,7 +86,7 @@ public class JavaType {
      * @param access          access modifier
      * @param isFinal         true if the Type is final
      */
-    public JavaType(final String uri, final String sourceFile, final BiMap<Integer, JavaNode> methods,
+    public JavaType(final String uri, final String sourceFile, final Map<Integer, JavaNode> methods,
                     final Map<String, JavaNode> defineds,
                     final LinkedList<FastenURI> superClasses,
                     final List<FastenURI> superInterfaces, final String access,
@@ -89,6 +94,9 @@ public class JavaType {
         this.uri = uri;
         this.sourceFileName = sourceFile;
         this.methods = methods;
+        this.javaNodes = new Object2IntOpenHashMap<>();
+        methods.forEach((x, y) -> javaNodes.put(y, x));;
+        javaNodes.defaultReturnValue(-1);
         this.definedMethods = defineds;
         this.superClasses = superClasses;
         this.superInterfaces = superInterfaces;
@@ -107,14 +115,18 @@ public class JavaType {
         this.sourceFileName = type.getString("sourceFile");
 
         final var methodsJson = type.getJSONObject("methods");
-        this.methods = HashBiMap.create();
+        this.methods = new HashMap<>();
+        this.javaNodes = new Object2IntOpenHashMap<>();
+        javaNodes.defaultReturnValue(-1);
         this.definedMethods = new HashMap<>();
         for (final var methodKey : methodsJson.keySet()) {
             final var nodeJson = methodsJson.getJSONObject(methodKey);
 
             final var metadata = nodeJson.getJSONObject("metadata");
             final var node = new JavaNode(FastenURI.create(nodeJson.getString("uri")), metadata.toMap());
-            this.methods.put(Integer.parseInt(methodKey), node);
+            final int k = Integer.parseInt(methodKey);
+			this.methods.put(k, node);
+            this.javaNodes.put(node, k);
             if (!metadata.isEmpty()) {
                 if (metadata.getBoolean("defined")){
                     definedMethods.put(node.getSignature(), node);
@@ -175,12 +187,12 @@ public class JavaType {
      * @return newly added method id, or an old id, of method already exists
      */
     public int addMethod(final JavaNode node, final int key) {
-        if (this.methods.inverse().containsKey(node)) {
-            return this.methods.inverse().get(node);
-        } else {
-            this.methods.put(key, node);
-            return key;
-        }
+        final int oldKey = javaNodes.getInt(node);
+        if (oldKey != -1) return oldKey;
+        assert ! methods.containsKey(key);
+        methods.put(key, node);
+        javaNodes.put(node, key);
+        return key;
     }
 
     /**

@@ -25,6 +25,8 @@ import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.Node;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -147,9 +149,9 @@ public class OPALType {
      * @return A Map in which the unique id of each method in the artifact is the key and the
      * {@link FastenURI} of the method is the value.
      */
-    public static Pair<Map<String, JavaNode>, BiMap<Integer, JavaNode>> getMethodMaps(final Map<Method,
+    public static Pair<Map<String, JavaNode>, Map<Integer, JavaNode>> getMethodMaps(final Map<Method,
             Integer> methods) {
-        final BiMap<Integer, JavaNode> nodes = HashBiMap.create();
+        final Map<Integer, JavaNode> nodes = new HashMap<>();
         final Map<String, JavaNode> defs = new HashMap<>();
 
         for (final var entry : methods.entrySet()) {
@@ -175,9 +177,9 @@ public class OPALType {
      * @param methods map of methods to convert
      * @return BiMap of Nodes
      */
-    public static BiMap<Integer, JavaNode> toURIDeclaredMethods(
+    public static Map<Integer, JavaNode> toURIDeclaredMethods(
             final Map<DeclaredMethod, Integer> methods) {
-        final BiMap<Integer, JavaNode> result = HashBiMap.create();
+        final Map<Integer, JavaNode> result = new HashMap<>();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
