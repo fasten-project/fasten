@@ -203,18 +203,8 @@ public class LocalMerger {
     private void addEdge(final FastenDefaultDirectedGraph result,
                          final DirectedGraph directedMerge,
                          final long source, final long target) {
-        if(directedMerge.isInternal(source)) {
-            result.addInternalNode(source);
-        }
-        else {
-            result.addExternalNode(source);
-        }
-        if(directedMerge.isInternal(target)) {
-            result.addInternalNode(target);
-        }
-        else {
-            result.addExternalNode(target);
-        }
+        result.addInternalNode(source);
+        result.addInternalNode(target);
         result.addEdge(source, target);
     }
 
@@ -279,16 +269,6 @@ public class LocalMerger {
         }
     }
 
-    /**
-     * Resolve an external call.
-     *
-     * @param result     call graph with resolved calls
-     * @param arc        source, target, and metadata
-     * @param nodeKey    node id
-     * @param type       type information
-     * @param typeUri    type uri
-     * @param isCallback true, if the call is a callback
-     */
     private void resolve(final Map<String, List<String>> universalParents,
                          final Map<String, List<String>> universalChildren,
                          final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,

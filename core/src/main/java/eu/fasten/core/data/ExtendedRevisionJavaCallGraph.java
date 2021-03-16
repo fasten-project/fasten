@@ -344,8 +344,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
                 stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addInternalNode(m)));
         erjcg.getClassHierarchy().get(JavaScope.resolvedTypes).entrySet().
                 stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addInternalNode(m)));
-        erjcg.getClassHierarchy().get(JavaScope.externalTypes).entrySet().
-                stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addExternalNode(m)));
 
         if (!onlyResolved) {
             erjcg.getGraph().getInternalCalls().keySet()
