@@ -34,6 +34,8 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
+import static java.util.Collections.emptyList;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -314,17 +316,15 @@ public class LocalMerger {
                                  final CGHA result, final boolean isCallback, final Call call,
                                  final ArrayList<String> receiverTypeUris) {
         for (final var receiverTypeUri : receiverTypeUris) {
-            final var types = universalChildren.getOrDefault(receiverTypeUri, new ArrayList<>());
+            final var types = universalChildren.getOrDefault(receiverTypeUri, emptyList());
             boolean foundTarget = false;
-            if (!types.isEmpty()) {
-                for (final var depTypeUri : types) {
-                    foundTarget =
+            for (final var depTypeUri : types) {
+                foundTarget =
                         findTargets(typeDictionary, result, isCallback, call, foundTarget,
-                            depTypeUri);
-                }
+                                depTypeUri);
             }
             if (!foundTarget) {
-                for (String depTypeUri : universalParents.getOrDefault(receiverTypeUri, new ArrayList<>())) {
+                for (String depTypeUri : universalParents.getOrDefault(receiverTypeUri, emptyList())) {
                     if(findTargets(typeDictionary, result, isCallback, call, foundTarget,
                         depTypeUri)){
                         break;
@@ -339,7 +339,7 @@ public class LocalMerger {
                                 Call call, boolean foundTarget,
                                 String depTypeUri) {
         for (final var dep : typeDictionary
-            .getOrDefault(depTypeUri, new ArrayList<>())) {
+            .getOrDefault(depTypeUri, emptyList())) {
 
             foundTarget = resolveToDynamics(result, call, dep.getClassHierarchy().get(JavaScope.internalTypes)
                     .get(depTypeUri), dep.productVersion, depTypeUri, isCallback);
@@ -364,7 +364,7 @@ public class LocalMerger {
                                      final Call call, final List<String> receiverTypeUris) {
         for (final var receiverTypeUri : receiverTypeUris) {
             for (final var dep : typeDictionary
-                .getOrDefault(receiverTypeUri, new ArrayList<>())) {
+                .getOrDefault(receiverTypeUri, emptyList())) {
 
                 resolveIfDefined(result, call, dep.getClassHierarchy()
                         .get(JavaScope.internalTypes)
