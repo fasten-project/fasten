@@ -163,27 +163,25 @@ public class LocalMerger {
      */
     public DirectedGraph mergeAllDeps() {
         final var result = new FastenDefaultDirectedGraph();
-        var offset = 0L;
         for (final var dep : this.dependencySet) {
-            offset = offset + addThisMergeToResult(result, mergeWithCHA(dep), offset);
+            addThisMergeToResult(result, mergeWithCHA(dep));
         }
         return result;
     }
 
-    private long addThisMergeToResult(FastenDefaultDirectedGraph result,
-                                      final ExtendedRevisionJavaCallGraph merged,
-                                      final long offset) {
+    private void addThisMergeToResult(FastenDefaultDirectedGraph result,
+                                      final ExtendedRevisionJavaCallGraph merged) {
         final var uris = merged.mapOfFullURIStrings();
         final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
+        long offset = result.nodes().longStream().max().orElse(0L) + 1;
 
         for (final var node : directedMerge.nodes()) {
             for (final var successor : directedMerge.successors(node)) {
                 final var updatedNode = updateNode(node, offset, uris);
                 final var updatedSuccessor = updateNode(successor, offset, uris);
-                addEdge(result, directedMerge, updatedNode, updatedSuccessor);
+                addEdge(result, updatedNode, updatedSuccessor);
             }
         }
-        return directedMerge.numNodes();
     }
 
     private long updateNode(final long node, final long offset,
@@ -201,7 +199,6 @@ public class LocalMerger {
     }
 
     private void addEdge(final FastenDefaultDirectedGraph result,
-                         final DirectedGraph directedMerge,
                          final long source, final long target) {
         result.addInternalNode(source);
         result.addInternalNode(target);
