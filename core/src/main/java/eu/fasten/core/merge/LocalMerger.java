@@ -167,18 +167,22 @@ public class LocalMerger {
      *
      * @return merged call graph
      */
-    public DirectedGraph mergeAllDeps() {
+    public DirectedGraph mergeAllDeps(boolean onlyResolved) {
         final var result = new FastenDefaultDirectedGraph();
         for (final var dep : this.dependencySet) {
-            addThisMergeToResult(result, mergeWithCHA(dep));
+            addThisMergeToResult(result, mergeWithCHA(dep), onlyResolved);
         }
         return result;
     }
 
+    public DirectedGraph mergeAllDeps() {
+        return mergeAllDeps(true);
+    }
+
     private void addThisMergeToResult(FastenDefaultDirectedGraph result,
-                                      final ExtendedRevisionJavaCallGraph merged) {
+                                      final ExtendedRevisionJavaCallGraph merged, boolean onlyResolved) {
         final var uris = merged.mapOfFullURIStrings();
-        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
+        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged, onlyResolved);
         long offset = result.nodes().longStream().max().orElse(0L) + 1;
 
         for (final var node : directedMerge.nodes()) {
