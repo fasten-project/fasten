@@ -269,4 +269,56 @@ public class JavaType {
                 + ", final=" + isFinal
                 + '}';
     }
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((access == null) ? 0 : access.hashCode());
+		result = prime * result + ((definedMethods == null) ? 0 : definedMethods.hashCode());
+		result = prime * result + (isFinal ? 1231 : 1237);
+		result = prime * result + ((javaNodes == null) ? 0 : javaNodes.hashCode());
+		result = prime * result + ((methods == null) ? 0 : methods.hashCode());
+		result = prime * result + ((sourceFileName == null) ? 0 : sourceFileName.hashCode());
+		result = prime * result + ((superClasses == null) ? 0 : superClasses.hashCode());
+		result = prime * result + ((superInterfaces == null) ? 0 : superInterfaces.hashCode());
+		result = prime * result + ((uri == null) ? 0 : uri.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass()) return false;
+		JavaType other = (JavaType)obj;
+		if (access == null) {
+			if (other.access != null) return false;
+		} else if (!access.equals(other.access)) return false;
+		if (definedMethods == null) {
+			if (other.definedMethods != null) return false;
+		} else if (!definedMethods.equals(other.definedMethods)) return false;
+		if (isFinal != other.isFinal) return false;
+		if (javaNodes == null) {
+			if (other.javaNodes != null) return false;
+		} else if (!javaNodes.equals(other.javaNodes)) return false;
+		if (methods == null) {
+			if (other.methods != null) return false;
+		} else if (!methods.equals(other.methods)) return false;
+		if (sourceFileName == null) {
+			if (other.sourceFileName != null) return false;
+		} else if (!sourceFileName.equals(other.sourceFileName)) return false;
+		if (superClasses == null) {
+			if (other.superClasses != null) return false;
+		} else if (!superClasses.equals(other.superClasses)) return false;
+		if (superInterfaces == null) {
+			if (other.superInterfaces != null) return false;
+		} else if (!superInterfaces.equals(other.superInterfaces)) return false;
+		if (uri == null) {
+			if (other.uri != null) return false;
+		} else if (!uri.equals(other.uri)) return false;
+		return true;
+	}
+
+    
 }
