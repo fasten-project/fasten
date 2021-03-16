@@ -182,19 +182,24 @@ public class JavaType {
     }
 
     /**
-     * Add a JavaNode to the list of methods of this {@link JavaType}.
+     * Returns the integer associated to the given JavaNode.
+     *
+     * @param node a {@link JavaNode}.
+     * @return the associated integer key, or &minus;1 if {@code node} is not in the map.
+     */
+    public int getMethodKey(final JavaNode node) {
+        return javaNodes.getInt(node);
+    }
+    
+    /**
+     * Puts a JavaNode to the list of methods of this {@link JavaType}.
      *
      * @param node new node to add
      * @param key  the key corresponding to this JavaNode
-     * @return newly added method id, or an old id, of method already exists
      */
-    public int addMethod(final JavaNode node, final int key) {
-        final int oldKey = javaNodes.getInt(node);
-        if (oldKey != -1) return oldKey;
-        assert ! methods.containsKey(key);
+    public void addMethod(final JavaNode node, final int key) {
         methods.put(key, node);
         javaNodes.put(node, key);
-        return key;
     }
 
     /**
