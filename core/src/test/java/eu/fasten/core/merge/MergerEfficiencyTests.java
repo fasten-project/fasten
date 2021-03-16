@@ -59,8 +59,8 @@ public class MergerEfficiencyTests {
 
         Assertions.assertTrue(
                 secondsTaken < 25, "CPU time used for merging should be less than 25 seconds, but was " + secondsTaken);
-        Assertions.assertEquals(43584, numNodes);
-        Assertions.assertEquals(578310, numEdges);
+        Assertions.assertEquals(43582, numNodes);
+        Assertions.assertEquals(578300, numEdges);
     }
 
     @Test

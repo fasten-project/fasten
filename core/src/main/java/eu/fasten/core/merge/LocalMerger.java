@@ -338,7 +338,7 @@ public class LocalMerger {
             .getOrDefault(depTypeUri, new ArrayList<>())) {
 
             foundTarget = resolveToDynamics(result, call, dep.getClassHierarchy().get(JavaScope.internalTypes)
-                    .get(depTypeUri), dep.productVersion, depTypeUri, isCallback);
+                    .get(depTypeUri), dep.productVersion, depTypeUri, isCallback, foundTarget);
         }
         return foundTarget;
     }
@@ -346,13 +346,13 @@ public class LocalMerger {
     private boolean resolveToDynamics(final CGHA cgha, final Call call,
                                       final JavaType type,
                                       final String product, final String depTypeUri,
-                                      boolean isCallback) {
+                                      boolean isCallback, boolean foundTarget) {
         final var node = type.getDefinedMethods().get(call.target.getSignature());
         if (node != null) {
             addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
             return true;
         }
-        return false;
+        return foundTarget;
     }
 
     private void resolveReceiverType(final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
