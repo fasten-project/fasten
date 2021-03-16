@@ -45,16 +45,16 @@ public class LocalMergerTest {
     public void mergeAllDepsTest() {
         final var cg = merger.mergeAllDeps();
         final var uris = merger.getAllUris();
-        assertEquals(cg.edgeSet().size(), 2);
-        assertEquals(uris.size(), 3);
+        assertEquals(2, cg.edgeSet().size());
+        assertEquals(3, uris.size());
         final var source = uris.inverse().get("fasten://mvn!Importer$0/merge" +
             ".simpleImport/Importer.sourceMethod()%2Fjava.lang%2FVoidType");
         final var target1 = uris.inverse().get("fasten://mvn!Imported$1/merge" +
             ".simpleImport/Imported.targetMethod()%2Fjava.lang%2FVoidType");
         final var target2 = uris.inverse().get("fasten://mvn!Imported$1/merge.simpleImport/Imported" +
             ".%3Cinit%3E()%2Fjava.lang%2FVoidType");
-        assertEquals(cg.edgeSet(), Set.of(LongLongPair.of(source, target1), LongLongPair.of(source,
-            target2)));
+        assertEquals(Set.of(LongLongPair.of(source, target1), LongLongPair.of(source,
+                target2)), cg.edgeSet());
     }
 
     @Test
