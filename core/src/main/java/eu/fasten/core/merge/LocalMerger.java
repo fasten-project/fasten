@@ -167,10 +167,10 @@ public class LocalMerger {
      *
      * @return merged call graph
      */
-    public DirectedGraph mergeAllDeps(boolean onlyResolved) {
+    public DirectedGraph mergeAllDeps(boolean alsoExternals) {
         final var result = new FastenDefaultDirectedGraph();
         for (final var dep : this.dependencySet) {
-            addThisMergeToResult(result, mergeWithCHA(dep), onlyResolved);
+            addThisMergeToResult(result, mergeWithCHA(dep), alsoExternals);
         }
         return result;
     }
