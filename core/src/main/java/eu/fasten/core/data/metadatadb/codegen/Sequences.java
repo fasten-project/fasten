@@ -49,14 +49,14 @@ public class Sequences {
     public static final Sequence<Long> INGESTED_ARTIFACTS_ID_SEQ = new SequenceImpl<Long>("ingested_artifacts_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
 
     /**
+     * The sequence <code>public.module_names_id_seq</code>
+     */
+    public static final Sequence<Long> MODULE_NAMES_ID_SEQ = new SequenceImpl<Long>("module_names_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
+
+    /**
      * The sequence <code>public.modules_id_seq</code>
      */
     public static final Sequence<Long> MODULES_ID_SEQ = new SequenceImpl<Long>("modules_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
-
-    /**
-     * The sequence <code>public.namespaces_id_seq</code>
-     */
-    public static final Sequence<Long> NAMESPACES_ID_SEQ = new SequenceImpl<Long>("namespaces_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
 
     /**
      * The sequence <code>public.package_versions_id_seq</code>

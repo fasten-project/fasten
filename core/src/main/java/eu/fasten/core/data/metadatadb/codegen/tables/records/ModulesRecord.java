@@ -30,7 +30,7 @@ import org.jooq.impl.UpdatableRecordImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements Record8<Long, Long, Long, Boolean, Access, Long[], Long[], JSONB> {
 
-    private static final long serialVersionUID = 819381081;
+    private static final long serialVersionUID = -1183070350;
 
     /**
      * Setter for <code>public.modules.id</code>.
@@ -61,16 +61,16 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
     }
 
     /**
-     * Setter for <code>public.modules.namespace_id</code>.
+     * Setter for <code>public.modules.module_name_id</code>.
      */
-    public void setNamespaceId(Long value) {
+    public void setModuleNameId(Long value) {
         set(2, value);
     }
 
     /**
-     * Getter for <code>public.modules.namespace_id</code>.
+     * Getter for <code>public.modules.module_name_id</code>.
      */
-    public Long getNamespaceId() {
+    public Long getModuleNameId() {
         return (Long) get(2);
     }
 
@@ -179,7 +179,7 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
 
     @Override
     public Field<Long> field3() {
-        return Modules.MODULES.NAMESPACE_ID;
+        return Modules.MODULES.MODULE_NAME_ID;
     }
 
     @Override
@@ -219,7 +219,7 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
 
     @Override
     public Long component3() {
-        return getNamespaceId();
+        return getModuleNameId();
     }
 
     @Override
@@ -259,7 +259,7 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
 
     @Override
     public Long value3() {
-        return getNamespaceId();
+        return getModuleNameId();
     }
 
     @Override
@@ -301,7 +301,7 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
 
     @Override
     public ModulesRecord value3(Long value) {
-        setNamespaceId(value);
+        setModuleNameId(value);
         return this;
     }
 
@@ -362,12 +362,12 @@ public class ModulesRecord extends UpdatableRecordImpl<ModulesRecord> implements
     /**
      * Create a detached, initialised ModulesRecord
      */
-    public ModulesRecord(Long id, Long packageVersionId, Long namespaceId, Boolean final_, Access access, Long[] superClasses, Long[] superInterfaces, JSONB metadata) {
+    public ModulesRecord(Long id, Long packageVersionId, Long moduleNameId, Boolean final_, Access access, Long[] superClasses, Long[] superInterfaces, JSONB metadata) {
         super(Modules.MODULES);
 
         set(0, id);
         set(1, packageVersionId);
-        set(2, namespaceId);
+        set(2, moduleNameId);
         set(3, final_);
         set(4, access);
         set(5, superClasses);

@@ -27,8 +27,8 @@ import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -223,15 +223,15 @@ public class MetadataDatabaseCPlugin extends Plugin {
             return new ImmutablePair<>(callables, numInternal);
         }
 
-        protected List<EdgesRecord> insertEdges(Graph graph,
-                                 Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
+        protected List<CallSitesRecord> insertEdges(Graph graph,
+                                                    Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)
             var graphCalls = graph.getInternalCalls();
             graphCalls.putAll(graph.getExternalCalls());
 
-            var edges = new ArrayList<EdgesRecord>(numEdges);
+            var edges = new ArrayList<CallSitesRecord>(numEdges);
             for (var edgeEntry : graphCalls.entrySet()) {
 
                 // Get Global ID of the source callable
@@ -240,13 +240,13 @@ public class MetadataDatabaseCPlugin extends Plugin {
                 var target = lidToGidMap.get((long) edgeEntry.getKey().get(1));
 
                 // Add edge record to the list of records
-                edges.add(new EdgesRecord(source, target, null, null));
+                edges.add(new CallSitesRecord(source, target, null, null, null, null));
             }
 
             // Batch insert all edges
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
+                var edgesBatch = new ArrayList<CallSitesRecord>(Constants.insertionBatchSize);
                 while (edgesIterator.hasNext()
                         && edgesBatch.size() < Constants.insertionBatchSize) {
                     edgesBatch.add(edgesIterator.next());

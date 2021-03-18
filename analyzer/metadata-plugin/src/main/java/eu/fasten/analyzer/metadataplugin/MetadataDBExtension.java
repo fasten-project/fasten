@@ -27,10 +27,9 @@ import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
-import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -54,12 +53,6 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.sql.BatchUpdateException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -296,8 +289,8 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         return new ImmutablePair<>(new ArrayList<>(), 0);
     }
 
-    protected List<EdgesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
-                                            Map<String, Long> namespaceMap, MetadataDao metadataDao) {
+    protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+                                                Map<String, Long> namespaceMap, MetadataDao metadataDao) {
         return new ArrayList<>();
     }
 

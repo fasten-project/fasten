@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Modules extends TableImpl<ModulesRecord> {
 
-    private static final long serialVersionUID = 638902105;
+    private static final long serialVersionUID = -1034162578;
 
     /**
      * The reference instance of <code>public.modules</code>
@@ -70,9 +70,9 @@ public class Modules extends TableImpl<ModulesRecord> {
     public final TableField<ModulesRecord, Long> PACKAGE_VERSION_ID = createField(DSL.name("package_version_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
-     * The column <code>public.modules.namespace_id</code>.
+     * The column <code>public.modules.module_name_id</code>.
      */
-    public final TableField<ModulesRecord, Long> NAMESPACE_ID = createField(DSL.name("namespace_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
+    public final TableField<ModulesRecord, Long> MODULE_NAME_ID = createField(DSL.name("module_name_id"), org.jooq.impl.SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.modules.final</code>.
@@ -159,15 +159,15 @@ public class Modules extends TableImpl<ModulesRecord> {
 
     @Override
     public List<ForeignKey<ModulesRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<ModulesRecord, ?>>asList(Keys.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY, Keys.MODULES__MODULES_NAMESPACE_ID_FKEY);
+        return Arrays.<ForeignKey<ModulesRecord, ?>>asList(Keys.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY, Keys.MODULES__MODULES_MODULE_NAME_ID_FKEY);
     }
 
     public PackageVersions packageVersions() {
         return new PackageVersions(this, Keys.MODULES__MODULES_PACKAGE_VERSION_ID_FKEY);
     }
 
-    public Namespaces namespaces() {
-        return new Namespaces(this, Keys.MODULES__MODULES_NAMESPACE_ID_FKEY);
+    public ModuleNames moduleNames() {
+        return new ModuleNames(this, Keys.MODULES__MODULES_MODULE_NAME_ID_FKEY);
     }
 
     @Override

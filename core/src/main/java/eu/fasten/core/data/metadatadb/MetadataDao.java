@@ -24,8 +24,8 @@ import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import eu.fasten.core.utils.FastenUriUtils;
 import org.apache.commons.math3.util.Pair;
@@ -341,7 +341,7 @@ public class MetadataDao {
                              Long[] superClasses, Long[] superInterfaces, JSONObject metadata) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Modules.MODULES,
-                Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE_ID,
+                Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.MODULE_NAME_ID,
                 Modules.MODULES.FINAL, Modules.MODULES.ACCESS, Modules.MODULES.SUPER_CLASSES,
                 Modules.MODULES.SUPER_INTERFACES, Modules.MODULES.METADATA)
                 .values(packageVersionId, namespace_id, isFinal, access, superClasses, superInterfaces, metadataJsonb)
@@ -369,7 +369,7 @@ public class MetadataDao {
                              boolean addDuplicates) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
         var resultRecord = context.insertInto(Modules.MODULES,
-                Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.NAMESPACE_ID,
+                Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.MODULE_NAME_ID,
                 Modules.MODULES.METADATA)
                 .values(packageVersionId, namespace_id, metadataJsonb)
                 // FIXME
@@ -723,19 +723,22 @@ public class MetadataDao {
     }
 
     /**
-     * Executes batch insert for 'edges' table.
+     * Executes batch insert for 'callsites' table.
      *
-     * @param edges List of edges records to insert
+     * @param callsites List of callsites records to insert
      */
-    public void batchInsertEdges(List<EdgesRecord> edges) {
-        var insert = context.insertInto(Edges.EDGES,
-                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES, Edges.EDGES.METADATA);
-        for (var edge : edges) {
-            insert = insert.values(edge.getSourceId(), edge.getTargetId(), edge.getCallSites(), edge.getMetadata());
+    public void batchInsertEdges(List<CallSitesRecord> callsites) {
+        var insert = context.insertInto(CallSites.CALL_SITES,
+                CallSites.CALL_SITES.SOURCE_ID, CallSites.CALL_SITES.TARGET_ID, CallSites.CALL_SITES.CALL_TYPE,
+                CallSites.CALL_SITES.RECEIVER_TYPE_IDS, CallSites.CALL_SITES.LINE, CallSites.CALL_SITES.METADATA);
+        for (var call : callsites) {
+            insert = insert.values(call.getSourceId(), call.getTargetId(), call.getCallType(), call.getReceiverTypeIds(), call.getLine(), call.getMetadata());
         }
         insert.onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
-                .set(Edges.EDGES.CALL_SITES, Edges.EDGES.as("excluded").CALL_SITES)
-                .set(Edges.EDGES.METADATA, field("coalesce(edges.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
+                .set(CallSites.CALL_SITES.CALL_TYPE, CallSites.CALL_SITES.as("excluded").CALL_TYPE)
+                .set(CallSites.CALL_SITES.RECEIVER_TYPE_IDS, CallSites.CALL_SITES.as("excluded").RECEIVER_TYPE_IDS)
+                .set(CallSites.CALL_SITES.LINE, CallSites.CALL_SITES.as("excluded").LINE)
+                .set(CallSites.CALL_SITES.METADATA, field("coalesce(call_sites.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
                 .execute();
     }
 
@@ -911,16 +914,16 @@ public class MetadataDao {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
-        Namespaces n = Namespaces.NAMESPACES;
+        ModuleNames n = ModuleNames.MODULE_NAMES;
 
         Record selectModule = context
                 .select(m.fields())
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
-                .innerJoin(n).on(m.NAMESPACE_ID.eq(n.ID))
+                .innerJoin(n).on(m.MODULE_NAME_ID.eq(n.ID))
                 .where(packageVersionWhereClause(name, version))
-                .and(n.NAMESPACE.equalIgnoreCase(namespace))
+                .and(n.NAME.equalIgnoreCase(namespace))
                 .fetchOne();
 
         return selectModule != null;
@@ -1128,13 +1131,13 @@ public class MetadataDao {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
-        Namespaces n = Namespaces.NAMESPACES;
+        ModuleNames n = ModuleNames.MODULE_NAMES;
 
         // Select clause
-        SelectField<?>[] selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, n.NAMESPACE, m.METADATA};
+        SelectField<?>[] selectClause = new SelectField[]{p.PACKAGE_NAME, pv.VERSION, n.NAME, m.METADATA};
 
         // Where clause
-        Condition whereClause = packageVersionWhereClause(packageName, packageVersion).and(n.NAMESPACE.equalIgnoreCase(moduleNamespace));
+        Condition whereClause = packageVersionWhereClause(packageName, packageVersion).and(n.NAME.equalIgnoreCase(moduleNamespace));
 
         // Building and executing the query
         var queryResult = context
@@ -1142,7 +1145,7 @@ public class MetadataDao {
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
-                .innerJoin(n).on(m.NAMESPACE_ID.eq(n.ID))
+                .innerJoin(n).on(m.MODULE_NAME_ID.eq(n.ID))
                 .where(whereClause)
                 .limit(1)
                 .fetchOne();
@@ -1169,7 +1172,7 @@ public class MetadataDao {
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
         Files f = Files.FILES;
-        Namespaces n = Namespaces.NAMESPACES;
+        ModuleNames n = ModuleNames.MODULE_NAMES;
 
         // Query
         Result<Record> queryResult = context
@@ -1178,9 +1181,9 @@ public class MetadataDao {
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .innerJoin(f).on(pv.ID.eq(f.PACKAGE_VERSION_ID))
-                .innerJoin(n).on(m.NAMESPACE_ID.eq(n.ID))
+                .innerJoin(n).on(m.MODULE_NAME_ID.eq(n.ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
-                .and(n.NAMESPACE.eq(moduleNamespace))
+                .and(n.NAME.eq(moduleNamespace))
                 .offset(offset)
                 .limit(limit)
                 .fetch();
@@ -1206,7 +1209,7 @@ public class MetadataDao {
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
-        Namespaces n = Namespaces.NAMESPACES;
+        ModuleNames n = ModuleNames.MODULE_NAMES;
 
         // Main Query
         Result<Record> queryResult = context
@@ -1215,9 +1218,9 @@ public class MetadataDao {
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
-                .innerJoin(n).on(m.NAMESPACE_ID.eq(n.ID))
+                .innerJoin(n).on(m.MODULE_NAME_ID.eq(n.ID))
                 .where(packageVersionWhereClause(packageName, packageVersion))
-                .and(n.NAMESPACE.eq(moduleNamespace))
+                .and(n.NAME.eq(moduleNamespace))
                 .offset(offset)
                 .limit(limit)
                 .fetch();
@@ -1552,7 +1555,7 @@ public class MetadataDao {
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
-        Edges e = Edges.EDGES;
+        CallSites e = CallSites.CALL_SITES;
 
         // Select clause
         SelectField<?>[] selectClause;
@@ -1685,31 +1688,22 @@ public class MetadataDao {
      * @return HashMap from Pair of IDs to metadata of the edge
      */
     public Map<Pair<Long, Long>, JSONObject> getEdgesMetadata(List<Pair<Long, Long>> edges) {
-        var whereClause = and(Edges.EDGES.SOURCE_ID.eq(edges.get(0).getFirst()))
-                .and(Edges.EDGES.TARGET_ID.eq(edges.get(0).getSecond()));
+        var whereClause = and(CallSites.CALL_SITES.SOURCE_ID.eq(edges.get(0).getFirst()))
+                .and(CallSites.CALL_SITES.TARGET_ID.eq(edges.get(0).getSecond()));
         for (int i = 1; i < edges.size(); i++) {
             whereClause = whereClause.or(
-                    and(Edges.EDGES.SOURCE_ID.eq(edges.get(i).getFirst()))
-                            .and(Edges.EDGES.TARGET_ID.eq(edges.get(i).getSecond()))
+                    and(CallSites.CALL_SITES.SOURCE_ID.eq(edges.get(i).getFirst()))
+                            .and(CallSites.CALL_SITES.TARGET_ID.eq(edges.get(i).getSecond()))
             );
         }
         var queryResult = context
-                .select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES, Edges.EDGES.METADATA)
-                .from(Edges.EDGES)
+                .select(CallSites.CALL_SITES.SOURCE_ID, CallSites.CALL_SITES.TARGET_ID, CallSites.CALL_SITES.METADATA)
+                .from(CallSites.CALL_SITES)
                 .where(whereClause)
                 .fetch();
         var metadataMap = new HashMap<Pair<Long, Long>, JSONObject>(queryResult.size());
         for (var record : queryResult) {
-            var json = new JSONObject(record.value4().data());
-            var receiversJson = new JSONArray();
-            for (var receiver : record.value3()) {
-                var receiverJson = new JSONObject();
-                receiverJson.put("line", receiver.value1());
-                receiverJson.put("type", receiver.value2().getLiteral());
-                receiverJson.put("receiver_uri", receiver.value3());
-            }
-            json.put("receivers", receiversJson);
-            metadataMap.put(new Pair<>(record.value1(), record.value2()), json);
+            metadataMap.put(new Pair<>(record.value1(), record.value2()), new JSONObject(record.value3().data()));
         }
         return metadataMap;
     }
@@ -1921,16 +1915,16 @@ public class MetadataDao {
     }
 
     public Map<String, Long> insertNamespaces(Collection<String> namespaces) {
-        var insert = context.insertInto(Namespaces.NAMESPACES, Namespaces.NAMESPACES.NAMESPACE);
+        var insert = context.insertInto(ModuleNames.MODULE_NAMES, ModuleNames.MODULE_NAMES.NAME);
         for (var namespace : namespaces) {
             insert = insert.values(namespace);
         }
-        var result = insert.onConflictOnConstraint(Keys.UNIQUE_NAMESPACES).doUpdate()
-                .set(Namespaces.NAMESPACES.NAMESPACE, Namespaces.NAMESPACES.as("excluded").NAMESPACE)
-                .returning(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE)
+        var result = insert.onConflictOnConstraint(Keys.UNIQUE_MODULE_NAMES).doUpdate()
+                .set(ModuleNames.MODULE_NAMES.NAME, ModuleNames.MODULE_NAMES.as("excluded").NAME)
+                .returning(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME)
                 .fetch();
         var map = new HashMap<String, Long>(result.size());
-        result.forEach(r -> map.put(r.getNamespace(), r.getId()));
+        result.forEach(r -> map.put(r.getName(), r.getId()));
         return map;
     }
 }

@@ -29,9 +29,8 @@ import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallType;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.CallSiteRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -191,14 +190,14 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             return callables;
         }
 
-        protected List<EdgesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+        protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
                                                 Map<String, Long> namespaceMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)
             var externalCalls = graph.getExternalCalls();
 
-            var edges = new ArrayList<EdgesRecord>(numEdges);
+            var edges = new ArrayList<CallSitesRecord>(numEdges);
             for (var edgeEntry : externalCalls.entrySet()) {
 
                 // Get Global ID of the source callable
@@ -207,26 +206,23 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                 var target = lidToGidMap.get((long) edgeEntry.getKey().get(1));
 
                 // Create receivers
-                var receivers = new CallSiteRecord[edgeEntry.getValue().size()];
+                var receivers = new Long[edgeEntry.getValue().size()];
                 var counter = 0;
                 for (var obj : edgeEntry.getValue().keySet()) {
                     var pc = obj.toString();
                     // Get edge metadata
-                    var metadataMap = (Map<String, Object>) edgeEntry.getValue()
-                            .get(Integer.parseInt(pc));
+                    var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(Integer.parseInt(pc));
                     var callMetadata = new JSONObject();
                     for (var key : metadataMap.keySet()) {
                         callMetadata.put(key, metadataMap.get(key));
                     }
-
-                    // Extract receiver information from the metadata
-                    int line = callMetadata.optInt("line", -1);
-                    var type = this.getReceiverType(callMetadata.optString("type"));
                     String receiverUri = callMetadata.optString("receiver");
-                    receivers[counter++] = new CallSiteRecord(line, type, namespaceMap.get(receiverUri));
+                    receivers[counter++] = namespaceMap.get(receiverUri);
                 }
+                Integer line = null; //callMetadata.optInt("line", -1);
+                CallType type = null; // this.getReceiverType(callMetadata.optString("type"));
                 // Add edge record to the list of records
-                edges.add(new EdgesRecord(source, target, receivers, null));
+                edges.add(new CallSitesRecord(source, target, line, type, receivers, null));
             }
 
             var internalCalls = graph.getInternalCalls();
@@ -235,13 +231,13 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                 var source = lidToGidMap.get((long) edgeEntry.getKey().get(0));
                 // Get Global ID of the target callable
                 var target = lidToGidMap.get((long) edgeEntry.getKey().get(1));
-                edges.add(new EdgesRecord(source, target, null, null));
+                edges.add(new CallSitesRecord(source, target, null, null, null, null));
             }
 
             // Batch insert all edges
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
+                var edgesBatch = new ArrayList<CallSitesRecord>(Constants.insertionBatchSize);
                 while (edgesIterator.hasNext()
                         && edgesBatch.size() < Constants.insertionBatchSize) {
                     edgesBatch.add(edgesIterator.next());

@@ -1,3 +1,11 @@
+CREATE TABLE ingested_artifacts
+(
+    id           BIGSERIAL PRIMARY KEY,
+    package_name TEXT NOT NULL,
+    version      TEXT NOT NULL,
+    timestamp    TIMESTAMP
+);
+
 CREATE TABLE packages
 (
     id           BIGSERIAL PRIMARY KEY,
@@ -8,15 +16,22 @@ CREATE TABLE packages
     created_at   TIMESTAMP
 );
 
+CREATE TABLE artifact_repositories
+(
+    id                  BIGSERIAL PRIMARY KEY,
+    repository_base_url TEXT NOT NULL
+);
+
 CREATE TABLE package_versions
 (
-    id           BIGSERIAL PRIMARY KEY,
-    package_id   BIGINT NOT NULL REFERENCES packages (id),
-    version      TEXT   NOT NULL,
-    cg_generator TEXT   NOT NULL,
-    architecture TEXT,
-    created_at   TIMESTAMP,
-    metadata     JSONB
+    id                     BIGSERIAL PRIMARY KEY,
+    package_id             BIGINT NOT NULL REFERENCES packages (id),
+    version                TEXT   NOT NULL,
+    cg_generator           TEXT   NOT NULL,
+    artifact_repository_id BIGINT references artifact_repositories (id),
+    architecture           TEXT,
+    created_at             TIMESTAMP,
+    metadata               JSONB
 );
 
 CREATE TABLE virtual_implementations
@@ -36,10 +51,10 @@ CREATE TABLE dependencies
     metadata           JSONB
 );
 
-CREATE TABLE namespaces
+CREATE TABLE module_names
 (
-    id        BIGSERIAL PRIMARY KEY,
-    namespace TEXT NOT NULL
+    id   BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL
 );
 
 CREATE TYPE ACCESS AS ENUM ('private', 'public', 'packagePrivate', 'static', 'protected');
@@ -48,7 +63,7 @@ CREATE TABLE modules
 (
     id                 BIGSERIAL PRIMARY KEY,
     package_version_id BIGINT NOT NULL REFERENCES package_versions (id),
-    namespace_id       BIGINT NOT NULL REFERENCES namespaces (id),
+    module_name_id     BIGINT NOT NULL REFERENCES module_names (id),
     final              BOOLEAN,
     access             ACCESS,
     super_classes      BIGINT[],
@@ -105,19 +120,14 @@ CREATE TABLE callables
 
 CREATE TYPE CALL_TYPE AS ENUM ('static', 'dynamic', 'virtual', 'interface', 'special');
 
-CREATE TYPE CALL_SITE AS
+CREATE TABLE call_sites
 (
-    line                  INTEGER,
-    call_type             CALL_TYPE,
-    receiver_namespace_id BIGINT
-);
-
-CREATE TABLE edges
-(
-    source_id  BIGINT NOT NULL REFERENCES callables (id),
-    target_id  BIGINT NOT NULL REFERENCES callables (id),
-    call_sites CALL_SITE[],
-    metadata   JSONB
+    source_id         BIGINT NOT NULL REFERENCES callables (id),
+    target_id         BIGINT NOT NULL REFERENCES callables (id),
+    line              INTEGER,
+    call_type         CALL_TYPE,
+    receiver_type_ids BIGINT[],
+    metadata          JSONB
 );
 
 -- CREATE INDEX CONCURRENTLY package_versions_package_id ON package_versions USING btree (package_id);
@@ -134,9 +144,17 @@ CREATE TABLE edges
 -- CREATE INDEX CONCURRENTLY edges_source_id ON edges USING btree (source_id);
 -- CREATE INDEX CONCURRENTLY edges_target_id ON edges USING btree (target_id);
 
+CREATE UNIQUE INDEX CONCURRENTLY unique_ingested_artifacts ON ingested_artifacts USING btree (package_name, version);
+ALTER TABLE ingested_artifacts
+    ADD CONSTRAINT unique_ingested_artifacts UNIQUE USING INDEX unique_ingested_artifacts;
+
 CREATE UNIQUE INDEX CONCURRENTLY unique_package_forge ON packages USING btree (package_name, forge);
 ALTER TABLE packages
     ADD CONSTRAINT unique_package_forge UNIQUE USING INDEX unique_package_forge;
+
+CREATE UNIQUE INDEX CONCURRENTLY unique_artifact_repositories ON artifact_repositories USING btree (repository_base_url);
+ALTER TABLE artifact_repositories
+    ADD CONSTRAINT unique_artifact_repositories UNIQUE USING INDEX unique_artifact_repositories;
 
 CREATE UNIQUE INDEX CONCURRENTLY unique_package_version_generator ON package_versions USING btree (package_id, version, cg_generator);
 ALTER TABLE package_versions
@@ -150,7 +168,7 @@ CREATE UNIQUE INDEX CONCURRENTLY unique_version_dependency_range ON dependencies
 ALTER TABLE dependencies
     ADD CONSTRAINT unique_version_dependency_range UNIQUE USING INDEX unique_version_dependency_range;
 
-CREATE UNIQUE INDEX CONCURRENTLY unique_version_namespace ON modules USING btree (package_version_id, namespace_id);
+CREATE UNIQUE INDEX CONCURRENTLY unique_version_namespace ON modules USING btree (package_version_id, module_name_id);
 ALTER TABLE modules
     ADD CONSTRAINT unique_version_namespace UNIQUE USING INDEX unique_version_namespace;
 
@@ -174,30 +192,36 @@ CREATE UNIQUE INDEX CONCURRENTLY unique_uri_call ON callables USING btree (modul
 ALTER TABLE callables
     ADD CONSTRAINT unique_uri_call UNIQUE USING INDEX unique_uri_call;
 
-CREATE UNIQUE INDEX CONCURRENTLY unique_source_target ON edges USING btree (source_id, target_id);
-ALTER TABLE edges
+CREATE UNIQUE INDEX CONCURRENTLY unique_source_target ON call_sites USING btree (source_id, target_id);
+ALTER TABLE call_sites
     ADD CONSTRAINT unique_source_target UNIQUE USING INDEX unique_source_target;
 
 ALTER TABLE callables
     ADD CONSTRAINT check_module_id CHECK ((module_id = -1 AND is_internal_call IS false) OR
                                           (module_id IS NOT NULL AND is_internal_call IS true));
 
-CREATE UNIQUE INDEX CONCURRENTLY unique_namespaces ON namespaces USING btree (namespace);
-ALTER TABLE namespaces
-    ADD CONSTRAINT unique_namespaces UNIQUE USING INDEX unique_namespaces;
+CREATE UNIQUE INDEX CONCURRENTLY unique_module_names ON module_names USING btree (name);
+ALTER TABLE module_names
+    ADD CONSTRAINT unique_module_names UNIQUE USING INDEX unique_module_names;
 
 INSERT INTO packages (id, package_name, forge)
 VALUES (-1, 'external_callables_library', 'pypi')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO package_versions (id, package_id, version, cg_generator)
-VALUES (-1, -1, '0.0.1', 'PyCG')
+INSERT INTO artifact_repositories (id, repository_base_url)
+VALUES (-1, 'https://pypi.org/')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO namespaces (id, namespace)
+INSERT INTO package_versions (id, package_id, version, cg_generator, artifact_repository_id)
+VALUES (-1, -1, '0.0.1', 'PyCG', -1)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO module_names (id, name)
 VALUES (-1, 'global_external_callables')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO modules (id, package_version_id, namespace_id)
+INSERT INTO modules (id, package_version_id, module_name_id)
 VALUES (-1, -1, -1)
 ON CONFLICT DO NOTHING;
+
+CREATE INDEX CONCURRENTLY idx_callables_fasten_uri ON callables USING btree (digest(fasten_uri, 'sha1'::text));
