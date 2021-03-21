@@ -20,16 +20,22 @@ package eu.fasten.core.merge;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.FastenDefaultDirectedGraph;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+
+import static java.util.Collections.emptyList;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,6 +43,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.Graphs;
@@ -44,6 +54,13 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class LocalMerger {
 
@@ -79,9 +96,9 @@ public class LocalMerger {
      */
     public static class CGHA {
 
-        private final Map<List<Integer>, Map<Object, Object>> graph;
-        private final BiMap<String, JavaType> CHA;
-        private int nodeCount;
+        private final ConcurrentMap<IntIntPair, Map<Object, Object>> graph;
+        private final ConcurrentMap<String, JavaType> CHA;
+        private AtomicInteger nodeCount;
 
         /**
          * Create CGHA object from an {@link ExtendedRevisionCallGraph}.
@@ -89,12 +106,12 @@ public class LocalMerger {
          * @param toResolve call graph
          */
         public CGHA(final ExtendedRevisionJavaCallGraph toResolve) {
-            this.graph = toResolve.getGraph().getResolvedCalls();
+            this.graph = new ConcurrentHashMap<>(toResolve.getGraph().getResolvedCalls());
             var classHierarchy = HashBiMap.create(toResolve.getClassHierarchy()
                     .getOrDefault(JavaScope.resolvedTypes, HashBiMap.create()));
-            this.CHA = HashBiMap.create();
+            this.CHA = new ConcurrentHashMap<>();
             classHierarchy.forEach(this.CHA::put);
-            this.nodeCount = toResolve.getNodeCount();
+            this.nodeCount = new AtomicInteger(toResolve.getNodeCount());
         }
 
     }
@@ -104,7 +121,7 @@ public class LocalMerger {
      */
     public static class Call {
 
-        private final List<Integer> indices;
+        private final IntIntPair indices;
         private final Map<Object, Object> metadata;
         private final JavaNode target;
 
@@ -115,7 +132,7 @@ public class LocalMerger {
          * @param metadata call metadata
          * @param target   target node
          */
-        public Call(final List<Integer> indices, Map<Object, Object> metadata,
+        public Call(final IntIntPair indices, Map<Object, Object> metadata,
                     final JavaNode target) {
             this.indices = indices;
             this.metadata = metadata;
@@ -128,7 +145,7 @@ public class LocalMerger {
             this.target = node;
         }
 
-        public Call(final Map.Entry<List<Integer>, Map<Object, Object>> arc,
+        public Call(final Map.Entry<IntIntPair, Map<Object, Object>> arc,
                     final JavaNode target) {
             this.indices = arc.getKey();
             this.metadata = arc.getValue();
@@ -150,74 +167,52 @@ public class LocalMerger {
      *
      * @return merged call graph
      */
-    public DirectedGraph mergeAllDeps() {
-        final var result = new ArrayImmutableDirectedGraph.Builder();
-        var offset = 0l;
+    public DirectedGraph mergeAllDeps(boolean alsoExternals) {
+        final var result = new FastenDefaultDirectedGraph();
         for (final var dep : this.dependencySet) {
-            final var merged = mergeWithCHA(dep);
-            final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
-            addThisMergeToResult(result, directedMerge, merged.mapOfFullURIStrings(), offset);
-            offset = offset + allUris.size();
+            addThisMergeToResult(result, mergeWithCHA(dep), alsoExternals);
         }
-        return result.build();
+        return result;
     }
 
-    private void addThisMergeToResult(ArrayImmutableDirectedGraph.Builder result,
-                                      final DirectedGraph directedMerge,
-                                      final BiMap<Integer, String> uris,
-                                      final Long offset) {
+    public DirectedGraph mergeAllDeps() {
+        return mergeAllDeps(true);
+    }
+
+    private void addThisMergeToResult(FastenDefaultDirectedGraph result,
+                                      final ExtendedRevisionJavaCallGraph merged, boolean onlyResolved) {
+        final var uris = merged.mapOfFullURIStrings();
+        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged, onlyResolved);
+        long offset = result.nodes().longStream().max().orElse(0L) + 1;
 
         for (final var node : directedMerge.nodes()) {
             for (final var successor : directedMerge.successors(node)) {
-                //check if they are not external edges
-                if (uris.containsKey(node.intValue())) {
-                    if (uris.containsKey(successor.intValue())) {
-                        final var updatedNode = updateNode(node, offset, uris);
-                        final var updatedSuccessor = updateNode(successor, offset, uris);
-                        addEdge(result, directedMerge, updatedNode, updatedSuccessor);
-                    }
-                }
+                final var updatedNode = updateNode(node, offset, uris);
+                final var updatedSuccessor = updateNode(successor, offset, uris);
+                addEdge(result, updatedNode, updatedSuccessor);
             }
         }
     }
 
-    private Long updateNode(final Long node, final Long offset,
+    private long updateNode(final long node, final long offset,
                             final BiMap<Integer, String> uris) {
-        if (this.allUris.inverse().containsKey(uris.get(node.intValue()))) {
-            return this.allUris.inverse().get(uris.get(node.intValue()));
-        }else{
+        var uri = uris.get((int) node);
+
+        if (allUris.containsValue(uri)) {
+            return allUris.inverse().get(uri);
+        }
+        else {
             final var updatedNode = node + offset;
-            this.allUris.put(updatedNode, uris.get(node.intValue()));
+            this.allUris.put(updatedNode, uri);
             return updatedNode;
         }
     }
 
-    private void addEdge(final ArrayImmutableDirectedGraph.Builder result,
-                         final DirectedGraph callGraphData,
-                         final Long source, final Long target) {
-
-        try {
-            if (callGraphData.nodes().contains(source.longValue())
-                && callGraphData.isInternal(source)) {
-                result.addInternalNode(source);
-            } else {
-                result.addExternalNode(source);
-            }
-        } catch (IllegalArgumentException ignored) {
-        }
-        try {
-            if (callGraphData.nodes().contains(target.longValue())
-                && callGraphData.isInternal(target)) {
-                result.addInternalNode(target);
-            } else {
-                result.addExternalNode(target);
-            }
-        } catch (IllegalArgumentException ignored) {
-        }
-        try {
-            result.addArc(source, target);
-        } catch (IllegalArgumentException ignored) {
-        }
+    private void addEdge(final FastenDefaultDirectedGraph result,
+                         final long source, final long target) {
+        result.addInternalNode(source);
+        result.addInternalNode(target);
+        result.addEdge(source, target);
     }
 
     /**
@@ -246,15 +241,15 @@ public class LocalMerger {
                             final Map<String, List<String>> universalChildren,
                             final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
                             final CGHA result,
-                            final Map<Integer, JavaType> externalNodeIdToTypeMap,
-                            final Map<Integer, JavaType> internalNodeIdToTypeMap,
-                            final Map.Entry<List<Integer>, Map<Object, Object>> arc,
+                            final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
+                            final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
+                            final Map.Entry<IntIntPair, Map<Object, Object>> arc,
                             final boolean isInternal) {
-        final var targetKey = arc.getKey().get(1);
-        final var sourceKey = arc.getKey().get(0);
+        final var targetKey = arc.getKey().secondInt();
+        final var sourceKey = arc.getKey().firstInt();
 
         boolean isCallBack = false;
-        Integer nodeKey = targetKey;
+        int nodeKey = targetKey;
         JavaType type =
             getType(externalNodeIdToTypeMap, internalNodeIdToTypeMap, isInternal, targetKey);
 
@@ -264,26 +259,15 @@ public class LocalMerger {
             nodeKey = sourceKey;
         }
         resolve(universalParents, universalChildren, typeDictionary, result, arc,
-            nodeKey, type, getTypeUri(artifact, isInternal, type), isCallBack);
+            nodeKey, type, isCallBack);
 
-    }
-
-    private String getTypeUri(ExtendedRevisionJavaCallGraph toResolve, boolean isInternal,
-                              JavaType type) {
-        if (isInternal){
-            return toResolve.getClassHierarchy().get(JavaScope.internalTypes)
-                .inverse().get(type);
-        } else{
-            return toResolve.getClassHierarchy().get(JavaScope.externalTypes)
-                .inverse().get(type);
-        }
     }
 
     private JavaType getType(
-        final Map<Integer, JavaType> externalNodeIdToTypeMap,
-        final Map<Integer, JavaType> internalNodeIdToTypeMap,
+        final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
+        final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
         final boolean isInternal,
-        final Integer targetKey) {
+        final int targetKey) {
 
         if (isInternal) {
             return internalNodeIdToTypeMap.get(targetKey);
@@ -292,24 +276,13 @@ public class LocalMerger {
         }
     }
 
-    /**
-     * Resolve an external call.
-     *
-     * @param result     call graph with resolved calls
-     * @param arc        source, target, and metadata
-     * @param nodeKey    node id
-     * @param type       type information
-     * @param typeUri    type uri
-     * @param isCallback true, if the call is a callback
-     */
     private void resolve(final Map<String, List<String>> universalParents,
                          final Map<String, List<String>> universalChildren,
                          final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
                          final CGHA result,
-                         final Map.Entry<List<Integer>, Map<Object, Object>> arc,
-                         final Integer nodeKey,
+                         final Map.Entry<IntIntPair, Map<Object, Object>> arc,
+                         final int nodeKey,
                          final JavaType type,
-                         final String typeUri,
                          final boolean isCallback) {
 
         var call = new Call(arc, type.getMethods().get(nodeKey));
@@ -325,7 +298,7 @@ public class LocalMerger {
 
             } else if (callSite.get("type").equals("invokespecial")) {
 
-                resolveSpecials(result, call, typeDictionary, universalParents, typeUri,
+                resolveSpecials(result, call, typeDictionary, universalParents, type.getUri(),
                     isCallback);
 
             } else if (callSite.get("type").equals("invokedynamic")) {
@@ -347,17 +320,15 @@ public class LocalMerger {
                                  final CGHA result, final boolean isCallback, final Call call,
                                  final ArrayList<String> receiverTypeUris) {
         for (final var receiverTypeUri : receiverTypeUris) {
-            final var types = universalChildren.getOrDefault(receiverTypeUri, new ArrayList<>());
+            final var types = universalChildren.getOrDefault(receiverTypeUri, emptyList());
             boolean foundTarget = false;
-            if (!types.isEmpty()) {
-                for (final var depTypeUri : types) {
-                    foundTarget =
+            for (final var depTypeUri : types) {
+                foundTarget =
                         findTargets(typeDictionary, result, isCallback, call, foundTarget,
-                            depTypeUri);
-                }
+                                depTypeUri);
             }
             if (!foundTarget) {
-                for (String depTypeUri : universalParents.getOrDefault(receiverTypeUri, new ArrayList<>())) {
+                for (String depTypeUri : universalParents.getOrDefault(receiverTypeUri, emptyList())) {
                     if(findTargets(typeDictionary, result, isCallback, call, foundTarget,
                         depTypeUri)){
                         break;
@@ -372,12 +343,10 @@ public class LocalMerger {
                                 Call call, boolean foundTarget,
                                 String depTypeUri) {
         for (final var dep : typeDictionary
-            .getOrDefault(depTypeUri, new ArrayList<>())) {
+            .getOrDefault(depTypeUri, emptyList())) {
 
             foundTarget = resolveToDynamics(result, call, dep.getClassHierarchy().get(JavaScope.internalTypes)
-                    .get(depTypeUri), dep.product + "$" + dep.version,
-                depTypeUri,
-                isCallback);
+                    .get(depTypeUri), dep.productVersion, depTypeUri, isCallback, foundTarget);
         }
         return foundTarget;
     }
@@ -385,13 +354,13 @@ public class LocalMerger {
     private boolean resolveToDynamics(final CGHA cgha, final Call call,
                                       final JavaType type,
                                       final String product, final String depTypeUri,
-                                      boolean isCallback) {
+                                      boolean isCallback, boolean foundTarget) {
         final var node = type.getDefinedMethods().get(call.target.getSignature());
         if (node != null) {
             addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
             return true;
         }
-        return false;
+        return foundTarget;
     }
 
     private void resolveReceiverType(final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
@@ -399,7 +368,7 @@ public class LocalMerger {
                                      final Call call, final List<String> receiverTypeUris) {
         for (final var receiverTypeUri : receiverTypeUris) {
             for (final var dep : typeDictionary
-                .getOrDefault(receiverTypeUri, new ArrayList<>())) {
+                .getOrDefault(receiverTypeUri, emptyList())) {
 
                 resolveIfDefined(result, call, dep.getClassHierarchy()
                         .get(JavaScope.internalTypes)
@@ -575,19 +544,14 @@ public class LocalMerger {
      * @param depTypeUri dependency type uri
      * @param isCallback true if the call is a callback
      */
-    private synchronized void addEdge(final CGHA cgha, final Call call,
+    private void addEdge(final CGHA cgha, final Call call,
                                       final String product,
                                       final JavaType depType,
                                       final String depTypeUri, boolean isCallback) {
         final int addedKey = addToCHA(cgha, call.target, product, depType, depTypeUri);
-        if (addedKey == cgha.nodeCount) {
-            cgha.nodeCount++;
-        }
-        if (isCallback) {
-            cgha.graph.put(Arrays.asList(addedKey, call.indices.get(1)), call.metadata);
-        } else {
-            cgha.graph.put(Arrays.asList(call.indices.get(0), addedKey), call.metadata);
-        }
+        final IntIntPair edge = isCallback ? IntIntPair.of(addedKey, call.indices.secondInt())
+             : IntIntPair.of(call.indices.firstInt(), addedKey);
+        cgha.graph.put(edge, call.metadata);
     }
 
     /**
@@ -605,14 +569,22 @@ public class LocalMerger {
                                 final String product,
                                 final JavaType depType,
                                 final String depTypeUri) {
-        final var keyType = "//" + product + depTypeUri;
-        final var type = cgha.CHA.getOrDefault(keyType,
-                new JavaType(depType.getSourceFileName(), HashBiMap.create(), new HashMap<>(),
+        final var cha = cgha.CHA;
+        final var type = cha.computeIfAbsent("//" + product + depTypeUri, x -> 
+                new JavaType(x, depType.getSourceFileName(), new Int2ObjectOpenHashMap<>(), new HashMap<>(),
                         depType.getSuperClasses(), depType.getSuperInterfaces(),
                         depType.getAccess(), depType.isFinal()));
-        final var index = type.addMethod(target,
-                cgha.nodeCount);
-        cgha.CHA.put(keyType, type);
+        
+        final int index;
+        synchronized(type) {
+            index = type.getMethodKey(target);
+            if (index == -1) {
+                final int nodeCount = cgha.nodeCount.getAndIncrement();
+                type.addMethod(target, nodeCount);
+                return nodeCount;
+            }
+        }
+        
         return index;
     }
 
@@ -626,7 +598,7 @@ public class LocalMerger {
      */
     private static ExtendedRevisionJavaCallGraph buildRCG(final ExtendedRevisionJavaCallGraph artifact,
                                                           final CGHA result) {
-        final var cha = new HashMap<>(artifact.getClassHierarchy());
+        final var cha = artifact.getClassHierarchy();
         cha.put(JavaScope.resolvedTypes, result.CHA);
         return ExtendedRevisionJavaCallGraph.extendedBuilder().forge(artifact.forge)
             .cgGenerator(artifact.getCgGenerator())
@@ -637,7 +609,7 @@ public class LocalMerger {
             .graph(new Graph(artifact.getGraph().getInternalCalls(),
                 artifact.getGraph().getExternalCalls(),
                 result.graph))
-            .nodeCount(result.nodeCount)
+            .nodeCount(result.nodeCount.get())
             .build();
     }
 }

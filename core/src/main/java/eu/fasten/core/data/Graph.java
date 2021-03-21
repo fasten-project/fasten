@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import org.json.JSONObject;
+
+import it.unimi.dsi.fastutil.ints.IntIntPair;
+
 import org.json.JSONArray;
 
 public class Graph {
@@ -31,17 +34,17 @@ public class Graph {
     /**
      * Keeps all the internal calls of the graph. The metadata per call is stored as a map.
      */
-    private final Map<List<Integer>, Map<Object, Object>> internalCalls;
+    private final Map<IntIntPair, Map<Object, Object>> internalCalls;
 
     /**
      * Keeps all the external calls of the graph. The metadata per call is stored as a map.
      */
-    private final Map<List<Integer>, Map<Object, Object>> externalCalls;
+    private final Map<IntIntPair, Map<Object, Object>> externalCalls;
 
     /**
      * Keeps all the resolved calls of the graph. The metadata per call is stored as a map.
      */
-    private final Map<List<Integer>, Map<Object, Object>> resolvedCalls;
+    private final Map<IntIntPair, Map<Object, Object>> resolvedCalls;
 
     /**
      * Creates {@link Graph} from given internal, external, and resolved calls.
@@ -50,9 +53,9 @@ public class Graph {
      * @param externalCalls external calls map
      * @param resolvedCalls resolved calls map
      */
-    public Graph(final Map<List<Integer>, Map<Object, Object>> internalCalls,
-                 final Map<List<Integer>, Map<Object, Object>> externalCalls,
-                 final Map<List<Integer>, Map<Object, Object>> resolvedCalls) {
+    public Graph(final Map<IntIntPair, Map<Object, Object>> internalCalls,
+                 final Map<IntIntPair, Map<Object, Object>> externalCalls,
+                 final Map<IntIntPair, Map<Object, Object>> resolvedCalls) {
         this.internalCalls = internalCalls;
         this.externalCalls = externalCalls;
         this.resolvedCalls = resolvedCalls;
@@ -75,8 +78,8 @@ public class Graph {
      * @param internalCalls internal calls map
      * @param externalCalls external calls map
      */
-    public Graph(final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
-                 final HashMap<List<Integer>, Map<Object, Object>> externalCalls) {
+    public Graph(final HashMap<IntIntPair, Map<Object, Object>> internalCalls,
+                 final HashMap<IntIntPair, Map<Object, Object>> externalCalls) {
         this.internalCalls = internalCalls;
         this.externalCalls = externalCalls;
         this.resolvedCalls = new HashMap<>();
@@ -91,15 +94,15 @@ public class Graph {
         this.resolvedCalls = new HashMap<>();
     }
 
-    public Map<List<Integer>, Map<Object, Object>> getInternalCalls() {
+    public Map<IntIntPair, Map<Object, Object>> getInternalCalls() {
         return internalCalls;
     }
 
-    public Map<List<Integer>, Map<Object, Object>> getExternalCalls() {
+    public Map<IntIntPair, Map<Object, Object>> getExternalCalls() {
         return externalCalls;
     }
 
-    public Map<List<Integer>, Map<Object, Object>> getResolvedCalls() {
+    public Map<IntIntPair, Map<Object, Object>> getResolvedCalls() {
         return resolvedCalls;
     }
 
@@ -118,7 +121,7 @@ public class Graph {
      * @param call JSON array
      * @return call map
      */
-    public Map<List<Integer>, Map<Object, Object>> getCall(final JSONArray call) {
+    public Map<IntIntPair, Map<Object, Object>> getCall(final JSONArray call) {
         final Map<Object, Object> callSite = new HashMap<>();
         if (call.length() == 3) {
             final var callTypeJson = call.getJSONObject(2);
@@ -127,8 +130,8 @@ public class Graph {
                 callSite.put(pc, callTypeJson.getJSONObject(key).toMap());
             }
         }
-        return Map.of(new ArrayList<>(Arrays.asList(Integer.valueOf(call.getString(0)),
-                Integer.valueOf(call.getString(1)))), callSite);
+        return Map.of(IntIntPair.of(Integer.parseInt(call.getString(0)),
+                Integer.parseInt(call.getString(1))), callSite);
     }
 
     /**
@@ -138,9 +141,9 @@ public class Graph {
      * @param key   key for calls extraction
      * @return extracted calls
      */
-    private Map<List<Integer>, Map<Object, Object>> extractCalls(JSONObject graph, String key) {
+    private Map<IntIntPair, Map<Object, Object>> extractCalls(JSONObject graph, String key) {
         final var internalCalls = graph.getJSONArray(key);
-        final Map<List<Integer>, Map<Object, Object>> result = new HashMap<>();
+        final Map<IntIntPair, Map<Object, Object>> result = new HashMap<>();
         final int numberOfArcs = internalCalls.length();
         for (int i = 0; i < numberOfArcs; i++) {
             result.putAll(getCall(internalCalls.getJSONArray(i)));
@@ -168,16 +171,16 @@ public class Graph {
         final var internalCallsJSON = new JSONArray();
         for (final var entry : this.internalCalls.entrySet()) {
             final var call = new JSONArray();
-            call.put(entry.getKey().get(0).toString());
-            call.put(entry.getKey().get(1).toString());
+            call.put(entry.getKey().first().toString());
+            call.put(entry.getKey().second().toString());
             call.put(new JSONObject(entry.getValue()));
             internalCallsJSON.put(call);
         }
         final var externalCallsJSON = new JSONArray();
         for (final var entry : this.externalCalls.entrySet()) {
             final var call = new JSONArray();
-            call.put(entry.getKey().get(0).toString());
-            call.put(entry.getKey().get(1).toString());
+            call.put(entry.getKey().first().toString());
+            call.put(entry.getKey().second().toString());
             call.put(new JSONObject(entry.getValue()));
             externalCallsJSON.put(call);
         }
@@ -185,8 +188,8 @@ public class Graph {
         final var resolvedCallsJSON = new JSONArray();
         for (final var entry : this.resolvedCalls.entrySet()) {
             final var call = new JSONArray();
-            call.put(entry.getKey().get(0).toString());
-            call.put(entry.getKey().get(1).toString());
+            call.put(entry.getKey().first().toString());
+            call.put(entry.getKey().second().toString());
             call.put(new JSONObject(entry.getValue()));
             resolvedCallsJSON.put(call);
         }

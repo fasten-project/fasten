@@ -18,14 +18,19 @@
 
 package eu.fasten.core.data;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import eu.fasten.core.utils.FastenUriUtils;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.List;
-import org.json.JSONObject;
+
 import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+
+import eu.fasten.core.utils.FastenUriUtils;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 /**
  * For each class in the revision, class hierarchy keeps a {@link JavaType} that is accessible by
@@ -33,8 +38,8 @@ import org.json.JSONException;
  *
  * @implNote each method in the revision has a unique id in this CHA.
  */
-public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map<JavaScope,
-    BiMap<String, JavaType>>> {
+public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<EnumMap<JavaScope,
+    Map<String, JavaType>>> {
     static {
         classHierarchyJSONKey = "cha";
     }
@@ -45,7 +50,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *
      * @param builder builder for {@link ExtendedRevisionJavaCallGraph}
      */
-    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<Map<JavaScope, BiMap<String,
+    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<EnumMap<JavaScope, Map<String,
         JavaType>>> builder) {
         super(builder);
     }
@@ -66,7 +71,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      */
     public ExtendedRevisionJavaCallGraph(final String forge, final String product, final String version,
                                          final long timestamp, int nodeCount, final String cgGenerator,
-                                         final Map<JavaScope,BiMap<String, JavaType>> classHierarchy,
+                                         final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
                                          final Graph graph) {
         super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
     }
@@ -97,30 +102,28 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      *
      * @param cha JSONObject of a cha.
      */
-    public Map<JavaScope, BiMap<String, JavaType>> getCHAFromJSON(final JSONObject cha) {
-        final BiMap<String, JavaType> internals = HashBiMap.create();
-        final BiMap<String, JavaType> externals = HashBiMap.create();
-        final BiMap<String, JavaType> resolved = HashBiMap.create();
+    public EnumMap<JavaScope, Map<String, JavaType>> getCHAFromJSON(final JSONObject cha) {
+        final Map<String, JavaType> internals = new HashMap<>();
+        final Map<String, JavaType> externals = new HashMap<>();
+        final Map<String, JavaType> resolved = new HashMap<>();
 
         final var internalTypes = cha.getJSONObject("internalTypes");
         for (final var key : internalTypes.keySet()) {
-            internals.forcePut(FastenURI.create(key).toString(),
-                new JavaType(internalTypes.getJSONObject(key)));
+            internals.put(key,
+                new JavaType(key, internalTypes.getJSONObject(key)));
         }
         final var externalTypes = cha.getJSONObject("externalTypes");
         for (final var key : externalTypes.keySet()) {
-            externals.forcePut(FastenURI.create(key).toString(),
-                new JavaType(externalTypes.getJSONObject(key)));
+            externals.put(key, new JavaType(key, externalTypes.getJSONObject(key)));
         }
         final var resolvedTypes = cha.getJSONObject("resolvedTypes");
         for (final var key : resolvedTypes.keySet()) {
-            resolved.forcePut(FastenURI.create(key).toString(),
-                new JavaType(resolvedTypes.getJSONObject(key)));
+            resolved.put(key, new JavaType(key, resolvedTypes.getJSONObject(key)));
         }
 
-        return Map.of(JavaScope.internalTypes, internals,
+        return new EnumMap<>(Map.of(JavaScope.internalTypes, internals,
             JavaScope.externalTypes, externals,
-            JavaScope.resolvedTypes, resolved);
+            JavaScope.resolvedTypes, resolved));
     }
 
     /**
@@ -129,8 +132,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
     @Override
-    public Map<Integer, JavaNode>  mapOfAllMethods() {
-        Map<Integer, JavaNode> result = new HashMap<>();
+    public Int2ObjectMap<JavaNode> mapOfAllMethods() {
+        Int2ObjectMap<JavaNode> result = new Int2ObjectOpenHashMap<>();
         for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
             result.putAll(aClass.getValue().getMethods());
         }
@@ -174,8 +177,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         }
     }
 
-    private void putMethodsOfType(final BiMap<Integer, String> result, final Map<Integer,
-        JavaNode> methods) {
+    private void putMethodsOfType(final BiMap<Integer, String> result, final Map<Integer, JavaNode> methods) {
         for (final var nodeEntry : methods.entrySet()) {
             final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, this.product,
                 this.version, nodeEntry.getValue().getUri().toString());
@@ -185,32 +187,32 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
         }
     }
 
-    public Map<Integer, JavaType> externalNodeIdToTypeMap() {
-        final Map<Integer, JavaType> result = new HashMap<>();
+    public Int2ObjectMap<JavaType> externalNodeIdToTypeMap() {
+        final Int2ObjectMap<JavaType> result = new Int2ObjectOpenHashMap<>();
         this.classHierarchy.get(JavaScope.externalTypes).values().parallelStream().forEach(type -> {
-            for (final var key : type.getMethods().keySet()) {
+            type.getMethods().keySet().forEach(key -> {
                 synchronized (result) {
                     result.put(key, type);
                 }
-            }
+            });
         });
         return result;
     }
 
-    public Map<Integer, JavaType> internalNodeIdToTypeMap() {
-        final Map<Integer, JavaType> result = new HashMap<>();
+    public Int2ObjectMap<JavaType> internalNodeIdToTypeMap() {
+        final Int2ObjectMap<JavaType> result = new Int2ObjectOpenHashMap<>();
         this.classHierarchy.get(JavaScope.internalTypes).values().parallelStream().forEach(type -> {
-            for (final var key : type.getMethods().keySet()) {
+            type.getMethods().keySet().forEach(key -> {
                 synchronized (result) {
                     result.put(key, type);
                 }
-            }
+            });
         });
         return result;
     }
 
-    public Map<Integer, String> nodeIDtoTypeNameMap() {
-        final Map<Integer, String> result = new HashMap<>();
+    public Int2ObjectMap<String> nodeIDtoTypeNameMap() {
+        final Int2ObjectMap<String> result = new Int2ObjectOpenHashMap<>();
         for (final var aClass : classHierarchy.get(JavaScope.internalTypes).entrySet()) {
             for (final var nodeEntry : aClass.getValue().getMethods().entrySet()) {
                 result.put(nodeEntry.getKey(), aClass.getKey());
@@ -235,7 +237,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * @param cha class hierarchy
      * @return the JSON representation
      */
-    public JSONObject classHierarchyToJSON(final Map<JavaScope, BiMap<String, JavaType>> cha) {
+    public JSONObject classHierarchyToJSON(final EnumMap<JavaScope, Map<String, JavaType>> cha) {
         final var result = new JSONObject();
         final var internalTypes = new JSONObject();
         final var externalTypes = new JSONObject();
@@ -332,19 +334,26 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Map
      * identifiers the local identifiers.
      *
      * @param erjcg an {@link ExtendedRevisionJavaCallGraph}.
-     * @return a directed graph with internal nodes only, based on the local identifiers of
-     *         {@code erjcg}.
+     * @return a directed graph based on the local identifiers of {@code erjcg}.
      */
-    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
-        final var builder = new ArrayImmutableDirectedGraph.Builder();
-        for (final int x : erjcg.mapOfAllMethods().keySet()) builder.addInternalNode(x);
+    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg,
+                                                     boolean alsoExternals) {
+        FastenDefaultDirectedGraph dg = new FastenDefaultDirectedGraph();
+        erjcg.getClassHierarchy().get(JavaScope.internalTypes).entrySet().
+                stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addInternalNode(m)));
+        erjcg.getClassHierarchy().get(JavaScope.resolvedTypes).entrySet().
+                stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addInternalNode(m)));
 
-        for (final List<Integer> l : erjcg.getGraph().getExternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
-        for (final List<Integer> l : erjcg.getGraph().getInternalCalls().keySet()) builder.addArc(l.get(0), l.get(1));
-        for (final List<Integer> l : erjcg.getGraph().getResolvedCalls().keySet()) builder.addArc(l.get(0), l.get(1));
+        if (!alsoExternals) {
+            erjcg.getGraph().getExternalCalls().keySet().forEach(p -> dg.addEdge((long) p.firstInt(), (long) p.secondInt()));
+        }
+        erjcg.getGraph().getInternalCalls().keySet().forEach(p -> dg.addEdge((long) p.firstInt(), (long) p.secondInt()));
+        erjcg.getGraph().getResolvedCalls().keySet().forEach(p -> dg.addEdge((long)p.firstInt(), (long)p.secondInt()));
 
-        return builder.build();
+        return dg;
     }
 
-
+    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
+        return toLocalDirectedGraph(erjcg,true);
+    }
 }

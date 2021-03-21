@@ -18,19 +18,20 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
 import eu.fasten.core.data.FastenURI;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
@@ -88,14 +89,14 @@ public class OPALClassHierarchy {
      * @param projectHierarchy OPAL class hierarchy
      * @return A {@link Map} of {@link FastenURI} and {@link JavaType}
      */
-    public Map<JavaScope, BiMap<String, JavaType>> asURIHierarchy(ClassHierarchy projectHierarchy) {
+    public EnumMap<JavaScope, Map<String, JavaType>> asURIHierarchy(ClassHierarchy projectHierarchy) {
 
-        final BiMap<String, JavaType> internalResult = HashBiMap.create();
-        final BiMap<String, JavaType> externalResult = HashBiMap.create();
+        final Map<String, JavaType> internalResult = new HashMap<>();
+        final Map<String, JavaType> externalResult = new HashMap<>();
         final var internals = this.getInternalCHA();
         for (final var aClass : internals.keySet()) {
             final var klass = OPALType.getType(internals.get(aClass), aClass);
-            internalResult.forcePut(klass.getLeft(), klass.getRight());
+            internalResult.put(klass.getLeft(), klass.getRight());
         }
         final var externals = this.getExternalCHA();
         for (final var aClass : externals.keySet()) {
@@ -103,8 +104,8 @@ public class OPALClassHierarchy {
                     .putAll(OPALType.getType(projectHierarchy, externals.get(aClass), aClass));
         }
 
-        return Map.of(JavaScope.internalTypes, internalResult, JavaScope.externalTypes, externalResult,
-                JavaScope.resolvedTypes, HashBiMap.create());
+        return new EnumMap<>(Map.of(JavaScope.internalTypes, internalResult, JavaScope.externalTypes, externalResult,
+                JavaScope.resolvedTypes, new HashMap<>()));
     }
 
     /**
@@ -297,9 +298,19 @@ public class OPALClassHierarchy {
                 }
             }
         }
-        return new Graph(internalCalls, externalCalls);
+        return new Graph(convert(internalCalls), convert(externalCalls));
     }
-    /**
+
+	// Conversion from List<Integer> to IntIntPair
+	private HashMap<IntIntPair, Map<Object, Object>> convert(final HashMap<List<Integer>, Map<Object, Object>> externalCalls) {
+		final HashMap<IntIntPair, Map<Object, Object>> result = new HashMap<>();
+		for (final var e : externalCalls.entrySet()) {
+			final List<Integer> key = e.getKey();
+			result.put(IntIntPair.of(key.get(0).intValue(), key.get(1).intValue()), e.getValue());
+		}
+		return result;
+	}
+	/**
      * Get call site for a method.
      *
      * @param source source method

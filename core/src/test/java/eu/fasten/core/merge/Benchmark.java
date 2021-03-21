@@ -169,8 +169,8 @@ public class Benchmark implements Runnable {
 
         for (var arc : callgraph.getGraph().getResolvedCalls().keySet()) {
             var newArc = ImmutablePair
-                    .of(localMethodsMap.get(arc.get(0)).getUri().toString(),
-                            localMethodsMap.get(arc.get(1)).getUri().toString());
+                    .of(localMethodsMap.get(arc.firstInt()).getUri().toString(),
+                            localMethodsMap.get(arc.secondInt()).getUri().toString());
             localResolvedGraph.add(newArc);
         }
         return localResolvedGraph;

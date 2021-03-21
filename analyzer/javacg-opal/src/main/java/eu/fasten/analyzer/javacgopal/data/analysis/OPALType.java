@@ -18,13 +18,15 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.Node;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -107,8 +109,9 @@ public class OPALType {
             superClassesURIs = new LinkedList<>();
         }
 
-        return Map.of(OPALMethod.getTypeURI(klass).toString(),
-                new JavaType("", toURIDeclaredMethods(methods), new HashMap<>(),superClassesURIs,
+        String uri = OPALMethod.getTypeURI(klass).toString();
+		return Map.of(uri,
+                new JavaType(uri, "", toURIDeclaredMethods(methods), new HashMap<>(),superClassesURIs,
                         toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass)),
                         "", false));
     }
@@ -130,8 +133,9 @@ public class OPALType {
         }
 
         final var methodMaps = getMethodMaps(type.methods);
-        return MutablePair.of(OPALMethod.getTypeURI(klass).toString(),
-            new JavaType(type.sourceFileName, methodMaps.getRight(),
+        final String uri = OPALMethod.getTypeURI(klass).toString();
+		return MutablePair.of(uri,
+            new JavaType(uri, type.sourceFileName, methodMaps.getRight(),
                 methodMaps.getLeft(), superClassesURIs, toURIInterfaces(type.superInterfaces),
                 type.access, type.isFinal));
     }
@@ -145,9 +149,9 @@ public class OPALType {
      * @return A Map in which the unique id of each method in the artifact is the key and the
      * {@link FastenURI} of the method is the value.
      */
-    public static Pair<Map<String, JavaNode>, BiMap<Integer, JavaNode>> getMethodMaps(final Map<Method,
+    public static Pair<Map<String, JavaNode>, Int2ObjectMap<JavaNode>> getMethodMaps(final Map<Method,
             Integer> methods) {
-        final BiMap<Integer, JavaNode> nodes = HashBiMap.create();
+        final Int2ObjectMap<JavaNode> nodes = new Int2ObjectOpenHashMap<>();
         final Map<String, JavaNode> defs = new HashMap<>();
 
         for (final var entry : methods.entrySet()) {
@@ -167,15 +171,15 @@ public class OPALType {
     }
 
     /**
-     * Convert a map of {@link DeclaredMethod} to a BiMap of
+     * Convert a map of {@link DeclaredMethod} to a Map of
      * {@link Node}.
      *
      * @param methods map of methods to convert
-     * @return BiMap of Nodes
+     * @return Map of Nodes
      */
-    public static BiMap<Integer, JavaNode> toURIDeclaredMethods(
+    public static Int2ObjectMap<JavaNode> toURIDeclaredMethods(
             final Map<DeclaredMethod, Integer> methods) {
-        final BiMap<Integer, JavaNode> result = HashBiMap.create();
+        final Int2ObjectMap<JavaNode> result = new Int2ObjectOpenHashMap<>();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
@@ -219,8 +223,8 @@ public class OPALType {
      * @return A Map in which the unique id of each method in the artifact is the key and the
      * {@link FastenURI} of the method is the value.
      */
-    public static BiMap<Integer, JavaNode> toURIMethods(final Map<Method, Integer> methods) {
-        final BiMap<Integer, JavaNode> result = HashBiMap.create();
+    public static Int2ObjectMap<JavaNode> toURIMethods(final Map<Method, Integer> methods) {
+        final Int2ObjectMap<JavaNode> result = new Int2ObjectOpenHashMap<>();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();

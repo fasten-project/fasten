@@ -22,6 +22,8 @@ import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.JavaNode;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -135,16 +137,16 @@ public class CallGraphUtils {
      * @return edges list
      */
     private static List<Pair<String, String>> getEdges(
-            final Map<List<Integer>, Map<Object, Object>> calls,
+            final Map<IntIntPair, Map<Object, Object>> calls,
             final Map<Integer, JavaNode> methods,
             final Map<Integer, String> types) {
 
         final List<Pair<String, String>> result = new ArrayList<>();
 
         for (final var exCall : calls.entrySet()) {
-            result.add(MutablePair.of(decode(types.get(exCall.getKey().get(0))) + "." +
-                            decode(methods.get(exCall.getKey().get(0)).getSignature()),
-                    decode(types.get(exCall.getKey().get(1))) + "." + decode(methods.get(exCall.getKey().get(1)).getSignature())));
+            result.add(MutablePair.of(decode(types.get(exCall.getKey().firstInt())) + "." +
+                            decode(methods.get(exCall.getKey().firstInt()).getSignature()),
+                    decode(types.get(exCall.getKey().secondInt())) + "." + decode(methods.get(exCall.getKey().secondInt()).getSignature())));
         }
         return result;
     }

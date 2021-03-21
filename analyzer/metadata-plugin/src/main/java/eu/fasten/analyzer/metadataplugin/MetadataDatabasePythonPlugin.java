@@ -140,9 +140,9 @@ public class MetadataDatabasePythonPlugin extends Plugin {
             for (var edgeEntry : graphCalls.entrySet()) {
 
                 // Get Global ID of the source callable
-                var source = lidToGidMap.get((long) edgeEntry.getKey().get(0));
+                var source = lidToGidMap.get((long) edgeEntry.getKey().firstInt());
                 // Get Global ID of the target callable
-                var target = lidToGidMap.get((long) edgeEntry.getKey().get(1));
+                var target = lidToGidMap.get((long) edgeEntry.getKey().secondInt());
 
                 // Create receivers
                 var receivers = new ReceiverRecord[0];

@@ -22,11 +22,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.EnumMap;
+
 import org.json.JSONObject;
 import org.json.JSONException;
 
 //Map<PythonScope, Map<String, PythonType>>
-public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<Map<PythonScope, Map<String, PythonType>>> {
+public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<EnumMap<PythonScope, Map<String, PythonType>>> {
     static {
         classHierarchyJSONKey = "modules";
     }
@@ -36,7 +38,7 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<M
      *
      * @param builder builder for {@link ExtendedRevisionCCallGraph}
      */
-    public ExtendedRevisionPythonCallGraph(final ExtendedBuilder<Map<PythonScope, Map<String, PythonType>>> builder) {
+    public ExtendedRevisionPythonCallGraph(final ExtendedBuilder<EnumMap<PythonScope, Map<String, PythonType>>> builder) {
         super(builder);
     }
 
@@ -56,7 +58,7 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<M
      */
     public ExtendedRevisionPythonCallGraph(final String forge, final String product, final String version,
                                      final long timestamp, int nodeCount, final String cgGenerator,
-                                     final Map<PythonScope, Map<String, PythonType>>classHierarchy,
+                                     final EnumMap<PythonScope, Map<String, PythonType>>classHierarchy,
                                      final Graph graph) {
         super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
     }
@@ -84,7 +86,7 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<M
      *
      * @param cha JSONObject of a cha.
      */
-    public Map<PythonScope, Map<String, PythonType>> getCHAFromJSON(final JSONObject cha) {
+    public EnumMap<PythonScope, Map<String, PythonType>> getCHAFromJSON(final JSONObject cha) {
         final Map<PythonScope, Map<String, PythonType>> methods = new HashMap<>();
 
         final var internal = cha.getJSONObject("internal");
@@ -93,7 +95,7 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<M
         methods.put(PythonScope.internal, parseModules(internal));
         methods.put(PythonScope.external, parseModules(external));
 
-        return methods;
+        return new EnumMap<>(methods);
     }
 
     /**
@@ -135,7 +137,7 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<M
      * @param cha class hierarchy
      * @return the JSON representation
      */
-    public JSONObject classHierarchyToJSON(final Map<PythonScope, Map<String, PythonType>> cha) {
+    public JSONObject classHierarchyToJSON(final EnumMap<PythonScope, Map<String, PythonType>> cha) {
         final var result = new JSONObject();
 
         final var internal = methodsToJSON(cha.get(PythonScope.internal));

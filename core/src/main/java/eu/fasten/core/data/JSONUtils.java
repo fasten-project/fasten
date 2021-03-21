@@ -1,9 +1,10 @@
 package eu.fasten.core.data;
 
-import com.google.common.collect.BiMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import it.unimi.dsi.fastutil.ints.IntIntPair;
 
 public class JSONUtils {
     /**
@@ -90,9 +91,9 @@ public class JSONUtils {
      * @param result the StringBuilder to append the information.
      */
     private static void appendCall(StringBuilder result,
-                                   final Map.Entry<List<Integer>, Map<Object, Object>> entry) {
-        result.append("[").append(quote(entry.getKey().get(0).toString())).append(",");
-        result.append(quote(entry.getKey().get(1).toString())).append(",{");
+                                   final Map.Entry<IntIntPair, Map<Object, Object>> entry) {
+        result.append("[").append(quote(entry.getKey().first().toString())).append(",");
+        result.append(quote(entry.getKey().second().toString())).append(",{");
         appendCallableMetadataJson(result, entry.getValue());
         result.append("}],");
     }
@@ -121,7 +122,7 @@ public class JSONUtils {
      * @param result the StringBuilder to append information.
      */
     private static void appendCha(StringBuilder result, final Map<JavaScope,
-        BiMap<String, JavaType>> cha) {
+        Map<String, JavaType>> cha) {
         result.append("\"cha\":{\"externalTypes\":{");
         for (final var entry : cha.get(JavaScope.externalTypes).entrySet()) {
             appendType(result, entry.getKey(), entry.getValue());

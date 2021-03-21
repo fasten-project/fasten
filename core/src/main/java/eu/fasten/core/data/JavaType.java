@@ -18,20 +18,29 @@
 
 package eu.fasten.core.data;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+
 import org.json.JSONObject;
+
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 /**
  * Each type is a class or an interface.
  */
 public class JavaType {
+
+	/** The FASTEN URI of this Java type. */
+	private final String uri;
 
     /**
      * The source file name of this type.
@@ -41,7 +50,8 @@ public class JavaType {
     /**
      * Methods of this type and their unique ids (unique within the same artifact).
      */
-    private final BiMap<Integer, JavaNode> methods;
+    private final Int2ObjectMap<JavaNode> methods;
+    private final Object2IntMap<JavaNode> javaNodes;
 
     /**
      * Classes that this type inherits from in the order of instantiation.
@@ -51,49 +61,6 @@ public class JavaType {
 
     public Map<String, JavaNode> getDefinedMethods() {
         return definedMethods;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        JavaType javaType = (JavaType) o;
-
-        if (isFinal != javaType.isFinal) {
-            return false;
-        }
-        if (sourceFileName != null ? !sourceFileName.equals(javaType.sourceFileName) :
-            javaType.sourceFileName != null) {
-            return false;
-        }
-        if (methods != null ? !methods.equals(javaType.methods) : javaType.methods != null) {
-            return false;
-        }
-        if (superClasses != null ? !superClasses.equals(javaType.superClasses) :
-            javaType.superClasses != null) {
-            return false;
-        }
-        if (superInterfaces != null ? !superInterfaces.equals(javaType.superInterfaces) :
-            javaType.superInterfaces != null) {
-            return false;
-        }
-        return access != null ? access.equals(javaType.access) : javaType.access == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = sourceFileName != null ? sourceFileName.hashCode() : 0;
-        result = 31 * result + (methods != null ? methods.hashCode() : 0);
-        result = 31 * result + (superClasses != null ? superClasses.hashCode() : 0);
-        result = 31 * result + (superInterfaces != null ? superInterfaces.hashCode() : 0);
-        result = 31 * result + (access != null ? access.hashCode() : 0);
-        result = 31 * result + (isFinal ? 1 : 0);
-        return result;
     }
 
     /**
@@ -121,13 +88,17 @@ public class JavaType {
      * @param access          access modifier
      * @param isFinal         true if the Type is final
      */
-    public JavaType(final String sourceFile, final BiMap<Integer, JavaNode> methods,
+    public JavaType(final String uri, final String sourceFile, final Int2ObjectMap<JavaNode> methods,
                     final Map<String, JavaNode> defineds,
                     final LinkedList<FastenURI> superClasses,
                     final List<FastenURI> superInterfaces, final String access,
                     final boolean isFinal) {
+        this.uri = uri;
         this.sourceFileName = sourceFile;
         this.methods = methods;
+        this.javaNodes = new Object2IntOpenHashMap<>();
+        methods.forEach((x, y) -> javaNodes.put(y, x));;
+        javaNodes.defaultReturnValue(-1);
         this.definedMethods = defineds;
         this.superClasses = superClasses;
         this.superInterfaces = superInterfaces;
@@ -141,19 +112,23 @@ public class JavaType {
      * @param type JSONObject of a type including its source file name, map of methods, super
      *             classes and super interfaces.
      */
-    public JavaType(final JSONObject type) {
+    public JavaType(final String uri, final JSONObject type) {
+        this.uri = uri;
         this.sourceFileName = type.getString("sourceFile");
 
         final var methodsJson = type.getJSONObject("methods");
-        this.methods = HashBiMap.create();
+        this.methods = new Int2ObjectOpenHashMap<>();
+        this.javaNodes = new Object2IntOpenHashMap<>();
+        javaNodes.defaultReturnValue(-1);
         this.definedMethods = new HashMap<>();
         for (final var methodKey : methodsJson.keySet()) {
             final var nodeJson = methodsJson.getJSONObject(methodKey);
 
             final var metadata = nodeJson.getJSONObject("metadata");
-            final var uri = FastenURI.create(nodeJson.getString("uri"));
-            final var node = new JavaNode(uri, metadata.toMap());
-            this.methods.put(Integer.parseInt(methodKey), node);
+            final var node = new JavaNode(FastenURI.create(nodeJson.getString("uri")), metadata.toMap());
+            final int k = Integer.parseInt(methodKey);
+			this.methods.put(k, node);
+            this.javaNodes.put(node, k);
             if (!metadata.isEmpty()) {
                 if (metadata.getBoolean("defined")){
                     definedMethods.put(node.getSignature(), node);
@@ -178,11 +153,15 @@ public class JavaType {
         this.isFinal = type.getBoolean("final");
     }
 
+    public String getUri() {
+        return uri;
+    }
+    
     public String getSourceFileName() {
         return sourceFileName;
     }
 
-    public Map<Integer, JavaNode> getMethods() {
+    public Int2ObjectMap<JavaNode> getMethods() {
         return this.methods;
     }
 
@@ -203,19 +182,24 @@ public class JavaType {
     }
 
     /**
-     * Add a JavaNode to the list of methods of this {@link JavaType}.
+     * Returns the integer associated to the given JavaNode.
+     *
+     * @param node a {@link JavaNode}.
+     * @return the associated integer key, or &minus;1 if {@code node} is not in the map.
+     */
+    public int getMethodKey(final JavaNode node) {
+        return javaNodes.getInt(node);
+    }
+    
+    /**
+     * Puts a JavaNode to the list of methods of this {@link JavaType}.
      *
      * @param node new node to add
      * @param key  the key corresponding to this JavaNode
-     * @return newly added method id, or an old id, of method already exists
      */
-    public int addMethod(final JavaNode node, final int key) {
-        if (this.methods.inverse().containsKey(node)) {
-            return this.methods.inverse().get(node);
-        } else {
-            this.methods.put(key, node);
-            return key;
-        }
+    public void addMethod(final JavaNode node, final int key) {
+        methods.put(key, node);
+        javaNodes.put(node, key);
     }
 
     /**
@@ -223,8 +207,8 @@ public class JavaType {
      *
      * @param map map of id-s and corresponding JavaNodes
      */
-    public static Map<Integer, JSONObject> toMapOfString(final Map<Integer, JavaNode> map) {
-        final Map<Integer, JSONObject> methods = new HashMap<>();
+    public static Int2ObjectMap<JSONObject> toMapOfString(final Int2ObjectMap<JavaNode> map) {
+        final Int2ObjectMap<JSONObject> methods = new Int2ObjectOpenHashMap<>();
         for (final var entry : map.entrySet()) {
             final JSONObject node = new JSONObject();
             node.put("uri", entry.getValue().getUri());
@@ -290,4 +274,56 @@ public class JavaType {
                 + ", final=" + isFinal
                 + '}';
     }
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((access == null) ? 0 : access.hashCode());
+		result = prime * result + ((definedMethods == null) ? 0 : definedMethods.hashCode());
+		result = prime * result + (isFinal ? 1231 : 1237);
+		result = prime * result + ((javaNodes == null) ? 0 : javaNodes.hashCode());
+		result = prime * result + ((methods == null) ? 0 : methods.hashCode());
+		result = prime * result + ((sourceFileName == null) ? 0 : sourceFileName.hashCode());
+		result = prime * result + ((superClasses == null) ? 0 : superClasses.hashCode());
+		result = prime * result + ((superInterfaces == null) ? 0 : superInterfaces.hashCode());
+		result = prime * result + ((uri == null) ? 0 : uri.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass()) return false;
+		JavaType other = (JavaType)obj;
+		if (access == null) {
+			if (other.access != null) return false;
+		} else if (!access.equals(other.access)) return false;
+		if (definedMethods == null) {
+			if (other.definedMethods != null) return false;
+		} else if (!definedMethods.equals(other.definedMethods)) return false;
+		if (isFinal != other.isFinal) return false;
+		if (javaNodes == null) {
+			if (other.javaNodes != null) return false;
+		} else if (!javaNodes.equals(other.javaNodes)) return false;
+		if (methods == null) {
+			if (other.methods != null) return false;
+		} else if (!methods.equals(other.methods)) return false;
+		if (sourceFileName == null) {
+			if (other.sourceFileName != null) return false;
+		} else if (!sourceFileName.equals(other.sourceFileName)) return false;
+		if (superClasses == null) {
+			if (other.superClasses != null) return false;
+		} else if (!superClasses.equals(other.superClasses)) return false;
+		if (superInterfaces == null) {
+			if (other.superInterfaces != null) return false;
+		} else if (!superInterfaces.equals(other.superInterfaces)) return false;
+		if (uri == null) {
+			if (other.uri != null) return false;
+		} else if (!uri.equals(other.uri)) return false;
+		return true;
+	}
+
+    
 }

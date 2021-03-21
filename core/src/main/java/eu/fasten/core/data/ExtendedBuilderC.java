@@ -18,12 +18,13 @@
 
 package eu.fasten.core.data;
 
+import java.util.EnumMap;
 import java.util.Map;
 
 /**
  * Builder for {@link ExtendedRevisionCCallGraph}.
  */
-public final class ExtendedBuilderC extends ExtendedBuilder<Map<CScope, Map<String, Map<Integer, CNode>>>> {
+public final class ExtendedBuilderC extends ExtendedBuilder<EnumMap<CScope, Map<String, Map<Integer, CNode>>>> {
     public String architecture;
 
     public String getArchitecture() {
@@ -69,7 +70,7 @@ public final class ExtendedBuilderC extends ExtendedBuilder<Map<CScope, Map<Stri
         return this;
     }
 
-    public ExtendedBuilderC classHierarchy(final Map<CScope, Map<String, Map<Integer, CNode>>> cha) {
+    public ExtendedBuilderC classHierarchy(final EnumMap<CScope, Map<String, Map<Integer, CNode>>> cha) {
         this.classHierarchy = cha;
         return this;
     }

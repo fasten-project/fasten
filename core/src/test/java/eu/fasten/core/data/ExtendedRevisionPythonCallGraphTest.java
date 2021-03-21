@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Objects;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -37,10 +38,9 @@ class ExtendedRevisionPythonCallGraphTest {
     private static ExtendedRevisionPythonCallGraph graph;
 
     @BeforeAll
-    static void setUp() throws IOException {
+    static void setUp() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testPythonRCG.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testPythonRCG.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -53,10 +53,9 @@ class ExtendedRevisionPythonCallGraphTest {
     }
 
     @Test
-    void toJSON() throws FileNotFoundException {
+    void toJSON() throws FileNotFoundException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testPythonRCG.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testPythonRCG.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -99,10 +98,9 @@ class ExtendedRevisionPythonCallGraphTest {
     }
 
     @Test
-    void isCallGraphEmptyEmptyInternal() throws IOException {
+    void isCallGraphEmptyEmptyInternal() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testPythonRCGEmptyInternal.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testPythonRCGEmptyInternal.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -112,10 +110,9 @@ class ExtendedRevisionPythonCallGraphTest {
     }
 
     @Test
-    void isCallGraphEmptyEmptyExternal() throws IOException {
+    void isCallGraphEmptyEmptyExternal() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testPythonRCGEmptyExternal.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testPythonRCGEmptyExternal.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -125,10 +122,9 @@ class ExtendedRevisionPythonCallGraphTest {
     }
 
     @Test
-    void isCallGraphEmptyEmptyAll() throws IOException {
+    void isCallGraphEmptyEmptyAll() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testPythonRCGEmptyAll.json"))
-                .getFile());
+                .getResource("extended-revision-call-graph/testPythonRCGEmptyAll.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 

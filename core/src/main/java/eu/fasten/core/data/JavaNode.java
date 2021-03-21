@@ -19,6 +19,8 @@
 package eu.fasten.core.data;
 
 import java.util.Map;
+import java.util.Objects;
+
 import org.apache.commons.lang3.StringUtils;
 
 public class JavaNode extends Node {
@@ -89,17 +91,12 @@ public class JavaNode extends Node {
 
         Node node = (Node) o;
 
-        if (uri != null ? !uri.equals(node.uri) : node.uri != null) {
-            return false;
-        }
-        return metadata != null ? metadata.equals(node.metadata) : node.metadata == null;
+        return Objects.equals(uri, node.uri);
     }
 
     @Override
     public int hashCode() {
-        int result = uri != null ? uri.hashCode() : 0;
-        result = 31 * result + (metadata != null ? metadata.hashCode() : 0);
-        return result;
+        return uri != null ? uri.hashCode() : 0;
     }
   
      /**

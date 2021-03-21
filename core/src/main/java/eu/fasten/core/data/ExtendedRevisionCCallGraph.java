@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.EnumMap;
+
 import org.json.JSONObject;
 import org.json.JSONException;
 
@@ -32,7 +34,7 @@ import org.json.JSONException;
  * The data structure contains a map with CScopes to a map of functions'
  * URIs to a map of NodeIds to CNodes.
  */
-public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CScope, Map<String, Map<Integer, CNode>>>> {
+public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<EnumMap<CScope, Map<String, Map<Integer, CNode>>>> {
     static {
         classHierarchyJSONKey = "functions";
     }
@@ -43,7 +45,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
      *
      * @param builder builder for {@link ExtendedRevisionCCallGraph}
      */
-    public ExtendedRevisionCCallGraph(final ExtendedBuilder<Map<CScope, Map<String, Map<Integer, CNode>>>> builder) {
+    public ExtendedRevisionCCallGraph(final ExtendedBuilder<EnumMap<CScope, Map<String, Map<Integer, CNode>>>> builder) {
         super(builder);
         ExtendedBuilderC cBuilder = (ExtendedBuilderC) builder;
         this.architecture = cBuilder.getArchitecture();
@@ -65,7 +67,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
      */
     public ExtendedRevisionCCallGraph(final String forge, final String product, final String version,
                                      final long timestamp, int nodeCount, final String cgGenerator,
-                                     final Map<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
+                                     final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
                                      final Graph graph) {
         super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
     }
@@ -87,7 +89,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
      */
     public ExtendedRevisionCCallGraph(final String forge, final String product, final String version,
                                      final long timestamp, int nodeCount, final String cgGenerator,
-                                     final Map<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
+                                     final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
                                      final Graph graph, final String architecture) {
         super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
         this.architecture = architecture;
@@ -157,8 +159,8 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
      *
      * @param cha JSONObject of a cha.
      */
-    public Map<CScope, Map<String, Map<Integer, CNode>>> getCHAFromJSON(final JSONObject cha) {
-        final Map<CScope, Map<String, Map<Integer, CNode>>> methods = new HashMap<>();
+    public EnumMap<CScope, Map<String, Map<Integer, CNode>>> getCHAFromJSON(final JSONObject cha) {
+        final HashMap<CScope, Map<String, Map<Integer, CNode>>> methods = new HashMap<>();
 
         final var internal = cha.getJSONObject("internal");
         final var external = cha.getJSONObject("external");
@@ -177,7 +179,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
         // Parse external undefined functions
         final var externalUndefined = external.getJSONObject("undefined").getJSONObject("methods");
         methods.put(CScope.externalUndefined, parseMethods(externalUndefined, false));
-        return methods;
+        return new EnumMap<>(methods);
     }
 
     /**
@@ -256,7 +258,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<Map<CS
      * @param cha class hierarchy
      * @return the JSON representation
      */
-    public JSONObject classHierarchyToJSON(final Map<CScope, Map<String, Map<Integer, CNode>>> cha) {
+    public JSONObject classHierarchyToJSON(final EnumMap<CScope, Map<String, Map<Integer, CNode>>> cha) {
         final var result = new JSONObject();
         final var internal = new JSONObject();
         final var external = new JSONObject();

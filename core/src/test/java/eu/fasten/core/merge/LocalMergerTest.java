@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,17 +26,15 @@ public class LocalMergerTest {
     private static LocalMerger merger;
 
     @BeforeAll
-    static void setUp() throws FileNotFoundException {
+    static void setUp() throws FileNotFoundException, URISyntaxException {
 
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-            .getResource("merge/Imported.json"))
-            .getFile());
+            .getResource("merge/Imported.json")).toURI().getPath());
         JSONTokener tokener = new JSONTokener(new FileReader(file));
         var imported = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
 
         file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-            .getResource("merge/Importer.json"))
-            .getFile());
+            .getResource("merge/Importer.json")).toURI().getPath());
         tokener = new JSONTokener(new FileReader(file));
         var importer = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
 
@@ -46,23 +45,23 @@ public class LocalMergerTest {
     public void mergeAllDepsTest() {
         final var cg = merger.mergeAllDeps();
         final var uris = merger.getAllUris();
-        assertEquals(cg.edgeSet().size(), 2);
-        assertEquals(uris.size(), 3);
+        assertEquals(2, cg.edgeSet().size());
+        assertEquals(3, uris.size());
         final var source = uris.inverse().get("fasten://mvn!Importer$0/merge" +
             ".simpleImport/Importer.sourceMethod()%2Fjava.lang%2FVoidType");
         final var target1 = uris.inverse().get("fasten://mvn!Imported$1/merge" +
             ".simpleImport/Imported.targetMethod()%2Fjava.lang%2FVoidType");
         final var target2 = uris.inverse().get("fasten://mvn!Imported$1/merge.simpleImport/Imported" +
             ".%3Cinit%3E()%2Fjava.lang%2FVoidType");
-        assertEquals(cg.edgeSet(), Set.of(LongLongPair.of(source, target1), LongLongPair.of(source,
-            target2)));
+        assertEquals(Set.of(LongLongPair.of(source, target1), LongLongPair.of(source,
+                target2)), cg.edgeSet());
     }
 
     @Test
-    public void souldNotGetIllegalArgumentExceptionWhileMerging() throws IOException {
+    public void souldNotGetIllegalArgumentExceptionWhileMerging() throws IOException, URISyntaxException {
         final var dir =
             new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("merge/LocalMergeException")).getFile());
+                .getResource("merge/LocalMergeException")).toURI().getPath());
         final List<ExtendedRevisionJavaCallGraph> depSet = new ArrayList<>();
 
         for (final var jsonFile : dir.listFiles()) {
