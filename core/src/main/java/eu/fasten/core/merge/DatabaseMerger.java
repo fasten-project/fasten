@@ -31,6 +31,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -297,38 +298,45 @@ public class DatabaseMerger {
         }
 
         for (var entry : arc.receivers) {
-            var receiverTypeUri = entry.component3();
-            var type = entry.component2().getLiteral();
-            switch (type) {
-                case "virtual":
-                case "interface":
-                    final var types = universalChildren.get(receiverTypeUri);
-                    if (types != null) {
-                        for (final var depTypeUri : types) {
-                            for (final var target : typeDictionary.getOrDefault(depTypeUri,
-                                    new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
-                                addEdge(result, callGraphData, arc.source, target, isCallback);
-                                added = true;
+            for (var receiverTypeUri : parseStringReceivers(entry.component3())) {
+                var type = entry.component2().getLiteral();
+                switch (type) {
+                    case "virtual":
+                    case "interface":
+                        final var types = universalChildren.get(receiverTypeUri);
+                        if (types != null) {
+                            for (final var depTypeUri : types) {
+                                for (final var target : typeDictionary.getOrDefault(depTypeUri,
+                                    new HashMap<>())
+                                    .getOrDefault(node.signature, new HashSet<>())) {
+                                    addEdge(result, callGraphData, arc.source, target, isCallback);
+                                    added = true;
+                                }
                             }
                         }
-                    }
-                    break;
-                case "special":
-                    added = resolveInitsAndConstructors(result, callGraphData, arc, node, isCallback);
-                    break;
-                case "dynamic":
-                    logger.warn("OPAL didn't rewrite the dynamic");
-                    break;
-                default:
-                    for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
+                        break;
+                    case "special":
+                        added = resolveInitsAndConstructors(result, callGraphData, arc, node,
+                            isCallback);
+                        break;
+                    case "dynamic":
+                        logger.warn("OPAL didn't rewrite the dynamic");
+                        break;
+                    default:
+                        for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
-                        addEdge(result, callGraphData, arc.source, target, isCallback);
-                        added = true;
-                    }
-                    break;
+                            addEdge(result, callGraphData, arc.source, target, isCallback);
+                            added = true;
+                        }
+                        break;
+                }
             }
         }
         return added;
+    }
+
+    private ArrayList<String> parseStringReceivers(final String receivers) {
+        return new ArrayList<>(Arrays.asList((receivers.replace("[","").replace("]","").split(","))));
     }
 
     /**

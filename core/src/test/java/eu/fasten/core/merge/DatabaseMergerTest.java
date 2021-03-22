@@ -90,23 +90,23 @@ public class DatabaseMergerTest {
         arcs = Map.of(
                 Pair.of(MAIN_INIT, MAIN_INIT), new ReceiverRecord[0],
                 Pair.of(MAIN_INIT, (long) 2), new ReceiverRecord[]{
-                        new ReceiverRecord(6, ReceiverType.special, "/java.lang/Object")
+                        new ReceiverRecord(6, ReceiverType.special, "[/java.lang/Object]")
                 },
                 Pair.of(MAIN_MAIN_METHOD, (long) 3), new ReceiverRecord[]{
-                        new ReceiverRecord(8, ReceiverType.special, "/test.group/Baz")
+                        new ReceiverRecord(8, ReceiverType.special, "[/test.group/Baz]")
                 },
                 Pair.of(MAIN_MAIN_METHOD, (long) 4), new ReceiverRecord[]{
-                        new ReceiverRecord(9, ReceiverType.virtual, "/test.group/Bar"),
-                        new ReceiverRecord(12, ReceiverType.interface_, "/test.group/Bar")
+                        new ReceiverRecord(9, ReceiverType.virtual, "[/test.group/Bar]"),
+                        new ReceiverRecord(12, ReceiverType.interface_, "[/test.group/Bar]")
                 },
                 Pair.of(MAIN_MAIN_METHOD, (long) 5), new ReceiverRecord[]{
-                        new ReceiverRecord(11, ReceiverType.special, "/test.group/Bar")
+                        new ReceiverRecord(11, ReceiverType.special, "[/test.group/Bar]")
                 },
                 Pair.of(MAIN_MAIN_METHOD, (long) 6), new ReceiverRecord[]{
-                        new ReceiverRecord(14, ReceiverType.static_, "/test.group/Foo")
+                        new ReceiverRecord(14, ReceiverType.static_, "[/test.group/Foo]")
                 },
                 Pair.of(MAIN_MAIN_METHOD, (long) 7), new ReceiverRecord[]{
-                        new ReceiverRecord(15, ReceiverType.special, "/test.group/Foo")
+                        new ReceiverRecord(15, ReceiverType.special, "[/test.group/Foo]")
                 }
         );
     }
