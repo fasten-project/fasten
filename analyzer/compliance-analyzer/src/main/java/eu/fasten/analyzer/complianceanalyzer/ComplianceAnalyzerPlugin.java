@@ -58,7 +58,7 @@ public class ComplianceAnalyzerPlugin extends Plugin {
         private final Logger logger = LoggerFactory.getLogger(CompliancePluginExtension.class.getName());
 
         protected String consumerTopic = "fasten.RepoCloner.out";
-        protected Throwable pluginError = null;
+        protected Exception pluginError = null;
         protected String repoUrl;
 
         /**
@@ -259,11 +259,11 @@ public class ComplianceAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public Throwable getPluginError() {
+        public Exception getPluginError() {
             return this.pluginError;
         }
 
-        public void setPluginError(Throwable throwable) {
+        public void setPluginError(Exception throwable) {
             this.pluginError = throwable;
         }
 
