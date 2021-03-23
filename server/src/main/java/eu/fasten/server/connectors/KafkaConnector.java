@@ -56,7 +56,7 @@ public class KafkaConnector {
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "1");
-        properties.setProperty(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, "50000000"); //Set max read size to 50 MB.
+        properties.setProperty(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, "200000000"); //Set max read size to 200 MB.
         properties.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "5000"); // 5 seconds
 
         // Default consumption configuration
@@ -94,7 +94,7 @@ public class KafkaConnector {
         p.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
                 StringSerializer.class.getName());
         p.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG,
-                "50000000"); //Set produce size to 50MB.
+                "200000000"); //Set produce size to 200MB.
         return p;
     }
 }
