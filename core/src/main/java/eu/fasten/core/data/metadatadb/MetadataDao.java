@@ -1490,7 +1490,7 @@ public class MetadataDao {
                 .fetch();
         var map = new HashMap<Long, JSONObject>(result.size());
         for (var record : result) {
-            map.put(record.value1(), new JSONObject(record.value2().data()));
+            map.put(record.value1(), new JSONObject(record.value2().data()).getJSONObject("vulnerabilities"));
         }
         return map;
     }
