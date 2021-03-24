@@ -54,15 +54,9 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             graphResolver.buildDependencyGraph(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
             this.graphResolver = graphResolver;
         } catch (Exception e) {
-            System.err.println("Error constructing dependency graph resolver: " + e.getMessage());
+            logger.error("Error constructing dependency graph resolver", e);
             System.exit(1);
         }
-        try {
-            Thread.sleep(30000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        System.out.println("Initialized");
     }
 
     @Override

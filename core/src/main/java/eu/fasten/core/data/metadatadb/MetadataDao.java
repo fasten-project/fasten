@@ -24,6 +24,7 @@ import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.IngestedArtifactsRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import eu.fasten.core.utils.FastenUriUtils;
@@ -727,20 +728,15 @@ public class MetadataDao {
      * @param edges List of edges records to insert
      */
     public void batchInsertEdges(List<EdgesRecord> edges) {
-        Query batchQuery = context.insertInto(Edges.EDGES,
-                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS,
-                Edges.EDGES.METADATA)
-                .values((Long) null, (Long) null, (ReceiverRecord[]) null, (JSONB) null)
-                .onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
-                .set(Edges.EDGES.RECEIVERS, Edges.EDGES.as("excluded").RECEIVERS)
-                .set(Edges.EDGES.METADATA, JsonbDSL.concat(Edges.EDGES.METADATA,
-                        Edges.EDGES.as("excluded").METADATA));
-        var batchBind = context.batch(batchQuery);
+        var insert = context.insertInto(Edges.EDGES,
+                Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.RECEIVERS, Edges.EDGES.METADATA);
         for (var edge : edges) {
-            batchBind = batchBind.bind(edge.getSourceId(), edge.getTargetId(),
-                    edge.getReceivers(), edge.getMetadata());
+            insert = insert.values(edge.getSourceId(), edge.getTargetId(), edge.getReceivers(), edge.getMetadata());
         }
-        batchBind.execute();
+        insert.onConflictOnConstraint(Keys.UNIQUE_SOURCE_TARGET).doUpdate()
+                .set(Edges.EDGES.RECEIVERS, Edges.EDGES.as("excluded").RECEIVERS)
+                .set(Edges.EDGES.METADATA, field("coalesce(edges.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
+                .execute();
     }
 
     /**
@@ -858,9 +854,8 @@ public class MetadataDao {
         return ids;
     }
 
-    public long insertIngestedArtifact(String packageName, String version, Timestamp timestamp) {
-        var result = context
-                .insertInto(IngestedArtifacts.INGESTED_ARTIFACTS,
+    public void insertIngestedArtifact(String packageName, String version, Timestamp timestamp) {
+        context.insertInto(IngestedArtifacts.INGESTED_ARTIFACTS,
                         IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
                         IngestedArtifacts.INGESTED_ARTIFACTS.VERSION,
                         IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP)
@@ -869,12 +864,20 @@ public class MetadataDao {
                 .set(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").PACKAGE_NAME)
                 .set(IngestedArtifacts.INGESTED_ARTIFACTS.VERSION, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").VERSION)
                 .set(IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").TIMESTAMP)
-                .returning(IngestedArtifacts.INGESTED_ARTIFACTS.ID)
-                .fetchOne();
-        if (result == null) {
-            return -1;
+                .execute();
+    }
+
+    public void batchInsertIngestedArtifacts(List<IngestedArtifactsRecord> ingestedArtifacts) {
+        var insert = context.insertInto(IngestedArtifacts.INGESTED_ARTIFACTS,
+                IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
+                IngestedArtifacts.INGESTED_ARTIFACTS.VERSION,
+                IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP);
+        for (var artifact : ingestedArtifacts) {
+            insert = insert.values(artifact.getPackageName(), artifact.getVersion(), artifact.getTimestamp());
         }
-        return result.getId();
+        insert.onConflictOnConstraint(Keys.UNIQUE_INGESTED_ARTIFACTS).doUpdate()
+                .set(IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").TIMESTAMP)
+                .execute();
     }
 
     public boolean isArtifactIngested(String packageName, String version) {
@@ -886,6 +889,24 @@ public class MetadataDao {
                 .and(IngestedArtifacts.INGESTED_ARTIFACTS.VERSION.eq(version))
                 .fetch();
         return !result.isEmpty();
+    }
+
+    public Set<Pair<String, String>> areArtifactsIngested(List<String> packageNames, List<String> versions) {
+        var condition = IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME.eq(packageNames.get(0))
+                .and(IngestedArtifacts.INGESTED_ARTIFACTS.VERSION.eq(versions.get(0)));
+        for (int i = 1; i < packageNames.size(); i++) {
+            condition = condition.or(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME.eq(packageNames.get(i))
+                    .and(IngestedArtifacts.INGESTED_ARTIFACTS.VERSION.eq(versions.get(i))));
+        }
+        var result = context
+                .select(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
+                        IngestedArtifacts.INGESTED_ARTIFACTS.VERSION)
+                .from(IngestedArtifacts.INGESTED_ARTIFACTS)
+                .where(condition)
+                .fetch();
+        var ingestedArtifacts = new HashSet<Pair<String, String>>(result.size());
+        result.forEach(r -> ingestedArtifacts.add(new Pair<>(r.component1(), r.component2())));
+        return ingestedArtifacts;
     }
 
     protected Condition packageVersionWhereClause(String name, String version) {

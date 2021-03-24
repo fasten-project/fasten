@@ -19,9 +19,14 @@
 package eu.fasten.analyzer.restapiplugin.mvn;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.IngestedArtifactsRecord;
 import eu.fasten.core.maven.MavenResolver;
+import org.apache.commons.math3.util.Pair;
 import org.json.JSONObject;
 import java.sql.Timestamp;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class LazyIngestionProvider {
 
@@ -41,8 +46,8 @@ public class LazyIngestionProvider {
             if (date != null && date > 0) {
                 jsonRecord.put("date", date);
             }
-            var id = KnowledgeBaseConnector.kbDao.insertIngestedArtifact(packageName, version, new Timestamp(System.currentTimeMillis()));
-            if (id != -1 && KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
+            KnowledgeBaseConnector.kbDao.insertIngestedArtifact(packageName, version, new Timestamp(System.currentTimeMillis()));
+            if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
                 KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
             }
         }
@@ -53,8 +58,73 @@ public class LazyIngestionProvider {
         var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         var mavenResolver = new MavenResolver();
         var dependencies = mavenResolver.resolveFullDependencySetOnline(groupId, artifactId, version);
-        // TODO: Provide proper support for different artifact repositories
         ingestArtifactIfNecessary(packageName, version, null, null);
         dependencies.forEach(d -> ingestArtifactIfNecessary(d.groupId + Constants.mvnCoordinateSeparator + d.artifactId, d.version.toString(), null, null));
+    }
+
+    public static void batchIngestArtifacts(List<IngestedArtifact> artifacts) {
+        var alreadyIngestedArtifacts = KnowledgeBaseConnector.kbDao.areArtifactsIngested(
+                artifacts.stream().map(a -> a.packageName).collect(Collectors.toList()),
+                artifacts.stream().map(a -> a.version).collect(Collectors.toList())
+        );
+        artifacts = artifacts.stream()
+                .filter(a -> !alreadyIngestedArtifacts.contains(new Pair<>(a.packageName, a.version)))
+                .collect(Collectors.toList());
+        var artifactRecords = artifacts.stream()
+                .map(a -> new IngestedArtifactsRecord(0L, a.packageName, a.version, new Timestamp(System.currentTimeMillis())))
+                .collect(Collectors.toList());
+        KnowledgeBaseConnector.kbDao.batchInsertIngestedArtifacts(artifactRecords);
+        for (var artifact : artifacts) {
+            if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
+                var jsonRecord = new JSONObject();
+                jsonRecord.put("groupId", artifact.packageName.split(Constants.mvnCoordinateSeparator)[0]);
+                jsonRecord.put("artifactId", artifact.packageName.split(Constants.mvnCoordinateSeparator)[1]);
+                jsonRecord.put("version", artifact.version);
+                if (artifact.artifactRepo != null && !artifact.artifactRepo.isEmpty()) {
+                    jsonRecord.put("artifactRepository", artifact.artifactRepo);
+                }
+                if (artifact.date != null && artifact.date > 0) {
+                    jsonRecord.put("date", artifact.date);
+                }
+                KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
+            }
+        }
+    }
+
+    public static class IngestedArtifact {
+        final String packageName;
+        final String version;
+        final String artifactRepo;
+        final Long date;
+
+        public IngestedArtifact(String packageName, String version, String artifactRepo, Long date) {
+            this.packageName = packageName;
+            this.version = version;
+            this.artifactRepo = artifactRepo;
+            this.date = date;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            IngestedArtifact that = (IngestedArtifact) o;
+            if (!Objects.equals(packageName, that.packageName))
+                return false;
+            if (!Objects.equals(version, that.version))
+                return false;
+            if (!Objects.equals(artifactRepo, that.artifactRepo))
+                return false;
+            return Objects.equals(date, that.date);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = packageName != null ? packageName.hashCode() : 0;
+            result = 31 * result + (version != null ? version.hashCode() : 0);
+            result = 31 * result + (artifactRepo != null ? artifactRepo.hashCode() : 0);
+            result = 31 * result + (date != null ? date.hashCode() : 0);
+            return result;
+        }
     }
 }

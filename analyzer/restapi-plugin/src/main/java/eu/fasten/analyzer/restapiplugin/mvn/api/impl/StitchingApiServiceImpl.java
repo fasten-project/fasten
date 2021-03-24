@@ -23,6 +23,7 @@ import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.api.StitchingApiService;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.DatabaseMerger;
 import eu.fasten.core.utils.FastenUriUtils;
@@ -42,8 +43,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class StitchingApiServiceImpl implements StitchingApiService {
-
-    private static final Logger logger = LoggerFactory.getLogger(StitchingApiServiceImpl.class);
 
     @Override
     public ResponseEntity<String> resolveCallablesToUris(List<Long> gidList) {
@@ -106,15 +105,17 @@ public class StitchingApiServiceImpl implements StitchingApiService {
     }
 
     public ResponseEntity<String> batchIngestArtifacts(JSONArray jsonArtifacts) {
+        var artifacts = new ArrayList<LazyIngestionProvider.IngestedArtifact>();
         for (int i = 0; i < jsonArtifacts.length(); i++) {
             var json = jsonArtifacts.getJSONObject(i);
-            var groupId = json.getString("groupId");
-            var artifactId = json.getString("artifactId");
-            var version = json.getString("version");
-            var date = json.optLong("date", -1);
-            var artifactRepository = json.optString("artifactRepository", null);
-            LazyIngestionProvider.ingestArtifactIfNecessary(groupId + Constants.mvnCoordinateSeparator + artifactId, version, artifactRepository, date);
+            artifacts.add(new LazyIngestionProvider.IngestedArtifact(
+                    json.getString("groupId") + Constants.mvnCoordinateSeparator + json.getString("artifactId"),
+                    json.getString("version"),
+                    json.optString("artifactRepository", null),
+                    json.optLong("date", -1)
+            ));
         }
+        LazyIngestionProvider.batchIngestArtifacts(artifacts);
         return new ResponseEntity<>("Ingested successfully", HttpStatus.OK);
     }
 }
