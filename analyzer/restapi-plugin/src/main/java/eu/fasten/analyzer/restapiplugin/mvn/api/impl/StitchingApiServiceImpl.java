@@ -22,27 +22,25 @@ import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.api.StitchingApiService;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.merge.DatabaseMerger;
 import eu.fasten.core.utils.FastenUriUtils;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import java.sql.Timestamp;
-import java.text.DecimalFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class StitchingApiServiceImpl implements StitchingApiService {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     public ResponseEntity<String> resolveCallablesToUris(List<Long> gidList) {
@@ -56,10 +54,14 @@ public class StitchingApiServiceImpl implements StitchingApiService {
 
     @Override
     public ResponseEntity<String> getCallablesMetadata(List<String> fullFastenUris, boolean allAttributes, List<String> attributes) {
+        var total = System.currentTimeMillis();
+        logger.debug("Received a list of callables");
         if (!allAttributes && attributes == null) {
             return new ResponseEntity<>("Either 'allAttributes' must be 'true' or a list of 'attributes' must be provided", HttpStatus.BAD_REQUEST);
         }
         Map<String, List<String>> packageVersionUris;
+        logger.debug("Parsing full FASTEN URIs and grouping callables by package version");
+        var start = System.currentTimeMillis();
         try {
             packageVersionUris = fullFastenUris.stream().map(FastenUriUtils::parseFullFastenUri).collect(Collectors.toMap(
                     x -> x.get(0) + "!" + x.get(1) + "$" + x.get(2),
@@ -73,18 +75,27 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
+        logger.debug("Parsing and grouping is done: {}ms", System.currentTimeMillis() - start);
         var metadataMap = new HashMap<String, JSONObject>(fullFastenUris.size());
+        logger.debug("Starting retrieving data from the database");
+        var time = System.currentTimeMillis();
         for (var artifact : packageVersionUris.keySet()) {
             var forge = artifact.split("!")[0];
             var forgelessArtifact = Arrays.stream(artifact.split("!")).skip(1).collect(Collectors.joining("!"));
             var packageName = forgelessArtifact.split("\\$")[0];
             var version = forgelessArtifact.split("\\$")[1];
             var partialUris = packageVersionUris.get(artifact);
+            logger.debug("Sending database request to retrieve metadata for {} callables of {}:{}", partialUris.size(), packageName, version);
+            start = System.currentTimeMillis();
             var urisMetadata = KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris);
+            logger.debug("Database query is complete: {}ms", System.currentTimeMillis() - start);
             if (urisMetadata != null) {
                 metadataMap.putAll(urisMetadata);
             }
         }
+        logger.debug("All data is retrieved. In total data retrieval took {}ms", System.currentTimeMillis() - time);
+        logger.debug("Now removing attributes which are not needed and putting everything into JSON");
+        start = System.currentTimeMillis();
         var json = new JSONObject();
         for (var entry : metadataMap.entrySet()) {
             var neededMetadata = new JSONObject();
@@ -101,6 +112,8 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         }
         var result = json.toString();
         result = result.replace("\\/", "/");
+        logger.debug("Done: {}ms. Sending response", System.currentTimeMillis() - start);
+        logger.debug("In total everything took {}ms", System.currentTimeMillis() - total);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
