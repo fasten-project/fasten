@@ -123,7 +123,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         }
 
         this.artifactRepository = consumedJson.optString("artifactRepository",
-                (callgraph instanceof ExtendedRevisionJavaCallGraph) ? MavenUtilities.getRepos().get(0) : null);
+                (callgraph instanceof ExtendedRevisionJavaCallGraph) ? MavenUtilities.MAVEN_CENTRAL_REPO : null);
         var revision = callgraph.product + Constants.mvnCoordinateSeparator + callgraph.version;
 
         int transactionRestartCount = 0;
@@ -223,8 +223,14 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         // Insert package record
         final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge);
 
-        var artifactRepoId = artifactRepository != null ? metadataDao.insertArtifactRepository(artifactRepository) : null;
-
+        Long artifactRepoId = null;
+        if (artifactRepository != null) {
+            if (artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
+                artifactRepoId = -1L;
+            } else {
+                artifactRepoId = metadataDao.insertArtifactRepository(artifactRepository);
+            }
+        }
         // Insert package version record
         final long packageVersionId = metadataDao.insertPackageVersion(packageId,
                 callGraph.getCgGenerator(), callGraph.version, artifactRepoId, null,
