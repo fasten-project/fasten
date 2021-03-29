@@ -70,9 +70,17 @@ public class CallableApiServiceImplTest {
 
         Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
         result = service.getCallableMetadata(packageName, version, callable, null, null);
-        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(2)).getCallableMetadata(packageName, version, callable);
+
+        packageName = "junit:junit";
+        version = "4.12";
+        Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
+        result = service.getCallableMetadata(packageName, version, callable, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
     }
 
     @Test

@@ -91,9 +91,17 @@ public class PackageApiServiceImplTest {
 
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);
         result = service.getPackageVersion(packageName, version, null, null);
-        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(2)).getPackageVersion(packageName, version);
+
+        packageName = "junit:junit";
+        version = "4.12";
+        Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);
+        result = service.getPackageVersion(packageName, version, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageVersion(packageName, version);
     }
 
     @Test
