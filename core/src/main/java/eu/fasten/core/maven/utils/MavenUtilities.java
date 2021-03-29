@@ -164,4 +164,16 @@ public class MavenUtilities {
         }
     }
 
+    public static boolean mavenArtifactExists(String groupId, String artifactId, String version, String artifactRepo) {
+        if (artifactRepo == null || artifactRepo.isEmpty()) {
+            artifactRepo = MAVEN_CENTRAL_REPO;
+        }
+        var url = getPomUrl(groupId, artifactId, version, artifactRepo);
+        try {
+            return httpGetToFile(url).isPresent();
+        } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+            return false;
+        }
+    }
+
 }

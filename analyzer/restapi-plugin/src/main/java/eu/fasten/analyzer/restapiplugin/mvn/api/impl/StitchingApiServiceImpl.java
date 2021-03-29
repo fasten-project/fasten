@@ -128,7 +128,11 @@ public class StitchingApiServiceImpl implements StitchingApiService {
                     json.optLong("date", -1)
             ));
         }
-        LazyIngestionProvider.batchIngestArtifacts(artifacts);
+        try {
+            LazyIngestionProvider.batchIngestArtifacts(artifacts);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
         return new ResponseEntity<>("Ingested successfully", HttpStatus.OK);
     }
 }

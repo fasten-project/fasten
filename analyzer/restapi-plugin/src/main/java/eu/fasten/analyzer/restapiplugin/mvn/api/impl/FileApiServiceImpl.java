@@ -41,7 +41,11 @@ public class FileApiServiceImpl implements FileApiService {
             result = KnowledgeBaseConnector.kbDao.getPackageFiles(
                     package_name, package_version, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

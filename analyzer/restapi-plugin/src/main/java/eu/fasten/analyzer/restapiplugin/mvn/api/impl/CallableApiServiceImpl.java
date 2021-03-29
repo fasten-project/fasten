@@ -43,7 +43,11 @@ public class CallableApiServiceImpl implements CallableApiService {
             result = KnowledgeBaseConnector.kbDao.getPackageCallables(
                     package_name, package_version, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
@@ -59,7 +63,11 @@ public class CallableApiServiceImpl implements CallableApiService {
         String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
                 package_name, package_version, fasten_uri);
         if (result == null) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

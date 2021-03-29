@@ -63,7 +63,15 @@ public class PackageApiServiceImpl implements PackageApiService {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersion(
                 package_name, package_version);
         if (result == null) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            try {
+                try {
+                    LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+                } catch (IllegalArgumentException ex) {
+                    return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+                }
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

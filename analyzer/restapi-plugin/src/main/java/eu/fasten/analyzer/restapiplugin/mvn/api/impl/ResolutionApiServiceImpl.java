@@ -62,7 +62,11 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
     @Override
     public ResponseEntity<String> resolveDependencies(String package_name, String version, boolean transitive, long timestamp, boolean useDepGraph) {
         if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, version)) {
-            LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
+            try {
+                LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
+            } catch (IllegalArgumentException e) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
@@ -178,7 +182,11 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
     public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise) {
 
         if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, version)) {
-            LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
+            try {
+                LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
+            } catch (IllegalArgumentException e) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
 

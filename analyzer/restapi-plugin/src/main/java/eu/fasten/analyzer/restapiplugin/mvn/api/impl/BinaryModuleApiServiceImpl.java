@@ -41,7 +41,11 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
             result = KnowledgeBaseConnector.kbDao.getPackageBinaryModules(
                     package_name, package_version, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
@@ -59,7 +63,11 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
             result = KnowledgeBaseConnector.kbDao.getBinaryModuleMetadata(
                     package_name, package_version, binary_module);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         if (result == null) {
@@ -82,7 +90,11 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
             result = KnowledgeBaseConnector.kbDao.getBinaryModuleFiles(
                     package_name, package_version, binary_module, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
