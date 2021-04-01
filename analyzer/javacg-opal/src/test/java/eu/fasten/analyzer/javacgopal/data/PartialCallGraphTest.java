@@ -26,14 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 import eu.fasten.core.maven.utils.MavenUtilities;
@@ -132,12 +128,10 @@ class PartialCallGraphTest {
         var graph = singleCallCG.getGraph();
 
         assertNotNull(graph);
-        Assertions.assertEquals(1, graph.getInternalCalls().size());
-        Assertions.assertEquals(1, graph.getExternalCalls().size());
-        Assertions.assertEquals(0, graph.getResolvedCalls().size());
+        Assertions.assertEquals(2, graph.getCallSites().size());
 
         // Check internal calls
-        var internalCalls = graph.getInternalCalls();
+        var internalCalls = graph.getCallSites();
 
         var call = IntIntPair.of(1, 2);
         

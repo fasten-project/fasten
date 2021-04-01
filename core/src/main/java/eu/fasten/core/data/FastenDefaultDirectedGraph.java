@@ -1,5 +1,6 @@
 package eu.fasten.core.data;
 
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;

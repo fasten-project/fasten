@@ -129,7 +129,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
      *                       it is set to -1.
      * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
-     * @param classHierarchy
+     * @param classHierarchy The class hierarchy
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     protected ExtendedRevisionCallGraph(final String forge, final String product, final String version,
@@ -231,9 +231,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
      * @return true if this {@link ExtendedRevisionCallGraph} is empty
      */
     public boolean isCallGraphEmpty() {
-        return this.graph.getInternalCalls().isEmpty()
-                && this.graph.getExternalCalls().isEmpty()
-                && this.graph.getResolvedCalls().isEmpty();
+        return this.graph.getCallSites().isEmpty();
     }
 
     /**
@@ -250,7 +248,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
         if (timestamp >= 0) {
             result.put("timestamp", timestamp);
         }
-        result.put(this.classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
+        result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
         result.put("graph", graph.toJSON());
         result.put("nodes", nodeCount);
 

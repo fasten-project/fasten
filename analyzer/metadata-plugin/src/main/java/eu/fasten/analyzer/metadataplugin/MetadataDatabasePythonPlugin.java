@@ -19,20 +19,16 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.PythonScope;
-import eu.fasten.core.data.PythonNode;
 import eu.fasten.core.data.PythonType;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionPythonCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
@@ -130,11 +126,10 @@ public class MetadataDatabasePythonPlugin extends Plugin {
 
         protected List<EdgesRecord> insertEdges(Graph graph,
                                  Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
-            final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
+            final var numEdges = graph.getCallSites().size();
 
             // Map of all edges (internal and external)
-            var graphCalls = graph.getInternalCalls();
-            graphCalls.putAll(graph.getExternalCalls());
+            var graphCalls = graph.getCallSites();
 
             var edges = new ArrayList<EdgesRecord>(numEdges);
             for (var edgeEntry : graphCalls.entrySet()) {

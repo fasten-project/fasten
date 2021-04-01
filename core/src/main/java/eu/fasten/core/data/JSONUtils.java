@@ -52,21 +52,11 @@ public class JSONUtils {
      * @param result the StringBuilder to append the information.
      */
     private static void appendGraph(StringBuilder result, final Graph graph) {
-        result.append("\"graph\":{\"internalCalls\":[");
-        for (final var entry : graph.getInternalCalls().entrySet()) {
+        result.append("\"graph\":{\"call-sites\":[");
+        for (final var entry : graph.getCallSites().entrySet()) {
             appendCall(result, entry);
         }
-        removeLastIfNotEmpty(result, graph.getInternalCalls().size());
-        result.append("],\"externalCalls\":[");
-        for (final var entry : graph.getExternalCalls().entrySet()) {
-            appendCall(result, entry);
-        }
-        removeLastIfNotEmpty(result, graph.getExternalCalls().size());
-        result.append("],\"resolvedCalls\":[");
-        for (final var entry : graph.getResolvedCalls().entrySet()) {
-            appendCall(result, entry);
-        }
-        removeLastIfNotEmpty(result, graph.getResolvedCalls().size());
+        removeLastIfNotEmpty(result, graph.getCallSites().size());
         result.append("]},");
 
     }

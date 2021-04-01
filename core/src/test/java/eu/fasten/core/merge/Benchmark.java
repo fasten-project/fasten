@@ -119,8 +119,8 @@ public class Benchmark implements Runnable {
 
         System.out.format("%14s%4s%12s%4s%12s\n", "", "|", "DATABASE", "|", "LOCAL");
         System.out.println("--------------------------------------------------");
-        System.out.format("%14s%4s%12d%4s%12d\n", "Edges", "|",
-                directedGraph.numArcs(), "|", callgraph.getGraph().getResolvedCalls().size());
+//        System.out.format("%14s%4s%12d%4s%12d\n", "Edges", "|",
+//                directedGraph.numArcs(), "|", callgraph.getGraph().getResolvedCalls().size());
         System.out.format("%14s%4s%12d%4s%12d\n", "Unique edges", "|",
                 databaseResolvedGraph.size(), "|", localResolvedGraph.size());
 
@@ -167,12 +167,12 @@ public class Benchmark implements Runnable {
         var localMethodsMap = callgraph.mapOfAllMethods();
         var localResolvedGraph = new HashSet<Pair<String, String>>();
 
-        for (var arc : callgraph.getGraph().getResolvedCalls().keySet()) {
-            var newArc = ImmutablePair
-                    .of(localMethodsMap.get(arc.firstInt()).getUri().toString(),
-                            localMethodsMap.get(arc.secondInt()).getUri().toString());
-            localResolvedGraph.add(newArc);
-        }
+//        for (var arc : callgraph.getGraph().getResolvedCalls().keySet()) {
+//            var newArc = ImmutablePair
+//                    .of(localMethodsMap.get(arc.firstInt()).getUri().toString(),
+//                            localMethodsMap.get(arc.secondInt()).getUri().toString());
+//            localResolvedGraph.add(newArc);
+//        }
         return localResolvedGraph;
     }
 

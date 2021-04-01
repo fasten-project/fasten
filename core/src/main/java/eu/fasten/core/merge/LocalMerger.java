@@ -32,7 +32,6 @@ import eu.fasten.core.data.JavaType;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 import static java.util.Collections.emptyList;
 
@@ -40,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,13 +52,6 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class LocalMerger {
 
@@ -98,7 +89,7 @@ public class LocalMerger {
 
         private final ConcurrentMap<IntIntPair, Map<Object, Object>> graph;
         private final ConcurrentMap<String, JavaType> CHA;
-        private AtomicInteger nodeCount;
+        private final AtomicInteger nodeCount;
 
         /**
          * Create CGHA object from an {@link ExtendedRevisionCallGraph}.
@@ -106,7 +97,8 @@ public class LocalMerger {
          * @param toResolve call graph
          */
         public CGHA(final ExtendedRevisionJavaCallGraph toResolve) {
-            this.graph = new ConcurrentHashMap<>(toResolve.getGraph().getResolvedCalls());
+            this.graph = null;
+//            this.graph = new ConcurrentHashMap<>(toResolve.getGraph().getResolvedCalls()); // TODO: What to do here?
             var classHierarchy = HashBiMap.create(toResolve.getClassHierarchy()
                     .getOrDefault(JavaScope.resolvedTypes, HashBiMap.create()));
             this.CHA = new ConcurrentHashMap<>();
@@ -167,22 +159,18 @@ public class LocalMerger {
      *
      * @return merged call graph
      */
-    public DirectedGraph mergeAllDeps(boolean alsoExternals) {
+    public DirectedGraph mergeAllDeps() {
         final var result = new FastenDefaultDirectedGraph();
         for (final var dep : this.dependencySet) {
-            addThisMergeToResult(result, mergeWithCHA(dep), alsoExternals);
+            addThisMergeToResult(result, mergeWithCHA(dep));
         }
         return result;
     }
 
-    public DirectedGraph mergeAllDeps() {
-        return mergeAllDeps(true);
-    }
-
     private void addThisMergeToResult(FastenDefaultDirectedGraph result,
-                                      final ExtendedRevisionJavaCallGraph merged, boolean onlyResolved) {
+                                      final ExtendedRevisionJavaCallGraph merged) {
         final var uris = merged.mapOfFullURIStrings();
-        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged, onlyResolved);
+        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
         long offset = result.nodes().longStream().max().orElse(0L) + 1;
 
         for (final var node : directedMerge.nodes()) {
@@ -226,17 +214,13 @@ public class LocalMerger {
         final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
         final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
 
-        artifact.getGraph().getInternalCalls().entrySet().parallelStream().forEach(arc ->
+        artifact.getGraph().getCallSites().entrySet().parallelStream().forEach(arc ->
             processArc(artifact, universalParents, universalChildren, typeDictionary, result,
-                externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, true));
-        artifact.getGraph().getExternalCalls().entrySet().parallelStream().forEach(arc ->
-            processArc(artifact, universalParents, universalChildren, typeDictionary, result,
-                externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, false));
-
+                externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, true));  // TODO: Should it be true or false
         return buildRCG(artifact, result);
     }
 
-    private void processArc(final ExtendedRevisionJavaCallGraph artifact,
+    private void processArc(final ExtendedRevisionJavaCallGraph artifact,   // TODO: Why is `artifact` not used?
                             final Map<String, List<String>> universalParents,
                             final Map<String, List<String>> universalChildren,
                             final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
@@ -606,9 +590,7 @@ public class LocalMerger {
             .product(artifact.product)
             .timestamp(artifact.timestamp)
             .version(artifact.version)
-            .graph(new Graph(artifact.getGraph().getInternalCalls(),
-                artifact.getGraph().getExternalCalls(),
-                result.graph))
+            .graph(new Graph(artifact.getGraph().getCallSites()))
             .nodeCount(result.nodeCount.get())
             .build();
     }

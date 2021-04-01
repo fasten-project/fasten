@@ -231,11 +231,11 @@ public class Main implements Runnable {
         result = merger.mergeWithCHA(art);
 
         if (result != null) {
-            logger.info("Resolved {} nodes, {} calls in {} seconds",
-                    result.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
-                    result.getGraph().getResolvedCalls().size(),
-                    new DecimalFormat("#0.000")
-                            .format((System.currentTimeMillis() - startTime) / 1000d));
+//            logger.info("Resolved {} nodes, {} calls in {} seconds",
+//                    result.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
+//                    result.getGraph().getResolvedCalls().size(),
+//                    new DecimalFormat("#0.000")
+//                            .format((System.currentTimeMillis() - startTime) / 1000d));
 
             if (!this.output.isEmpty()) {
                 try{

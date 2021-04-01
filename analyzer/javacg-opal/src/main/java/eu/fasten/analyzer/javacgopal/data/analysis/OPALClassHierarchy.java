@@ -259,8 +259,7 @@ public class OPALClassHierarchy {
                              final List<Integer> incompeletes,
                              final Set<Integer> visitedPCs) {
 
-        final var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
-        final var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+        final var callSites = new HashMap<List<Integer>, Map<Object, Object>>();
 
         if (targets != null) {
             for (final var opalCallSite : JavaConverters.asJavaIterable(targets.toIterable())) {
@@ -277,28 +276,28 @@ public class OPALClassHierarchy {
                             metadata = getCallSite((Method) source, (Integer) opalCallSite._1(),
                                 stmts);
                         }
-
+                        // TODO: Is it correct to put everything in the callSites?
                         if (targetDeclaration.hasMultipleDefinedMethods()) {
                             for (final var target : JavaConverters
                                 .asJavaIterable(targetDeclaration.definedMethods())) {
-                                this.putCalls(source, internalCalls, externalCalls,
+                                this.putCalls(source, callSites, callSites,
                                     targetDeclaration,
                                     metadata, target);
                             }
 
                         } else if (targetDeclaration.hasSingleDefinedMethod()) {
-                            this.putCalls(source, internalCalls, externalCalls, targetDeclaration,
+                            this.putCalls(source, callSites, callSites, targetDeclaration,
                                 metadata, targetDeclaration.definedMethod());
 
                         } else if (targetDeclaration.isVirtualOrHasSingleDefinedMethod()) {
-                            this.putExternalCall(source, externalCalls, targetDeclaration,
+                            this.putExternalCall(source, callSites, targetDeclaration,
                                 metadata);
                         }
                     }
                 }
             }
         }
-        return new Graph(convert(internalCalls), convert(externalCalls));
+        return new Graph(convert(callSites));
     }
 
 	// Conversion from List<Integer> to IntIntPair
@@ -306,7 +305,7 @@ public class OPALClassHierarchy {
 		final HashMap<IntIntPair, Map<Object, Object>> result = new HashMap<>();
 		for (final var e : externalCalls.entrySet()) {
 			final List<Integer> key = e.getKey();
-			result.put(IntIntPair.of(key.get(0).intValue(), key.get(1).intValue()), e.getValue());
+			result.put(IntIntPair.of(key.get(0), key.get(1)), e.getValue());
 		}
 		return result;
 	}

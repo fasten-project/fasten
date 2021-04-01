@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,15 +114,15 @@ public class CallGraphUtils {
         final var types = ercg.nodeIDtoTypeNameMap();
         if (includeInternals) {
             result.put("internalTypes",
-                getEdges(ercg.getGraph().getInternalCalls(), methods, types));
+                getEdges(ercg.getGraph().getCallSites(), methods, types));
         }
-        result.put("resolvedTypes",
-            getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
-
-        if (includeExternals) {
-            result.put("externalTypes",
-                getEdges(ercg.getGraph().getExternalCalls(), methods, types));
-        }
+//        result.put("resolvedTypes",
+//            getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
+//
+//        if (includeExternals) {
+//            result.put("externalTypes",
+//                getEdges(ercg.getGraph().getExternalCalls(), methods, types));
+//        }
 
         return result;
     }
