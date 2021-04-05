@@ -26,14 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 import eu.fasten.core.maven.utils.MavenUtilities;
@@ -72,7 +68,8 @@ class PartialCallGraphTest {
     static void setUp() throws OPALException {
         singleCallCG = new PartialCallGraph(new CallGraphConstructor(
                 new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                        .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA"));
+                        .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA"),
+            false);
     }
 
     @Test
@@ -161,7 +158,7 @@ class PartialCallGraphTest {
         exception.setStackTrace(new StackTraceElement[]{new StackTraceElement("some.class", "some method", "some file", 10)});
         Mockito.when(constructor.getProject()).thenThrow(exception);
 
-        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor));
+        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor, false));
     }
 
     @Test
@@ -171,7 +168,7 @@ class PartialCallGraphTest {
         Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{new StackTraceElement("org.opalj", "some method", "some file", 10)});
         Mockito.when(constructor.getProject()).thenThrow(exception);
 
-        assertThrows(OPALException.class, () -> new PartialCallGraph(constructor));
+        assertThrows(OPALException.class, () -> new PartialCallGraph(constructor, false));
     }
 
     @Test
@@ -181,7 +178,7 @@ class PartialCallGraphTest {
         Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{});
         Mockito.when(constructor.getProject()).thenThrow(exception);
 
-        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor));
+        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor, false));
     }
 
     @Test
@@ -231,7 +228,7 @@ class PartialCallGraphTest {
         Mockito.when(constructor.getProject()).thenReturn(project);
         Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
 
-        var pcg = new PartialCallGraph(constructor);
+        var pcg = new PartialCallGraph(constructor, false);
         assertNotNull(pcg);
 
         Mockito.verify(callGraph, Mockito.times(2)).calleesOf(declaredMethod);
@@ -270,7 +267,7 @@ class PartialCallGraphTest {
         Mockito.when(constructor.getProject()).thenReturn(project);
         Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
 
-        var pcg = new PartialCallGraph(constructor);
+        var pcg = new PartialCallGraph(constructor, false);
         assertNotNull(pcg);
 
         Mockito.verify(declaredMethod, Mockito.times(1)).definedMethod();
@@ -310,7 +307,7 @@ class PartialCallGraphTest {
         Mockito.when(constructor.getProject()).thenReturn(project);
         Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
 
-        var pcg = new PartialCallGraph(constructor);
+        var pcg = new PartialCallGraph(constructor, false);
         assertNotNull(pcg);
 
         Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
@@ -348,7 +345,7 @@ class PartialCallGraphTest {
         Mockito.when(constructor.getProject()).thenReturn(project);
         Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
 
-        var pcg = new PartialCallGraph(constructor);
+        var pcg = new PartialCallGraph(constructor, false);
         assertNotNull(pcg);
 
         Mockito.verify(callGraph, Mockito.never()).calleesOf(Mockito.any());
