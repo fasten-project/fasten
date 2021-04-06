@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.complianceanalyzer;
+package eu.fasten.analyzer.licensedetector;
 
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;

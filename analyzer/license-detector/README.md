@@ -74,8 +74,8 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
        mvn \
          -DclusterCredentials=path/to/cluster/credentials.json \
          clean install exec:java \
-         -f analyzer/compliance-analyzer/pom.xml \
-         -Dexec.args="--repository analyzer/compliance-analyzer/dummyKafkaTopic.json"
+         -f analyzer/license-detector/pom.xml \
+         -Dexec.args="--repository analyzer/license-detector/dummyKafkaTopic.json"
        ```
        -
            This demo simulates a Kafka message consumption by reading the [`dummyKafkaTopic.json` file](dummyKafkaTopic.json).
@@ -84,7 +84,7 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
        -
            Make sure to include the Kubernetes namespace when using a custom one:
            ```
-           -Dexec.args="--repository analyzer/compliance-analyzer/dummyKafkaTopic.json --namespace myownnamespace"
+           -Dexec.args="--repository analyzer/license-detector/dummyKafkaTopic.json --namespace myownnamespace"
            ```
 
 
