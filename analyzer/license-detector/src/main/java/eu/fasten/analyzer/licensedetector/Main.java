@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.complianceanalyzer;
+package eu.fasten.analyzer.licensedetector;
 
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -35,7 +35,7 @@ public class Main implements Runnable {
     public void run() {
 
         // License and compliance plugin
-        var compliancePlugin = new ComplianceAnalyzerPlugin.CompliancePluginExtension();
+        var compliancePlugin = new LicenseDetectorPlugin.LicenseDetectorExtension();
         compliancePlugin.setNamespace(namespace);
 
         // Retrieving repository information

@@ -26,7 +26,7 @@
         <module>restapi-plugin</module>
         <module>vulnerability-consumer</module>
         <module>repo-analyzer</module>
-        <module>compliance-analyzer</module>
+        <module>license-detector</module>
     </modules>
 
     <build>

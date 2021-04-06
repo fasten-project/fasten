@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.complianceanalyzer;
+package eu.fasten.analyzer.licensedetector;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.collect.Lists;
@@ -12,8 +12,6 @@ import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1ReplicationController;
 import io.kubernetes.client.openapi.models.V1Service;
-import io.kubernetes.client.proto.Meta;
-import io.kubernetes.client.proto.V1;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
@@ -41,21 +39,21 @@ import java.util.Optional;
  * Plugin which runs qmstr command line tool to detect
  * license compatibility and compliance.
  */
-public class ComplianceAnalyzerPlugin extends Plugin {
+public class LicenseDetectorPlugin extends Plugin {
 
     /**
      * Name of the environment variable containing the cluster credentials file path.
      */
     protected static final String CLUSTER_CREDENTIALS_ENV = "clusterCredentials";
 
-    public ComplianceAnalyzerPlugin(PluginWrapper wrapper) {
+    public LicenseDetectorPlugin(PluginWrapper wrapper) {
         super(wrapper);
     }
 
     @Extension
-    public static class CompliancePluginExtension implements KafkaPlugin {
+    public static class LicenseDetectorExtension implements KafkaPlugin {
 
-        private final Logger logger = LoggerFactory.getLogger(CompliancePluginExtension.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(LicenseDetectorExtension.class.getName());
 
         protected String consumerTopic = "fasten.RepoCloner.out";
         protected Exception pluginError = null;
@@ -148,14 +146,14 @@ public class ComplianceAnalyzerPlugin extends Plugin {
 
                 // Deploying the RabbitMQ ReplicationController
                 String replicationControllerFilePath = "/k8s/rabbitmq/replicationcontroller.yaml";
-                File replicationControllerFile = new File(ComplianceAnalyzerPlugin.class.getResource(replicationControllerFilePath).getPath());
+                File replicationControllerFile = new File(LicenseDetectorPlugin.class.getResource(replicationControllerFilePath).getPath());
                 V1ReplicationController replicationController = Yaml.loadAs(replicationControllerFile, V1ReplicationController.class);
                 V1ReplicationController deployedReplicationControllerMap = new CoreV1Api().createNamespacedReplicationController(namespace, replicationController, null, null, null);
                 logger.info("Deployed ReplicationController: " + deployedReplicationControllerMap);
 
                 // Deploying the RabbitMQ Service
                 String serviceFilePath = "/k8s/rabbitmq/service.yaml";
-                File serviceFile = new File(ComplianceAnalyzerPlugin.class.getResource(serviceFilePath).getPath());
+                File serviceFile = new File(LicenseDetectorPlugin.class.getResource(serviceFilePath).getPath());
                 V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
                 V1Service deployedService = new CoreV1Api().createNamespacedService(namespace, service, null, null, null);
                 logger.info("Deployed ReplicationController: " + deployedService);
@@ -172,21 +170,21 @@ public class ComplianceAnalyzerPlugin extends Plugin {
 
                 // Deploying the QMSTR ConfigMap
                 String configMapFilePath = "/k8s/qmstr/master-config.yaml";
-                File configMapFile = new File(ComplianceAnalyzerPlugin.class.getResource(configMapFilePath).getPath());
+                File configMapFile = new File(LicenseDetectorPlugin.class.getResource(configMapFilePath).getPath());
                 V1ConfigMap configMap = Yaml.loadAs(configMapFile, V1ConfigMap.class);
                 V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap(namespace, configMap, null, null, null);
                 logger.info("Deployed ConfigMap: " + deployedConfigMap);
 
                 // Deploying the QMSTR Service
                 String serviceFilePath = "/k8s/dgraph/service.yaml";
-                File serviceFile = new File(ComplianceAnalyzerPlugin.class.getResource(serviceFilePath).getPath());
+                File serviceFile = new File(LicenseDetectorPlugin.class.getResource(serviceFilePath).getPath());
                 V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
                 V1Service deployedService = new CoreV1Api().createNamespacedService(namespace, service, null, null, null);
                 logger.info("Deployed Service: " + deployedService);
 
                 // Patching the QMSTR Job
                 String jobFilePath = "/k8s/qmstr/job.yaml";
-                String jobFileFullPath = ComplianceAnalyzerPlugin.class.getResource(jobFilePath).getPath();
+                String jobFileFullPath = LicenseDetectorPlugin.class.getResource(jobFilePath).getPath();
                 Path jobFileSystemPath = Paths.get(jobFileFullPath);
                 Charset jobFileCharset = StandardCharsets.UTF_8;
                 String jobFileContent = Files.readString(jobFileSystemPath, jobFileCharset);
