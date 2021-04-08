@@ -1,8 +1,6 @@
 package eu.fasten.analyzer.licensedetector;
 
 import eu.fasten.core.plugins.KafkaPlugin;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -10,7 +8,6 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -38,11 +35,6 @@ public class LicenseDetectorPlugin extends Plugin {
          */
         protected String inputTopic = "fasten.RepoCloner.out";
 
-        /**
-         * Where the repository will be cloned.
-         */
-        protected final String REPOSITORY_PATH = "/var/qmstr/buildroot/project";
-
         @Override
         public Optional<List<String>> consumeTopic() {
             return Optional.of(Collections.singletonList(inputTopic));
@@ -61,12 +53,9 @@ public class LicenseDetectorPlugin extends Plugin {
 
                 logger.info("License detector started.");
 
-                // Retrieving the repository URI
-                String repoUri = extractUri(record);
-                logger.info("License detector: scanning " + repoUri + "...");
-
-                // Cloning the repository
-                clone(repoUri);
+                // Retrieving the repository path on the shared volume
+                String repoPath = extractRepoPath(record);
+                logger.info("License detector: scanning repository in " + repoPath + "...");
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage());
@@ -76,33 +65,22 @@ public class LicenseDetectorPlugin extends Plugin {
         }
 
         /**
-         * Retrieves the repository URL from the input record.
+         * Retrieves the cloned repository path on the shared volume from the input record.
          *
          * @param record    the input record containing repository information.
-         * @return          the repository URI
-         * @throws IllegalArgumentException in case the function couldn't find the repository URI in the record.
+         * @return          the repository path on the shared volume
+         * @throws IllegalArgumentException in case the function couldn't find the repository path in the input record.
          */
-        protected String extractUri(String record) throws IllegalArgumentException {
+        protected String extractRepoPath(String record) throws IllegalArgumentException {
             var payload = new JSONObject(record);
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
-            String repoUri = payload.getString("repoUrl");
-            if (repoUri == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing repository URI.");
+            String repoPath = payload.getString("repoPath");
+            if (repoPath == null) {
+                throw new IllegalArgumentException("Invalid repository information: missing repository path.");
             }
-            return repoUri;
-        }
-
-        /**
-         * Clones a repository given its URI.
-         *
-         * @param repoUri   the URI of the repository to be cloned.
-         * @throws GitAPIException
-         */
-        protected void clone(String repoUri) throws GitAPIException {
-            logger.info("Cloning " + repoUri + "...");
-            Git.cloneRepository().setURI(repoUri).setDirectory(new File(REPOSITORY_PATH)).call();
+            return repoPath;
         }
 
         @Override
