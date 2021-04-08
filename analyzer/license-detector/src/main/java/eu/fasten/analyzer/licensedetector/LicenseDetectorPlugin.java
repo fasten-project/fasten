@@ -149,5 +149,22 @@ public class LicenseDetectorPlugin extends Plugin {
         @Override
         public void freeResource() {
         }
+
+        @Override
+        public boolean isStaticMembership() {
+            /*  The Pod behind license detection contains containers that are supposed to terminate
+                upon consuming one record. This avoids rebalancing. */
+            return true;
+        }
+
+        @Override
+        public long getMaxConsumeTimeout() {
+            return 1 * 60 * 60 * 1000; // 1 hour
+        }
+
+        @Override
+        public long getSessionTimeout() {
+            return 1 * 60 * 60 * 1000; // 1 hour
+        }
     }
 }
