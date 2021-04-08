@@ -164,10 +164,5 @@ public class LicenseDetectorPlugin extends Plugin {
         public long getMaxConsumeTimeout() {
             return 1 * 60 * 60 * 1000; // 1 hour
         }
-
-        @Override
-        public long getSessionTimeout() {
-            return 1 * 60 * 60 * 1000; // 1 hour
-        }
     }
 }
