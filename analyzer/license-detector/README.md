@@ -1,7 +1,9 @@
+<!--
 <p align="center">
     <img src="https://user-images.githubusercontent.com/45048351/91091340-1c578200-e65f-11ea-9c5d-597fbbe4ba41.jpg">
 </p>
 <br/>
+-->
 <p align="center">
     <a href="https://github.com/fasten-project/fasten/actions" alt="GitHub Workflow Status">
         <img src="https://img.shields.io/github/workflow/status/fasten-project/fasten/Java%20CI?logo=GitHub%20Actions&logoColor=white&style=for-the-badge" /></a>
@@ -11,12 +13,11 @@
 </p>
 <br/>
 
-The FASTEN QMSTR plugin is a tool to integrate the [QMSTR](https://github.com/qmstr/qmstr) license and compliance analysis process into FASTEN.\
-This integration is part of the WP4 and it's being developed by [Endocode AG](https://endocode.com).
+<!-- TODO Provide description -->
+
+<!-- TODO Shall we provide an example that can be manually triggered?
 
 ## Arguments
-- `-r` `--repo` `--repository`                Path to JSON file containing repository information
-- `-n` `--ns` `--namespace`                   Kubernetes namespace to be used
 
 ## Usage
 
@@ -194,6 +195,8 @@ Here are the necessary steps needed to visualize the detected metadata stored in
     The left part of the graph consists in the usual build graph, having in this case a single (Java) package node in green as the central node.
     License and compliance information is on the right, having the analyzer node in pink right in the middle.  
 </details>
+
+-->
 
 ## Join the community
 
