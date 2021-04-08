@@ -13,10 +13,6 @@ import java.util.List;
 import java.util.Optional;
 
 
-/**
- * Plugin which runs qmstr command line tool to detect
- * license compatibility and compliance.
- */
 public class LicenseDetectorPlugin extends Plugin {
 
     public LicenseDetectorPlugin(PluginWrapper wrapper) {
@@ -67,8 +63,8 @@ public class LicenseDetectorPlugin extends Plugin {
         /**
          * Retrieves the cloned repository path on the shared volume from the input record.
          *
-         * @param record    the input record containing repository information.
-         * @return          the repository path on the shared volume
+         * @param record the input record containing repository information.
+         * @return the repository path on the shared volume
          * @throws IllegalArgumentException in case the function couldn't find the repository path in the input record.
          */
         protected String extractRepoPath(String record) throws IllegalArgumentException {
