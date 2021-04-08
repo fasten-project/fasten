@@ -168,13 +168,25 @@ public class CGandStitchingTest {
         Supplier<Stream<String>> projects = () -> Stream.of("app", "dep1", "dep2");
         final var version = "1.0";
 
-        final var expected = projects.get().map(this::getExpected).reduce(CompositeMap::new).get();
+        final var expected = new HashMap<String,Set<String>>();
+        projects.get().forEach(p -> expected.putAll(getExpected(p)));
+        expected.putAll(getOtherPackages());
+
         final var deps =
             projects.get().map(s -> generate(basePath, s,version)).collect(Collectors.toList());
         final var actual =
             deps.stream().map(ercg -> toMap(CallGraphUtils.convertToNodePairs(merge(ercg, deps),
                 false, false))).reduce(CompositeMap::new).get();
-        assertEqual(((Map<String, Set<String>>)expected), ((Map<String, Set<String>>)actual));
+        assertEqual(expected, ((Map<String, Set<String>>)actual));
+    }
+
+    private Map<? extends String,? extends Set<String>> getOtherPackages() {
+        final var root = "src/test/resources/merge/annotated-tests/app" +
+            "/src/main/java";
+        final var pckg1 = new CommentParser().extractComments(root, "inheritedandsubtyped");
+        final var pckg2 = new CommentParser().extractComments(root, "implementedmethod");
+        pckg1.putAll(pckg2);
+        return pckg1;
     }
 
 

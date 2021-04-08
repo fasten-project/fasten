@@ -8,7 +8,7 @@ public class App {
         Dep1.source();
         //App.<init>()
         App app = new App();
-        //App.m1(),Dep2.m1()
+        //App.m1()
         app.m1();
         //InterfaceImplementor.<init>()
         AppInterface appInterface = new InterfaceImplementor();
@@ -16,6 +16,8 @@ public class App {
         appInterface.m2();
     }
 
-    public void m1(){}
+    public void m1(){
+        System.out.println("I'm in App");
+    }
 
 }
