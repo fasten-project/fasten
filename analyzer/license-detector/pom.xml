@@ -22,14 +22,6 @@
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-
-        <!-- For cloning git repositories -->
-        <dependency>
-            <groupId>org.eclipse.jgit</groupId>
-            <artifactId>org.eclipse.jgit-parent</artifactId>
-            <version>5.11.0.202103091610-r</version>
-            <type>pom</type>
-        </dependency>
     </dependencies>
 
     <build>
