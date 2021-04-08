@@ -1,20 +1,8 @@
 package eu.fasten.analyzer.licensedetector;
 
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.common.collect.Lists;
 import eu.fasten.core.plugins.KafkaPlugin;
-import io.kubernetes.client.openapi.ApiClient;
-import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.Configuration;
-import io.kubernetes.client.openapi.apis.BatchV1Api;
-import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1ConfigMap;
-import io.kubernetes.client.openapi.models.V1Job;
-import io.kubernetes.client.openapi.models.V1ReplicationController;
-import io.kubernetes.client.openapi.models.V1Service;
-import io.kubernetes.client.util.Config;
-import io.kubernetes.client.util.KubeConfig;
-import io.kubernetes.client.util.Yaml;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -23,13 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -41,47 +22,35 @@ import java.util.Optional;
  */
 public class LicenseDetectorPlugin extends Plugin {
 
-    /**
-     * Name of the environment variable containing the cluster credentials file path.
-     */
-    protected static final String CLUSTER_CREDENTIALS_ENV = "clusterCredentials";
-
     public LicenseDetectorPlugin(PluginWrapper wrapper) {
         super(wrapper);
     }
 
     @Extension
-    public static class LicenseDetectorExtension implements KafkaPlugin {
+    public static class LicenseDetector implements KafkaPlugin {
 
-        private final Logger logger = LoggerFactory.getLogger(LicenseDetectorExtension.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(LicenseDetector.class.getName());
 
-        protected String consumerTopic = "fasten.RepoCloner.out";
         protected Exception pluginError = null;
-        protected String repoUrl;
 
         /**
-         * Path to the Kubernetes cluster credentials file
+         * The topic this plugin consumes.
          */
-        protected final String clusterCredentialsFilePath = System.getProperty(CLUSTER_CREDENTIALS_ENV);
+        protected String inputTopic = "fasten.RepoCloner.out";
 
         /**
-         * Placeholder for the repository URL in the Kubernetes Job file
+         * Where the repository will be cloned.
          */
-        protected final String repositoryUrlPlaceholder = "REPOSITORY_URL";
-
-        /**
-         * Kubernetes namespace to be used.
-         */
-        protected String namespace = "default";
+        protected final String REPOSITORY_PATH = "/var/qmstr/buildroot/project";
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.of(Collections.singletonList(consumerTopic));
+            return Optional.of(Collections.singletonList(inputTopic));
         }
 
         @Override
         public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
+            this.inputTopic = topicName;
         }
 
         @Override
@@ -89,33 +58,12 @@ public class LicenseDetectorPlugin extends Plugin {
             try { // Fasten error-handling guidelines
 
                 this.pluginError = null;
-                var consumedJsonPayload = new JSONObject(record);
-                if (consumedJsonPayload.has("payload")) {
-                    consumedJsonPayload = consumedJsonPayload.getJSONObject("payload");
-                }
-                this.repoUrl = consumedJsonPayload.getString("repoUrl");
-                String repoPath = consumedJsonPayload.getString("repoPath");
-                String artifactID = consumedJsonPayload.getString("artifactId");
 
-                logger.info("Repo url: " + repoUrl);
-                logger.info("Path to the cloned repo: " + repoPath);
-                logger.info("Artifact id: " + artifactID);
+                // Retrieving the repository URI
+                String repoUri = extractUri(record);
 
-                if (repoUrl == null) {
-                    IllegalArgumentException missingRepoUrlException =
-                            new IllegalArgumentException("Invalid repository information: missing repository URL.");
-                    setPluginError(missingRepoUrlException);
-                    throw missingRepoUrlException;
-                }
-
-                // Connecting to the Kubernetes cluster
-                connectToCluster();
-
-                // Starting RabbitMQ
-                applyRabbitMQ();
-
-                // Starting the QMSTR Job
-                applyK8sJob();
+                // Cloning the repository
+                clone(repoUri);
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage());
@@ -124,128 +72,61 @@ public class LicenseDetectorPlugin extends Plugin {
 
         }
 
-        protected void connectToCluster() throws IOException {
-            try {
-                // If we don't specify credentials when constructing the client, the client library will
-                // look for credentials via the environment variable GOOGLE_APPLICATION_CREDENTIALS.
-                GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(clusterCredentialsFilePath))
-                        .createScoped(Lists.newArrayList("https://www.googleapis.com/auth/cloud-platform"));
-
-                KubeConfig.registerAuthenticator(new ReplacedGCPAuthenticator(credentials));
-
-                ApiClient client = Config.defaultClient();
-                Configuration.setDefaultApiClient(client);
-            } catch (IOException e) {
-                throw new IOException("Couldn't find cluster credentials at: " + clusterCredentialsFilePath);
+        /**
+         * Retrieves the repository URL from the input record.
+         *
+         * @param record    the input record containing repository information.
+         * @return          the repository URI
+         * @throws IllegalArgumentException in case the function couldn't find the repository URI in the record.
+         */
+        protected String extractUri(String record) throws IllegalArgumentException {
+            var payload = new JSONObject(record);
+            if (payload.has("payload")) {
+                payload = payload.getJSONObject("payload");
             }
-        }
-
-        protected void applyRabbitMQ() throws IOException, ApiException {
-
-            try {
-
-                // Deploying the RabbitMQ ReplicationController
-                String replicationControllerFilePath = "/k8s/rabbitmq/replicationcontroller.yaml";
-                File replicationControllerFile = new File(LicenseDetectorPlugin.class.getResource(replicationControllerFilePath).getPath());
-                V1ReplicationController replicationController = Yaml.loadAs(replicationControllerFile, V1ReplicationController.class);
-                V1ReplicationController deployedReplicationControllerMap = new CoreV1Api().createNamespacedReplicationController(namespace, replicationController, null, null, null);
-                logger.info("Deployed ReplicationController: " + deployedReplicationControllerMap);
-
-                // Deploying the RabbitMQ Service
-                String serviceFilePath = "/k8s/rabbitmq/service.yaml";
-                File serviceFile = new File(LicenseDetectorPlugin.class.getResource(serviceFilePath).getPath());
-                V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
-                V1Service deployedService = new CoreV1Api().createNamespacedService(namespace, service, null, null, null);
-                logger.info("Deployed ReplicationController: " + deployedService);
-
-            } catch (ApiException e) {
-                throw new ApiException("Exception while deploying a RabbitMQ Kubernetes resource: " + e);
+            String repoUri = payload.getString("repoUrl");
+            if (repoUri == null) {
+                throw new IllegalArgumentException("Invalid repository information: missing repository URI.");
             }
-
-        }
-
-        protected void applyK8sJob() throws ApiException, IOException {
-
-            try {
-
-                // Deploying the QMSTR ConfigMap
-                String configMapFilePath = "/k8s/qmstr/master-config.yaml";
-                File configMapFile = new File(LicenseDetectorPlugin.class.getResource(configMapFilePath).getPath());
-                V1ConfigMap configMap = Yaml.loadAs(configMapFile, V1ConfigMap.class);
-                V1ConfigMap deployedConfigMap = new CoreV1Api().createNamespacedConfigMap(namespace, configMap, null, null, null);
-                logger.info("Deployed ConfigMap: " + deployedConfigMap);
-
-                // Deploying the QMSTR Service
-                String serviceFilePath = "/k8s/dgraph/service.yaml";
-                File serviceFile = new File(LicenseDetectorPlugin.class.getResource(serviceFilePath).getPath());
-                V1Service service = Yaml.loadAs(serviceFile, V1Service.class);
-                V1Service deployedService = new CoreV1Api().createNamespacedService(namespace, service, null, null, null);
-                logger.info("Deployed Service: " + deployedService);
-
-                // Patching the QMSTR Job
-                String jobFilePath = "/k8s/qmstr/job.yaml";
-                String jobFileFullPath = LicenseDetectorPlugin.class.getResource(jobFilePath).getPath();
-                Path jobFileSystemPath = Paths.get(jobFileFullPath);
-                Charset jobFileCharset = StandardCharsets.UTF_8;
-                String jobFileContent = Files.readString(jobFileSystemPath, jobFileCharset);
-                jobFileContent = jobFileContent.replaceAll(repositoryUrlPlaceholder, repoUrl);
-                Files.write(jobFileSystemPath, jobFileContent.getBytes(jobFileCharset));
-
-                // Deploying the QMSTR Job
-                Yaml.addModelMap("v1", "Job", V1Job.class);
-                File jobFile = new File(jobFileFullPath);
-                V1Job yamlJob = Yaml.loadAs(jobFile, V1Job.class);
-                V1Job deployedJob = new BatchV1Api().createNamespacedJob(namespace, yamlJob, null, null, null);
-                logger.info("Deployed Job: " + deployedJob);
-
-            } catch (IOException e) {
-                throw new IOException("Exception while patching the QMSTR Job: " + e);
-            } catch (ApiException e) {
-                throw new ApiException("Exception while deploying a QMSTR Kubernetes resource: " + e);
-            }
-
+            return repoUri;
         }
 
         /**
-         * Sets the Kubernetes namespace in which QMSTR will be deployed.
+         * Clones a repository given its URI.
          *
-         * @param namespace namespace to be used by this plugin.
+         * @param repoUri   the URI of the repository to be cloned.
+         * @throws GitAPIException
          */
-        protected void setNamespace(String namespace) {
-            this.namespace = namespace;
+        protected void clone(String repoUri) throws GitAPIException {
+            logger.info("Cloning " + repoUri + "...");
+            Git.cloneRepository().setURI(repoUri).setDirectory(new File(REPOSITORY_PATH)).call();
         }
 
         @Override
         public Optional<String> produce() {
-            return Optional.empty();
+            return Optional.empty(); // this plugin only inserts data into the Metadata DB
         }
 
         @Override
         public String getOutputPath() {
-            // TODO
-            throw new UnsupportedOperationException(
-                    "Output path will become available as soon as the QMSTR reporting phase will be released."
-            );
+            /*  A JSON file with detected licenses is available in another container.
+                Licenses are inserted into the Metadata DB. */
+            return null;
         }
 
         @Override
         public String name() {
-            return "License Compliance Plugin";
+            return "License Detector Plugin";
         }
 
         @Override
         public String description() {
-            return "License Compliance Plugin."
-                    + "Consumes Repository Urls from Kafka topic,"
-                    + " connects to cluster and starts a Kubernetes Job."
-                    + " The Job spins a qmstr process which detects the project's"
-                    + " license compliance and compatibility."
-                    + " Once the Job is done the output is written to another Kafka topic.";
+            return "Detects licenses at the file level";
         }
 
         @Override
         public String version() {
-            return "0.0.1";
+            return "0.0.2";
         }
 
         @Override

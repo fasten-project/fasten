@@ -64,8 +64,8 @@ This integration is part of the WP4 and it's being developed by [Endocode AG](ht
                 -jar docker/server/server-0.0.1-SNAPSHOT-with-dependencies.jar \
                 --kafka_server ${KAFKA_ADDRESS}:9092 \
                 --plugin_dir $(pwd)/docker/plugins \
-                --plugin_list CompliancePluginExtension \
-                --topic CompliancePluginExtension=fasten.RepoCloner.out
+                --plugin_list LicenseDetector \
+                --topic LicenseDetector=fasten.RepoCloner.out
             ```
        
    1. As a standalone Maven plugin:
