@@ -59,8 +59,11 @@ public class LicenseDetectorPlugin extends Plugin {
 
                 this.pluginError = null;
 
+                logger.info("License detector started.");
+
                 // Retrieving the repository URI
                 String repoUri = extractUri(record);
+                logger.info("License detector: scanning " + repoUri + "...");
 
                 // Cloning the repository
                 clone(repoUri);
