@@ -22,28 +22,15 @@
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
+
+        <!-- For cloning git repositories -->
         <dependency>
-            <groupId>io.kubernetes</groupId>
-            <artifactId>client-java</artifactId>
-            <version>8.0.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.cloud</groupId>
-            <artifactId>google-cloud-storage</artifactId>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit-parent</artifactId>
+            <version>5.11.0.202103091610-r</version>
+            <type>pom</type>
         </dependency>
     </dependencies>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>libraries-bom</artifactId>
-                <version>7.0.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <plugins>
@@ -57,21 +44,6 @@
                     </annotationProcessors>
                     <source>1.11</source>
                     <target>1.11</target>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.5.0</version>
-                <configuration>
-                    <mainClass>eu.fasten.analyzer.licensedetector.Main</mainClass>
-                    <systemProperties>
-                        <systemProperty>
-                            <key>jdk.tls.client.protocols</key>
-                            <value>TLSv1.2</value>
-                        </systemProperty>
-                    </systemProperties>
                 </configuration>
             </plugin>
 
@@ -96,15 +68,13 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>eu.fasten.analyzer.licensedetector.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
                                         <Plugin-Class>eu.fasten.analyzer.licensedetector.LicenseDetectorPlugin</Plugin-Class>
                                         <Plugin-Id>license-detector</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
                                         <Plugin-Description>
-                                            Given a repository URL, detects project's
-                                            license compliance and compatibility.
+                                            Detects licenses of a repository.
                                         </Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
