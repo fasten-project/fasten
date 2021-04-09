@@ -1,16 +1,15 @@
-name: Publish Docker image
+name: Build and push the license detector Docker image
 
 on:
   push:
-    # Publish `opal-plugin` as Docker `latest` image.
     branches:
       - develop
+      - endocode/compliancePlugin
 
     # Publish `v1.2.3` tags as releases.
     tags:
       - v*
 
-  # Run tests for any PRs.
   pull_request:
     branches:
       - develop
