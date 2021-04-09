@@ -1750,6 +1750,11 @@ public class MetadataDao {
     }
 
     public Map<String, JSONObject> getCallablesMetadataByUri(String forge, String packageName, String version, List<String> fastenUris) {
+        var conditions = new ArrayList<String>(fastenUris.size());
+        for (int i = 0; i < fastenUris.size(); i++) {
+            conditions.add("digest(callables.fasten_uri, 'sha1') = digest(?, 'sha1')");
+        }
+        var uriDigestIsInList = String.join(" or ", conditions);
         var result = context
                 .select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.METADATA)
                 .from(Callables.CALLABLES)
@@ -1757,10 +1762,7 @@ public class MetadataDao {
                 .join(PackageVersions.PACKAGE_VERSIONS).on(PackageVersions.PACKAGE_VERSIONS.ID.eq(Modules.MODULES.PACKAGE_VERSION_ID))
                 .join(Packages.PACKAGES).on(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
                 .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName).and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
-                        .and("digest(callables.fasten_uri, 'sha1') in ("
-                                + fastenUris.stream()
-                                .map(u -> "digest(?, 'sha1')")
-                                .collect(Collectors.joining(",")) + ")", fastenUris.toArray()))
+                        .and(uriDigestIsInList, fastenUris.toArray()))
                 .fetch();
         if (result.isEmpty()) {
             return null;
