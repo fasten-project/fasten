@@ -1752,7 +1752,7 @@ public class MetadataDao {
     public Map<String, JSONObject> getCallablesMetadataByUri(String forge, String packageName, String version, List<String> fastenUris) {
         var conditions = new ArrayList<String>(fastenUris.size());
         for (int i = 0; i < fastenUris.size(); i++) {
-            conditions.add("digest(callables.fasten_uri, 'sha1') = digest(?, 'sha1')");
+            conditions.add("callables.fasten_uri = ?");
         }
         var uriDigestIsInList = String.join(" or ", conditions);
         var result = context
