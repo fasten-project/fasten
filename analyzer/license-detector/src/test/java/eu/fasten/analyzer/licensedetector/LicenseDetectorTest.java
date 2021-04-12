@@ -2,11 +2,13 @@ package eu.fasten.analyzer.licensedetector;
 
 import org.junit.jupiter.api.Test;
 
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -47,6 +49,72 @@ public class LicenseDetectorTest {
                     new LicenseDetectorPlugin.LicenseDetector().extractRepoPath(recordContent),
                     "Extracted repository path did not match test record content."
             );
+        });
+    }
+
+    @Test
+    public void givenRepoPath_whenRetrievingPomFile_thenPomFileIsRetrieved() {
+
+        // Test Maven repo paths
+        List<String> repoPaths = Arrays.asList("complete-maven-project", "simple-maven-repo");
+
+        // Absolute test Maven repo path -> expected retrieved pom file
+        Map<String, File> inputToExpected = new HashMap<>();
+        repoPaths.forEach(repoPath -> {
+
+            // Retrieving test Maven repo absolute path
+            String repoAbsolutePath = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
+                    .getResource(repoPath)).getFile()).getAbsolutePath();
+            assertNotNull(repoAbsolutePath, "Test Maven repo's absolute path shouldn't be empty.");
+
+            File repoPomFile = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
+                    .getResource(repoPath + "/pom.xml")).getFile());
+            assertFalse(repoPomFile.isDirectory(), "Test Maven repo pom.xml file shouldn't be a directory.");
+
+            inputToExpected.put(repoAbsolutePath, repoPomFile);
+        });
+
+        // For all inputs
+        inputToExpected.forEach((repoAbsolutePath, expectedRetrievedPomFile) ->
+                assertEquals(
+                        expectedRetrievedPomFile,
+                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).get(),
+                        "Retrieved pom.xml file is not the one the test expected."
+                ));
+    }
+
+    @Test
+    public void givenRepoPath_whenPatchingPomFile_thenPomPatchingCompletesSuccessfully() {
+
+        // Test Maven repo paths
+        List<String> repoPaths = Arrays.asList("complete-maven-project", "simple-maven-repo");
+
+        // Absolute test Maven repo path -> expected patched pom file
+        Map<String, File> inputToExpected = new HashMap<>();
+        repoPaths.forEach(repoPath -> {
+
+            // Retrieving test Maven repo absolute path
+            String repoAbsolutePath = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
+                    .getResource(repoPath)).getFile()).getAbsolutePath();
+            assertNotNull(repoAbsolutePath, "Test Maven repo's absolute path shouldn't be empty.");
+
+            File repoPomFile = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
+                    .getResource(repoPath + "/expected-patched-pom.xml")).getFile());
+            assertFalse(repoPomFile.isDirectory(),
+                    "The expected test Maven repo patched pom.xml file shouldn't be a directory.");
+
+            inputToExpected.put(repoAbsolutePath, repoPomFile);
+        });
+
+        // For all inputs
+        inputToExpected.forEach((repoAbsolutePath, expectedPatchedPomFile) -> {
+
+            try {
+                new LicenseDetectorPlugin.LicenseDetector().patchPomFile(repoAbsolutePath);  // FIXME
+            } catch (ParserConfigurationException e) {
+                System.err.println("XML parser's configuration is invalid.");
+                fail();
+            }
         });
     }
 }

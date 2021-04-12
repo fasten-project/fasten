@@ -1,0 +1,22 @@
+<plugin xmlns="http://maven.apache.org/POM/4.0.0">
+  <groupId>org.qmstr</groupId>
+  <artifactId>qmstr-maven-plugin</artifactId>
+  <version>0.5</version>
+  <configuration>
+    <qmstrAddress>${env.QMSTRADDRENV}</qmstrAddress>
+  </configuration>
+  <executions>
+    <execution>
+      <id>qmstrbuild</id>
+      <goals>
+        <goal>qmstrbuild</goal>
+      </goals>
+    </execution>
+    <execution>
+      <id>qmstrpackage</id>
+      <goals>
+        <goal>qmstr</goal>
+      </goals>
+    </execution>
+  </executions>
+</plugin>
