@@ -67,7 +67,7 @@ public class PartialCallGraph {
     private final int nodeCount;
 
     public PartialCallGraph(CallGraphConstructor constructor) throws OPALException{
-        this(constructor, false);
+        this(constructor, true);
     }
 
     /**
@@ -123,7 +123,7 @@ public class PartialCallGraph {
      */
     public static ExtendedRevisionJavaCallGraph createExtendedRevisionJavaCallGraph(
             final MavenCoordinate coordinate, final String mainClass,
-            final String algorithm, final long timestamp, final String artifactRepo)
+            final String algorithm, final long timestamp, final String artifactRepo, final boolean callSiteOnly)
             throws MissingArtifactException, OPALException {
 
         File file = null;
@@ -131,7 +131,7 @@ public class PartialCallGraph {
             file = new MavenCoordinate.MavenResolver().downloadArtifact(coordinate, artifactRepo);
             final var opalCG = new CallGraphConstructor(file, mainClass, algorithm);
 
-            final var partialCallGraph = new PartialCallGraph(opalCG);
+            final var partialCallGraph = new PartialCallGraph(opalCG, callSiteOnly);
 
             return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
                     coordinate.getVersionConstraint(), timestamp,
