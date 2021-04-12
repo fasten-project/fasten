@@ -1,0 +1,137 @@
+{
+  "input": {
+    "input": {
+      "groupId": "log4j",
+      "artifactId": "log4j",
+      "version": "1.2.17"
+    },
+    "plugin_version": "0.1.2",
+    "consumed_at": 1617960855,
+    "payload": {
+      "date": 1338025419000,
+      "repoUrl": "http://svn.apache.org/viewvc/logging/log4j/tags/v1_2_17_rc3",
+      "groupId": "log4j",
+      "version": "1.2.17",
+      "parentCoordinate": "",
+      "artifactRepository": "https://repo.maven.apache.org/maven2/",
+      "forge": "mvn",
+      "sourcesUrl": "https://repo.maven.apache.org/maven2/log4j/log4j/1.2.17/log4j-1.2.17-sources.jar",
+      "artifactId": "log4j",
+      "dependencyData": {
+        "dependencyManagement": {
+          "dependencies": []
+        },
+        "dependencies": [
+          {
+            "versionConstraints": [
+              {
+                "isUpperHardRequirement": false,
+                "isLowerHardRequirement": false,
+                "upperBound": "1.4.3",
+                "lowerBound": "1.4.3"
+              }
+            ],
+            "groupId": "javax.mail",
+            "scope": "",
+            "classifier": "",
+            "artifactId": "mail",
+            "exclusions": [],
+            "optional": true,
+            "type": ""
+          },
+          {
+            "versionConstraints": [
+              {
+                "isUpperHardRequirement": false,
+                "isLowerHardRequirement": false,
+                "upperBound": "5.0-2",
+                "lowerBound": "5.0-2"
+              }
+            ],
+            "groupId": "org.apache.openejb",
+            "scope": "provided",
+            "classifier": "",
+            "artifactId": "javaee-api",
+            "exclusions": [],
+            "optional": false,
+            "type": "jar"
+          },
+          {
+            "versionConstraints": [
+              {
+                "isUpperHardRequirement": false,
+                "isLowerHardRequirement": false,
+                "upperBound": "2.0.8",
+                "lowerBound": "2.0.8"
+              }
+            ],
+            "groupId": "oro",
+            "scope": "test",
+            "classifier": "",
+            "artifactId": "oro",
+            "exclusions": [],
+            "optional": false,
+            "type": ""
+          },
+          {
+            "versionConstraints": [
+              {
+                "isUpperHardRequirement": false,
+                "isLowerHardRequirement": false,
+                "upperBound": "3.8.2",
+                "lowerBound": "3.8.2"
+              }
+            ],
+            "groupId": "junit",
+            "scope": "test",
+            "classifier": "",
+            "artifactId": "junit",
+            "exclusions": [],
+            "optional": false,
+            "type": ""
+          },
+          {
+            "versionConstraints": [
+              {
+                "isUpperHardRequirement": false,
+                "isLowerHardRequirement": false,
+                "upperBound": "1.0",
+                "lowerBound": "1.0"
+              }
+            ],
+            "groupId": "org.apache.geronimo.specs",
+            "scope": "",
+            "classifier": "",
+            "artifactId": "geronimo-jms_1.1_spec",
+            "exclusions": [],
+            "optional": true,
+            "type": ""
+          }
+        ]
+      },
+      "projectName": "Apache Log4j",
+      "commitTag": "",
+      "packagingType": "bundle"
+    },
+    "host": "68ebe136ca4c",
+    "created_at": 1617960856,
+    "plugin_name": "POMAnalyzer"
+  },
+  "plugin_version": "0.1.2",
+  "consumed_at": 1617960856,
+  "payload": {
+    "repoUrl": "http://svn.apache.org/viewvc/logging/log4j/tags/v1_2_17_rc3",
+    "date": 1338025419000,
+    "repoType": "",
+    "forge": "mvn",
+    "groupId": "log4j",
+    "sourcesUrl": "https://repo.maven.apache.org/maven2/log4j/log4j/1.2.17/log4j-1.2.17-sources.jar",
+    "artifactId": "log4j",
+    "repoPath": "",
+    "version": "1.2.17",
+    "commitTag": ""
+  },
+  "host": "bbdaa1271d50",
+  "created_at": 1617960861,
+  "plugin_name": "RepoCloner"
+}
