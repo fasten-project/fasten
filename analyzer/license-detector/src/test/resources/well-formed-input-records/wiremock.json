@@ -1,0 +1,51 @@
+{
+  "input": {
+    "input": {
+      "groupId": "com.github.tomakehurst",
+      "artifactId": "wiremock-standalone",
+      "version": "2.27.2"
+    },
+    "plugin_version": "0.1.2",
+    "consumed_at": 1617959558,
+    "payload": {
+      "date": 1599747606000,
+      "repoUrl": "https://tomakehurst@github.com/tomakehurst/wiremock.git",
+      "groupId": "com.github.tomakehurst",
+      "version": "2.27.2",
+      "parentCoordinate": "",
+      "artifactRepository": "https://repo.maven.apache.org/maven2/",
+      "forge": "mvn",
+      "sourcesUrl": "https://repo.maven.apache.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2-sources.jar",
+      "artifactId": "wiremock-standalone",
+      "dependencyData": {
+        "dependencyManagement": {
+          "dependencies": []
+        },
+        "dependencies": []
+      },
+      "projectName": "WireMock",
+      "commitTag": "",
+      "packagingType": "jar"
+    },
+    "host": "68ebe136ca4c",
+    "created_at": 1617959560,
+    "plugin_name": "POMAnalyzer"
+  },
+  "plugin_version": "0.1.2",
+  "consumed_at": 1617959560,
+  "payload": {
+    "repoUrl": "https://tomakehurst@github.com/tomakehurst/wiremock.git",
+    "date": 1599747606000,
+    "repoType": "git",
+    "forge": "mvn",
+    "groupId": "com.github.tomakehurst",
+    "sourcesUrl": "https://repo.maven.apache.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2-sources.jar",
+    "artifactId": "wiremock-standalone",
+    "repoPath": "/mnt/fasten/c/com.github.tomakehurst/wiremock-standalone",
+    "version": "2.27.2",
+    "commitTag": ""
+  },
+  "host": "bbdaa1271d50",
+  "created_at": 1617959562,
+  "plugin_name": "RepoCloner"
+}
