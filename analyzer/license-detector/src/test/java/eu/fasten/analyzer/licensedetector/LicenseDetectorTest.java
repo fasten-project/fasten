@@ -127,8 +127,9 @@ public class LicenseDetectorTest {
             } catch (ParserConfigurationException e) {
                 System.err.println("XML parser's configuration is invalid.");
                 fail();
-            } catch (IOException e) {
-                e.printStackTrace(); // FIXME
+            } catch (IOException | URISyntaxException e) {
+                System.err.println("Couldn't find an XML file: " + e.getMessage());
+                fail();
             } catch (TransformerException e) {
                 System.err.println("Couldn't overwrite the XML file.");
                 fail();
