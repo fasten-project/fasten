@@ -1,6 +1,7 @@
 package eu.fasten.analyzer.licensedetector;
 
 import eu.fasten.core.plugins.KafkaPlugin;
+import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -24,9 +25,8 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
+import java.net.URISyntaxException;
 import java.util.*;
 
 
@@ -51,7 +51,12 @@ public class LicenseDetectorPlugin extends Plugin {
         /**
          * Patch to be applied to pom.xml files before the analysis begins.
          */
-        protected static final String POM_PATCH_FILE = "pom-patch.xml";
+        protected static final String POM_PATCH_FILE = "/pom-patch.xml";
+
+        /**
+         * Temporary file used when retrieving the patch file from within a fat JAR.
+         */
+        private static final String TMP_POM_PATCH_FILE = "tmp-pom-patch.xml";
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -134,14 +139,15 @@ public class LicenseDetectorPlugin extends Plugin {
         /**
          * Patches a pom.xml file by injecting the Quartermaster Maven plugin.
          *
-         * @param repoPath
+         * @param repoPath the path of the repository whose pom.xml file needs to be patched.
          * @throws ParserConfigurationException in case the XML DocumentBuilder could not be instantiated.
-         * @throws FileNotFoundException        in case either the input pom.xml file or the patch one
+         * @throws IOException                  in case either the input pom.xml file or the patch one
          *                                      could not be found.
+         * @throws URISyntaxException           in case either the patch XML file could not be found.
          * @throws TransformerException         in case of error while overwriting the XML file.
          */
         protected void patchPomFile(String repoPath)
-                throws ParserConfigurationException, FileNotFoundException, TransformerException {
+                throws ParserConfigurationException, IOException, URISyntaxException, TransformerException {
 
             // Retrieving the pom file
             Optional<File> pomFile = retrievePomFile(repoPath);
@@ -151,8 +157,15 @@ public class LicenseDetectorPlugin extends Plugin {
             }
 
             // Retrieving the patch XML file
-            File patchFile = new File(Objects.requireNonNull(LicenseDetector.class.getClassLoader()
-                    .getResource(POM_PATCH_FILE)).getFile());
+            File patchFile = new File(TMP_POM_PATCH_FILE);
+            try (var patchFileStream = getClass().getResourceAsStream(POM_PATCH_FILE);
+                 OutputStream outputStream = new FileOutputStream(patchFile)) {
+
+                IOUtils.copy(patchFileStream, outputStream);
+            }
+            if (new BufferedReader(new FileReader(patchFile)).readLine() == null) { // shouldn't be empty
+                throw new FileNotFoundException("Patch XML file could not be found.");
+            }
 
             // XML document builder
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -223,12 +236,14 @@ public class LicenseDetectorPlugin extends Plugin {
             try {
                 document = builder.parse(file); // also checks whether the file is malformed or not
             } catch (SAXException e) {
-                throw new IllegalArgumentException(fileName.toUpperCase() + " file is malformed.");
+                throw new IllegalArgumentException(
+                        fileName.substring(0, 1).toUpperCase() + fileName.substring(1) + " file is malformed.");
             } catch (IOException e) {
-                throw new FileNotFoundException(fileName.toUpperCase() + " file not found.");
+                throw new FileNotFoundException(
+                        fileName.substring(0, 1).toUpperCase() + fileName.substring(1) + " file not found.");
             }
             if (document == null) {
-                throw new RuntimeException("Couldn't parse the " + fileName.toLowerCase() + " file.");
+                throw new RuntimeException("Couldn't parse the " + fileName + " file.");
             }
             return document;
         }

@@ -189,3 +189,4 @@ modules.xml
 !/analyzer/javacg-wala/src/test/resources/*.jar
 !/analyzer/javacg-opal/lib/**/*.jar
 !/analyzer/javacg-opal/src/test/resources/*.class
+/analyzer/license-detector/**/tmp-*.xml
