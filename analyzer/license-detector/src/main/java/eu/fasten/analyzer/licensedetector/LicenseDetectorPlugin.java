@@ -8,6 +8,9 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -15,7 +18,14 @@ import org.xml.sax.SAXParseException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 
@@ -121,12 +131,22 @@ public class LicenseDetectorPlugin extends Plugin {
             return pomFile;
         }
 
-        protected File patchPomFile(String repoPath) throws IllegalArgumentException, ParserConfigurationException {
+        /**
+         * Patches a pom.xml file by injecting the Quartermaster Maven plugin.
+         *
+         * @param repoPath
+         * @throws ParserConfigurationException in case the XML DocumentBuilder could not be instantiated.
+         * @throws FileNotFoundException        in case either the input pom.xml file or the patch one
+         *                                      could not be found.
+         * @throws TransformerException         in case of error while overwriting the XML file.
+         */
+        protected void patchPomFile(String repoPath)
+                throws ParserConfigurationException, FileNotFoundException, TransformerException {
 
             // Retrieving the pom file
             Optional<File> pomFile = retrievePomFile(repoPath);
             if (pomFile.isEmpty()) {
-                throw new IllegalArgumentException("No file named pom.xml found in " + repoPath + ". " +
+                throw new FileNotFoundException("No file named pom.xml found in " + repoPath + ". " +
                         "This plugin only analyzes Maven projects.");
             }
 
@@ -134,20 +154,9 @@ public class LicenseDetectorPlugin extends Plugin {
             File patchFile = new File(Objects.requireNonNull(LicenseDetector.class.getClassLoader()
                     .getResource(POM_PATCH_FILE)).getFile());
 
-            // Checking whether these two XML files are well-formed
-            if (xmlFileIsWellFormed(pomFile.get())) {
-                throw new IllegalArgumentException("Repository's pom.xml is malformed.");
-            }
-            if (xmlFileIsWellFormed(patchFile)) {
-                throw new IllegalArgumentException("Path file is malformed.");
-            }
-
-            return null; // FIXME
-        }
-
-        protected boolean xmlFileIsWellFormed(File xmlFile) throws ParserConfigurationException {
+            // XML document builder
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(true);
+            factory.setNamespaceAware(false);
             DocumentBuilder builder = factory.newDocumentBuilder();
             builder.setErrorHandler(new ErrorHandler() {
                 @Override
@@ -166,18 +175,81 @@ public class LicenseDetectorPlugin extends Plugin {
                 }
             });
 
-            try {
-                Document parse = builder.parse(xmlFile);
-            } catch (SAXException e) {
-                logger.warn("XML file " + xmlFile.getAbsolutePath() + " is malformed.");
-                return true;
-            } catch (IOException e) {
-                throw new IllegalArgumentException("File " + xmlFile.getAbsolutePath() + " not found.");
-            }
+            // Checking whether the patch is malformed or not
+            Document patchDocument = getXmlDocument(builder, patchFile, "patch XML");
 
-            return false;
+            // Parsing the repository pom file
+            Document repoPomDocument = getXmlDocument(builder, pomFile.get(), "repository pom.xml");
+
+            // Retrieving the `plugins` XML section
+            Element documentRoot = repoPomDocument.getDocumentElement();
+            if (documentRoot == null) {
+                throw new IllegalArgumentException("No root element in repository pom.xml file "
+                        + pomFile.get().getAbsolutePath() + ".");
+            }
+            NodeList buildNodeList = documentRoot.getElementsByTagName("build");
+            if (buildNodeList.getLength() == 0) {
+                documentRoot.appendChild(repoPomDocument.createElement("build"));
+            }
+            Element buildElement = (Element) buildNodeList.item(0);
+            NodeList pluginsNodeList = buildElement.getElementsByTagName("plugins");
+            if (pluginsNodeList.getLength() == 0) {
+                buildElement.appendChild(repoPomDocument.createElement("plugins"));
+            }
+            Element pluginsElement = (Element) pluginsNodeList.item(0);
+
+            // Insertion
+            Node importedNode = repoPomDocument.importNode(patchDocument.getDocumentElement(), true);
+            pluginsElement.appendChild(importedNode);
+
+            // Saving the file
+            writeXmlToFile(documentRoot, pomFile.get());
         }
 
+        /**
+         * Retrieves an XML document given its file.
+         *
+         * @param builder  the XML builder being used.
+         * @param file     the XML file whose document is of interest.
+         * @param fileName a file name used for debugging purposes.
+         * @return the XML document of interest.
+         * @throws FileNotFoundException in case the file could not be found.
+         * @throws RuntimeException      in case the XML file could not be parsed.
+         */
+        protected Document getXmlDocument(DocumentBuilder builder, File file, String fileName)
+                throws FileNotFoundException, RuntimeException {
+
+            Document document = null;
+            try {
+                document = builder.parse(file); // also checks whether the file is malformed or not
+            } catch (SAXException e) {
+                throw new IllegalArgumentException(fileName.toUpperCase() + " file is malformed.");
+            } catch (IOException e) {
+                throw new FileNotFoundException(fileName.toUpperCase() + " file not found.");
+            }
+            if (document == null) {
+                throw new RuntimeException("Couldn't parse the " + fileName.toLowerCase() + " file.");
+            }
+            return document;
+        }
+
+        /**
+         * Writes an XML document to a file.
+         *
+         * @param document the XML element to be written.
+         * @param file     the file to be overridden.
+         * @throws TransformerException in case of error while creating an XML `Transformer` or
+         *                              while transforming the XML file.
+         */
+        protected void writeXmlToFile(Element document, File file) throws TransformerException {
+            Transformer tf = TransformerFactory.newInstance().newTransformer();
+            tf.setOutputProperty(OutputKeys.INDENT, "yes");
+            tf.setOutputProperty(OutputKeys.METHOD, "xml");
+            tf.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+            DOMSource domSource = new DOMSource(document);
+            StreamResult sr = new StreamResult(file);
+            tf.transform(domSource, sr);
+        }
 
         @Override
         public Optional<String> produce() {
