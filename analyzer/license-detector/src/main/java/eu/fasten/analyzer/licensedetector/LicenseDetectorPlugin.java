@@ -264,7 +264,7 @@ public class LicenseDetectorPlugin extends Plugin {
          */
         protected void writeXmlToFile(Element document, File file) throws TransformerException {
             Transformer tf = TransformerFactory.newInstance().newTransformer();
-            tf.setOutputProperty(OutputKeys.INDENT, "yes");
+            tf.setOutputProperty(OutputKeys.INDENT, "yes"); // FIXME Unnecessary empty lines between all lines
             tf.setOutputProperty(OutputKeys.METHOD, "xml");
             tf.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
             DOMSource domSource = new DOMSource(document);
