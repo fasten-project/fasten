@@ -80,6 +80,7 @@ public class LicenseDetectorPlugin extends Plugin {
                 String repoPath = extractRepoPath(record);
                 logger.info("License detector: scanning repository in " + repoPath + "...");
 
+                // Injecting the Quartermaster Maven plugin
                 patchPomFile(repoPath);
 
             } catch (Exception e) { // Fasten error-handling guidelines
@@ -155,6 +156,7 @@ public class LicenseDetectorPlugin extends Plugin {
                 throw new FileNotFoundException("No file named pom.xml found in " + repoPath + ". " +
                         "This plugin only analyzes Maven projects.");
             }
+            logger.info("Patching " + pomFile.get().getAbsolutePath() + "...");
 
             // Retrieving the patch XML file
             File patchFile = new File(TMP_POM_PATCH_FILE);
@@ -212,11 +214,15 @@ public class LicenseDetectorPlugin extends Plugin {
             Element pluginsElement = (Element) pluginsNodeList.item(0);
 
             // Insertion
+            logger.info("Injecting the Quartermaster build plugin...");
             Node importedNode = repoPomDocument.importNode(patchDocument.getDocumentElement(), true);
             pluginsElement.appendChild(importedNode);
+            logger.info("...Quartermaster build plugin injected.");
 
             // Saving the file
+            logger.info("Overwriting " + pomFile.get().getAbsolutePath() + "...");
             writeXmlToFile(documentRoot, pomFile.get());
+            logger.info("..." + pomFile.get().getAbsolutePath() + " successfully patched.");
         }
 
         /**
