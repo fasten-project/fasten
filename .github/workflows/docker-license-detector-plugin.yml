@@ -34,7 +34,7 @@ jobs:
       - name: Build jar
         run: mvn clean install --projects server,:license-detector --also-make
       - name: Build image
-        run: cd docker/ && docker build -t $IMAGE_NAME -f license-detector/Dockerfile .
+        run: docker build --tag $IMAGE_NAME --file docker/license-detector/Dockerfile --target package-ci .
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - name: Push image
