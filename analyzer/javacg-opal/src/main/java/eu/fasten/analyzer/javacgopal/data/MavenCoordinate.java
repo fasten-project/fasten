@@ -94,6 +94,24 @@ public class MavenCoordinate {
         this.packaging = packaging;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        MavenCoordinate that = (MavenCoordinate) o;
+
+        return this.getCoordinate().equals(that.getCoordinate());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.getCoordinate().hashCode();
+    }
+
     /**
      * Construct MavenCoordinate form json.
      *

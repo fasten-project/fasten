@@ -68,7 +68,8 @@ class PartialCallGraphTest {
     static void setUp() throws OPALException {
         singleCallCG = new PartialCallGraph(new CallGraphConstructor(
                 new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                        .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA"));
+                        .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA"),
+            true);
     }
 
     @Test
@@ -155,7 +156,7 @@ class PartialCallGraphTest {
         exception.setStackTrace(new StackTraceElement[]{new StackTraceElement("some.class", "some method", "some file", 10)});
         Mockito.when(constructor.getProject()).thenThrow(exception);
 
-        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor));
+        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor, false));
     }
 
     @Test
@@ -165,7 +166,7 @@ class PartialCallGraphTest {
         Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{new StackTraceElement("org.opalj", "some method", "some file", 10)});
         Mockito.when(constructor.getProject()).thenThrow(exception);
 
-        assertThrows(OPALException.class, () -> new PartialCallGraph(constructor));
+        assertThrows(OPALException.class, () -> new PartialCallGraph(constructor, false));
     }
 
     @Test
@@ -175,14 +176,14 @@ class PartialCallGraphTest {
         Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{});
         Mockito.when(constructor.getProject()).thenThrow(exception);
 
-        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor));
+        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor, false));
     }
 
     @Test
     void createExtendedRevisionJavaCallGraph() throws MissingArtifactException, OPALException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
         var cg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
-                "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO);
+                "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, true);
         assertNotNull(cg);
         Assertions.assertEquals(Constants.mvnForge, cg.forge);
         Assertions.assertEquals("1.7.29", cg.version);
@@ -225,7 +226,7 @@ class PartialCallGraphTest {
         Mockito.when(constructor.getProject()).thenReturn(project);
         Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
 
-        var pcg = new PartialCallGraph(constructor);
+        var pcg = new PartialCallGraph(constructor, false);
         assertNotNull(pcg);
 
         Mockito.verify(callGraph, Mockito.times(2)).calleesOf(declaredMethod);
@@ -264,7 +265,7 @@ class PartialCallGraphTest {
         Mockito.when(constructor.getProject()).thenReturn(project);
         Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
 
-        var pcg = new PartialCallGraph(constructor);
+        var pcg = new PartialCallGraph(constructor, false);
         assertNotNull(pcg);
 
         Mockito.verify(declaredMethod, Mockito.times(1)).definedMethod();
@@ -304,7 +305,7 @@ class PartialCallGraphTest {
         Mockito.when(constructor.getProject()).thenReturn(project);
         Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
 
-        var pcg = new PartialCallGraph(constructor);
+        var pcg = new PartialCallGraph(constructor, false);
         assertNotNull(pcg);
 
         Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
@@ -342,7 +343,7 @@ class PartialCallGraphTest {
         Mockito.when(constructor.getProject()).thenReturn(project);
         Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
 
-        var pcg = new PartialCallGraph(constructor);
+        var pcg = new PartialCallGraph(constructor, false);
         assertNotNull(pcg);
 
         Mockito.verify(callGraph, Mockito.never()).calleesOf(Mockito.any());

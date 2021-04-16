@@ -28,7 +28,6 @@ import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -556,7 +555,7 @@ class OPALTypeTest {
         return new PartialCallGraph(new CallGraphConstructor(
             new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource(s)).getFile()), "",
-            "CHA"));
+            "CHA"), false);
     }
 }
 

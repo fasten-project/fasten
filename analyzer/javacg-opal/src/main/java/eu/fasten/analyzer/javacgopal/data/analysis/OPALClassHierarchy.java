@@ -232,17 +232,17 @@ public class OPALClassHierarchy {
 
     /**
      * Append a sub-graph to already existing ExtendedRevisionJavaCallGraph.
-     *
-     * @param source      source method
+     *  @param source      source method
      * @param targets     list of targets
      * @param resultGraph already existing ExtendedRevisionJavaCallGraph
+     * @param callSiteOnly
      */
     public void appendGraph(final Object source,
                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
                             final Stmt<DUVar<ValueInformation>>[] stmts,
                             final Graph resultGraph, List<Integer> incompeletes,
-                            final Set<Integer> visitedPCs) {
-        final var edges = this.getSubGraph(source, targets, stmts, incompeletes, visitedPCs);
+                            final Set<Integer> visitedPCs, final boolean callSiteOnly) {
+        final var edges = this.getSubGraph(source, targets, stmts, incompeletes, visitedPCs, callSiteOnly);
         resultGraph.append(edges);
     }
 
@@ -251,13 +251,14 @@ public class OPALClassHierarchy {
      *
      * @param source  source method
      * @param targets list of targets
+     * @param callSiteOnly
      * @return ExtendedRevisionJavaCallGraph sub-graph
      */
     public Graph getSubGraph(final Object source,
                              final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
                              final Stmt<DUVar<ValueInformation>>[] stmts,
                              final List<Integer> incompeletes,
-                             final Set<Integer> visitedPCs) {
+                             final Set<Integer> visitedPCs, boolean callSiteOnly) {
 
         final var callSites = new HashMap<List<Integer>, Map<Object, Object>>();
 
@@ -268,30 +269,13 @@ public class OPALClassHierarchy {
                     .asJavaIterable(opalCallSite._2().toIterable())) {
                     final var pc = (Integer) opalCallSite._1();
                     incompeletes.remove(pc);
-                    if (!visitedPCs.contains(pc)) {
-
-                        visitedPCs.add(pc);
-                        Map<Object, Object> metadata = new HashMap<>();
-                        if (source instanceof Method) {
-                            metadata = getCallSite((Method) source, (Integer) opalCallSite._1(),
-                                stmts);
-                        }
-                        // TODO: Is it correct to put everything in the callSites?
-                        if (targetDeclaration.hasMultipleDefinedMethods()) {
-                            for (final var target : JavaConverters
-                                .asJavaIterable(targetDeclaration.definedMethods())) {
-                                this.putCalls(source, callSites, callSites,
-                                    targetDeclaration,
-                                    metadata, target);
-                            }
-
-                        } else if (targetDeclaration.hasSingleDefinedMethod()) {
-                            this.putCalls(source, callSites, callSites, targetDeclaration,
-                                metadata, targetDeclaration.definedMethod());
-
-                        } else if (targetDeclaration.isVirtualOrHasSingleDefinedMethod()) {
-                            this.putExternalCall(source, callSites, targetDeclaration,
-                                metadata);
+                    if (!callSiteOnly) {
+                        processPC(source, stmts, visitedPCs, internalCalls, externalCalls,
+                            opalCallSite, targetDeclaration, pc);
+                    } else {
+                        if (!visitedPCs.contains(pc)) {
+                            processPC(source, stmts, visitedPCs, internalCalls, externalCalls,
+                                opalCallSite, targetDeclaration, pc);
                         }
                     }
                 }
@@ -300,7 +284,38 @@ public class OPALClassHierarchy {
         return new Graph(convert(callSites));
     }
 
-	// Conversion from List<Integer> to IntIntPair
+    private void processPC(final Object source, final Stmt<DUVar<ValueInformation>>[] stmts,
+                           final Set<Integer> visitedPCs,
+                           final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
+                           final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
+                           final Tuple2<Object, Iterator<DeclaredMethod>> opalCallSite,
+                           final DeclaredMethod targetDeclaration, final Integer pc) {
+        visitedPCs.add(pc);
+        Map<Object, Object> metadata = new HashMap<>();
+        if (source instanceof Method) {
+            metadata = getCallSite((Method) source, (Integer) opalCallSite._1(),
+                stmts);
+        }
+
+        if (targetDeclaration.hasMultipleDefinedMethods()) {
+            for (final var target : JavaConverters
+                .asJavaIterable(targetDeclaration.definedMethods())) {
+                this.putCalls(source, internalCalls, externalCalls,
+                    targetDeclaration,
+                    metadata, target);
+            }
+
+        } else if (targetDeclaration.hasSingleDefinedMethod()) {
+            this.putCalls(source, internalCalls, externalCalls, targetDeclaration,
+                metadata, targetDeclaration.definedMethod());
+
+        } else if (targetDeclaration.isVirtualOrHasSingleDefinedMethod()) {
+            this.putExternalCall(source, externalCalls, targetDeclaration,
+                metadata);
+        }
+    }
+
+    // Conversion from List<Integer> to IntIntPair
 	private HashMap<IntIntPair, Map<Object, Object>> convert(final HashMap<List<Integer>, Map<Object, Object>> externalCalls) {
 		final HashMap<IntIntPair, Map<Object, Object>> result = new HashMap<>();
 		for (final var e : externalCalls.entrySet()) {

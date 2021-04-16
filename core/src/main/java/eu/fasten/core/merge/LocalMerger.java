@@ -216,12 +216,11 @@ public class LocalMerger {
 
         artifact.getGraph().getCallSites().entrySet().parallelStream().forEach(arc ->
             processArc(artifact, universalParents, universalChildren, typeDictionary, result,
-                externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, true));  // TODO: Should it be true or false
+                externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, true));  // TODO: Should it be true or false?
         return buildRCG(artifact, result);
     }
 
-    private void processArc(final ExtendedRevisionJavaCallGraph artifact,   // TODO: Why is `artifact` not used?
-                            final Map<String, List<String>> universalParents,
+    private void processArc(final Map<String, List<String>> universalParents,
                             final Map<String, List<String>> universalChildren,
                             final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
                             final CGHA result,
@@ -280,14 +279,11 @@ public class LocalMerger {
                 resolveDynamics(universalChildren,universalParents, typeDictionary, result,
                     isCallback, call, receiverTypeUris);
 
-            } else if (callSite.get("type").equals("invokespecial")) {
-
-                resolveSpecials(result, call, typeDictionary, universalParents, type.getUri(),
-                    isCallback);
-
-            } else if (callSite.get("type").equals("invokedynamic")) {
+            }
+            else if (callSite.get("type").equals("invokedynamic")) {
                 logger.warn("OPAL didn're rewrite the invokedynamic");
             } else {
+
                 resolveReceiverType(typeDictionary, result, isCallback, call, receiverTypeUris);
             }
         }
@@ -303,20 +299,24 @@ public class LocalMerger {
                                  final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
                                  final CGHA result, final boolean isCallback, final Call call,
                                  final ArrayList<String> receiverTypeUris) {
+
+        boolean foundTarget = false;
         for (final var receiverTypeUri : receiverTypeUris) {
-            final var types = universalChildren.getOrDefault(receiverTypeUri, emptyList());
-            boolean foundTarget = false;
-            for (final var depTypeUri : types) {
-                foundTarget =
-                        findTargets(typeDictionary, result, isCallback, call, foundTarget,
-                                depTypeUri);
-            }
+            foundTarget =
+                findTargets(typeDictionary, result, isCallback, call, foundTarget,
+                    receiverTypeUri);
             if (!foundTarget) {
                 for (String depTypeUri : universalParents.getOrDefault(receiverTypeUri, emptyList())) {
                     if(findTargets(typeDictionary, result, isCallback, call, foundTarget,
                         depTypeUri)){
                         break;
                     }
+                }
+            }
+            if (!foundTarget) {
+                final var types = universalChildren.getOrDefault(receiverTypeUri, emptyList());
+                for (final var depTypeUri : types) {
+                    findTargets(typeDictionary, result, isCallback, call, foundTarget, depTypeUri);
                 }
             }
         }
@@ -356,7 +356,7 @@ public class LocalMerger {
 
                 resolveIfDefined(result, call, dep.getClassHierarchy()
                         .get(JavaScope.internalTypes)
-                        .get(receiverTypeUri), dep.product + "$" + dep.version,
+                        .get(receiverTypeUri), dep.productVersion,
                     receiverTypeUri, isCallback);
             }
         }
@@ -371,34 +371,6 @@ public class LocalMerger {
             addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
         }
     }
-
-    /**
-     * Resolves inits and constructors.
-     * The <init> methods are called only when a new instance is created. At least one <init>
-     * method will be invoked for each class along the inheritance path of the newly created
-     * object, and multiple <init> methods could be invoked for any one class along that path.
-     * This is how multiple <init> methods get invoked when an object is instantiated.
-     * The virtual machine invokes an <init> method declared in the object's class.
-     * That <init> method first invokes either another <init> method in the same class,
-     * or an <init> method in its superclass. This process continues all the way up to Object.
-     *
-     * @param result          call graph with resolved calls
-     * @param call            call information
-     * @param constructorType type uri
-     * @param isCallback      true, if the call is a constructor
-     */
-    private void resolveSpecials(final CGHA result, final Call call,
-                                 final Map<String, List<ExtendedRevisionJavaCallGraph>> typeFinder,
-                                 final Map<String, List<String>> universalParents,
-                                 final String constructorType, final boolean isCallback) {
-        final var typeList = universalParents.get(constructorType);
-        if (typeList != null) {
-            resolveReceiverType(typeFinder, result, isCallback, call,
-                Collections.singletonList(typeList.get(0)));
-        }
-    }
-
-
 
     /**
      * Create a map with types as keys and a list of {@link ExtendedRevisionCallGraph} that
@@ -459,9 +431,20 @@ public class LocalMerger {
 
             final var parents = new ArrayList<>(Collections.singletonList(type));
             parents.addAll(getAllParents(result, type));
-            universalParents.put(type, parents);
+            universalParents.put(type, organize(parents));
         }
         return ImmutablePair.of(universalParents, universalChildren);
+    }
+
+    private List<String> organize(ArrayList<String> parents) {
+        final List<String> result = new ArrayList<>();
+        for (String parent : parents) {
+            if (!result.contains(parent) && !parent.equals("/java.lang/Object")) {
+                result.add(parent);
+            }
+        }
+        result.add("/java.lang/Object");
+        return result;
     }
 
     /**

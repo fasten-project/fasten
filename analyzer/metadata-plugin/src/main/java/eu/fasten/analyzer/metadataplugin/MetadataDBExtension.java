@@ -161,6 +161,9 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
                         restartTransaction = false;
                         logger.info("Saved the '" + revision + "' callgraph metadata "
                                 + "to the database with package version ID = " + id);
+
+                        // Set the output path for this call graph, so that it can be stored to disk if necessary.
+                        setOutputPath(callgraph);
                     }
                 });
             } catch (Exception expected) {
