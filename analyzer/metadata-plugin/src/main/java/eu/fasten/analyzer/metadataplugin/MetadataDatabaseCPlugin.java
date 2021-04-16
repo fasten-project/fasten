@@ -196,10 +196,11 @@ public class MetadataDatabaseCPlugin extends Plugin {
 
         protected List<EdgesRecord> insertEdges(Graph graph,
                                  Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
-            final var numEdges = graph.getCallSites().size();
+            final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)
-            var graphCalls = graph.getCallSites();
+            var graphCalls = graph.getInternalCalls();
+            graphCalls.putAll(graph.getExternalCalls());
 
             var edges = new ArrayList<EdgesRecord>(numEdges);
             for (var edgeEntry : graphCalls.entrySet()) {

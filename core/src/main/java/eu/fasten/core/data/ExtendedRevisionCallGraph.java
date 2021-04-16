@@ -170,7 +170,9 @@ public abstract class ExtendedRevisionCallGraph<A> {
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = json.getString("generator");
-        this.graph = new Graph(json.getJSONObject("graph"));
+        if (!rcgClass.getName().equals(ExtendedRevisionJavaCallGraph.class.getName())) {
+            this.graph = new Graph(json.getJSONObject("graph"));
+        }
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
         this.nodeCount = json.getInt("nodes");
     }
@@ -231,7 +233,13 @@ public abstract class ExtendedRevisionCallGraph<A> {
      * @return true if this {@link ExtendedRevisionCallGraph} is empty
      */
     public boolean isCallGraphEmpty() {
-        return this.graph.getCallSites().isEmpty();
+        if (this.graph instanceof JavaGraph) {
+            return ((JavaGraph) graph).getCallSites().isEmpty();
+        } else {
+            return this.graph.getInternalCalls().isEmpty()
+                    && this.graph.getExternalCalls().isEmpty()
+                    && this.graph.getResolvedCalls().isEmpty();
+        }
     }
 
     /**

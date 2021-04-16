@@ -19,7 +19,7 @@ public class JSONUtils {
         var result = new StringBuilder("{");
         appendArtifactInformation(result, erjcg);
         appendCha(result, erjcg.classHierarchy);
-        appendGraph(result, erjcg.graph);
+        appendGraph(result, erjcg.getGraph());
         if (erjcg.timestamp >= 0) {
             appendKeyValue(result, "timestamp", erjcg.timestamp, true);
         }
@@ -51,13 +51,13 @@ public class JSONUtils {
      * @param graph  the graph object to extract the information from.
      * @param result the StringBuilder to append the information.
      */
-    private static void appendGraph(StringBuilder result, final Graph graph) {
-        result.append("\"graph\":{\"call-sites\":[");
+    private static void appendGraph(StringBuilder result, final JavaGraph graph) {
+        result.append("\"call-sites\":[");
         for (final var entry : graph.getCallSites().entrySet()) {
             appendCall(result, entry);
         }
         removeLastIfNotEmpty(result, graph.getCallSites().size());
-        result.append("]},");
+        result.append("],");
 
     }
 

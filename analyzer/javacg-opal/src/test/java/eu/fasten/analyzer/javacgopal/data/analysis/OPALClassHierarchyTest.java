@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -493,7 +494,7 @@ class OPALClassHierarchyTest {
         OPALClassHierarchy classHierarchy =
             Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
         var newGraph = Mockito.mock(Graph.class);
-        var existingGraph = Mockito.mock(Graph.class);
+        var existingGraph = Mockito.mock(JavaGraph.class);
         final var incompeletes = new ArrayList<Integer>();
         final Set<Integer> visitedPCs = new java.util.HashSet<>();
 

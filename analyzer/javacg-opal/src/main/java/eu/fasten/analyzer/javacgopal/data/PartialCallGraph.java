@@ -24,14 +24,10 @@ import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.*;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
 import org.opalj.br.analyses.Project;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -63,7 +59,7 @@ public class PartialCallGraph {
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
     private final EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
-    private final Graph graph;
+    private final JavaGraph graph;
     private final int nodeCount;
 
     public PartialCallGraph(CallGraphConstructor constructor) throws OPALException{
@@ -77,7 +73,7 @@ public class PartialCallGraph {
      * @param constructor call graph constructor
      */
     public PartialCallGraph(CallGraphConstructor constructor, boolean callSiteOnly) throws OPALException {
-        this.graph = new Graph();
+        this.graph = new JavaGraph();
 
         try {
             final var cha = createInternalCHA(constructor.getProject());
@@ -105,7 +101,7 @@ public class PartialCallGraph {
         return classHierarchy;
     }
 
-    public Graph getGraph() {
+    public JavaGraph getGraph() {
         return graph;
     }
 

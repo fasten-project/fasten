@@ -153,11 +153,11 @@ public class Merger implements Runnable {
                     depFiles.add(artFile);
                     var localMerger = new LocalMerger(depFiles);
                     var mergedERCG = localMerger.mergeWithCHA(artFile);
-//                    logger.info("Resolved {} nodes, {} calls in {} seconds",
-//                            mergedERCG.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
-//                            mergedERCG.getGraph().getResolvedCalls().size(),
-//                            new DecimalFormat("#0.000")
-//                                    .format((System.currentTimeMillis() - startTime) / 1000d));
+                    logger.info("Resolved {} nodes, {} calls in {} seconds",
+                            mergedERCG.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
+                            mergedERCG.getGraph().getResolvedCalls().size(),
+                            new DecimalFormat("#0.000")
+                                    .format((System.currentTimeMillis() - startTime) / 1000d));
 
                     if (output != null) {
                         try {

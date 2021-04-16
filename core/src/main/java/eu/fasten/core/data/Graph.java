@@ -31,15 +31,31 @@ public class Graph {
     /**
      * Keeps all the internal calls of the graph. The metadata per call is stored as a map.
      */
-    private final Map<IntIntPair, Map<Object, Object>> callSites;
+    private final Map<IntIntPair, Map<Object, Object>> internalCalls;
 
     /**
-     * Creates {@link Graph} from given call-sites.
-     *
-     * @param callSites internal calls map
+     * Keeps all the external calls of the graph. The metadata per call is stored as a map.
      */
-    public Graph(final Map<IntIntPair, Map<Object, Object>> callSites) {
-        this.callSites = callSites;
+    private final Map<IntIntPair, Map<Object, Object>> externalCalls;
+
+    /**
+     * Keeps all the resolved calls of the graph. The metadata per call is stored as a map.
+     */
+    private final Map<IntIntPair, Map<Object, Object>> resolvedCalls;
+
+    /**
+     * Creates {@link Graph} from given internal, external, and resolved calls.
+     *
+     * @param internalCalls internal calls map
+     * @param externalCalls external calls map
+     * @param resolvedCalls resolved calls map
+     */
+    public Graph(final Map<IntIntPair, Map<Object, Object>> internalCalls,
+                 final Map<IntIntPair, Map<Object, Object>> externalCalls,
+                 final Map<IntIntPair, Map<Object, Object>> resolvedCalls) {
+        this.internalCalls = internalCalls;
+        this.externalCalls = externalCalls;
+        this.resolvedCalls = resolvedCalls;
     }
 
     /**
@@ -48,27 +64,43 @@ public class Graph {
      * @param graph JSONObject of a graph including its internal calls and external calls.
      */
     public Graph(final JSONObject graph) {
-        this.callSites = extractCalls(graph, "call-sites");
+        this.internalCalls = extractCalls(graph, "internalCalls");
+        this.externalCalls = extractCalls(graph, "externalCalls");
+        this.resolvedCalls = extractCalls(graph, "resolvedCalls");
     }
 
     /**
-     * Creates {@link Graph} from given call-sites
+     * Creates {@link Graph} from given internal and external calls. Resolved calls are empty.
      *
-     * @param callSites call-sites map
+     * @param internalCalls internal calls map
+     * @param externalCalls external calls map
      */
-    public Graph(final HashMap<IntIntPair, Map<Object, Object>> callSites) {
-        this.callSites = callSites;
+    public Graph(final HashMap<IntIntPair, Map<Object, Object>> internalCalls,
+                 final HashMap<IntIntPair, Map<Object, Object>> externalCalls) {
+        this.internalCalls = internalCalls;
+        this.externalCalls = externalCalls;
+        this.resolvedCalls = new HashMap<>();
     }
 
     /**
      * Creates {@link Graph} with all fields empty.
      */
     public Graph() {
-        this.callSites = new HashMap<>();
+        this.internalCalls = new HashMap<>();
+        this.externalCalls = new HashMap<>();
+        this.resolvedCalls = new HashMap<>();
     }
 
-    public Map<IntIntPair, Map<Object, Object>> getCallSites() {
-        return callSites;
+    public Map<IntIntPair, Map<Object, Object>> getInternalCalls() {
+        return internalCalls;
+    }
+
+    public Map<IntIntPair, Map<Object, Object>> getExternalCalls() {
+        return externalCalls;
+    }
+
+    public Map<IntIntPair, Map<Object, Object>> getResolvedCalls() {
+        return resolvedCalls;
     }
 
     /**
@@ -77,7 +109,7 @@ public class Graph {
      * @return total number of calls
      */
     public int size() {
-        return callSites.size();
+        return internalCalls.size() + externalCalls.size();
     }
 
     /**
@@ -107,11 +139,11 @@ public class Graph {
      * @return extracted calls
      */
     private Map<IntIntPair, Map<Object, Object>> extractCalls(JSONObject graph, String key) {
-        final var calls = graph.getJSONArray(key);
+        final var internalCalls = graph.getJSONArray(key);
         final Map<IntIntPair, Map<Object, Object>> result = new HashMap<>();
-        final int numberOfArcs = calls.length();
+        final int numberOfArcs = internalCalls.length();
         for (int i = 0; i < numberOfArcs; i++) {
-            result.putAll(getCall(calls.getJSONArray(i)));
+            result.putAll(getCall(internalCalls.getJSONArray(i)));
         }
         return result;
     }
@@ -122,7 +154,8 @@ public class Graph {
      * @param graph a {@link Graph} to take new calls from
      */
     public void append(Graph graph) {
-        this.callSites.putAll(graph.getCallSites());
+        this.internalCalls.putAll(graph.getInternalCalls());
+        this.externalCalls.putAll(graph.getExternalCalls());
     }
 
     /**
@@ -130,17 +163,36 @@ public class Graph {
      *
      * @return the corresponding JSON representation.
      */
-    public JSONObject toJSON() {
+    public Object toJSON() {
         final var result = new JSONObject();
         final var internalCallsJSON = new JSONArray();
-        for (final var entry : this.callSites.entrySet()) {
+        for (final var entry : this.internalCalls.entrySet()) {
             final var call = new JSONArray();
             call.put(entry.getKey().first().toString());
             call.put(entry.getKey().second().toString());
             call.put(new JSONObject(entry.getValue()));
             internalCallsJSON.put(call);
         }
-        result.put("call-sites", internalCallsJSON);
+        final var externalCallsJSON = new JSONArray();
+        for (final var entry : this.externalCalls.entrySet()) {
+            final var call = new JSONArray();
+            call.put(entry.getKey().first().toString());
+            call.put(entry.getKey().second().toString());
+            call.put(new JSONObject(entry.getValue()));
+            externalCallsJSON.put(call);
+        }
+
+        final var resolvedCallsJSON = new JSONArray();
+        for (final var entry : this.resolvedCalls.entrySet()) {
+            final var call = new JSONArray();
+            call.put(entry.getKey().first().toString());
+            call.put(entry.getKey().second().toString());
+            call.put(new JSONObject(entry.getValue()));
+            resolvedCallsJSON.put(call);
+        }
+        result.put("internalCalls", internalCallsJSON);
+        result.put("externalCalls", externalCallsJSON);
+        result.put("resolvedCalls", resolvedCallsJSON);
         return result;
     }
 
@@ -155,13 +207,23 @@ public class Graph {
 
         Graph graph = (Graph) o;
 
-        if (callSites != null) {
-            return callSites.equals(graph.callSites);
-        } else return graph.callSites == null;
+        if (internalCalls != null ? !internalCalls.equals(graph.internalCalls) :
+            graph.internalCalls != null) {
+            return false;
+        }
+        if (externalCalls != null ? !externalCalls.equals(graph.externalCalls) :
+            graph.externalCalls != null) {
+            return false;
+        }
+        return resolvedCalls != null ? resolvedCalls.equals(graph.resolvedCalls) :
+            graph.resolvedCalls == null;
     }
 
     @Override
     public int hashCode() {
-        return callSites != null ? callSites.hashCode() : 0;
+        int result = internalCalls != null ? internalCalls.hashCode() : 0;
+        result = 31 * result + (externalCalls != null ? externalCalls.hashCode() : 0);
+        result = 31 * result + (resolvedCalls != null ? resolvedCalls.hashCode() : 0);
+        return result;
     }
 }

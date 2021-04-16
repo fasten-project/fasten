@@ -84,6 +84,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      */
     public ExtendedRevisionJavaCallGraph(final JSONObject json) throws JSONException {
         super(json, ExtendedRevisionJavaCallGraph.class);
+        this.graph = new JavaGraph(json.getJSONArray("call-sites"));
     }
 
     /**
@@ -95,7 +96,9 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
         return new ExtendedBuilderJava();
     }
 
-
+    public JavaGraph getGraph() {
+        return (JavaGraph) this.graph;
+    }
 
     /**
      * Creates a class hierarchy for the given JSONObject.
@@ -268,6 +271,22 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
         final String groupId = this.product.split(Constants.mvnCoordinateSeparator)[0];
         final String artifactId = this.product.split(Constants.mvnCoordinateSeparator)[1];
         return artifactId + "_" + groupId + "_" + this.version;
+    }
+
+    public JSONObject toJSON() {
+        final var result = new JSONObject();
+        result.put("forge", forge);
+        result.put("product", product);
+        result.put("version", version);
+        result.put("generator", cgGenerator);
+        if (timestamp >= 0) {
+            result.put("timestamp", timestamp);
+        }
+        result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
+        result.put("call-sites", graph.toJSON());
+        result.put("nodes", nodeCount);
+
+        return result;
     }
 
     @Override

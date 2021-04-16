@@ -18,13 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.*;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
@@ -158,10 +152,11 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
 
         protected List<EdgesRecord> insertEdges(Graph graph,
                                  Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
-            final var numEdges = graph.getCallSites().size();
+            var javaGraph = (JavaGraph) graph;
+            final var numEdges = javaGraph.getCallSites().size();
 
             // Map of all edges (internal and external)
-            var graphCalls = graph.getCallSites();
+            var graphCalls = javaGraph.getCallSites();
 
             var edges = new ArrayList<EdgesRecord>(numEdges);
             for (var edgeEntry : graphCalls.entrySet()) {

@@ -18,11 +18,8 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
-import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.*;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
-import eu.fasten.core.data.FastenURI;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -240,7 +237,7 @@ public class OPALClassHierarchy {
     public void appendGraph(final Object source,
                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
                             final Stmt<DUVar<ValueInformation>>[] stmts,
-                            final Graph resultGraph, List<Integer> incompeletes,
+                            final JavaGraph resultGraph, List<Integer> incompeletes,
                             final Set<Integer> visitedPCs, final boolean callSiteOnly) {
         final var edges = this.getSubGraph(source, targets, stmts, incompeletes, visitedPCs, callSiteOnly);
         resultGraph.append(edges);
@@ -254,7 +251,7 @@ public class OPALClassHierarchy {
      * @param callSiteOnly
      * @return ExtendedRevisionJavaCallGraph sub-graph
      */
-    public Graph getSubGraph(final Object source,
+    public JavaGraph getSubGraph(final Object source,
                              final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
                              final Stmt<DUVar<ValueInformation>>[] stmts,
                              final List<Integer> incompeletes,
@@ -270,18 +267,18 @@ public class OPALClassHierarchy {
                     final var pc = (Integer) opalCallSite._1();
                     incompeletes.remove(pc);
                     if (!callSiteOnly) {
-                        processPC(source, stmts, visitedPCs, internalCalls, externalCalls,
+                        processPC(source, stmts, visitedPCs, callSites, callSites,
                             opalCallSite, targetDeclaration, pc);
                     } else {
                         if (!visitedPCs.contains(pc)) {
-                            processPC(source, stmts, visitedPCs, internalCalls, externalCalls,
+                            processPC(source, stmts, visitedPCs, callSites, callSites,
                                 opalCallSite, targetDeclaration, pc);
                         }
                     }
                 }
             }
         }
-        return new Graph(convert(callSites));
+        return new JavaGraph(convert(callSites));
     }
 
     private void processPC(final Object source, final Stmt<DUVar<ValueInformation>>[] stmts,

@@ -20,15 +20,7 @@ package eu.fasten.core.merge;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.FastenDefaultDirectedGraph;
-import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.JavaNode;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.*;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
@@ -215,7 +207,7 @@ public class LocalMerger {
         final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
 
         artifact.getGraph().getCallSites().entrySet().parallelStream().forEach(arc ->
-            processArc(artifact, universalParents, universalChildren, typeDictionary, result,
+            processArc(universalParents, universalChildren, typeDictionary, result,
                 externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, true));  // TODO: Should it be true or false?
         return buildRCG(artifact, result);
     }
@@ -573,7 +565,7 @@ public class LocalMerger {
             .product(artifact.product)
             .timestamp(artifact.timestamp)
             .version(artifact.version)
-            .graph(new Graph(artifact.getGraph().getCallSites()))
+            .graph(new JavaGraph(artifact.getGraph().getCallSites()))
             .nodeCount(result.nodeCount.get())
             .build();
     }
