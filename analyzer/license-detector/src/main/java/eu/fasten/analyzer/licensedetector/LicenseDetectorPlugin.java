@@ -124,6 +124,11 @@ public class LicenseDetectorPlugin extends Plugin {
 
             // Retrieving all repository's pom files
             File[] pomFiles = repoFolder.listFiles((dir, name) -> name.equalsIgnoreCase("pom.xml"));
+            if (pomFiles == null) {
+                throw new RuntimeException(repoPath + " does not denote a directory.");
+            }
+            logger.info("Found " + pomFiles.length + " pom.xml file" +
+                    ((pomFiles.length == 1) ? "" : "s") + ": " + Arrays.toString(pomFiles));
             if (pomFiles.length == 0) {
                 logger.error("No pom.xml file found in " + repoFolder.getAbsolutePath() + ".");
             } else if (pomFiles.length == 1) {
