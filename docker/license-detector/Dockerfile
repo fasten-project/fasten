@@ -20,7 +20,7 @@ ENV JVM_MEM_MAX="-Xmx16g"
 COPY --from=build /home/app/docker/server/server-* server.jar
 COPY --from=build /home/app/docker/plugins/license-detector-* plugins/license-detector.jar
 
-ENTRYPOINT java $JVM_MEM_MAX -XX:+ExitOnOutOfMemoryError -cp server.jar eu.fasten.server.FastenServer -p ./plugins $0 $@
+ENTRYPOINT java $JVM_MEM_MAX --add-opens java.base/jdk.internal.misc=ALL-UNNAMED -XX:+ExitOnOutOfMemoryError -cp server.jar eu.fasten.server.FastenServer -p ./plugins $0 $@
 
 ###############################################
 # Stage 2b: packaging (skips JARs generation) #
@@ -36,4 +36,4 @@ ENV JVM_MEM_MAX="-Xmx16g"
 COPY docker/server/server-* server.jar
 COPY docker/plugins/license-detector-* plugins/license-detector.jar
 
-ENTRYPOINT java $JVM_MEM_MAX -XX:+ExitOnOutOfMemoryError -cp server.jar eu.fasten.server.FastenServer -p ./plugins $0 $@
+ENTRYPOINT java $JVM_MEM_MAX --add-opens java.base/jdk.internal.misc=ALL-UNNAMED -XX:+ExitOnOutOfMemoryError -cp server.jar eu.fasten.server.FastenServer -p ./plugins $0 $@

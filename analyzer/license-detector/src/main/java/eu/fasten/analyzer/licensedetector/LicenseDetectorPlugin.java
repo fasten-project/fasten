@@ -1,6 +1,11 @@
 package eu.fasten.analyzer.licensedetector;
 
 import eu.fasten.core.plugins.KafkaPlugin;
+import io.dgraph.DgraphClient;
+import io.dgraph.DgraphGrpc;
+import io.dgraph.DgraphProto;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -58,6 +63,32 @@ public class LicenseDetectorPlugin extends Plugin {
          */
         private static final String TMP_POM_PATCH_FILE = "tmp-pom-patch.xml";
 
+        /**
+         * DGraph database address.
+         */
+        protected static final String DGRAPH_ADDRESS =
+                System.getenv("DGRAPH_ADDRESS") == null ? "dgraph" : System.getenv("DGRAPH_ADDRESS");
+
+        /**
+         * DGraph database port.
+         */
+        protected static final int DGRAPH_PORT;
+
+        static {
+            // Retrieving DGraph's port
+            int retrievedDgraphPort;
+            if (System.getenv("DGRAPH_PORT") == null) {
+                retrievedDgraphPort = 9080;
+            } else {
+                try {
+                    retrievedDgraphPort = Integer.parseInt(System.getenv("DGRAPH_PORT"));
+                } catch (NumberFormatException e) {
+                    retrievedDgraphPort = 9080;
+                }
+            }
+            DGRAPH_PORT = retrievedDgraphPort;
+        }
+
         @Override
         public Optional<List<String>> consumeTopic() {
             return Optional.of(Collections.singletonList(consumerTopic));
@@ -82,6 +113,9 @@ public class LicenseDetectorPlugin extends Plugin {
 
                 // Injecting the Quartermaster Maven plugin
                 patchPomFile(repoPath);
+
+                // Dropping DGraph data
+                dropDgraphDatabase();
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage());
@@ -275,6 +309,18 @@ public class LicenseDetectorPlugin extends Plugin {
             DOMSource domSource = new DOMSource(document);
             StreamResult sr = new StreamResult(file);
             tf.transform(domSource, sr);
+        }
+
+        /**
+         * Drops the entire content of a DGraph instance.
+         */
+        protected void dropDgraphDatabase() {
+            logger.info("Dropping content of the DGraph instance at " + DGRAPH_ADDRESS + ":" + DGRAPH_PORT + "...");
+            ManagedChannel channel = ManagedChannelBuilder.forAddress(DGRAPH_ADDRESS, DGRAPH_PORT)
+                    .usePlaintext().build();
+            DgraphGrpc.DgraphStub stub = DgraphGrpc.newStub(channel);
+            DgraphClient dgraphClient = new DgraphClient(stub);
+            dgraphClient.alter(DgraphProto.Operation.newBuilder().setDropAll(true).build());
         }
 
         @Override
