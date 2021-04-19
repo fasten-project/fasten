@@ -7,21 +7,19 @@ package eu.fasten.core.data.metadatadb.codegen;
 import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
+import eu.fasten.core.data.metadatadb.codegen.tables.CallSites;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
-import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.data.metadatadb.codegen.tables.PgpArmorHeaders;
 import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PgpArmorHeadersRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.CallSite;
-import eu.fasten.core.data.metadatadb.codegen.udt.Receiver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +33,6 @@ import org.jooq.Field;
 import org.jooq.Result;
 import org.jooq.Sequence;
 import org.jooq.Table;
-import org.jooq.UDT;
 import org.jooq.impl.SchemaImpl;
 
 
@@ -52,7 +49,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = -2104071715;
+    private static final long serialVersionUID = 887412418;
 
     /**
      * The reference instance of <code>public</code>
@@ -75,6 +72,11 @@ public class Public extends SchemaImpl {
     public final BinaryModules BINARY_MODULES = eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules.BINARY_MODULES;
 
     /**
+     * The table <code>public.call_sites</code>.
+     */
+    public final CallSites CALL_SITES = eu.fasten.core.data.metadatadb.codegen.tables.CallSites.CALL_SITES;
+
+    /**
      * The table <code>public.callables</code>.
      */
     public final Callables CALLABLES = eu.fasten.core.data.metadatadb.codegen.tables.Callables.CALLABLES;
@@ -83,11 +85,6 @@ public class Public extends SchemaImpl {
      * The table <code>public.dependencies</code>.
      */
     public final Dependencies DEPENDENCIES = eu.fasten.core.data.metadatadb.codegen.tables.Dependencies.DEPENDENCIES;
-
-    /**
-     * The table <code>public.edges</code>.
-     */
-    public final Edges EDGES = eu.fasten.core.data.metadatadb.codegen.tables.Edges.EDGES;
 
     /**
      * The table <code>public.files</code>.
@@ -105,14 +102,14 @@ public class Public extends SchemaImpl {
     public final ModuleContents MODULE_CONTENTS = eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents.MODULE_CONTENTS;
 
     /**
+     * The table <code>public.module_names</code>.
+     */
+    public final ModuleNames MODULE_NAMES = eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames.MODULE_NAMES;
+
+    /**
      * The table <code>public.modules</code>.
      */
     public final Modules MODULES = eu.fasten.core.data.metadatadb.codegen.tables.Modules.MODULES;
-
-    /**
-     * The table <code>public.namespaces</code>.
-     */
-    public final Namespaces NAMESPACES = eu.fasten.core.data.metadatadb.codegen.tables.Namespaces.NAMESPACES;
 
     /**
      * The table <code>public.package_versions</code>.
@@ -182,8 +179,8 @@ public class Public extends SchemaImpl {
             Sequences.CALLABLES_ID_SEQ,
             Sequences.FILES_ID_SEQ,
             Sequences.INGESTED_ARTIFACTS_ID_SEQ,
+            Sequences.MODULE_NAMES_ID_SEQ,
             Sequences.MODULES_ID_SEQ,
-            Sequences.NAMESPACES_ID_SEQ,
             Sequences.PACKAGE_VERSIONS_ID_SEQ,
             Sequences.PACKAGES_ID_SEQ);
     }
@@ -200,30 +197,17 @@ public class Public extends SchemaImpl {
             ArtifactRepositories.ARTIFACT_REPOSITORIES,
             BinaryModuleContents.BINARY_MODULE_CONTENTS,
             BinaryModules.BINARY_MODULES,
+            CallSites.CALL_SITES,
             Callables.CALLABLES,
             Dependencies.DEPENDENCIES,
-            Edges.EDGES,
             Files.FILES,
             IngestedArtifacts.INGESTED_ARTIFACTS,
             ModuleContents.MODULE_CONTENTS,
+            ModuleNames.MODULE_NAMES,
             Modules.MODULES,
-            Namespaces.NAMESPACES,
             PackageVersions.PACKAGE_VERSIONS,
             Packages.PACKAGES,
             PgpArmorHeaders.PGP_ARMOR_HEADERS,
             VirtualImplementations.VIRTUAL_IMPLEMENTATIONS);
-    }
-
-    @Override
-    public final List<UDT<?>> getUDTs() {
-        List result = new ArrayList();
-        result.addAll(getUDTs0());
-        return result;
-    }
-
-    private final List<UDT<?>> getUDTs0() {
-        return Arrays.<UDT<?>>asList(
-            CallSite.CALL_SITE,
-            Receiver.RECEIVER);
     }
 }

@@ -19,10 +19,6 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.*;
-import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -33,6 +29,7 @@ import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -55,7 +52,17 @@ public class MetadataDatabasePythonPlugin extends Plugin {
             return MetadataDBPythonExtension.dslContext;
         }
 
-        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
+        protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
+            ExtendedRevisionPythonCallGraph pyGraph = (ExtendedRevisionPythonCallGraph) graph;
+            var namespaces = new HashSet<String>();
+            namespaces.addAll(pyGraph.getClassHierarchy().get(PythonScope.internal).keySet());
+            namespaces.addAll(pyGraph.getClassHierarchy().get(PythonScope.external).keySet());
+            return metadataDao.insertNamespaces(namespaces);
+        }
+
+        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph,
+                                                                                    MetadataDao metadataDao, long packageVersionId,
+                                                                                    Map<String, Long> namespaceMap) {
             ExtendedRevisionPythonCallGraph pythonCallGraph = (ExtendedRevisionPythonCallGraph) callgraph;
 
             var callables = new ArrayList<CallablesRecord>();
@@ -65,9 +72,8 @@ public class MetadataDatabasePythonPlugin extends Plugin {
             for (var entry : internals.entrySet()) {
                 var type = entry.getValue();
                 var moduleName = entry.getKey();
-
-                var moduleId = metadataDao.insertModule(packageVersionId, moduleName,
-                                                        null, new JSONObject());
+                var moduleId = metadataDao.insertModule(packageVersionId, namespaceMap.get(moduleName),
+                        null, null, null, null, null);
                 var fileId = metadataDao.insertFile(packageVersionId, type.getSourceFileName());
                 metadataDao.insertModuleContent(moduleId, fileId);
                 callables.addAll(extractCallablesFromType(type, moduleId, true));
@@ -103,31 +109,46 @@ public class MetadataDatabasePythonPlugin extends Plugin {
                 if (callableMetadata.has("first")
                         && !(callableMetadata.get("first") instanceof String)) {
                     firstLine = callableMetadata.getInt("first");
-                    callableMetadata.remove("first");
                 }
+                callableMetadata.remove("first");
                 Integer lastLine = null;
                 if (callableMetadata.has("last")
                         && !(callableMetadata.get("last") instanceof String)) {
                     lastLine = callableMetadata.getInt("last");
-                    callableMetadata.remove("last");
                 }
-
+                callableMetadata.remove("last");
+                CallableType callableType = null;
+                if (callableMetadata.has("type") && (callableMetadata.get("type") instanceof String)) {
+                    callableType = getCallableType(callableMetadata.getString("type"));
+                }
+                callableMetadata.remove("type");
+                Boolean callableDefined = null;
+                if (callableMetadata.has("defined") && (callableMetadata.get("defined") instanceof Boolean)) {
+                    callableDefined = callableMetadata.getBoolean("defined");
+                }
+                callableMetadata.remove("defined");
+                Access callableAccess = null;
+                if (callableMetadata.has("access") && (callableMetadata.get("access") instanceof String)) {
+                    callableAccess = getAccess(callableMetadata.getString("access"));
+                }
+                callableMetadata.remove("access");
                 // Add a record to the list
-                callables.add(new CallablesRecord(localId, moduleId, uri, isInternal, null,
-                        firstLine, lastLine, JSONB.valueOf(callableMetadata.toString())));
+                callables.add(new CallablesRecord(localId, moduleId, uri, isInternal,
+                        firstLine, lastLine, callableType, callableDefined, callableAccess,
+                        JSONB.valueOf(callableMetadata.toString())));
             }
             return callables;
         }
 
-        protected List<EdgesRecord> insertEdges(Graph graph,
-                                 Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
+        protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+                                                Map<String, Long> namespaceMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)
             var graphCalls = graph.getInternalCalls();
             graphCalls.putAll(graph.getExternalCalls());
 
-            var edges = new ArrayList<EdgesRecord>(numEdges);
+            var edges = new ArrayList<CallSitesRecord>(numEdges);
             for (var edgeEntry : graphCalls.entrySet()) {
 
                 // Get Global ID of the source callable
@@ -135,17 +156,14 @@ public class MetadataDatabasePythonPlugin extends Plugin {
                 // Get Global ID of the target callable
                 var target = lidToGidMap.get((long) edgeEntry.getKey().secondInt());
 
-                // Create receivers
-                var receivers = new ReceiverRecord[0];
-
                 // Add edge record to the list of records
-                edges.add(new EdgesRecord(source, target, receivers, JSONB.valueOf("{}")));
+                edges.add(new CallSitesRecord(source, target, null, null, null, null));
             }
 
             // Batch insert all edges
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
+                var edgesBatch = new ArrayList<CallSitesRecord>(Constants.insertionBatchSize);
                 while (edgesIterator.hasNext()
                         && edgesBatch.size() < Constants.insertionBatchSize) {
                     edgesBatch.add(edgesIterator.next());

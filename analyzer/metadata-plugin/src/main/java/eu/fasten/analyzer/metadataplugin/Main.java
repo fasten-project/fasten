@@ -45,7 +45,7 @@ public class Main implements Runnable {
     @CommandLine.Option(names = {"-d", "--database"},
             paramLabel = "DB_URL",
             description = "Database URL for connection",
-            defaultValue = "jdbc:postgresql:postgres")
+            defaultValue = "jdbc:postgresql:fasten_java")
     String dbUrl;
 
     @CommandLine.Option(names = {"-u", "--user"},

@@ -20,10 +20,11 @@ package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.*;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.data.metadatadb.codegen.enums.ReceiverType;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallType;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -33,9 +34,7 @@ import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.io.File;
 
 public class MetadataDatabaseJavaPlugin extends Plugin {
@@ -73,8 +72,35 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     + groupId + File.separator + product + ".json";
         }
 
+        protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
+            ExtendedRevisionJavaCallGraph javaGraph = (ExtendedRevisionJavaCallGraph) graph;
+            var namespaces = new HashSet<String>();
+            javaGraph.getClassHierarchy().get(JavaScope.internalTypes).keySet().forEach(k -> namespaces.add(k.toString()));
+            javaGraph.getClassHierarchy().get(JavaScope.externalTypes).keySet().forEach(k -> namespaces.add(k.toString()));
+            javaGraph.getClassHierarchy().get(JavaScope.internalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperInterfaces())));
+            javaGraph.getClassHierarchy().get(JavaScope.internalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperClasses())));
+            javaGraph.getClassHierarchy().get(JavaScope.externalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperInterfaces())));
+            javaGraph.getClassHierarchy().get(JavaScope.externalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperClasses())));
+            for (var edgeEntry : graph.getGraph().getExternalCalls().entrySet()) {
+                for (var obj : edgeEntry.getValue().keySet()) {
+                    var pc = obj.toString();
+                    var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(Integer.parseInt(pc));
+                    var callMetadata = new JSONObject();
+                    for (var key : metadataMap.keySet()) {
+                        callMetadata.put(key, metadataMap.get(key));
+                    }
+                    String receiverUri = callMetadata.optString("receiver");
+                    if (!receiverUri.isEmpty()) {
+                        namespaces.add(receiverUri);
+                    }
+                }
+            }
+            return metadataDao.insertNamespaces(namespaces);
+        }
+
         public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
-                ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
+                ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId,
+                Map<String, Long> namespaceMap) {
             ExtendedRevisionJavaCallGraph javaCallGraph = (ExtendedRevisionJavaCallGraph) callgraph;
             var callables = new ArrayList<CallablesRecord>();
             var cha = javaCallGraph.getClassHierarchy();
@@ -100,20 +126,14 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             return new ImmutablePair<>(callables, numInternal);
         }
 
-        protected long insertModule(JavaType type, FastenURI fastenUri,
-                                  long packageVersionId, MetadataDao metadataDao) {
-            // Collect metadata of the module
-            var moduleMetadata = new JSONObject();
-            moduleMetadata.put("superInterfaces",
-                    JavaType.toListOfString(type.getSuperInterfaces()));
-            moduleMetadata.put("superClasses",
-                    JavaType.toListOfString(type.getSuperClasses()));
-            moduleMetadata.put("access", type.getAccess());
-            moduleMetadata.put("final", type.isFinal());
-
-            // Put everything in the database
-            return metadataDao.insertModule(packageVersionId, fastenUri.toString(),
-                    null, moduleMetadata);
+        protected long insertModule(JavaType type, FastenURI fastenUri, long packageVersionId,
+                                    Map<String, Long> namespaceMap, MetadataDao metadataDao) {
+            var isFinal = type.isFinal();
+            var access = getAccess(type.getAccess());
+            var superClasses = JavaType.toListOfString(type.getSuperClasses()).stream().map(namespaceMap::get).toArray(Long[]::new);
+            var superInterfaces = JavaType.toListOfString(type.getSuperInterfaces()).stream().map(namespaceMap::get).toArray(Long[]::new);
+            return metadataDao.insertModule(packageVersionId, namespaceMap.get(fastenUri.toString()),
+                    isFinal, access, superClasses, superInterfaces, null);
         }
 
         private List<CallablesRecord> extractCallablesFromType(JavaType type,
@@ -134,32 +154,46 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                 if (callableMetadata.has("first")
                         && !(callableMetadata.get("first") instanceof String)) {
                     firstLine = callableMetadata.getInt("first");
-                    callableMetadata.remove("first");
                 }
+                callableMetadata.remove("first");
                 Integer lastLine = null;
                 if (callableMetadata.has("last")
                         && !(callableMetadata.get("last") instanceof String)) {
                     lastLine = callableMetadata.getInt("last");
-                    callableMetadata.remove("last");
                 }
-
+                callableMetadata.remove("last");
+                CallableType callableType = null;
+                if (callableMetadata.has("type") && (callableMetadata.get("type") instanceof String)) {
+                    callableType = getCallableType(callableMetadata.getString("type"));
+                }
+                callableMetadata.remove("type");
+                Boolean callableDefined = null;
+                if (callableMetadata.has("defined") && (callableMetadata.get("defined") instanceof Boolean)) {
+                    callableDefined = callableMetadata.getBoolean("defined");
+                }
+                callableMetadata.remove("defined");
+                Access access = null;
+                if (callableMetadata.has("access") && (callableMetadata.get("access") instanceof String)) {
+                    access = getAccess(callableMetadata.getString("access"));
+                }
+                callableMetadata.remove("access");
                 // Add a record to the list
-                callables.add(new CallablesRecord(localId, moduleId, uri, isInternal, null,
-                        firstLine, lastLine, JSONB.valueOf(callableMetadata.toString())));
+                callables.add(new CallablesRecord(localId, moduleId, uri, isInternal,
+                        firstLine, lastLine, callableType, callableDefined, access,
+                        JSONB.valueOf(callableMetadata.toString())));
             }
             return callables;
         }
 
-        protected List<EdgesRecord> insertEdges(Graph graph,
-                                 Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
-            var javaGraph = (JavaGraph) graph;
-            final var numEdges = javaGraph.getCallSites().size();
+        protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+                                                Map<String, Long> namespaceMap, MetadataDao metadataDao) {
+            final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)
-            var graphCalls = javaGraph.getCallSites();
+            var externalCalls = graph.getExternalCalls();
 
-            var edges = new ArrayList<EdgesRecord>(numEdges);
-            for (var edgeEntry : graphCalls.entrySet()) {
+            var edges = new ArrayList<CallSitesRecord>(numEdges);
+            for (var edgeEntry : externalCalls.entrySet()) {
 
                 // Get Global ID of the source callable
                 var source = lidToGidMap.get((long) edgeEntry.getKey().firstInt());
@@ -167,33 +201,38 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                 var target = lidToGidMap.get((long) edgeEntry.getKey().secondInt());
 
                 // Create receivers
-                var receivers = new ReceiverRecord[edgeEntry.getValue().size()];
+                var receivers = new Long[edgeEntry.getValue().size()];
                 var counter = 0;
                 for (var obj : edgeEntry.getValue().keySet()) {
                     var pc = obj.toString();
                     // Get edge metadata
-                    var metadataMap = (Map<String, Object>) edgeEntry.getValue()
-                            .get(Integer.parseInt(pc));
+                    var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(Integer.parseInt(pc));
                     var callMetadata = new JSONObject();
                     for (var key : metadataMap.keySet()) {
                         callMetadata.put(key, metadataMap.get(key));
                     }
-
-                    // Extract receiver information from the metadata
-                    int line = callMetadata.optInt("line", -1);
-                    var type = this.getReceiverType(callMetadata.optString("type"));
                     String receiverUri = callMetadata.optString("receiver");
-                    receivers[counter++] = new ReceiverRecord(line, type, receiverUri);
+                    receivers[counter++] = namespaceMap.get(receiverUri);
                 }
-
+                Integer line = null; //callMetadata.optInt("line", -1);
+                CallType type = null; // this.getReceiverType(callMetadata.optString("type"));
                 // Add edge record to the list of records
-                edges.add(new EdgesRecord(source, target, receivers, JSONB.valueOf("{}")));
+                edges.add(new CallSitesRecord(source, target, line, type, receivers, null));
+            }
+
+            var internalCalls = graph.getInternalCalls();
+            for (var edgeEntry : internalCalls.entrySet()) {
+                // Get Global ID of the source callable
+                var source = lidToGidMap.get((long) edgeEntry.getKey().get(0));
+                // Get Global ID of the target callable
+                var target = lidToGidMap.get((long) edgeEntry.getKey().get(1));
+                edges.add(new CallSitesRecord(source, target, null, null, null, null));
             }
 
             // Batch insert all edges
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
+                var edgesBatch = new ArrayList<CallSitesRecord>(Constants.insertionBatchSize);
                 while (edgesIterator.hasNext()
                         && edgesBatch.size() < Constants.insertionBatchSize) {
                     edgesBatch.add(edgesIterator.next());
@@ -203,18 +242,18 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             return edges;
         }
 
-        private ReceiverType getReceiverType(String type) {
+        private CallType getReceiverType(String type) {
             switch (type) {
                 case "invokestatic":
-                    return ReceiverType.static_;
+                    return CallType.static_;
                 case "invokespecial":
-                    return ReceiverType.special;
+                    return CallType.special;
                 case "invokevirtual":
-                    return ReceiverType.virtual;
+                    return CallType.virtual;
                 case "invokedynamic":
-                    return ReceiverType.dynamic;
+                    return CallType.dynamic;
                 case "invokeinterface":
-                    return ReceiverType.interface_;
+                    return CallType.interface_;
                 default:
                     return null;
             }
