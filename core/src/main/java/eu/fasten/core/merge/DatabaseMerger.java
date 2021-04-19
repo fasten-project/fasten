@@ -378,7 +378,7 @@ public class DatabaseMerger {
      * @param dbContext     DSL context
      * @return list of external and constructor calls
      */
-    private Cursor<Record3<Long, Long, CallSiteRecord[]>> getArcs(final DirectedGraph callGraphData, final DSLContext dbContext) {
+    private Cursor<Record3<Long, Long, CallSiteRecord[]>> getArcs(final DirectedGraph callGraphData, final DSLContext dbContext) {  // FIXME
         Condition arcsCondition = null;
         for (var source : callGraphData.nodes()) {
             for (var target : callGraphData.successors(source)) {

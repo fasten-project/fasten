@@ -26,9 +26,7 @@ import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.IngestedArtifactsRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import eu.fasten.core.utils.FastenUriUtils;
 import org.apache.commons.math3.util.Pair;
@@ -40,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.stream.Collectors;
 import static org.jooq.impl.DSL.*;
 
 public class MetadataDao {
