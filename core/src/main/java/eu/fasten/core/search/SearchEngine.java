@@ -396,6 +396,7 @@ public class SearchEngine {
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
 		seed.forEach(x -> queue.enqueue(x)); // Load initial state
 		final LongOpenHashSet seen = new LongOpenHashSet();
+		seed.forEach(x -> seen.add(x)); // Load initial state
 		int d = -1;
 		long sentinel = queue.firstLong();
 		final Result probe = new Result();
