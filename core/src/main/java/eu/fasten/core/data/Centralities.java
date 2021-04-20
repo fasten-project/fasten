@@ -213,7 +213,7 @@ public class Centralities {
 	 * @param directedGraph a directed graph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
-	public static Long2DoubleFunction seelyCentralityParallel(final DirectedGraph directedGraph) throws IOException {
+	public static Long2DoubleFunction seeleyCentralityParallel(final DirectedGraph directedGraph) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
 		final DominantEigenvectorParallelPowerMethod dominantEigenvectorParallelPowerMethod = new DominantEigenvectorParallelPowerMethod(immutableGraphAdapter.transpose());
 		dominantEigenvectorParallelPowerMethod.markovian = true;

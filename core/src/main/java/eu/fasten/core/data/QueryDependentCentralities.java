@@ -53,25 +53,25 @@ import it.unimi.dsi.webgraph.algo.HyperBall;
  * {@link DirectedGraph}.
  *
  * <p>
- * {@linkplain Centralities Query-<em>independent</em>} centrality measure associate a score
+ * A {@linkplain Centralities Query-<em>independent</em>} centrality measure associate a score
  * with each node of a graph. Query-<em>dependent</em> centrality measure use additional
  * information specific to a query to make the centrality dependent on a set of <em>query nodes</em>.
  *
  * <p>
- * The influence of the query nodes on the final result very depending on the type of centrality
+ * The influence of the query nodes on the final result vary depending on the type of centrality
  * considered. For example, in the case of PageRank it is customary to set the {@link PageRank#preference <em>preference vector</em>}
  * to a probability distribution concentrated on the query nodes (in the methods provided
  * by this class, the preference vector is set to the uniform distribution on the query nodes).
  *
  * <p>
- * In the case of <em>geometric centralities</em> such as closeness of harmonic centrality,
+ * In the case of <em>geometric centralities</em>, such as closeness of harmonic centrality,
  * we consider a weight on the node that is zero outside of the query nodes and one on the
  * query nodes. The methods of this class assume that the query nodes are in relatively
  * small number, and thus perform a number breadth-first visit from the query nodes,
  * accumulating the results, rather than use the {@link HyperBall} approximation algorithm.
  *
  * <p>
- * We provide a method for each implementation part of D5.3. Many implementation provide a wide
+ * We provide a method for each implementation part of D5.3. Many implementations provide a wide
  * number of options, that should be explored, if necessary, by looking at the code in this class
  * and at the related Javadoc documentation.
  *
@@ -229,7 +229,7 @@ public class QueryDependentCentralities {
 	 * @param directedGraph a directed graph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
-	public static Long2DoubleFunction seelyCentralityParallel(final DirectedGraph directedGraph) throws IOException {
+	public static Long2DoubleFunction seeleyCentralityParallel(final DirectedGraph directedGraph) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
 		final DominantEigenvectorParallelPowerMethod dominantEigenvectorParallelPowerMethod = new DominantEigenvectorParallelPowerMethod(immutableGraphAdapter.transpose());
 		dominantEigenvectorParallelPowerMethod.markovian = true;
