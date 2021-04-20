@@ -223,7 +223,7 @@ public class QueryDependentCentralitiesTest {
 		final DominantEigenvectorParallelPowerMethod dominantEigenvectorParallelPowerMethod = new DominantEigenvectorParallelPowerMethod(immutableGraph.transpose());
 		dominantEigenvectorParallelPowerMethod.markovian = true;
 		dominantEigenvectorParallelPowerMethod.stepUntil(new SpectralRanking.NormStoppingCriterion(1E-7));
-		final Long2DoubleFunction seeley = Centralities.seelyCentralityParallel(directedGraph);
+		final Long2DoubleFunction seeley = Centralities.seeleyCentralityParallel(directedGraph);
 		for (final long id : directedGraph.nodes()) assertEquals(dominantEigenvectorParallelPowerMethod.rank[immutableGraph.id2Node(id)], seeley.get(id));
 	}
 
