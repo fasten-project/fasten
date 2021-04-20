@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2020 Sebastian Proksch
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -13,6 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package eu.fasten.analyzer.sourceanalyzer;
 
 import com.github.javaparser.ParseResult;
@@ -21,7 +22,6 @@ import com.github.javaparser.utils.CodeGenerationUtils;
 import com.github.javaparser.utils.SourceRoot;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

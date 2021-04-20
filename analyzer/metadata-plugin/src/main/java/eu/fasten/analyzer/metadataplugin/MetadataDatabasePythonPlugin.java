@@ -19,6 +19,11 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.*;
+import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -141,7 +146,7 @@ public class MetadataDatabasePythonPlugin extends Plugin {
         }
 
         protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
-                                                Map<String, Long> namespaceMap, MetadataDao metadataDao) {
+                                                    Map<String, Long> namespaceMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)

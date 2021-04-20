@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import eu.fasten.analyzer.javacgopal.data.exceptions.EmptyCallGraphException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import java.io.FileNotFoundException;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;

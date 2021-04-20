@@ -289,7 +289,7 @@ public class CGandStitchingTest {
 
     @Test
     public void testAllCasesJ8() {
-        //runTestsIn("resources/example-workspace-java8/");
+//        runTestsIn("resources/example-workspace-java8/");
     }
 
 
@@ -305,14 +305,14 @@ public class CGandStitchingTest {
     }
 
     public void asserReceiver(ExtendedRevisionJavaCallGraph cg, String callType, String type){
-//        for (final var edge : cg.getGraph().getExternalCalls().entrySet()) {
-//            for (final var cs : edge.getValue().entrySet()) {
-//                final var metadata = (Map<Object,Object>)cs.getValue();
-//                if ((metadata.get("type").equals(callType))) {
-//                    Assertions.assertEquals(type, metadata.get("receiver"));
-//                }
-//            }
-//        }
+        for (final var edge : cg.getGraph().getExternalCalls().entrySet()) {
+            for (final var cs : edge.getValue().entrySet()) {
+                final var metadata = (Map<Object,Object>)cs.getValue();
+                if ((metadata.get("type").equals(callType))) {
+                    Assertions.assertEquals(type, metadata.get("receiver"));
+                }
+            }
+        }
     }
 
     @Test

@@ -25,8 +25,6 @@ import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.Node;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;

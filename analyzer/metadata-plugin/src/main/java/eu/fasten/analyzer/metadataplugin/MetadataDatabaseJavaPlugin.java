@@ -109,7 +109,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             for (var fastenUri : internalTypes.keySet()) {
                 var type = internalTypes.get(fastenUri);
                 var moduleId = insertModule(type, FastenURI.create(fastenUri), packageVersionId,
-                    metadataDao);
+                    namespaceMap, metadataDao);
                 var fileId = metadataDao.insertFile(packageVersionId, type.getSourceFileName());
                 metadataDao.insertModuleContent(moduleId, fileId);
                 callables.addAll(extractCallablesFromType(type, moduleId, true));
@@ -186,23 +186,19 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
         }
 
         protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
-                                                Map<String, Long> namespaceMap, MetadataDao metadataDao) {
-            final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
+                                                Map<String, Long> typesMap, MetadataDao metadataDao) {
+            var javaGraph = (JavaGraph) graph;
+            final var numEdges = javaGraph.getCallSites().size();
 
-            // Map of all edges (internal and external)
-            var externalCalls = graph.getExternalCalls();
-
-            var edges = new ArrayList<CallSitesRecord>(numEdges);
-            for (var edgeEntry : externalCalls.entrySet()) {
+            var callSites = new ArrayList<CallSitesRecord>(numEdges);
+            for (var edgeEntry : javaGraph.getCallSites().entrySet()) {
 
                 // Get Global ID of the source callable
                 var source = lidToGidMap.get((long) edgeEntry.getKey().firstInt());
                 // Get Global ID of the target callable
                 var target = lidToGidMap.get((long) edgeEntry.getKey().secondInt());
 
-                // Create receivers
-                var receivers = new Long[edgeEntry.getValue().size()];
-                var counter = 0;
+                // Create call-site record for each pc
                 for (var obj : edgeEntry.getValue().keySet()) {
                     var pc = obj.toString();
                     // Get edge metadata
@@ -211,38 +207,32 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     for (var key : metadataMap.keySet()) {
                         callMetadata.put(key, metadataMap.get(key));
                     }
-                    String receiverUri = callMetadata.optString("receiver");
-                    receivers[counter++] = namespaceMap.get(receiverUri);
+                    var receivers = new Long[edgeEntry.getValue().size()];
+                    var receiverTypes = callMetadata.optString("receiver")
+                            .replace("[","").replace("]","").split(",");
+                    for (int i = 0; i < receiverTypes.length; i++) {
+                        receivers[i] = typesMap.get(receiverTypes[i]);
+                    }
+                    Integer line = callMetadata.optInt("line", -1);
+                    CallType type = this.getCallType(callMetadata.optString("type"));
+                    callSites.add(new CallSitesRecord(source, target, line, type, receivers, null));
                 }
-                Integer line = null; //callMetadata.optInt("line", -1);
-                CallType type = null; // this.getReceiverType(callMetadata.optString("type"));
-                // Add edge record to the list of records
-                edges.add(new CallSitesRecord(source, target, line, type, receivers, null));
-            }
-
-            var internalCalls = graph.getInternalCalls();
-            for (var edgeEntry : internalCalls.entrySet()) {
-                // Get Global ID of the source callable
-                var source = lidToGidMap.get((long) edgeEntry.getKey().get(0));
-                // Get Global ID of the target callable
-                var target = lidToGidMap.get((long) edgeEntry.getKey().get(1));
-                edges.add(new CallSitesRecord(source, target, null, null, null, null));
             }
 
             // Batch insert all edges
-            final var edgesIterator = edges.iterator();
-            while (edgesIterator.hasNext()) {
+            final var callSitesIterator = callSites.iterator();
+            while (callSitesIterator.hasNext()) {
                 var edgesBatch = new ArrayList<CallSitesRecord>(Constants.insertionBatchSize);
-                while (edgesIterator.hasNext()
+                while (callSitesIterator.hasNext()
                         && edgesBatch.size() < Constants.insertionBatchSize) {
-                    edgesBatch.add(edgesIterator.next());
+                    edgesBatch.add(callSitesIterator.next());
                 }
                 metadataDao.batchInsertEdges(edgesBatch);
             }
-            return edges;
+            return callSites;
         }
 
-        private CallType getReceiverType(String type) {
+        private CallType getCallType(String type) {
             switch (type) {
                 case "invokestatic":
                     return CallType.static_;
