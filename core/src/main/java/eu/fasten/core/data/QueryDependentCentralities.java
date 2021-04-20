@@ -20,34 +20,58 @@ package eu.fasten.core.data;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.jgrapht.alg.scoring.AlphaCentrality;
 import org.jgrapht.alg.scoring.BetweennessCentrality;
-import org.jgrapht.alg.scoring.ClosenessCentrality;
 import org.jgrapht.alg.scoring.ClusteringCoefficient;
-import org.jgrapht.alg.scoring.HarmonicCentrality;
-import org.jgrapht.alg.scoring.PageRank;
 
-import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
+import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2LongMap.Entry;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import it.unimi.dsi.fastutil.longs.LongCollection;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.law.rank.DominantEigenvectorParallelPowerMethod;
 import it.unimi.dsi.law.rank.KatzParallelGaussSeidel;
 import it.unimi.dsi.law.rank.LeftSingularVectorParallelPowerMethod;
+import it.unimi.dsi.law.rank.PageRank;
 import it.unimi.dsi.law.rank.PageRankParallelGaussSeidel;
 import it.unimi.dsi.law.rank.Salsa;
 import it.unimi.dsi.law.rank.SpectralRanking;
 import it.unimi.dsi.law.rank.SpectralRanking.StoppingCriterion;
 import it.unimi.dsi.law.util.Norm;
-import it.unimi.dsi.webgraph.algo.GeometricCentralities;
 import it.unimi.dsi.webgraph.algo.HyperBall;
 
 /**
- * A containers for static utility methods computing centrality measures on instances of
+ * A containers for static utility methods computing query-dependent centrality measures on instances of
  * {@link DirectedGraph}.
  *
  * <p>
- * We provide a method for each implementation part of D5.2. Many implementation provide a wide
+ * {@linkplain Centralities Query-<em>independent</em>} centrality measure associate a score
+ * with each node of a graph. Query-<em>dependent</em> centrality measure use additional
+ * information specific to a query to make the centrality dependent on a set of <em>query nodes</em>.
+ *
+ * <p>
+ * The influence of the query nodes on the final result very depending on the type of centrality
+ * considered. For example, in the case of PageRank it is customary to set the {@link PageRank#preference <em>preference vector</em>}
+ * to a probability distribution concentrated on the query nodes (in the methods provided
+ * by this class, the preference vector is set to the uniform distribution on the query nodes).
+ *
+ * <p>
+ * In the case of <em>geometric centralities</em> such as closeness of harmonic centrality,
+ * we consider a weight on the node that is zero outside of the query nodes and one on the
+ * query nodes. The methods of this class assume that the query nodes are in relatively
+ * small number, and thus perform a number breadth-first visit from the query nodes,
+ * accumulating the results, rather than use the {@link HyperBall} approximation algorithm.
+ *
+ * <p>
+ * We provide a method for each implementation part of D5.3. Many implementation provide a wide
  * number of options, that should be explored, if necessary, by looking at the code in this class
  * and at the related Javadoc documentation.
  *
@@ -78,120 +102,112 @@ public class QueryDependentCentralities {
 	private static final StoppingCriterion DEFAULT_STOPPING_CRITERION = SpectralRanking.or(new SpectralRanking.IterationNumberStoppingCriterion(1000), new SpectralRanking.NormStoppingCriterion(1E-7));
 
 	/**
-	 * Computes closeness centrality using all-pairs shortest-paths.
+	 * Computes query-dependent closeness centrality using parallel breadth-first visits.
 	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
+	 * @param graph a directed graph.
+	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
+	 * the query nodes) or the <em>positive</em> version of closeness (distances <em>from</em> the query nodes).
+	 * @return a function mapping node identifiers to their query-dependent closeness score.
 	 */
-	public static Long2DoubleFunction closenessExact(final DirectedGraph directedGraph) throws IOException, InterruptedException {
-		final ClosenessCentrality<Long, LongLongPair> harmonicCentrality = new ClosenessCentrality<>(directedGraph.transpose(), false, false);
-		return id -> harmonicCentrality.getVertexScore(id);
+	public static Long2DoubleFunction closeness(final DirectedGraph graph, final LongCollection queryNodes) throws InterruptedException {
+		final Long2LongOpenHashMap sumOfDistances = new Long2LongOpenHashMap();
+		final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
+		for(final long node: queryNodes) executorCompletionService.submit(() ->{
+			final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
+			queue.enqueue(node);
+			final LongOpenHashSet seen = new LongOpenHashSet();
+			seen.add(node);
+			int d = -1;
+			long sentinel = queue.firstLong();
+
+			while (!queue.isEmpty()) {
+				final long gid = queue.dequeueLong();
+				if (gid == sentinel) {
+					d++;
+					sentinel = -1;
+				}
+
+				synchronized(sumOfDistances) {
+					sumOfDistances.addTo(gid, d);
+				}
+
+				// Note that we are reversing the computation
+				final LongIterator iterator = graph.successors(gid).iterator();
+
+				while (iterator.hasNext()) {
+					final long x = iterator.nextLong();
+					if (seen.add(x)) {
+						if (sentinel == -1) sentinel = x;
+						queue.enqueue(x);
+					}
+				}
+			}
+
+			return null;
+		});
+
+		for (final Long queryNode : queryNodes) executorCompletionService.take();
+
+		final Long2DoubleOpenHashMap result = new Long2DoubleOpenHashMap();
+		for(final Entry e: sumOfDistances.long2LongEntrySet()) {
+			final long s = e.getLongValue();
+			if (s != 0) result.put(e.getLongKey(), 1. / s);
+		}
+		return result;
 	}
 
 	/**
-	 * Computes closeness centrality using a parallel implementation of all-pairs shortest-paths.
+	 * Computes query-dependent harmonic centrality using parallel breadth-first visits.
 	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
+	 * @param graph a directed graph.
+	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes). the query
+	 *            nodes) or the <em>positive</em> version of harmonic centrality (distances
+	 *            <em>from</em> the query nodes).
+	 * @return a function mapping node identifiers to their query-dependent harmonic score.
 	 */
-	public static Long2DoubleFunction closenessExactParallel(final DirectedGraph directedGraph) throws IOException, InterruptedException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final GeometricCentralities geometricCentralities = new GeometricCentralities(immutableGraphAdapter.transpose());
-		geometricCentralities.compute();
-		return id -> geometricCentralities.closeness[immutableGraphAdapter.id2Node(id)];
+	public static Long2DoubleFunction harmonic(final DirectedGraph graph, final LongCollection queryNodes) throws InterruptedException {
+		final Long2DoubleOpenHashMap result = new Long2DoubleOpenHashMap();
+		final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
+		for (final long node : queryNodes) executorCompletionService.submit(() -> {
+			final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
+			queue.enqueue(node);
+			final LongOpenHashSet seen = new LongOpenHashSet();
+			seen.add(node);
+			int d = -1;
+			long sentinel = queue.firstLong();
+
+			while (!queue.isEmpty()) {
+				final long gid = queue.dequeueLong();
+				if (gid == sentinel) {
+					d++;
+					sentinel = -1;
+				}
+
+				synchronized (result) {
+					if (gid != node) result.addTo(gid, 1. / d);
+				}
+
+				// Note that we are reversing the computation
+				final LongIterator iterator = graph.successors(gid).iterator();
+
+				while (iterator.hasNext()) {
+					final long x = iterator.nextLong();
+					if (seen.add(x)) {
+						if (sentinel == -1) sentinel = x;
+						queue.enqueue(x);
+					}
+				}
+			}
+
+			return null;
+		});
+
+		for (final Long queryNode : queryNodes) executorCompletionService.take();
+		return result;
 	}
 
-	/**
-	 * Approximates closeness centrality using {@linkplain HyperBall HyperBall}.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @param eps the desired relative error with probability 90%; the number of counters per register
-	 *            will be approximately 3.16 / {@code eps}.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction closenessApproximateParallel(final DirectedGraph directedGraph, final double eps) throws IOException, InterruptedException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final HyperBall hyperBall = new HyperBall(immutableGraphAdapter.transpose(), immutableGraphAdapter, Fast.approximateLog2((3 * 1.06 / eps) * (3 * 1.06 / eps)), null, 0, 0, 0, false, true, false, null, 0);
-		hyperBall.run();
-		hyperBall.close();
-		return id -> 1. / hyperBall.sumOfDistances[immutableGraphAdapter.id2Node(id)];
-	}
-
-
-	/**
-	 * Computes Lin's centrality using a parallel implementation of all-pairs shortest-paths.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction linExactParallel(final DirectedGraph directedGraph) throws IOException, InterruptedException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final GeometricCentralities geometricCentralities = new GeometricCentralities(immutableGraphAdapter.transpose());
-		geometricCentralities.compute();
-		return id -> geometricCentralities.lin[immutableGraphAdapter.id2Node(id)];
-	}
-
-	/**
-	 * Approximates Lin's centrality using {@linkplain HyperBall HyperBall}.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @param eps the desired relative error with probability 90%; the number of counters per register
-	 *            will be approximately 3.16 / {@code eps}.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction linApproximateParallel(final DirectedGraph directedGraph, final double eps) throws IOException, InterruptedException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final HyperBall hyperBall = new HyperBall(immutableGraphAdapter.transpose(), immutableGraphAdapter, Fast.approximateLog2((3 * 1.06 / eps) * (3 * 1.06 / eps)), null, 0, 0, 0, false, true, false, null, 0);
-		hyperBall.run();
-		hyperBall.close();
-
-		return id -> {
-			final int x = immutableGraphAdapter.id2Node(id);
-			if (hyperBall.sumOfDistances[x] == 0) return 1;
-			final double count = hyperBall.count(x);
-			return count * count / hyperBall.sumOfDistances[x];
-		};
-	}
-
-	/**
-	 * Computes harmonic centrality using all-pairs shortest-paths.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction harmonicExact(final DirectedGraph directedGraph) throws IOException, InterruptedException {
-		final ClosenessCentrality<Long, LongLongPair> harmonicCentrality = new HarmonicCentrality<>(directedGraph.transpose(), false, false);
-		return id -> harmonicCentrality.getVertexScore(id);
-	}
-
-	/**
-	 * Computes harmonic centrality using a parallel implementation of all-pairs shortest-paths.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction harmonicExactParallel(final DirectedGraph directedGraph) throws IOException, InterruptedException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final GeometricCentralities geometricCentralities = new GeometricCentralities(immutableGraphAdapter.transpose());
-		geometricCentralities.compute();
-		return id -> geometricCentralities.harmonic[immutableGraphAdapter.id2Node(id)];
-	}
-
-	/**
-	 * Approximates harmonic centrality using {@linkplain HyperBall HyperBall}.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @param eps the desired relative error with probability 90%; the number of counters per register
-	 *            will be approximately 3.16 / {@code eps}.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction harmonicApproximateParallel(final DirectedGraph directedGraph, final double eps) throws IOException, InterruptedException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final HyperBall hyperBall = new HyperBall(immutableGraphAdapter.transpose(), immutableGraphAdapter, Fast.approximateLog2((3 * 1.06 / eps) * (3 * 1.06 / eps)), null, 0, 0, 0, false, false, true, null, 0);
-		hyperBall.run();
-		hyperBall.close();
-		return id -> hyperBall.sumOfInverseDistances[immutableGraphAdapter.id2Node(id)];
-	}
 
 	/**
 	 * Approximates left dominant eigenvector centrality using a parallel implementation of the power
@@ -255,7 +271,7 @@ public class QueryDependentCentralities {
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction pageRank(final DirectedGraph directedGraph, final double alpha) {
-		final PageRank<Long, LongLongPair> pageRank = new PageRank<>(directedGraph, alpha, 1000, 1E-7);
+		final org.jgrapht.alg.scoring.PageRank<Long, LongLongPair> pageRank = new org.jgrapht.alg.scoring.PageRank<>(directedGraph, alpha, 1000, 1E-7);
 		final Map<Long, Double> scores = pageRank.getScores();
 		return id -> scores.get(id);
 	}
