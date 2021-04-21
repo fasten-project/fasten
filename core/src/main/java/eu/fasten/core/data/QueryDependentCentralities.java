@@ -45,6 +45,7 @@ import it.unimi.dsi.law.rank.KatzParallelGaussSeidel;
 import it.unimi.dsi.law.rank.LeftSingularVectorParallelPowerMethod;
 import it.unimi.dsi.law.rank.PageRank;
 import it.unimi.dsi.law.rank.PageRankParallelGaussSeidel;
+import it.unimi.dsi.law.rank.PageRankPush;
 import it.unimi.dsi.law.rank.Salsa;
 import it.unimi.dsi.law.rank.SpectralRanking;
 import it.unimi.dsi.law.rank.SpectralRanking.StoppingCriterion;
@@ -101,8 +102,9 @@ import it.unimi.dsi.webgraph.algo.HyperBall;
 
 public class QueryDependentCentralities {
 
-
-	private static final StoppingCriterion DEFAULT_STOPPING_CRITERION = SpectralRanking.or(new SpectralRanking.IterationNumberStoppingCriterion(1000), new SpectralRanking.NormStoppingCriterion(1E-7));
+	public static final double DEFAULT_L1_THRESHOLD = 1E-7;
+	private static final int MAX_ITERATIONS = 1000;
+	public static final StoppingCriterion DEFAULT_STOPPING_CRITERION = SpectralRanking.or(new SpectralRanking.IterationNumberStoppingCriterion(MAX_ITERATIONS), new SpectralRanking.NormStoppingCriterion(DEFAULT_L1_THRESHOLD));
 
 	/**
 	 * Computes query-dependent closeness centrality using parallel breadth-first visits.
@@ -229,49 +231,6 @@ public class QueryDependentCentralities {
 	}
 	
 	
-	//TODO
-	/**
-	 * Approximates left dominant eigenvector centrality using a parallel implementation of the power
-	 * method.
-	 *
-	 * @param directedGraph a directed graph.
-	 * 
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction eigenvectorCentralityParallel(final DirectedGraph directedGraph) throws IOException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final DominantEigenvectorParallelPowerMethod dominantEigenvectorParallelPowerMethod = new DominantEigenvectorParallelPowerMethod(immutableGraphAdapter.transpose());
-		dominantEigenvectorParallelPowerMethod.stepUntil(DEFAULT_STOPPING_CRITERION);
-		return id -> dominantEigenvectorParallelPowerMethod.rank[immutableGraphAdapter.id2Node(id)];
-	}
-
-	//TODO
-	/**
-	 * Approximates Seeley's centrality using a parallel implementation of the power method.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction seeleyCentralityParallel(final DirectedGraph directedGraph) throws IOException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final DominantEigenvectorParallelPowerMethod dominantEigenvectorParallelPowerMethod = new DominantEigenvectorParallelPowerMethod(immutableGraphAdapter.transpose());
-		dominantEigenvectorParallelPowerMethod.markovian = true;
-		dominantEigenvectorParallelPowerMethod.stepUntil(DEFAULT_STOPPING_CRITERION);
-		return id -> dominantEigenvectorParallelPowerMethod.rank[immutableGraphAdapter.id2Node(id)];
-	}
-
-	//TODO
-	/**
-	 * Approximates Katz centrality.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction katz(final DirectedGraph directedGraph, final double alpha) {
-		final AlphaCentrality<Long, LongLongPair> katz = new AlphaCentrality<>(directedGraph, alpha, 1, 1000, 1E-7);
-		final Map<Long, Double> scores = katz.getScores();
-		return id -> scores.get(id);
-	}
 
 	/**
 	 * Approximates Katz centrality using a parallel implementation of the Gauss&ndash;Seidel method.
@@ -288,20 +247,6 @@ public class QueryDependentCentralities {
 		katzParallelGaussSeidel.alpha = alpha;
 		katzParallelGaussSeidel.stepUntil(DEFAULT_STOPPING_CRITERION);
 		return id -> katzParallelGaussSeidel.rank[immutableGraphAdapter.id2Node(id)];
-	}
-
-	//TODO
-	/**
-	 * Approximates PageRank.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @param alpha the damping factor.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction pageRank(final DirectedGraph directedGraph, final double alpha) {
-		final org.jgrapht.alg.scoring.PageRank<Long, LongLongPair> pageRank = new org.jgrapht.alg.scoring.PageRank<>(directedGraph, alpha, 1000, 1E-7);
-		final Map<Long, Double> scores = pageRank.getScores();
-		return id -> scores.get(id);
 	}
 
 	/**
@@ -323,6 +268,26 @@ public class QueryDependentCentralities {
 	}
 
 	/**
+	 * Approximates PageRank using the push method; it can only be called for a single query node.
+	 *
+	 * @param directedGraph a directed graph.
+	 * @param queryNode the query nodes. 
+	 * @param alpha the damping factor.
+	 * @return a function mapping node identifiers to their centrality score.
+	 */
+	public static Long2DoubleFunction pageRankPush(final DirectedGraph directedGraph, final long queryNode, final double alpha) throws IOException {
+		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
+		final PageRankPush prp = new PageRankPush(immutableGraphAdapter, false);
+		prp.root = immutableGraphAdapter.id2Node(queryNode);
+		prp.alpha = alpha;
+		prp.threshold = DEFAULT_L1_THRESHOLD;
+		prp.stepUntil(new PageRankPush.EmptyQueueStoppingCritertion());
+		return id -> prp.rank[immutableGraphAdapter.id2Node(id)];
+	}
+
+
+	//TODO
+	/**
 	 * Approximates HITS using a parallel implementation of the power method.
 	 *
 	 * <p>
@@ -340,6 +305,7 @@ public class QueryDependentCentralities {
 		return id -> leftSingularVectorParallelPowerMethod.rank[immutableGraphAdapter.id2Node(id)];
 	}
 
+	//TODO
 	/**
 	 * Computes SALSA using the a non-iterative algorithm.
 	 *
@@ -352,41 +318,5 @@ public class QueryDependentCentralities {
 		return id -> salsa[immutableGraphAdapter.id2Node(id)];
 	}
 
-	/**
-	 * Computes betweenness centrality.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction betweenness(final DirectedGraph directedGraph) {
-		final BetweennessCentrality<Long, LongLongPair> betweennessCentrality = new BetweennessCentrality<>(directedGraph);
-		final Map<Long, Double> scores = betweennessCentrality.getScores();
-		return id -> scores.get(id);
-	}
-
-	/**
-	 * Computes betweenness centrality using a parallel breadth-first visit implementation.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction betweennessParallel(final DirectedGraph directedGraph) throws InterruptedException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final it.unimi.dsi.webgraph.algo.BetweennessCentrality betweennessCentrality = new it.unimi.dsi.webgraph.algo.BetweennessCentrality(immutableGraphAdapter);
-		betweennessCentrality.compute();
-		return id -> betweennessCentrality.betweenness[immutableGraphAdapter.id2Node(id)];
-	}
-
-	/**
-	 * Computes the local clustering coefficient.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their local clustering coefficient.
-	 */
-	public static Long2DoubleFunction localClusteringCoefficient(final DirectedGraph directedGraph) {
-		final ClusteringCoefficient<Long, LongLongPair> clusteringCoefficient = new ClusteringCoefficient<>(directedGraph);
-		final Map<Long, Double> scores = clusteringCoefficient.getScores();
-		return id -> scores.get(id);
-	}
 
 }
