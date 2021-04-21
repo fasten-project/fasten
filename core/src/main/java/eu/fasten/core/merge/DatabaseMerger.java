@@ -23,9 +23,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.graphdb.RocksDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import java.text.DecimalFormat;
-import java.util.*;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import eu.fasten.core.data.metadatadb.codegen.tables.*;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -43,6 +43,7 @@ import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jooq.Condition;
+import org.jooq.Cursor;
 import org.jooq.DSLContext;
 import org.jooq.Record3;
 import org.json.JSONObject;
@@ -120,19 +121,19 @@ public class DatabaseMerger {
     private static class Arc {
         private final Long source;
         private final Long target;
-        private final CallSiteRecord[] callSites;
+        private final CallSitesRecord callSite;
 
         /**
          * Create new Arc instance.
          *
          * @param source    source ID
          * @param target    target ID
-         * @param callSites list of receivers
+         * @param callSite  call-site info
          */
-        public Arc(final Long source, final Long target, final CallSiteRecord[] callSites) {
+        public Arc(final Long source, final Long target, final CallSitesRecord callSite) {
             this.source = source;
             this.target = target;
-            this.callSites = callSites;
+            this.callSite = callSite;
         }
     }
 
@@ -210,6 +211,15 @@ public class DatabaseMerger {
         return result;
     }
 
+    public Map<Long, String> getTypeUrisMap(final List<CallSitesRecord> callSites) {
+        var ids = new HashSet<Long>();
+        callSites.forEach(c -> ids.addAll(Arrays.asList(c.getReceiverTypeIds())));
+        var result = dbContext.selectFrom(ModuleNames.MODULE_NAMES).where(ModuleNames.MODULE_NAMES.ID.in(ids)).fetch();
+        var map = new HashMap<Long, String>(result.size());
+        result.forEach(r -> map.put(r.getId(), r.getName()));
+        return map;
+    }
+
     /**
      * Merges a call graph with its dependencies using CHA algorithm.
      *
@@ -237,7 +247,6 @@ public class DatabaseMerger {
 
         final var typeMap = createTypeMap(callGraphData, dbContext);
 
-
         var result = new ArrayImmutableDirectedGraph.Builder();
 
         cloneNodesAndArcs(result, callGraphData);
@@ -247,16 +256,20 @@ public class DatabaseMerger {
         var cursor = getArcs(callGraphData, dbContext);
         while (cursor.hasNext()) {
             var arcRecord = cursor.fetchNext();
-            var arc = new Arc(arcRecord.value1(), arcRecord.value2(), arcRecord.value3());
+            if (arcRecord == null) {
+                continue;
+            }
+            final var typeNamesMap = getTypeUrisMap(List.of(arcRecord));
+            var arc = new Arc(arcRecord.getSourceId(), arcRecord.getTargetId(), arcRecord);
             try {
                 if (callGraphData.isExternal(arc.target)) {
                     var node = typeMap.containsKey(arc.target) ? typeMap.get(arc.target) : fetchMissingNode(arc.target, dbContext);
-                    if (!resolve(result, callGraphData, arc, node, false)) {
+                    if (!resolve(result, callGraphData, arc, node, false, typeNamesMap)) {
                         addEdge(result, callGraphData, arc.source, arc.target, false);
                     }
                 } else {
                     var node = typeMap.containsKey(arc.source) ? typeMap.get(arc.source) : fetchMissingNode(arc.source, dbContext);
-                    if (!resolve(result, callGraphData, arc, node, callGraphData.isExternal(arc.source))) {
+                    if (!resolve(result, callGraphData, arc, node, callGraphData.isExternal(arc.source), typeNamesMap)) {
                         addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
                     }
                 }
@@ -288,52 +301,48 @@ public class DatabaseMerger {
                             final DirectedGraph callGraphData,
                             final Arc arc,
                             final Node node,
-                            final boolean isCallback) {
+                            final boolean isCallback,
+                            Map<Long, String> typeMap) {
         var added = false;
         if (node.isConstructor()) {
             added = resolveInitsAndConstructors(result, callGraphData, arc, node, isCallback);
         }
 
-        for (var entry : arc.receivers) {
-            for (var receiverTypeUri : parseStringReceivers(entry.component3())) {
-                var type = entry.component2().getLiteral();
-                switch (type) {
-                    case "virtual":
-                    case "interface":
-                        final var types = universalChildren.get(receiverTypeUri);
-                        if (types != null) {
-                            for (final var depTypeUri : types) {
-                                for (final var target : typeDictionary.getOrDefault(depTypeUri,
-                                    new HashMap<>())
-                                    .getOrDefault(node.signature, new HashSet<>())) {
-                                    addEdge(result, callGraphData, arc.source, target, isCallback);
-                                    added = true;
-                                }
+        for (int i = 0; i < arc.callSite.getReceiverTypeIds().length; i++) {
+            var receiverTypeUri = typeMap.get(arc.callSite.getReceiverTypeIds()[i]);
+            var type = arc.callSite.getCallType().getLiteral();
+            switch (type) {
+                case "virtual":
+                case "interface":
+                    final var types = universalChildren.get(receiverTypeUri);
+                    if (types != null) {
+                        for (final var depTypeUri : types) {
+                            for (final var target : typeDictionary.getOrDefault(depTypeUri,
+                                new HashMap<>())
+                                .getOrDefault(node.signature, new HashSet<>())) {
+                                addEdge(result, callGraphData, arc.source, target, isCallback);
+                                added = true;
                             }
                         }
-                        break;
-                    case "special":
-                        added = resolveInitsAndConstructors(result, callGraphData, arc, node,
-                            isCallback);
-                        break;
-                    case "dynamic":
-                        logger.warn("OPAL didn't rewrite the dynamic");
-                        break;
-                    default:
-                        for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
-                            new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
-                            addEdge(result, callGraphData, arc.source, target, isCallback);
-                            added = true;
-                        }
-                        break;
-                }
+                    }
+                    break;
+                case "special":
+                    added = resolveInitsAndConstructors(result, callGraphData, arc, node,
+                        isCallback);
+                    break;
+                case "dynamic":
+                    logger.warn("OPAL didn't rewrite the dynamic");
+                    break;
+                default:
+                    for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
+                        new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
+                        addEdge(result, callGraphData, arc.source, target, isCallback);
+                        added = true;
+                    }
+                    break;
             }
         }
         return added;
-    }
-
-    private ArrayList<String> parseStringReceivers(final String receivers) {
-        return new ArrayList<>(Arrays.asList((receivers.replace("[","").replace("]","").split(","))));
     }
 
     /**
@@ -378,7 +387,7 @@ public class DatabaseMerger {
      * @param dbContext     DSL context
      * @return list of external and constructor calls
      */
-    private Cursor<Record3<Long, Long, CallSiteRecord[]>> getArcs(final DirectedGraph callGraphData, final DSLContext dbContext) {  // FIXME
+    private Cursor<CallSitesRecord> getArcs(final DirectedGraph callGraphData, final DSLContext dbContext) {
         Condition arcsCondition = null;
         for (var source : callGraphData.nodes()) {
             for (var target : callGraphData.successors(source)) {
@@ -386,17 +395,16 @@ public class DatabaseMerger {
                         || callGraphData.isExternal(source)
                         || source.equals(target)) {
                     if (arcsCondition == null) {
-                        arcsCondition = Edges.EDGES.SOURCE_ID.eq(source)
-                                .and(Edges.EDGES.TARGET_ID.eq(target));
+                        arcsCondition = CallSites.CALL_SITES.SOURCE_ID.eq(source)
+                                .and(CallSites.CALL_SITES.TARGET_ID.eq(target));
                     } else {
-                        arcsCondition = arcsCondition.or(Edges.EDGES.SOURCE_ID.eq(source)
-                                .and(Edges.EDGES.TARGET_ID.eq(target)));
+                        arcsCondition = arcsCondition.or(CallSites.CALL_SITES.SOURCE_ID.eq(source)
+                                .and(CallSites.CALL_SITES.TARGET_ID.eq(target)));
                     }
                 }
             }
         }
-        return dbContext.select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES)
-                .from(Edges.EDGES)
+        return dbContext.selectFrom(CallSites.CALL_SITES)
                 .where(arcsCondition)
                 .fetchSize(10000)
                 .fetchLazy();
@@ -542,7 +550,7 @@ public class DatabaseMerger {
                 .fetch();
 
         var modules = dbContext
-                .select(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
+                .select(Modules.MODULES.MODULE_NAME_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
                 .from(Modules.MODULES)
                 .where(Modules.MODULES.ID.in(modulesIds))
                 .fetch();
@@ -551,9 +559,9 @@ public class DatabaseMerger {
         modules.forEach(m -> namespaceIDs.addAll(Arrays.asList(m.value2())));
         modules.forEach(m -> namespaceIDs.addAll(Arrays.asList(m.value3())));
         var namespaceResults = dbContext
-                .select(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE)
-                .from(Namespaces.NAMESPACES)
-                .where(Namespaces.NAMESPACES.ID.in(namespaceIDs))
+                .select(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME)
+                .from(ModuleNames.MODULE_NAMES)
+                .where(ModuleNames.MODULE_NAMES.ID.in(namespaceIDs))
                 .fetch();
         this.namespaceMap = new HashMap<>(namespaceResults.size());
         namespaceResults.forEach(r -> namespaceMap.put(r.value1(), r.value2()));

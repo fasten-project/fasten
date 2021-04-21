@@ -207,9 +207,9 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     for (var key : metadataMap.keySet()) {
                         callMetadata.put(key, metadataMap.get(key));
                     }
-                    var receivers = new Long[edgeEntry.getValue().size()];
                     var receiverTypes = callMetadata.optString("receiver")
                             .replace("[","").replace("]","").split(",");
+                    var receivers = new Long[receiverTypes.length];
                     for (int i = 0; i < receiverTypes.length; i++) {
                         receivers[i] = typesMap.get(receiverTypes[i]);
                     }

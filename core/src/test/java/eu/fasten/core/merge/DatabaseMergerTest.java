@@ -9,11 +9,11 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallType;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.Edges;
+import eu.fasten.core.data.metadatadb.codegen.tables.CallSites;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.Namespaces;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.CallSiteRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongArraySet;
 import java.util.HashSet;
@@ -21,11 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jooq.DSLContext;
-import org.jooq.Record2;
-import org.jooq.Record3;
-import org.jooq.Result;
-import org.jooq.SQLDialect;
+import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.jooq.tools.jdbc.MockConnection;
 import org.jooq.tools.jdbc.MockDataProvider;
@@ -49,7 +45,7 @@ public class DatabaseMergerTest {
     private final static long BAZ_INIT = 300;
     private final static long BAZ_SUPER_METHOD = 301;
 
-    private static Map<Pair<Long, Long>, CallSiteRecord[]> arcs;
+    private static Map<Pair<Long, Long>, CallSitesRecord> arcs;
     private static Map<Long, String> typeDictionary;
     private static Map<Long, String> typeMap;
     private static Map<String, Pair<Long[], Long[]>> universalCHA;
@@ -97,26 +93,13 @@ public class DatabaseMergerTest {
         );
 
         arcs = Map.of(
-                Pair.of(MAIN_INIT, MAIN_INIT), new CallSiteRecord[0],
-                Pair.of(MAIN_INIT, (long) 2), new CallSiteRecord[]{
-                        new CallSiteRecord(6, CallType.special, namespacesMap.get("/java.lang/Object"))
-                },
-                Pair.of(MAIN_MAIN_METHOD, (long) 3), new CallSiteRecord[]{
-                        new CallSiteRecord(8, CallType.special, namespacesMap.get("/test.group/Baz"))
-                },
-                Pair.of(MAIN_MAIN_METHOD, (long) 4), new CallSiteRecord[]{
-                        new CallSiteRecord(9, CallType.virtual, namespacesMap.get("/test.group/Bar")),
-                        new CallSiteRecord(12, CallType.interface_, namespacesMap.get("/test.group/Bar"))
-                },
-                Pair.of(MAIN_MAIN_METHOD, (long) 5), new CallSiteRecord[]{
-                        new CallSiteRecord(11, CallType.special, namespacesMap.get("/test.group/Bar"))
-                },
-                Pair.of(MAIN_MAIN_METHOD, (long) 6), new CallSiteRecord[]{
-                        new CallSiteRecord(14, CallType.static_, namespacesMap.get("/test.group/Foo"))
-                },
-                Pair.of(MAIN_MAIN_METHOD, (long) 7), new CallSiteRecord[]{
-                        new CallSiteRecord(15, CallType.special, namespacesMap.get("/test.group/Foo"))
-                }
+                Pair.of(MAIN_INIT, (long) 2), new CallSitesRecord(MAIN_INIT, 2L, 6, CallType.special, new Long[] {namespacesMap.get("/java.lang/Object")}, null),
+                Pair.of(MAIN_MAIN_METHOD, (long) 3), new CallSitesRecord(MAIN_INIT, 3L, 8, CallType.special, new Long[]{namespacesMap.get("/test.group/Baz")}, null),
+                Pair.of(MAIN_MAIN_METHOD, (long) 4), new CallSitesRecord(MAIN_MAIN_METHOD, 4L, 9, CallType.virtual, new Long[]{namespacesMap.get("/test.group/Bar")}, null),
+                Pair.of(MAIN_MAIN_METHOD, (long) 4), new CallSitesRecord(MAIN_MAIN_METHOD, 4L, 12, CallType.interface_, new Long[]{namespacesMap.get("/test.group/Bar")}, null),
+                Pair.of(MAIN_MAIN_METHOD, (long) 5), new CallSitesRecord(MAIN_MAIN_METHOD, 5L, 11, CallType.special, new Long[]{namespacesMap.get("/test.group/Bar")}, null),
+                Pair.of(MAIN_MAIN_METHOD, (long) 6), new CallSitesRecord(MAIN_MAIN_METHOD, 6L, 14, CallType.static_, new Long[]{namespacesMap.get("/test.group/Foo")}, null),
+                Pair.of(MAIN_MAIN_METHOD, (long) 7), new CallSitesRecord(MAIN_MAIN_METHOD, 7L, 15, CallType.special, new Long[]{namespacesMap.get("/test.group/Foo")}, null)
         );
     }
 
@@ -214,16 +197,16 @@ public class DatabaseMergerTest {
                     .from(Callables.CALLABLES)
                     .getSQL();
             this.namespacesQuery = context
-                    .select(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE)
-                    .from(Namespaces.NAMESPACES)
+                    .select(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME)
+                    .from(ModuleNames.MODULE_NAMES)
                     .getSQL();
             this.universalCHAQuery = context
-                    .select(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
+                    .select(Modules.MODULES.MODULE_NAME_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
                     .from(Modules.MODULES)
                     .getSQL();
             this.arcsQuery = context
-                    .select(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES)
-                    .from(Edges.EDGES)
+                    .select(CallSites.CALL_SITES.SOURCE_ID, CallSites.CALL_SITES.TARGET_ID, CallSites.CALL_SITES.LINE, CallSites.CALL_SITES.CALL_TYPE, CallSites.CALL_SITES.RECEIVER_TYPE_IDS)
+                    .from(CallSites.CALL_SITES)
                     .getSQL();
             this.typeDictionaryQuery = context
                     .select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID)
@@ -270,31 +253,31 @@ public class DatabaseMergerTest {
         }
 
         private MockResult createUniversalCHA() {
-            var result = context.newResult(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES);
+            var result = context.newResult(Modules.MODULES.MODULE_NAME_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES);
             for (var type : universalCHA.entrySet()) {
                 result.add(context
-                        .newRecord(Modules.MODULES.NAMESPACE_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
+                        .newRecord(Modules.MODULES.MODULE_NAME_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
                         .values(namespacesMap.get(type.getKey()), type.getValue().getLeft(), type.getValue().getRight()));
             }
             return new MockResult(result.size(), result);
         }
 
         private MockResult createNamespaces() {
-            Result<Record2<Long, String>> result = context.newResult(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE);
+            Result<Record2<Long, String>> result = context.newResult(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME);
             for (var namespace : namespacesMap.entrySet()) {
                 result.add(context
-                        .newRecord(Namespaces.NAMESPACES.ID, Namespaces.NAMESPACES.NAMESPACE)
+                        .newRecord(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME)
                         .values(namespace.getValue(), namespace.getKey()));
             }
             return new MockResult(result.size(), result);
         }
 
         private MockResult createArcs() {
-            Result<Record3<Long, Long, CallSiteRecord[]>> result = context.newResult(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES);
+            Result<Record5<Long, Long, Integer, CallType, Long[]>> result = context.newResult(CallSites.CALL_SITES.SOURCE_ID, CallSites.CALL_SITES.TARGET_ID, CallSites.CALL_SITES.LINE, CallSites.CALL_SITES.CALL_TYPE, CallSites.CALL_SITES.RECEIVER_TYPE_IDS);
             for (var arc : arcs.entrySet()) {
                 result.add(context
-                        .newRecord(Edges.EDGES.SOURCE_ID, Edges.EDGES.TARGET_ID, Edges.EDGES.CALL_SITES)
-                        .values(arc.getKey().getLeft(), arc.getKey().getRight(), arc.getValue()));
+                        .newRecord(CallSites.CALL_SITES.SOURCE_ID, CallSites.CALL_SITES.TARGET_ID, CallSites.CALL_SITES.LINE, CallSites.CALL_SITES.CALL_TYPE, CallSites.CALL_SITES.RECEIVER_TYPE_IDS)
+                        .values(arc.getValue().component1(), arc.getValue().component2(), arc.getValue().component3(), arc.getValue().component4(), arc.getValue().component5()));
             }
             return new MockResult(result.size(), result);
         }
