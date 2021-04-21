@@ -19,6 +19,7 @@
 package eu.fasten.core.data;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +29,7 @@ import org.jgrapht.alg.scoring.AlphaCentrality;
 import org.jgrapht.alg.scoring.BetweennessCentrality;
 import org.jgrapht.alg.scoring.ClusteringCoefficient;
 
+import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleCollection;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
@@ -225,9 +227,20 @@ public class QueryDependentCentralities {
 	private static DoubleList preferenceVector(final ImmutableGraphAdapter immutableGraphAdapter, final LongCollection queryNodes) {
 		final int n = immutableGraphAdapter.numNodes();
 		final double c = 1. / queryNodes.size();
-		final double[] pref = new double[n];
-		for (long id: queryNodes) pref[immutableGraphAdapter.id2Node(id)] = c;
-		return new DoubleArrayList(pref);
+		var x = new AbstractDoubleList() {
+			@Override
+			public double getDouble(int u) {
+				return queryNodes.contains(immutableGraphAdapter.node2Id(u)) ? c : 0;
+			}
+
+			@Override
+			public int size() {
+				return n;
+			}
+		};
+		//final double[] pref = new double[n];
+		//for (long id: queryNodes) pref[immutableGraphAdapter.id2Node(id)] = c;
+		return x;
 	}
 	
 	
@@ -277,12 +290,13 @@ public class QueryDependentCentralities {
 	 */
 	public static Long2DoubleFunction pageRankPush(final DirectedGraph directedGraph, final long queryNode, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final PageRankPush prp = new PageRankPush(immutableGraphAdapter, false);
-		prp.root = immutableGraphAdapter.id2Node(queryNode);
-		prp.alpha = alpha;
-		prp.threshold = DEFAULT_L1_THRESHOLD;
-		prp.stepUntil(new PageRankPush.EmptyQueueStoppingCritertion());
-		return id -> prp.rank[immutableGraphAdapter.id2Node(id)];
+		final PageRankPush pageRankPush = new PageRankPush(immutableGraphAdapter, false);
+		pageRankPush.root = immutableGraphAdapter.id2Node(queryNode);
+		pageRankPush.alpha = alpha;
+		pageRankPush.threshold = DEFAULT_L1_THRESHOLD;
+		pageRankPush.stepUntil(new PageRankPush.EmptyQueueStoppingCritertion());
+
+		return id -> pageRankPush.rank[pageRankPush.node2Seen.get(immutableGraphAdapter.id2Node(id))] / (1 - pageRankPush.backToRoot);
 	}
 
 

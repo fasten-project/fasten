@@ -26,13 +26,21 @@ import java.util.Map;
 import org.jgrapht.alg.scoring.AlphaCentrality;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.helpers.NOPLogger;
 
+import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
+import it.unimi.dsi.law.rank.PageRankParallelGaussSeidel;
+import it.unimi.dsi.law.rank.PageRankPush;
+import it.unimi.dsi.law.rank.PowerSeries;
+import it.unimi.dsi.law.rank.SpectralRanking;
 import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandomGenerator;
 import it.unimi.dsi.webgraph.algo.GeometricCentralities;
 
@@ -228,14 +236,20 @@ public class QueryDependentCentralitiesTest {
 
 	@Test
 	public void testPageRankPush() throws IOException {
-		Long2DoubleFunction pushPr, expectedPr;
-				
-		pushPr = QueryDependentCentralities.pageRankPush(directedGraph, queryNode, 0.85);
-		expectedPr = QueryDependentCentralities.pageRankParallel(directedGraph, LongSets.singleton(queryNode), 0.85);
-		for (final long id : directedGraph.nodes()) {
-			System.out.println(expectedPr.get(id) + "\t" + pushPr.get(id));
-			//assertEquals(expectedPr.get(id), pushPr.get(id), 1E-6);
-		}
+		Long2DoubleFunction pageRankPush;
+		int n = directedGraph.numNodes();
+		
+		pageRankPush = QueryDependentCentralities.pageRankPush(directedGraph, queryNode, 0.85);
+		Long2DoubleFunction prGS = QueryDependentCentralities.pageRankParallel(directedGraph, LongSets.singleton(queryNode), 0.85);
+		
+		final PageRankParallelGaussSeidel prPGS = new PageRankParallelGaussSeidel(immutableGraph.transpose());
+		double[] pref = new double[n];
+		pref[immutableGraph.id2Node(queryNode)] = 1.;
+		prPGS.preference = new DoubleArrayList(pref);
+		prPGS.alpha = 0.85;
+		prPGS.stepUntil(new SpectralRanking.NormStoppingCriterion(QueryDependentCentralities.DEFAULT_L1_THRESHOLD));
+
+		for (final long id : directedGraph.nodes()) assertEquals(prGS.get(id), pageRankPush.get(id), 1E-6);
 	}
 
 
