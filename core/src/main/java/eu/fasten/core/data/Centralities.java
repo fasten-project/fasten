@@ -208,7 +208,7 @@ public class Centralities {
 	}
 
 	/**
-	 * Approximates Seely's centrality using a parallel implementation of the power method.
+	 * Approximates Seeley's centrality using a parallel implementation of the power method.
 	 *
 	 * @param directedGraph a directed graph.
 	 * @return a function mapping node identifiers to their centrality score.

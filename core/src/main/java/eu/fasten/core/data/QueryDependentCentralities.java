@@ -28,6 +28,9 @@ import org.jgrapht.alg.scoring.AlphaCentrality;
 import org.jgrapht.alg.scoring.BetweennessCentrality;
 import org.jgrapht.alg.scoring.ClusteringCoefficient;
 
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+import it.unimi.dsi.fastutil.doubles.DoubleCollection;
+import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMap.Entry;
@@ -208,12 +211,31 @@ public class QueryDependentCentralities {
 		return result;
 	}
 
-
+	/** Given a graph (represented as an {@link ImmutableGraphAdapter}) and a collection of
+	 *  node identifiers, it returns a preference vector with as many elements as there are nodes
+	 *  in the graph, where the value associated to a node is either 0 (if the node is outside
+	 *  of the collection) or 1./c (if the node is inside the collection).
+	 * 
+	 * @param immutableGraphAdapter the graph.
+	 * @param queryNodes the nodes that should have nonzero preference.
+	 * @return the preference vector.
+	 */
+	private static DoubleList preferenceVector(final ImmutableGraphAdapter immutableGraphAdapter, final LongCollection queryNodes) {
+		final int n = immutableGraphAdapter.numNodes();
+		final double c = 1. / queryNodes.size();
+		final double[] pref = new double[n];
+		for (long id: queryNodes) pref[immutableGraphAdapter.id2Node(id)] = c;
+		return new DoubleArrayList(pref);
+	}
+	
+	
+	//TODO
 	/**
 	 * Approximates left dominant eigenvector centrality using a parallel implementation of the power
 	 * method.
 	 *
 	 * @param directedGraph a directed graph.
+	 * 
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction eigenvectorCentralityParallel(final DirectedGraph directedGraph) throws IOException {
@@ -223,8 +245,9 @@ public class QueryDependentCentralities {
 		return id -> dominantEigenvectorParallelPowerMethod.rank[immutableGraphAdapter.id2Node(id)];
 	}
 
+	//TODO
 	/**
-	 * Approximates Seely's centrality using a parallel implementation of the power method.
+	 * Approximates Seeley's centrality using a parallel implementation of the power method.
 	 *
 	 * @param directedGraph a directed graph.
 	 * @return a function mapping node identifiers to their centrality score.
@@ -237,6 +260,7 @@ public class QueryDependentCentralities {
 		return id -> dominantEigenvectorParallelPowerMethod.rank[immutableGraphAdapter.id2Node(id)];
 	}
 
+	//TODO
 	/**
 	 * Approximates Katz centrality.
 	 *
@@ -253,16 +277,20 @@ public class QueryDependentCentralities {
 	 * Approximates Katz centrality using a parallel implementation of the Gauss&ndash;Seidel method.
 	 *
 	 * @param directedGraph a directed graph.
+	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except
+	 * for the queryNodes where it is uniform.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
-	public static Long2DoubleFunction katzParallel(final DirectedGraph directedGraph, final double alpha) throws IOException {
+	public static Long2DoubleFunction katzParallel(final DirectedGraph directedGraph, final LongCollection queryNodes, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
 		final KatzParallelGaussSeidel katzParallelGaussSeidel = new KatzParallelGaussSeidel(immutableGraphAdapter.transpose());
+		katzParallelGaussSeidel.preference = preferenceVector(immutableGraphAdapter, queryNodes);
 		katzParallelGaussSeidel.alpha = alpha;
 		katzParallelGaussSeidel.stepUntil(DEFAULT_STOPPING_CRITERION);
 		return id -> katzParallelGaussSeidel.rank[immutableGraphAdapter.id2Node(id)];
 	}
 
+	//TODO
 	/**
 	 * Approximates PageRank.
 	 *
@@ -280,12 +308,15 @@ public class QueryDependentCentralities {
 	 * Approximates PageRank using a parallel implementation of the Gauss&ndash;Seidel method.
 	 *
 	 * @param directedGraph a directed graph.
+	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except
+	 * for the queryNodes where it is uniform.
 	 * @param alpha the damping factor.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
-	public static Long2DoubleFunction pageRankParallel(final DirectedGraph directedGraph, final double alpha) throws IOException {
+	public static Long2DoubleFunction pageRankParallel(final DirectedGraph directedGraph, final LongCollection queryNodes, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
 		final PageRankParallelGaussSeidel pageRankParallelGaussSeidel = new PageRankParallelGaussSeidel(immutableGraphAdapter.transpose());
+		pageRankParallelGaussSeidel.preference = preferenceVector(immutableGraphAdapter, queryNodes);
 		pageRankParallelGaussSeidel.alpha = alpha;
 		pageRankParallelGaussSeidel.stepUntil(DEFAULT_STOPPING_CRITERION);
 		return id -> pageRankParallelGaussSeidel.rank[immutableGraphAdapter.id2Node(id)];
