@@ -296,40 +296,7 @@ public class QueryDependentCentralities {
 		pageRankPush.threshold = DEFAULT_L1_THRESHOLD;
 		pageRankPush.stepUntil(new PageRankPush.EmptyQueueStoppingCritertion());
 
-		return id -> pageRankPush.rank[pageRankPush.node2Seen.get(immutableGraphAdapter.id2Node(id))] / (1 - pageRankPush.backToRoot);
-	}
-
-
-	//TODO
-	/**
-	 * Approximates HITS using a parallel implementation of the power method.
-	 *
-	 * <p>
-	 * Note that the returned score is the authoritativeness score. To obtain the hubbiness score, pass
-	 * the transpose.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction hitsParallel(final DirectedGraph directedGraph) throws IOException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final LeftSingularVectorParallelPowerMethod leftSingularVectorParallelPowerMethod = new LeftSingularVectorParallelPowerMethod(immutableGraphAdapter, immutableGraphAdapter.transpose());
-		leftSingularVectorParallelPowerMethod.norm = Norm.L_2;
-		leftSingularVectorParallelPowerMethod.stepUntil(DEFAULT_STOPPING_CRITERION);
-		return id -> leftSingularVectorParallelPowerMethod.rank[immutableGraphAdapter.id2Node(id)];
-	}
-
-	//TODO
-	/**
-	 * Computes SALSA using the a non-iterative algorithm.
-	 *
-	 * @param directedGraph a directed graph.
-	 * @return a function mapping node identifiers to their centrality score.
-	 */
-	public static Long2DoubleFunction salsa(final DirectedGraph directedGraph) throws IOException {
-		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
-		final double[] salsa = Salsa.rank(immutableGraphAdapter, null);
-		return id -> salsa[immutableGraphAdapter.id2Node(id)];
+		return id -> pageRankPush.rank[pageRankPush.node2Seen.get(immutableGraphAdapter.id2Node(id))] / pageRankPush.pNorm;
 	}
 
 
