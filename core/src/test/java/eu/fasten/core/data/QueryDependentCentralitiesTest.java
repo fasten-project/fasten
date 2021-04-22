@@ -26,11 +26,8 @@ import java.util.Map;
 import org.jgrapht.alg.scoring.AlphaCentrality;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.helpers.NOPLogger;
 
-import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
@@ -38,8 +35,6 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.law.rank.PageRankParallelGaussSeidel;
-import it.unimi.dsi.law.rank.PageRankPush;
-import it.unimi.dsi.law.rank.PowerSeries;
 import it.unimi.dsi.law.rank.SpectralRanking;
 import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandomGenerator;
 import it.unimi.dsi.webgraph.algo.GeometricCentralities;
@@ -88,7 +83,7 @@ public class QueryDependentCentralitiesTest {
 
 		directedGraph = builder.build(true);
 		immutableGraph = new ImmutableGraphAdapter(directedGraph, false);
-		
+
 		builder = new ArrayImmutableDirectedGraph.Builder();
 		n = SPECIAL_GRAPH.length;
 		node = new long[n];
@@ -97,7 +92,7 @@ public class QueryDependentCentralitiesTest {
 		builder.addInternalNode(node[0]);
 		for (int i = 1; i < n; i++) builder.addInternalNode(node[i] = node[i-1] + 1 + random.nextInt(100));
 		for (int source = 0; source < n; source++)
-			for (int target: SPECIAL_GRAPH[source])
+			for (final int target: SPECIAL_GRAPH[source])
 				builder.addArc(node[source], node[target]);
 		
 		specialDirectedGraph = builder.build(true);
@@ -191,9 +186,9 @@ public class QueryDependentCentralitiesTest {
 
 	@Test
 	public void testPageRankUniform() throws IOException {
-		LongCollection queryNodes = new LongOpenHashSet();
-		Long2DoubleFunction pr;
-		int n = specialImmutableGraph.numNodes();
+		final LongCollection queryNodes = new LongOpenHashSet();
+		final Long2DoubleFunction pr;
+		final int n = specialImmutableGraph.numNodes();
 
 		// Uniform
 		for (int i = 0; i < n; i++) queryNodes.add(specialImmutableGraph.node2Id(i));
@@ -203,9 +198,9 @@ public class QueryDependentCentralitiesTest {
 
 	@Test
 	public void testPageRank1stHalf() throws IOException {
-		LongCollection queryNodes = new LongOpenHashSet();
+		final LongCollection queryNodes = new LongOpenHashSet();
 		Long2DoubleFunction pr;
-		int n = specialImmutableGraph.numNodes();
+		final int n = specialImmutableGraph.numNodes();
 
 		// 1st half of nodes
 		for (int i = 0; i < n / 2; i++) queryNodes.add(specialImmutableGraph.node2Id(i));
@@ -215,9 +210,9 @@ public class QueryDependentCentralitiesTest {
 
 	@Test
 	public void testPageRank2ndHalf() throws IOException {
-		LongCollection queryNodes = new LongOpenHashSet();
+		final LongCollection queryNodes = new LongOpenHashSet();
 		Long2DoubleFunction pr;
-		int n = specialImmutableGraph.numNodes();
+		final int n = specialImmutableGraph.numNodes();
 
 		// 2nd half of nodes
 		for (int i = n / 2; i < n; i++) queryNodes.add(specialImmutableGraph.node2Id(i));
@@ -237,13 +232,13 @@ public class QueryDependentCentralitiesTest {
 	@Test
 	public void testPageRankPush() throws IOException {
 		Long2DoubleFunction pageRankPush;
-		int n = directedGraph.numNodes();
+		final int n = directedGraph.numNodes();
 		
 		pageRankPush = QueryDependentCentralities.pageRankPush(directedGraph, queryNode, 0.85);
-		Long2DoubleFunction prGS = QueryDependentCentralities.pageRankParallel(directedGraph, LongSets.singleton(queryNode), 0.85);
+		final Long2DoubleFunction prGS = QueryDependentCentralities.pageRankParallel(directedGraph, LongSets.singleton(queryNode), 0.85);
 		
 		final PageRankParallelGaussSeidel prPGS = new PageRankParallelGaussSeidel(immutableGraph.transpose());
-		double[] pref = new double[n];
+		final double[] pref = new double[n];
 		pref[immutableGraph.id2Node(queryNode)] = 1.;
 		prPGS.preference = new DoubleArrayList(pref);
 		prPGS.alpha = 0.85;

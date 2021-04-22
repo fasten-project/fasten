@@ -19,39 +19,27 @@
 package eu.fasten.core.data;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.jgrapht.alg.scoring.AlphaCentrality;
-import org.jgrapht.alg.scoring.BetweennessCentrality;
-import org.jgrapht.alg.scoring.ClusteringCoefficient;
-
 import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
-import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import it.unimi.dsi.fastutil.doubles.DoubleCollection;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
+import it.unimi.dsi.fastutil.longs.Long2DoubleMap;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMap.Entry;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.law.rank.DominantEigenvectorParallelPowerMethod;
 import it.unimi.dsi.law.rank.KatzParallelGaussSeidel;
-import it.unimi.dsi.law.rank.LeftSingularVectorParallelPowerMethod;
 import it.unimi.dsi.law.rank.PageRank;
 import it.unimi.dsi.law.rank.PageRankParallelGaussSeidel;
 import it.unimi.dsi.law.rank.PageRankPush;
-import it.unimi.dsi.law.rank.Salsa;
 import it.unimi.dsi.law.rank.SpectralRanking;
 import it.unimi.dsi.law.rank.SpectralRanking.StoppingCriterion;
-import it.unimi.dsi.law.util.Norm;
 import it.unimi.dsi.webgraph.algo.HyperBall;
 
 /**
@@ -109,18 +97,20 @@ public class QueryDependentCentralities {
 	public static final StoppingCriterion DEFAULT_STOPPING_CRITERION = SpectralRanking.or(new SpectralRanking.IterationNumberStoppingCriterion(MAX_ITERATIONS), new SpectralRanking.NormStoppingCriterion(DEFAULT_L1_THRESHOLD));
 
 	/**
-	 * Computes query-dependent closeness centrality using parallel breadth-first visits.
+	 * Computes weighed query-dependent closeness centrality using parallel breadth-first visits.
 	 *
 	 * @param graph a directed graph.
-	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
-	 * the query nodes) or the <em>positive</em> version of closeness (distances <em>from</em> the query nodes).
+	 * @param queryNodeWeights a map from the query nodes (breadth-first visits will start form these
+	 *            nodes) to their weight.
 	 * @return a function mapping node identifiers to their query-dependent closeness score.
 	 */
-	public static Long2DoubleFunction closeness(final DirectedGraph graph, final LongCollection queryNodes) throws InterruptedException {
-		final Long2LongOpenHashMap sumOfDistances = new Long2LongOpenHashMap();
+	public static Long2DoubleFunction closeness(final DirectedGraph graph, final Long2DoubleMap queryNodeWeights) throws InterruptedException {
+		final Long2DoubleOpenHashMap sumOfWeightedDistances = new Long2DoubleOpenHashMap();
 		final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
-		for(final long node: queryNodes) executorCompletionService.submit(() ->{
+		for (final it.unimi.dsi.fastutil.longs.Long2DoubleMap.Entry e : queryNodeWeights.long2DoubleEntrySet()) executorCompletionService.submit(() -> {
+			final long node = e.getLongKey();
+			final double invWeight = 1. / e.getDoubleValue();
 			final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
 			queue.enqueue(node);
 			final LongOpenHashSet seen = new LongOpenHashSet();
@@ -135,7 +125,113 @@ public class QueryDependentCentralities {
 					sentinel = -1;
 				}
 
-				synchronized(sumOfDistances) {
+				synchronized (sumOfWeightedDistances) {
+					sumOfWeightedDistances.addTo(gid, d * invWeight);
+				}
+
+				// Note that we are reversing the computation
+				final LongIterator iterator = graph.successors(gid).iterator();
+
+				while (iterator.hasNext()) {
+					final long x = iterator.nextLong();
+					if (seen.add(x)) {
+						if (sentinel == -1) sentinel = x;
+						queue.enqueue(x);
+					}
+				}
+			}
+
+			return null;
+		});
+
+		for (int i = 0; i < queryNodeWeights.size(); i++) executorCompletionService.take();
+
+		final Long2DoubleOpenHashMap result = new Long2DoubleOpenHashMap();
+		for (final it.unimi.dsi.fastutil.longs.Long2DoubleMap.Entry e : sumOfWeightedDistances.long2DoubleEntrySet()) {
+			final double s = e.getDoubleValue();
+			if (s != 0) result.put(e.getLongKey(), 1. / s);
+		}
+		return result;
+	}
+
+	/**
+	 * Computes query-dependent harmonic centrality using parallel breadth-first visits.
+	 *
+	 * @param graph a directed graph.
+	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
+	 * @return a function mapping node identifiers to their query-dependent harmonic score.
+	 */
+	public static Long2DoubleFunction harmonic(final DirectedGraph graph, final Long2DoubleMap queryNodeWeights) throws InterruptedException {
+		final Long2DoubleOpenHashMap result = new Long2DoubleOpenHashMap();
+		final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
+		for (final it.unimi.dsi.fastutil.longs.Long2DoubleMap.Entry e : queryNodeWeights.long2DoubleEntrySet()) executorCompletionService.submit(() -> {
+			final long node = e.getLongKey();
+			final double weight = e.getDoubleValue();
+			final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
+			queue.enqueue(node);
+			final LongOpenHashSet seen = new LongOpenHashSet();
+			seen.add(node);
+			int d = -1;
+			long sentinel = queue.firstLong();
+
+			while (!queue.isEmpty()) {
+				final long gid = queue.dequeueLong();
+				if (gid == sentinel) {
+					d++;
+					sentinel = -1;
+				}
+
+				synchronized (result) {
+					if (gid != node) result.addTo(gid, weight / d);
+				}
+
+				// Note that we are reversing the computation
+				final LongIterator iterator = graph.successors(gid).iterator();
+
+				while (iterator.hasNext()) {
+					final long x = iterator.nextLong();
+					if (seen.add(x)) {
+						if (sentinel == -1) sentinel = x;
+						queue.enqueue(x);
+					}
+				}
+			}
+
+			return null;
+		});
+
+		for (int i = 0; i < queryNodeWeights.size(); i++) executorCompletionService.take();
+		return result;
+	}
+
+	/**
+	 * Computes query-dependent closeness centrality using parallel breadth-first visits.
+	 *
+	 * @param graph a directed graph.
+	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
+	 * @return a function mapping node identifiers to their query-dependent closeness score.
+	 */
+	public static Long2DoubleFunction closeness(final DirectedGraph graph, final LongCollection queryNodes) throws InterruptedException {
+		final Long2LongOpenHashMap sumOfDistances = new Long2LongOpenHashMap();
+		final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
+		for (final long node : queryNodes) executorCompletionService.submit(() -> {
+			final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
+			queue.enqueue(node);
+			final LongOpenHashSet seen = new LongOpenHashSet();
+			seen.add(node);
+			int d = -1;
+			long sentinel = queue.firstLong();
+
+			while (!queue.isEmpty()) {
+				final long gid = queue.dequeueLong();
+				if (gid == sentinel) {
+					d++;
+					sentinel = -1;
+				}
+
+				synchronized (sumOfDistances) {
 					sumOfDistances.addTo(gid, d);
 				}
 
@@ -157,7 +253,7 @@ public class QueryDependentCentralities {
 		for (final Long queryNode : queryNodes) executorCompletionService.take();
 
 		final Long2DoubleOpenHashMap result = new Long2DoubleOpenHashMap();
-		for(final Entry e: sumOfDistances.long2LongEntrySet()) {
+		for (final Entry e : sumOfDistances.long2LongEntrySet()) {
 			final long s = e.getLongValue();
 			if (s != 0) result.put(e.getLongKey(), 1. / s);
 		}
@@ -168,58 +264,21 @@ public class QueryDependentCentralities {
 	 * Computes query-dependent harmonic centrality using parallel breadth-first visits.
 	 *
 	 * @param graph a directed graph.
-	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes). the query
-	 *            nodes) or the <em>positive</em> version of harmonic centrality (distances
-	 *            <em>from</em> the query nodes).
+	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
 	 * @return a function mapping node identifiers to their query-dependent harmonic score.
 	 */
 	public static Long2DoubleFunction harmonic(final DirectedGraph graph, final LongCollection queryNodes) throws InterruptedException {
-		final Long2DoubleOpenHashMap result = new Long2DoubleOpenHashMap();
-		final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
-		for (final long node : queryNodes) executorCompletionService.submit(() -> {
-			final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
-			queue.enqueue(node);
-			final LongOpenHashSet seen = new LongOpenHashSet();
-			seen.add(node);
-			int d = -1;
-			long sentinel = queue.firstLong();
-
-			while (!queue.isEmpty()) {
-				final long gid = queue.dequeueLong();
-				if (gid == sentinel) {
-					d++;
-					sentinel = -1;
-				}
-
-				synchronized (result) {
-					if (gid != node) result.addTo(gid, 1. / d);
-				}
-
-				// Note that we are reversing the computation
-				final LongIterator iterator = graph.successors(gid).iterator();
-
-				while (iterator.hasNext()) {
-					final long x = iterator.nextLong();
-					if (seen.add(x)) {
-						if (sentinel == -1) sentinel = x;
-						queue.enqueue(x);
-					}
-				}
-			}
-
-			return null;
-		});
-
-		for (final Long queryNode : queryNodes) executorCompletionService.take();
-		return result;
+		final Long2DoubleOpenHashMap queryNodeWeights = new Long2DoubleOpenHashMap();
+		for (final long node : queryNodes) queryNodeWeights.put(node, 1.);
+		return harmonic(graph, queryNodeWeights);
 	}
+
 
 	/** Given a graph (represented as an {@link ImmutableGraphAdapter}) and a collection of
 	 *  node identifiers, it returns a preference vector with as many elements as there are nodes
 	 *  in the graph, where the value associated to a node is either 0 (if the node is outside
 	 *  of the collection) or 1./c (if the node is inside the collection).
-	 * 
+	 *
 	 * @param immutableGraphAdapter the graph.
 	 * @param queryNodes the nodes that should have nonzero preference.
 	 * @return the preference vector.
@@ -227,9 +286,9 @@ public class QueryDependentCentralities {
 	private static DoubleList preferenceVector(final ImmutableGraphAdapter immutableGraphAdapter, final LongCollection queryNodes) {
 		final int n = immutableGraphAdapter.numNodes();
 		final double c = 1. / queryNodes.size();
-		var x = new AbstractDoubleList() {
+		final var x = new AbstractDoubleList() {
 			@Override
-			public double getDouble(int u) {
+			public double getDouble(final int u) {
 				return queryNodes.contains(immutableGraphAdapter.node2Id(u)) ? c : 0;
 			}
 
@@ -242,8 +301,7 @@ public class QueryDependentCentralities {
 		//for (long id: queryNodes) pref[immutableGraphAdapter.id2Node(id)] = c;
 		return x;
 	}
-	
-	
+
 
 	/**
 	 * Approximates Katz centrality using a parallel implementation of the Gauss&ndash;Seidel method.
