@@ -31,9 +31,9 @@ import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMap.Entry;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
-import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.law.rank.KatzParallelGaussSeidel;
 import it.unimi.dsi.law.rank.PageRank;
 import it.unimi.dsi.law.rank.PageRankParallelGaussSeidel;
@@ -212,7 +212,7 @@ public class QueryDependentCentralities {
 	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
 	 * @return a function mapping node identifiers to their query-dependent closeness score.
 	 */
-	public static Long2DoubleFunction closeness(final DirectedGraph graph, final LongCollection queryNodes) throws InterruptedException {
+	public static Long2DoubleFunction closeness(final DirectedGraph graph, final LongSet queryNodes) throws InterruptedException {
 		final Long2LongOpenHashMap sumOfDistances = new Long2LongOpenHashMap();
 		final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
@@ -267,7 +267,7 @@ public class QueryDependentCentralities {
 	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
 	 * @return a function mapping node identifiers to their query-dependent harmonic score.
 	 */
-	public static Long2DoubleFunction harmonic(final DirectedGraph graph, final LongCollection queryNodes) throws InterruptedException {
+	public static Long2DoubleFunction harmonic(final DirectedGraph graph, final LongSet queryNodes) throws InterruptedException {
 		final Long2DoubleOpenHashMap queryNodeWeights = new Long2DoubleOpenHashMap();
 		for (final long node : queryNodes) queryNodeWeights.put(node, 1.);
 		return harmonic(graph, queryNodeWeights);
@@ -283,7 +283,7 @@ public class QueryDependentCentralities {
 	 * @param queryNodes the nodes that should have nonzero preference.
 	 * @return the preference vector.
 	 */
-	private static DoubleList preferenceVector(final ImmutableGraphAdapter immutableGraphAdapter, final LongCollection queryNodes) {
+	private static DoubleList preferenceVector(final ImmutableGraphAdapter immutableGraphAdapter, final LongSet queryNodes) {
 		final int n = immutableGraphAdapter.numNodes();
 		final double c = 1. / queryNodes.size();
 		final var x = new AbstractDoubleList() {
@@ -311,7 +311,7 @@ public class QueryDependentCentralities {
 	 * for the queryNodes where it is uniform.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
-	public static Long2DoubleFunction katzParallel(final DirectedGraph directedGraph, final LongCollection queryNodes, final double alpha) throws IOException {
+	public static Long2DoubleFunction katzParallel(final DirectedGraph directedGraph, final LongSet queryNodes, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
 		final KatzParallelGaussSeidel katzParallelGaussSeidel = new KatzParallelGaussSeidel(immutableGraphAdapter.transpose());
 		katzParallelGaussSeidel.preference = preferenceVector(immutableGraphAdapter, queryNodes);
@@ -329,7 +329,7 @@ public class QueryDependentCentralities {
 	 * @param alpha the damping factor.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
-	public static Long2DoubleFunction pageRankParallel(final DirectedGraph directedGraph, final LongCollection queryNodes, final double alpha) throws IOException {
+	public static Long2DoubleFunction pageRankParallel(final DirectedGraph directedGraph, final LongSet queryNodes, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
 		final PageRankParallelGaussSeidel pageRankParallelGaussSeidel = new PageRankParallelGaussSeidel(immutableGraphAdapter.transpose());
 		pageRankParallelGaussSeidel.preference = preferenceVector(immutableGraphAdapter, queryNodes);
@@ -342,7 +342,7 @@ public class QueryDependentCentralities {
 	 * Approximates PageRank using the push method; it can only be called for a single query node.
 	 *
 	 * @param directedGraph a directed graph.
-	 * @param queryNode the query nodes. 
+	 * @param queryNode the query nodes.
 	 * @param alpha the damping factor.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
@@ -356,6 +356,4 @@ public class QueryDependentCentralities {
 
 		return id -> pageRankPush.rank[pageRankPush.node2Seen.get(immutableGraphAdapter.id2Node(id))] / pageRankPush.pNorm;
 	}
-
-
 }
