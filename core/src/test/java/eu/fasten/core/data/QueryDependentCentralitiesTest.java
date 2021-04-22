@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
+import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -160,6 +161,30 @@ public class QueryDependentCentralitiesTest {
 	}
 
 	@Test
+	public void testWeighedPath() throws InterruptedException {
+		final ArrayImmutableDirectedGraph.Builder builder = new ArrayImmutableDirectedGraph.Builder();
+		builder.addInternalNode(0);
+		builder.addInternalNode(1);
+		builder.addInternalNode(2);
+		builder.addArc(0, 1);
+		builder.addArc(1, 2);
+		final ArrayImmutableDirectedGraph graph = builder.build();
+
+		final Long2DoubleFunction closeness = QueryDependentCentralities.closeness(graph, new Long2DoubleOpenHashMap(new long[] {
+				0, 1 }, new double[] { 3, 2 }));
+		assertEquals(0., closeness.get(0), 1E-9);
+		assertEquals(3, closeness.get(1), 1E-9);
+		assertEquals(1. / (2. / 3 + 1. / 2), closeness.get(2), 1E-9);
+
+		final Long2DoubleFunction harmonic = QueryDependentCentralities.harmonic(graph, new Long2DoubleOpenHashMap(new long[] {
+				0, 1 }, new double[] { 3, 2 }));
+		assertEquals(0., harmonic.get(0), 1E-9);
+		assertEquals(3, harmonic.get(1), 1E-9);
+		assertEquals(3. / 2 + 2, harmonic.get(2), 1E-9);
+
+	}
+
+	@Test
 	public void testCloseness() throws InterruptedException {
 		final GeometricCentralities geometricCentralities = new GeometricCentralities(immutableGraph.transpose());
 		geometricCentralities.compute();
@@ -168,6 +193,14 @@ public class QueryDependentCentralitiesTest {
 
 		for (final long id : directedGraph.nodes()) {
 			assertEquals(geometricCentralities.closeness[immutableGraph.id2Node(id)], closeness.get(id), 1E-9);
+		}
+
+		final Long2DoubleOpenHashMap trivialWeight = new Long2DoubleOpenHashMap();
+		directedGraph.nodes().forEach(x -> trivialWeight.put(x, 1 / 2.));
+		final Long2DoubleFunction closenessWeighed = QueryDependentCentralities.closeness(directedGraph, trivialWeight);
+
+		for (final long id : directedGraph.nodes()) {
+			assertEquals(geometricCentralities.closeness[immutableGraph.id2Node(id)] / 2, closenessWeighed.get(id), 1E-9);
 		}
 	}
 
@@ -180,6 +213,14 @@ public class QueryDependentCentralitiesTest {
 
 		for (final long id : directedGraph.nodes()) {
 			assertEquals(geometricCentralities.harmonic[immutableGraph.id2Node(id)], harmonic.get(id), 1E-9);
+		}
+
+		final Long2DoubleOpenHashMap trivialWeight = new Long2DoubleOpenHashMap();
+		directedGraph.nodes().forEach(x -> trivialWeight.put(x, 1 / 2.));
+		final Long2DoubleFunction harmonicWeighed = QueryDependentCentralities.harmonic(directedGraph, trivialWeight);
+
+		for (final long id : directedGraph.nodes()) {
+			assertEquals(geometricCentralities.harmonic[immutableGraph.id2Node(id)] / 2, harmonicWeighed.get(id), 1E-9);
 		}
 	}
 
