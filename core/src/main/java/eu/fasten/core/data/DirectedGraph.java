@@ -20,6 +20,8 @@ package eu.fasten.core.data;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -28,6 +30,7 @@ import org.jgrapht.graph.DefaultGraphType;
 
 import it.unimi.dsi.fastutil.longs.LongIterable;
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongIterators;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -57,6 +60,51 @@ import it.unimi.dsi.fastutil.objects.ObjectSets;
  */
 
 public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, LongIterable {
+	
+	/** A class representing an arc with some associated data.
+	 * 
+	 *  @param T the type of associated data.
+	 */
+	public static final class Arc<T> {
+		/** Build an arc with given source, target and data.
+		 * 
+		 * @param source the source of the arc.
+		 * @param target the target of the arc.
+		 * @param data the associated data.
+		 */
+		public Arc(long source, long target, T data) {
+			this.source = source;
+			this.target = target;
+			this.data = data;
+		}
+		
+		/** Source and target of the arc. */
+		public long source, target;
+		/** The data associated with the arc. */
+		public T data;
+	}
+
+	/** A class representing a node with some associated data.
+	 * 
+	 *  @param T the type of associated data.
+	 */
+	public static final class Node<T> {
+		/** Build a node with associated data.
+		 * 
+		 * @param node the node.
+		 * @param data the associated data.
+		 */
+		public Node(long node, T data) {
+			this.node = node;
+			this.data = data;
+		}
+		
+		/** The node. */
+		public long node;
+		/** The data associated with the node. */
+		public T data;
+	}
+
 	/**
 	 * The number of nodes in the graph.
 	 *
@@ -361,5 +409,65 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 	default void setEdgeWeight(final LongLongPair e, final double weight) {
 		if (weight == 1) return;
 		throw new UnsupportedOperationException();
+	}
+	
+	/** A method that returns the arcs (sources have the order that this {@link #iterator()} would give,
+	 *  targets the same order as in {@link #successors()}), each associated with the data provided by the 
+	 *  given <code>dataIterator</code>.
+	 * 
+	 * @param <T> the type of the data associated with each arc.
+	 * @param dataIterator the iterator providing arc data.
+	 * @return an iterator providing arcs with data.
+	 */
+	default <T> Iterator<Arc<T>> getArcsWithData(final Iterator<T> dataIterator) {
+		LongIterator nodeIterator = iterator();
+		
+		return new Iterator<Arc<T>>() {
+			LongIterator successors = LongIterators.EMPTY_ITERATOR;
+			long currentNode = -1;
+			
+			@Override
+			public boolean hasNext() {
+				while (!successors.hasNext()) {
+					if (!nodeIterator.hasNext()) return false;
+					currentNode = nodeIterator.nextLong();
+					successors = successors(currentNode).iterator();
+				}			
+				return true;
+			}
+
+			@Override
+			public Arc<T> next() {
+				if (!hasNext()) throw new NoSuchElementException();
+				return new Arc<T>(currentNode, successors.nextLong(), dataIterator.next());
+			}
+			
+		};
+	}
+
+	/** A method that returns the nodes (in the same order as with {@link #iterator()}), each associated with the data provided by the 
+	 *  given <code>dataIterator</code>.
+	 * 
+	 * @param <T> the type of the data associated with each node.
+	 * @param dataIterator the iterator providing node data.
+	 * @return an iterator providing nodes with data.
+	 */
+	default <T> Iterator<Node<T>> getNodesWithData(final Iterator<T> dataIterator) {
+		LongIterator nodeIterator = iterator();
+		
+		return new Iterator<Node<T>>() {
+			
+			@Override
+			public boolean hasNext() {
+				return nodeIterator.hasNext();
+			}
+
+			@Override
+			public Node<T> next() {
+				if (!hasNext()) throw new NoSuchElementException();
+				return new Node<T>(nodeIterator.nextLong(), dataIterator.next());
+			}
+			
+		};
 	}
 }
