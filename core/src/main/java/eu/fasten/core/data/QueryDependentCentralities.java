@@ -43,31 +43,35 @@ import it.unimi.dsi.law.rank.SpectralRanking.StoppingCriterion;
 import it.unimi.dsi.webgraph.algo.HyperBall;
 
 /**
- * A containers for static utility methods computing query-dependent centrality measures on instances of
- * {@link DirectedGraph}.
+ * A containers for static utility methods computing query-dependent centrality measures on
+ * instances of {@link DirectedGraph}.
  *
  * <p>
- * A {@linkplain Centralities Query-<em>independent</em>} centrality measure associate a score
- * with each node of a graph. Query-<em>dependent</em> centrality measure use additional
- * information specific to a query to make the centrality dependent on a set of <em>query nodes</em>.
+ * A {@linkplain Centralities Query-<em>independent</em>} centrality measure associates a score with
+ * each node of a graph. Query-<em>dependent</em> centrality measure use additional information
+ * specific to a query to make the centrality dependent on a set of <em>query nodes</em>.
  *
  * <p>
  * The influence of the query nodes on the final result vary depending on the type of centrality
- * considered. For example, in the case of PageRank it is customary to set the {@link PageRank#preference <em>preference vector</em>}
- * to a probability distribution concentrated on the query nodes (in the methods provided
- * by this class, the preference vector is set to the uniform distribution on the query nodes).
+ * considered. For example, in the case of PageRank it is customary to set the
+ * {@link PageRank#preference <em>preference vector</em>} to a probability distribution concentrated
+ * on the query nodes.
  *
  * <p>
- * In the case of <em>geometric centralities</em>, such as closeness of harmonic centrality,
- * we consider a weight on the node that is zero outside of the query nodes and one on the
- * query nodes. The methods of this class assume that the query nodes are in relatively
- * small number, and thus perform a number breadth-first visit from the query nodes,
- * accumulating the results, rather than use the {@link HyperBall} approximation algorithm.
+ * In the case of <em>geometric centralities</em>, such as closeness or harmonic centrality, we
+ * consider a weight on the node that is zero outside of the query nodes and nonzero on the query
+ * nodes. The methods of this class assume that the query nodes are in relatively small number, and
+ * thus perform a number of reverse breadth-first visit from the query nodes, accumulating the
+ * results, rather than use all-nodes breadth-first visits, or the {@link HyperBall} approximation
+ * algorithm.
  *
  * <p>
- * We provide a method for each implementation part of D5.3. Many implementations provide a wide
- * number of options, that should be explored, if necessary, by looking at the code in this class
- * and at the related Javadoc documentation.
+ * We provide implementations for each query-dependent measure described in D5.3. There is, whenever
+ * possible, a method with a {@link LongSet} argument which should contain the query nodes, which
+ * will be weighed uniformly, and a method with a {@link Long2DoubleMap} argument that associates
+ * each query node with a weight. Note that in the case of the
+ * {@linkplain #pageRankPush(DirectedGraph, long, double) push algorithm} weighing is meaningless as
+ * there is a single query node.
  *
  * <p>
  * All centralities are implemented in their <em>negative</em> form, which is the most commonly
@@ -77,17 +81,14 @@ import it.unimi.dsi.webgraph.algo.HyperBall;
  * <p>
  * Iterative processes stop with a threshold of 10<sup>&minus;7</sup> or after a thousand
  * iterations. The second condition is useful in case damping / attenuation factors out of range or
- * provided to {@link #pageRank(DirectedGraph, double)}, {@link #katz(DirectedGraph, double)}, etc.
+ * provided to {@link #pageRankParallel(DirectedGraph, LongSet, double)},
+ * {@link #pageRankPush(DirectedGraph, long, double)},
+ * {@link #katzParallel(DirectedGraph, LongSet, double)}, etc.
  *
  * <p>
  * All methods return uniformly a {@link Long2DoubleFunction} mapping node identifiers to the
  * associated centrality score.
  *
- * <p>
- * Javadoc documentation consistently uses &ldquo;compute&rdquo; for exact computations, and
- * &ldquo;approximates&rdquo; for approximated computations; the latter can be of iterative type
- * (e.g., {@link #pageRank(DirectedGraph, double)}) or of statistical type (e.g.,
- * {@link #harmonicApproximateParallel(DirectedGraph, double)}).
  */
 
 public class QueryDependentCentralities {
@@ -155,7 +156,7 @@ public class QueryDependentCentralities {
 	}
 
 	/**
-	 * Computes query-dependent harmonic centrality using parallel breadth-first visits.
+	 * Computes weighed query-dependent harmonic centrality using parallel breadth-first visits.
 	 *
 	 * @param graph a directed graph.
 	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
@@ -206,7 +207,8 @@ public class QueryDependentCentralities {
 	}
 
 	/**
-	 * Computes query-dependent closeness centrality using parallel breadth-first visits.
+	 * Computes uniformly weighed query-dependent closeness centrality using parallel breadth-first
+	 * visits.
 	 *
 	 * @param graph a directed graph.
 	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
@@ -261,7 +263,8 @@ public class QueryDependentCentralities {
 	}
 
 	/**
-	 * Computes query-dependent harmonic centrality using parallel breadth-first visits.
+	 * Computes uniformly weighed query-dependent harmonic centrality using parallel breadth-first
+	 * visits.
 	 *
 	 * @param graph a directed graph.
 	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
@@ -297,19 +300,19 @@ public class QueryDependentCentralities {
 				return n;
 			}
 		};
-		//final double[] pref = new double[n];
-		//for (long id: queryNodes) pref[immutableGraphAdapter.id2Node(id)] = c;
+
 		return x;
 	}
 
 
 	/**
-	 * Approximates Katz centrality using a parallel implementation of the Gauss&ndash;Seidel method.
+	 * Approximates uniformly weighed query-dependent Katz centrality using a parallel implementation of
+	 * the Gauss&ndash;Seidel method.
 	 *
 	 * @param directedGraph a directed graph.
-	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except
-	 * for the queryNodes where it is uniform.
-	 * @return a function mapping node identifiers to their centrality score.
+	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except for
+	 *            these nodes, where it is uniform.
+	 * @return a function mapping node identifiers to their query-dependent Katz score.
 	 */
 	public static Long2DoubleFunction katzParallel(final DirectedGraph directedGraph, final LongSet queryNodes, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
@@ -321,13 +324,14 @@ public class QueryDependentCentralities {
 	}
 
 	/**
-	 * Approximates PageRank using a parallel implementation of the Gauss&ndash;Seidel method.
+	 * Approximates uniformly weighed query-dependent PageRank using a parallel implementation of the
+	 * Gauss&ndash;Seidel method.
 	 *
 	 * @param directedGraph a directed graph.
-	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except
-	 * for the queryNodes where it is uniform.
+	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except for
+	 *            these nodes, where it is uniform.
 	 * @param alpha the damping factor.
-	 * @return a function mapping node identifiers to their centrality score.
+	 * @return a function mapping node identifiers to their query-dependent PageRank score.
 	 */
 	public static Long2DoubleFunction pageRankParallel(final DirectedGraph directedGraph, final LongSet queryNodes, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
@@ -339,12 +343,13 @@ public class QueryDependentCentralities {
 	}
 
 	/**
-	 * Approximates PageRank using the push method; it can only be called for a single query node.
+	 * Approximates query-dependent PageRank using the push method; it can only be called for a single
+	 * query node.
 	 *
 	 * @param directedGraph a directed graph.
-	 * @param queryNode the query nodes.
+	 * @param queryNode the query node.
 	 * @param alpha the damping factor.
-	 * @return a function mapping node identifiers to their centrality score.
+	 * @return a function mapping node identifiers to their query-dependent PageRank score.
 	 */
 	public static Long2DoubleFunction pageRankPush(final DirectedGraph directedGraph, final long queryNode, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);

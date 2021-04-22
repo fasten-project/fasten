@@ -39,7 +39,7 @@ import it.unimi.dsi.law.rank.SpectralRanking;
 import it.unimi.dsi.util.XoRoShiRo128PlusPlusRandomGenerator;
 import it.unimi.dsi.webgraph.algo.GeometricCentralities;
 
-/** Tests multiple implementation of centrality measures on different adapters. */
+/** Tests implementations of query-dependent centrality measures. */
 
 public class QueryDependentCentralitiesTest {
 
