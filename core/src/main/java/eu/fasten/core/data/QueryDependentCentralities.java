@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 
 import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
+import it.unimi.dsi.fastutil.longs.AbstractLong2DoubleMap;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.Long2DoubleMap;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
@@ -34,6 +35,8 @@ import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
 import it.unimi.dsi.law.rank.KatzParallelGaussSeidel;
 import it.unimi.dsi.law.rank.PageRank;
 import it.unimi.dsi.law.rank.PageRankParallelGaussSeidel;
@@ -277,7 +280,7 @@ public class QueryDependentCentralities {
 	}
 
 
-	/** Given a graph (represented as an {@link ImmutableGraphAdapter}) and a collection of
+	/** Given a graph with n nodes and a collection of
 	 *  node identifiers, it returns a preference vector with as many elements as there are nodes
 	 *  in the graph, where the value associated to a node is either 0 (if the node is outside
 	 *  of the collection) or 1./c (if the node is inside the collection).
@@ -286,13 +289,45 @@ public class QueryDependentCentralities {
 	 * @param queryNodes the nodes that should have nonzero preference.
 	 * @return the preference vector.
 	 */
-	private static DoubleList preferenceVector(final ImmutableGraphAdapter immutableGraphAdapter, final LongSet queryNodes) {
-		final int n = immutableGraphAdapter.numNodes();
+	private static Long2DoubleMap preferenceVector(final int n, final LongSet queryNodes) {
 		final double c = 1. / queryNodes.size();
-		final var x = new AbstractDoubleList() {
+		return new AbstractLong2DoubleMap() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public double get(long key) {
+				return queryNodes.contains(key)? c : 0;
+			}
+			
+			@Override
+			public int size() {
+				return n;
+			}
+			
+			@Override
+			public ObjectSet<it.unimi.dsi.fastutil.longs.Long2DoubleMap.Entry> long2DoubleEntrySet() {
+				ObjectSet<Entry> result = new ObjectOpenHashSet<>();
+				for (long id: queryNodes) result.add(new AbstractLong2DoubleMap.BasicEntry(id, c));
+				return result;
+			}
+		};
+	}
+
+	/** Given a graph (represented as an {@link ImmutableGraphAdapter}) and a map of preference values for a set
+	 *  node identifiers, it returns a preference vector with as many elements as there are nodes
+	 *  in the graph, where the value associated to a node is either 0 (if the node is not among the map keys) 
+	 *  or the appropriate value in the map.
+	 *
+	 * @param immutableGraphAdapter the graph.
+	 * @param queryNodesWeight a map mapping some of the nodes to their preference (weight).
+	 * @return the preference vector.
+	 */
+	private static DoubleList preferenceVector(final ImmutableGraphAdapter immutableGraphAdapter, final Long2DoubleMap queryNodeWeights) {
+		final int n = immutableGraphAdapter.numNodes();
+		return new AbstractDoubleList() {
 			@Override
 			public double getDouble(final int u) {
-				return queryNodes.contains(immutableGraphAdapter.node2Id(u)) ? c : 0;
+				return queryNodeWeights.getOrDefault(immutableGraphAdapter.node2Id(u), 0);
 			}
 
 			@Override
@@ -300,51 +335,70 @@ public class QueryDependentCentralities {
 				return n;
 			}
 		};
-
-		return x;
 	}
-
 
 	/**
 	 * Approximates uniformly weighed query-dependent Katz centrality using a parallel implementation of
 	 * the Gauss&ndash;Seidel method.
 	 *
 	 * @param directedGraph a directed graph.
-	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except for
-	 *            these nodes, where it is uniform.
+	 * @param queryNodeWeights a map from the query nodes to their weight.
 	 * @return a function mapping node identifiers to their query-dependent Katz score.
+>>>>>>> Implemented spectral with queryNodesWeight
 	 */
-	public static Long2DoubleFunction katzParallel(final DirectedGraph directedGraph, final LongSet queryNodes, final double alpha) throws IOException {
+	public static Long2DoubleFunction katzParallel(final DirectedGraph directedGraph,  final Long2DoubleMap queryNodeWeights, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
 		final KatzParallelGaussSeidel katzParallelGaussSeidel = new KatzParallelGaussSeidel(immutableGraphAdapter.transpose());
-		katzParallelGaussSeidel.preference = preferenceVector(immutableGraphAdapter, queryNodes);
+		katzParallelGaussSeidel.preference = preferenceVector(immutableGraphAdapter, queryNodeWeights);
 		katzParallelGaussSeidel.alpha = alpha;
 		katzParallelGaussSeidel.stepUntil(DEFAULT_STOPPING_CRITERION);
 		return id -> katzParallelGaussSeidel.rank[immutableGraphAdapter.id2Node(id)];
 	}
 
 	/**
-	 * Approximates uniformly weighed query-dependent PageRank using a parallel implementation of the
-	 * Gauss&ndash;Seidel method.
+	 * Approximates Katz centrality using a parallel implementation of the Gauss&ndash;Seidel method.
 	 *
 	 * @param directedGraph a directed graph.
-	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except for
-	 *            these nodes, where it is uniform.
+	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except
+	 * for the queryNodes where it is uniform.
+	 * @return a function mapping node identifiers to their centrality score.
+	 */
+	public static Long2DoubleFunction katzParallel(final DirectedGraph directedGraph, final LongSet queryNodes, final double alpha) throws IOException {
+		return katzParallel(directedGraph, preferenceVector(directedGraph.numNodes(), queryNodes), alpha);
+	}
+
+	/**
+	 * Approximates PageRank using a parallel implementation of the Gauss&ndash;Seidel method.
+	 *
+	 * @param directedGraph a directed graph.
+	 * @param queryNodeWeights a map from the query nodes to their weight.
 	 * @param alpha the damping factor.
 	 * @return a function mapping node identifiers to their query-dependent PageRank score.
 	 */
-	public static Long2DoubleFunction pageRankParallel(final DirectedGraph directedGraph, final LongSet queryNodes, final double alpha) throws IOException {
+	public static Long2DoubleFunction pageRankParallel(final DirectedGraph directedGraph, final Long2DoubleMap queryNodesWeight, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
 		final PageRankParallelGaussSeidel pageRankParallelGaussSeidel = new PageRankParallelGaussSeidel(immutableGraphAdapter.transpose());
-		pageRankParallelGaussSeidel.preference = preferenceVector(immutableGraphAdapter, queryNodes);
+		pageRankParallelGaussSeidel.preference = preferenceVector(immutableGraphAdapter, queryNodesWeight);
 		pageRankParallelGaussSeidel.alpha = alpha;
 		pageRankParallelGaussSeidel.stepUntil(DEFAULT_STOPPING_CRITERION);
 		return id -> pageRankParallelGaussSeidel.rank[immutableGraphAdapter.id2Node(id)];
 	}
 
 	/**
-	 * Approximates query-dependent PageRank using the push method; it can only be called for a single
-	 * query node.
+	 * Approximates PageRank using a parallel implementation of the Gauss&ndash;Seidel method.
+	 *
+	 * @param directedGraph a directed graph.
+	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except
+	 * for the queryNodes where it is uniform.
+	 * @param alpha the damping factor.
+	 * @return a function mapping node identifiers to their centrality score.
+	 */
+	public static Long2DoubleFunction pageRankParallel(final DirectedGraph directedGraph, final LongSet queryNodes, final double alpha) throws IOException {
+		return pageRankParallel(directedGraph, preferenceVector(directedGraph.numNodes(), queryNodes), alpha);
+	}
+
+	/**
+	 * Approximates PageRank using the push method; it can only be called for a single query node.
 	 *
 	 * @param directedGraph a directed graph.
 	 * @param queryNode the query node.
@@ -358,7 +412,8 @@ public class QueryDependentCentralities {
 		pageRankPush.alpha = alpha;
 		pageRankPush.threshold = DEFAULT_L1_THRESHOLD;
 		pageRankPush.stepUntil(new PageRankPush.EmptyQueueStoppingCritertion());
-
-		return id -> pageRankPush.rank[pageRankPush.node2Seen.get(immutableGraphAdapter.id2Node(id))] / pageRankPush.pNorm;
+		final Long2DoubleMap id2rank = new Long2DoubleOpenHashMap();
+		for (long id: directedGraph.nodes()) id2rank.put(id, pageRankPush.rank[pageRankPush.node2Seen.get(immutableGraphAdapter.id2Node(id))] / pageRankPush.pNorm);		
+		return id -> id2rank.get(id);
 	}
 }
