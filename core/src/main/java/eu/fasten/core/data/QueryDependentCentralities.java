@@ -379,6 +379,7 @@ public class QueryDependentCentralities {
 		final PageRankParallelGaussSeidel pageRankParallelGaussSeidel = new PageRankParallelGaussSeidel(immutableGraphAdapter.transpose());
 		pageRankParallelGaussSeidel.preference = preferenceVector(immutableGraphAdapter, queryNodesWeight);
 		pageRankParallelGaussSeidel.alpha = alpha;
+		pageRankParallelGaussSeidel.stronglyPreferential = true;
 		pageRankParallelGaussSeidel.stepUntil(DEFAULT_STOPPING_CRITERION);
 		return id -> pageRankParallelGaussSeidel.rank[immutableGraphAdapter.id2Node(id)];
 	}
