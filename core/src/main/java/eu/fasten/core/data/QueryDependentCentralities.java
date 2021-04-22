@@ -344,7 +344,6 @@ public class QueryDependentCentralities {
 	 * @param directedGraph a directed graph.
 	 * @param queryNodeWeights a map from the query nodes to their weight.
 	 * @return a function mapping node identifiers to their query-dependent Katz score.
->>>>>>> Implemented spectral with queryNodesWeight
 	 */
 	public static Long2DoubleFunction katzParallel(final DirectedGraph directedGraph,  final Long2DoubleMap queryNodeWeights, final double alpha) throws IOException {
 		final ImmutableGraphAdapter immutableGraphAdapter = new ImmutableGraphAdapter(directedGraph);
