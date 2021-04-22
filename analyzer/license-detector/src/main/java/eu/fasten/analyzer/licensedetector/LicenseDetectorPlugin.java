@@ -7,6 +7,7 @@ import io.dgraph.DgraphProto;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.io.IOUtils;
+import org.apache.maven.shared.invoker.*;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -112,10 +113,13 @@ public class LicenseDetectorPlugin extends Plugin {
                 logger.info("License detector: scanning repository in " + repoPath + "...");
 
                 // Injecting the Quartermaster Maven plugin
-                patchPomFile(repoPath);
+                File pomFile = patchPomFile(repoPath);
 
                 // Dropping DGraph data
                 dropDgraphDatabase();
+
+                // Start packaging the project with the Quartermaster Maven plugin
+                packageProject(repoPath, pomFile);
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage());
@@ -180,13 +184,14 @@ public class LicenseDetectorPlugin extends Plugin {
          * Patches a pom.xml file by injecting the Quartermaster Maven plugin.
          *
          * @param repoPath the path of the repository whose pom.xml file needs to be patched.
+         * @return the patched pom.xml File object.
          * @throws ParserConfigurationException in case the XML DocumentBuilder could not be instantiated.
          * @throws IOException                  in case either the input pom.xml file or the patch one
          *                                      could not be found.
          * @throws URISyntaxException           in case either the patch XML file could not be found.
          * @throws TransformerException         in case of error while overwriting the XML file.
          */
-        protected void patchPomFile(String repoPath)
+        protected File patchPomFile(String repoPath)
                 throws ParserConfigurationException, IOException, URISyntaxException, TransformerException {
 
             // Retrieving the pom file
@@ -262,6 +267,8 @@ public class LicenseDetectorPlugin extends Plugin {
             logger.info("Overwriting " + pomFile.get().getAbsolutePath() + "...");
             writeXmlToFile(documentRoot, pomFile.get());
             logger.info("..." + pomFile.get().getAbsolutePath() + " successfully patched.");
+
+            return pomFile.get();
         }
 
         /**
@@ -321,6 +328,28 @@ public class LicenseDetectorPlugin extends Plugin {
             DgraphGrpc.DgraphStub stub = DgraphGrpc.newStub(channel);
             DgraphClient dgraphClient = new DgraphClient(stub);
             dgraphClient.alter(DgraphProto.Operation.newBuilder().setDropAll(true).build());
+            logger.info("...dropped content of the DGraph instance at " + DGRAPH_ADDRESS + ":" + DGRAPH_PORT + ".");
+        }
+
+        /**
+         * Packages the project, causing the Quartermaster Maven plugin to intercept build information.
+         *
+         * @param repoPath the path of the repository to be packaged.
+         * @param pomFile  the `pom.xml` file to be used while packaging.
+         * @throws MavenInvocationException in case Maven crashes.
+         */
+        protected void packageProject(String repoPath, File pomFile) throws MavenInvocationException {
+            InvocationRequest request = new DefaultInvocationRequest();
+            request.setPomFile(pomFile);
+            request.setBaseDirectory(new File(repoPath));
+            request.setGoals(Arrays.asList("package", "-Dmaven.test.skip=true"));
+            Invoker invoker = new DefaultInvoker();
+            invoker.setMavenHome(new File("/usr/share/maven"));
+            invoker.setWorkingDirectory(new File(repoPath));
+            InvocationResult result = invoker.execute(request);
+            if (result.getExitCode() != 0) {
+                throw new IllegalStateException("Maven package command on " + pomFile.getAbsolutePath() + " failed.");
+            }
         }
 
         @Override

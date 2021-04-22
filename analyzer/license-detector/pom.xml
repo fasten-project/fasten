@@ -27,6 +27,12 @@
             <artifactId>dgraph4j</artifactId>
             <version>21.03.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-invoker-plugin</artifactId>
+            <version>3.2.2</version>
+            <type>maven-plugin</type>
+        </dependency>
     </dependencies>
 
     <build>
