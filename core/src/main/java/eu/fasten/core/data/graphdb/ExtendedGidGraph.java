@@ -98,28 +98,40 @@ public class ExtendedGidGraph extends GidGraph {
     }
 
     public static ExtendedGidGraph getGraph(JSONObject jsonGraph) throws JSONException {
-        var gidGraph = GidGraph.getGraph(jsonGraph);
+        if (jsonGraph == null) {
+            throw new JSONException("JSON Graph cannot be null");
+        }
+        var index = jsonGraph.getLong("index");
+        var product = jsonGraph.getString("product");
+        var version = jsonGraph.getString("version");
+        var jsonNodes = jsonGraph.getJSONArray("nodes");
+        List<Long> nodes = new ArrayList<>(jsonNodes.length());
+        for (int i = 0; i < jsonNodes.length(); i++) {
+            nodes.add(jsonNodes.getLong(i));
+        }
+        var numInternalNodes = jsonGraph.getInt("numInternalNodes");
         var edgesInfoJson = jsonGraph.getJSONObject("callsites_info");
         var edgesList = new ArrayList<CallSitesRecord>(edgesInfoJson.length());
         edgesInfoJson.keySet().forEach(k -> {
             var key = k.substring(1, k.length() - 1).split(",");
             var source = Long.parseLong(key[0].trim());
             var target = Long.parseLong(key[1].trim());
-            var infoJson = edgesInfoJson.getJSONObject(k);
-            var line = infoJson.getInt("line");
-            var callType = getCallType(infoJson.getString("call_type"));
-            var receiverTypeIdsJson = infoJson.getJSONArray("receiver_type_ids");
-            var receiverTypeIds = new Long[receiverTypeIdsJson.length()];
-            for (int i = 0; i < receiverTypeIdsJson.length(); i++) {
-                receiverTypeIds[i] = receiverTypeIdsJson.getLong(i);
+            var infoJson = edgesInfoJson.getJSONArray(k);
+            for (int i = 0; i < infoJson.length(); i++) {
+                var line = infoJson.getJSONObject(i).getInt("line");
+                var callType = getCallType(infoJson.getJSONObject(i).getString("call_type"));
+                var receiverTypeIdsJson = infoJson.getJSONObject(i).getJSONArray("receiver_type_ids");
+                var receiverTypeIds = new Long[receiverTypeIdsJson.length()];
+                for (int j = 0; j < receiverTypeIdsJson.length(); j++) {
+                    receiverTypeIds[j] = receiverTypeIdsJson.getLong(j);
+                }
+                edgesList.add(new CallSitesRecord(source, target, line, callType, receiverTypeIds, null));
             }
-            edgesList.add(new CallSitesRecord(source, target, line, callType, receiverTypeIds, null));
         });
-        var gid2uriMap = new HashMap<Long, String>(gidGraph.getNodes().size());
+        var gid2uriMap = new HashMap<Long, String>(nodes.size());
         var gidToUriJson = jsonGraph.getJSONObject("gid_to_uri");
         gidToUriJson.keySet().forEach(k -> gid2uriMap.put(Long.parseLong(k), gidToUriJson.getString(k)));
-        return new ExtendedGidGraph(gidGraph.getIndex(), gidGraph.getProduct(), gidGraph.getVersion(),
-                gidGraph.getNodes(), gidGraph.getNumInternalNodes(), edgesList, gid2uriMap);
+        return new ExtendedGidGraph(index, product, version, nodes, numInternalNodes, edgesList, gid2uriMap);
     }
 
     private static CallType getCallType(String type) {

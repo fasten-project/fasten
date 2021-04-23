@@ -59,24 +59,19 @@ public class RocksDaoTest {
                 "      [0, 1],\n" +
                 "      [1, 2]\n" +
                 "   ],\n" +
-                "   \"edges_info\": {\n" +
+                "   \"callsites_info\": {\n" +
                 "      \"[0, 1]\": [\n" +
                 "         {\n" +
                 "            \"line\": 5,\n" +
                 "            \"call_type\": \"static\",\n" +
-                "            \"receiver_namespace\": \"/java.lang/String\"\n" +
-                "         },\n" +
-                "         {\n" +
-                "            \"line\": 12,\n" +
-                "            \"call_type\":\"interface\",\n" +
-                "            \"receiver_namespace\": \"/product/Interface\"\n" +
+                "            \"receiver_type_ids\": [1,2]\n" +
                 "         }\n" +
                 "      ],\n" +
                 "      \"[1, 2]\": [\n" +
                 "         {\n" +
                 "            \"line\": 25,\n" +
                 "            \"call_type\": \"dynamic\",\n" +
-                "            \"receiver_namespace\": \"/java.lang/Object\"\n" +
+                "            \"receiver_type_ids\": [3]\n" +
                 "         } \n" +
                 "      ]\n" +
                 "   },\n" +
