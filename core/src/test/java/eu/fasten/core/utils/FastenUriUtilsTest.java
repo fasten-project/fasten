@@ -186,4 +186,22 @@ public class FastenUriUtilsTest {
         assertEquals(partialUriFormatException, actualMessage);
     }
 
+    @Test
+    void testInnerClassesSuccess() {
+        var partialUri = "/nl.tudelft.jpacman.ui/PacManUiBuilder$addStopButton(Lnl$tudelft$jpacman$game$Game:)V:30$Lambda.$newInstance(/nl.tudelft.jpacman.game/Game)PacManUiBuilder$addStopButton(Lnl$tudelft$jpacman$game$Game:)V:30$Lambda";
+        var expectedNamespace = "nl.tudelft.jpacman.ui";
+        var expectedClass = "PacManUiBuilder";
+        var expectedMethod = "newInstance";
+        var expectedArgs = "/nl.tudelft.jpacman.game/Game";
+        var expectedReturnType = "PacManUiBuilder$addStopButton(Lnl$tudelft$jpacman$game$Game:)V:30$Lambda";
+
+        var actual = FastenUriUtils.parsePartialFastenUri(partialUri);
+
+        assertEquals(expectedNamespace, actual.get(0));
+        assertEquals(expectedClass, actual.get(1));
+        assertEquals(expectedMethod, actual.get(2));
+        assertEquals(expectedArgs, actual.get(3));
+        assertEquals(expectedReturnType, actual.get(4));
+    }
+
 }

@@ -33,12 +33,12 @@
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>dsiutils</artifactId>
-            <version>2.6.16</version>
+            <version>2.6.17</version>
         </dependency>
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>sux4j</artifactId>
-            <version>5.2.2</version>
+            <version>5.2.3</version>
         </dependency>
         <dependency>
             <groupId>it.unimi.dsi</groupId>
@@ -48,7 +48,7 @@
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>webgraph</artifactId>
-            <version>3.6.3</version>
+            <version>3.6.10</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -73,7 +73,7 @@
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>law</artifactId>
-            <version>2.7.1</version>
+            <version>2.7.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.poi</groupId>
@@ -189,7 +189,7 @@
         <dependency>
             <groupId>org.rocksdb</groupId>
             <artifactId>rocksdbjni</artifactId>
-            <version>6.2.4</version>
+            <version>6.15.2</version>
         </dependency>
         <dependency>
             <groupId>org.jooq</groupId>

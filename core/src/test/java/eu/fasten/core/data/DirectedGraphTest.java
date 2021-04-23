@@ -26,10 +26,16 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Collections;
+import java.util.Iterator;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.fasten.core.data.DirectedGraph.Arc;
+import eu.fasten.core.data.DirectedGraph.Node;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
@@ -165,5 +171,17 @@ public class DirectedGraphTest {
 		}
 
 		assertEquals(transposeTranspose.externalNodes(), transpose.externalNodes());
+
+		final Iterator<Node<Long>> nodesWithData = graph.getNodesWithData(graph.iterator());
+		nodesWithData.forEachRemaining(n -> assertEquals(n.node, n.data));
+
+		final LongList sums = new LongArrayList();
+		for(final LongIterator nodes = graph.iterator(); nodes.hasNext();) {
+			final long x = nodes.nextLong();
+			graph.successors(x).forEach(e -> sums.add(x + e));
+		}
+
+		final Iterator<Arc<Long>> arcsWithData = graph.getArcsWithData(sums.iterator());
+		arcsWithData.forEachRemaining(a -> assertEquals(a.data, a.source + a.target));
 	}
 }
