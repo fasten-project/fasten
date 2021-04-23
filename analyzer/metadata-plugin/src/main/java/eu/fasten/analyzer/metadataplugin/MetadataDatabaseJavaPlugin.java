@@ -75,8 +75,8 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
         protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
             ExtendedRevisionJavaCallGraph javaGraph = (ExtendedRevisionJavaCallGraph) graph;
             var namespaces = new HashSet<String>();
-            javaGraph.getClassHierarchy().get(JavaScope.internalTypes).keySet().forEach(k -> namespaces.add(k.toString()));
-            javaGraph.getClassHierarchy().get(JavaScope.externalTypes).keySet().forEach(k -> namespaces.add(k.toString()));
+            namespaces.addAll(javaGraph.getClassHierarchy().get(JavaScope.internalTypes).keySet());
+            namespaces.addAll(javaGraph.getClassHierarchy().get(JavaScope.externalTypes).keySet());
             javaGraph.getClassHierarchy().get(JavaScope.internalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperInterfaces())));
             javaGraph.getClassHierarchy().get(JavaScope.internalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperClasses())));
             javaGraph.getClassHierarchy().get(JavaScope.externalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperInterfaces())));
@@ -89,10 +89,9 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     for (var key : metadataMap.keySet()) {
                         callMetadata.put(key, metadataMap.get(key));
                     }
-                    String receiverUri = callMetadata.optString("receiver");
-                    if (!receiverUri.isEmpty()) {
-                        namespaces.add(receiverUri);
-                    }
+                    namespaces.addAll(Arrays.asList(callMetadata.optString("receiver")
+                            .replace("[", "").replace("]", "").split(",")));
+
                 }
             }
             return metadataDao.insertNamespaces(namespaces);
@@ -199,24 +198,36 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                 var target = lidToGidMap.get((long) edgeEntry.getKey().secondInt());
 
                 // Create call-site record for each pc
-                for (var obj : edgeEntry.getValue().keySet()) {
-                    var pc = obj.toString();
+                var pcIterator = edgeEntry.getValue().keySet().iterator();
+                var pc = pcIterator.next().toString();
                     // Get edge metadata
-                    var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(Integer.parseInt(pc));
-                    var callMetadata = new JSONObject();
+                var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(Integer.parseInt(pc));
+                var callMetadata = new JSONObject();
+                for (var key : metadataMap.keySet()) {
+                    callMetadata.put(key, metadataMap.get(key));
+                }
+                var receiverTypes = callMetadata.optString("receiver")
+                        .replace("[","").replace("]","").split(",");
+                var receivers = new ArrayList<Long>(receiverTypes.length);
+                for (var receiverType : receiverTypes) {
+                    receivers.add(typesMap.get(receiverType));
+                }
+                Integer line = callMetadata.optInt("line", -1);
+                CallType type = this.getCallType(callMetadata.optString("type"));
+                while (pcIterator.hasNext()) {
+                    pc = pcIterator.next().toString();
+                    metadataMap = (Map<String, Object>) edgeEntry.getValue().get(Integer.parseInt(pc));
+                    callMetadata = new JSONObject();
                     for (var key : metadataMap.keySet()) {
                         callMetadata.put(key, metadataMap.get(key));
                     }
-                    var receiverTypes = callMetadata.optString("receiver")
+                    receiverTypes = callMetadata.optString("receiver")
                             .replace("[","").replace("]","").split(",");
-                    var receivers = new Long[receiverTypes.length];
-                    for (int i = 0; i < receiverTypes.length; i++) {
-                        receivers[i] = typesMap.get(receiverTypes[i]);
+                    for (var receiverType : receiverTypes) {
+                        receivers.add(typesMap.get(receiverType));
                     }
-                    Integer line = callMetadata.optInt("line", -1);
-                    CallType type = this.getCallType(callMetadata.optString("type"));
-                    callSites.add(new CallSitesRecord(source, target, line, type, receivers, null));
                 }
+                callSites.add(new CallSitesRecord(source, target, line, type, receivers.toArray(Long[]::new), null));
             }
 
             // Batch insert all edges
