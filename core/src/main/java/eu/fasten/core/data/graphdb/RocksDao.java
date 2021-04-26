@@ -105,7 +105,7 @@ public class RocksDao implements Closeable {
 
     public void saveToRocksDb(final GidGraph gidGraph) throws IOException, RocksDBException {
         if (gidGraph instanceof ExtendedGidGraph) {
-            System.out.println("GID Graph has the edges info for stitching");
+            System.out.println("GID Graph has the call-sites info for stitching");
         }
         saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
     }
