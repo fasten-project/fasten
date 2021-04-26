@@ -81,7 +81,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             javaGraph.getClassHierarchy().get(JavaScope.internalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperClasses())));
             javaGraph.getClassHierarchy().get(JavaScope.externalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperInterfaces())));
             javaGraph.getClassHierarchy().get(JavaScope.externalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperClasses())));
-            for (var edgeEntry : graph.getGraph().getExternalCalls().entrySet()) {
+            for (var edgeEntry : ((JavaGraph) graph.getGraph()).getCallSites().entrySet()) {
                 for (var obj : edgeEntry.getValue().keySet()) {
                     var pc = obj.toString();
                     var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(Integer.parseInt(pc));
