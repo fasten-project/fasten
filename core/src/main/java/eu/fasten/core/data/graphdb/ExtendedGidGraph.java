@@ -35,6 +35,7 @@ public class ExtendedGidGraph extends GidGraph {
 
     private final Map<Pair<Long, Long>, CallSitesRecord> callInfo = new HashMap<>();
     private final Map<Long, String> gidToUriMap;
+    private final Map<Long, String> typeMap;
 
     /**
      * Constructor for Graph.
@@ -47,10 +48,11 @@ public class ExtendedGidGraph extends GidGraph {
      * @param numInternalNodes Number of internal nodes in nodes list
      * @param edges            List of edges of the graph with pairs for Global IDs
      */
-    public ExtendedGidGraph(long index, String product, String version, List<Long> nodes, int numInternalNodes, List<CallSitesRecord> edges, Map<Long, String> gid2UriMap) {
+    public ExtendedGidGraph(long index, String product, String version, List<Long> nodes, int numInternalNodes, List<CallSitesRecord> edges, Map<Long, String> gid2UriMap, Map<Long, String> typeMap) {
         super(index, product, version, nodes, numInternalNodes, edges);
         this.gidToUriMap = gid2UriMap;
         edges.forEach(e -> callInfo.put(new Pair<>(e.getSourceId(), e.getTargetId()), e));
+        this.typeMap = typeMap;
     }
 
     public Map<Pair<Long, Long>, CallSitesRecord> getCallsInfo() {
@@ -63,6 +65,10 @@ public class ExtendedGidGraph extends GidGraph {
 
     public Map<Long, String> getGidToUriMap() {
         return gidToUriMap;
+    }
+
+    public Map<Long, String> getTypeMap() {
+        return typeMap;
     }
 
     @Override
@@ -81,6 +87,9 @@ public class ExtendedGidGraph extends GidGraph {
         var gidToUriJson = new JSONObject();
         this.gidToUriMap.forEach((k, v) -> gidToUriJson.put(String.valueOf(k), v));
         json.put("gid_to_uri", gidToUriJson);
+        var typesJson = new JSONObject();
+        this.typeMap.forEach((k, v) -> typesJson.put(String.valueOf(k), v));
+        json.put("types_map", typesJson);
         return json;
     }
 
@@ -134,11 +143,14 @@ public class ExtendedGidGraph extends GidGraph {
         var gid2uriMap = new HashMap<Long, String>(nodes.size());
         var gidToUriJson = jsonGraph.getJSONObject("gid_to_uri");
         gidToUriJson.keySet().forEach(k -> gid2uriMap.put(Long.parseLong(k), gidToUriJson.getString(k)));
-        return new ExtendedGidGraph(index, product, version, nodes, numInternalNodes, callSitesList, gid2uriMap);
+        var typesMap = new HashMap<Long, String>();
+        var typesJson = jsonGraph.getJSONObject("types_map");
+        typesJson.keySet().forEach(k -> typesMap.put(Long.parseLong(k), typesJson.getString(k)));
+        return new ExtendedGidGraph(index, product, version, nodes, numInternalNodes, callSitesList, gid2uriMap, typesMap);
     }
 
     private static CallType getCallType(String type) {
-        switch (type) {
+        switch (type.toLowerCase()) {
             case "static":
                 return CallType.static_;
             case "dynamic":

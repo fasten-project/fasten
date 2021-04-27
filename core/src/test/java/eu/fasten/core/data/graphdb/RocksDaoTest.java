@@ -18,32 +18,24 @@
 
 package eu.fasten.core.data.graphdb;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
+import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.math3.util.Pair;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
-
-import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.DYNAMIC;
-import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.INTERFACE;
-import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.STATIC;
-import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.VIRTUAL;
-import static org.junit.jupiter.api.Assertions.*;
+import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class RocksDaoTest {
 
@@ -65,49 +57,43 @@ public class RocksDaoTest {
     @Test
     public void extendedGidGraphTest() throws IOException, RocksDBException {
         var json = new JSONObject("{\n" +
-                "   \"index\": 1,\n" +
-                "   \"product\": \"test\",\n" +
-                "   \"version\": \"0.0.1\",\n" +
-                "   \"nodes\":[0, 1, 2],\n" +
-                "   \"numInternalNodes\": 2,\n" +
-                "   \"edges\": [\n" +
-                "      [0, 1],\n" +
-                "      [0, 2],\n" +
-                "      [1, 2]\n" +
-                "   ],\n" +
-                "   \"callsites_info\": {\n" +
-                "      \"[0, 1]\": [\n" +
-                "         {\n" +
-                "            \"line\": 5,\n" +
-                "            \"call_type\": \"static\",\n" +
-                "            \"receiver_type_ids\": [1,2]\n" +
-                "         }\n" +
-                "      ],\n" +
-                "      \"[0, 2]\": [\n" +
-                "         {\n" +
-                "            \"line\": 12,\n" +
-                "            \"call_type\": \"static\",\n" +
-                "            \"receiver_namespace\": \"/java.lang/String\"\n" +
-                "         },\n" +
-                "         {\n" +
-                "            \"line\": 13,\n" +
-                "            \"call_type\":\"virtual\",\n" +
-                "            \"receiver_namespace\": \"/product/Interface\"\n" +
-                "         }\n" +
-                "      ],\n" +
-                "      \"[1, 2]\": [\n" +
-                "         {\n" +
-                "            \"line\": 25,\n" +
-                "            \"call_type\": \"dynamic\",\n" +
-                "            \"receiver_type_ids\": [3]\n" +
-                "         } \n" +
-                "      ]\n" +
-                "   },\n" +
-                "   \"gid_to_uri\": {\n" +
-                "   \t\t\"0\": \"/java.lang/String.get()long\",\n" +
-                "   \t\t\"1\": \"/java.lang/Object.hashCode()int\",\n" +
-                "   \t\t\"2\": \"/my.package/Klass.method(int)int\"\n" +
-                "   }\n" +
+                "        \"index\": 1,\n" +
+                "        \"product\": \"test\",\n" +
+                "           \"version\": \"0.0.1\",\n" +
+                "           \"nodes\":[0, 1, 2],\n" +
+                "           \"numInternalNodes\": 2,\n" +
+                "           \"edges\": [\n" +
+                "              [0, 1],\n" +
+                "              [0, 2],\n" +
+                "              [1, 2]\n" +
+                "           ],\n" +
+                "           \"callsites_info\": {\n" +
+                "                \"[0, 1]\": {\n" +
+                "                    \"line\": 5,\n" +
+                "                    \"call_type\": \"static\",\n" +
+                "                    \"receiver_type_ids\": [1,2]\n" +
+                "                 },\n" +
+                "              \"[0, 2]\": {\n" +
+                "                    \"line\": 12,\n" +
+                "                    \"call_type\": \"static\",\n" +
+                "                    \"receiver_type_ids\": [1,2]\n" +
+                "                },\n" +
+                "              \"[1, 2]\": {\n" +
+                "                    \"line\": 25,\n" +
+                "                    \"call_type\": \"dynamic\",\n" +
+                "                    \"receiver_type_ids\": [3]\n" +
+                "                } \n" +
+                "           },\n" +
+                "           \"gid_to_uri\": {\n" +
+                "                   \"0\": \"/java.lang/String.get()long\",\n" +
+                "                   \"1\": \"/java.lang/Object.hashCode()int\",\n" +
+                "                   \"2\": \"/my.package/Klass.method(int)int\"\n" +
+                "           },\n" +
+                "           \"types_map\": {\n" +
+                "                \"1\": \"/java.lang/String\",\n" +
+                "                \"2\": \"/product/Interface\",\n" +
+                "                \"3\": \"/java.lang/Object\"\n" +
+                "           }\n" +
                 "}");
         var graph = ExtendedGidGraph.getGraph(json);
         rocksDao.saveToRocksDb(graph);
@@ -126,19 +112,17 @@ public class RocksDaoTest {
         GraphMetadata graphMetadata = rocksDao.getGraphMetadata(graph.getIndex(), graphData);
         assertEquals(
                 new GraphMetadata.NodeMetadata("/java.lang/String", "get()/java.lang/long",
-                List.of(new ReceiverRecord(5, STATIC, "/java.lang/String"),
-                new ReceiverRecord(12, INTERFACE, "/product/Interface"),
-                new ReceiverRecord(12, STATIC, "/java.lang/String"),
-                new ReceiverRecord(13, VIRTUAL, "/product/Interface"))), 
+                        List.of(new ReceiverRecord(5, STATIC, List.of("/java.lang/String", "/product/Interface")),
+                                new ReceiverRecord(12, STATIC, List.of("/java.lang/String", "/product/Interface")))),
                 graphMetadata.gid2NodeMetadata.get(0));
         assertEquals(
                 new GraphMetadata.NodeMetadata("/java.lang/Object", "hashCode()/java.lang/int",
-                List.of(new ReceiverRecord(25, DYNAMIC, "/java.lang/Object"))), 
-                graphMetadata.gid2NodeMetadata.get(1));    
+                        List.of(new ReceiverRecord(25, DYNAMIC, List.of("/java.lang/Object")))),
+                graphMetadata.gid2NodeMetadata.get(1));
         assertEquals(
                 new GraphMetadata.NodeMetadata("/my.package/Klass", "method(/my.package/int)/my.package/int",
-                List.of()), 
-                graphMetadata.gid2NodeMetadata.get(2));    
+                        List.of()),
+                graphMetadata.gid2NodeMetadata.get(2));
     }
 
     @Test
