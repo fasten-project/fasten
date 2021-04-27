@@ -17,17 +17,20 @@
 
 package eu.fasten.core.utils;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
- * Utility methods for encoding longs in a byte stream using variable-length byte encoding.
+ * Utility methods for writing and reading data in a byte stream using variable-length byte
+ * encoding.
  *
  * <p>
- * This class implements a variable-length byte encoding that is not redundant on small values, as
- * it happens in a trivial &ldquo;continuation bit&rdquo; implementation. More precisely, setting
- * <var>u</var><sub>0</sub>&nbsp;=&nbsp;0 and
+ * This class implements a variable-length byte encoding for longs that is not redundant on small
+ * values, as it happens in a trivial &ldquo;continuation bit&rdquo; implementation. More precisely,
+ * setting <var>u</var><sub>0</sub>&nbsp;=&nbsp;0 and
  * <var>u</var><sub><var>i</var>+1</sub>&nbsp;=&nbsp;128<sup><var><var>i</var>+1</var></sup>&nbsp;+&nbsp;<var>u</var><sub><var>i</var></sub>,
  * a long <var>x</var> smaller than <var>u</var><sub><var>i</var>+1</sub> but larger than or equal
  * to <var>u</var><sub><var>i</var></sub> is encoded by <var>i</var> bits set to one, one bit set to
@@ -47,6 +50,11 @@ import java.io.OutputStream;
  * <p>
  * Note that moving continuation bits to the front is a folklore technique, and the same is true of
  * the reduction of redundancy (see, e.g., Git's encoder).
+ * 
+ * <p>
+ * Using the encoding above, the class provides also utility methods to write
+ * {@linkplain #writeByteArray(byte[], OutputStream) byte arrays} and
+ * {@linkplain #writeString(String, OutputStream) strings}.
  *
  * @author Sebastiano Vigna
  */
@@ -66,12 +74,12 @@ public class VariableLengthByteCoder {
 	}
 
 	/**
-	 * Encodes a long using a variable-length prefix-free code.
+	 * Writes a long using a variable-length prefix-free code.
 	 *
 	 * @param x a nonnegative long.
 	 * @param os an output stream.
 	 */
-	public static void encode(long x, final OutputStream os) throws IOException {
+	public static void writeLong(long x, final OutputStream os) throws IOException {
 		assert x >= 0;
 		if (x < UPPER_BOUND_1) os.write((int)x);
 		else if (x < UPPER_BOUND_2) {
@@ -143,7 +151,7 @@ public class VariableLengthByteCoder {
 	}
 
 	/**
-	 * Decodes a long written by {@link #encode(long, OutputStream)}.
+	 * Reads a long written by {@link #writeLong(long, OutputStream)}.
 	 *
 	 * <p>
 	 * Note that for efficiency reasons error values returned by {@link InputStream#read()} are ignored.
@@ -151,11 +159,11 @@ public class VariableLengthByteCoder {
 	 * &minus;1.
 	 *
 	 * @param is an input stream.
-	 * @return the next encoded nonnegative long; if the result is negative, it is likely reading
-	 *         happened past EOF.
+	 * @return the next nonnegative long written by {@link #writeLong(long, OutputStream)}; if the
+	 *         result is negative, it is likely reading happened past EOF.
 	 *
 	 */
-	public static long decode(final InputStream is) throws IOException {
+	public static long readLong(final InputStream is) throws IOException {
 		// Note that alternatively one can switch on Long.numberOfLeadingZeros(~x << 56), but it appears to
 		// be slower
 		final long x = is.read();
@@ -169,4 +177,52 @@ public class VariableLengthByteCoder {
 		if (x < 0xFF) return ((long)is.read() << 48 | (long)is.read() << 40 | (long)is.read() << 32 | (long)is.read() << 24 | is.read() << 16 | is.read() << 8 | is.read()) + UPPER_BOUND_7;
 		return ((long)is.read() << 56 | (long)is.read() << 48 | (long)is.read() << 40 | (long)is.read() << 32 | (long)is.read() << 24 | is.read() << 16 | is.read() << 8 | is.read());
 	}
+
+	/**
+	 * Writes a byte array by encoding its length using {@link #writeLong(long, OutputStream)}, and then
+	 * writing the array.
+	 *
+	 * @param array a byte array.
+	 * @param os an output stream.
+	 */
+	public static void writeByteArray(final byte[] array, final OutputStream os) throws IOException {
+		writeLong(array.length, os);
+		os.write(array);
+	}
+
+	/**
+	 * Reads a byte array written by {@link #writeByteArray(byte[], OutputStream)}.
+	 *
+	 * @param is an input stream.
+	 * @return the next byte array written by {@link #writeByteArray(byte[], OutputStream)}.
+	 */
+	public static byte[] readByteArray(final InputStream is) throws IOException {
+		final long length = readLong(is);
+		if (length > Integer.MAX_VALUE) throw new IOException();
+		byte[] array = new byte[(int)length];
+		if (is.read(array) < array.length) throw new EOFException();
+		return array;
+	}
+
+	/**
+	 * Writes a string by encoding it in UTF-8 and writing the result byte array using
+	 * {@link #writeByteArray(byte[], OutputStream)}.
+	 *
+	 * @param s a string.
+	 * @param os an output stream.
+	 */
+	public static void writeString(final String s, final OutputStream os) throws IOException {
+		writeByteArray(s.getBytes(StandardCharsets.UTF_8), os);
+	}
+
+	/**
+	 * Reads a string written by {@link #writeString(String, OutputStream)}.
+	 *
+	 * @param is an input stream.
+	 * @return the next string written by {@link #writeString(String, OutputStream)}.
+	 */
+	public static String readString(final InputStream is) throws IOException {
+		return new String(readByteArray(is), StandardCharsets.UTF_8);
+	}
+
 }

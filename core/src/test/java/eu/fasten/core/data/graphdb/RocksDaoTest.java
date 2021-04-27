@@ -18,33 +18,48 @@
 
 package eu.fasten.core.data.graphdb;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.math3.util.Pair;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
+
+import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.DYNAMIC;
+import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.INTERFACE;
+import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.STATIC;
+import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type.VIRTUAL;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class RocksDaoTest {
 
+    private File rocksDaoDir;
     private RocksDao rocksDao;
 
     @BeforeEach
-    public void setUp() throws RocksDBException {
-        rocksDao = new RocksDao("graphDB", false);
+    public void setUp() throws RocksDBException, IOException {
+        rocksDaoDir = Files.createTempDirectory(RocksDaoTest.class.getSimpleName()).toFile();
+        rocksDao = new RocksDao(rocksDaoDir.toString(), false);
     }
 
     @AfterEach
     public void tearDown() throws IOException {
         rocksDao.close();
-        FileUtils.deleteDirectory(new File("graphDB"));
+        FileUtils.deleteDirectory(rocksDaoDir);
     }
 
     @Test
@@ -57,6 +72,7 @@ public class RocksDaoTest {
                 "   \"numInternalNodes\": 2,\n" +
                 "   \"edges\": [\n" +
                 "      [0, 1],\n" +
+                "      [0, 2],\n" +
                 "      [1, 2]\n" +
                 "   ],\n" +
                 "   \"callsites_info\": {\n" +
@@ -65,6 +81,18 @@ public class RocksDaoTest {
                 "            \"line\": 5,\n" +
                 "            \"call_type\": \"static\",\n" +
                 "            \"receiver_type_ids\": [1,2]\n" +
+                "         }\n" +
+                "      ],\n" +
+                "      \"[0, 2]\": [\n" +
+                "         {\n" +
+                "            \"line\": 12,\n" +
+                "            \"call_type\": \"static\",\n" +
+                "            \"receiver_namespace\": \"/java.lang/String\"\n" +
+                "         },\n" +
+                "         {\n" +
+                "            \"line\": 13,\n" +
+                "            \"call_type\":\"virtual\",\n" +
+                "            \"receiver_namespace\": \"/product/Interface\"\n" +
                 "         }\n" +
                 "      ],\n" +
                 "      \"[1, 2]\": [\n" +
@@ -76,9 +104,9 @@ public class RocksDaoTest {
                 "      ]\n" +
                 "   },\n" +
                 "   \"gid_to_uri\": {\n" +
-                "   \t\t\"0\": \"fasten_uri1\",\n" +
-                "   \t\t\"1\": \"fasten_uri2\",\n" +
-                "   \t\t\"2\": \"fasten_uri3\"\n" +
+                "   \t\t\"0\": \"/java.lang/String.get()long\",\n" +
+                "   \t\t\"1\": \"/java.lang/Object.hashCode()int\",\n" +
+                "   \t\t\"2\": \"/my.package/Klass.method(int)int\"\n" +
                 "   }\n" +
                 "}");
         var graph = ExtendedGidGraph.getGraph(json);
@@ -87,13 +115,30 @@ public class RocksDaoTest {
         assertEquals(graph.getNumInternalNodes(), graphData.nodes().size() - graphData.externalNodes().size());
         assertEquals(graph.getNodes().size(), graphData.nodes().size());
         assertEquals(new LongOpenHashSet(graph.getNodes()), graphData.nodes());
-        assertEquals(new LongArrayList(List.of(1L)), graphData.successors(0L));
+        assertEquals(LongList.of(1L, 2L), graphData.successors(0L));
         assertEquals(new LongArrayList(List.of(2L)), graphData.successors(1L));
         assertEquals(new LongArrayList(List.of(0L)), graphData.predecessors(1L));
-        assertEquals(new LongArrayList(List.of(1L)), graphData.predecessors(2L));
+        assertEquals(LongList.of(0L, 1L), graphData.predecessors(2L));
         assertEquals(graph.getEdges().size(), graphData.numArcs());
         assertEquals(new LongOpenHashSet(List.of(2L)), graphData.externalNodes());
         assertEquals(new HashSet<>(graph.getNodes()), graph.getGidToUriMap().keySet());
+
+        GraphMetadata graphMetadata = rocksDao.getGraphMetadata(graph.getIndex(), graphData);
+        assertEquals(
+                new GraphMetadata.NodeMetadata("/java.lang/String", "get()/java.lang/long",
+                List.of(new ReceiverRecord(5, STATIC, "/java.lang/String"),
+                new ReceiverRecord(12, INTERFACE, "/product/Interface"),
+                new ReceiverRecord(12, STATIC, "/java.lang/String"),
+                new ReceiverRecord(13, VIRTUAL, "/product/Interface"))), 
+                graphMetadata.gid2NodeMetadata.get(0));
+        assertEquals(
+                new GraphMetadata.NodeMetadata("/java.lang/Object", "hashCode()/java.lang/int",
+                List.of(new ReceiverRecord(25, DYNAMIC, "/java.lang/Object"))), 
+                graphMetadata.gid2NodeMetadata.get(1));    
+        assertEquals(
+                new GraphMetadata.NodeMetadata("/my.package/Klass", "method(/my.package/int)/my.package/int",
+                List.of()), 
+                graphMetadata.gid2NodeMetadata.get(2));    
     }
 
     @Test
