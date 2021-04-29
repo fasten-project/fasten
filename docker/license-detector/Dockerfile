@@ -53,7 +53,7 @@ ENTRYPOINT java $JVM_MEM_MAX --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
 # Stage 2b: packaging (skips JARs generation) #
 ###############################################
 
-FROM openjdk:11-jre-slim AS package-ci
+FROM maven:3.8.1-openjdk-11-slim AS package-ci
 
 WORKDIR /
 
