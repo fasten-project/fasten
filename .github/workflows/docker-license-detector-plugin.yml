@@ -24,7 +24,6 @@ jobs:
   push:
 
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push'
 
     steps:
       - name: Checkout repo
