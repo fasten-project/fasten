@@ -1259,8 +1259,8 @@ public class MetadataDao {
 
             try {
                 var uriObject = FastenUriUtils.parsePartialFastenUri(uri);
-                jObj.put("methodName", uriObject.get(2));
-                jObj.put("methodArgs", uriObject.get(3));
+                jObj.put("method_name", uriObject.get(2));
+                jObj.put("method_args", uriObject.get(3));
             } catch (IllegalArgumentException err) {
                 logger.warn("Error FASTEN URI Parser: " + err.toString());
             }
