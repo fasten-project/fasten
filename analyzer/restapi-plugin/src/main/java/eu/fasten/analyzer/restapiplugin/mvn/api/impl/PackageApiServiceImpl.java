@@ -112,6 +112,9 @@ public class PackageApiServiceImpl implements PackageApiService {
     @Override
     public ResponseEntity<String> searchPackageNames(String packageName, int offset, int limit) {
         var result = KnowledgeBaseConnector.kbDao.searchPackageNames(packageName, offset, limit);
+        if (result == null) {
+            return new ResponseEntity<>("Packages version not found", HttpStatus.NOT_FOUND);
+        }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
