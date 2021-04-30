@@ -22,6 +22,7 @@ import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.graphdb.GraphMetadata;
 import eu.fasten.core.data.graphdb.RocksDao;
 import java.text.DecimalFormat;
 import java.util.stream.Collectors;
@@ -253,33 +254,47 @@ public class DatabaseMerger {
 
         final long startTime = System.currentTimeMillis();
 
-        var cursor = getArcs(callGraphData, dbContext);
-        while (cursor.hasNext()) {
-            var arcRecord = cursor.fetchNext();
-            if (arcRecord == null) {
-                continue;
-            }
-            final var typeNamesMap = getTypeUrisMap(List.of(arcRecord));
-            var arc = new Arc(arcRecord.getSourceId(), arcRecord.getTargetId(), arcRecord);
-            try {
-                if (callGraphData.isExternal(arc.target)) {
-                    var node = typeMap.containsKey(arc.target) ? typeMap.get(arc.target) : fetchMissingNode(arc.target, dbContext);
-                    if (!resolve(result, callGraphData, arc, node, false, typeNamesMap)) {
-                        addEdge(result, callGraphData, arc.source, arc.target, false);
-                    }
-                } else {
-                    var node = typeMap.containsKey(arc.source) ? typeMap.get(arc.source) : fetchMissingNode(arc.source, dbContext);
-                    if (!resolve(result, callGraphData, arc, node, callGraphData.isExternal(arc.source), typeNamesMap)) {
-                        addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
-                    }
-                }
-            } catch (RuntimeException e) {
-                logger.warn(e.getMessage());
-                if (!ignoreMissing) {
-                    throw e;
-                }
+        var graphArcs = getArcs(artifactId, callGraphData, rocksDao);
+        if (graphArcs == null) {
+            return null;
+        }
+        for (var entry : graphArcs.gid2NodeMetadata.long2ObjectEntrySet()) {
+            var sourceId = entry.getLongKey();
+            var nodeMetadata = entry.getValue();
+            for (var receiver : nodeMetadata.receiverRecords) {
+//                TODO: How to proceed?
             }
         }
+
+
+
+//        var cursor = getArcs(callGraphData, dbContext);
+//        while (cursor.hasNext()) {
+//            var arcRecord = cursor.fetchNext();
+//            if (arcRecord == null) {
+//                continue;
+//            }
+//            final var typeNamesMap = getTypeUrisMap(List.of(arcRecord));
+//            var arc = new Arc(arcRecord.getSourceId(), arcRecord.getTargetId(), arcRecord);
+//            try {
+//                if (callGraphData.isExternal(arc.target)) {
+//                    var node = typeMap.containsKey(arc.target) ? typeMap.get(arc.target) : fetchMissingNode(arc.target, dbContext);
+//                    if (!resolve(result, callGraphData, arc, node, false, typeNamesMap)) {
+//                        addEdge(result, callGraphData, arc.source, arc.target, false);
+//                    }
+//                } else {
+//                    var node = typeMap.containsKey(arc.source) ? typeMap.get(arc.source) : fetchMissingNode(arc.source, dbContext);
+//                    if (!resolve(result, callGraphData, arc, node, callGraphData.isExternal(arc.source), typeNamesMap)) {
+//                        addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
+//                    }
+//                }
+//            } catch (RuntimeException e) {
+//                logger.warn(e.getMessage());
+//                if (!ignoreMissing) {
+//                    throw e;
+//                }
+//            }
+//        }
 
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
@@ -387,27 +402,13 @@ public class DatabaseMerger {
      * @param dbContext     DSL context
      * @return list of external and constructor calls
      */
-    private Cursor<CallSitesRecord> getArcs(final DirectedGraph callGraphData, final DSLContext dbContext) {
-        Condition arcsCondition = null;
-        for (var source : callGraphData.nodes()) {
-            for (var target : callGraphData.successors(source)) {
-                if (callGraphData.isExternal(target)
-                        || callGraphData.isExternal(source)
-                        || source.equals(target)) {
-                    if (arcsCondition == null) {
-                        arcsCondition = CallSites.CALL_SITES.SOURCE_ID.eq(source)
-                                .and(CallSites.CALL_SITES.TARGET_ID.eq(target));
-                    } else {
-                        arcsCondition = arcsCondition.or(CallSites.CALL_SITES.SOURCE_ID.eq(source)
-                                .and(CallSites.CALL_SITES.TARGET_ID.eq(target)));
-                    }
-                }
-            }
+    private GraphMetadata getArcs(final long index, final DirectedGraph callGraphData, final RocksDao rocksDao) {
+        try {
+            return rocksDao.getGraphMetadata(index, callGraphData);
+        } catch (RocksDBException e) {
+            logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
+            return null;
         }
-        return dbContext.selectFrom(CallSites.CALL_SITES)
-                .where(arcsCondition)
-                .fetchSize(10000)
-                .fetchLazy();
     }
 
     /**
