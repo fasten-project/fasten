@@ -121,20 +121,17 @@ public class DatabaseMerger {
      */
     private static class Arc {
         private final Long source;
-        private final Long target;
-        private final CallSitesRecord callSite;
+        private final GraphMetadata.ReceiverRecord target;
 
         /**
          * Create new Arc instance.
          *
          * @param source    source ID
          * @param target    target ID
-         * @param callSite  call-site info
          */
-        public Arc(final Long source, final Long target, final CallSitesRecord callSite) {
+        public Arc(final Long source, final GraphMetadata.ReceiverRecord target) {
             this.source = source;
             this.target = target;
-            this.callSite = callSite;
         }
     }
 
@@ -153,6 +150,11 @@ public class DatabaseMerger {
         public Node(final FastenJavaURI uri) {
             this.typeUri = "/" + uri.getNamespace() + "/" + uri.getClassName();
             this.signature = StringUtils.substringAfter(uri.getEntity(), ".");
+        }
+
+        public Node (final String typeUri, final String signature) {
+            this.typeUri = typeUri;
+            this.signature = signature;
         }
 
         /**
@@ -246,8 +248,6 @@ public class DatabaseMerger {
             return null;
         }
 
-        final var typeMap = createTypeMap(callGraphData, dbContext);
-
         var result = new ArrayImmutableDirectedGraph.Builder();
 
         cloneNodesAndArcs(result, callGraphData);
@@ -262,40 +262,11 @@ public class DatabaseMerger {
             var sourceId = entry.getLongKey();
             var nodeMetadata = entry.getValue();
             for (var receiver : nodeMetadata.receiverRecords) {
-//                TODO: How to proceed?
+                var arc = new Arc(sourceId, receiver);
+                var node = new Node(nodeMetadata.type, nodeMetadata.signature);
+                resolve(result, callGraphData, arc, node, callGraphData.isExternal(sourceId));
             }
         }
-
-
-
-//        var cursor = getArcs(callGraphData, dbContext);
-//        while (cursor.hasNext()) {
-//            var arcRecord = cursor.fetchNext();
-//            if (arcRecord == null) {
-//                continue;
-//            }
-//            final var typeNamesMap = getTypeUrisMap(List.of(arcRecord));
-//            var arc = new Arc(arcRecord.getSourceId(), arcRecord.getTargetId(), arcRecord);
-//            try {
-//                if (callGraphData.isExternal(arc.target)) {
-//                    var node = typeMap.containsKey(arc.target) ? typeMap.get(arc.target) : fetchMissingNode(arc.target, dbContext);
-//                    if (!resolve(result, callGraphData, arc, node, false, typeNamesMap)) {
-//                        addEdge(result, callGraphData, arc.source, arc.target, false);
-//                    }
-//                } else {
-//                    var node = typeMap.containsKey(arc.source) ? typeMap.get(arc.source) : fetchMissingNode(arc.source, dbContext);
-//                    if (!resolve(result, callGraphData, arc, node, callGraphData.isExternal(arc.source), typeNamesMap)) {
-//                        addEdge(result, callGraphData, arc.source, arc.target, callGraphData.isExternal(arc.source));
-//                    }
-//                }
-//            } catch (RuntimeException e) {
-//                logger.warn(e.getMessage());
-//                if (!ignoreMissing) {
-//                    throw e;
-//                }
-//            }
-//        }
-
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
         logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
@@ -312,20 +283,14 @@ public class DatabaseMerger {
      * @param node          type and method information
      * @param isCallback    true, if a given arc is a callback
      */
-    private boolean resolve(final ArrayImmutableDirectedGraph.Builder result,
+    private void resolve(final ArrayImmutableDirectedGraph.Builder result,
                             final DirectedGraph callGraphData,
                             final Arc arc,
                             final Node node,
-                            final boolean isCallback,
-                            Map<Long, String> typeMap) {
-        var added = false;
-        if (node.isConstructor()) {
-            added = resolveInitsAndConstructors(result, callGraphData, arc, node, isCallback);
-        }
-
-        for (int i = 0; i < arc.callSite.getReceiverTypeIds().length; i++) {
-            var receiverTypeUri = typeMap.get(arc.callSite.getReceiverTypeIds()[i]);
-            var type = arc.callSite.getCallType().getLiteral();
+                            final boolean isCallback) {
+        var receivers = arc.target.receiverUris.replace("[", "").replace("]", "").split(",");
+        for (String receiverTypeUri : receivers) {
+            var type = arc.target.type.toString();
             switch (type) {
                 case "virtual":
                 case "interface":
@@ -333,73 +298,30 @@ public class DatabaseMerger {
                     if (types != null) {
                         for (final var depTypeUri : types) {
                             for (final var target : typeDictionary.getOrDefault(depTypeUri,
-                                new HashMap<>())
-                                .getOrDefault(node.signature, new HashSet<>())) {
+                                    new HashMap<>())
+                                    .getOrDefault(node.signature, new HashSet<>())) {
                                 addEdge(result, callGraphData, arc.source, target, isCallback);
-                                added = true;
                             }
                         }
                     }
-                    break;
-                case "special":
-                    added = resolveInitsAndConstructors(result, callGraphData, arc, node,
-                        isCallback);
                     break;
                 case "dynamic":
                     logger.warn("OPAL didn't rewrite the dynamic");
                     break;
                 default:
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
-                        new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
+                            new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                         addEdge(result, callGraphData, arc.source, target, isCallback);
-                        added = true;
                     }
                     break;
             }
         }
-        return added;
-    }
-
-    /**
-     * Resolves constructors.
-     *
-     * @param result        {@link DirectedGraph} with resolved calls
-     * @param callGraphData graph for the artifact to resolve
-     * @param arc           source, target and receivers information
-     * @param node          type and method information
-     * @param isCallback    true, if a given arc is a callback
-     */
-    private boolean resolveInitsAndConstructors(final ArrayImmutableDirectedGraph.Builder result,
-                                                final DirectedGraph callGraphData,
-                                                final Arc arc,
-                                                final Node node,
-                                                final boolean isCallback) {
-        var added = false;
-        final var typeList = universalParents.get(node.typeUri);
-        if (typeList != null) {
-            for (final var superTypeUri : typeList) {
-                for (final var target : typeDictionary.getOrDefault(superTypeUri,
-                        new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
-                    addEdge(result, callGraphData, arc.source, target, isCallback);
-                    added = true;
-                }
-
-                var superSignature = "<clinit>()/java.lang/VoidType";
-                for (final var target : typeDictionary.getOrDefault(superTypeUri,
-                        new HashMap<>()).getOrDefault(superSignature, new HashSet<>())) {
-                    addEdge(result, callGraphData, arc.source, target, isCallback);
-                    added = true;
-                }
-            }
-        }
-        return added;
     }
 
     /**
      * Retrieve external calls and constructor calls from a call graph.
      *
      * @param callGraphData call graph
-     * @param dbContext     DSL context
      * @return list of external and constructor calls
      */
     private GraphMetadata getArcs(final long index, final DirectedGraph callGraphData, final RocksDao rocksDao) {
