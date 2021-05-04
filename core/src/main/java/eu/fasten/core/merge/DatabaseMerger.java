@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -44,7 +43,6 @@ import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jooq.Condition;
-import org.jooq.Cursor;
 import org.jooq.DSLContext;
 import org.jooq.Record3;
 import org.json.JSONObject;
@@ -56,15 +54,12 @@ public class DatabaseMerger {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseMerger.class);
 
-    private final Map<String, Set<String>> universalParents;
     private final Map<String, Set<String>> universalChildren;
     private final Map<String, Map<String, Set<Long>>> typeDictionary;
     private final DSLContext dbContext;
     private final RocksDao rocksDao;
     private final Set<Long> dependencySet;
     private Map<Long, String> namespaceMap;
-
-    private boolean ignoreMissing;
 
     /**
      * Create instance of database merger from package names.
@@ -79,12 +74,8 @@ public class DatabaseMerger {
         this.rocksDao = rocksDao;
         this.dependencySet = getDependenciesIds(dependencySet, dbContext);
         final var universalCHA = createUniversalCHA(this.dependencySet, dbContext, rocksDao);
-
-        this.universalParents = universalCHA.getLeft();
         this.universalChildren = universalCHA.getRight();
         this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
-
-        this.ignoreMissing = false;
     }
 
     /**
@@ -100,20 +91,9 @@ public class DatabaseMerger {
         this.rocksDao = rocksDao;
         this.dependencySet = dependencySet;
         final var universalCHA = createUniversalCHA(dependencySet, dbContext, rocksDao);
-
-        this.universalParents = universalCHA.getLeft();
         this.universalChildren = universalCHA.getRight();
         this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
 
-        this.ignoreMissing = false;
-    }
-
-    public boolean getIgnoreMissing() {
-        return ignoreMissing;
-    }
-
-    public void setIgnoreMissing(final boolean ignoreMissing) {
-        this.ignoreMissing = ignoreMissing;
     }
 
     /**
@@ -212,15 +192,6 @@ public class DatabaseMerger {
         }
 
         return result;
-    }
-
-    public Map<Long, String> getTypeUrisMap(final List<CallSitesRecord> callSites) {
-        var ids = new HashSet<Long>();
-        callSites.forEach(c -> ids.addAll(Arrays.asList(c.getReceiverTypeIds())));
-        var result = dbContext.selectFrom(ModuleNames.MODULE_NAMES).where(ModuleNames.MODULE_NAMES.ID.in(ids)).fetch();
-        var map = new HashMap<Long, String>(result.size());
-        result.forEach(r -> map.put(r.getId(), r.getName()));
-        return map;
     }
 
     /**
@@ -369,48 +340,6 @@ public class DatabaseMerger {
                 .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
                 .fetchOne())
                 .component1();
-    }
-
-    /**
-     * Create a mapping from callable IDs to {@link Node}.
-     *
-     * @param callGraphData call graph
-     * @param dbContext     DSL context
-     * @return a map of callable IDs and {@link Node}
-     */
-    private Map<Long, Node> createTypeMap(final DirectedGraph callGraphData, final DSLContext dbContext) {
-        var typeMap = new HashMap<Long, Node>();
-        var nodesIds = callGraphData.nodes();
-        var callables = dbContext
-                .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.ID.in(nodesIds))
-                .fetch();
-
-        callables.forEach(callable -> typeMap.put(callable.value1(),
-                new Node(FastenJavaURI.create(callable.value2()).decanonicalize())));
-        return typeMap;
-    }
-
-    /**
-     * Tries to fetch a FastenURI from a metadata database with a given callable ID or throws
-     * a new RuntimeException if no callable is found.
-     *
-     * @param callableId ID of a callable to fetch
-     * @param dbContext  DSL context
-     * @return Node
-     */
-    private Node fetchMissingNode(final Long callableId, final DSLContext dbContext) {
-        var callable = dbContext
-                .select(Callables.CALLABLES.FASTEN_URI)
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.ID.eq(callableId))
-                .fetchOne();
-        if (callable == null) {
-            throw new RuntimeException("Callable with ID " + callableId
-                    + " couldn't be found in the metadata database");
-        }
-        return new Node(FastenJavaURI.create(callable.value1()).decanonicalize());
     }
 
     /**

@@ -6,14 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.graphdb.GraphMetadata;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallType;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.CallSites;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongArraySet;
 import java.util.HashSet;
@@ -45,11 +46,11 @@ public class DatabaseMergerTest {
     private final static long BAZ_INIT = 300;
     private final static long BAZ_SUPER_METHOD = 301;
 
-    private static Map<Pair<Long, Long>, CallSitesRecord> arcs;
     private static Map<Long, String> typeDictionary;
     private static Map<Long, String> typeMap;
     private static Map<String, Pair<Long[], Long[]>> universalCHA;
     private static Map<String, Long> namespacesMap;
+    private static GraphMetadata graphMetadata;
 
     @BeforeAll
     static void setUp() {
@@ -92,15 +93,15 @@ public class DatabaseMergerTest {
                 "/test.group/Foo", 5L
         );
 
-        arcs = Map.of(
-                Pair.of(MAIN_INIT, (long) 2), new CallSitesRecord(MAIN_INIT, 2L, 6, CallType.special, new Long[] {namespacesMap.get("/java.lang/Object")}, null),
-                Pair.of(MAIN_MAIN_METHOD, (long) 3), new CallSitesRecord(MAIN_INIT, 3L, 8, CallType.special, new Long[]{namespacesMap.get("/test.group/Baz")}, null),
-                Pair.of(MAIN_MAIN_METHOD, (long) 4), new CallSitesRecord(MAIN_MAIN_METHOD, 4L, 9, CallType.virtual, new Long[]{namespacesMap.get("/test.group/Bar")}, null),
-                Pair.of(MAIN_MAIN_METHOD, (long) 4), new CallSitesRecord(MAIN_MAIN_METHOD, 4L, 12, CallType.interface_, new Long[]{namespacesMap.get("/test.group/Bar")}, null),
-                Pair.of(MAIN_MAIN_METHOD, (long) 5), new CallSitesRecord(MAIN_MAIN_METHOD, 5L, 11, CallType.special, new Long[]{namespacesMap.get("/test.group/Bar")}, null),
-                Pair.of(MAIN_MAIN_METHOD, (long) 6), new CallSitesRecord(MAIN_MAIN_METHOD, 6L, 14, CallType.static_, new Long[]{namespacesMap.get("/test.group/Foo")}, null),
-                Pair.of(MAIN_MAIN_METHOD, (long) 7), new CallSitesRecord(MAIN_MAIN_METHOD, 7L, 15, CallType.special, new Long[]{namespacesMap.get("/test.group/Foo")}, null)
-        );
+        var gid2nodeMap = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
+        gid2nodeMap.put(MAIN_INIT, new GraphMetadata.NodeMetadata("/java.lang/Object", "/java.lang/Object.%3Cinit%3E()VoidType", List.of(
+                new GraphMetadata.ReceiverRecord(6, GraphMetadata.ReceiverRecord.Type.SPECIAL, List.of("/java.lang/Object"))
+        )));
+        gid2nodeMap.put(MAIN_MAIN_METHOD, new GraphMetadata.NodeMetadata("/test.group/Main", "/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType", List.of(
+                new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.Type.SPECIAL, List.of("/test.group/Baz")),
+                new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.Type.VIRTUAL, List.of("/test.group/Bar", "/test.group/Bar", "/test.group/Foo", "/test.group/Foo"))
+        )));
+        graphMetadata = new GraphMetadata(gid2nodeMap);
     }
 
     @Test
@@ -112,6 +113,7 @@ public class DatabaseMergerTest {
 
         var rocksDao = Mockito.mock(RocksDao.class);
         Mockito.when(rocksDao.getGraphData(42)).thenReturn(directedGraph);
+        Mockito.when(rocksDao.getGraphMetadata(42, directedGraph)).thenReturn(graphMetadata);
 
         var merger = new DatabaseMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
                 context, rocksDao);
@@ -147,6 +149,7 @@ public class DatabaseMergerTest {
 
         var rocksDao = Mockito.mock(RocksDao.class);
         Mockito.when(rocksDao.getGraphData(42)).thenReturn(directedGraph.build());
+        Mockito.when(rocksDao.getGraphMetadata(42, directedGraph.build())).thenReturn(graphMetadata);
 
         var merger = new DatabaseMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
                 context, rocksDao);
@@ -184,7 +187,6 @@ public class DatabaseMergerTest {
         private final String modulesIdsQuery;
         private final String universalCHAQuery;
         private final String namespacesQuery;
-        private final String arcsQuery;
         private final String typeDictionaryQuery;
         private final String typeMapQuery;
         private final String dependenciesQuery;
@@ -203,10 +205,6 @@ public class DatabaseMergerTest {
             this.universalCHAQuery = context
                     .select(Modules.MODULES.MODULE_NAME_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
                     .from(Modules.MODULES)
-                    .getSQL();
-            this.arcsQuery = context
-                    .select(CallSites.CALL_SITES.SOURCE_ID, CallSites.CALL_SITES.TARGET_ID, CallSites.CALL_SITES.LINE, CallSites.CALL_SITES.CALL_TYPE, CallSites.CALL_SITES.RECEIVER_TYPE_IDS)
-                    .from(CallSites.CALL_SITES)
                     .getSQL();
             this.typeDictionaryQuery = context
                     .select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID)
@@ -237,9 +235,6 @@ public class DatabaseMergerTest {
             } else if (sql.startsWith(universalCHAQuery)) {
                 mock[0] = createUniversalCHA();
 
-            } else if (sql.startsWith(arcsQuery)) {
-                mock[0] = createArcs();
-
             } else if (sql.startsWith(typeDictionaryQuery)) {
                 mock[0] = createTypeDictionary();
 
@@ -268,16 +263,6 @@ public class DatabaseMergerTest {
                 result.add(context
                         .newRecord(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME)
                         .values(namespace.getValue(), namespace.getKey()));
-            }
-            return new MockResult(result.size(), result);
-        }
-
-        private MockResult createArcs() {
-            Result<Record5<Long, Long, Integer, CallType, Long[]>> result = context.newResult(CallSites.CALL_SITES.SOURCE_ID, CallSites.CALL_SITES.TARGET_ID, CallSites.CALL_SITES.LINE, CallSites.CALL_SITES.CALL_TYPE, CallSites.CALL_SITES.RECEIVER_TYPE_IDS);
-            for (var arc : arcs.entrySet()) {
-                result.add(context
-                        .newRecord(CallSites.CALL_SITES.SOURCE_ID, CallSites.CALL_SITES.TARGET_ID, CallSites.CALL_SITES.LINE, CallSites.CALL_SITES.CALL_TYPE, CallSites.CALL_SITES.RECEIVER_TYPE_IDS)
-                        .values(arc.getValue().component1(), arc.getValue().component2(), arc.getValue().component3(), arc.getValue().component4(), arc.getValue().component5()));
             }
             return new MockResult(result.size(), result);
         }

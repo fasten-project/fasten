@@ -508,7 +508,6 @@ public class SearchEngine {
 
 		stitchingTime -= System.nanoTime();
 		final DatabaseMerger dm = new DatabaseMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, rocksDao);
-		dm.setIgnoreMissing(true);
 		final var stitchedGraph = getStitchedGraph(dm, rev);
 		stitchingTime += System.nanoTime();
 
@@ -654,7 +653,6 @@ public class SearchEngine {
 
 			stitchingTime -= System.nanoTime();
 			final DatabaseMerger dm = new DatabaseMerger(dependencyIds, context, rocksDao);
-			dm.setIgnoreMissing(true);
 
 			DirectedGraph stitchedGraph = null;
 			try {
