@@ -92,15 +92,13 @@ public class DatabaseMergerTest {
         );
 
         var gid2nodeMap = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
-        gid2nodeMap.put(MAIN_INIT, new GraphMetadata.NodeMetadata("/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType", "/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType", List.of(
-                new GraphMetadata.ReceiverRecord(6, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "/java.lang/Object.%3Cinit%3E()VoidType", List.of("/java.lang/Object"))
-        )));
-        gid2nodeMap.put(MAIN_MAIN_METHOD, new GraphMetadata.NodeMetadata("/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType", "/test.group/Main.main(%2Fjava.lang%2FString%5B%5D)%2Fjava.lang%2FVoidType", List.of(
-                new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.CallType.SPECIAL,"/test.group/Baz.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType", List.of("/test.group/Baz")),
-                new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.CallType.VIRTUAL, "/test.group/Bar.superMethod()%2Fjava.lang%2FVoidType", List.of("/test.group/Bar", "/test.group/Bar")),
-                new GraphMetadata.ReceiverRecord(11, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "/test.group/Bar.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType", List.of("/test.group/Bar")),
-                new GraphMetadata.ReceiverRecord(14, GraphMetadata.ReceiverRecord.CallType.STATIC, "/test.group/Foo.staticMethod()%2Fjava.lang%2FIntegerType", List.of("/test.group/Foo")),
-                new GraphMetadata.ReceiverRecord(15, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "/test.group/Foo.%3Cinit%3E(%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType", List.of("/test.group/Foo"))
+        gid2nodeMap.put(MAIN_INIT, new GraphMetadata.NodeMetadata("/test.group/Main", "<init>()" + "/java.lang/VoidType", List.of(new GraphMetadata.ReceiverRecord(6, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>()VoidType", List.of("/java.lang/Object")))));
+        gid2nodeMap.put(MAIN_MAIN_METHOD, new GraphMetadata.NodeMetadata("/test.group/Main", "main(/java.lang/String[])/java.lang/VoidType", List.of(
+            new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.CallType.SPECIAL,"<init>(/java.lang/IntegerType,/java.lang/IntegerType,/java" + ".lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Baz")),
+            new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.CallType.VIRTUAL, "superMethod()/java.lang/VoidType", List.of("/test.group/Bar", "/test" + ".group/Bar")),
+            new GraphMetadata.ReceiverRecord(11, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java" + ".lang/IntegerType,/java.lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Bar")),
+            new GraphMetadata.ReceiverRecord(14, GraphMetadata.ReceiverRecord.CallType.STATIC, "staticMethod()/java.lang/IntegerType", List.of("/test.group/Foo")),
+            new GraphMetadata.ReceiverRecord(15, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java" + ".lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Foo"))
         )));
         graphMetadata = new GraphMetadata(gid2nodeMap);
     }

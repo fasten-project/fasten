@@ -234,7 +234,7 @@ public class DatabaseMerger {
             var nodeMetadata = entry.getValue();
             for (var receiver : nodeMetadata.receiverRecords) {
                 var arc = new Arc(sourceId, receiver);
-                var node = new Node(nodeMetadata.type, nodeMetadata.signature);
+                var node = new Node(nodeMetadata.type, receiver.receiverSignature);
                 resolve(result, callGraphData, arc, node, callGraphData.isExternal(sourceId));
             }
         }
