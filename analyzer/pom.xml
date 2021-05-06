@@ -40,6 +40,8 @@
         <module>restapi-plugin</module>
         <module>vulnerability-consumer</module>
         <module>repo-analyzer</module>
+        <module>merger-cache-invalidation-plugin</module>
+        <module>merger-cache-processor-plugin</module>
     </modules>
 
     <build>
