@@ -147,13 +147,11 @@ public class RocksDao implements Closeable {
             final Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
 
             // Gather data by source and store it in lists of GraphMetadata.ReceiverRecord.
-			edgesInfo.forEach((pair, record) -> {
-				map.compute(pair.getFirst().longValue(), (k, list) -> {
-					if (list == null) list = new ArrayList<>();
-					list.add(new ReceiverRecord(record, typeMap));
-					return list;
-				});
-			});
+			edgesInfo.forEach((pair, record) -> map.compute(pair.getFirst().longValue(), (k, list) -> {
+                if (list == null) list = new ArrayList<>();
+                list.add(new ReceiverRecord(record, typeMap));
+                return list;
+            }));
 
             final Map<Long, String> gidToUriMap = extendedGidGraph.getGidToUriMap();
 
@@ -343,9 +341,9 @@ public class RocksDao implements Closeable {
             bbo.flush();
             // Write to DB
             rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
-			final var fileProperties = new File(file.toString() + BVGraph.PROPERTIES_EXTENSION);
-			final var fileOffsets = new File(file.toString() + BVGraph.OFFSETS_EXTENSION);
-			final var fileGraph = new File(file.toString() + BVGraph.GRAPH_EXTENSION);
+			final var fileProperties = new File(file + BVGraph.PROPERTIES_EXTENSION);
+			final var fileOffsets = new File(file + BVGraph.OFFSETS_EXTENSION);
+			final var fileGraph = new File(file + BVGraph.GRAPH_EXTENSION);
             try {
                 FileUtils.forceDelete(fileProperties);
                 FileUtils.forceDelete(fileOffsets);
@@ -470,6 +468,7 @@ public class RocksDao implements Closeable {
     public boolean deleteCallGraph(final long index) {
         try {
             rocksDb.delete(defaultHandle, Longs.toByteArray(index));
+            rocksDb.delete(metadataHandle, Longs.toByteArray(index));
         } catch (final RocksDBException e) {
             logger.error("Could not delete graph with index " + index, e);
             return false;

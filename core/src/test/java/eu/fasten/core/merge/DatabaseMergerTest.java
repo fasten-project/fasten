@@ -1,28 +1,21 @@
 package eu.fasten.core.merge;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.graphdb.GraphMetadata;
 import eu.fasten.core.data.graphdb.RocksDao;
-import eu.fasten.core.data.metadatadb.codegen.enums.CallType;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongArraySet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jooq.*;
+import org.jooq.DSLContext;
+import org.jooq.Record2;
+import org.jooq.Result;
+import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.jooq.tools.jdbc.MockConnection;
 import org.jooq.tools.jdbc.MockDataProvider;
@@ -32,6 +25,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.rocksdb.RocksDBException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DatabaseMergerTest {
 
@@ -94,12 +92,15 @@ public class DatabaseMergerTest {
         );
 
         var gid2nodeMap = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
-        gid2nodeMap.put(MAIN_INIT, new GraphMetadata.NodeMetadata("/java.lang/Object", "/java.lang/Object.%3Cinit%3E()VoidType", List.of(
-                new GraphMetadata.ReceiverRecord(6, GraphMetadata.ReceiverRecord.CallType.SPECIAL, List.of("/java.lang/Object"))
+        gid2nodeMap.put(MAIN_INIT, new GraphMetadata.NodeMetadata("/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType", "/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType", List.of(
+                new GraphMetadata.ReceiverRecord(6, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "/java.lang/Object.%3Cinit%3E()VoidType", List.of("/java.lang/Object"))
         )));
-        gid2nodeMap.put(MAIN_MAIN_METHOD, new GraphMetadata.NodeMetadata("/test.group/Main", "/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType", List.of(
-                new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.CallType.SPECIAL, List.of("/test.group/Baz")),
-                new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.CallType.VIRTUAL, List.of("/test.group/Bar", "/test.group/Bar", "/test.group/Foo", "/test.group/Foo"))
+        gid2nodeMap.put(MAIN_MAIN_METHOD, new GraphMetadata.NodeMetadata("/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType", "/test.group/Main.main(%2Fjava.lang%2FString%5B%5D)%2Fjava.lang%2FVoidType", List.of(
+                new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.CallType.SPECIAL,"/test.group/Baz.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType", List.of("/test.group/Baz")),
+                new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.CallType.VIRTUAL, "/test.group/Bar.superMethod()%2Fjava.lang%2FVoidType", List.of("/test.group/Bar", "/test.group/Bar")),
+                new GraphMetadata.ReceiverRecord(11, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "/test.group/Bar.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType", List.of("/test.group/Bar")),
+                new GraphMetadata.ReceiverRecord(14, GraphMetadata.ReceiverRecord.CallType.STATIC, "/test.group/Foo.staticMethod()%2Fjava.lang%2FIntegerType", List.of("/test.group/Foo")),
+                new GraphMetadata.ReceiverRecord(15, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "/test.group/Foo.%3Cinit%3E(%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType", List.of("/test.group/Foo"))
         )));
         graphMetadata = new GraphMetadata(gid2nodeMap);
     }

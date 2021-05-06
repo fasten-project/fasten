@@ -259,8 +259,7 @@ public class DatabaseMerger {
                             final Arc arc,
                             final Node node,
                             final boolean isCallback) {
-        var receivers = arc.target.receiverUris.replace("[", "").replace("]", "").split(",");
-        for (String receiverTypeUri : receivers) {
+        for (String receiverTypeUri : arc.target.receiverTypes) {
             var type = arc.target.callType.toString();
             switch (type) {
                 case "virtual":
