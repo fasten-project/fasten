@@ -95,11 +95,11 @@ public class DatabaseMergerTest {
 
         var gid2nodeMap = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
         gid2nodeMap.put(MAIN_INIT, new GraphMetadata.NodeMetadata("/java.lang/Object", "/java.lang/Object.%3Cinit%3E()VoidType", List.of(
-                new GraphMetadata.ReceiverRecord(6, GraphMetadata.ReceiverRecord.Type.SPECIAL, List.of("/java.lang/Object"))
+                new GraphMetadata.ReceiverRecord(6, GraphMetadata.ReceiverRecord.CallType.SPECIAL, List.of("/java.lang/Object"))
         )));
         gid2nodeMap.put(MAIN_MAIN_METHOD, new GraphMetadata.NodeMetadata("/test.group/Main", "/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType", List.of(
-                new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.Type.SPECIAL, List.of("/test.group/Baz")),
-                new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.Type.VIRTUAL, List.of("/test.group/Bar", "/test.group/Bar", "/test.group/Foo", "/test.group/Foo"))
+                new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.CallType.SPECIAL, List.of("/test.group/Baz")),
+                new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.CallType.VIRTUAL, List.of("/test.group/Bar", "/test.group/Bar", "/test.group/Foo", "/test.group/Foo"))
         )));
         graphMetadata = new GraphMetadata(gid2nodeMap);
     }

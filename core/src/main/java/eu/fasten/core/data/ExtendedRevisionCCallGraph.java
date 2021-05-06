@@ -62,7 +62,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<EnumMa
      * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
-     *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
+     *                       <code> Map<{@link FastenURI}, {@link CallType}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     public ExtendedRevisionCCallGraph(final String forge, final String product, final String version,
@@ -83,7 +83,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<EnumMa
      * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
-     *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
+     *                       <code> Map<{@link FastenURI}, {@link CallType}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      * @param architecture   the architecture.
      */

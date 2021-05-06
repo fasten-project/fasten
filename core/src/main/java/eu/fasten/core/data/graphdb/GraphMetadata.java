@@ -18,10 +18,10 @@
 
 package eu.fasten.core.data.graphdb;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
+import com.google.common.collect.ImmutableList;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import it.unimi.dsi.fastutil.HashCommon;
@@ -57,18 +57,18 @@ public class GraphMetadata {
          */
         public final List<ReceiverRecord> receiverRecords;
 
-        public NodeMetadata(String type, String signature, List<ReceiverRecord> receiverRecords) {
+        public NodeMetadata(final String type, final String signature, final List<ReceiverRecord> receiverRecords) {
             this.type = type;
             this.signature = signature;
             this.receiverRecords = receiverRecords;
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(final Object obj) {
             if (this == obj) return true;
             if (obj == null) return false;
             if (getClass() != obj.getClass()) return false;
-            NodeMetadata other = (NodeMetadata) obj;
+            final NodeMetadata other = (NodeMetadata) obj;
             if (!type.equals(other.type)) return false;
             if (!signature.equals(other.signature)) return false;
             return receiverRecords.equals(other.receiverRecords);
@@ -86,7 +86,7 @@ public class GraphMetadata {
     }
 
     /**
-     * This class represent compactly a receiver record. The {@link Type} enum matches closely the
+     * This class represent compactly a receiver record. The {@link CallType} enum matches closely the
      * jOOQ-generated one in {@link eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord}.
      *
      * <p>
@@ -94,7 +94,7 @@ public class GraphMetadata {
      * immutable, no getters/setters are provided.
      */
     public static final class ReceiverRecord {
-        public enum Type {
+        public enum CallType {
             STATIC,
             DYNAMIC,
             VIRTUAL,
@@ -102,41 +102,51 @@ public class GraphMetadata {
             SPECIAL
         }
 
-        public ReceiverRecord(int line, Type type, List<String> receiverUris) {
+		/** The line of this call. */
+		public final int line;
+		/** The type of this call. */
+		public final CallType callType;
+		/** The signature of this call. */
+		public final String receiverSignature;
+		/** Possible target types for this call. */
+		public final List<String> receiverTypes;
+
+		public ReceiverRecord(final int line, final CallType callType, final String receiverSignature, final List<String> receiverTypes) {
             this.line = line;
-            this.type = type;
-            this.receiverUris = "[" + String.join(",", receiverUris) + "]";
+            this.callType = callType;
+			this.receiverSignature = receiverSignature;
+			this.receiverTypes = receiverTypes;
         }
 
-        public ReceiverRecord(CallSitesRecord record, Map<Long, String> typesMap) {
-            this.line = record.getLine();
-            this.type = Type.valueOf(record.getCallType().getLiteral().toUpperCase());
-            this.receiverUris = "[" + Arrays.stream(record.getReceiverTypeIds()).map(typesMap::get).collect(Collectors.joining(",")) + "]";
-        }
+		public ReceiverRecord(final CallSitesRecord record, final Map<Long, String> typesMap) {
+		    this.line = record.getLine();
+		    this.callType = CallType.valueOf(record.getCallType().getLiteral().toUpperCase());
 
-        public final int line;
-        public final Type type;
-        public final String receiverUris;
+			// How do we get the receiver signature?
+			this.receiverSignature = "dummy";
+			// Should we save the whole map or the values only, as in the database?
+			this.receiverTypes = ImmutableList.copyOf(typesMap.values());
+		}
 
         @Override
         public String toString() {
-            return "{line: " + line + ", type: " + type + ", receiverUris: " + receiverUris + "}";
+			return "{line: " + line + ", type: " + callType + ", receiverUris: " + receiverTypes + "}";
         }
 
         @Override
         public int hashCode() {
-            return HashCommon.mix(line + type.ordinal() + receiverUris.hashCode());
+			return HashCommon.mix(line + callType.ordinal() + receiverTypes.hashCode());
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(final Object obj) {
             if (this == obj) return true;
             if (obj == null) return false;
             if (getClass() != obj.getClass()) return false;
-            ReceiverRecord other = (ReceiverRecord) obj;
+            final ReceiverRecord other = (ReceiverRecord) obj;
             if (line != other.line) return false;
-            if (type != other.type) return false;
-            return receiverUris.equals(other.receiverUris);
+            if (callType != other.callType) return false;
+			return receiverTypes.equals(other.receiverTypes);
         }
 
     }
@@ -146,7 +156,7 @@ public class GraphMetadata {
      */
     public final Long2ObjectOpenHashMap<NodeMetadata> gid2NodeMetadata;
 
-    public GraphMetadata(Long2ObjectOpenHashMap<NodeMetadata> gid2NodeData) {
+    public GraphMetadata(final Long2ObjectOpenHashMap<NodeMetadata> gid2NodeData) {
         this.gid2NodeMetadata = gid2NodeData;
     }
 }

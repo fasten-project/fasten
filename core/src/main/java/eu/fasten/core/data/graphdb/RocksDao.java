@@ -18,17 +18,50 @@
 
 package eu.fasten.core.data.graphdb;
 
+import static eu.fasten.core.utils.VariableLengthByteCoder.readLong;
+import static eu.fasten.core.utils.VariableLengthByteCoder.readString;
+import static eu.fasten.core.utils.VariableLengthByteCoder.writeLong;
+import static eu.fasten.core.utils.VariableLengthByteCoder.writeString;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Pair;
+import org.rocksdb.ColumnFamilyDescriptor;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.CompressionType;
+import org.rocksdb.DBOptions;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.google.common.primitives.Longs;
-import eu.fasten.core.data.*;
+
+import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.ArrayImmutableDirectedGraph.Builder;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.GOV3LongFunction;
 import eu.fasten.core.data.graphdb.GraphMetadata.NodeMetadata;
 import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
-import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.Type;
+import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.CallType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.index.BVGraphSerializer;
 import eu.fasten.core.index.LayeredLabelPropagation;
@@ -36,7 +69,13 @@ import eu.fasten.core.legacy.KnowledgeBase;
 import it.unimi.dsi.Util;
 import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
-import it.unimi.dsi.fastutil.longs.*;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongIterators;
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.io.InputBitStream;
 import it.unimi.dsi.io.NullInputStream;
 import it.unimi.dsi.lang.MutableString;
@@ -45,21 +84,6 @@ import it.unimi.dsi.webgraph.ArrayListMutableGraph;
 import it.unimi.dsi.webgraph.BVGraph;
 import it.unimi.dsi.webgraph.ImmutableGraph;
 import it.unimi.dsi.webgraph.Transform;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.math3.util.Pair;
-import org.rocksdb.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.*;
-import static eu.fasten.core.utils.VariableLengthByteCoder.readLong;
-import static eu.fasten.core.utils.VariableLengthByteCoder.readString;
-import static eu.fasten.core.utils.VariableLengthByteCoder.writeLong;
-import static eu.fasten.core.utils.VariableLengthByteCoder.writeString;
 
 public class RocksDao implements Closeable {
 
@@ -78,14 +102,12 @@ public class RocksDao implements Closeable {
      */
     public RocksDao(final String dbDir, final boolean readOnly) throws RocksDBException {
         RocksDB.loadLibrary();
-        final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
-        final ColumnFamilyOptions metadataOptions = new ColumnFamilyOptions().setCompressionType(CompressionType.ZSTD_COMPRESSION);
+		final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
+		final ColumnFamilyOptions metadataOptions = new ColumnFamilyOptions().setCompressionType(CompressionType.ZSTD_COMPRESSION);
         @SuppressWarnings("resource") final DBOptions dbOptions = new DBOptions()
                 .setCreateIfMissing(true)
                 .setCreateMissingColumnFamilies(true);
-        final List<ColumnFamilyDescriptor> cfDescriptors = List.of(
-                new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions),
-                new ColumnFamilyDescriptor(METADATA_COLUMN_FAMILY, metadataOptions));
+		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), new ColumnFamilyDescriptor(METADATA_COLUMN_FAMILY, metadataOptions));
         final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
         this.rocksDb = readOnly
                 ? RocksDB.openReadOnly(dbOptions, dbDir, cfDescriptors, columnFamilyHandles)
@@ -115,81 +137,83 @@ public class RocksDao implements Closeable {
 
     public void saveToRocksDb(final GidGraph gidGraph) throws IOException, RocksDBException {
         // Save and obtain graph
-        DirectedGraph graph = saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
+        final DirectedGraph graph = saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
         if (gidGraph instanceof ExtendedGidGraph) {
             // Save metadata
-            final ExtendedGidGraph extendedGidGraph = (ExtendedGidGraph) gidGraph;
+			final ExtendedGidGraph extendedGidGraph = (ExtendedGidGraph)gidGraph;
 
-            final Map<Pair<Long, Long>, CallSitesRecord> callsInfo = extendedGidGraph.getCallsInfo();
+			final Map<Pair<Long, Long>, CallSitesRecord> edgesInfo = extendedGidGraph.getCallsInfo();
+			final Map<Long, String> typeMap = extendedGidGraph.getTypeMap();
             final Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
 
             // Gather data by source and store it in lists of GraphMetadata.ReceiverRecord.
-            callsInfo.forEach((pair, record) -> map.compute(pair.getFirst().longValue(), (k, list) -> {
-                if (list == null) {
-                    var l = new ArrayList<ReceiverRecord>();
-                    l.add(new ReceiverRecord(record, extendedGidGraph.getTypeMap()));
-                    return l;
-                }
-                list.add(new ReceiverRecord(record, extendedGidGraph.getTypeMap()));
-                return list;
-            }));
+			edgesInfo.forEach((pair, record) -> {
+				map.compute(pair.getFirst().longValue(), (k, list) -> {
+					if (list == null) list = new ArrayList<>();
+					list.add(new ReceiverRecord(record, typeMap));
+					return list;
+				});
+			});
 
             final Map<Long, String> gidToUriMap = extendedGidGraph.getGidToUriMap();
 
             // Serialize information in compact form, following the standard node enumeration order
             final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
-            for (LongIterator iterator = graph.iterator(); iterator.hasNext(); ) {
+			for (final LongIterator iterator = graph.iterator(); iterator.hasNext();) {
                 final long node = iterator.nextLong();
 
                 final FastenJavaURI uri = FastenJavaURI.create(gidToUriMap.get(node)).decanonicalize();
                 writeString("/" + uri.getNamespace() + "/" + uri.getClassName(), fbaos);
                 writeString(StringUtils.substringAfter(uri.getEntity(), "."), fbaos);
 
-                List<ReceiverRecord> list = map.get(node);
+				final List<ReceiverRecord> list = map.get(node);
                 // TODO: is this acceptable behavior?
                 if (list == null) writeLong(0, fbaos); // no data
                 else {
                     // Encode list length
                     writeLong(list.size(), fbaos);
                     // Encode elements
-                    for (var r : list) {
+					for (final var r : list) {
                         writeLong(r.line, fbaos);
-                        writeLong(r.type.ordinal(), fbaos);
-                        writeString(r.receiverUris, fbaos);
+                        writeLong(r.callType.ordinal(), fbaos);
+						writeString(r.receiverSignature, fbaos);
+						writeLong(r.receiverTypes.size(), fbaos);
+						for (final String s : r.receiverTypes) writeString(s, fbaos);
                     }
                 }
             }
-            rocksDb.put(metadataHandle, Longs.toByteArray(gidGraph.getIndex()), 0, 8, fbaos.array, 0, fbaos.length);
-        }
+			rocksDb.put(metadataHandle, Longs.toByteArray(gidGraph.getIndex()), 0, 8, fbaos.array, 0, fbaos.length);
+		}
     }
 
     /**
-     * Inserts graph (nodes and edges) into RocksDB database.
-     *
-     * @param index       Index of the graph (ID from postgres)
-     * @param nodes       List of GID nodes (first internal nodes, then external nodes)
-     * @param numInternal Number of internal nodes in nodes list
-     * @param edges       List of edges (pairs of GIDs)
-     * @return the stored {@link DirectedGraph}, or {@code null} if the provided index key is already present.
-     * @throws IOException      if there was a problem writing to files
-     * @throws RocksDBException if there was a problem inserting in the database
-     */
+	 * Inserts graph (nodes and edges) into RocksDB database.
+	 *
+	 * @param index Index of the graph (ID from postgres)
+	 * @param nodes List of GID nodes (first internal nodes, then external nodes)
+	 * @param numInternal Number of internal nodes in nodes list
+	 * @param edges List of edges (pairs of GIDs)
+	 * @return the stored {@link DirectedGraph}, or {@code null} if the provided index key is already
+	 *         present.
+	 * @throws IOException if there was a problem writing to files
+	 * @throws RocksDBException if there was a problem inserting in the database
+	 */
     public DirectedGraph saveToRocksDb(final long index, List<Long> nodes, int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
         if (this.getGraphData(index) != null) {
             logger.info("Graph with index {} is already in the database", index);
             return null;
         }
-        var internalIds = new LongArrayList(numInternal);
-        var externalIds = new LongArrayList(nodes.size() - numInternal);
+        final var internalIds = new LongArrayList(numInternal);
+        final var externalIds = new LongArrayList(nodes.size() - numInternal);
         for (int i = 0; i < numInternal; i++) {
             internalIds.add(nodes.get(i).longValue());
         }
         for (int i = numInternal; i < nodes.size(); i++) {
             externalIds.add(nodes.get(i).longValue());
         }
-        var internalNodesSet = new LongLinkedOpenHashSet(internalIds);
-        var externalNodesSet = new LongLinkedOpenHashSet(externalIds);
+        final var internalNodesSet = new LongLinkedOpenHashSet(internalIds);
+        final var externalNodesSet = new LongLinkedOpenHashSet(externalIds);
         numInternal = internalNodesSet.size();
         nodes = new LongArrayList(internalNodesSet.size() + externalNodesSet.size());
         nodes.addAll(internalNodesSet);
@@ -319,9 +343,9 @@ public class RocksDao implements Closeable {
             bbo.flush();
             // Write to DB
             rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
-            var fileProperties = new File(file + BVGraph.PROPERTIES_EXTENSION);
-            var fileOffsets = new File(file + BVGraph.OFFSETS_EXTENSION);
-            var fileGraph = new File(file + BVGraph.GRAPH_EXTENSION);
+			final var fileProperties = new File(file.toString() + BVGraph.PROPERTIES_EXTENSION);
+			final var fileOffsets = new File(file.toString() + BVGraph.OFFSETS_EXTENSION);
+			final var fileGraph = new File(file.toString() + BVGraph.GRAPH_EXTENSION);
             try {
                 FileUtils.forceDelete(fileProperties);
                 FileUtils.forceDelete(fileOffsets);
@@ -396,13 +420,13 @@ public class RocksDao implements Closeable {
     public GraphMetadata getGraphMetadata(final long index, final DirectedGraph graph) throws RocksDBException {
         final byte[] metadata = rocksDb.get(metadataHandle, Longs.toByteArray(index));
         if (metadata != null) {
-            Long2ObjectOpenHashMap<NodeMetadata> map = new Long2ObjectOpenHashMap<>();
+            final Long2ObjectOpenHashMap<NodeMetadata> map = new Long2ObjectOpenHashMap<>();
 
             final FastByteArrayInputStream fbais = new FastByteArrayInputStream(metadata);
 
             try {
                 // Deserialize map following the standard node enumeration order
-                for (LongIterator iterator = graph.iterator(); iterator.hasNext(); ) {
+				for (final LongIterator iterator = graph.iterator(); iterator.hasNext();) {
                     final long node = iterator.nextLong();
 
                     final String type = readString(fbais);
@@ -413,14 +437,21 @@ public class RocksDao implements Closeable {
                     if (length == 0) list = Collections.emptyList();
                     else {
                         list = new ArrayList<>();
-                        for (long i = 0; i < length; i++)
-                            list.add(new ReceiverRecord((int) readLong(fbais), Type.values()[(int) readLong(fbais)], Arrays.asList(readString(fbais).replace("[", "").replace("]", "").split(","))));
+						for (long i = 0; i < length; i++) {
+							final int line = (int)readLong(fbais);
+							final CallType callType = CallType.values()[(int)readLong(fbais)];
+							final String receiverSignature = readString(fbais);
+							final int size = (int)readLong(fbais);
+							final ArrayList<String> t = new ArrayList<>();
+							for (int j = 0; j < size; j++) t.add(readString(fbais));
+							list.add(new ReceiverRecord(line, callType, receiverSignature, t));
+						}
                     }
 
                     // Make the list immutable
                     map.put(node, new NodeMetadata(type, signature, List.copyOf(list)));
                 }
-            } catch (IOException cantHappen) {
+            } catch (final IOException cantHappen) {
                 // Not really I/O
                 throw new RuntimeException(cantHappen.getCause());
             }
@@ -436,10 +467,10 @@ public class RocksDao implements Closeable {
      * @param index Index of thr graph (package_version.id)
      * @return true if deleted successfully, false otherwise
      */
-    public boolean deleteCallGraph(long index) {
+    public boolean deleteCallGraph(final long index) {
         try {
             rocksDb.delete(defaultHandle, Longs.toByteArray(index));
-        } catch (RocksDBException e) {
+        } catch (final RocksDBException e) {
             logger.error("Could not delete graph with index " + index, e);
             return false;
         }
