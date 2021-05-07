@@ -89,8 +89,7 @@ public class LocalMerger {
          * @param toResolve call graph
          */
         public CGHA(final ExtendedRevisionJavaCallGraph toResolve) {
-            this.graph = null;
-//            this.graph = new ConcurrentHashMap<>(toResolve.getGraph().getResolvedCalls()); // TODO: What to do here?
+            this.graph = new ConcurrentHashMap<>(toResolve.getGraph().getResolvedCalls());
             var classHierarchy = HashBiMap.create(toResolve.getClassHierarchy()
                     .getOrDefault(JavaScope.resolvedTypes, HashBiMap.create()));
             this.CHA = new ConcurrentHashMap<>();
