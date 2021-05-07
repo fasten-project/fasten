@@ -17,14 +17,29 @@
  */
 package eu.fasten.analyzer.mergercacheinvalidationplugin;
 
+import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 
 @CommandLine.Command(name = "MergerCacheInvalidationPlugin")
 public class Main implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
+
+    @CommandLine.Option(names = {"-f", "--file"},
+            paramLabel = "JSON_FILE",
+            description = "Path to JSON file which contains product and its version")
+    String jsonFile;
+
+    @CommandLine.Option(names = {"-dg", "--depgraph-path"},
+            paramLabel = "DEP_GRAPH_PATH",
+            description = "The directory of the dependency graph")
+    String depGraphPath;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
@@ -33,6 +48,17 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-
+        var cacheInvalidationPlugin = new MergerCacheInvalidationPlugin.MergerCacheInvalidationExtension();
+        cacheInvalidationPlugin.loadGraphResolver(depGraphPath);
+        final FileReader reader;
+        try {
+            reader = new FileReader(jsonFile);
+        } catch (FileNotFoundException e) {
+            logger.error("Could not find the JSON file at " + jsonFile, e);
+            return;
+        }
+        final JSONObject input = new JSONObject(new JSONTokener(reader));
+        cacheInvalidationPlugin.consume(input.toString());
     }
+
 }
