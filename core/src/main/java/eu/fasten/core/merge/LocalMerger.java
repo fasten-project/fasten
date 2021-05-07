@@ -553,8 +553,13 @@ public class LocalMerger {
                 .product(artifact.product)
                 .timestamp(artifact.timestamp)
                 .version(artifact.version)
-                .graph(new JavaGraph(artifact.getGraph().getCallSites()))
+                .graph(new JavaGraph(artifact.getGraph().getInternalCalls(),
+                    artifact.getGraph().getExternalCalls(),
+                    result.graph))
                 .nodeCount(result.nodeCount.get())
                 .build();
+
+
+
     }
 }

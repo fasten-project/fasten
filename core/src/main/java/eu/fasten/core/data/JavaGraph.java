@@ -19,6 +19,7 @@
 package eu.fasten.core.data;
 
 import it.unimi.dsi.fastutil.ints.IntIntPair;
+import java.util.concurrent.ConcurrentMap;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.HashMap;
@@ -63,6 +64,13 @@ public class JavaGraph extends Graph {
      */
     public JavaGraph() {
         this.callSites = new HashMap<>();
+    }
+
+    public JavaGraph(Map<IntIntPair, Map<Object, Object>> internalCalls,
+                     Map<IntIntPair, Map<Object, Object>> externalCalls,
+                     ConcurrentMap<IntIntPair, Map<Object, Object>> resolvedCalls) {
+        super(internalCalls,externalCalls,resolvedCalls);
+        callSites = new HashMap<>();
     }
 
     public Map<IntIntPair, Map<Object, Object>> getCallSites() {
