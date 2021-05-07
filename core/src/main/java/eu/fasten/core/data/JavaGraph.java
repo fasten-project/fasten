@@ -66,11 +66,11 @@ public class JavaGraph extends Graph {
         this.callSites = new HashMap<>();
     }
 
-    public JavaGraph(Map<IntIntPair, Map<Object, Object>> internalCalls,
+    public JavaGraph(Map<IntIntPair, Map<Object, Object>> callSites,
                      Map<IntIntPair, Map<Object, Object>> externalCalls,
                      ConcurrentMap<IntIntPair, Map<Object, Object>> resolvedCalls) {
-        super(internalCalls,externalCalls,resolvedCalls);
-        callSites = new HashMap<>();
+        super(new HashMap<>(), externalCalls, resolvedCalls);
+        this.callSites = callSites;
     }
 
     public Map<IntIntPair, Map<Object, Object>> getCallSites() {

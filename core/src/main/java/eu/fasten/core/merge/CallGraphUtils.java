@@ -116,13 +116,13 @@ public class CallGraphUtils {
             result.put("internalTypes",
                 getEdges(ercg.getGraph().getCallSites(), methods, types));
         }
-//        result.put("resolvedTypes",
-//            getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
-//
-//        if (includeExternals) {
-//            result.put("externalTypes",
-//                getEdges(ercg.getGraph().getExternalCalls(), methods, types));
-//        }
+        result.put("resolvedTypes",
+            getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
+
+        if (includeExternals) {
+            result.put("externalTypes",
+                getEdges(ercg.getGraph().getExternalCalls(), methods, types));
+        }
 
         return result;
     }

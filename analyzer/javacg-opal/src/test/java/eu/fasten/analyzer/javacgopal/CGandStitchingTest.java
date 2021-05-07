@@ -136,7 +136,7 @@ public class CGandStitchingTest {
                 "//Parent.class$0.0.0/merge.hashCode/Parent.hashCode()/java.lang/IntegerType\n\n",
             toString(merged));
 
-        Assertions.  assertEquals(
+        Assertions.assertEquals(
             "/merge.hashCode/User.<init>()/java.lang/VoidType '->'\n" +
                 "/java.lang/Object.<init>()/java.lang/VoidType\n" +
                 "\n" +
