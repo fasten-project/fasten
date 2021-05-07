@@ -136,7 +136,7 @@ CREATE TABLE call_sites
 -- CREATE INDEX CONCURRENTLY files_package_version_id ON files USING btree (package_version_id);
 -- CREATE INDEX CONCURRENTLY modules_package_version_id ON modules USING btree (package_version_id);
 -- CREATE INDEX CONCURRENTLY module_contents_module_id ON module_contents USING btree (module_id);
--- CREATE INDEX CONCURRENTLY module_contents_file_id ON module_contents USING btree (file_id);
+CREATE INDEX CONCURRENTLY module_contents_file_id ON module_contents USING btree (file_id);
 -- CREATE INDEX CONCURRENTLY binary_modules_package_version_id ON binary_modules USING btree (package_version_id);
 -- CREATE INDEX CONCURRENTLY binary_module_contents_binary_module_id ON binary_module_contents USING btree (binary_module_id);
 -- CREATE INDEX CONCURRENTLY binary_module_contents_file_id ON binary_module_contents USING btree (file_id);
