@@ -179,8 +179,7 @@ public class LocalMerger {
 
         if (allUris.containsValue(uri)) {
             return allUris.inverse().get(uri);
-        }
-        else {
+        } else {
             final var updatedNode = node + offset;
             this.allUris.put(updatedNode, uri);
             return updatedNode;
@@ -206,8 +205,8 @@ public class LocalMerger {
         final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
 
         artifact.getGraph().getCallSites().entrySet().parallelStream().forEach(arc ->
-            processArc(universalParents, universalChildren, typeDictionary, result,
-                externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc, true));  // TODO: Should it be true or false?
+                processArc(universalParents, universalChildren, typeDictionary, result,
+                        externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc));
         return buildRCG(artifact, result);
     }
 
@@ -217,36 +216,27 @@ public class LocalMerger {
                             final CGHA result,
                             final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
                             final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
-                            final Map.Entry<IntIntPair, Map<Object, Object>> arc,
-                            final boolean isInternal) {
+                            final Map.Entry<IntIntPair, Map<Object, Object>> arc) {
         final var targetKey = arc.getKey().secondInt();
         final var sourceKey = arc.getKey().firstInt();
 
         boolean isCallBack = false;
         int nodeKey = targetKey;
-        JavaType type =
-            getType(externalNodeIdToTypeMap, internalNodeIdToTypeMap, isInternal, targetKey);
-
+        JavaType type = null;
+        if (internalNodeIdToTypeMap.containsKey(targetKey)) {
+            type = internalNodeIdToTypeMap.get(targetKey);
+        }
+        if (externalNodeIdToTypeMap.containsKey(targetKey)) {
+            type = externalNodeIdToTypeMap.get(targetKey);
+        }
         if (externalNodeIdToTypeMap.containsKey(sourceKey)) {
-            type = getType(externalNodeIdToTypeMap, internalNodeIdToTypeMap, isInternal, sourceKey);
+            type = externalNodeIdToTypeMap.get(sourceKey);
             isCallBack = true;
             nodeKey = sourceKey;
         }
-        resolve(universalParents, universalChildren, typeDictionary, result, arc,
-            nodeKey, type, isCallBack);
-
-    }
-
-    private JavaType getType(
-        final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
-        final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
-        final boolean isInternal,
-        final int targetKey) {
-
-        if (isInternal) {
-            return internalNodeIdToTypeMap.get(targetKey);
-        }else {
-            return externalNodeIdToTypeMap.get(targetKey);
+        if (type != null) {
+            resolve(universalParents, universalChildren, typeDictionary, result, arc,
+                    nodeKey, type, isCallBack);
         }
     }
 
@@ -267,11 +257,10 @@ public class LocalMerger {
 
             if (callSite.get("type").toString().matches("invokevirtual|invokeinterface")) {
 
-                resolveDynamics(universalChildren,universalParents, typeDictionary, result,
-                    isCallback, call, receiverTypeUris);
+                resolveDynamics(universalChildren, universalParents, typeDictionary, result,
+                        isCallback, call, receiverTypeUris);
 
-            }
-            else if (callSite.get("type").equals("invokedynamic")) {
+            } else if (callSite.get("type").equals("invokedynamic")) {
                 logger.warn("OPAL didn're rewrite the invokedynamic");
             } else {
 
@@ -282,7 +271,7 @@ public class LocalMerger {
 
     private ArrayList<String> getReceiver(final HashMap<String, Object> callSite) {
         return new ArrayList<>(Arrays.asList(((String) callSite.get(
-            "receiver")).replace("[","").replace("]","").split(",")));
+                "receiver")).replace("[", "").replace("]", "").split(",")));
     }
 
     private void resolveDynamics(final Map<String, List<String>> universalChildren,
@@ -294,12 +283,12 @@ public class LocalMerger {
         boolean foundTarget = false;
         for (final var receiverTypeUri : receiverTypeUris) {
             foundTarget =
-                findTargets(typeDictionary, result, isCallback, call, foundTarget,
-                    receiverTypeUri);
+                    findTargets(typeDictionary, result, isCallback, call, foundTarget,
+                            receiverTypeUri);
             if (!foundTarget) {
                 for (String depTypeUri : universalParents.getOrDefault(receiverTypeUri, emptyList())) {
-                    if(findTargets(typeDictionary, result, isCallback, call, foundTarget,
-                        depTypeUri)){
+                    if (findTargets(typeDictionary, result, isCallback, call, foundTarget,
+                            depTypeUri)) {
                         break;
                     }
                 }
@@ -318,7 +307,7 @@ public class LocalMerger {
                                 Call call, boolean foundTarget,
                                 String depTypeUri) {
         for (final var dep : typeDictionary
-            .getOrDefault(depTypeUri, emptyList())) {
+                .getOrDefault(depTypeUri, emptyList())) {
 
             foundTarget = resolveToDynamics(result, call, dep.getClassHierarchy().get(JavaScope.internalTypes)
                     .get(depTypeUri), dep.productVersion, depTypeUri, isCallback, foundTarget);
@@ -343,12 +332,12 @@ public class LocalMerger {
                                      final Call call, final List<String> receiverTypeUris) {
         for (final var receiverTypeUri : receiverTypeUris) {
             for (final var dep : typeDictionary
-                .getOrDefault(receiverTypeUri, emptyList())) {
+                    .getOrDefault(receiverTypeUri, emptyList())) {
 
                 resolveIfDefined(result, call, dep.getClassHierarchy()
-                        .get(JavaScope.internalTypes)
-                        .get(receiverTypeUri), dep.productVersion,
-                    receiverTypeUri, isCallback);
+                                .get(JavaScope.internalTypes)
+                                .get(receiverTypeUri), dep.productVersion,
+                        receiverTypeUri, isCallback);
             }
         }
     }
@@ -503,12 +492,12 @@ public class LocalMerger {
      * @param isCallback true if the call is a callback
      */
     private void addEdge(final CGHA cgha, final Call call,
-                                      final String product,
-                                      final JavaType depType,
-                                      final String depTypeUri, boolean isCallback) {
+                         final String product,
+                         final JavaType depType,
+                         final String depTypeUri, boolean isCallback) {
         final int addedKey = addToCHA(cgha, call.target, product, depType, depTypeUri);
         final IntIntPair edge = isCallback ? IntIntPair.of(addedKey, call.indices.secondInt())
-             : IntIntPair.of(call.indices.firstInt(), addedKey);
+                : IntIntPair.of(call.indices.firstInt(), addedKey);
         cgha.graph.put(edge, call.metadata);
     }
 
@@ -528,13 +517,13 @@ public class LocalMerger {
                                 final JavaType depType,
                                 final String depTypeUri) {
         final var cha = cgha.CHA;
-        final var type = cha.computeIfAbsent("//" + product + depTypeUri, x -> 
+        final var type = cha.computeIfAbsent("//" + product + depTypeUri, x ->
                 new JavaType(x, depType.getSourceFileName(), new Int2ObjectOpenHashMap<>(), new HashMap<>(),
                         depType.getSuperClasses(), depType.getSuperInterfaces(),
                         depType.getAccess(), depType.isFinal()));
-        
+
         final int index;
-        synchronized(type) {
+        synchronized (type) {
             index = type.getMethodKey(target);
             if (index == -1) {
                 final int nodeCount = cgha.nodeCount.getAndIncrement();
@@ -542,7 +531,7 @@ public class LocalMerger {
                 return nodeCount;
             }
         }
-        
+
         return index;
     }
 
@@ -559,13 +548,13 @@ public class LocalMerger {
         final var cha = artifact.getClassHierarchy();
         cha.put(JavaScope.resolvedTypes, result.CHA);
         return ExtendedRevisionJavaCallGraph.extendedBuilder().forge(artifact.forge)
-            .cgGenerator(artifact.getCgGenerator())
-            .classHierarchy(cha)
-            .product(artifact.product)
-            .timestamp(artifact.timestamp)
-            .version(artifact.version)
-            .graph(new JavaGraph(artifact.getGraph().getCallSites()))
-            .nodeCount(result.nodeCount.get())
-            .build();
+                .cgGenerator(artifact.getCgGenerator())
+                .classHierarchy(cha)
+                .product(artifact.product)
+                .timestamp(artifact.timestamp)
+                .version(artifact.version)
+                .graph(new JavaGraph(artifact.getGraph().getCallSites()))
+                .nodeCount(result.nodeCount.get())
+                .build();
     }
 }
