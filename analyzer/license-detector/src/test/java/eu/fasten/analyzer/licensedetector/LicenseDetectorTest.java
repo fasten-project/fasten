@@ -1,15 +1,7 @@
 package eu.fasten.analyzer.licensedetector;
 
 import org.junit.jupiter.api.Test;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.xpath.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -82,102 +74,17 @@ public class LicenseDetectorTest {
         });
 
         // For all inputs
-        inputToExpected.forEach((repoAbsolutePath, expectedRetrievedPomFile) ->
-                assertEquals(
-                        expectedRetrievedPomFile,
-                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).get(),
-                        "Retrieved pom.xml file is not the one the test expected."
-                ));
-    }
+        inputToExpected.forEach((repoAbsolutePath, expectedRetrievedPomFile) -> {
+            assertTrue(
+                    new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).isPresent(),
+                    "pom.xml file has not been retrieved."
+            );
 
-    @Test
-    public void givenRepoPath_whenPatchingPomFile_thenPomPatchingCompletesSuccessfully() {
-
-        // Test Maven repo paths
-        List<String> repoPaths = Arrays.asList(
-                "no-build-section-maven-project",
-                "no-plugins-section-maven-project",
-                "complete-maven-project",
-                "simple-maven-repo"
-        );
-
-        // Absolute test Maven repo path -> expected patched pom file
-        Map<String, File> inputToExpected = new HashMap<>();
-        repoPaths.forEach(repoPath -> {
-
-            // Retrieving test Maven repo absolute path
-            String repoAbsolutePath = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
-                    .getResource(repoPath)).getFile()).getAbsolutePath();
-            assertNotNull(repoAbsolutePath, "Test Maven repo's absolute path shouldn't be empty.");
-
-            File repoPomFile = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
-                    .getResource(repoPath + "/expected-patched-pom.xml")).getFile());
-            assertFalse(repoPomFile.isDirectory(),
-                    "The expected test Maven repo patched pom.xml file shouldn't be a directory.");
-
-            inputToExpected.put(repoAbsolutePath, repoPomFile);
+            assertEquals(
+                    expectedRetrievedPomFile,
+                    new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).get(),
+                    "Retrieved pom.xml file is not the one the test expected."
+            );
         });
-
-        // For all inputs
-        inputToExpected.forEach((repoAbsolutePath, expectedPatchedPomFile) -> {
-
-            // Patch the pom.xml file
-            try {
-                new LicenseDetectorPlugin.LicenseDetector().patchPomFile(repoAbsolutePath);
-            } catch (ParserConfigurationException e) {
-                System.err.println("XML parser's configuration is invalid.");
-                fail();
-            } catch (IOException | URISyntaxException e) {
-                System.err.println("Couldn't find an XML file: " + e.getMessage());
-                fail();
-            } catch (TransformerException e) {
-                System.err.println("Couldn't overwrite the XML file.");
-                fail();
-            }
-
-            // Checking whether the patched pom.xml file contains the Quartermaster Maven plugin
-            File patchedFile = new File(repoAbsolutePath + "/pom.xml");
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(false);
-            try {
-                DocumentBuilder builder = factory.newDocumentBuilder();
-                Document patchedPomDocument = builder.parse(patchedFile);
-                String xPathExpression = "//build/plugins/plugin/groupId[text() = 'org.qmstr']";
-                assertTrue(documentContainsNode(patchedPomDocument, xPathExpression));
-            } catch (ParserConfigurationException e) {
-                System.err.println("Couldn't instantiate a DocumentBuilder while comparing XML documents.");
-                fail();
-            } catch (SAXException e) {
-                System.err.println("Couldn't parse an XML document during comparison: " + e.getMessage());
-                fail();
-            } catch (IOException e) {
-                System.err.println("An I/O error occurred while comparing XML documents: " + e.getMessage());
-                fail();
-            } catch (XPathExpressionException e) {
-                System.err.println("Invalid XPath expression: " + e.getMessage());
-                fail();
-            }
-        });
-    }
-
-    /**
-     * Checks whether an XML document contains a XML node inside.
-     *
-     * @param document        the XML document to be checked.
-     * @param xpathExpression the XPath expression to be used to locate the XML node to be checked.
-     * @return true if the XML document contains the XML node specified by the XPath expression.
-     * @throws XPathExpressionException in case the XPath expression is invalid.
-     */
-    private static boolean documentContainsNode(Document document, String xpathExpression)
-            throws XPathExpressionException {
-        boolean matches = false;
-        XPathFactory xpathFactory = XPathFactory.newInstance();
-        XPath xpath = xpathFactory.newXPath();
-        XPathExpression expr = xpath.compile(xpathExpression);
-        NodeList nodes = (NodeList) xpath.evaluate(xpathExpression, document, XPathConstants.NODE);
-        if (nodes != null && nodes.getLength() > 0) {
-            matches = true;
-        }
-        return matches;
     }
 }
