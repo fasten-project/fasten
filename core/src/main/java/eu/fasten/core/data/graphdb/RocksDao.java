@@ -27,11 +27,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -135,6 +132,23 @@ public class RocksDao implements Closeable {
         kryo.register(GOV3LongFunction.class, new JavaSerializer());
     }
 
+    private GraphMetadata.ReceiverRecord.CallType transformCallType(eu.fasten.core.data.metadatadb.codegen.enums.CallType type) {
+        switch (type) {
+            case dynamic:
+                return CallType.DYNAMIC;
+            case special:
+                return CallType.SPECIAL;
+            case static_:
+                return CallType.STATIC;
+            case interface_:
+                return CallType.INTERFACE;
+            case virtual:
+                return CallType.VIRTUAL;
+            default:
+                return null;
+        }
+    }
+
     public void saveToRocksDb(final GidGraph gidGraph) throws IOException, RocksDBException {
         // Save and obtain graph
         final DirectedGraph graph = saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
@@ -146,14 +160,15 @@ public class RocksDao implements Closeable {
 			final Map<Long, String> typeMap = extendedGidGraph.getTypeMap();
             final Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
 
+            final Map<Long, String> gidToUriMap = extendedGidGraph.getGidToUriMap();
+            
             // Gather data by source and store it in lists of GraphMetadata.ReceiverRecord.
-			edgesInfo.forEach((pair, record) -> map.compute(pair.getFirst().longValue(), (k, list) -> {
+            edgesInfo.forEach((pair, record) -> map.compute(pair.getFirst().longValue(), (k, list) -> {
                 if (list == null) list = new ArrayList<>();
-                list.add(new ReceiverRecord(record, typeMap));
+                list.add(new ReceiverRecord(record.getLine(), transformCallType(record.getCallType()), gidToUriMap.get(pair.getFirst()), Arrays.stream(record.getReceiverTypeIds()).map(typeMap::get).collect(Collectors.toList())));
                 return list;
             }));
 
-            final Map<Long, String> gidToUriMap = extendedGidGraph.getGidToUriMap();
 
             // Serialize information in compact form, following the standard node enumeration order
             final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
