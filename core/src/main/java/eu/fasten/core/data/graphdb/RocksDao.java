@@ -161,7 +161,7 @@ public class RocksDao implements Closeable {
             final Long2ObjectOpenHashMap<List<ReceiverRecord>> map = new Long2ObjectOpenHashMap<>();
 
             final Map<Long, String> gidToUriMap = extendedGidGraph.getGidToUriMap();
-            
+
             // Gather data by source and store it in lists of GraphMetadata.ReceiverRecord.
             edgesInfo.forEach((pair, record) -> map.compute(pair.getFirst().longValue(), (k, list) -> {
                 if (list == null) list = new ArrayList<>();

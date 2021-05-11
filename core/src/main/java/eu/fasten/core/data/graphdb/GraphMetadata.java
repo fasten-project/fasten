@@ -19,11 +19,6 @@
 package eu.fasten.core.data.graphdb;
 
 import java.util.List;
-import java.util.Map;
-
-import com.google.common.collect.ImmutableList;
-
-import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
@@ -117,16 +112,6 @@ public class GraphMetadata {
 			this.receiverSignature = receiverSignature;
 			this.receiverTypes = receiverTypes;
         }
-
-		public ReceiverRecord(final CallSitesRecord record, final Map<Long, String> typesMap) {
-		    this.line = record.getLine();
-		    this.callType = CallType.valueOf(record.getCallType().getLiteral().toUpperCase());
-
-			// How do we get the receiver signature?
-			this.receiverSignature = "dummy";
-			// Should we save the whole map or the values only, as in the database?
-			this.receiverTypes = ImmutableList.copyOf(typesMap.values());
-		}
 
         @Override
         public String toString() {
