@@ -25,9 +25,8 @@ import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
-import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.maven.utils.MavenUtilities;
-import eu.fasten.core.merge.LocalMerger;
+import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;
 import java.io.File;
 import java.io.IOException;
@@ -227,7 +226,7 @@ public class Main implements Runnable {
         final var art = generate(artifact, this.commands.computations.main,
                 commands.computations.genAlgorithm, true);
         deps.add(art);
-        final var merger = new LocalMerger(deps);
+        final var merger = new CGMerger(deps);
         result = merger.mergeWithCHA(art);
 
         if (result != null) {

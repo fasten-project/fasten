@@ -20,9 +20,7 @@ package eu.fasten.core.merge;
 
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -192,8 +190,8 @@ public class Benchmark implements Runnable {
 
     private DirectedGraph getDatabaseCallGraph() {
         final var depSet = dependencies;
-        var databaseMerger = new DatabaseMerger(depSet, dbContext, rocksDao);
-        return databaseMerger.mergeWithCHA(artifact);
+        var merger = new CGMerger(depSet, dbContext, rocksDao);
+        return merger.mergeWithCHA(artifact);
     }
 
     private Map<Long, String> getMethodsMap(final DSLContext dslContext, final LongSet nodes) {

@@ -26,7 +26,7 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.MavenResolver;
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.merge.DatabaseMerger;
+import eu.fasten.core.merge.CGMerger;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -153,7 +153,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var depSet = this.graphResolver.resolveDependencies(groupId,
                     artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, true);
             var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
-            var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
+            var databaseMerger = new CGMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
             graph = databaseMerger.mergeWithCHA(packageVersionId);
         } else {
             try {
@@ -213,7 +213,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var vulnerableDepsIds = vulnerablePathDeps.stream().map(r -> r.id).collect(Collectors.toSet());
             depIds = depIds.stream().filter(vulnerableDepsIds::contains).collect(Collectors.toSet());
         }
-        var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
+        var databaseMerger = new CGMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
         // Get stitched (with dependencies) graph
         var graph = databaseMerger.mergeWithCHA(package_name + Constants.mvnCoordinateSeparator + version);
 

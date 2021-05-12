@@ -6,7 +6,7 @@ import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.maven.utils.MavenUtilities;
-import eu.fasten.core.merge.LocalMerger;
+import eu.fasten.core.merge.CGMerger;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -52,7 +52,7 @@ class JSONUtilsTest {
             "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, true);
         final var deps = new ArrayList<>(Collections.singletonList(dependency));
         deps.add(artifact);
-        final var merger = new LocalMerger(deps);
+        final var merger = new CGMerger(deps);
         merger.mergeWithCHA(artifact);
 
         coords =

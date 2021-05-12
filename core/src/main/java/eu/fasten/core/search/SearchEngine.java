@@ -29,6 +29,7 @@ import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import eu.fasten.core.merge.CGMerger;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.jooq.conf.ParseUnknownFunctions;
@@ -51,7 +52,6 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.merge.DatabaseMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
@@ -358,15 +358,15 @@ public class SearchEngine {
 	}
 
 	/**
-	 * Use the given {@link DatabaseMerger} to get the stitched graph for the given revision.
+	 * Use the given {@link CGMerger} to get the stitched graph for the given revision.
 	 *
-	 * @param dm the {@link DatabaseMerger} to be used.
+	 * @param dm the {@link CGMerger} to be used.
 	 * @param id the database identifier of a revision.
 	 * @return the stitched graph for the revision with database identifier {@code id}, or {@code null}
-	 *         if {@link DatabaseMerger#mergeWithCHA(long)} returns {@code null} (usually because the
+	 *         if {@link CGMerger#mergeWithCHA(long)} returns {@code null} (usually because the
 	 *         provided artifact is not present in the graph database).
 	 */
-	private DirectedGraph getStitchedGraph(final DatabaseMerger dm, final long id) {
+	private DirectedGraph getStitchedGraph(final CGMerger dm, final long id) {
 		DirectedGraph result = stitchedGraphCache.getAndMoveToFirst(id);
 		if (result == null) {
 			result = dm.mergeWithCHA(id);
@@ -507,7 +507,7 @@ public class SearchEngine {
 		LOGGER.debug("Found " + dependencySet.size() + " dependencies");
 
 		stitchingTime -= System.nanoTime();
-		final DatabaseMerger dm = new DatabaseMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, rocksDao);
+		final var dm = new CGMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, rocksDao);
 		final var stitchedGraph = getStitchedGraph(dm, rev);
 		stitchingTime += System.nanoTime();
 
@@ -652,7 +652,7 @@ public class SearchEngine {
 			trueDependents++;
 
 			stitchingTime -= System.nanoTime();
-			final DatabaseMerger dm = new DatabaseMerger(dependencyIds, context, rocksDao);
+			final var dm = new CGMerger(dependencyIds, context, rocksDao);
 
 			DirectedGraph stitchedGraph = null;
 			try {

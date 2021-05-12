@@ -1,7 +1,26 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.core.merge;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.graphdb.GraphMetadata;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
@@ -11,6 +30,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongArraySet;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
@@ -21,17 +41,23 @@ import org.jooq.tools.jdbc.MockConnection;
 import org.jooq.tools.jdbc.MockDataProvider;
 import org.jooq.tools.jdbc.MockExecuteContext;
 import org.jooq.tools.jdbc.MockResult;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.rocksdb.RocksDBException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DatabaseMergerTest {
+public class CGMergerTest {
 
     private final static long MAIN_INIT = 0;
     private final static long MAIN_MAIN_METHOD = 1;
@@ -50,8 +76,13 @@ public class DatabaseMergerTest {
     private static Map<String, Long> namespacesMap;
     private static GraphMetadata graphMetadata;
 
+    private static CGMerger merger;
+    private static ExtendedRevisionJavaCallGraph importer;
+    private static ExtendedRevisionJavaCallGraph imported;
+
+
     @BeforeAll
-    static void setUp() {
+    static void setUp() throws FileNotFoundException, URISyntaxException {
         typeMap = Map.of(
                 MAIN_INIT, "/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType",
                 MAIN_MAIN_METHOD, "/test.group/Main.main(%2Fjava.lang%2FString%5B%5D)%2Fjava.lang%2FVoidType",
@@ -94,13 +125,23 @@ public class DatabaseMergerTest {
         var gid2nodeMap = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
         gid2nodeMap.put(MAIN_INIT, new GraphMetadata.NodeMetadata("/test.group/Main", "<init>()" + "/java.lang/VoidType", List.of(new GraphMetadata.ReceiverRecord(6, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>()VoidType", List.of("/java.lang/Object")))));
         gid2nodeMap.put(MAIN_MAIN_METHOD, new GraphMetadata.NodeMetadata("/test.group/Main", "main(/java.lang/String[])/java.lang/VoidType", List.of(
-            new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.CallType.SPECIAL,"<init>(/java.lang/IntegerType,/java.lang/IntegerType,/java" + ".lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Baz")),
-            new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.CallType.VIRTUAL, "superMethod()/java.lang/VoidType", List.of("/test.group/Bar", "/test" + ".group/Bar")),
-            new GraphMetadata.ReceiverRecord(11, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java" + ".lang/IntegerType,/java.lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Bar")),
-            new GraphMetadata.ReceiverRecord(14, GraphMetadata.ReceiverRecord.CallType.STATIC, "staticMethod()/java.lang/IntegerType", List.of("/test.group/Foo")),
-            new GraphMetadata.ReceiverRecord(15, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java" + ".lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Foo"))
+                new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.CallType.SPECIAL,"<init>(/java.lang/IntegerType,/java.lang/IntegerType,/java" + ".lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Baz")),
+                new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.CallType.VIRTUAL, "superMethod()/java.lang/VoidType", List.of("/test.group/Bar", "/test" + ".group/Bar")),
+                new GraphMetadata.ReceiverRecord(11, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java" + ".lang/IntegerType,/java.lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Bar")),
+                new GraphMetadata.ReceiverRecord(14, GraphMetadata.ReceiverRecord.CallType.STATIC, "staticMethod()/java.lang/IntegerType", List.of("/test.group/Foo")),
+                new GraphMetadata.ReceiverRecord(15, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java" + ".lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Foo"))
         )));
         graphMetadata = new GraphMetadata(gid2nodeMap);
+
+        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource("merge/Imported.json")).toURI().getPath());
+        JSONTokener tokener = new JSONTokener(new FileReader(file));
+        imported = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
+
+        file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource("merge/Importer.json")).toURI().getPath());
+        tokener = new JSONTokener(new FileReader(file));
+        importer = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
     }
 
     @Test
@@ -114,7 +155,7 @@ public class DatabaseMergerTest {
         Mockito.when(rocksDao.getGraphData(42)).thenReturn(directedGraph);
         Mockito.when(rocksDao.getGraphMetadata(42, directedGraph)).thenReturn(graphMetadata);
 
-        var merger = new DatabaseMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
+        merger = new CGMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
                 context, rocksDao);
 
         var mergedGraph = merger.mergeWithCHA(42);
@@ -150,7 +191,7 @@ public class DatabaseMergerTest {
         Mockito.when(rocksDao.getGraphData(42)).thenReturn(directedGraph.build());
         Mockito.when(rocksDao.getGraphMetadata(42, directedGraph.build())).thenReturn(graphMetadata);
 
-        var merger = new DatabaseMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
+        merger = new CGMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
                 context, rocksDao);
 
         var mergedGraph = merger.mergeWithCHA(42);
@@ -285,5 +326,37 @@ public class DatabaseMergerTest {
             }
             return new MockResult(result.size(), result);
         }
+    }
+
+    @Test
+    public void mergeAllDepsTest() {
+        merger = new CGMerger(Arrays.asList(imported, importer));
+        final var cg = merger.mergeAllDeps();
+        final var uris = merger.getAllUris();
+        assertEquals(2, cg.edgeSet().size());
+        assertEquals(3, uris.size());
+        final var source = uris.inverse().get("fasten://mvn!Importer$0/merge" +
+                ".simpleImport/Importer.sourceMethod()%2Fjava.lang%2FVoidType");
+        final var target1 = uris.inverse().get("fasten://mvn!Imported$1/merge" +
+                ".simpleImport/Imported.targetMethod()%2Fjava.lang%2FVoidType");
+        final var target2 = uris.inverse().get("fasten://mvn!Imported$1/merge.simpleImport/Imported" +
+                ".%3Cinit%3E()%2Fjava.lang%2FVoidType");
+        assertEquals(Set.of(LongLongPair.of(source, target1), LongLongPair.of(source,
+                target2)), cg.edgeSet());
+    }
+
+    @Test
+    public void souldNotGetIllegalArgumentExceptionWhileMerging() throws IOException, URISyntaxException {
+        final var dir =
+                new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                        .getResource("merge/LocalMergeException")).toURI().getPath());
+        final List<ExtendedRevisionJavaCallGraph> depSet = new ArrayList<>();
+
+        for (final var jsonFile : dir.listFiles()) {
+            depSet.add(new ExtendedRevisionJavaCallGraph(new JSONObject(Files.readString(jsonFile.toPath()))));
+        }
+
+        merger = new CGMerger(depSet);
+        merger.mergeWithCHA(depSet.get(0));
     }
 }

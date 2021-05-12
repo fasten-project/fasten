@@ -27,7 +27,7 @@ import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.analyzer.sourceanalyzer.CommentParser;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.merge.LocalMerger;
+import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;
 import java.io.File;
 import java.net.URISyntaxException;
@@ -109,7 +109,7 @@ public class CGandStitchingTest {
 
     private ExtendedRevisionJavaCallGraph merge(ExtendedRevisionJavaCallGraph artifact,
                                             List<ExtendedRevisionJavaCallGraph> deps) {
-        final var cgMerger = new LocalMerger(deps);
+        final var cgMerger = new CGMerger(deps);
         return cgMerger.mergeWithCHA(artifact);
     }
 
@@ -330,7 +330,7 @@ public class CGandStitchingTest {
             getRCG("net.bytebuddy:byte-buddy:1.10.5"),
             getRCG("org.apache.kafka:kafka-clients:2.3.0")));
 
-        var merger = new LocalMerger(depSet);
+        var merger = new CGMerger(depSet);
         merger.mergeWithCHA(depSet.get(2));
     }
 
