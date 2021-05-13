@@ -115,6 +115,14 @@ public class MergerCacheInvalidationPlugin extends Plugin {
         public void consume(String record) {
             this.pluginError = null;
 
+            if (graphResolver == null) {
+                var errorMsg = "Graph Resolver is not initialized, but needed for the plugin. " +
+                               "Please initialize the resolver with MergerCacheInvalidationExtension.loadGraphResolver(...).";
+                logger.error(errorMsg);
+                setPluginError(new RuntimeException(errorMsg));
+                return;
+            }
+
             // Parse JSON object from kafka topic of GraphDBExtension.
             // Although it doesn't have output payload, the plugin serializes the graph for its input.
             // And we can use the input copy from this topic and the serialized graph to process our caching.
