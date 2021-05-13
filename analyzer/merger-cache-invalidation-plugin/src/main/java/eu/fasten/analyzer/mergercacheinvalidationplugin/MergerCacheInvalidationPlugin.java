@@ -133,12 +133,6 @@ public class MergerCacheInvalidationPlugin extends Plugin {
             String artifactId = "";
             String version = "";
             try {
-                if (!json.has("product")) {
-                    throw new JSONException("product");
-                }
-                if (!json.has("version")) {
-                    throw new JSONException("version");
-                }
                 version = json.get("version").toString();
                 var product = json.get("product").toString();
                 var splits = product.split(Constants.mvnCoordinateSeparator);
@@ -147,6 +141,7 @@ public class MergerCacheInvalidationPlugin extends Plugin {
             } catch (JSONException e) {
                 logger.error("Error parsing product for vulnerability cache invalidator", e);
                 setPluginError(e);
+                return;
             }
 
             // Resolve the set of transitive dependants for this product.
@@ -181,6 +176,7 @@ public class MergerCacheInvalidationPlugin extends Plugin {
                 var json = new JSONArray();
                 // TODO: possible optimization: we don't really need to pass the whole revision.
                 depSet.stream().map(Revision::toJSON).forEach(json::put);
+                this.depSet = null;
                 return Optional.of(json.toString());
             }
         }
