@@ -71,7 +71,7 @@ public class CGMerger {
     }
 
     /**
-     * Creates instance of local merger.
+     * Creates instance of callgraph merger.
      *
      * @param dependencySet all artifacts present in a resolution
      */
@@ -85,6 +85,43 @@ public class CGMerger {
         this.allUris = HashBiMap.create();
     }
 
+    /**
+     * Create instance of callgraph merger from package names.
+     *
+     * @param dependencySet dependencies present in the resolution
+     * @param dbContext     DSL context
+     * @param rocksDao      rocks DAO
+     */
+    public CGMerger(final List<String> dependencySet,
+                    final DSLContext dbContext, final RocksDao rocksDao) {
+        this.dbContext = dbContext;
+        this.rocksDao = rocksDao;
+        this.dependencySet = getDependenciesIds(dependencySet, dbContext);
+        final var universalCHA = createUniversalCHA(this.dependencySet, dbContext, rocksDao);
+        this.universalChildren = new HashMap<>(universalCHA.getRight().size());
+        universalCHA.getRight().forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
+        this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
+    }
+
+    /**
+     * Create instance of callgraph merger from package versions ids.
+     *
+     * @param dependencySet dependencies present in the resolution
+     * @param dbContext     DSL context
+     * @param rocksDao      rocks DAO
+     */
+    public CGMerger(final Set<Long> dependencySet,
+                    final DSLContext dbContext, final RocksDao rocksDao) {
+        this.dbContext = dbContext;
+        this.rocksDao = rocksDao;
+        this.dependencySet = dependencySet;
+        final var universalCHA = createUniversalCHA(dependencySet, dbContext, rocksDao);
+        this.universalChildren = new HashMap<>(universalCHA.getRight().size());
+        universalCHA.getRight().forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
+        this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
+    }
+
+    // Local
     /**
      * Class with resolved calls and CHA.
      */
@@ -107,9 +144,9 @@ public class CGMerger {
             classHierarchy.forEach(this.CHA::put);
             this.nodeCount = new AtomicInteger(toResolve.getNodeCount());
         }
-
     }
 
+    // Local
     /**
      * Single call containing source and target IDs, metadata and target node.
      */
@@ -156,436 +193,6 @@ public class CGMerger {
         }
     }
 
-    private long updateNode(final long node, final long offset,
-                            final BiMap<Integer, String> uris) {
-        var uri = uris.get((int) node);
-
-        if (allUris.containsValue(uri)) {
-            return allUris.inverse().get(uri);
-        } else {
-            final var updatedNode = node + offset;
-            this.allUris.put(updatedNode, uri);
-            return updatedNode;
-        }
-    }
-
-    private void processArc(final Map<String, List<String>> universalParents,
-                            final Map<String, List<String>> universalChildren,
-                            final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
-                            final CGHA result,
-                            final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
-                            final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
-                            final Map.Entry<IntIntPair, Map<Object, Object>> arc) {
-        final var targetKey = arc.getKey().secondInt();
-        final var sourceKey = arc.getKey().firstInt();
-
-        boolean isCallBack = false;
-        int nodeKey = targetKey;
-        JavaType type = null;
-        if (internalNodeIdToTypeMap.containsKey(targetKey)) {
-            type = internalNodeIdToTypeMap.get(targetKey);
-        }
-        if (externalNodeIdToTypeMap.containsKey(targetKey)) {
-            type = externalNodeIdToTypeMap.get(targetKey);
-        }
-        if (externalNodeIdToTypeMap.containsKey(sourceKey)) {
-            type = externalNodeIdToTypeMap.get(sourceKey);
-            isCallBack = true;
-            nodeKey = sourceKey;
-        }
-        if (type != null) {
-            resolve(universalParents, universalChildren, typeDictionary, result, arc,
-                    nodeKey, type, isCallBack);
-        }
-    }
-
-    private void resolve(final Map<String, List<String>> universalParents,
-                         final Map<String, List<String>> universalChildren,
-                         final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
-                         final CGHA result,
-                         final Map.Entry<IntIntPair, Map<Object, Object>> arc,
-                         final int nodeKey,
-                         final JavaType type,
-                         final boolean isCallback) {
-
-        var call = new Call(arc, type.getMethods().get(nodeKey));
-
-        for (final var entry : arc.getValue().entrySet()) {
-            final var callSite = (HashMap<String, Object>) entry.getValue();
-            final var receiverTypeUris = getReceiver(callSite);
-
-            if (callSite.get("type").toString().matches("invokevirtual|invokeinterface")) {
-
-                resolveDynamics(universalChildren, universalParents, typeDictionary, result,
-                        isCallback, call, receiverTypeUris);
-
-            } else if (callSite.get("type").equals("invokedynamic")) {
-                logger.warn("OPAL didn're rewrite the invokedynamic");
-            } else {
-
-                resolveReceiverType(typeDictionary, result, isCallback, call, receiverTypeUris);
-            }
-        }
-    }
-
-    private ArrayList<String> getReceiver(final HashMap<String, Object> callSite) {
-        return new ArrayList<>(Arrays.asList(((String) callSite.get(
-                "receiver")).replace("[", "").replace("]", "").split(",")));
-    }
-
-    private void resolveDynamics(final Map<String, List<String>> universalChildren,
-                                 final Map<String, List<String>> universalParents,
-                                 final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
-                                 final CGHA result, final boolean isCallback, final Call call,
-                                 final ArrayList<String> receiverTypeUris) {
-
-        boolean foundTarget = false;
-        for (final var receiverTypeUri : receiverTypeUris) {
-            foundTarget =
-                    findTargets(typeDictionary, result, isCallback, call, foundTarget,
-                            receiverTypeUri);
-            if (!foundTarget) {
-                for (String depTypeUri : universalParents.getOrDefault(receiverTypeUri, emptyList())) {
-                    if (findTargets(typeDictionary, result, isCallback, call, foundTarget,
-                            depTypeUri)) {
-                        break;
-                    }
-                }
-            }
-            if (!foundTarget) {
-                final var types = universalChildren.getOrDefault(receiverTypeUri, emptyList());
-                for (final var depTypeUri : types) {
-                    findTargets(typeDictionary, result, isCallback, call, foundTarget, depTypeUri);
-                }
-            }
-        }
-    }
-
-    private boolean findTargets(Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
-                                CGHA result, boolean isCallback,
-                                Call call, boolean foundTarget,
-                                String depTypeUri) {
-        for (final var dep : typeDictionary
-                .getOrDefault(depTypeUri, emptyList())) {
-
-            foundTarget = resolveToDynamics(result, call, dep.getClassHierarchy().get(JavaScope.internalTypes)
-                    .get(depTypeUri), dep.productVersion, depTypeUri, isCallback, foundTarget);
-        }
-        return foundTarget;
-    }
-
-    private boolean resolveToDynamics(final CGHA cgha, final Call call,
-                                      final JavaType type,
-                                      final String product, final String depTypeUri,
-                                      boolean isCallback, boolean foundTarget) {
-        final var node = type.getDefinedMethods().get(call.target.getSignature());
-        if (node != null) {
-            addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
-            return true;
-        }
-        return foundTarget;
-    }
-
-    private void resolveReceiverType(final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
-                                     final CGHA result, final boolean isCallback,
-                                     final Call call, final List<String> receiverTypeUris) {
-        for (final var receiverTypeUri : receiverTypeUris) {
-            for (final var dep : typeDictionary
-                    .getOrDefault(receiverTypeUri, emptyList())) {
-
-                resolveIfDefined(result, call, dep.getClassHierarchy()
-                                .get(JavaScope.internalTypes)
-                                .get(receiverTypeUri), dep.productVersion,
-                        receiverTypeUri, isCallback);
-            }
-        }
-    }
-
-    private void resolveIfDefined(final CGHA cgha, final Call call,
-                                  final JavaType type,
-                                  final String product, final String depTypeUri,
-                                  boolean isCallback) {
-        final var node = type.getDefinedMethods().get(call.target.getSignature());
-        if (node != null) {
-            addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
-        }
-    }
-
-    /**
-     * Create a map with types as keys and a list of {@link ExtendedRevisionCallGraph} that
-     * contain this type as values.
-     *
-     * @param dependencies dependencies including the artifact to resolve
-     * @return type dictionary
-     */
-    private Map<String, List<ExtendedRevisionJavaCallGraph>> createTypeDictionary(
-            final List<ExtendedRevisionJavaCallGraph> dependencies) {
-
-        Map<String, List<ExtendedRevisionJavaCallGraph>> result = new HashMap<>();
-
-        for (final var rcg : dependencies) {
-            for (final var type : rcg
-                    .getClassHierarchy().get(JavaScope.internalTypes)
-                    .entrySet()) {
-                result.merge(type.getKey(),
-                        new ArrayList<>(Collections.singletonList(rcg)), (old, nieuw) -> {
-                            old.addAll(nieuw);
-                            return old;
-                        });
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Create a universal CHA for all dependencies including the artifact to resolve.
-     *
-     * @param dependencies dependencies including the artifact to resolve
-     * @return universal CHA
-     */
-    private Pair<Map<String, List<String>>, Map<String, List<String>>> createUniversalCHA(
-            final List<ExtendedRevisionJavaCallGraph> dependencies) {
-        final var allPackages = new ArrayList<>(dependencies);
-
-        final var result = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
-        for (final var aPackage : allPackages) {
-            for (final var type : aPackage.getClassHierarchy()
-                    .get(JavaScope.internalTypes).entrySet()) {
-                if (!result.containsVertex(type.getKey())) {
-                    result.addVertex(type.getKey());
-                }
-                addSuperTypes(result, type.getKey(),
-                        type.getValue().getSuperClasses()
-                                .stream().map(FastenURI::toString).collect(Collectors.toList()));
-                addSuperTypes(result, type.getKey(),
-                        type.getValue().getSuperInterfaces()
-                                .stream().map(FastenURI::toString).collect(Collectors.toList()));
-            }
-        }
-        final Map<String, List<String>> universalParents = new HashMap<>();
-        final Map<String, List<String>> universalChildren = new HashMap<>();
-        for (final var type : result.vertexSet()) {
-
-            final var children = new ArrayList<>(Collections.singletonList(type));
-            children.addAll(getAllChildren(result, type));
-            universalChildren.put(type, children);
-
-            final var parents = new ArrayList<>(Collections.singletonList(type));
-            parents.addAll(getAllParents(result, type));
-            universalParents.put(type, organize(parents));
-        }
-        return ImmutablePair.of(universalParents, universalChildren);
-    }
-
-    private List<String> organize(ArrayList<String> parents) {
-        final List<String> result = new ArrayList<>();
-        for (String parent : parents) {
-            if (!result.contains(parent) && !parent.equals("/java.lang/Object")) {
-                result.add(parent);
-            }
-        }
-        result.add("/java.lang/Object");
-        return result;
-    }
-
-    /**
-     * Get all parents of a given type.
-     *
-     * @param graph universal CHA
-     * @param type  type uri
-     * @return list of types parents
-     */
-    private List<String> getAllParents(final DefaultDirectedGraph<String, DefaultEdge> graph,
-                                       final String type) {
-        final var children = Graphs.predecessorListOf(graph, type);
-        final List<String> result = new ArrayList<>(children);
-        for (final var child : children) {
-            result.addAll(getAllParents(graph, child));
-        }
-        return result;
-    }
-
-    /**
-     * Get all children of a given type.
-     *
-     * @param graph universal CHA
-     * @param type  type uri
-     * @return list of types children
-     */
-    private List<String> getAllChildren(final DefaultDirectedGraph<String, DefaultEdge> graph,
-                                        final String type) {
-        final var children = Graphs.successorListOf(graph, type);
-        final List<String> result = new ArrayList<>(children);
-        for (final var child : children) {
-            result.addAll(getAllChildren(graph, child));
-        }
-        return result;
-    }
-
-    /**
-     * Add super classes and interfaces to the universal CHA.
-     *
-     * @param result      universal CHA graph
-     * @param sourceTypes source type
-     * @param targetTypes list of target target types
-     */
-    private void addSuperTypes(final DefaultDirectedGraph<String, DefaultEdge> result,
-                               final String sourceTypes,
-                               final List<String> targetTypes) {
-        for (final var superClass : targetTypes) {
-            if (!result.containsVertex(superClass)) {
-                result.addVertex(superClass);
-            }
-            if (!result.containsEdge(sourceTypes, superClass)) {
-                result.addEdge(superClass, sourceTypes);
-            }
-        }
-    }
-
-    /**
-     * Add new edge to the resolved call graph.
-     *
-     * @param cgha       call graph with resolved calls
-     * @param call       new call
-     * @param product    product name
-     * @param depType    dependency {@link JavaType}
-     * @param depTypeUri dependency type uri
-     * @param isCallback true if the call is a callback
-     */
-    private void addEdge(final CGHA cgha, final Call call,
-                         final String product,
-                         final JavaType depType,
-                         final String depTypeUri, boolean isCallback) {
-        final int addedKey = addToCHA(cgha, call.target, product, depType, depTypeUri);
-        final IntIntPair edge = isCallback ? IntIntPair.of(addedKey, call.indices.secondInt())
-                : IntIntPair.of(call.indices.firstInt(), addedKey);
-        cgha.graph.put(edge, call.metadata);
-    }
-
-    /**
-     * Add a new node to CHA.
-     *
-     * @param cgha       call graph with resolved calls
-     * @param target     target Node
-     * @param product    product name
-     * @param depType    dependency {@link JavaType}
-     * @param depTypeUri dependency type uri
-     * @return id of a node in the CHA
-     */
-    private static int addToCHA(final CGHA cgha,
-                                final JavaNode target,
-                                final String product,
-                                final JavaType depType,
-                                final String depTypeUri) {
-        final var cha = cgha.CHA;
-        final var type = cha.computeIfAbsent("//" + product + depTypeUri, x ->
-                new JavaType(x, depType.getSourceFileName(), new Int2ObjectOpenHashMap<>(), new HashMap<>(),
-                        depType.getSuperClasses(), depType.getSuperInterfaces(),
-                        depType.getAccess(), depType.isFinal()));
-
-        final int index;
-        synchronized (type) {
-            index = type.getMethodKey(target);
-            if (index == -1) {
-                final int nodeCount = cgha.nodeCount.getAndIncrement();
-                type.addMethod(target, nodeCount);
-                return nodeCount;
-            }
-        }
-
-        return index;
-    }
-
-    /**
-     * Build an {@link ExtendedRevisionCallGraph} from the original artifact and newly
-     * resolved calls.
-     *
-     * @param artifact original artifact
-     * @param result   resolved calls
-     * @return full call graph
-     */
-    private static ExtendedRevisionJavaCallGraph buildRCG(final ExtendedRevisionJavaCallGraph artifact,
-                                                          final CGHA result) {
-        final var cha = artifact.getClassHierarchy();
-        cha.put(JavaScope.resolvedTypes, result.CHA);
-        return ExtendedRevisionJavaCallGraph.extendedBuilder().forge(artifact.forge)
-                .cgGenerator(artifact.getCgGenerator())
-                .classHierarchy(cha)
-                .product(artifact.product)
-                .timestamp(artifact.timestamp)
-                .version(artifact.version)
-                .graph(new JavaGraph(artifact.getGraph().getCallSites(),
-                        new HashMap<>(),
-                        result.graph))
-                .nodeCount(result.nodeCount.get())
-                .build();
-
-
-    }
-
-    private void addThisMergeToResult(FastenDefaultDirectedGraph result,
-                                      final ExtendedRevisionJavaCallGraph merged) {
-        final var uris = merged.mapOfFullURIStrings();
-        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
-        long offset = result.nodes().longStream().max().orElse(0L) + 1;
-
-        for (final var node : directedMerge.nodes()) {
-            for (final var successor : directedMerge.successors(node)) {
-                final var updatedNode = updateNode(node, offset, uris);
-                final var updatedSuccessor = updateNode(successor, offset, uris);
-                addEdge(result, updatedNode, updatedSuccessor);
-            }
-        }
-    }
-
-    private void addEdge(final FastenDefaultDirectedGraph result,
-                         final long source, final long target) {
-        result.addInternalNode(source);
-        result.addInternalNode(target);
-        result.addEdge(source, target);
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Create instance of database merger from package names.
-     *
-     * @param dependencySet dependencies present in the resolution
-     * @param dbContext     DSL context
-     * @param rocksDao      rocks DAO
-     */
-    public CGMerger(final List<String> dependencySet,
-                    final DSLContext dbContext, final RocksDao rocksDao) {
-        this.dbContext = dbContext;
-        this.rocksDao = rocksDao;
-        this.dependencySet = getDependenciesIds(dependencySet, dbContext);
-        final var universalCHA = createUniversalCHA(this.dependencySet, dbContext, rocksDao);
-        this.universalChildren = new HashMap<>(universalCHA.getRight().size());
-        universalCHA.getRight().forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
-        this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
-    }
-
-    /**
-     * Create instance of database merger from package versions ids.
-     *
-     * @param dependencySet dependencies present in the resolution
-     * @param dbContext     DSL context
-     * @param rocksDao      rocks DAO
-     */
-    public CGMerger(final Set<Long> dependencySet,
-                    final DSLContext dbContext, final RocksDao rocksDao) {
-        this.dbContext = dbContext;
-        this.rocksDao = rocksDao;
-        this.dependencySet = dependencySet;
-        final var universalCHA = createUniversalCHA(dependencySet, dbContext, rocksDao);
-        this.universalChildren = new HashMap<>(universalCHA.getRight().size());
-        universalCHA.getRight().forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
-        this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
-
-    }
-
     /**
      * Single arc containing source and target IDs and a list of receivers.
      */
@@ -619,7 +226,7 @@ public class CGMerger {
          */
         public Node(final FastenJavaURI uri) {
             this.typeUri = "/" + uri.getNamespace() + "/" + uri.getClassName();
-            this.signature = StringUtils.substringAfter(uri.getEntity(), ".");
+            this.signature = StringUtils.substringAfter(uri.decanonicalize().getEntity(), ".");
         }
 
         public Node(final String typeUri, final String signature) {
@@ -646,30 +253,173 @@ public class CGMerger {
         }
     }
 
-    /**
-     * Fetches metadata of the nodes of first arg from database.
-     *
-     * @param graph DirectedGraph to search for its callable's metadata in the database.
-     * @return Map of callable ids and their corresponding metadata in the form of
-     * JSONObject.
-     */
-    public Map<Long, JSONObject> getCallablesMetadata(final DirectedGraph graph) {
-        final Map<Long, JSONObject> result = new HashMap<>();
+    private long updateNode(final long node, final long offset,
+                            final BiMap<Integer, String> uris) {
+        var uri = uris.get((int) node);
 
-        final var metadata = dbContext
-                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.ID.in(graph.nodes()))
-                .fetch();
-        for (final var callable : metadata) {
-            result.put(callable.value1(), new JSONObject(callable.value2().data()));
+        if (allUris.containsValue(uri)) {
+            return allUris.inverse().get(uri);
+        } else {
+            final var updatedNode = node + offset;
+            this.allUris.put(updatedNode, uri);
+            return updatedNode;
         }
+    }
 
-        return result;
+    public ExtendedRevisionJavaCallGraph mergeWithCHA(final ExtendedRevisionJavaCallGraph artifact) {
+        final var result = new CGHA(artifact);
+
+        final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
+        final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
+
+        artifact.getGraph().getCallSites().entrySet().parallelStream().forEach(arc ->
+                processArc(universalParents, universalChildren, ercgTypeDictionary, result,
+                        externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc));
+        return buildRCG(artifact, result);
+
+//        final var directedGraph = new FastenDefaultDirectedGraph();
+//        addThisMergeToResult(directedGraph, buildRCG(artifact, result));
+//        return directedGraph;
     }
 
     /**
-     * Resolve an external call.
+     * Merges a call graph with its dependencies using CHA algorithm.
+     *
+     * @param artifactId package version id of an artifact to resolve
+     * @return merged call graph
+     */
+    public DirectedGraph mergeWithCHA(final long artifactId) {
+        final long totalTime = System.currentTimeMillis();
+        final var callGraphData = fetchCallGraphData(artifactId, rocksDao);
+
+        if (callGraphData == null) {
+            logger.error("Empty call graph data");
+            return null;
+        }
+
+        var result = new ArrayImmutableDirectedGraph.Builder();
+
+        cloneNodesAndArcs(result, callGraphData);
+
+        final long startTime = System.currentTimeMillis();
+
+        var graphArcs = getArcs(artifactId, callGraphData, rocksDao);
+        if (graphArcs == null) {
+            return null;
+        }
+        for (var entry : graphArcs.gid2NodeMetadata.long2ObjectEntrySet()) {
+            var sourceId = entry.getLongKey();
+            var nodeMetadata = entry.getValue();
+            for (var receiver : nodeMetadata.receiverRecords) {
+                var arc = new Arc(sourceId, receiver);
+                var node = new Node(nodeMetadata.type, receiver.receiverSignature);
+                resolve(result, callGraphData, arc, node, callGraphData.isExternal(sourceId));
+            }
+        }
+        logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - startTime) / 1000d));
+        logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - totalTime) / 1000d));
+        return result.build();
+    }
+
+    /**
+     * Merges a call graph with its dependencies using CHA algorithm.
+     *
+     * @param artifact artifact to resolve
+     * @return merged call graph
+     */
+    public DirectedGraph mergeWithCHA(final String artifact) {
+        return mergeWithCHA(getPackageVersionId(artifact));
+    }
+
+    /**
+     * Create fully merged for the entire dependency set.
+     *
+     * @return merged call graph
+     */
+    public DirectedGraph mergeAllDeps() {
+        if (this.dbContext == null) {
+            final var result = new FastenDefaultDirectedGraph();
+            for (final var dep : this.ercgDependencySet) {
+                addThisMergeToResult(result, mergeWithCHA(dep));
+            }
+            return result;
+        } else {
+            List<DirectedGraph> depGraphs = new ArrayList<>();
+            for (final var dep : this.dependencySet) {
+                var merged = mergeWithCHA(dep);
+                if (merged != null) {
+                    depGraphs.add(merged);
+                }
+            }
+            return augmentGraphs(depGraphs);
+        }
+    }
+
+    // Local
+    private void processArc(final Map<String, List<String>> universalParents,
+                            final Map<String, List<String>> universalChildren,
+                            final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
+                            final CGHA result,
+                            final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
+                            final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
+                            final Map.Entry<IntIntPair, Map<Object, Object>> arc) {
+        final var targetKey = arc.getKey().secondInt();
+        final var sourceKey = arc.getKey().firstInt();
+
+        boolean isCallBack = false;
+        int nodeKey = targetKey;
+        JavaType type = null;
+        if (internalNodeIdToTypeMap.containsKey(targetKey)) {
+            type = internalNodeIdToTypeMap.get(targetKey);
+        }
+        if (externalNodeIdToTypeMap.containsKey(targetKey)) {
+            type = externalNodeIdToTypeMap.get(targetKey);
+        }
+        if (externalNodeIdToTypeMap.containsKey(sourceKey)) {
+            type = externalNodeIdToTypeMap.get(sourceKey);
+            isCallBack = true;
+            nodeKey = sourceKey;
+        }
+        if (type != null) {
+            resolve(universalParents, universalChildren, typeDictionary, result, arc,
+                    nodeKey, type, isCallBack);
+        }
+    }
+
+    // Local
+    private void resolve(final Map<String, List<String>> universalParents,
+                         final Map<String, List<String>> universalChildren,
+                         final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
+                         final CGHA result,
+                         final Map.Entry<IntIntPair, Map<Object, Object>> arc,
+                         final int nodeKey,
+                         final JavaType type,
+                         final boolean isCallback) {
+
+        var call = new Call(arc, type.getMethods().get(nodeKey));
+
+        for (final var entry : arc.getValue().entrySet()) {
+            final var callSite = (HashMap<String, Object>) entry.getValue();
+            final var receiverTypeUris = getReceiver(callSite);
+
+            if (callSite.get("type").toString().matches("invokevirtual|invokeinterface")) {
+
+                resolveDynamics(universalChildren, universalParents, typeDictionary, result,
+                        isCallback, call, receiverTypeUris);
+
+            } else if (callSite.get("type").equals("invokedynamic")) {
+                logger.warn("OPAL didn't rewrite the invokedynamic");
+            } else {
+
+                resolveReceiverType(typeDictionary, result, isCallback, call, receiverTypeUris);
+            }
+        }
+    }
+
+    /**
+     * Resolve call.
      *
      * @param result        graph with resolved calls
      * @param callGraphData graph for the artifact to resolve
@@ -711,57 +461,114 @@ public class CGMerger {
         }
     }
 
-    /**
-     * Retrieve external calls and constructor calls from a call graph.
-     *
-     * @param callGraphData call graph
-     * @return list of external and constructor calls
-     */
-    private GraphMetadata getArcs(final long index, final DirectedGraph callGraphData, final RocksDao rocksDao) {
-        try {
-            return rocksDao.getGraphMetadata(index, callGraphData);
-        } catch (RocksDBException e) {
-            logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
-            return null;
+    // Local
+    private ArrayList<String> getReceiver(final HashMap<String, Object> callSite) {
+        return new ArrayList<>(Arrays.asList(((String) callSite.get(
+                "receiver")).replace("[", "").replace("]", "").split(",")));
+    }
+
+    // Local
+    private void resolveDynamics(final Map<String, List<String>> universalChildren,
+                                 final Map<String, List<String>> universalParents,
+                                 final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
+                                 final CGHA result, final boolean isCallback, final Call call,
+                                 final ArrayList<String> receiverTypeUris) {
+        boolean foundTarget = false;
+        for (final var receiverTypeUri : receiverTypeUris) {
+            foundTarget =
+                    findTargets(typeDictionary, result, isCallback, call, foundTarget,
+                            receiverTypeUri);
+            if (!foundTarget) {
+                for (String depTypeUri : universalParents.getOrDefault(receiverTypeUri, emptyList())) {
+                    if (findTargets(typeDictionary, result, isCallback, call, foundTarget,
+                            depTypeUri)) {
+                        break;
+                    }
+                }
+            }
+            if (!foundTarget) {
+                final var types = universalChildren.getOrDefault(receiverTypeUri, emptyList());
+                for (final var depTypeUri : types) {
+                    findTargets(typeDictionary, result, isCallback, call, foundTarget, depTypeUri);
+                }
+            }
         }
     }
 
-    /**
-     * Retrieve a call graph from a graph database given a maven coordinate.
-     *
-     * @param rocksDao rocks DAO
-     * @return call graph
-     */
-    private DirectedGraph fetchCallGraphData(final long artifactId, final RocksDao rocksDao) {
-        DirectedGraph callGraphData = null;
-        try {
-            callGraphData = rocksDao.getGraphData(artifactId);
-        } catch (RocksDBException e) {
-            e.printStackTrace();
+    // Local
+    private boolean findTargets(Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
+                                CGHA result, boolean isCallback,
+                                Call call, boolean foundTarget,
+                                String depTypeUri) {
+        for (final var dep : typeDictionary.getOrDefault(depTypeUri, emptyList())) {
+            foundTarget = resolveToDynamics(result, call, dep.getClassHierarchy().get(JavaScope.internalTypes)
+                    .get(depTypeUri), dep.productVersion, depTypeUri, isCallback, foundTarget);
         }
-
-        return callGraphData;
+        return foundTarget;
     }
 
-    /**
-     * Get package version id for an artifact.
-     *
-     * @param artifact artifact in format groupId:artifactId:version
-     * @return package version id
-     */
-    private long getPackageVersionId(final String artifact) {
-        var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
-        var version = artifact.split(":")[2];
+    // Local
+    private boolean resolveToDynamics(final CGHA cgha, final Call call,
+                                      final JavaType type,
+                                      final String product, final String depTypeUri,
+                                      boolean isCallback, boolean foundTarget) {
+        final var node = type.getDefinedMethods().get(call.target.getSignature());
+        if (node != null) {
+            addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
+            return true;
+        }
+        return foundTarget;
+    }
 
-        return Objects.requireNonNull(dbContext
-                .select(PackageVersions.PACKAGE_VERSIONS.ID)
-                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
-                .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                .fetchOne())
-                .component1();
+    // Local
+    private void resolveReceiverType(final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
+                                     final CGHA result, final boolean isCallback,
+                                     final Call call, final List<String> receiverTypeUris) {
+        for (final var receiverTypeUri : receiverTypeUris) {
+            for (final var dep : typeDictionary.getOrDefault(receiverTypeUri, emptyList())) {
+                resolveIfDefined(result, call, dep.getClassHierarchy()
+                                .get(JavaScope.internalTypes)
+                                .get(receiverTypeUri), dep.productVersion,
+                        receiverTypeUri, isCallback);
+            }
+        }
+    }
+
+    // Local
+    private void resolveIfDefined(final CGHA cgha, final Call call,
+                                  final JavaType type,
+                                  final String product, final String depTypeUri,
+                                  boolean isCallback) {
+        final var node = type.getDefinedMethods().get(call.target.getSignature());
+        if (node != null) {
+            addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
+        }
+    }
+
+    // Local
+
+    /**
+     * Create a map with types as keys and a list of {@link ExtendedRevisionCallGraph} that
+     * contain this type as values.
+     *
+     * @param dependencies dependencies including the artifact to resolve
+     * @return type dictionary
+     */
+    private Map<String, List<ExtendedRevisionJavaCallGraph>> createTypeDictionary(
+            final List<ExtendedRevisionJavaCallGraph> dependencies) {
+        Map<String, List<ExtendedRevisionJavaCallGraph>> result = new HashMap<>();
+        for (final var rcg : dependencies) {
+            for (final var type : rcg
+                    .getClassHierarchy().get(JavaScope.internalTypes)
+                    .entrySet()) {
+                result.merge(type.getKey(),
+                        new ArrayList<>(Collections.singletonList(rcg)), (old, nieuw) -> {
+                            old.addAll(nieuw);
+                            return old;
+                        });
+            }
+        }
+        return result;
     }
 
     /**
@@ -800,6 +607,47 @@ public class CGMerger {
                         .format((System.currentTimeMillis() - startTime) / 1000d));
 
         return result;
+    }
+
+    // Local
+    /**
+     * Create a universal CHA for all dependencies including the artifact to resolve.
+     *
+     * @param dependencies dependencies including the artifact to resolve
+     * @return universal CHA
+     */
+    private Pair<Map<String, List<String>>, Map<String, List<String>>> createUniversalCHA(
+            final List<ExtendedRevisionJavaCallGraph> dependencies) {
+        final var allPackages = new ArrayList<>(dependencies);
+
+        final var result = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
+        for (final var aPackage : allPackages) {
+            for (final var type : aPackage.getClassHierarchy()
+                    .get(JavaScope.internalTypes).entrySet()) {
+                if (!result.containsVertex(type.getKey())) {
+                    result.addVertex(type.getKey());
+                }
+                addSuperTypes(result, type.getKey(),
+                        type.getValue().getSuperClasses()
+                                .stream().map(FastenURI::toString).collect(Collectors.toList()));
+                addSuperTypes(result, type.getKey(),
+                        type.getValue().getSuperInterfaces()
+                                .stream().map(FastenURI::toString).collect(Collectors.toList()));
+            }
+        }
+        final Map<String, List<String>> universalParents = new HashMap<>();
+        final Map<String, List<String>> universalChildren = new HashMap<>();
+        for (final var type : result.vertexSet()) {
+
+            final var children = new ArrayList<>(Collections.singletonList(type));
+            children.addAll(getAllChildren(result, type));
+            universalChildren.put(type, children);
+
+            final var parents = new ArrayList<>(Collections.singletonList(type));
+            parents.addAll(getAllParents(result, type));
+            universalParents.put(type, organize(parents));
+        }
+        return ImmutablePair.of(universalParents, universalChildren);
     }
 
     /**
@@ -878,61 +726,176 @@ public class CGMerger {
         return ImmutablePair.of(universalParents, universalChildren);
     }
 
-    /**
-     * Get callables from dependencies.
-     *
-     * @param dependenciesIds dependencies IDs
-     * @param rocksDao        rocks DAO
-     * @return list of callables
-     */
-    private List<Long> getCallables(final Set<Long> dependenciesIds, final RocksDao rocksDao) {
-        var callables = new ArrayList<Long>();
-        for (var id : dependenciesIds) {
-            try {
-                var cg = rocksDao.getGraphData(id);
-                var nodes = cg.nodes();
-                nodes.removeAll(cg.externalNodes());
-                callables.addAll(nodes);
-            } catch (RocksDBException | NullPointerException e) {
-                logger.error("Couldn't retrieve a call graph with ID: {}", id);
+    // Local
+    private List<String> organize(ArrayList<String> parents) {
+        final List<String> result = new ArrayList<>();
+        for (String parent : parents) {
+            if (!result.contains(parent) && !parent.equals("/java.lang/Object")) {
+                result.add(parent);
             }
         }
-        return callables;
+        result.add("/java.lang/Object");
+        return result;
     }
 
     /**
-     * Get dependencies IDs from a metadata database.
+     * Get all parents of a given type.
      *
-     * @param dbContext DSL context
-     * @return set of IDs of dependencies
+     * @param graph universal CHA
+     * @param type  type uri
+     * @return list of types parents
      */
-    private Set<Long> getDependenciesIds(final List<String> dependencySet,
-                                         final DSLContext dbContext) {
-        var coordinates = new HashSet<>(dependencySet);
+    private List<String> getAllParents(final DefaultDirectedGraph<String, DefaultEdge> graph,
+                                       final String type) {
+        final var children = Graphs.predecessorListOf(graph, type);
+        final List<String> result = new ArrayList<>(children);
+        for (final var child : children) {
+            result.addAll(getAllParents(graph, child));
+        }
+        return result;
+    }
 
-        Condition depCondition = null;
+    /**
+     * Get all children of a given type.
+     *
+     * @param graph universal CHA
+     * @param type  type uri
+     * @return list of types children
+     */
+    private List<String> getAllChildren(final DefaultDirectedGraph<String, DefaultEdge> graph,
+                                        final String type) {
+        final var children = Graphs.successorListOf(graph, type);
+        final List<String> result = new ArrayList<>(children);
+        for (final var child : children) {
+            result.addAll(getAllChildren(graph, child));
+        }
+        return result;
+    }
 
-        for (var dependency : coordinates) {
-            var packageName = dependency.split(":")[0] + ":" + dependency.split(":")[1];
-            var version = dependency.split(":")[2];
-
-            if (depCondition == null) {
-                depCondition = Packages.PACKAGES.PACKAGE_NAME.eq(packageName)
-                        .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version));
-            } else {
-                depCondition = depCondition.or(Packages.PACKAGES.PACKAGE_NAME.eq(packageName)
-                        .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version)));
+    /**
+     * Add super classes and interfaces to the universal CHA.
+     *
+     * @param result      universal CHA graph
+     * @param sourceTypes source type
+     * @param targetTypes list of target target types
+     */
+    private void addSuperTypes(final DefaultDirectedGraph<String, DefaultEdge> result,
+                               final String sourceTypes,
+                               final List<String> targetTypes) {
+        for (final var superClass : targetTypes) {
+            if (!result.containsVertex(superClass)) {
+                result.addVertex(superClass);
+            }
+            if (!result.containsEdge(sourceTypes, superClass)) {
+                result.addEdge(superClass, sourceTypes);
             }
         }
+    }
 
-        return dbContext
-                .select(PackageVersions.PACKAGE_VERSIONS.ID)
-                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .where(depCondition)
-                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                .fetch()
-                .intoSet(PackageVersions.PACKAGE_VERSIONS.ID);
+    // Local
+    /**
+     * Add new edge to the resolved call graph.
+     *
+     * @param cgha       call graph with resolved calls
+     * @param call       new call
+     * @param product    product name
+     * @param depType    dependency {@link JavaType}
+     * @param depTypeUri dependency type uri
+     * @param isCallback true if the call is a callback
+     */
+    private void addEdge(final CGHA cgha, final Call call,
+                         final String product,
+                         final JavaType depType,
+                         final String depTypeUri, boolean isCallback) {
+        final int addedKey = addToCHA(cgha, call.target, product, depType, depTypeUri);
+        final IntIntPair edge = isCallback
+                ? IntIntPair.of(addedKey, call.indices.secondInt())
+                : IntIntPair.of(call.indices.firstInt(), addedKey);
+        cgha.graph.put(edge, call.metadata);
+    }
+
+    // Local
+    /**
+     * Add a new node to CHA.
+     *
+     * @param cgha       call graph with resolved calls
+     * @param target     target Node
+     * @param product    product name
+     * @param depType    dependency {@link JavaType}
+     * @param depTypeUri dependency type uri
+     * @return id of a node in the CHA
+     */
+    private static int addToCHA(final CGHA cgha,
+                                final JavaNode target,
+                                final String product,
+                                final JavaType depType,
+                                final String depTypeUri) {
+        final var cha = cgha.CHA;
+        final var type = cha.computeIfAbsent("//" + product + depTypeUri, x ->
+                new JavaType(x, depType.getSourceFileName(), new Int2ObjectOpenHashMap<>(), new HashMap<>(),
+                        depType.getSuperClasses(), depType.getSuperInterfaces(),
+                        depType.getAccess(), depType.isFinal()));
+
+        final int index;
+        synchronized (type) {
+            index = type.getMethodKey(target);
+            if (index == -1) {
+                final int nodeCount = cgha.nodeCount.getAndIncrement();
+                type.addMethod(target, nodeCount);
+                return nodeCount;
+            }
+        }
+        return index;
+    }
+
+    // Local
+    /**
+     * Build an {@link ExtendedRevisionCallGraph} from the original artifact and newly
+     * resolved calls.
+     *
+     * @param artifact original artifact
+     * @param result   resolved calls
+     * @return full call graph
+     */
+    private static ExtendedRevisionJavaCallGraph buildRCG(final ExtendedRevisionJavaCallGraph artifact,
+                                                          final CGHA result) {
+        final var cha = artifact.getClassHierarchy();
+        cha.put(JavaScope.resolvedTypes, result.CHA);
+        return ExtendedRevisionJavaCallGraph.extendedBuilder().forge(artifact.forge)
+                .cgGenerator(artifact.getCgGenerator())
+                .classHierarchy(cha)
+                .product(artifact.product)
+                .timestamp(artifact.timestamp)
+                .version(artifact.version)
+                .graph(new JavaGraph(artifact.getGraph().getCallSites(),
+                        new HashMap<>(),
+                        result.graph))
+                .nodeCount(result.nodeCount.get())
+                .build();
+    }
+
+    // Local
+    private void addThisMergeToResult(FastenDefaultDirectedGraph result,
+                                      final ExtendedRevisionJavaCallGraph merged) {
+        final var uris = merged.mapOfFullURIStrings();
+        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
+        long offset = result.nodes().longStream().max().orElse(0L) + 1;
+
+        for (final var node : directedMerge.nodes()) {
+            for (final var successor : directedMerge.successors(node)) {
+                final var updatedNode = updateNode(node, offset, uris);
+                final var updatedSuccessor = updateNode(successor, offset, uris);
+                addEdge(result, updatedNode, updatedSuccessor);
+            }
+        }
+    }
+
+    // Local
+    private void addEdge(final FastenDefaultDirectedGraph result,
+                         final long source, final long target) {
+        result.addInternalNode(source);
+        result.addInternalNode(target);
+        result.addEdge(source, target);
     }
 
     /**
@@ -1016,91 +979,131 @@ public class CGMerger {
         }
     }
 
+    /**
+     * Fetches metadata of the nodes of first arg from database.
+     *
+     * @param graph DirectedGraph to search for its callable's metadata in the database.
+     * @return Map of callable ids and their corresponding metadata in the form of
+     * JSONObject.
+     */
+    public Map<Long, JSONObject> getCallablesMetadata(final DirectedGraph graph) {
+        final Map<Long, JSONObject> result = new HashMap<>();
 
-    public ExtendedRevisionJavaCallGraph mergeWithCHA(final ExtendedRevisionJavaCallGraph artifact) {
-        final var result = new CGHA(artifact);
-
-        final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
-        final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
-
-        artifact.getGraph().getCallSites().entrySet().parallelStream().forEach(arc ->
-                processArc(universalParents, universalChildren, ercgTypeDictionary, result,
-                        externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc));
-        return buildRCG(artifact, result);
+        final var metadata = dbContext
+                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
+                .from(Callables.CALLABLES)
+                .where(Callables.CALLABLES.ID.in(graph.nodes()))
+                .fetch();
+        for (final var callable : metadata) {
+            result.put(callable.value1(), new JSONObject(callable.value2().data()));
+        }
+        return result;
     }
 
     /**
-     * Merges a call graph with its dependencies using CHA algorithm.
+     * Retrieve external calls and constructor calls from a call graph.
      *
-     * @param artifactId package version id of an artifact to resolve
-     * @return merged call graph
+     * @param callGraphData call graph
+     * @return list of external and constructor calls
      */
-    public DirectedGraph mergeWithCHA(final long artifactId) {
-        final long totalTime = System.currentTimeMillis();
-        final var callGraphData = fetchCallGraphData(artifactId, rocksDao);
-
-        if (callGraphData == null) {
-            logger.error("Empty call graph data");
+    private GraphMetadata getArcs(final long index, final DirectedGraph callGraphData, final RocksDao rocksDao) {
+        try {
+            return rocksDao.getGraphMetadata(index, callGraphData);
+        } catch (RocksDBException e) {
+            logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
             return null;
         }
-
-        var result = new ArrayImmutableDirectedGraph.Builder();
-
-        cloneNodesAndArcs(result, callGraphData);
-
-        final long startTime = System.currentTimeMillis();
-
-        var graphArcs = getArcs(artifactId, callGraphData, rocksDao);
-        if (graphArcs == null) {
-            return null;
-        }
-        for (var entry : graphArcs.gid2NodeMetadata.long2ObjectEntrySet()) {
-            var sourceId = entry.getLongKey();
-            var nodeMetadata = entry.getValue();
-            for (var receiver : nodeMetadata.receiverRecords) {
-                var arc = new Arc(sourceId, receiver);
-                var node = new Node(nodeMetadata.type, receiver.receiverSignature);
-                resolve(result, callGraphData, arc, node, callGraphData.isExternal(sourceId));
-            }
-        }
-        logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
-                .format((System.currentTimeMillis() - startTime) / 1000d));
-        logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
-                .format((System.currentTimeMillis() - totalTime) / 1000d));
-        return result.build();
     }
 
     /**
-     * Merges a call graph with its dependencies using CHA algorithm.
+     * Retrieve a call graph from a graph database given a maven coordinate.
      *
-     * @param artifact artifact to resolve
-     * @return merged call graph
+     * @param rocksDao rocks DAO
+     * @return call graph
      */
-    public DirectedGraph mergeWithCHA(final String artifact) {
-        return mergeWithCHA(getPackageVersionId(artifact));
+    private DirectedGraph fetchCallGraphData(final long artifactId, final RocksDao rocksDao) {
+        DirectedGraph callGraphData = null;
+        try {
+            callGraphData = rocksDao.getGraphData(artifactId);
+        } catch (RocksDBException e) {
+            logger.error("Could not retrieve callgraph data from the graph database:", e);
+        }
+        return callGraphData;
     }
 
     /**
-     * Create fully merged for the entire dependency set.
+     * Get package version id for an artifact.
      *
-     * @return merged call graph
+     * @param artifact artifact in format groupId:artifactId:version
+     * @return package version id
      */
-    public DirectedGraph mergeAllDeps() {
-        if (this.dbContext == null) {
-            final var result = new FastenDefaultDirectedGraph();
-            for (final var dep : this.ercgDependencySet) {
-                addThisMergeToResult(result, mergeWithCHA(dep));
+    private long getPackageVersionId(final String artifact) {
+        var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
+        var version = artifact.split(":")[2];
+        return Objects.requireNonNull(dbContext
+                .select(PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
+                .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                .fetchOne())
+                .component1();
+    }
+
+    /**
+     * Get callables from dependencies.
+     *
+     * @param dependenciesIds dependencies IDs
+     * @param rocksDao        rocks DAO
+     * @return list of callables
+     */
+    private List<Long> getCallables(final Set<Long> dependenciesIds, final RocksDao rocksDao) {
+        var callables = new ArrayList<Long>();
+        for (var id : dependenciesIds) {
+            try {
+                var cg = rocksDao.getGraphData(id);
+                var nodes = cg.nodes();
+                nodes.removeAll(cg.externalNodes());
+                callables.addAll(nodes);
+            } catch (RocksDBException | NullPointerException e) {
+                logger.error("Couldn't retrieve a call graph with ID: {}", id);
             }
-            return result;
-        } else {
-            List<DirectedGraph> depGraphs = new ArrayList<>();
-            for (final var dep : this.dependencySet) {
-                var merged = mergeWithCHA(dep);
-                if (merged != null) {
-                    depGraphs.add(merged);
-                }
-            }
-            return augmentGraphs(depGraphs);
         }
+        return callables;
+    }
+
+    /**
+     * Get dependencies IDs from a metadata database.
+     *
+     * @param dbContext DSL context
+     * @return set of IDs of dependencies
+     */
+    private Set<Long> getDependenciesIds(final List<String> dependencySet,
+                                         final DSLContext dbContext) {
+        var coordinates = new HashSet<>(dependencySet);
+
+        Condition depCondition = null;
+
+        for (var dependency : coordinates) {
+            var packageName = dependency.split(":")[0] + ":" + dependency.split(":")[1];
+            var version = dependency.split(":")[2];
+
+            if (depCondition == null) {
+                depCondition = Packages.PACKAGES.PACKAGE_NAME.eq(packageName)
+                        .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version));
+            } else {
+                depCondition = depCondition.or(Packages.PACKAGES.PACKAGE_NAME.eq(packageName)
+                        .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version)));
+            }
+        }
+        return dbContext
+                .select(PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+                .where(depCondition)
+                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                .fetch()
+                .intoSet(PackageVersions.PACKAGE_VERSIONS.ID);
     }
 }
