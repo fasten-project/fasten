@@ -172,8 +172,7 @@ public class MergerCacheInvalidationPlugin extends Plugin {
             } else {
                 var json = new JSONArray();
                 // TODO: possible optimization: we don't really need to pass the whole revision.
-                var depSetJson = depSet.stream().map(Revision::toJSON);
-                json.put(depSetJson);
+                depSet.stream().map(Revision::toJSON).forEach(json::put);
                 return Optional.of(json.toString());
             }
         }
