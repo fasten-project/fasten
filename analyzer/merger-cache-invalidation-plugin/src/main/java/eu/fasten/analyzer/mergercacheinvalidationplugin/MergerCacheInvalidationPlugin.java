@@ -142,7 +142,7 @@ public class MergerCacheInvalidationPlugin extends Plugin {
             }
 
             // Resolve the set of transitive dependants for this product.
-            this.depSet = this.graphResolver.dependentBFS(groupId, artifactId, version, -1, true);
+            this.depSet = this.graphResolver.resolveDependents(groupId, artifactId, version, -1, true);
 
             // Go over the set and invalidate the cache for each dependant.
             for (Revision revision : depSet) {
