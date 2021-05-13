@@ -1,6 +1,7 @@
 package eu.fasten.analyzer.mergercacheinvalidationplugin;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -40,14 +42,20 @@ public class MergerCacheInvalidationPlugin extends Plugin {
          * It first creates a Database Context from Knowledge Base and
          * then uses it to build dependency graph in the graph resolver.
          *
+         * @param kbUrl - the url of the knowledge base.
+         * @param kbUser  - user for the knowledge base.
          * @param depGraphPath - the directory where the dependency graph can be found.
          */
-        public void loadGraphResolver(String depGraphPath) {
+        public void loadGraphResolver(String kbUrl, String kbUser, String depGraphPath) {
             logger.info("Building Dependency Graph from " + depGraphPath + "...");
             try {
+                var dbContext = PostgresConnector.getDSLContext(kbUrl, kbUser, true);
                 var graphResolver = new GraphMavenResolver();
-                graphResolver.buildDependencyGraph(null, depGraphPath);
+                graphResolver.buildDependencyGraph(dbContext, depGraphPath);
                 this.graphResolver = graphResolver;
+            } catch (SQLException e) {
+                logger.error("Couldn't connect to the KnowledgeBase", e);
+                System.exit(1);
             } catch (Exception e) {
                 logger.error("Couldn't build the dependency graph", e);
                 System.exit(1);

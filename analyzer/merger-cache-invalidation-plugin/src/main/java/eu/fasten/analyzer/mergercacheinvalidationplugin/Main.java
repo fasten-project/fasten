@@ -36,6 +36,16 @@ public class Main implements Runnable {
             description = "Path to JSON file which contains product and its version")
     String jsonFile;
 
+    @CommandLine.Option(names = {"-ur", "--kb-url"},
+            paramLabel = "KB_URL",
+            description = "The url of the knowledge base")
+    String kbUrl;
+
+    @CommandLine.Option(names = {"-us", "--kb-user"},
+            paramLabel = "KB_USER",
+            description = "The user of the knowledge base")
+    String kbUser;
+
     @CommandLine.Option(names = {"-dg", "--depgraph-path"},
             paramLabel = "DEP_GRAPH_PATH",
             description = "The directory of the dependency graph")
@@ -49,7 +59,7 @@ public class Main implements Runnable {
     @Override
     public void run() {
         var cacheInvalidationPlugin = new MergerCacheInvalidationPlugin.MergerCacheInvalidationExtension();
-        cacheInvalidationPlugin.loadGraphResolver(depGraphPath);
+        cacheInvalidationPlugin.loadGraphResolver(kbUrl, kbUser, depGraphPath);
         final FileReader reader;
         try {
             reader = new FileReader(jsonFile);
