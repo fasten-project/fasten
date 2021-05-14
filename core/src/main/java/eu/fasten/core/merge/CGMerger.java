@@ -53,14 +53,14 @@ public class CGMerger {
     private static final Logger logger = LoggerFactory.getLogger(CGMerger.class);
 
     private final Map<String, List<String>> universalChildren;
+    private final Map<String, List<String>> universalParents;
+
     private Map<String, Map<String, Set<Long>>> typeDictionary;
     private DSLContext dbContext;
     private RocksDao rocksDao;
     private Set<Long> dependencySet;
     private Map<Long, String> namespaceMap;
 
-
-    private Map<String, List<String>> universalParents;
     private List<ExtendedRevisionJavaCallGraph> ercgDependencySet;
     private BiMap<Long, String> allUris;
     private Map<String, List<ExtendedRevisionJavaCallGraph>> ercgTypeDictionary;
@@ -100,6 +100,8 @@ public class CGMerger {
         final var universalCHA = createUniversalCHA(this.dependencySet, dbContext, rocksDao);
         this.universalChildren = new HashMap<>(universalCHA.getRight().size());
         universalCHA.getRight().forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
+        this.universalParents = new HashMap<>(universalCHA.getLeft().size());
+        universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
         this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
     }
 
@@ -118,6 +120,8 @@ public class CGMerger {
         final var universalCHA = createUniversalCHA(dependencySet, dbContext, rocksDao);
         this.universalChildren = new HashMap<>(universalCHA.getRight().size());
         universalCHA.getRight().forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
+        this.universalParents = new HashMap<>(universalCHA.getLeft().size());
+        universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
         this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
     }
 
@@ -266,6 +270,7 @@ public class CGMerger {
         }
     }
 
+//    FastenDefaultDirectedGraph
     public ExtendedRevisionJavaCallGraph mergeWithCHA(final ExtendedRevisionJavaCallGraph artifact) {
         final var result = new CGHA(artifact);
 
