@@ -1,13 +1,19 @@
 package eu.fasten.analyzer.licensedetector;
 
+import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
+import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -85,6 +91,49 @@ public class LicenseDetectorTest {
                     new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).get(),
                     "Retrieved pom.xml file is not the one the test expected."
             );
+        });
+    }
+
+    @Test
+    public void givenRepo_whenRetrievingLicensesFromLocalPomFile_thenLicensesAreCorrectlyRetrieved() {
+
+        // Relative Maven repo path -> expected detected licenses
+        Map<String, Set<DetectedLicense>> inputToExpected = Map.ofEntries(
+                Map.entry(
+                        "complete-maven-project",
+                        Stream.of(
+                                // FIXME SPDX IDs
+                                new DetectedLicense("Apache License, Version 2.0", DetectedLicenseSource.LOCAL_POM),
+                                new DetectedLicense("GNU General Public License (GPL) version 2, or any later version", DetectedLicenseSource.LOCAL_POM),
+                                new DetectedLicense("GPLv2 with Classpath exception", DetectedLicenseSource.LOCAL_POM)
+                        ).collect(Collectors.toCollection(HashSet::new))
+                ),
+                Map.entry(
+                        "empty-license-section-maven-project",
+                        Collections.<DetectedLicense>emptySet()
+                ),
+                Map.entry(
+                        "no-license-section-maven-project",
+                        Collections.<DetectedLicense>emptySet()
+                )
+        );
+
+        inputToExpected.forEach((relativeRepoPath, expectedDetectedLicenses) -> {
+
+            // Retrieving the test Maven repo pom file's absolute path
+            String absoluteRepoPath = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
+                    .getResource(relativeRepoPath)).getFile()).getAbsolutePath();
+            assertNotNull(absoluteRepoPath, "Test Maven repo's absolute path shouldn't be empty.");
+
+            try {
+                assertEquals(
+                        new LicenseDetectorPlugin.LicenseDetector().getOutboundLicenses(absoluteRepoPath),
+                        expectedDetectedLicenses,
+                        "Retrieved and expected outbound licenses do not match."
+                );
+            } catch (FileNotFoundException | XmlPullParserException e) {
+                fail("Test has failed with the following exception: " + e.getMessage());
+            }
         });
     }
 }
