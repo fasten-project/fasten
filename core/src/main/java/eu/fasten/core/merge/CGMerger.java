@@ -442,13 +442,39 @@ public class CGMerger {
             switch (type) {
                 case "virtual":
                 case "interface":
-                    final var types = universalChildren.get(receiverTypeUri);
-                    if (types != null) {
-                        for (final var depTypeUri : types) {
-                            for (final var target : typeDictionary.getOrDefault(depTypeUri,
+                    var foundTarget = false;
+                    for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
+                        new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
+                        addEdge(result, callGraphData, arc.source, target, isCallback);
+                        foundTarget = true;
+                    }
+                    if(!foundTarget) {
+                        final var parents = universalParents.get(receiverTypeUri);
+                        if (parents != null) {
+                            for (final var parentUri : parents) {
+                                for (final var target : typeDictionary.getOrDefault(parentUri,
                                     new HashMap<>())
                                     .getOrDefault(node.signature, new HashSet<>())) {
-                                addEdge(result, callGraphData, arc.source, target, isCallback);
+                                    addEdge(result, callGraphData, arc.source, target, isCallback);
+                                    foundTarget = true;
+                                    break;
+                                }
+                                if (foundTarget){
+                                    break;
+                                }
+                            }
+                        }
+                        if (!foundTarget) {
+                            final var types = universalChildren.get(receiverTypeUri);
+                            if (types != null) {
+                                for (final var depTypeUri : types) {
+                                    for (final var target : typeDictionary.getOrDefault(depTypeUri,
+                                        new HashMap<>())
+                                        .getOrDefault(node.signature, new HashSet<>())) {
+                                        addEdge(result, callGraphData, arc.source, target,
+                                            isCallback);
+                                    }
+                                }
                             }
                         }
                     }
@@ -481,8 +507,7 @@ public class CGMerger {
         boolean foundTarget = false;
         for (final var receiverTypeUri : receiverTypeUris) {
             foundTarget =
-                    findTargets(typeDictionary, result, isCallback, call, foundTarget,
-                            receiverTypeUri);
+                    findTargets(typeDictionary, result, isCallback, call, foundTarget, receiverTypeUri);
             if (!foundTarget) {
                 for (String depTypeUri : universalParents.getOrDefault(receiverTypeUri, emptyList())) {
                     if (findTargets(typeDictionary, result, isCallback, call, foundTarget,
