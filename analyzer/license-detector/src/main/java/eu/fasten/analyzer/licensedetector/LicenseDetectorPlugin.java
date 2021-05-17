@@ -1,6 +1,12 @@
 package eu.fasten.analyzer.licensedetector;
 
+import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
+import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
 import eu.fasten.core.plugins.KafkaPlugin;
+import org.apache.maven.model.License;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -9,6 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 
 
@@ -52,10 +61,68 @@ public class LicenseDetectorPlugin extends Plugin {
                 String repoPath = extractRepoPath(record);
                 logger.info("License detector: scanning repository in " + repoPath + "...");
 
+                // TODO Checking whether the repository has already been scanned (by querying the KB)
+
+                // TODO Retrieving the outbound license
+                Set<DetectedLicense> outboundLicenses = getOutboundLicenses(repoPath);
+
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage());
                 setPluginError(e);
             }
+        }
+
+        protected Set<DetectedLicense> getOutboundLicenses(String repoPath)
+                throws FileNotFoundException, XmlPullParserException {
+
+            // Retrieving the `pom.xml` file
+            Optional<File> optionalPomFile = retrievePomFile(repoPath);
+            if (optionalPomFile.isEmpty()) {
+                throw new FileNotFoundException("No file named pom.xml found in " + repoPath + ". " +
+                        "This plugin only analyzes Maven projects.");
+            }
+            File pomFile = optionalPomFile.get();
+
+            // Looking for licenses in the local `pom.xml` file FIXME
+            List<License> licenses;
+            MavenXpp3Reader reader = new MavenXpp3Reader();
+            try(FileReader fileReader = new FileReader(pomFile)) {
+
+                // Parsing and retrieving the `licenses` XML tag
+                Model model = reader.read(fileReader);
+                licenses = model.getLicenses();
+
+                // If the pom file contains at least a license tag
+                if (!licenses.isEmpty()) {
+
+                    // Logging
+                    logger.info("Found some licenses in :" + repoPath);
+                    for (int i = 0; i < licenses.size(); i++) {
+                        logger.info("License number " + i + ": " + licenses.get(i).getName());
+                    }
+
+                    // Returning the set of discovered licenses
+                    Set<DetectedLicense> result = new HashSet<>(Collections.emptySet());
+                    licenses.forEach(license ->
+                            result.add(new DetectedLicense(license.getName(), DetectedLicenseSource.LOCAL_POM)));
+                    return result;
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Pom file " + pomFile.getAbsolutePath() +
+                        " exists but couldn't instantiate a FileReader object..");
+            } catch (XmlPullParserException e) {
+                throw new XmlPullParserException("Pom file " + pomFile.getAbsolutePath() +
+                        " exists but couldn't be parsed as a Maven pom XML file: " + e.getMessage());
+            }
+
+            // TODO Retrieving licenses from Maven central
+//            if (licenses.isEmpty()) { // in case no licenses have been found in the local `pom.xml` file
+//
+//            }
+
+            // TODO Retrieving licenses from the GitHub API
+
+            return Collections.emptySet(); // FIXME
         }
 
         /**
