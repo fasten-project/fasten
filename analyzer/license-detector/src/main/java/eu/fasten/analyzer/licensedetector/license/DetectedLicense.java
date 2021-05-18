@@ -10,12 +10,12 @@ public class DetectedLicense {
     /**
      * License name.
      */
-    protected String name; // FIXME Use SPDX IDs
+    protected final String name; // FIXME Use SPDX IDs
 
     /**
      * Where does the license come from.
      */
-    protected DetectedLicenseSource source;
+    protected final DetectedLicenseSource source;
 
     public DetectedLicense(String name, DetectedLicenseSource source) {
         this.name = name;
@@ -43,21 +43,5 @@ public class DetectedLicense {
                 "name='" + name + '\'' +
                 ", source=" + source +
                 '}';
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public DetectedLicenseSource getSource() {
-        return source;
-    }
-
-    public void setSource(DetectedLicenseSource source) {
-        this.source = source;
     }
 }
