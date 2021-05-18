@@ -27,6 +27,19 @@
         </license>
     </licenses>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.annotation</artifactId>
+            <version>7.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.1</version>
+        </dependency>
+    </dependencies>
+
     <modules>
         <module>module1</module>
         <module>module2</module>
