@@ -2,6 +2,7 @@ package eu.fasten.analyzer.licensedetector;
 
 import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
 import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
+import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.apache.maven.model.Dependency;
@@ -20,6 +21,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.*;
 
 
@@ -68,6 +70,9 @@ public class LicenseDetectorPlugin extends Plugin {
                 String repoPath = extractRepoPath(record);
                 logger.info("License detector: scanning repository in " + repoPath + "...");
 
+                // Retrieving the Maven coordinate of this input record
+                Revision coordinate = extractMavenCoordinate(record);
+
                 // Retrieving the `pom.xml` file
                 Optional<File> optionalPomFile = retrievePomFile(repoPath);
                 if (optionalPomFile.isEmpty()) {
@@ -79,7 +84,7 @@ public class LicenseDetectorPlugin extends Plugin {
                 // TODO Checking whether the repository has already been scanned (by querying the KB)
 
                 // Retrieving the outbound license
-                Set<DetectedLicense> outboundLicenses = getOutboundLicenses(pomFile);
+                Set<DetectedLicense> outboundLicenses = getOutboundLicenses(pomFile, coordinate);
 
                 // Retrieving inbound dependency licenses
                 Set<DetectedLicense> inboundDependencyLicenses = getDependencyLicensesFromMavenCentral(pomFile);
@@ -87,6 +92,7 @@ public class LicenseDetectorPlugin extends Plugin {
                 // TODO Detecting inbound licenses by scanning the project
 
                 // TODO Unzipping the JAR to determine which files actually form the package
+                // TODO Use the `sourcesUrl` field in the `fasten.RepoCLoner.out` input record
 
                 // TODO Inserting licenses into the Knowledge Base
 
@@ -97,26 +103,17 @@ public class LicenseDetectorPlugin extends Plugin {
         }
 
         /**
-         * Retrieves all licenses declared in a `pom.xml` file (of the project itself, not for dependencies).
-         *
-         * @param pomFile the `pom.xml` file to be analyzed.
-         * @return the detected licenses.
-         * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
-         */
-        protected Set<DetectedLicense> getLicensesFromPomFile(File pomFile) throws XmlPullParserException {
-            return getLicensesFromPomFile(pomFile, false);
-        }
-
-        /**
          * Retrieves all licenses declared in a `pom.xml` file.
          *
          * @param pomFile      the `pom.xml` file to be analyzed.
+         * @param coordinate   the Maven coordinate this `pom.xml` file belongs to.
          * @param isDependency whether the `pom.xml` belongs to a dependency or to the project itself.
          * @return the detected licenses.
          * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
          */
-        protected Set<DetectedLicense> getLicensesFromPomFile(File pomFile, boolean isDependency)
-                throws XmlPullParserException {
+        protected Set<DetectedLicense> getLicensesFromPomFile(File pomFile,
+                                                              Revision coordinate,
+                                                              boolean isDependency) throws XmlPullParserException {
 
             // Result
             List<License> licenses;
@@ -141,8 +138,10 @@ public class LicenseDetectorPlugin extends Plugin {
 
                     // Returning the set of discovered licenses
                     Set<DetectedLicense> result = new HashSet<>(Collections.emptySet());
-                    licenses.forEach(license -> result.add(new DetectedLicense(license.getName(),
-                            isDependency ? DetectedLicenseSource.MAVEN_CENTRAL : DetectedLicenseSource.LOCAL_POM)));
+                    licenses.forEach(license -> result.add(new DetectedLicense(
+                            license.getName(),
+                            isDependency ? DetectedLicenseSource.MAVEN_CENTRAL : DetectedLicenseSource.LOCAL_POM,
+                            coordinate)));
                     return result;
                 }
             } catch (IOException e) {
@@ -160,14 +159,16 @@ public class LicenseDetectorPlugin extends Plugin {
         /**
          * Retrieves outbound licenses of the analyzed project.
          *
-         * @param pomFile the repository `pom.xml` file.
+         * @param pomFile    the repository `pom.xml` file.
+         * @param coordinate the Maven coordinate this `pom.xml` file belongs to.
          * @return a set of detected outbound licenses.
          * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
          */
-        protected Set<DetectedLicense> getOutboundLicenses(File pomFile) throws XmlPullParserException {
+        protected Set<DetectedLicense> getOutboundLicenses(File pomFile,
+                                                           Revision coordinate) throws XmlPullParserException {
 
             // Retrieving outbound licenses from the local `pom.xml` file.
-            Set<DetectedLicense> licenses = getLicensesFromPomFile(pomFile);
+            Set<DetectedLicense> licenses = getLicensesFromPomFile(pomFile, coordinate, false);
 
             // TODO Retrieving licenses from Maven central
 //            if (licenses.isEmpty()) { // in case no licenses have been found in the local `pom.xml` file
@@ -236,7 +237,10 @@ public class LicenseDetectorPlugin extends Plugin {
 
                     // Retrieving licenses from the downloaded `pom.xml` file
                     File dependencyPomFile = optionalDependencyPomFile.get();
-                    dependencyLicenses.addAll(getLicensesFromPomFile(dependencyPomFile, true));
+                    dependencyLicenses.addAll(getLicensesFromPomFile(
+                            dependencyPomFile,
+                            new Revision(dependencyGroupId, dependencyArtifactId, dependencyVersion, new Timestamp(-1)),
+                            true));
 
                     // Deleting the temporary dependency's `pom.xml` file
                     MavenUtilities.forceDeleteFile(dependencyPomFile);
@@ -271,6 +275,36 @@ public class LicenseDetectorPlugin extends Plugin {
                 throw new IllegalArgumentException("Invalid repository information: missing repository path.");
             }
             return repoPath;
+        }
+
+        /**
+         * Retrieves the Maven coordinate of the input record.
+         *
+         * @param record the input record containing repository information.
+         * @return the Maven coordinate of the input record.
+         * @throws IllegalArgumentException in case the function couldn't find coordinate information
+         *                                  in the input record.
+         */
+        protected Revision extractMavenCoordinate(String record) {
+            var payload = new JSONObject(record);
+            if (payload.has("payload")) {
+                payload = payload.getJSONObject("payload");
+            }
+            String groupId = payload.getString("groupId");
+            if (groupId == null) {
+                throw new IllegalArgumentException("Invalid repository information: missing coordinate group ID.");
+            }
+            String artifactId = payload.getString("artifactId");
+            if (artifactId == null) {
+                throw new IllegalArgumentException("Invalid repository information: missing coordinate artifact ID.");
+            }
+            String version = payload.getString("version");
+            if (version == null) {
+                throw new IllegalArgumentException("Invalid repository information: missing coordinate version.");
+            }
+            long createdAt = payload.getLong("date");
+            // TODO Is the timestamp conversion right?
+            return new Revision(groupId, artifactId, version, new Timestamp(createdAt));
         }
 
         /**
@@ -310,9 +344,9 @@ public class LicenseDetectorPlugin extends Plugin {
         /**
          * Pretty-prints Maven coordinates.
          *
-         * @param groupId the maven coordinate's group ID.
+         * @param groupId    the maven coordinate's group ID.
          * @param artifactId the maven coordinate's artifact ID.
-         * @param version the maven coordinate's version.
+         * @param version    the maven coordinate's version.
          * @return a pretty String representation of the input Maven coordinate.
          */
         protected static String constructMavenArtifactName(String groupId, String artifactId, String version) {
