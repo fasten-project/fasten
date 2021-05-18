@@ -2,6 +2,9 @@ package eu.fasten.analyzer.licensedetector.license;
 
 import java.util.Objects;
 
+/**
+ * A license detected by the license detector plugin.
+ */
 public class DetectedLicense {
 
     /**
@@ -30,8 +33,16 @@ public class DetectedLicense {
             return true;
         if (!(o instanceof DetectedLicense))
             return false;
-        DetectedLicense other = (DetectedLicense)o;
+        DetectedLicense other = (DetectedLicense) o;
         return this.name.compareToIgnoreCase(other.name) == 0 && this.source == other.source;
+    }
+
+    @Override
+    public String toString() {
+        return "DetectedLicense{" +
+                "name='" + name + '\'' +
+                ", source=" + source +
+                '}';
     }
 
     public String getName() {

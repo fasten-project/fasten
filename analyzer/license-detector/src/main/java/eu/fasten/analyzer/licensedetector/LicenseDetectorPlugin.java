@@ -2,7 +2,9 @@ package eu.fasten.analyzer.licensedetector;
 
 import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
 import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.KafkaPlugin;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.model.License;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -39,6 +41,11 @@ public class LicenseDetectorPlugin extends Plugin {
          */
         protected String consumerTopic = "fasten.RepoCloner.out";
 
+        /**
+         * The default pom's repository url used by this plugin.
+         */
+        public static String MAVEN_CENTRAL_REPO = "https://repo1.maven.org/maven2/";
+
         @Override
         public Optional<List<String>> consumeTopic() {
             return Optional.of(Collections.singletonList(consumerTopic));
@@ -61,10 +68,27 @@ public class LicenseDetectorPlugin extends Plugin {
                 String repoPath = extractRepoPath(record);
                 logger.info("License detector: scanning repository in " + repoPath + "...");
 
+                // Retrieving the `pom.xml` file
+                Optional<File> optionalPomFile = retrievePomFile(repoPath);
+                if (optionalPomFile.isEmpty()) {
+                    throw new FileNotFoundException("No file named pom.xml found in " + repoPath + ". " +
+                            "This plugin only analyzes Maven projects.");
+                }
+                File pomFile = optionalPomFile.get();
+
                 // TODO Checking whether the repository has already been scanned (by querying the KB)
 
-                // TODO Retrieving the outbound license
-                Set<DetectedLicense> outboundLicenses = getOutboundLicenses(repoPath);
+                // Retrieving the outbound license
+                Set<DetectedLicense> outboundLicenses = getOutboundLicenses(pomFile);
+
+                // Retrieving inbound dependency licenses
+                Set<DetectedLicense> inboundDependencyLicenses = getDependencyLicensesFromMavenCentral(pomFile);
+
+                // TODO Detecting inbound licenses by scanning the project
+
+                // TODO Unzipping the JAR to determine which files actually form the package
+
+                // TODO Inserting licenses into the Knowledge Base
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage());
@@ -72,21 +96,34 @@ public class LicenseDetectorPlugin extends Plugin {
             }
         }
 
-        protected Set<DetectedLicense> getOutboundLicenses(String repoPath)
-                throws FileNotFoundException, XmlPullParserException {
+        /**
+         * Retrieves all licenses declared in a `pom.xml` file (of the project itself, not for dependencies).
+         *
+         * @param pomFile the `pom.xml` file to be analyzed.
+         * @return the detected licenses.
+         * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
+         */
+        protected Set<DetectedLicense> getLicensesFromPomFile(File pomFile) throws XmlPullParserException {
+            return getLicensesFromPomFile(pomFile, false);
+        }
 
-            // Retrieving the `pom.xml` file
-            Optional<File> optionalPomFile = retrievePomFile(repoPath);
-            if (optionalPomFile.isEmpty()) {
-                throw new FileNotFoundException("No file named pom.xml found in " + repoPath + ". " +
-                        "This plugin only analyzes Maven projects.");
-            }
-            File pomFile = optionalPomFile.get();
+        /**
+         * Retrieves all licenses declared in a `pom.xml` file.
+         *
+         * @param pomFile      the `pom.xml` file to be analyzed.
+         * @param isDependency whether the `pom.xml` belongs to a dependency or to the project itself.
+         * @return the detected licenses.
+         * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
+         */
+        protected Set<DetectedLicense> getLicensesFromPomFile(File pomFile, boolean isDependency)
+                throws XmlPullParserException {
 
-            // Looking for licenses in the local `pom.xml` file FIXME
+            // Result
             List<License> licenses;
+
+            // Maven `pom.xml` file parser
             MavenXpp3Reader reader = new MavenXpp3Reader();
-            try(FileReader fileReader = new FileReader(pomFile)) {
+            try (FileReader fileReader = new FileReader(pomFile)) {
 
                 // Parsing and retrieving the `licenses` XML tag
                 Model model = reader.read(fileReader);
@@ -96,15 +133,16 @@ public class LicenseDetectorPlugin extends Plugin {
                 if (!licenses.isEmpty()) {
 
                     // Logging
-                    logger.info("Found some licenses in :" + repoPath);
+                    logger.info("Found some " + (isDependency ? "(dependency)" : "") + "licenses in " +
+                            pomFile.getAbsolutePath() + ":");
                     for (int i = 0; i < licenses.size(); i++) {
                         logger.info("License number " + i + ": " + licenses.get(i).getName());
                     }
 
                     // Returning the set of discovered licenses
                     Set<DetectedLicense> result = new HashSet<>(Collections.emptySet());
-                    licenses.forEach(license ->
-                            result.add(new DetectedLicense(license.getName(), DetectedLicenseSource.LOCAL_POM)));
+                    licenses.forEach(license -> result.add(new DetectedLicense(license.getName(),
+                            isDependency ? DetectedLicenseSource.MAVEN_CENTRAL : DetectedLicenseSource.LOCAL_POM)));
                     return result;
                 }
             } catch (IOException e) {
@@ -115,6 +153,22 @@ public class LicenseDetectorPlugin extends Plugin {
                         " exists but couldn't be parsed as a Maven pom XML file: " + e.getMessage());
             }
 
+            // No licenses were detected
+            return Collections.emptySet();
+        }
+
+        /**
+         * Retrieves outbound licenses of the analyzed project.
+         *
+         * @param pomFile the repository `pom.xml` file.
+         * @return a set of detected outbound licenses.
+         * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
+         */
+        protected Set<DetectedLicense> getOutboundLicenses(File pomFile) throws XmlPullParserException {
+
+            // Retrieving outbound licenses from the local `pom.xml` file.
+            Set<DetectedLicense> licenses = getLicensesFromPomFile(pomFile);
+
             // TODO Retrieving licenses from Maven central
 //            if (licenses.isEmpty()) { // in case no licenses have been found in the local `pom.xml` file
 //
@@ -122,7 +176,82 @@ public class LicenseDetectorPlugin extends Plugin {
 
             // TODO Retrieving licenses from the GitHub API
 
-            return Collections.emptySet(); // FIXME
+            // Return all detected licenses
+            return licenses;
+        }
+
+        /**
+         * Retrieves dependency licenses by downloading their `pom.xml` files from Maven central and looking for
+         * the `licenses` XML tag.
+         *
+         * @param pomFile the `pom.xml` file of the project whose dependency licenses are of interest.
+         * @return the set of detected dependency licenses.
+         * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
+         */
+        protected Set<DetectedLicense> getDependencyLicensesFromMavenCentral(File pomFile)
+                throws XmlPullParserException {
+
+            // Result
+            Set<DetectedLicense> dependencyLicenses = new HashSet<>(Collections.emptySet());
+
+            // Maven `pom.xml` file parser
+            MavenXpp3Reader reader = new MavenXpp3Reader();
+            try (FileReader fileReader = new FileReader(pomFile)) {
+
+                // Parsing and retrieving the `dependencies` XML tag
+                Model model = reader.read(fileReader);
+                List<Dependency> dependencies = model.getDependencies();
+
+                // For each dependency
+                for (Dependency dependency : dependencies) {
+
+                    // Retrieving dependency license information
+                    String dependencyGroupId = dependency.getGroupId();
+                    String dependencyArtifactId = dependency.getArtifactId();
+                    String dependencyVersion = dependency.getVersion();
+
+                    // Construct a dependency name for printing purposes
+                    String dependencyName =
+                            constructMavenArtifactName(dependencyGroupId, dependencyArtifactId, dependencyVersion);
+
+                    // Skipping if artifact doesn't exist
+                    if (!MavenUtilities.mavenArtifactExists(
+                            dependencyGroupId, dependencyArtifactId, dependencyVersion, MAVEN_CENTRAL_REPO)) {
+                        logger.info("Artifact of dependency " + dependencyName +
+                                " doesn't exist on " + MAVEN_CENTRAL_REPO + ".");
+                        continue;
+                    }
+
+                    // Download the dependency `pom.xml` file
+                    Optional<File> optionalDependencyPomFile = MavenUtilities.downloadPom(
+                            dependencyGroupId, dependencyArtifactId, dependencyVersion,
+                            Collections.singletonList(MAVEN_CENTRAL_REPO));
+
+                    // Skip if the dependency's `pom.xml` file was not available on Maven central
+                    if (optionalDependencyPomFile.isEmpty()) {
+                        logger.info("Dependency " + dependencyName +
+                                " doesn't have a pom.xml file on " + MAVEN_CENTRAL_REPO + ".");
+                        continue;
+                    }
+
+                    // Retrieving licenses from the downloaded `pom.xml` file
+                    File dependencyPomFile = optionalDependencyPomFile.get();
+                    dependencyLicenses.addAll(getLicensesFromPomFile(dependencyPomFile, true));
+
+                    // Deleting the temporary dependency's `pom.xml` file
+                    MavenUtilities.forceDeleteFile(dependencyPomFile);
+                }
+
+            } catch (IOException e) {
+                throw new RuntimeException("Pom file " + pomFile.getAbsolutePath() +
+                        " exists but couldn't instantiate a FileReader object..");
+            } catch (XmlPullParserException e) {
+                throw new XmlPullParserException("Pom file " + pomFile.getAbsolutePath() +
+                        " exists but couldn't be parsed as a Maven pom XML file: " + e.getMessage());
+            }
+
+            // Returning all detected dependency licenses
+            return dependencyLicenses;
         }
 
         /**
@@ -176,6 +305,18 @@ public class LicenseDetectorPlugin extends Plugin {
             }
 
             return pomFile;
+        }
+
+        /**
+         * Pretty-prints Maven coordinates.
+         *
+         * @param groupId the maven coordinate's group ID.
+         * @param artifactId the maven coordinate's artifact ID.
+         * @param version the maven coordinate's version.
+         * @return a pretty String representation of the input Maven coordinate.
+         */
+        protected static String constructMavenArtifactName(String groupId, String artifactId, String version) {
+            return groupId + ":" + artifactId + ":" + version;
         }
 
         @Override
