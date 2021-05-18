@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -227,7 +228,7 @@ public class Main implements Runnable {
                 commands.computations.genAlgorithm, true);
         deps.add(art);
         final var merger = new CGMerger(deps);
-        result = merger.mergeWithCHA(art);
+        result = new ExtendedRevisionJavaCallGraph(new JSONObject()); //merger.mergeWithCHA(art); TODO: Fix this
 
         if (result != null) {
 //            logger.info("Resolved {} nodes, {} calls in {} seconds",

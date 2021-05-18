@@ -24,9 +24,8 @@ import eu.fasten.core.data.*;
 import eu.fasten.core.data.graphdb.GraphMetadata;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -46,7 +45,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import static java.util.Collections.emptyList;
 
 public class CGMerger {
 
@@ -63,7 +61,6 @@ public class CGMerger {
 
     private List<ExtendedRevisionJavaCallGraph> ercgDependencySet;
     private BiMap<Long, String> allUris;
-    private Map<String, List<ExtendedRevisionJavaCallGraph>> ercgTypeDictionary;
 
 
     public BiMap<Long, String> getAllUris() {
@@ -80,7 +77,6 @@ public class CGMerger {
         final var UCH = createUniversalCHA(dependencySet);
         this.universalParents = UCH.getLeft();
         this.universalChildren = UCH.getRight();
-        this.ercgTypeDictionary = createTypeDictionary(dependencySet);
         this.ercgDependencySet = dependencySet;
         this.allUris = HashBiMap.create();
     }
@@ -270,21 +266,69 @@ public class CGMerger {
         }
     }
 
-//    FastenDefaultDirectedGraph
-    public ExtendedRevisionJavaCallGraph mergeWithCHA(final ExtendedRevisionJavaCallGraph artifact) {
-        final var result = new CGHA(artifact);
+    public DirectedGraph mergeWithCHA(final ExtendedRevisionJavaCallGraph artifact) {
+        final var artifactCGHA = new CGHA(artifact);
+        final var callGraphData = ercgToDirectedGraph(artifact, artifactCGHA);
 
-        final var externalNodeIdToTypeMap = artifact.externalNodeIdToTypeMap();
-        final var internalNodeIdToTypeMap = artifact.internalNodeIdToTypeMap();
+        var result = new ArrayImmutableDirectedGraph.Builder();
+        cloneNodesAndArcs(result, callGraphData);
 
-        artifact.getGraph().getCallSites().entrySet().parallelStream().forEach(arc ->
-                processArc(universalParents, universalChildren, ercgTypeDictionary, result,
-                        externalNodeIdToTypeMap, internalNodeIdToTypeMap, arc));
-        return buildRCG(artifact, result);
+        var graphArcs = getERCGArcs(artifact);
+        for (var entry : graphArcs.gid2NodeMetadata.long2ObjectEntrySet()) {
+            var sourceId = entry.getLongKey();
+            var nodeMetadata = entry.getValue();
+            for (var receiver : nodeMetadata.receiverRecords) {
+                var arc = new Arc(sourceId, receiver);
+                var node = new Node(nodeMetadata.type, receiver.receiverSignature);
+                resolve(result, callGraphData, arc, node, callGraphData.isExternal(sourceId));
+            }
+        }
+        return result.build();
+    }
 
-//        final var directedGraph = new FastenDefaultDirectedGraph();
-//        addThisMergeToResult(directedGraph, buildRCG(artifact, result));
-//        return directedGraph;
+    private DirectedGraph ercgToDirectedGraph(ExtendedRevisionJavaCallGraph ercg, CGHA result) {
+        final var directedGraph = new FastenDefaultDirectedGraph();
+        addThisMergeToResult(directedGraph, buildRCG(ercg, result));
+        return directedGraph;
+    }
+
+    private GraphMetadata getERCGArcs(ExtendedRevisionJavaCallGraph ercg) {
+        final var map = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
+        for (var callsite : ercg.getGraph().getCallSites().entrySet()) {
+            var source = callsite.getKey().firstInt();
+            var target = callsite.getKey().secondInt();
+            var signature = ercg.mapOfAllMethods().get(source).getSignature();
+            var type = ercg.nodeIDtoTypeNameMap().get(source);
+            var receivers = new ArrayList<GraphMetadata.ReceiverRecord>();
+            var metadata = callsite.getValue();
+            for (var obj : metadata.values()) {
+                var receiver = (HashMap<String, Object>) obj;
+                var receiverTypes = getReceiver(receiver);
+                var callType = getCallType(receiver);
+                var line = (int) receiver.get("line");
+                var receiverSignature = ercg.mapOfAllMethods().get(target).getSignature();
+                receivers.add(new GraphMetadata.ReceiverRecord(line, callType, receiverSignature, receiverTypes));
+            }
+            map.put(source, new GraphMetadata.NodeMetadata(type, signature, receivers));
+        }
+        return new GraphMetadata(map);
+    }
+
+    private GraphMetadata.ReceiverRecord.CallType getCallType(HashMap<String, Object> callsite) {
+        switch (callsite.get("type").toString()) {
+            case "invokespecial":
+                return GraphMetadata.ReceiverRecord.CallType.SPECIAL;
+            case "invokestatic":
+                return GraphMetadata.ReceiverRecord.CallType.STATIC;
+            case "invokevirtual":
+                return GraphMetadata.ReceiverRecord.CallType.VIRTUAL;
+            case "invokeinterface":
+                return GraphMetadata.ReceiverRecord.CallType.INTERFACE;
+            case "invokedynamic":
+                return GraphMetadata.ReceiverRecord.CallType.DYNAMIC;
+            default:
+                return null;
+        }
     }
 
     /**
@@ -344,83 +388,23 @@ public class CGMerger {
      * @return merged call graph
      */
     public DirectedGraph mergeAllDeps() {
+        List<DirectedGraph> depGraphs = new ArrayList<>();
         if (this.dbContext == null) {
-            final var result = new FastenDefaultDirectedGraph();
             for (final var dep : this.ercgDependencySet) {
-                addThisMergeToResult(result, mergeWithCHA(dep));
+                var merged = mergeWithCHA(dep);
+                if (merged != null) {
+                    depGraphs.add(merged);
+                }
             }
-            return result;
         } else {
-            List<DirectedGraph> depGraphs = new ArrayList<>();
             for (final var dep : this.dependencySet) {
                 var merged = mergeWithCHA(dep);
                 if (merged != null) {
                     depGraphs.add(merged);
                 }
             }
-            return augmentGraphs(depGraphs);
         }
-    }
-
-    // Local
-    private void processArc(final Map<String, List<String>> universalParents,
-                            final Map<String, List<String>> universalChildren,
-                            final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
-                            final CGHA result,
-                            final Int2ObjectMap<JavaType> externalNodeIdToTypeMap,
-                            final Int2ObjectMap<JavaType> internalNodeIdToTypeMap,
-                            final Map.Entry<IntIntPair, Map<Object, Object>> arc) {
-        final var targetKey = arc.getKey().secondInt();
-        final var sourceKey = arc.getKey().firstInt();
-
-        boolean isCallBack = false;
-        int nodeKey = targetKey;
-        JavaType type = null;
-        if (internalNodeIdToTypeMap.containsKey(targetKey)) {
-            type = internalNodeIdToTypeMap.get(targetKey);
-        }
-        if (externalNodeIdToTypeMap.containsKey(targetKey)) {
-            type = externalNodeIdToTypeMap.get(targetKey);
-        }
-        if (externalNodeIdToTypeMap.containsKey(sourceKey)) {
-            type = externalNodeIdToTypeMap.get(sourceKey);
-            isCallBack = true;
-            nodeKey = sourceKey;
-        }
-        if (type != null) {
-            resolve(universalParents, universalChildren, typeDictionary, result, arc,
-                    nodeKey, type, isCallBack);
-        }
-    }
-
-    // Local
-    private void resolve(final Map<String, List<String>> universalParents,
-                         final Map<String, List<String>> universalChildren,
-                         final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
-                         final CGHA result,
-                         final Map.Entry<IntIntPair, Map<Object, Object>> arc,
-                         final int nodeKey,
-                         final JavaType type,
-                         final boolean isCallback) {
-
-        var call = new Call(arc, type.getMethods().get(nodeKey));
-
-        for (final var entry : arc.getValue().entrySet()) {
-            final var callSite = (HashMap<String, Object>) entry.getValue();
-            final var receiverTypeUris = getReceiver(callSite);
-
-            if (callSite.get("type").toString().matches("invokevirtual|invokeinterface")) {
-
-                resolveDynamics(universalChildren, universalParents, typeDictionary, result,
-                        isCallback, call, receiverTypeUris);
-
-            } else if (callSite.get("type").equals("invokedynamic")) {
-                logger.warn("OPAL didn't rewrite the invokedynamic");
-            } else {
-
-                resolveReceiverType(typeDictionary, result, isCallback, call, receiverTypeUris);
-            }
-        }
+        return augmentGraphs(depGraphs);
     }
 
     /**
@@ -444,22 +428,22 @@ public class CGMerger {
                 case "interface":
                     var foundTarget = false;
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
-                        new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
+                            new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                         addEdge(result, callGraphData, arc.source, target, isCallback);
                         foundTarget = true;
                     }
-                    if(!foundTarget) {
+                    if (!foundTarget) {
                         final var parents = universalParents.get(receiverTypeUri);
                         if (parents != null) {
                             for (final var parentUri : parents) {
                                 for (final var target : typeDictionary.getOrDefault(parentUri,
-                                    new HashMap<>())
-                                    .getOrDefault(node.signature, new HashSet<>())) {
+                                        new HashMap<>())
+                                        .getOrDefault(node.signature, new HashSet<>())) {
                                     addEdge(result, callGraphData, arc.source, target, isCallback);
                                     foundTarget = true;
                                     break;
                                 }
-                                if (foundTarget){
+                                if (foundTarget) {
                                     break;
                                 }
                             }
@@ -469,10 +453,10 @@ public class CGMerger {
                             if (types != null) {
                                 for (final var depTypeUri : types) {
                                     for (final var target : typeDictionary.getOrDefault(depTypeUri,
-                                        new HashMap<>())
-                                        .getOrDefault(node.signature, new HashSet<>())) {
+                                            new HashMap<>())
+                                            .getOrDefault(node.signature, new HashSet<>())) {
                                         addEdge(result, callGraphData, arc.source, target,
-                                            isCallback);
+                                                isCallback);
                                     }
                                 }
                             }
@@ -496,109 +480,6 @@ public class CGMerger {
     private ArrayList<String> getReceiver(final HashMap<String, Object> callSite) {
         return new ArrayList<>(Arrays.asList(((String) callSite.get(
                 "receiver")).replace("[", "").replace("]", "").split(",")));
-    }
-
-    // Local
-    private void resolveDynamics(final Map<String, List<String>> universalChildren,
-                                 final Map<String, List<String>> universalParents,
-                                 final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
-                                 final CGHA result, final boolean isCallback, final Call call,
-                                 final ArrayList<String> receiverTypeUris) {
-        boolean foundTarget = false;
-        for (final var receiverTypeUri : receiverTypeUris) {
-            foundTarget =
-                    findTargets(typeDictionary, result, isCallback, call, foundTarget, receiverTypeUri);
-            if (!foundTarget) {
-                for (String depTypeUri : universalParents.getOrDefault(receiverTypeUri, emptyList())) {
-                    if (findTargets(typeDictionary, result, isCallback, call, foundTarget,
-                            depTypeUri)) {
-                        break;
-                    }
-                }
-            }
-            if (!foundTarget) {
-                final var types = universalChildren.getOrDefault(receiverTypeUri, emptyList());
-                for (final var depTypeUri : types) {
-                    findTargets(typeDictionary, result, isCallback, call, foundTarget, depTypeUri);
-                }
-            }
-        }
-    }
-
-    // Local
-    private boolean findTargets(Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
-                                CGHA result, boolean isCallback,
-                                Call call, boolean foundTarget,
-                                String depTypeUri) {
-        for (final var dep : typeDictionary.getOrDefault(depTypeUri, emptyList())) {
-            foundTarget = resolveToDynamics(result, call, dep.getClassHierarchy().get(JavaScope.internalTypes)
-                    .get(depTypeUri), dep.productVersion, depTypeUri, isCallback, foundTarget);
-        }
-        return foundTarget;
-    }
-
-    // Local
-    private boolean resolveToDynamics(final CGHA cgha, final Call call,
-                                      final JavaType type,
-                                      final String product, final String depTypeUri,
-                                      boolean isCallback, boolean foundTarget) {
-        final var node = type.getDefinedMethods().get(call.target.getSignature());
-        if (node != null) {
-            addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
-            return true;
-        }
-        return foundTarget;
-    }
-
-    // Local
-    private void resolveReceiverType(final Map<String, List<ExtendedRevisionJavaCallGraph>> typeDictionary,
-                                     final CGHA result, final boolean isCallback,
-                                     final Call call, final List<String> receiverTypeUris) {
-        for (final var receiverTypeUri : receiverTypeUris) {
-            for (final var dep : typeDictionary.getOrDefault(receiverTypeUri, emptyList())) {
-                resolveIfDefined(result, call, dep.getClassHierarchy()
-                                .get(JavaScope.internalTypes)
-                                .get(receiverTypeUri), dep.productVersion,
-                        receiverTypeUri, isCallback);
-            }
-        }
-    }
-
-    // Local
-    private void resolveIfDefined(final CGHA cgha, final Call call,
-                                  final JavaType type,
-                                  final String product, final String depTypeUri,
-                                  boolean isCallback) {
-        final var node = type.getDefinedMethods().get(call.target.getSignature());
-        if (node != null) {
-            addEdge(cgha, new Call(call, node), product, type, depTypeUri, isCallback);
-        }
-    }
-
-    // Local
-
-    /**
-     * Create a map with types as keys and a list of {@link ExtendedRevisionCallGraph} that
-     * contain this type as values.
-     *
-     * @param dependencies dependencies including the artifact to resolve
-     * @return type dictionary
-     */
-    private Map<String, List<ExtendedRevisionJavaCallGraph>> createTypeDictionary(
-            final List<ExtendedRevisionJavaCallGraph> dependencies) {
-        Map<String, List<ExtendedRevisionJavaCallGraph>> result = new HashMap<>();
-        for (final var rcg : dependencies) {
-            for (final var type : rcg
-                    .getClassHierarchy().get(JavaScope.internalTypes)
-                    .entrySet()) {
-                result.merge(type.getKey(),
-                        new ArrayList<>(Collections.singletonList(rcg)), (old, nieuw) -> {
-                            old.addAll(nieuw);
-                            return old;
-                        });
-            }
-        }
-        return result;
     }
 
     /**
@@ -640,6 +521,7 @@ public class CGMerger {
     }
 
     // Local
+
     /**
      * Create a universal CHA for all dependencies including the artifact to resolve.
      *
@@ -820,62 +702,6 @@ public class CGMerger {
                 result.addEdge(superClass, sourceTypes);
             }
         }
-    }
-
-    // Local
-    /**
-     * Add new edge to the resolved call graph.
-     *
-     * @param cgha       call graph with resolved calls
-     * @param call       new call
-     * @param product    product name
-     * @param depType    dependency {@link JavaType}
-     * @param depTypeUri dependency type uri
-     * @param isCallback true if the call is a callback
-     */
-    private void addEdge(final CGHA cgha, final Call call,
-                         final String product,
-                         final JavaType depType,
-                         final String depTypeUri, boolean isCallback) {
-        final int addedKey = addToCHA(cgha, call.target, product, depType, depTypeUri);
-        final IntIntPair edge = isCallback
-                ? IntIntPair.of(addedKey, call.indices.secondInt())
-                : IntIntPair.of(call.indices.firstInt(), addedKey);
-        cgha.graph.put(edge, call.metadata);
-    }
-
-    // Local
-    /**
-     * Add a new node to CHA.
-     *
-     * @param cgha       call graph with resolved calls
-     * @param target     target Node
-     * @param product    product name
-     * @param depType    dependency {@link JavaType}
-     * @param depTypeUri dependency type uri
-     * @return id of a node in the CHA
-     */
-    private static int addToCHA(final CGHA cgha,
-                                final JavaNode target,
-                                final String product,
-                                final JavaType depType,
-                                final String depTypeUri) {
-        final var cha = cgha.CHA;
-        final var type = cha.computeIfAbsent("//" + product + depTypeUri, x ->
-                new JavaType(x, depType.getSourceFileName(), new Int2ObjectOpenHashMap<>(), new HashMap<>(),
-                        depType.getSuperClasses(), depType.getSuperInterfaces(),
-                        depType.getAccess(), depType.isFinal()));
-
-        final int index;
-        synchronized (type) {
-            index = type.getMethodKey(target);
-            if (index == -1) {
-                final int nodeCount = cgha.nodeCount.getAndIncrement();
-                type.addMethod(target, nodeCount);
-                return nodeCount;
-            }
-        }
-        return index;
     }
 
     // Local

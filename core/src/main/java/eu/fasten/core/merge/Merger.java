@@ -152,7 +152,7 @@ public class Merger implements Runnable {
                     }
                     depFiles.add(artFile);
                     var localMerger = new CGMerger(depFiles);
-                    var mergedERCG = localMerger.mergeWithCHA(artFile);
+                    var mergedERCG = new ExtendedRevisionJavaCallGraph(new JSONObject()); //localMerger.mergeWithCHA(artFile); TODO: Fix this
                     logger.info("Resolved {} nodes, {} calls in {} seconds",
                             mergedERCG.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
                             mergedERCG.getGraph().getResolvedCalls().size(),
