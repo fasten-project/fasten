@@ -102,9 +102,9 @@ public class LicenseDetectorTest {
                         "complete-maven-project",
                         Stream.of(
                                 // FIXME SPDX IDs
-                                new DetectedLicense("Apache License, Version 2.0", DetectedLicenseSource.LOCAL_POM),
-                                new DetectedLicense("GNU General Public License (GPL) version 2, or any later version", DetectedLicenseSource.LOCAL_POM),
-                                new DetectedLicense("GPLv2 with Classpath exception", DetectedLicenseSource.LOCAL_POM)
+                                new DetectedLicense("Apache License, Version 2.0", DetectedLicenseSource.LOCAL_POM, null),
+                                new DetectedLicense("GNU General Public License (GPL) version 2, or any later version", DetectedLicenseSource.LOCAL_POM, null),
+                                new DetectedLicense("GPLv2 with Classpath exception", DetectedLicenseSource.LOCAL_POM, null)
                         ).collect(Collectors.toCollection(HashSet::new))
                 ),
                 Map.entry(
@@ -126,7 +126,7 @@ public class LicenseDetectorTest {
 
             try {
                 assertEquals(
-                        new LicenseDetectorPlugin.LicenseDetector().getOutboundLicenses(pomFile),
+                        new LicenseDetectorPlugin.LicenseDetector().getOutboundLicenses(pomFile, null),
                         expectedDetectedLicenses,
                         "Retrieved and expected outbound licenses do not match."
                 );
@@ -146,8 +146,8 @@ public class LicenseDetectorTest {
                         "complete-maven-project",
                         Stream.of(
                                 // FIXME SPDX IDs
-                                new DetectedLicense("Apache-2.0", DetectedLicenseSource.MAVEN_CENTRAL),
-                                new DetectedLicense("Eclipse Public License 1.0", DetectedLicenseSource.MAVEN_CENTRAL)
+                                new DetectedLicense("Apache-2.0", DetectedLicenseSource.MAVEN_CENTRAL, null),
+                                new DetectedLicense("Eclipse Public License 1.0", DetectedLicenseSource.MAVEN_CENTRAL, null)
                         ).collect(Collectors.toCollection(HashSet::new))
                 ),
                 Map.entry(
@@ -163,8 +163,8 @@ public class LicenseDetectorTest {
                         "licensed-dependencies-maven-project",
                         Stream.of(
                                 // FIXME SPDX IDs
-                                new DetectedLicense("Apache-2.0", DetectedLicenseSource.MAVEN_CENTRAL),
-                                new DetectedLicense("Eclipse Public License 1.0", DetectedLicenseSource.MAVEN_CENTRAL)
+                                new DetectedLicense("Apache-2.0", DetectedLicenseSource.MAVEN_CENTRAL, null),
+                                new DetectedLicense("Eclipse Public License 1.0", DetectedLicenseSource.MAVEN_CENTRAL, null)
                         ).collect(Collectors.toCollection(HashSet::new))
                 )
         );

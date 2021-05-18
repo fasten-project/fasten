@@ -1,5 +1,8 @@
 package eu.fasten.analyzer.licensedetector.license;
 
+import eu.fasten.core.maven.data.Revision;
+
+import javax.annotation.Nullable;
 import java.util.Objects;
 
 /**
@@ -17,9 +20,17 @@ public class DetectedLicense {
      */
     protected final DetectedLicenseSource source;
 
-    public DetectedLicense(String name, DetectedLicenseSource source) {
+    /**
+     * The Maven coordinate this detected license belongs to.
+     * Might be `null` during tests.
+     */
+    @Nullable
+    protected final Revision coordinate;
+
+    public DetectedLicense(String name, DetectedLicenseSource source, @Nullable Revision coordinate) {
         this.name = name;
         this.source = source;
+        this.coordinate = coordinate;
     }
 
     @Override
