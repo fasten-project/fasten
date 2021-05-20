@@ -94,8 +94,6 @@ public class LicenseDetectorPlugin extends Plugin {
                 // TODO Unzipping the JAR to determine which files actually form the package
                 // TODO Use the `sourcesUrl` field in the `fasten.RepoCLoner.out` input record
 
-                // TODO Inserting licenses into the Knowledge Base
-
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage());
                 setPluginError(e);
@@ -355,14 +353,13 @@ public class LicenseDetectorPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            return Optional.empty(); // this plugin only inserts data into the Metadata DB
+            // TODO Creating the license report record
+            return Optional.empty();
         }
 
         @Override
         public String getOutputPath() {
-            /*  A JSON file with detected licenses is available in another container.
-                Licenses are inserted into the Metadata DB. */
-            return null;
+            return null; // FIXME
         }
 
         @Override
@@ -403,9 +400,7 @@ public class LicenseDetectorPlugin extends Plugin {
 
         @Override
         public boolean isStaticMembership() {
-            /*  The Pod behind license detection contains containers that are supposed to terminate
-                upon consuming one record. This avoids rebalancing. */
-            return true;
+            return false;
         }
 
         @Override
