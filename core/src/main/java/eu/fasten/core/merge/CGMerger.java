@@ -39,7 +39,15 @@ import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CGMerger {
@@ -48,8 +56,8 @@ public class CGMerger {
 
     private final Map<String, List<String>> universalChildren;
     private final Map<String, List<String>> universalParents;
+    private final Map<String, Map<String, Set<Long>>> typeDictionary;
 
-    private Map<String, Map<String, Set<Long>>> typeDictionary;
     private DSLContext dbContext;
     private RocksDao rocksDao;
     private Set<Long> dependencySet;
@@ -73,9 +81,9 @@ public class CGMerger {
         final var UCH = createUniversalCHA(dependencySet);
         this.universalParents = UCH.getLeft();
         this.universalChildren = UCH.getRight();
+        this.allUris = HashBiMap.create();
         final var graphAndDict = getDirectedGraphsAndTypeDict(dependencySet);
         this.ercgDependencySet = graphAndDict.getLeft();
-        this.allUris = HashBiMap.create();
         this.typeDictionary = graphAndDict.getRight();
 
     }
