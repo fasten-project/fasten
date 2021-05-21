@@ -24,7 +24,6 @@ import eu.fasten.core.data.*;
 import eu.fasten.core.data.graphdb.GraphMetadata;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
-import it.unimi.dsi.fastutil.ints.IntIntPair;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -41,9 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class CGMerger {
@@ -59,7 +55,7 @@ public class CGMerger {
     private Set<Long> dependencySet;
     private Map<Long, String> namespaceMap;
 
-    private List<ExtendedRevisionJavaCallGraph> ercgDependencySet;
+    private List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>> ercgDependencySet;
     private BiMap<Long, String> allUris;
 
 
@@ -77,14 +73,61 @@ public class CGMerger {
         final var UCH = createUniversalCHA(dependencySet);
         this.universalParents = UCH.getLeft();
         this.universalChildren = UCH.getRight();
-        this.ercgDependencySet = dependencySet;
+        final var graphAndDict = getDirectedGraphsAndTypeDict(dependencySet);
+        this.ercgDependencySet = graphAndDict.getLeft();
         this.allUris = HashBiMap.create();
+        this.typeDictionary = graphAndDict.getRight();
+
     }
+
+    private Pair<List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>>, Map<String, Map<String,
+        Set<Long>>>> getDirectedGraphsAndTypeDict(
+        final List<ExtendedRevisionJavaCallGraph> dependencySet) {
+
+        List<Pair<DirectedGraph,ExtendedRevisionJavaCallGraph>> depSet = new ArrayList<>();
+        long offset = 0L;
+        for (final var dep : dependencySet) {
+            final var directedDep = ercgToDirectedGraph(dep, offset);
+            offset = directedDep.nodes().longStream().max().orElse(0L) + 1;
+            depSet.add(ImmutablePair.of(directedDep, dep));
+        }
+
+        Map<String, Map<String, Set<Long>>> typeDict = new HashMap<>();
+        for (final var rcg : dependencySet) {
+            final var uris = rcg.mapOfFullURIStrings();
+            for (final var type : rcg.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
+                type.getValue().getMethods().forEach((localId, Node) -> {
+                    final var oldType = typeDict.getOrDefault(type.getKey(), new HashMap<>());
+                    final var oldNode = oldType.getOrDefault(Node.getSignature(), new HashSet<>());
+                    oldNode.add(this.allUris.inverse().get(uris.get(localId)));
+                    oldType.put(Node.getSignature(), oldNode);
+                    typeDict.put(type.getKey(), oldType); });
+            }
+        }
+
+        return ImmutablePair.of(depSet, typeDict);
+    }
+
+    private DirectedGraph ercgToDirectedGraph(final ExtendedRevisionJavaCallGraph ercg, long offset) {
+        final var result = new FastenDefaultDirectedGraph();
+        final var uris = ercg.mapOfFullURIStrings();
+        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(ercg);
+
+        for (final var node : directedMerge.nodes()) {
+            for (final var successor : directedMerge.successors(node)) {
+                final var updatedNode = updateNode(node, offset, uris);
+                final var updatedSuccessor = updateNode(successor, offset, uris);
+                addEdge(result, updatedNode, updatedSuccessor);
+            }
+        }
+        return result;
+    }
+
 
     /**
      * Create instance of callgraph merger from package names.
      *
-     * @param dependencySet dependencies present in the resolution
+     * @param dependencySet coordinates of dependencies present in the resolution
      * @param dbContext     DSL context
      * @param rocksDao      rocks DAO
      */
@@ -95,7 +138,8 @@ public class CGMerger {
         this.dependencySet = getDependenciesIds(dependencySet, dbContext);
         final var universalCHA = createUniversalCHA(this.dependencySet, dbContext, rocksDao);
         this.universalChildren = new HashMap<>(universalCHA.getRight().size());
-        universalCHA.getRight().forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
+        universalCHA.getRight()
+            .forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
         this.universalParents = new HashMap<>(universalCHA.getLeft().size());
         universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
         this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
@@ -115,82 +159,31 @@ public class CGMerger {
         this.dependencySet = dependencySet;
         final var universalCHA = createUniversalCHA(dependencySet, dbContext, rocksDao);
         this.universalChildren = new HashMap<>(universalCHA.getRight().size());
-        universalCHA.getRight().forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
+        universalCHA.getRight()
+            .forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
         this.universalParents = new HashMap<>(universalCHA.getLeft().size());
         universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
         this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
     }
 
-    // Local
-    /**
-     * Class with resolved calls and CHA.
-     */
-    public static class CGHA {
-
-        private final ConcurrentMap<IntIntPair, Map<Object, Object>> graph;
-        private final ConcurrentMap<String, JavaType> CHA;
-        private final AtomicInteger nodeCount;
-
-        /**
-         * Create CGHA object from an {@link ExtendedRevisionCallGraph}.
-         *
-         * @param toResolve call graph
-         */
-        public CGHA(final ExtendedRevisionJavaCallGraph toResolve) {
-            this.graph = new ConcurrentHashMap<>(toResolve.getGraph().getResolvedCalls());
-            var classHierarchy = HashBiMap.create(toResolve.getClassHierarchy()
-                    .getOrDefault(JavaScope.resolvedTypes, HashBiMap.create()));
-            this.CHA = new ConcurrentHashMap<>();
-            classHierarchy.forEach(this.CHA::put);
-            this.nodeCount = new AtomicInteger(toResolve.getNodeCount());
-        }
+    public DirectedGraph mergeWithCHA(final long id) {
+        final var callGraphData = fetchCallGraphData(id, rocksDao);
+        var graphArcs = getArcs(id, callGraphData, rocksDao);
+        return mergeWithCHA(callGraphData, graphArcs);
     }
 
-    // Local
-    /**
-     * Single call containing source and target IDs, metadata and target node.
-     */
-    public static class Call {
+    public DirectedGraph mergeWithCHA(final String artifact) {
+        return mergeWithCHA(getPackageVersionId(artifact));
+    }
 
-        private final IntIntPair indices;
-        private final Map<Object, Object> metadata;
-        private final JavaNode target;
-
-        /**
-         * Create Call object from indices, metadata and target node.
-         *
-         * @param indices  source and target IDs
-         * @param metadata call metadata
-         * @param target   target node
-         */
-        public Call(final IntIntPair indices, Map<Object, Object> metadata,
-                    final JavaNode target) {
-            this.indices = indices;
-            this.metadata = metadata;
-            this.target = target;
+    public DirectedGraph mergeWithCHA(final ExtendedRevisionJavaCallGraph cg) {
+        for (final var directedERCGPair : this.ercgDependencySet) {
+            if (cg.productVersion.equals(directedERCGPair.getRight().productVersion)){
+                return mergeWithCHA(directedERCGPair.getKey(), getERCGArcs(directedERCGPair.getRight()));
+            }
         }
-
-        public Call(final Call call, final JavaNode node) {
-            this.indices = call.indices;
-            this.metadata = call.metadata;
-            this.target = node;
-        }
-
-        public Call(final Map.Entry<IntIntPair, Map<Object, Object>> arc,
-                    final JavaNode target) {
-            this.indices = arc.getKey();
-            this.metadata = arc.getValue();
-            this.target = target;
-        }
-
-        /**
-         * Check if the call is to a constructor.
-         *
-         * @return true, if the constructor is called, false otherwise
-         */
-        public boolean isConstructor() {
-            return target.getSignature().startsWith("<init>");
-        }
+        logger.warn("This cg does not exist in the dependency set.");
+        return new FastenDefaultDirectedGraph();
     }
 
     /**
@@ -266,31 +259,6 @@ public class CGMerger {
         }
     }
 
-    public DirectedGraph mergeWithCHA(final ExtendedRevisionJavaCallGraph artifact) {
-        final var artifactCGHA = new CGHA(artifact);
-        final var callGraphData = ercgToDirectedGraph(artifact, artifactCGHA);
-
-        var result = new ArrayImmutableDirectedGraph.Builder();
-        cloneNodesAndArcs(result, callGraphData);
-
-        var graphArcs = getERCGArcs(artifact);
-        for (var entry : graphArcs.gid2NodeMetadata.long2ObjectEntrySet()) {
-            var sourceId = entry.getLongKey();
-            var nodeMetadata = entry.getValue();
-            for (var receiver : nodeMetadata.receiverRecords) {
-                var arc = new Arc(sourceId, receiver);
-                var node = new Node(nodeMetadata.type, receiver.receiverSignature);
-                resolve(result, callGraphData, arc, node, callGraphData.isExternal(sourceId));
-            }
-        }
-        return result.build();
-    }
-
-    private DirectedGraph ercgToDirectedGraph(ExtendedRevisionJavaCallGraph ercg, CGHA result) {
-        final var directedGraph = new FastenDefaultDirectedGraph();
-        addThisMergeToResult(directedGraph, buildRCG(ercg, result));
-        return directedGraph;
-    }
 
     private GraphMetadata getERCGArcs(ExtendedRevisionJavaCallGraph ercg) {
         final var map = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
@@ -307,7 +275,8 @@ public class CGMerger {
                 var callType = getCallType(receiver);
                 var line = (int) receiver.get("line");
                 var receiverSignature = ercg.mapOfAllMethods().get(target).getSignature();
-                receivers.add(new GraphMetadata.ReceiverRecord(line, callType, receiverSignature, receiverTypes));
+                receivers.add(new GraphMetadata.ReceiverRecord(line, callType, receiverSignature,
+                    receiverTypes));
             }
             map.put(source, new GraphMetadata.NodeMetadata(type, signature, receivers));
         }
@@ -334,12 +303,12 @@ public class CGMerger {
     /**
      * Merges a call graph with its dependencies using CHA algorithm.
      *
-     * @param artifactId package version id of an artifact to resolve
+     * @param callGraphData DirectedGraph of the dependency to stitch
+     * @param graphArcs GraphMetadata of the dependency to stitch
      * @return merged call graph
      */
-    public DirectedGraph mergeWithCHA(final long artifactId) {
+    public DirectedGraph mergeWithCHA(final DirectedGraph callGraphData, final GraphMetadata graphArcs) {
         final long totalTime = System.currentTimeMillis();
-        final var callGraphData = fetchCallGraphData(artifactId, rocksDao);
 
         if (callGraphData == null) {
             logger.error("Empty call graph data");
@@ -352,7 +321,6 @@ public class CGMerger {
 
         final long startTime = System.currentTimeMillis();
 
-        var graphArcs = getArcs(artifactId, callGraphData, rocksDao);
         if (graphArcs == null) {
             return null;
         }
@@ -366,20 +334,10 @@ public class CGMerger {
             }
         }
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
-                .format((System.currentTimeMillis() - startTime) / 1000d));
+            .format((System.currentTimeMillis() - startTime) / 1000d));
         logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
-                .format((System.currentTimeMillis() - totalTime) / 1000d));
+            .format((System.currentTimeMillis() - totalTime) / 1000d));
         return result.build();
-    }
-
-    /**
-     * Merges a call graph with its dependencies using CHA algorithm.
-     *
-     * @param artifact artifact to resolve
-     * @return merged call graph
-     */
-    public DirectedGraph mergeWithCHA(final String artifact) {
-        return mergeWithCHA(getPackageVersionId(artifact));
     }
 
     /**
@@ -391,7 +349,7 @@ public class CGMerger {
         List<DirectedGraph> depGraphs = new ArrayList<>();
         if (this.dbContext == null) {
             for (final var dep : this.ercgDependencySet) {
-                var merged = mergeWithCHA(dep);
+                var merged = mergeWithCHA(dep.getKey(), getERCGArcs(dep.getRight()));
                 if (merged != null) {
                     depGraphs.add(merged);
                 }
@@ -428,7 +386,7 @@ public class CGMerger {
                 case "interface":
                     var foundTarget = false;
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
-                            new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
+                        new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                         addEdge(result, callGraphData, arc.source, target, isCallback);
                         foundTarget = true;
                     }
@@ -437,8 +395,8 @@ public class CGMerger {
                         if (parents != null) {
                             for (final var parentUri : parents) {
                                 for (final var target : typeDictionary.getOrDefault(parentUri,
-                                        new HashMap<>())
-                                        .getOrDefault(node.signature, new HashSet<>())) {
+                                    new HashMap<>())
+                                    .getOrDefault(node.signature, new HashSet<>())) {
                                     addEdge(result, callGraphData, arc.source, target, isCallback);
                                     foundTarget = true;
                                     break;
@@ -453,10 +411,10 @@ public class CGMerger {
                             if (types != null) {
                                 for (final var depTypeUri : types) {
                                     for (final var target : typeDictionary.getOrDefault(depTypeUri,
-                                            new HashMap<>())
-                                            .getOrDefault(node.signature, new HashSet<>())) {
+                                        new HashMap<>())
+                                        .getOrDefault(node.signature, new HashSet<>())) {
                                         addEdge(result, callGraphData, arc.source, target,
-                                                isCallback);
+                                            isCallback);
                                     }
                                 }
                             }
@@ -468,7 +426,7 @@ public class CGMerger {
                     break;
                 default:
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
-                            new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
+                        new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
                         addEdge(result, callGraphData, arc.source, target, isCallback);
                     }
                     break;
@@ -479,7 +437,7 @@ public class CGMerger {
     // Local
     private ArrayList<String> getReceiver(final HashMap<String, Object> callSite) {
         return new ArrayList<>(Arrays.asList(((String) callSite.get(
-                "receiver")).replace("[", "").replace("]", "").split(",")));
+            "receiver")).replace("[", "").replace("]", "").split(",")));
     }
 
     /**
@@ -491,31 +449,31 @@ public class CGMerger {
      * @return a type dictionary
      */
     private Map<String, Map<String, Set<Long>>> createTypeDictionary(
-            final Set<Long> dependenciesIds, final DSLContext dbContext, final RocksDao rocksDao) {
+        final Set<Long> dependenciesIds, final DSLContext dbContext, final RocksDao rocksDao) {
         final long startTime = System.currentTimeMillis();
         var result = new HashMap<String, Map<String, Set<Long>>>();
 
         var callables = getCallables(dependenciesIds, rocksDao);
 
         dbContext.select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID)
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.ID.in(callables))
-                .fetch()
-                .forEach(callable -> {
-                    var node = new Node(FastenJavaURI.create(callable.value1()).decanonicalize());
-                    result.putIfAbsent(node.typeUri, new HashMap<>());
-                    var type = result.get(node.typeUri);
-                    var newestSet = new HashSet<Long>();
-                    newestSet.add(callable.value2());
-                    type.merge(node.signature, newestSet, (old, newest) -> {
-                        old.addAll(newest);
-                        return old;
-                    });
+            .from(Callables.CALLABLES)
+            .where(Callables.CALLABLES.ID.in(callables))
+            .fetch()
+            .forEach(callable -> {
+                var node = new Node(FastenJavaURI.create(callable.value1()).decanonicalize());
+                result.putIfAbsent(node.typeUri, new HashMap<>());
+                var type = result.get(node.typeUri);
+                var newestSet = new HashSet<Long>();
+                newestSet.add(callable.value2());
+                type.merge(node.signature, newestSet, (old, newest) -> {
+                    old.addAll(newest);
+                    return old;
                 });
+            });
 
         logger.info("Created the type dictionary with {} types in {} seconds", result.size(),
-                new DecimalFormat("#0.000")
-                        .format((System.currentTimeMillis() - startTime) / 1000d));
+            new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - startTime) / 1000d));
 
         return result;
     }
@@ -529,22 +487,22 @@ public class CGMerger {
      * @return universal CHA
      */
     private Pair<Map<String, List<String>>, Map<String, List<String>>> createUniversalCHA(
-            final List<ExtendedRevisionJavaCallGraph> dependencies) {
+        final List<ExtendedRevisionJavaCallGraph> dependencies) {
         final var allPackages = new ArrayList<>(dependencies);
 
         final var result = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
         for (final var aPackage : allPackages) {
             for (final var type : aPackage.getClassHierarchy()
-                    .get(JavaScope.internalTypes).entrySet()) {
+                .get(JavaScope.internalTypes).entrySet()) {
                 if (!result.containsVertex(type.getKey())) {
                     result.addVertex(type.getKey());
                 }
                 addSuperTypes(result, type.getKey(),
-                        type.getValue().getSuperClasses()
-                                .stream().map(FastenURI::toString).collect(Collectors.toList()));
+                    type.getValue().getSuperClasses()
+                        .stream().map(FastenURI::toString).collect(Collectors.toList()));
                 addSuperTypes(result, type.getKey(),
-                        type.getValue().getSuperInterfaces()
-                                .stream().map(FastenURI::toString).collect(Collectors.toList()));
+                    type.getValue().getSuperInterfaces()
+                        .stream().map(FastenURI::toString).collect(Collectors.toList()));
             }
         }
         final Map<String, List<String>> universalParents = new HashMap<>();
@@ -571,32 +529,33 @@ public class CGMerger {
      * @return universal CHA
      */
     private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA(
-            final Set<Long> dependenciesIds, final DSLContext dbContext, final RocksDao rocksDao) {
+        final Set<Long> dependenciesIds, final DSLContext dbContext, final RocksDao rocksDao) {
         final long startTime = System.currentTimeMillis();
         var universalCHA = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
 
         var callables = getCallables(dependenciesIds, rocksDao);
 
         var modulesIds = dbContext
-                .select(Callables.CALLABLES.MODULE_ID)
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.ID.in(callables))
-                .fetch();
+            .select(Callables.CALLABLES.MODULE_ID)
+            .from(Callables.CALLABLES)
+            .where(Callables.CALLABLES.ID.in(callables))
+            .fetch();
 
         var modules = dbContext
-                .select(Modules.MODULES.MODULE_NAME_ID, Modules.MODULES.SUPER_CLASSES, Modules.MODULES.SUPER_INTERFACES)
-                .from(Modules.MODULES)
-                .where(Modules.MODULES.ID.in(modulesIds))
-                .fetch();
+            .select(Modules.MODULES.MODULE_NAME_ID, Modules.MODULES.SUPER_CLASSES,
+                Modules.MODULES.SUPER_INTERFACES)
+            .from(Modules.MODULES)
+            .where(Modules.MODULES.ID.in(modulesIds))
+            .fetch();
 
         var namespaceIDs = new HashSet<>(modules.map(Record3::value1));
         modules.forEach(m -> namespaceIDs.addAll(Arrays.asList(m.value2())));
         modules.forEach(m -> namespaceIDs.addAll(Arrays.asList(m.value3())));
         var namespaceResults = dbContext
-                .select(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME)
-                .from(ModuleNames.MODULE_NAMES)
-                .where(ModuleNames.MODULE_NAMES.ID.in(namespaceIDs))
-                .fetch();
+            .select(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME)
+            .from(ModuleNames.MODULE_NAMES)
+            .where(ModuleNames.MODULE_NAMES.ID.in(namespaceIDs))
+            .fetch();
         this.namespaceMap = new HashMap<>(namespaceResults.size());
         namespaceResults.forEach(r -> namespaceMap.put(r.value1(), r.value2()));
 
@@ -606,12 +565,14 @@ public class CGMerger {
             }
 
             try {
-                var superClasses = Arrays.stream(callable.value2()).map(n -> namespaceMap.get(n)).collect(Collectors.toList());
+                var superClasses = Arrays.stream(callable.value2()).map(n -> namespaceMap.get(n))
+                    .collect(Collectors.toList());
                 addSuperTypes(universalCHA, namespaceMap.get(callable.value1()), superClasses);
             } catch (NullPointerException ignore) {
             }
             try {
-                var superInterfaces = Arrays.stream(callable.value3()).map(n -> namespaceMap.get(n)).collect(Collectors.toList());
+                var superInterfaces = Arrays.stream(callable.value3()).map(n -> namespaceMap.get(n))
+                    .collect(Collectors.toList());
                 addSuperTypes(universalCHA, namespaceMap.get(callable.value1()), superInterfaces);
             } catch (NullPointerException ignore) {
             }
@@ -631,9 +592,9 @@ public class CGMerger {
         }
 
         logger.info("Created the Universal CHA with {} vertices in {}",
-                universalCHA.vertexSet().size(),
-                new DecimalFormat("#0.000")
-                        .format((System.currentTimeMillis() - startTime) / 1000d));
+            universalCHA.vertexSet().size(),
+            new DecimalFormat("#0.000")
+                .format((System.currentTimeMillis() - startTime) / 1000d));
 
         return ImmutablePair.of(universalParents, universalChildren);
     }
@@ -704,47 +665,9 @@ public class CGMerger {
         }
     }
 
-    // Local
-    /**
-     * Build an {@link ExtendedRevisionCallGraph} from the original artifact and newly
-     * resolved calls.
-     *
-     * @param artifact original artifact
-     * @param result   resolved calls
-     * @return full call graph
-     */
-    private static ExtendedRevisionJavaCallGraph buildRCG(final ExtendedRevisionJavaCallGraph artifact,
-                                                          final CGHA result) {
-        final var cha = artifact.getClassHierarchy();
-        cha.put(JavaScope.resolvedTypes, result.CHA);
-        return ExtendedRevisionJavaCallGraph.extendedBuilder().forge(artifact.forge)
-                .cgGenerator(artifact.getCgGenerator())
-                .classHierarchy(cha)
-                .product(artifact.product)
-                .timestamp(artifact.timestamp)
-                .version(artifact.version)
-                .graph(new JavaGraph(artifact.getGraph().getCallSites(),
-                        new HashMap<>(),
-                        result.graph))
-                .nodeCount(result.nodeCount.get())
-                .build();
-    }
 
-    // Local
-    private void addThisMergeToResult(FastenDefaultDirectedGraph result,
-                                      final ExtendedRevisionJavaCallGraph merged) {
-        final var uris = merged.mapOfFullURIStrings();
-        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(merged);
-        long offset = result.nodes().longStream().max().orElse(0L) + 1;
 
-        for (final var node : directedMerge.nodes()) {
-            for (final var successor : directedMerge.successors(node)) {
-                final var updatedNode = updateNode(node, offset, uris);
-                final var updatedSuccessor = updateNode(successor, offset, uris);
-                addEdge(result, updatedNode, updatedSuccessor);
-            }
-        }
-    }
+
 
     // Local
     private void addEdge(final FastenDefaultDirectedGraph result,
@@ -809,7 +732,7 @@ public class CGMerger {
                          final Long source, final Long target, final boolean isCallback) {
         try {
             if (new HashSet<>(callGraphData.nodes()).contains(source)
-                    && callGraphData.isInternal(source)) {
+                && callGraphData.isInternal(source)) {
                 result.addInternalNode(source);
             } else {
                 result.addExternalNode(source);
@@ -818,7 +741,7 @@ public class CGMerger {
         }
         try {
             if (new HashSet<>(callGraphData.nodes()).contains(target)
-                    && callGraphData.isInternal(target)) {
+                && callGraphData.isInternal(target)) {
                 result.addInternalNode(target);
             } else {
                 result.addExternalNode(target);
@@ -846,10 +769,10 @@ public class CGMerger {
         final Map<Long, JSONObject> result = new HashMap<>();
 
         final var metadata = dbContext
-                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.ID.in(graph.nodes()))
-                .fetch();
+            .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
+            .from(Callables.CALLABLES)
+            .where(Callables.CALLABLES.ID.in(graph.nodes()))
+            .fetch();
         for (final var callable : metadata) {
             result.put(callable.value1(), new JSONObject(callable.value2().data()));
         }
@@ -862,7 +785,8 @@ public class CGMerger {
      * @param callGraphData call graph
      * @return list of external and constructor calls
      */
-    private GraphMetadata getArcs(final long index, final DirectedGraph callGraphData, final RocksDao rocksDao) {
+    private GraphMetadata getArcs(final long index, final DirectedGraph callGraphData,
+                                  final RocksDao rocksDao) {
         try {
             return rocksDao.getGraphMetadata(index, callGraphData);
         } catch (RocksDBException e) {
@@ -897,14 +821,14 @@ public class CGMerger {
         var packageName = artifact.split(":")[0] + ":" + artifact.split(":")[1];
         var version = artifact.split(":")[2];
         return Objects.requireNonNull(dbContext
-                .select(PackageVersions.PACKAGE_VERSIONS.ID)
-                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
-                .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                .fetchOne())
-                .component1();
+            .select(PackageVersions.PACKAGE_VERSIONS.ID)
+            .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
+            .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+            .where(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
+            .and(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
+            .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+            .fetchOne())
+            .component1();
     }
 
     /**
@@ -947,19 +871,19 @@ public class CGMerger {
 
             if (depCondition == null) {
                 depCondition = Packages.PACKAGES.PACKAGE_NAME.eq(packageName)
-                        .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version));
+                    .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version));
             } else {
                 depCondition = depCondition.or(Packages.PACKAGES.PACKAGE_NAME.eq(packageName)
-                        .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version)));
+                    .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version)));
             }
         }
         return dbContext
-                .select(PackageVersions.PACKAGE_VERSIONS.ID)
-                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .where(depCondition)
-                .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
-                .fetch()
-                .intoSet(PackageVersions.PACKAGE_VERSIONS.ID);
+            .select(PackageVersions.PACKAGE_VERSIONS.ID)
+            .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
+            .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
+            .where(depCondition)
+            .and(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+            .fetch()
+            .intoSet(PackageVersions.PACKAGE_VERSIONS.ID);
     }
 }
