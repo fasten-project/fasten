@@ -116,9 +116,9 @@ class PackageApiTest {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("link to ercg", HttpStatus.OK);
-        Mockito.when(service.getERCGLink(packageName, version)).thenReturn(response);
-        var result = api.getERCGLink(packageName, version);
+        Mockito.when(service.getERCGLink(packageName, version, null, null)).thenReturn(response);
+        var result = api.getERCGLink(packageName, version, null, null);
         assertEquals(response, result);
-        Mockito.verify(service).getERCGLink(packageName, version);
+        Mockito.verify(service).getERCGLink(packageName, version, null, null);
     }
 }

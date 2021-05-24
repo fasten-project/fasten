@@ -23,10 +23,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -141,6 +138,30 @@ public class MavenUtilities {
             throw e;
         } catch (IOException e) {
             logger.error("Error getting file from URL: " + url, e);
+            return Optional.empty();
+        }
+    }
+
+    public static String sendGetRequest(String url) {
+        return MavenUtilities.downloadPomFile(url).flatMap(MavenUtilities::fileToString).orElse(null);
+    }
+
+    /**
+     * Utility function that reads the contents of a file to a String.
+     */
+    private static Optional<String> fileToString(final File f) {
+        logger.trace("Loading file as string: " + f.toString());
+        try {
+            final var fr = new BufferedReader(new FileReader(f));
+            final StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = fr.readLine()) != null) {
+                result.append(line);
+            }
+            fr.close();
+            return Optional.of(result.toString());
+        } catch (IOException e) {
+            logger.error("Cannot read from file: " + f.toString(), e);
             return Optional.empty();
         }
     }
