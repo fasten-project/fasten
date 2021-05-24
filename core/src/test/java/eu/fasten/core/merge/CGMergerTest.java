@@ -331,6 +331,7 @@ public class CGMergerTest {
     @Test
     public void mergeAllDepsTest() {
         merger = new CGMerger(Arrays.asList(imported, importer));
+
         final var cg = merger.mergeAllDeps();
         final var uris = merger.getAllUris();
         assertEquals(2, cg.edgeSet().size());

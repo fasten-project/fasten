@@ -96,7 +96,7 @@ public class CGMerger {
         long offset = 0L;
         for (final var dep : dependencySet) {
             final var directedDep = ercgToDirectedGraph(dep, offset);
-            offset = directedDep.nodes().longStream().max().orElse(0L) + 1;
+            offset = this.allUris.keySet().stream().max(Long::compareTo).orElse(0L) + 1;
             depSet.add(ImmutablePair.of(directedDep, dep));
         }
 
@@ -122,8 +122,8 @@ public class CGMerger {
         final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(ercg);
 
         for (final var node : directedMerge.nodes()) {
+            final var updatedNode = updateNode(node, offset, uris);
             for (final var successor : directedMerge.successors(node)) {
-                final var updatedNode = updateNode(node, offset, uris);
                 final var updatedSuccessor = updateNode(successor, offset, uris);
                 addEdge(result, updatedNode, updatedSuccessor);
             }
