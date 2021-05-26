@@ -39,7 +39,7 @@ public class ResolutionApi {
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestParam(required = false, defaultValue = "true") boolean transitive,
                                                @RequestParam(required = false, defaultValue = "-1") long timestamp,
-                                               @RequestParam(required = false, defaultValue = "false") boolean useDepGraph) {
+                                               @RequestParam(required = false, defaultValue = "true") boolean useDepGraph) {
         return service.resolveDependencies(package_name, package_version, transitive, timestamp, useDepGraph);
     }
 
