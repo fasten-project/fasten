@@ -36,8 +36,10 @@ import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
+import eu.fasten.core.merge.LocalMerger;
 import org.apache.commons.io.FilenameUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -181,34 +183,65 @@ public class Main implements Runnable {
 
         } else if (commands.computations.mode.equals("FILE")) {
             try {
-                var line = "7,org.wso2.carbon.identity.server.api:org.wso2.carbon.identity.rest.api.server.workflow.engine.v1:1.0.198,org.wso2.carbon.identity.server.api:org.wso2.carbon.identity.rest.api.server.workflow.engine.v1:1.0.198;io.swagger:swagger-jaxrs:1.6.2;io.swagger:swagger-core:1.6.2;org.apache.commons:commons-lang3:3.2.1;org.slf4j:slf4j-api:1.7.22;io.swagger:swagger-models:1.6.2;io.swagger:swagger-annotations:1.6.2;javax.validation:validation-api:1.1.0.Final;org.reflections:reflections:0.9.11;org.javassist:javassist:3.21.0-GA";
-                var parts = Arrays.asList(line.split(","));
-                var artifact = parts.get(1);
-                var artifactCoordinate = MavenCoordinate.fromString(artifact, "jar");
-                if (this.repos != null && !this.repos.isEmpty()) {
-                    artifactCoordinate.setMavenRepos(this.repos);
-                }
-                var dependencies = Arrays.asList(parts.get(2).split(";"));
-                ExtendedRevisionJavaCallGraph artifactCg = generate(artifactCoordinate, commands.computations.main, commands.computations.genAlgorithm, !this.output.isEmpty());
-                var depSet = new ArrayList<ExtendedRevisionJavaCallGraph>(dependencies.size());
-                for (var dep : dependencies) {
-                    var depCoordinate = MavenCoordinate.fromString(dep, "jar");
+                var lines = Files.readAllLines(getArtifactFile().toPath());
+                for (var line : lines) {
+                    var parts = Arrays.asList(line.split(","));
+                    var artifact = parts.get(1);
+                    var artifactCoordinate = MavenCoordinate.fromString(artifact, "jar");
                     if (this.repos != null && !this.repos.isEmpty()) {
-                        depCoordinate.setMavenRepos(this.repos);
+                        artifactCoordinate.setMavenRepos(this.repos);
                     }
-                    ExtendedRevisionJavaCallGraph depCg;
-                    try {
-                        depCg = generate(depCoordinate, commands.computations.main, commands.computations.genAlgorithm, !this.output.isEmpty());
-                    } catch (OPALException | MissingArtifactException ex) {
-                        continue;
+                    var dependencies = Arrays.asList(parts.get(2).split(";"));
+                    ExtendedRevisionJavaCallGraph artifactCg = generate(artifactCoordinate, commands.computations.main, commands.computations.genAlgorithm, !this.output.isEmpty());
+                    var depSet = new ArrayList<ExtendedRevisionJavaCallGraph>(dependencies.size());
+                    for (var dep : dependencies) {
+                        var depCoordinate = MavenCoordinate.fromString(dep, "jar");
+                        if (this.repos != null && !this.repos.isEmpty()) {
+                            depCoordinate.setMavenRepos(this.repos);
+                        }
+                        ExtendedRevisionJavaCallGraph depCg;
+                        try {
+                            depCg = generate(depCoordinate, commands.computations.main, commands.computations.genAlgorithm, !this.output.isEmpty());
+                        } catch (OPALException | MissingArtifactException ex) {
+                            continue;
+                        }
+                        depSet.add(depCg);
                     }
-                    depSet.add(depCg);
+                    depSet.add(artifactCg);
+                    var merger = new CGMerger(depSet);
+                    var uris = merger.getAllUris();
+                    var localMerger = new LocalMerger(depSet);
+                    var localUris = localMerger.getAllUris();
+                    var result = merger.mergeAllDeps();
+                    var localResult = localMerger.mergeAllDeps();
+
+                    var resultUris = new HashSet<String>();
+                    for (var node : result.nodes()) {
+                        resultUris.add(uris.get(node));
+                    }
+                    var localResultUris = new HashSet<String>();
+                    for (var node : localResult.nodes()) {
+                        localResultUris.add(localUris.get(node));
+                    }
+
+                    var mergerMinusLocal = resultUris;
+                    mergerMinusLocal.removeAll(localResultUris);
+                    var localMinusMerger = localResultUris;
+                    localMinusMerger.removeAll(resultUris);
+                    logger.info("---------------------------------------------------------------");
+                    logger.info("LocalMerger - CGMerger nodes: " + localMinusMerger.size());
+                    localMinusMerger.forEach(logger::info);
+                    logger.info("---------------------------------------------------------------");
+                    logger.info("CGMerger - LocalMerger nodes: " + mergerMinusLocal.size());
+                    mergerMinusLocal.forEach(logger::info);
+                    logger.info("---------------------------------------------------------------");
+                    var nodes = result.numNodes();
+                    var localNodes = localResult.numNodes();
+                    var edges = result.numArcs();
+                    var localEdges = localResult.numArcs();
+                    logger.info("CGMerger - Nodes: " + nodes + "; Edges: " + edges);
+                    logger.info("LocalMerger - Nodes: " + localNodes + "; Edges: " + localEdges);
                 }
-                var merger = new CGMerger(depSet);
-                var result = merger.mergeWithCHA(artifactCg);
-                var nodes = result.numNodes();
-                var edges = result.numArcs();
-                logger.info("Nodes: " + nodes + "; Edges: " + edges);
             } catch (IOException | OPALException | MissingArtifactException e) {
                 logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
