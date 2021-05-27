@@ -30,9 +30,12 @@ import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
@@ -178,8 +181,34 @@ public class Main implements Runnable {
 
         } else if (commands.computations.mode.equals("FILE")) {
             try {
-                generate(getArtifactFile(), commands.computations.main,
-                        commands.computations.genAlgorithm, !this.output.isEmpty());
+                var line = "7,org.wso2.carbon.identity.server.api:org.wso2.carbon.identity.rest.api.server.workflow.engine.v1:1.0.198,org.wso2.carbon.identity.server.api:org.wso2.carbon.identity.rest.api.server.workflow.engine.v1:1.0.198;io.swagger:swagger-jaxrs:1.6.2;io.swagger:swagger-core:1.6.2;org.apache.commons:commons-lang3:3.2.1;org.slf4j:slf4j-api:1.7.22;io.swagger:swagger-models:1.6.2;io.swagger:swagger-annotations:1.6.2;javax.validation:validation-api:1.1.0.Final;org.reflections:reflections:0.9.11;org.javassist:javassist:3.21.0-GA";
+                var parts = Arrays.asList(line.split(","));
+                var artifact = parts.get(1);
+                var artifactCoordinate = MavenCoordinate.fromString(artifact, "jar");
+                if (this.repos != null && !this.repos.isEmpty()) {
+                    artifactCoordinate.setMavenRepos(this.repos);
+                }
+                var dependencies = Arrays.asList(parts.get(2).split(";"));
+                ExtendedRevisionJavaCallGraph artifactCg = generate(artifactCoordinate, commands.computations.main, commands.computations.genAlgorithm, !this.output.isEmpty());
+                var depSet = new ArrayList<ExtendedRevisionJavaCallGraph>(dependencies.size());
+                for (var dep : dependencies) {
+                    var depCoordinate = MavenCoordinate.fromString(dep, "jar");
+                    if (this.repos != null && !this.repos.isEmpty()) {
+                        depCoordinate.setMavenRepos(this.repos);
+                    }
+                    ExtendedRevisionJavaCallGraph depCg;
+                    try {
+                        depCg = generate(depCoordinate, commands.computations.main, commands.computations.genAlgorithm, !this.output.isEmpty());
+                    } catch (OPALException | MissingArtifactException ex) {
+                        continue;
+                    }
+                    depSet.add(depCg);
+                }
+                var merger = new CGMerger(depSet);
+                var result = merger.mergeWithCHA(artifactCg);
+                var nodes = result.numNodes();
+                var edges = result.numArcs();
+                logger.info("Nodes: " + nodes + "; Edges: " + edges);
             } catch (IOException | OPALException | MissingArtifactException e) {
                 logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
@@ -216,7 +245,7 @@ public class Main implements Runnable {
      * @throws IOException thrown in case file related exceptions occur, e.g FileNotFoundException
      */
     public <T> ExtendedRevisionJavaCallGraph merge(final T artifact,
-                                               final List<T> dependencies)
+                                                   final List<T> dependencies)
             throws IOException, OPALException, MissingArtifactException {
         final long startTime = System.currentTimeMillis();
         final ExtendedRevisionJavaCallGraph result;
@@ -230,21 +259,19 @@ public class Main implements Runnable {
         final var merger = new CGMerger(deps);
         result = new ExtendedRevisionJavaCallGraph(new JSONObject()); //merger.mergeWithCHA(art); TODO: Fix this
 
-        if (result != null) {
-//            logger.info("Resolved {} nodes, {} calls in {} seconds",
-//                    result.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
-//                    result.getGraph().getResolvedCalls().size(),
-//                    new DecimalFormat("#0.000")
-//                            .format((System.currentTimeMillis() - startTime) / 1000d));
+//        logger.info("Resolved {} nodes, {} calls in {} seconds",
+//                result.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
+//                result.getGraph().getResolvedCalls().size(),
+//                new DecimalFormat("#0.000")
+//                        .format((System.currentTimeMillis() - startTime) / 1000d));
 
-            if (!this.output.isEmpty()) {
-                try{
+        if (!this.output.isEmpty()) {
+            try {
                 CallGraphUtils.writeToFile(Paths.get(Paths.get(this.output).getParent().toString(),
                         FilenameUtils.getBaseName(this.output) + "_" + result.product + "_merged" + "." +
                                 FilenameUtils.getExtension(this.output)).toString(), JSONUtils.toJSONString(result), "");
-                }catch (NullPointerException e){
-                    logger.error("Provided output path might be incomplete!");
-                }
+            } catch (NullPointerException e) {
+                logger.error("Provided output path might be incomplete!");
             }
         }
 
@@ -265,8 +292,8 @@ public class Main implements Runnable {
      * @throws IOException file related exceptions, e.g. FileNotFoundException
      */
     public <T> ExtendedRevisionJavaCallGraph generate(final T artifact,
-                                                  final String mainClass,
-                                                  final String algorithm, final boolean writeToFile)
+                                                      final String mainClass,
+                                                      final String algorithm, final boolean writeToFile)
             throws MissingArtifactException, OPALException, IOException {
         final ExtendedRevisionJavaCallGraph revisionCallGraph;
 
