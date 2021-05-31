@@ -38,12 +38,14 @@ public class Main implements Runnable {
 
     @CommandLine.Option(names = {"-ur", "--kb-url"},
             paramLabel = "KB_URL",
-            description = "The url of the knowledge base")
+            description = "The url of the knowledge base",
+            defaultValue = "jdbc:postgresql:postgres")
     String kbUrl;
 
     @CommandLine.Option(names = {"-us", "--kb-user"},
             paramLabel = "KB_USER",
-            description = "The user of the knowledge base")
+            description = "The user of the knowledge base",
+            defaultValue = "postgres")
     String kbUser;
 
     @CommandLine.Option(names = {"-dg", "--depgraph-path"},
