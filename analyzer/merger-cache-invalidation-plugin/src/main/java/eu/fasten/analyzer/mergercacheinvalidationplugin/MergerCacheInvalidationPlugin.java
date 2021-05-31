@@ -65,6 +65,18 @@ public class MergerCacheInvalidationPlugin extends Plugin {
             logger.info("...Dependency Graph has been successfully built.");
         }
 
+        /**
+         * The helper method that creates a graph resolver.
+         * It is overloaded method that allows to load graph resolver from the mocked instance.
+         * Currently, used for testing purposes.
+         *
+         * @param mockResolver - mocked instance of GraphMavenResolver.
+         */
+        public void loadGraphResolver(GraphMavenResolver mockResolver) {
+            logger.info("Loaded mock graph resolver");
+            this.graphResolver = mockResolver;
+        }
+
         @Override
         public String name() {
             return "Merger Cache Invalidation Plugin";
