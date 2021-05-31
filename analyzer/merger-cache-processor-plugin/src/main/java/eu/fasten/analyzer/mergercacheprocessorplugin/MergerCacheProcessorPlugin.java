@@ -72,14 +72,17 @@ public class MergerCacheProcessorPlugin extends Plugin {
                 graphResolver.buildDependencyGraph(dbContext, depGraphPath);
                 this.graphResolver = graphResolver;
             } catch (SQLException e) {
-                logger.error("Couldn't connect to the Knowledge Base", e);
-                System.exit(1);
+                var err = "Couldn't connect to the Knowledge Base";
+                logger.error(err, e);
+                this.setPluginError(new SQLException(err, e));
             } catch (RuntimeException e) {
-                logger.error("Couldn't connect to the Graph Database", e);
-                System.exit(1);
+                var err = "Couldn't connect to the Graph Database";
+                logger.error(err, e);
+                this.setPluginError(new RuntimeException(err, e));
             } catch (Exception e) {
-                logger.error("Couldn't build the Dependency Graph", e);
-                System.exit(1);
+                var err = "Couldn't build the Dependency Graph";
+                logger.error(err, e);
+                this.setPluginError(new RuntimeException(err, e));
             }
             logger.info("...Dependency Graph has been successfully built.");
         }
@@ -163,9 +166,18 @@ public class MergerCacheProcessorPlugin extends Plugin {
 
         @Override
         public void consume(String record) {
+            this.pluginError = null;
+
+            if (dbContext == null || kbDao == null || graphDao == null || graphResolver == null) {
+                var errorMsg = "Graph Resolver is not initialized, but needed for the plugin. " +
+                        "Please initialize the resolver with MergerCacheProcessorExtension.loadGraphResolver(...).";
+                logger.error(errorMsg);
+                setPluginError(new RuntimeException(errorMsg));
+                return;
+            }
 
             // Parse JSON object from kafka topic of GraphDBExtension.
-            // Although it doesn't have output payloa d, the plugin serializes the graph for its input.
+            // Although it doesn't have output payload, the plugin serializes the graph for its input.
             // And we can use the input copy from this topic and the serialized graph to process our caching.
             var jsonPayload = new JSONObject(record);
             JSONArray json = new JSONArray();

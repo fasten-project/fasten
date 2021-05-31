@@ -54,11 +54,13 @@ public class MergerCacheInvalidationPlugin extends Plugin {
                 graphResolver.buildDependencyGraph(dbContext, depGraphPath);
                 this.graphResolver = graphResolver;
             } catch (SQLException e) {
-                logger.error("Couldn't connect to the KnowledgeBase", e);
-                System.exit(1);
+                var err = "Couldn't connect to the KnowledgeBase";
+                logger.error(err, e);
+                this.setPluginError(new SQLException(err, e));
             } catch (Exception e) {
-                logger.error("Couldn't build the dependency graph", e);
-                System.exit(1);
+                var err = "Couldn't build the dependency graph";
+                logger.error(err, e);
+                this.setPluginError(new RuntimeException(err, e));
             }
             logger.info("...Dependency Graph has been successfully built.");
         }
