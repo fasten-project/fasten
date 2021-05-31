@@ -87,6 +87,13 @@ public class MergerCacheProcessorPlugin extends Plugin {
             logger.info("...Dependency Graph has been successfully built.");
         }
 
+        public void loadGraphResolver(DSLContext dbContext, MetadataDao kbDao, RocksDao graphDao, GraphMavenResolver graphResolver) {
+            this.dbContext = dbContext;
+            this.kbDao = kbDao;
+            this.graphDao = graphDao;
+            this.graphResolver = graphResolver;
+        }
+
         /**
          * Helper method that traverses the directed graph and creates paths from source to vulnerable dependency.
          *
