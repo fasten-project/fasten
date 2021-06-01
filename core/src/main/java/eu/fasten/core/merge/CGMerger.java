@@ -269,25 +269,33 @@ public class CGMerger {
     }
 
 
-    private GraphMetadata getERCGArcs(ExtendedRevisionJavaCallGraph ercg) {
+    private GraphMetadata getERCGArcs(final ExtendedRevisionJavaCallGraph ercg) {
         final var map = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
-        for (var callsite : ercg.getGraph().getCallSites().entrySet()) {
-            var source = callsite.getKey().firstInt();
-            var target = callsite.getKey().secondInt();
-            var signature = ercg.mapOfAllMethods().get(source).getSignature();
-            var type = ercg.nodeIDtoTypeNameMap().get(source);
-            var receivers = new ArrayList<GraphMetadata.ReceiverRecord>();
-            var metadata = callsite.getValue();
+        final var allMethods = ercg.mapOfAllMethods();
+        final var typeMap = ercg.nodeIDtoTypeNameMap();
+        for (final var callsite : ercg.getGraph().getCallSites().entrySet()) {
+            final var source = callsite.getKey().firstInt();
+            final var target = callsite.getKey().secondInt();
+            final var signature = allMethods.get(source).getSignature();
+            final var type = typeMap.get(source);
+            final var receivers = new ArrayList<GraphMetadata.ReceiverRecord>();
+            final var metadata = callsite.getValue();
             for (var obj : metadata.values()) {
                 var receiver = (HashMap<String, Object>) obj;
                 var receiverTypes = getReceiver(receiver);
                 var callType = getCallType(receiver);
                 var line = (int) receiver.get("line");
-                var receiverSignature = ercg.mapOfAllMethods().get(target).getSignature();
+                var receiverSignature = allMethods.get(target).getSignature();
                 receivers.add(new GraphMetadata.ReceiverRecord(line, callType, receiverSignature,
                         receiverTypes));
             }
-            map.put(source, new GraphMetadata.NodeMetadata(type, signature, receivers));
+            var value = map.get(source);
+            if (value == null) {
+                value = new GraphMetadata.NodeMetadata(type, signature, receivers);
+            } else {
+                value.receiverRecords.addAll(receivers);
+            }
+            map.put(source, value);
         }
         return new GraphMetadata(map);
     }
@@ -338,8 +346,7 @@ public class CGMerger {
             var nodeMetadata = entry.getValue();
             for (var receiver : nodeMetadata.receiverRecords) {
                 var arc = new Arc(sourceId, receiver);
-                var node = new Node(nodeMetadata.type, receiver.receiverSignature);
-                resolve(result, callGraphData, arc, node, callGraphData.isExternal(sourceId));
+                resolve(result, callGraphData, arc, receiver.receiverSignature, callGraphData.isExternal(sourceId));
             }
         }
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
@@ -376,26 +383,24 @@ public class CGMerger {
 
     /**
      * Resolve call.
-     *
-     * @param result        graph with resolved calls
+     *  @param result        graph with resolved calls
      * @param callGraphData graph for the artifact to resolve
      * @param arc           source, target and receivers information
-     * @param node          type and method information
+     * @param signature     signature of the target
      * @param isCallback    true, if a given arc is a callback
      */
     private void resolve(final ArrayImmutableDirectedGraph.Builder result,
                          final DirectedGraph callGraphData,
                          final Arc arc,
-                         final Node node,
+                         final String signature,
                          final boolean isCallback) {
         for (String receiverTypeUri : arc.target.receiverTypes) {
-            var type = arc.target.callType.toString();
-            switch (type) {
-                case "virtual":
-                case "interface":
+            switch (arc.target.callType) {
+                case VIRTUAL:
+                case INTERFACE:
                     var foundTarget = false;
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
-                            new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
+                            new HashMap<>()).getOrDefault(signature, new HashSet<>())) {
                         addEdge(result, callGraphData, arc.source, target, isCallback);
                         foundTarget = true;
                     }
@@ -405,7 +410,7 @@ public class CGMerger {
                             for (final var parentUri : parents) {
                                 for (final var target : typeDictionary.getOrDefault(parentUri,
                                         new HashMap<>())
-                                        .getOrDefault(node.signature, new HashSet<>())) {
+                                        .getOrDefault(signature, new HashSet<>())) {
                                     addEdge(result, callGraphData, arc.source, target, isCallback);
                                     foundTarget = true;
                                     break;
@@ -421,7 +426,7 @@ public class CGMerger {
                                 for (final var depTypeUri : types) {
                                     for (final var target : typeDictionary.getOrDefault(depTypeUri,
                                             new HashMap<>())
-                                            .getOrDefault(node.signature, new HashSet<>())) {
+                                            .getOrDefault(signature, new HashSet<>())) {
                                         addEdge(result, callGraphData, arc.source, target,
                                                 isCallback);
                                     }
@@ -430,12 +435,12 @@ public class CGMerger {
                         }
                     }
                     break;
-                case "dynamic":
+                case DYNAMIC:
                     logger.warn("OPAL didn't rewrite the dynamic");
                     break;
                 default:
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
-                            new HashMap<>()).getOrDefault(node.signature, new HashSet<>())) {
+                            new HashMap<>()).getOrDefault(signature, new HashSet<>())) {
                         addEdge(result, callGraphData, arc.source, target, isCallback);
                     }
                     break;
