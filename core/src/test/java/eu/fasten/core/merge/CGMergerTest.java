@@ -335,7 +335,7 @@ public class CGMergerTest {
         final var cg = merger.mergeAllDeps();
         final var uris = merger.getAllUris();
         assertEquals(2, cg.edgeSet().size());
-        assertEquals(3, uris.size());
+        assertEquals(4, uris.size());
         final var source = uris.inverse().get("fasten://mvn!Importer$0/merge" +
                 ".simpleImport/Importer.sourceMethod()%2Fjava.lang%2FVoidType");
         final var target1 = uris.inverse().get("fasten://mvn!Imported$1/merge" +

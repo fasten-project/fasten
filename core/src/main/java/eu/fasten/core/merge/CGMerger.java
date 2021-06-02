@@ -272,6 +272,7 @@ public class CGMerger {
     private GraphMetadata getERCGArcs(final ExtendedRevisionJavaCallGraph ercg) {
         final var map = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
         final var allMethods = ercg.mapOfAllMethods();
+        final var allUris = ercg.mapOfFullURIStrings();
         final var typeMap = ercg.nodeIDtoTypeNameMap();
         for (final var callsite : ercg.getGraph().getCallSites().entrySet()) {
             final var source = callsite.getKey().firstInt();
@@ -289,13 +290,14 @@ public class CGMerger {
                 receivers.add(new GraphMetadata.ReceiverRecord(line, callType, receiverSignature,
                         receiverTypes));
             }
-            var value = map.get(source);
+            final var globalSource = this.allUris.inverse().get(allUris.get(source));
+            var value = map.get(globalSource.longValue());
             if (value == null) {
                 value = new GraphMetadata.NodeMetadata(type, signature, receivers);
             } else {
                 value.receiverRecords.addAll(receivers);
             }
-            map.put(source, value);
+            map.put(globalSource.longValue(), value);
         }
         return new GraphMetadata(map);
     }
@@ -341,14 +343,14 @@ public class CGMerger {
         if (graphArcs == null) {
             return null;
         }
-        for (var entry : graphArcs.gid2NodeMetadata.long2ObjectEntrySet()) {
+        graphArcs.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
             var sourceId = entry.getLongKey();
             var nodeMetadata = entry.getValue();
             for (var receiver : nodeMetadata.receiverRecords) {
                 var arc = new Arc(sourceId, receiver);
                 resolve(result, callGraphData, arc, receiver.receiverSignature, callGraphData.isExternal(sourceId));
             }
-        }
+        });
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
         logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
@@ -738,7 +740,7 @@ public class CGMerger {
      * @param target        target callable ID
      * @param isCallback    true, if a given arc is a callback
      */
-    private void addEdge(final ArrayImmutableDirectedGraph.Builder result,
+    private synchronized void addEdge(final ArrayImmutableDirectedGraph.Builder result,
                          final DirectedGraph callGraphData,
                          final Long source, final Long target, final boolean isCallback) {
         try {
