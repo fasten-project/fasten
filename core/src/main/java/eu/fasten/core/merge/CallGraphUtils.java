@@ -156,7 +156,7 @@ public class CallGraphUtils {
      * @param methodSignature method signature
      * @return decoded method signature
      */
-    private static String decode(final String methodSignature) {
+    public static String decode(final String methodSignature) {
         String result = methodSignature;
         while (result.contains("%")) {
             result = URLDecoder.decode(result, StandardCharsets.UTF_8);

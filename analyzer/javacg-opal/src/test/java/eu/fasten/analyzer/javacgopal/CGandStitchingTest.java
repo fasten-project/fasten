@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import static eu.fasten.core.merge.CallGraphUtils.decode;
 import static org.junit.jupiter.api.Assertions.*;
 import com.github.javaparser.utils.Log;
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
@@ -27,7 +28,6 @@ import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.analyzer.sourceanalyzer.CommentParser;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.LocalMerger;
 import eu.fasten.core.merge.CallGraphUtils;
@@ -52,7 +52,6 @@ import org.apache.commons.collections.map.CompositeMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.kafka.common.protocol.types.Field;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -184,6 +183,7 @@ public class CGandStitchingTest {
 
         for (final var entry : expected.entrySet()) {
             if (!entry.getValue().isEmpty()) {
+
                 assertEquals(entry.getValue(), actual.get(entry.getKey()));
             }
         }
@@ -208,9 +208,9 @@ public class CGandStitchingTest {
         Map<String, Set<String>> result = new HashMap<>();
         for (final var edge : nodePairs) {
             final var source =
-                getClass(edge.getLeft()) + "." + getMethod(edge.getLeft());
+                decode(getClass(edge.getLeft()) + "." + getMethod(edge.getLeft()));
             final var target =
-                getClass(edge.getRight()) + "." + getMethod(edge.getRight());
+                decode(getClass(edge.getRight()) + "." + getMethod(edge.getRight()));
             final var current = result.getOrDefault(source, new HashSet<>());
             current.add(target);
             result.put(source, current);
@@ -255,6 +255,7 @@ public class CGandStitchingTest {
         var method = methodNameMatcher.group(0) + "(";
         final var params = StringUtils.substringBetween(uri, "(", ")").split(",");
         for (String param : params) {
+            param = decode(param);
             final var paramUri = param.split("/");
             final var paramCLas = paramUri[paramUri.length-1];
             method = method + paramCLas + ",";

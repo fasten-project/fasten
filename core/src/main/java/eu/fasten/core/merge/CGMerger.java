@@ -104,7 +104,8 @@ public class CGMerger {
         for (final var rcg : dependencySet) {
             final var uris = rcg.mapOfFullURIStrings();
             for (final var type : rcg.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
-                type.getValue().getMethods().forEach((localId, node) -> {
+                type.getValue().getDefinedMethods().forEach((signature, node) -> {
+                    final var localId = type.getValue().getMethodKey(node);
                     final var oldType = typeDict.getOrDefault(type.getKey(), new HashMap<>());
                     final var oldNode = oldType.getOrDefault(node.getSignature(), new HashSet<>());
                     oldNode.add(this.allUris.inverse().get(uris.get(localId)));
