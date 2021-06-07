@@ -187,7 +187,7 @@ public class CallGraphUtils {
      * @return String representation of an edge
      */
     public static String getStringEdge(final Pair<String, String> edge) {
-        return edge.getLeft() + " '->" + "'\n" + edge.getRight() + "\n\n";
+        return decode(edge.getLeft()) + " '->" + "'\n" + decode(edge.getRight()) + "\n\n";
     }
 
     /**

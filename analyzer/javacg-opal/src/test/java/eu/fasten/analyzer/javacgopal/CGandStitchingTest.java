@@ -27,8 +27,11 @@ import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.analyzer.sourceanalyzer.CommentParser;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.merge.CGMerger;
+import eu.fasten.core.merge.LocalMerger;
 import eu.fasten.core.merge.CallGraphUtils;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -47,8 +50,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.collections.map.CompositeMap;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.json.JSONObject;
+import org.apache.kafka.common.protocol.types.Field;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -65,7 +69,7 @@ public class CGandStitchingTest {
     }
 
     private static ExtendedRevisionJavaCallGraph getRCG(final File file, final String product,
-                                                    final String version)
+                                                        final String version)
         throws OPALException {
         var opalCG = new CallGraphConstructor(file, "", "RTA");
         var cg = new PartialCallGraph(opalCG);
@@ -90,28 +94,32 @@ public class CGandStitchingTest {
                 "\n",
             toString(importer));
 
-        final ExtendedRevisionJavaCallGraph mergedRcg = merge(importer, Arrays.asList(importer,
-            imported));
+        final var mergedRcg = merge(importer, Arrays.asList(importer, imported));
 
-        Assertions.assertEquals("/merge.staticInitializer/Importer.<init>()/java.lang/VoidType '->'\n" +
-            "/java.lang/Object.<init>()/java.lang/VoidType\n" +
-            "\n" +
-            "/merge.staticInitializer/Importer.sourceMethod()/java.lang/VoidType '->'\n" +
-            "/merge.staticInitializer/Imported.<init>()/java.lang/VoidType\n" +
-            "\n" +
-            "/merge.staticInitializer/Importer.sourceMethod()/java.lang/VoidType '->'\n" +
-            "//imported$1.1.1/merge.staticInitializer/Imported.<init>()/java.lang/VoidType\n" +
+        Assertions.assertEquals("fasten://mvn!importer$0.0.0/merge.staticInitializer/Importer" +
+            ".sourceMethod()/java.lang/VoidType '->'\n" +
+            "fasten://mvn!imported$1.1.1/merge.staticInitializer/Imported.<init>()/java.lang/VoidType\n" +
             "\n", toString(mergedRcg));
+    }
+
+    private String toString(List<Pair<String, String>> mergedRcg) {
+        return CallGraphUtils.toStringEdges(mergedRcg);
     }
 
     private String toString(ExtendedRevisionJavaCallGraph mergedRcg) {
         return CallGraphUtils.getString(CallGraphUtils.convertToNodePairs(mergedRcg));
     }
-
-    private ExtendedRevisionJavaCallGraph merge(ExtendedRevisionJavaCallGraph artifact,
-                                            List<ExtendedRevisionJavaCallGraph> deps) {
+    private List<Pair<String, String>> merge(ExtendedRevisionJavaCallGraph artifact,
+                                        List<ExtendedRevisionJavaCallGraph> deps) {
         final var cgMerger = new CGMerger(deps);
-        return new ExtendedRevisionJavaCallGraph(new JSONObject()); //cgMerger.mergeWithCHA(artifact); TODO: Fix this
+        final var mergedCG = cgMerger.mergeWithCHA(artifact);
+        List<Pair<String, String>> result = new ArrayList<>();
+        for (LongLongPair edge : mergedCG.edgeSet()) {
+            final var firstUri = cgMerger.getAllUris().get(edge.firstLong());
+            final var secondUri = cgMerger.getAllUris().get(edge.secondLong());
+            result.add(ImmutablePair.of(firstUri, secondUri));
+        }
+        return result;
     }
 
     @Test
@@ -123,28 +131,9 @@ public class CGandStitchingTest {
 
         final var merged =  merge(user, deps);
 
-
-        assertNotEquals( "/merge.hashCode/User.<init>()/java.lang/VoidType '->'\n" +
-                "/java.lang/Object.<init>()/java.lang/VoidType\n" +
-                "\n" +
-                "/merge.hashCode/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
-                "/merge.hashCode/Child.hashCode()/java.lang/IntegerType\n" +
-                "\n" +
-                "/merge.hashCode/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
-                "//Other.class$0.0.0/merge.hashCode/Other.hashCode()/java.lang/IntegerType\n" +
-                "\n" +
-                "/merge.hashCode/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
-                "//Parent.class$0.0.0/merge.hashCode/Parent.hashCode()/java.lang/IntegerType\n\n",
-            toString(merged));
-
         Assertions.assertEquals(
-            "/merge.hashCode/User.<init>()/java.lang/VoidType '->'\n" +
-                "/java.lang/Object.<init>()/java.lang/VoidType\n" +
-                "\n" +
-                "/merge.hashCode/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
-                "/merge.hashCode/Child.hashCode()/java.lang/IntegerType\n\n" +
-                "/merge.hashCode/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
-                "//Parent.class$0.0.0/merge.hashCode/Parent.hashCode()/java.lang/IntegerType\n\n",
+                "fasten://mvn!User.class$0.0.0/merge.hashCode/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
+                "fasten://mvn!Parent.class$0.0.0/merge.hashCode/Parent.hashCode()/java.lang/IntegerType\n\n",
             toString(merged));
 
     }
@@ -176,8 +165,7 @@ public class CGandStitchingTest {
         final var deps =
             projects.get().map(s -> generate(basePath, s,version)).collect(Collectors.toList());
         final var actual =
-            deps.stream().map(ercg -> toMap(CallGraphUtils.convertToNodePairs(merge(ercg, deps),
-                false, false))).reduce(CompositeMap::new).get();
+            deps.stream().map(ercg -> toMap(merge(ercg, deps))).reduce(CompositeMap::new).get();
         assertEqual(expected, ((Map<String, Set<String>>)actual));
     }
 
@@ -207,7 +195,7 @@ public class CGandStitchingTest {
     }
 
     private ExtendedRevisionJavaCallGraph generate(final String base, final String artifact,
-                                               final String version) {
+                                                   final String version) {
         try {
             return getRCG(base+"/"+artifact+"/target/"+artifact+"-"+version+"-SNAPSHOT.jar", artifact,
                 version);
@@ -215,6 +203,19 @@ public class CGandStitchingTest {
             e.printStackTrace();
         }
         return null;
+    }
+    public static Map<String,Set<String>> toMap(final List<Pair<String, String>> nodePairs) {
+        Map<String, Set<String>> result = new HashMap<>();
+        for (final var edge : nodePairs) {
+            final var source =
+                getClass(edge.getLeft()) + "." + getMethod(edge.getLeft());
+            final var target =
+                getClass(edge.getRight()) + "." + getMethod(edge.getRight());
+            final var current = result.getOrDefault(source, new HashSet<>());
+            current.add(target);
+            result.put(source, current);
+        }
+        return result;
     }
 
     public static Map<String,Set<String>> toMap(final Map<String,
@@ -290,7 +291,7 @@ public class CGandStitchingTest {
 
     @Test
     public void testAllCasesJ8() {
-//        runTestsIn("resources/example-workspace-java8/");
+        //runTestsIn("resources/example-workspace-java8/");
     }
 
 
@@ -331,7 +332,7 @@ public class CGandStitchingTest {
             getRCG("net.bytebuddy:byte-buddy:1.10.5"),
             getRCG("org.apache.kafka:kafka-clients:2.3.0")));
 
-        var merger = new CGMerger(depSet);
+        var merger = new LocalMerger(depSet);
         merger.mergeWithCHA(depSet.get(2));
     }
 
