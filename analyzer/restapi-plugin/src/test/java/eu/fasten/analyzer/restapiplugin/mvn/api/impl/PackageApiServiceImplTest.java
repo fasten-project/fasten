@@ -27,6 +27,7 @@ import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class PackageApiServiceImplTest {
 
@@ -146,11 +147,17 @@ public class PackageApiServiceImplTest {
 
     @Test
     void getERCGLinkTest() {
-        var packageName = "group:artifact";
-        var version = "version";
-        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl";
-        var expected = new ResponseEntity<>("http://lima.ewi.tudelft.nl/mvn/a/artifact/artifact_group_version.json", HttpStatus.OK);
-        var result = service.getERCGLink(packageName, version);
-        assertEquals(expected, result);
+        var packageName = "junit:junit";
+        var version = "4.12";
+        Mockito.when(kbDao.assertPackageExistence(packageName, version)).thenReturn(true);
+        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl/";
+        var result = service.getERCGLink(packageName, version, null, null);
+        assertNotNull(result);
+
+        packageName = "junit:junit";
+        version = "4.12";
+        Mockito.when(kbDao.assertPackageExistence(packageName, version)).thenReturn(false);
+        result = service.getPackageVersion(packageName, version, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
     }
 }
