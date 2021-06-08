@@ -123,13 +123,17 @@ public class CGMergerTest {
         );
 
         var gid2nodeMap = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
-        gid2nodeMap.put(MAIN_INIT, new GraphMetadata.NodeMetadata("/test.group/Main", "<init>()" + "/java.lang/VoidType", List.of(new GraphMetadata.ReceiverRecord(6, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>()VoidType", List.of("/java.lang/Object")))));
+        gid2nodeMap.put(MAIN_INIT,
+            new GraphMetadata.NodeMetadata("/test.group/Main", "<init>()/java.lang/VoidType",
+                List.of(new GraphMetadata.ReceiverRecord(6, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>()VoidType",
+                    List.of("/java.lang/Object")))));
         gid2nodeMap.put(MAIN_MAIN_METHOD, new GraphMetadata.NodeMetadata("/test.group/Main", "main(/java.lang/String[])/java.lang/VoidType", List.of(
-                new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.CallType.SPECIAL,"<init>(/java.lang/IntegerType,/java.lang/IntegerType,/java" + ".lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Baz")),
-                new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.CallType.VIRTUAL, "superMethod()/java.lang/VoidType", List.of("/test.group/Bar", "/test" + ".group/Bar")),
-                new GraphMetadata.ReceiverRecord(11, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java" + ".lang/IntegerType,/java.lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Bar")),
+                new GraphMetadata.ReceiverRecord(8, GraphMetadata.ReceiverRecord.CallType.SPECIAL,"<init>(/java.lang/IntegerType,/java.lang/IntegerType,/java.lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Baz")),
+                new GraphMetadata.ReceiverRecord(9, GraphMetadata.ReceiverRecord.CallType.VIRTUAL
+                    , "superMethod()/java.lang/VoidType", List.of("/test.group/Bar")),
+                new GraphMetadata.ReceiverRecord(11, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java.lang/IntegerType,/java.lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Bar")),
                 new GraphMetadata.ReceiverRecord(14, GraphMetadata.ReceiverRecord.CallType.STATIC, "staticMethod()/java.lang/IntegerType", List.of("/test.group/Foo")),
-                new GraphMetadata.ReceiverRecord(15, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java" + ".lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Foo"))
+                new GraphMetadata.ReceiverRecord(15, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java.lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Foo"))
         )));
         graphMetadata = new GraphMetadata(gid2nodeMap);
 
@@ -162,17 +166,10 @@ public class CGMergerTest {
 
         assertNotNull(mergedGraph);
 
-        assertEquals(new LongArraySet(new long[]{MAIN_INIT, MAIN_MAIN_METHOD, FOO_CLINIT, FOO_INIT,
-                        FOO_STATIC_METHOD, BAR_INIT, BAR_SUPER_METHOD, BAZ_INIT, BAZ_SUPER_METHOD, 2}),
-                mergedGraph.nodes());
-        assertEquals(new LongArraySet(new long[]{FOO_CLINIT, FOO_INIT, FOO_STATIC_METHOD, BAR_INIT,
-                BAR_SUPER_METHOD, BAZ_INIT, BAZ_SUPER_METHOD, 2}), mergedGraph.externalNodes());
-
-        assertEquals(mergedGraph.successors(MAIN_INIT), LongArrayList.wrap(new long[]{MAIN_INIT, 2}));
+        assertEquals(LongArrayList.wrap(new long[]{MAIN_INIT}), mergedGraph.successors(MAIN_INIT));
 
         assertEquals(new HashSet<>(mergedGraph.successors(MAIN_MAIN_METHOD)),
-                Set.of(FOO_CLINIT, FOO_INIT, FOO_STATIC_METHOD, BAR_INIT, BAR_SUPER_METHOD,
-                        BAZ_INIT, BAZ_SUPER_METHOD));
+                Set.of(BAR_SUPER_METHOD, BAZ_INIT, BAR_INIT, FOO_STATIC_METHOD, FOO_INIT));
     }
 
     @Test
@@ -186,11 +183,10 @@ public class CGMergerTest {
         var directedGraph = new ArrayImmutableDirectedGraph.Builder();
         directedGraph.addInternalNode(nodeWithRecursiveCall);
         directedGraph.addArc(nodeWithRecursiveCall, nodeWithRecursiveCall);
-
+        final var directedGraphBuilt = directedGraph.build();
         var rocksDao = Mockito.mock(RocksDao.class);
-        Mockito.when(rocksDao.getGraphData(42)).thenReturn(directedGraph.build());
-        Mockito.when(rocksDao.getGraphMetadata(42, directedGraph.build())).thenReturn(graphMetadata);
-
+        Mockito.when(rocksDao.getGraphData(42)).thenReturn(directedGraphBuilt);
+        Mockito.when(rocksDao.getGraphMetadata(42, directedGraphBuilt)).thenReturn(graphMetadata);
         merger = new CGMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
                 context, rocksDao);
 
