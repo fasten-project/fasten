@@ -100,15 +100,14 @@ public class FastenUriUtils {
 
 
         // Method Args: `({args})`
-        Pattern methodArgsPattern = Pattern.compile("(?<=" + methodNameMatcher.group(0) + "\\()(.*?)(?=\\))");
+        Pattern methodArgsPattern = Pattern.compile("(?<=" + Pattern.quote(methodNameMatcher.group(0)) + "\\()(.*?)(?=\\))");
         Matcher methodArgsMatcher = methodArgsPattern.matcher(partialFastenUri);
         if (!methodArgsMatcher.find())
             throw new IllegalArgumentException(partialUriFormatException + "; failed to parse method args.");
 
-
         // Method Return Type: `)/{type}`
         Pattern methodReturnPattern = Pattern.compile(
-                "(?<=" + methodNameMatcher.group(0) + "\\(" + methodArgsMatcher.group(0) + "\\))(.*)");
+                "(?<=" + Pattern.quote(methodNameMatcher.group(0)) + "\\(" + Pattern.quote(methodArgsMatcher.group(0)) + "\\))(.*)");
         Matcher methodReturnMatcher = methodReturnPattern.matcher(partialFastenUri);
         if (!methodReturnMatcher.find() || methodReturnMatcher.group(0).isEmpty())
             throw new IllegalArgumentException(partialUriFormatException + "; failed to parse return type.");
