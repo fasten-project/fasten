@@ -78,7 +78,6 @@ public class FastenUriUtils {
         // URI is usually stored encoded, so decode for parsing.
         // E.g., `/com.sun.istack.localization/Localizer.%3Cinit%3E(%2Fjava.util%2FLocale)%2Fjava.lang%2FVoidType`
         partialFastenUri = java.net.URLDecoder.decode(partialFastenUri, StandardCharsets.UTF_8);
-        System.out.println(partialFastenUri);
 
         // Namespace: `/{namespace}/`
         Pattern namespacePattern = Pattern.compile("(?<=/)(.+?)(?=/)");
