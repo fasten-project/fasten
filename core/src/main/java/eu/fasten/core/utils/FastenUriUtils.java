@@ -83,27 +83,27 @@ public class FastenUriUtils {
         Pattern namespacePattern = Pattern.compile("(?<=/)(.+?)(?=/)");
         Matcher namespaceMatcher = namespacePattern.matcher(partialFastenUri);
         if (!namespaceMatcher.find() || namespaceMatcher.group(0).isEmpty())
-            throw new IllegalArgumentException(partialUriFormatException);
+            throw new IllegalArgumentException(partialUriFormatException + "; failed to parse namespace.");
 
         // Class: `/{class}.*(`
         Pattern classPattern = Pattern.compile("(?<=/)([^,;./]+?)(?=(\\$|\\.)([^./]+)\\()");
         Matcher classMatcher = classPattern.matcher(partialFastenUri);
         if (!classMatcher.find() || classMatcher.group(0).isEmpty())
-            throw new IllegalArgumentException(partialUriFormatException);
+            throw new IllegalArgumentException(partialUriFormatException + "; failed to parse class name.");
 
 
         // Method: `.{method}(`
         Pattern methodNamePattern = Pattern.compile("(?<=\\.(\\$?))([^,;./$]+?)(?=\\()");
         Matcher methodNameMatcher = methodNamePattern.matcher(partialFastenUri);
         if (!methodNameMatcher.find() || methodNameMatcher.group(0).isEmpty())
-            throw new IllegalArgumentException(partialUriFormatException);
+            throw new IllegalArgumentException(partialUriFormatException + "; failed to parse method name.");
 
 
         // Method Args: `({args})`
         Pattern methodArgsPattern = Pattern.compile("(?<=" + methodNameMatcher.group(0) + "\\()(.*?)(?=\\))");
         Matcher methodArgsMatcher = methodArgsPattern.matcher(partialFastenUri);
         if (!methodArgsMatcher.find())
-            throw new IllegalArgumentException(partialUriFormatException);
+            throw new IllegalArgumentException(partialUriFormatException + "; failed to parse method args.");
 
 
         // Method Return Type: `)/{type}`
@@ -111,7 +111,7 @@ public class FastenUriUtils {
                 "(?<=" + methodNameMatcher.group(0) + "\\(" + methodArgsMatcher.group(0) + "\\))(.*)");
         Matcher methodReturnMatcher = methodReturnPattern.matcher(partialFastenUri);
         if (!methodReturnMatcher.find() || methodReturnMatcher.group(0).isEmpty())
-            throw new IllegalArgumentException(partialUriFormatException);
+            throw new IllegalArgumentException(partialUriFormatException + "; failed to parse return type.");
 
 
         var namespace = namespaceMatcher.group(0);
