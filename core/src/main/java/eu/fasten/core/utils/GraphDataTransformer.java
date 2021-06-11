@@ -22,10 +22,10 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.graphdb.ExtendedGidGraph;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import org.apache.commons.math3.util.Pair;
 import org.jooq.DSLContext;
+import org.jooq.Record3;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,8 +103,9 @@ public class GraphDataTransformer implements Runnable {
                 logger.warn("Directed graph with id {} is not found", packageVersionId);
                 continue;
             }
-            var callables = new HashSet<>(metadataDb.selectFrom(Callables.CALLABLES).where(Callables.CALLABLES.ID.in(oldGraphData.nodes())).fetch());
-            var moduleIds = callables.stream().map(CallablesRecord::getModuleId).collect(Collectors.toList());
+            var callables = new HashSet<>(metadataDb.select(Callables.CALLABLES.ID, Callables.CALLABLES.MODULE_ID, Callables.CALLABLES.FASTEN_URI)
+                    .from(Callables.CALLABLES).where(Callables.CALLABLES.ID.in(oldGraphData.nodes())).fetch());
+            var moduleIds = callables.stream().map(Record3::value2).collect(Collectors.toList());
             var edges = new HashSet<>(metadataDb.selectFrom(CallSites.CALL_SITES).where(CallSites.CALL_SITES.SOURCE_ID.in(oldGraphData.nodes())).fetch());
             edges.addAll(metadataDb.selectFrom(CallSites.CALL_SITES).where(CallSites.CALL_SITES.TARGET_ID.in(oldGraphData.nodes())).fetch());
             var namespaceIds = new HashSet<Long>();
@@ -113,7 +114,7 @@ public class GraphDataTransformer implements Runnable {
             var typesMap = new HashMap<Long, String>();
             metadataDb.select(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME).from(ModuleNames.MODULE_NAMES).where(ModuleNames.MODULE_NAMES.ID.in(namespaceIds)).fetch().forEach(r -> typesMap.put(r.value1(), r.value2()));
             var gidToUriMap = new HashMap<Long, String>();
-            callables.forEach(c -> gidToUriMap.put(c.getId(), c.getFastenUri()));
+            callables.forEach(c -> gidToUriMap.put(c.value1(), c.value3()));
             var extendedGidGraph = new ExtendedGidGraph(packageVersionId,
                     packageVersions.get(packageVersionId).getFirst(),
                     packageVersions.get(packageVersionId).getSecond(),
