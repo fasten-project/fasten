@@ -86,10 +86,14 @@ public class RocksDao implements Closeable {
 
     private final static byte[] METADATA_COLUMN_FAMILY = "metadata".getBytes();
     private final RocksDB rocksDb;
-    private final ColumnFamilyHandle defaultHandle, metadataHandle;
+    private final ColumnFamilyHandle defaultHandle;
+    private ColumnFamilyHandle metadataHandle;
     private Kryo kryo;
     private final static Logger logger = LoggerFactory.getLogger(RocksDao.class.getName());
 
+    public RocksDao(final String dbDir, final boolean readOnly) throws RocksDBException {
+        this(dbDir, readOnly, false);
+    }
 
     /**
      * Constructor of RocksDao (Database Access Object).
@@ -97,20 +101,27 @@ public class RocksDao implements Closeable {
      * @param dbDir Directory where RocksDB data will be stored
      * @throws RocksDBException if there is an error loading or opening RocksDB instance
      */
-    public RocksDao(final String dbDir, final boolean readOnly) throws RocksDBException {
+    public RocksDao(final String dbDir, final boolean readOnly, final boolean onlyDefaultColumnFamily) throws RocksDBException {    // TODO: Remove onlyDefaultColumnFamily
         RocksDB.loadLibrary();
 		final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
-		final ColumnFamilyOptions metadataOptions = new ColumnFamilyOptions().setCompressionType(CompressionType.ZSTD_COMPRESSION);
+        ColumnFamilyOptions metadataOptions = null;
+        if (!onlyDefaultColumnFamily) {
+            metadataOptions = new ColumnFamilyOptions().setCompressionType(CompressionType.ZSTD_COMPRESSION);
+        }
         @SuppressWarnings("resource") final DBOptions dbOptions = new DBOptions()
                 .setCreateIfMissing(true)
                 .setCreateMissingColumnFamilies(true);
-		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), new ColumnFamilyDescriptor(METADATA_COLUMN_FAMILY, metadataOptions));
+		final List<ColumnFamilyDescriptor> cfDescriptors = onlyDefaultColumnFamily ?
+                List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions)) :
+                List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), new ColumnFamilyDescriptor(METADATA_COLUMN_FAMILY, metadataOptions));
         final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
         this.rocksDb = readOnly
                 ? RocksDB.openReadOnly(dbOptions, dbDir, cfDescriptors, columnFamilyHandles)
                 : RocksDB.open(dbOptions, dbDir, cfDescriptors, columnFamilyHandles);
         this.defaultHandle = columnFamilyHandles.get(0);
-        this.metadataHandle = columnFamilyHandles.get(1);
+        if (!onlyDefaultColumnFamily) {
+            this.metadataHandle = columnFamilyHandles.get(1);
+        }
         initKryo();
     }
 

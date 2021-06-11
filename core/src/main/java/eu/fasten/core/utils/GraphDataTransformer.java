@@ -76,7 +76,7 @@ public class GraphDataTransformer implements Runnable {
         RocksDao newGraphDb;
         DSLContext metadataDb;
         try {
-            oldGraphDb = new RocksDao(graphDbPath, true);
+            oldGraphDb = new RocksDao(graphDbPath, true, true);
             newGraphDb = new RocksDao(oldGraphDbPath, false);
             metadataDb = PostgresConnector.getDSLContext(dbUrl, dbUser, true);
         } catch (RocksDBException | SQLException e) {
