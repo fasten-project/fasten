@@ -6,6 +6,7 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -80,16 +81,15 @@ public class LicenseDetectorTest {
 
         // For all inputs
         inputToExpected.forEach((repoAbsolutePath, expectedRetrievedPomFile) -> {
-            assertTrue(
-                    new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).isPresent(),
-                    "pom.xml file has not been retrieved."
-            );
-
-            assertEquals(
-                    expectedRetrievedPomFile,
-                    new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).get(),
-                    "Retrieved pom.xml file is not the one the test expected."
-            );
+            try {
+                assertEquals(
+                        expectedRetrievedPomFile,
+                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath),
+                        "Retrieved pom.xml file is not the one the test expected."
+                );
+            } catch (FileNotFoundException e) {
+                fail("Test couldn't find pom file " + expectedRetrievedPomFile.getAbsolutePath(), e.getCause());
+            }
         });
     }
 
@@ -161,6 +161,15 @@ public class LicenseDetectorTest {
                 Map.entry(
                         // This case has a lot of dependencies without the `licenses` XML tag in their `pom.xml` file
                         "licensed-dependencies-maven-project",
+                        Stream.of(
+                                // FIXME SPDX IDs
+                                new DetectedLicense("Apache-2.0", DetectedLicenseSource.MAVEN_CENTRAL, null),
+                                new DetectedLicense("Eclipse Public License 1.0", DetectedLicenseSource.MAVEN_CENTRAL, null)
+                        ).collect(Collectors.toCollection(HashSet::new))
+                ),
+                Map.entry(
+                        // These dependencies use Maven properties that should be resolved first
+                        "dependencies-with-maven-properties",
                         Stream.of(
                                 // FIXME SPDX IDs
                                 new DetectedLicense("Apache-2.0", DetectedLicenseSource.MAVEN_CENTRAL, null),
