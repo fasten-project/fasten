@@ -13,19 +13,19 @@ public class DetectedLicense {
     /**
      * License name.
      */
-    protected final String name; // FIXME Use SPDX IDs
+    protected String name; // FIXME Use SPDX IDs
 
     /**
      * Where does the license come from.
      */
-    protected final DetectedLicenseSource source;
+    protected DetectedLicenseSource source;
 
     /**
      * The Maven coordinate this detected license belongs to.
      * Might be `null` during tests.
      */
     @Nullable
-    protected final Revision coordinate;
+    protected Revision coordinate;
 
     public DetectedLicense(String name, DetectedLicenseSource source, @Nullable Revision coordinate) {
         this.name = name;
@@ -54,5 +54,30 @@ public class DetectedLicense {
                 "name='" + name + '\'' +
                 ", source=" + source +
                 '}';
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public DetectedLicenseSource getSource() {
+        return source;
+    }
+
+    public void setSource(DetectedLicenseSource source) {
+        this.source = source;
+    }
+
+    @Nullable
+    public Revision getCoordinate() {
+        return coordinate;
+    }
+
+    public void setCoordinate(@Nullable Revision coordinate) {
+        this.coordinate = coordinate;
     }
 }

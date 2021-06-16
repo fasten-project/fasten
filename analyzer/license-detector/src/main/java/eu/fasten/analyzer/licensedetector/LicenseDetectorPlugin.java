@@ -2,6 +2,7 @@ package eu.fasten.analyzer.licensedetector;
 
 import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
 import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
+import eu.fasten.analyzer.licensedetector.license.DetectedLicenses;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -48,6 +49,11 @@ public class LicenseDetectorPlugin extends Plugin {
          */
         public static String MAVEN_CENTRAL_REPO = "https://repo1.maven.org/maven2/";
 
+        /**
+         * TODO
+         */
+        protected DetectedLicenses detectedLicenses = new DetectedLicenses();
+
         @Override
         public Optional<List<String>> consumeTopic() {
             return Optional.of(Collections.singletonList(consumerTopic));
@@ -64,35 +70,34 @@ public class LicenseDetectorPlugin extends Plugin {
 
                 this.pluginError = null;
 
-                logger.info("License detector started.");
+                logger.info("License detector started");
 
                 // Retrieving the repository path on the shared volume
                 String repoPath = extractRepoPath(record);
-                logger.info("License detector: scanning repository in " + repoPath + "...");
 
                 // Retrieving the Maven coordinate of this input record
                 Revision coordinate = extractMavenCoordinate(record);
 
                 // Retrieving the `pom.xml` file
-                Optional<File> optionalPomFile = retrievePomFile(repoPath);
-                if (optionalPomFile.isEmpty()) {
-                    throw new FileNotFoundException("No file named pom.xml found in " + repoPath + ". " +
-                            "This plugin only analyzes Maven projects.");
-                }
-                File pomFile = optionalPomFile.get();
+                File pomFile = retrievePomFile(repoPath);
 
                 // TODO Checking whether the repository has already been scanned (by querying the KB)
 
+                // TODO Retrieving a fully-resolved model of the `pom.xml` file
+
                 // Retrieving the outbound license
-                Set<DetectedLicense> outboundLicenses = getOutboundLicenses(pomFile, coordinate);
+                detectedLicenses.setOutbound(getOutboundLicenses(pomFile, coordinate));
+                logger.info("Number of detected outbound licenses: " + detectedLicenses.getOutbound().size());
 
                 // Retrieving inbound dependency licenses
-                Set<DetectedLicense> inboundDependencyLicenses = getDependencyLicensesFromMavenCentral(pomFile);
+                detectedLicenses.setDependencies(getDependencyLicensesFromMavenCentral(pomFile));
+                logger.info("Number of detected dependency licenses: " + detectedLicenses.getDependencies().size());
 
                 // TODO Detecting inbound licenses by scanning the project
 
                 // TODO Unzipping the JAR to determine which files actually form the package
-                // TODO Use the `sourcesUrl` field in the `fasten.RepoCLoner.out` input record
+                // TODO Use the `sourcesUrl` field in the `fasten.RepoCloner.out` input record
+
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage());
@@ -310,8 +315,9 @@ public class LicenseDetectorPlugin extends Plugin {
          *
          * @param repoPath the repository path whose pom.xml file must be retrieved.
          * @return the pom.xml file of the repository.
+         * @throws FileNotFoundException in case no pom.xml file could be found in the repository.
          */
-        protected Optional<File> retrievePomFile(String repoPath) {
+        protected File retrievePomFile(String repoPath) throws FileNotFoundException {
 
             // Result
             Optional<File> pomFile = Optional.empty();
@@ -336,7 +342,12 @@ public class LicenseDetectorPlugin extends Plugin {
                 logger.info("Multiple pom.xml files found. Using " + pomFile.get());
             }
 
-            return pomFile;
+            if (pomFile.isEmpty()) {
+                throw new FileNotFoundException("No file named pom.xml found in " + repoPath + ". " +
+                        "This plugin only analyzes Maven projects.");
+            }
+
+            return pomFile.get();
         }
 
         /**
@@ -353,8 +364,12 @@ public class LicenseDetectorPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            // TODO Creating the license report record
-            return Optional.empty();
+            if (detectedLicenses == null ||
+                    (detectedLicenses.getOutbound().isEmpty() && detectedLicenses.getDependencies().isEmpty())) {
+                return Optional.empty();
+            } else {
+                return Optional.of(new JSONObject(detectedLicenses).toString());
+            }
         }
 
         @Override
