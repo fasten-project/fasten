@@ -76,7 +76,7 @@ class JSONUtilsTest {
             builder.timestamp(-1).classHierarchy(graph.getClassHierarchy()).graph(graph.getGraph())
                 .forge(graph.forge).cgGenerator(graph.getCgGenerator()).version(graph.version).product(graph.product).build();
         final var rcgString = JSONUtils.toJSONString(rcg);
-        Assertions.assertTrue(rcgString.endsWith("]}}"));
+        Assertions.assertTrue(rcgString.endsWith("]]}"));
         JSONAssert.assertEquals(rcg.toJSON().toString(), rcgString,
             JSONCompareMode.STRICT);
     }

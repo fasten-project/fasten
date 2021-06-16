@@ -493,7 +493,7 @@ class OPALClassHierarchyTest {
     void appendGraph() {
         OPALClassHierarchy classHierarchy =
             Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
-        var newGraph = Mockito.mock(Graph.class);
+        var newGraph = Mockito.mock(JavaGraph.class);
         var existingGraph = Mockito.mock(JavaGraph.class);
         final var incompeletes = new ArrayList<Integer>();
         final Set<Integer> visitedPCs = new java.util.HashSet<>();
