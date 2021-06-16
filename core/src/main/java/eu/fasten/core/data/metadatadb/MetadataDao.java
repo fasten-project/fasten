@@ -177,37 +177,6 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts multiple records in the 'package_versions' table in the database.
-     *
-     * @param packageId     ID of the common package (references 'packages.id')
-     * @param cgGenerators  List of code generators
-     * @param versions      List of versions
-     * @param architectures List of architectures
-     * @param createdAt     List of timestamps
-     * @param metadata      List of metadata objects
-     * @return List of IDs of the new records
-     * @throws IllegalArgumentException if lists are not of the same size
-     */
-    public List<Long> insertPackageVersions(long packageId, List<String> cgGenerators,
-                                            List<String> versions, List<Long> artifactRepositoriesIds,
-                                            List<String> architectures, List<Timestamp> createdAt,
-                                            List<JSONObject> metadata)
-            throws IllegalArgumentException {
-        if (cgGenerators.size() != versions.size() || versions.size() != createdAt.size()
-                || createdAt.size() != metadata.size() || metadata.size() != architectures.size()) {
-            throw new IllegalArgumentException("All lists should have equal size");
-        }
-        int length = cgGenerators.size();
-        var recordIds = new ArrayList<Long>(length);
-        for (int i = 0; i < length; i++) {
-            long result = insertPackageVersion(packageId, cgGenerators.get(i), versions.get(i),
-                    artifactRepositoriesIds.get(i), architectures.get(i), createdAt.get(i), metadata.get(i));
-            recordIds.add(result);
-        }
-        return recordIds;
-    }
-
-    /**
      * Inserts a record in the 'dependencies' table in the database.
      *
      * @param packageVersionId ID of the package version (references 'package_versions.id')
@@ -249,40 +218,6 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts multiple 'dependencies' in the database for certain package.
-     *
-     * @param packageVersionId  ID of the package version
-     * @param dependenciesIds   List of IDs of dependencies
-     * @param versionRanges     List of version ranges
-     * @param architectures     List of architectures of the dependencies
-     * @param dependencyTypes   List of types of the dependencies
-     * @param alternativeGroups List of alternative dependencies group
-     * @param metadata          List of metadata
-     * @return ID of the package (packageId)
-     * @throws IllegalArgumentException if lists are not of the same size
-     */
-    public long insertDependencies(long packageVersionId, List<Long> dependenciesIds,
-                                   List<String[]> versionRanges, List<String[]> architectures,
-                                   List<String[]> dependencyTypes, List<Long> alternativeGroups,
-                                   List<JSONObject> metadata)
-            throws IllegalArgumentException {
-        if (dependenciesIds.size() != versionRanges.size()
-                || versionRanges.size() != architectures.size()
-                || architectures.size() != dependencyTypes.size()
-                || dependencyTypes.size() != alternativeGroups.size()
-                || alternativeGroups.size() != metadata.size()) {
-            throw new IllegalArgumentException("All lists should have equal size");
-        }
-        int length = dependenciesIds.size();
-        for (int i = 0; i < length; i++) {
-            insertDependency(packageVersionId, dependenciesIds.get(i), versionRanges.get(i),
-                    architectures.get(i), dependencyTypes.get(i), alternativeGroups.get(i),
-                    metadata.get(i));
-        }
-        return packageVersionId;
-    }
-
-    /**
      * Inserts a record in 'virtual_implementations' table in the database.
      *
      * @param virtualPackageVersionId ID of the virtual implementation of package version
@@ -306,51 +241,31 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts multiple 'virtual_implementations' in the database.
-     *
-     * @param virtualPackageVersionIds List of IDs of virtual package versions
-     * @param packageVersionIds        List of IDs of package versions
-     * @return List of virtual package version IDs from the database
-     * @throws IllegalArgumentException if lists are not of the same size
-     */
-    public List<Long> insertVirtualImplementations(List<Long> virtualPackageVersionIds,
-                                                   List<Long> packageVersionIds) {
-        if (virtualPackageVersionIds.size() != packageVersionIds.size()) {
-            throw new IllegalArgumentException("Lists should have equal size");
-        }
-        int length = virtualPackageVersionIds.size();
-        var recordIds = new ArrayList<Long>(length);
-        for (int i = 0; i < length; i++) {
-            long result = insertVirtualImplementation(virtualPackageVersionIds.get(i),
-                    packageVersionIds.get(i));
-            recordIds.add(result);
-        }
-        return recordIds;
-    }
-
-    /**
      * Inserts a record in 'modules' table in the database.
      *
      * @param packageVersionId ID of the package version where the module belongs
      *                         (references 'package_versions.id')
      * @param namespace_id     ID of the namespace of the module (references 'namespaces.id`)
      * @param metadata         Metadata of the module
+     * @param annotations      Annotations of the class and their values
      * @return ID of the new record
      */
     public long insertModule(long packageVersionId, long namespace_id, Boolean isFinal, Access access,
-                             Long[] superClasses, Long[] superInterfaces, JSONObject metadata) {
+                             Long[] superClasses, Long[] superInterfaces, JSONObject metadata, JSONObject annotations) {
         var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
+        var annotationsJsonb = annotations != null ? JSONB.valueOf(annotations.toString()) : null;
         var resultRecord = context.insertInto(Modules.MODULES,
                 Modules.MODULES.PACKAGE_VERSION_ID, Modules.MODULES.MODULE_NAME_ID,
                 Modules.MODULES.FINAL, Modules.MODULES.ACCESS, Modules.MODULES.SUPER_CLASSES,
-                Modules.MODULES.SUPER_INTERFACES, Modules.MODULES.METADATA)
-                .values(packageVersionId, namespace_id, isFinal, access, superClasses, superInterfaces, metadataJsonb)
+                Modules.MODULES.SUPER_INTERFACES, Modules.MODULES.METADATA, Modules.MODULES.ANNOTATIONS)
+                .values(packageVersionId, namespace_id, isFinal, access, superClasses, superInterfaces, metadataJsonb, annotationsJsonb)
                 .onConflictOnConstraint(Keys.UNIQUE_VERSION_NAMESPACE).doUpdate()
                 .set(Modules.MODULES.FINAL, Modules.MODULES.as("excluded").FINAL)
                 .set(Modules.MODULES.ACCESS, Modules.MODULES.as("excluded").ACCESS)
                 .set(Modules.MODULES.SUPER_CLASSES, Modules.MODULES.as("excluded").SUPER_CLASSES)
                 .set(Modules.MODULES.SUPER_INTERFACES, Modules.MODULES.as("excluded").SUPER_INTERFACES)
                 .set(Modules.MODULES.METADATA, field("coalesce(modules.metadata, '{}'::jsonb) || excluded.metadata", JSONB.class))
+                .set(Modules.MODULES.ANNOTATIONS, field("coalesce(modules.annotations, '{}'::jsonb) || excluded.annotations", JSONB.class))
                 .returning(Modules.MODULES.ID).fetchOne();
         return resultRecord.getValue(Modules.MODULES.ID);
     }
@@ -391,32 +306,6 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts multiple records in the 'modules' table in the database.
-     *
-     * @param packageVersionId ID of the common package version
-     * @param namespacesList   List of namespace IDs
-     * @param metadata         List of metadata objects
-     * @return List of IDs of new records
-     * @throws IllegalArgumentException if lists are not of the same size
-     */
-    public List<Long> insertModules(long packageVersionId, List<Long> namespacesList, List<Boolean> isFinal,
-                                    List<Access> accesses, List<Long[]> superClasses, List<Long[]> superInterfaces,
-                                    List<JSONObject> metadata)
-            throws IllegalArgumentException {
-        if (namespacesList.size() != metadata.size()) {
-            throw new IllegalArgumentException("All lists should have equal size");
-        }
-        int length = namespacesList.size();
-        var recordIds = new ArrayList<Long>(length);
-        for (int i = 0; i < length; i++) {
-            long result = insertModule(packageVersionId, namespacesList.get(i), isFinal.get(i), accesses.get(i),
-                    superClasses.get(i), superInterfaces.get(i), metadata.get(i));
-            recordIds.add(result);
-        }
-        return recordIds;
-    }
-
-    /**
      * Inserts a record in 'binary_modules' table in the database.
      *
      * @param packageVersionId ID of the package version where the binary module belongs
@@ -444,32 +333,6 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts multiple records in the 'binary_modules' table in the database.
-     *
-     * @param packageVersionId ID of the common package version
-     * @param namesList        List of names
-     * @param createdAt        List of timestamps
-     * @param metadata         List of metadata objects
-     * @return List of IDs of new records
-     * @throws IllegalArgumentException if lists are not of the same size
-     */
-    public List<Long> insertBinaryModules(long packageVersionId, List<String> namesList,
-                                          List<Timestamp> createdAt, List<JSONObject> metadata)
-            throws IllegalArgumentException {
-        if (namesList.size() != createdAt.size() || createdAt.size() != metadata.size()) {
-            throw new IllegalArgumentException("All lists should have equal size");
-        }
-        int length = namesList.size();
-        var recordIds = new ArrayList<Long>(length);
-        for (int i = 0; i < length; i++) {
-            long result = insertBinaryModule(packageVersionId, namesList.get(i), createdAt.get(i),
-                    metadata.get(i));
-            recordIds.add(result);
-        }
-        return recordIds;
-    }
-
-    /**
      * Inserts a record in 'module_contents' table in the database.
      *
      * @param moduleId ID of the module (references 'modules.id')
@@ -489,28 +352,6 @@ public class MetadataDao {
     }
 
     /**
-     * Inserts multiple records in the 'module_contents' table in the database.
-     *
-     * @param moduleIds List of modules IDs
-     * @param fileIds   List of files IDs
-     * @return List of IDs of new records
-     * @throws IllegalArgumentException if lists are not of the same size
-     */
-    public List<Long> insertModuleContents(List<Long> moduleIds, List<Long> fileIds)
-            throws IllegalArgumentException {
-        if (moduleIds.size() != fileIds.size()) {
-            throw new IllegalArgumentException("Lists should have equal size");
-        }
-        int length = fileIds.size();
-        var recordIds = new ArrayList<Long>(length);
-        for (int i = 0; i < length; i++) {
-            long result = insertModuleContent(moduleIds.get(i), fileIds.get(i));
-            recordIds.add(result);
-        }
-        return recordIds;
-    }
-
-    /**
      * Inserts a record in 'binary_module_contents' table in the database.
      *
      * @param binaryModuleId ID of the binary module (references 'binary_modules.id')
@@ -527,28 +368,6 @@ public class MetadataDao {
                         BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID)
                 .returning(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID).fetchOne();
         return resultRecord.getValue(BinaryModuleContents.BINARY_MODULE_CONTENTS.BINARY_MODULE_ID);
-    }
-
-    /**
-     * Inserts multiple records in the 'binary_module_contents' table in the database.
-     *
-     * @param binaryModuleIds List of binary modules IDs
-     * @param fileIds         List of files IDs
-     * @return List of IDs of new records
-     * @throws IllegalArgumentException if lists are not of the same size
-     */
-    public List<Long> insertBinaryModuleContents(List<Long> binaryModuleIds, List<Long> fileIds)
-            throws IllegalArgumentException {
-        if (fileIds.size() != binaryModuleIds.size()) {
-            throw new IllegalArgumentException("Lists should have equal size");
-        }
-        int length = fileIds.size();
-        var recordIds = new ArrayList<Long>(length);
-        for (int i = 0; i < length; i++) {
-            long result = insertBinaryModuleContent(binaryModuleIds.get(i), fileIds.get(i));
-            recordIds.add(result);
-        }
-        return recordIds;
     }
 
     /**
@@ -596,34 +415,6 @@ public class MetadataDao {
                 .set(Files.FILES.PATH, Files.FILES.as("excluded").PATH)
                 .returning(Files.FILES.ID).fetchOne();
         return resultRecord.getValue(Files.FILES.ID);
-    }
-
-    /**
-     * Insert multiple records in the 'files' table in the database.
-     *
-     * @param packageVersionId ID of the common package version
-     * @param pathsList        List of paths of files
-     * @param checksumsList    List of checksums of files
-     * @param createdAt        List of timestamps of files
-     * @param metadata         List of metadata of files
-     * @return List of IDs of new records
-     * @throws IllegalArgumentException if any of the lists have different size
-     */
-    public List<Long> insertFiles(long packageVersionId, List<String> pathsList,
-                                  List<byte[]> checksumsList, List<Timestamp> createdAt,
-                                  List<JSONObject> metadata) throws IllegalArgumentException {
-        if (pathsList.size() != checksumsList.size() || checksumsList.size() != createdAt.size()
-                || createdAt.size() != metadata.size()) {
-            throw new IllegalArgumentException("All lists should have equal size");
-        }
-        int length = pathsList.size();
-        var recordIds = new ArrayList<Long>(length);
-        for (int i = 0; i < length; i++) {
-            long result = insertFile(packageVersionId, pathsList.get(i), checksumsList.get(i),
-                    createdAt.get(i), metadata.get(i));
-            recordIds.add(result);
-        }
-        return recordIds;
     }
 
     /**
@@ -862,9 +653,9 @@ public class MetadataDao {
 
     public void insertIngestedArtifact(String packageName, String version, Timestamp timestamp) {
         context.insertInto(IngestedArtifacts.INGESTED_ARTIFACTS,
-                        IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
-                        IngestedArtifacts.INGESTED_ARTIFACTS.VERSION,
-                        IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP)
+                IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
+                IngestedArtifacts.INGESTED_ARTIFACTS.VERSION,
+                IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP)
                 .values(packageName, version, timestamp)
                 .onConflictOnConstraint(Keys.UNIQUE_INGESTED_ARTIFACTS).doUpdate()
                 .set(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").PACKAGE_NAME)

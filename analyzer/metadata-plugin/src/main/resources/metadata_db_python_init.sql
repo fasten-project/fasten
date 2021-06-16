@@ -68,7 +68,8 @@ CREATE TABLE modules
     access             ACCESS,
     super_classes      BIGINT[],
     super_interfaces   BIGINT[],
-    metadata           JSONB
+    metadata           JSONB,
+    annotations        JSONB
 );
 
 CREATE TABLE files

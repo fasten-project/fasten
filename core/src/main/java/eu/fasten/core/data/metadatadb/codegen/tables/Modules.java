@@ -22,7 +22,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row8;
+import org.jooq.Row9;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -44,7 +44,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Modules extends TableImpl<ModulesRecord> {
 
-    private static final long serialVersionUID = -1034162578;
+    private static final long serialVersionUID = -10639682;
 
     /**
      * The reference instance of <code>public.modules</code>
@@ -98,6 +98,11 @@ public class Modules extends TableImpl<ModulesRecord> {
      * The column <code>public.modules.metadata</code>.
      */
     public final TableField<ModulesRecord, JSONB> METADATA = createField(DSL.name("metadata"), org.jooq.impl.SQLDataType.JSONB, this, "");
+
+    /**
+     * The column <code>public.modules.annotations</code>.
+     */
+    public final TableField<ModulesRecord, JSONB> ANNOTATIONS = createField(DSL.name("annotations"), org.jooq.impl.SQLDataType.JSONB, this, "");
 
     /**
      * Create a <code>public.modules</code> table reference
@@ -197,11 +202,11 @@ public class Modules extends TableImpl<ModulesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row8 type methods
+    // Row9 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Long, Long, Long, Boolean, Access, Long[], Long[], JSONB> fieldsRow() {
-        return (Row8) super.fieldsRow();
+    public Row9<Long, Long, Long, Boolean, Access, Long[], Long[], JSONB, JSONB> fieldsRow() {
+        return (Row9) super.fieldsRow();
     }
 }

@@ -108,7 +108,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             for (var fastenUri : internalTypes.keySet()) {
                 var type = internalTypes.get(fastenUri);
                 var moduleId = insertModule(type, FastenURI.create(fastenUri), packageVersionId,
-                    namespaceMap, metadataDao);
+                        namespaceMap, metadataDao);
                 var fileId = metadataDao.insertFile(packageVersionId, type.getSourceFileName());
                 metadataDao.insertModuleContent(moduleId, fileId);
                 callables.addAll(extractCallablesFromType(type, moduleId, true));
@@ -132,7 +132,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             var superClasses = JavaType.toListOfString(type.getSuperClasses()).stream().map(namespaceMap::get).toArray(Long[]::new);
             var superInterfaces = JavaType.toListOfString(type.getSuperInterfaces()).stream().map(namespaceMap::get).toArray(Long[]::new);
             return metadataDao.insertModule(packageVersionId, namespaceMap.get(fastenUri.toString()),
-                    isFinal, access, superClasses, superInterfaces, null);
+                    isFinal, access, superClasses, superInterfaces, null, null);
         }
 
         private List<CallablesRecord> extractCallablesFromType(JavaType type,
@@ -185,7 +185,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
         }
 
         protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
-                                                Map<String, Long> typesMap, MetadataDao metadataDao) {
+                                                    Map<String, Long> typesMap, MetadataDao metadataDao) {
             var javaGraph = (JavaGraph) graph;
             final var numEdges = javaGraph.getCallSites().size();
 
@@ -200,14 +200,14 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                 // Create call-site record for each pc
                 var pcIterator = edgeEntry.getValue().keySet().iterator();
                 var pc = pcIterator.next().toString();
-                    // Get edge metadata
+                // Get edge metadata
                 var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(Integer.parseInt(pc));
                 var callMetadata = new JSONObject();
                 for (var key : metadataMap.keySet()) {
                     callMetadata.put(key, metadataMap.get(key));
                 }
                 var receiverTypes = callMetadata.optString("receiver")
-                        .replace("[","").replace("]","").split(",");
+                        .replace("[", "").replace("]", "").split(",");
                 var receivers = new ArrayList<Long>(receiverTypes.length);
                 for (var receiverType : receiverTypes) {
                     receivers.add(typesMap.get(receiverType));
@@ -222,7 +222,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                         callMetadata.put(key, metadataMap.get(key));
                     }
                     receiverTypes = callMetadata.optString("receiver")
-                            .replace("[","").replace("]","").split(",");
+                            .replace("[", "").replace("]", "").split(",");
                     for (var receiverType : receiverTypes) {
                         receivers.add(typesMap.get(receiverType));
                     }

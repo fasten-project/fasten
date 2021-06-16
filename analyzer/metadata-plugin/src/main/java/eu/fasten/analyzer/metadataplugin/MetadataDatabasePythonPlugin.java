@@ -78,7 +78,7 @@ public class MetadataDatabasePythonPlugin extends Plugin {
                 var type = entry.getValue();
                 var moduleName = entry.getKey();
                 var moduleId = metadataDao.insertModule(packageVersionId, namespaceMap.get(moduleName),
-                        null, null, null, null, null);
+                        null, null, null, null, null, null);
                 var fileId = metadataDao.insertFile(packageVersionId, type.getSourceFileName());
                 metadataDao.insertModuleContent(moduleId, fileId);
                 callables.addAll(extractCallablesFromType(type, moduleId, true));
