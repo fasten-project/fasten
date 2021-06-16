@@ -745,7 +745,7 @@ public class CGMerger {
                          final DirectedGraph callGraphData,
                          final Long source, final Long target, final boolean isCallback) {
         try {
-            if (new HashSet<>(callGraphData.nodes()).contains(source)
+            if (callGraphData.nodes().contains(source.longValue())
                     && callGraphData.isInternal(source)) {
                 result.addInternalNode(source);
             } else {
@@ -754,7 +754,7 @@ public class CGMerger {
         } catch (IllegalArgumentException ignored) {
         }
         try {
-            if (new HashSet<>(callGraphData.nodes()).contains(target)
+            if (callGraphData.nodes().contains(target.longValue())
                     && callGraphData.isInternal(target)) {
                 result.addInternalNode(target);
             } else {
