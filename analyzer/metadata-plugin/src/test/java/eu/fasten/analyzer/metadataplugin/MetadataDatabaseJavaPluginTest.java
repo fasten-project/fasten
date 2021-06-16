@@ -102,21 +102,17 @@ public class MetadataDatabaseJavaPluginTest {
                 "        },\n" +
                 "        \"resolvedTypes\": {}\n" +
                 "    },\n" +
-                "    \"graph\": {\n" +
-                "        \"internalCalls\": [],\n" +
-                "        \"externalCalls\": [\n" +
+                "    \"call-sites\": [\n" +
                 "            [\n" +
                 "                \"2\",\n" +
                 "                \"1\",\n" +
                 "                {\"1\": {\n" +
-                "                    \"receiver\": \"/java.lang/Object\",\n" +
+                "                    \"receiver\": \"[/java.lang/Object]\",\n" +
                 "                    \"line\": 42,\n" +
                 "                    \"type\": \"invokespecial\"\n" +
                 "                }}\n" +
                 "            ]\n" +
-                "        ],\n" +
-                "        \"resolvedCalls\": []\n" +
-                "    },\n" +
+                "    ],\n" +
                 "    \"timestamp\": 123\n" +
                 "}\n");
         var namespacesMap = new HashMap<String, Long>(2);
@@ -135,7 +131,7 @@ public class MetadataDatabaseJavaPluginTest {
         Mockito.when(metadataDao.insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt())).thenReturn(List.of(64L, 65L));
         long internalModuleId = 17;
         Mockito.when(metadataDao.insertModule(packageVersionId, 1L, false, Access.public_, new Long[]{3L}, new Long[]{4L},
-                null)).thenReturn(internalModuleId);
+                null, null)).thenReturn(internalModuleId);
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionJavaCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), Constants.mvnForge);
