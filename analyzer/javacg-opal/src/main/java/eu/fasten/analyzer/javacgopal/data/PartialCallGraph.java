@@ -19,11 +19,12 @@
 package eu.fasten.analyzer.javacgopal.data;
 
 import com.google.common.collect.Lists;
+import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
-import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
-import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.*;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;

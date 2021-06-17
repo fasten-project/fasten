@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.core.data.opal;
 
-import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import org.json.JSONException;

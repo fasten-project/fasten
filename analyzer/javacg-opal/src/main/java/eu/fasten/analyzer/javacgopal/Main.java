@@ -19,10 +19,10 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
-import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
@@ -117,12 +117,6 @@ public class Main implements Runnable {
     }
 
     static class Merge {
-        @CommandLine.Option(names = {"-ma", "--mergeAlgorithm"},
-                paramLabel = "MerALG",
-                description = "Algorhtm merge{RA, CHA}",
-                defaultValue = "CHA")
-        String mergeAlgorithm;
-
         @CommandLine.Option(names = {"-m", "--merge"},
                 paramLabel = "MERGE",
                 description = "Merge artifact CG to dependencies",
@@ -198,7 +192,7 @@ public class Main implements Runnable {
 
         } else if (commands.computations.mode.equals("FILE")) {
             try {
-                merge(getArtifactFile(), getDependenciesFiles()).toJSON();
+                merge(getArtifactFile(), getDependenciesFiles());
             } catch (IOException | OPALException | MissingArtifactException e) {
                 logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
@@ -214,7 +208,7 @@ public class Main implements Runnable {
      * @return a revision call graph with resolved class hierarchy and calls
      * @throws IOException thrown in case file related exceptions occur, e.g FileNotFoundException
      */
-    public <T> ExtendedRevisionJavaCallGraph merge(final T artifact,
+    public <T> DirectedGraph merge(final T artifact,
                                                    final List<T> dependencies)
             throws IOException, OPALException, MissingArtifactException {
         final long startTime = System.currentTimeMillis();
@@ -235,12 +229,11 @@ public class Main implements Runnable {
                     result.edgeSet().size(),
                     new DecimalFormat("#0.000")
                             .format((System.currentTimeMillis() - startTime) / 1000d));
-            // FIXME
             if (!this.output.isEmpty()) {
                 try {
                     CallGraphUtils.writeToFile(Paths.get(Paths.get(this.output).getParent().toString(),
-                            FilenameUtils.getBaseName(this.output) + "_" + result.product + "_merged" + "." +
-                                    FilenameUtils.getExtension(this.output)).toString(), JSONUtils.toJSONString(result), "");
+                            FilenameUtils.getBaseName(this.output) + "_" + getArtifactCoordinate().getCoordinate() + "_merged" + "." +
+                                    FilenameUtils.getExtension(this.output)).toString(), JSONUtils.toJSONString(result, getArtifactCoordinate()), "");
                 } catch (NullPointerException e) {
                     logger.error("Provided output path might be incomplete!");
                 }

@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import eu.fasten.core.data.Graph;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import java.util.ArrayList;
@@ -130,19 +131,19 @@ class OPALClassHierarchyTest {
             .get(JavaScope.externalTypes)
             .get("/some.package/typeName");
 
-        Assertions.assertEquals("source.java", internalUri.getSourceFileName());
-        Assertions.assertEquals("methodName(/some.package/typeName)/some.package/typeName",
+        assertEquals("source.java", internalUri.getSourceFileName());
+        assertEquals("methodName(/some.package/typeName)/some.package/typeName",
             internalUri.getMethods().get(123).getSignature());
-        Assertions.assertEquals(0, internalUri.getSuperInterfaces().size());
-        Assertions.assertEquals(0, internalUri.getSuperClasses().size());
+        assertEquals(0, internalUri.getSuperInterfaces().size());
+        assertEquals(0, internalUri.getSuperClasses().size());
 
-        Assertions.assertEquals("", externalUri.getSourceFileName());
-        Assertions.assertEquals("methodName(/some.package/typeName)/some.package/typeName",
+        assertEquals("", externalUri.getSourceFileName());
+        assertEquals("methodName(/some.package/typeName)/some.package/typeName",
             externalUri.getMethods().get(4).getSignature());
-        Assertions.assertEquals(1, externalUri.getSuperInterfaces().size());
-        Assertions.assertEquals("/some.package/typeName",
+        assertEquals(1, externalUri.getSuperInterfaces().size());
+        assertEquals("/some.package/typeName",
             externalUri.getSuperInterfaces().get(0).toString());
-        Assertions.assertEquals(0, externalUri.getSuperClasses().size());
+        assertEquals(0, externalUri.getSuperClasses().size());
     }
 
     private Method createMethod() {

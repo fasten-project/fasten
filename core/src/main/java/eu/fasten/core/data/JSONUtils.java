@@ -4,9 +4,59 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import eu.fasten.core.data.opal.MavenCoordinate;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 
 public class JSONUtils {
+
+    public static String toJSONString(final DirectedGraph graph, final MavenCoordinate coordinate) {
+        var result = new StringBuilder("{");
+        appendArtifactInformation(result, coordinate, graph.numNodes());
+        appendGraph(result, graph);
+        if (result.charAt(result.length()-1) == ',') {
+            result.setLength(result.length() - 1);
+        }
+        result.append("}");
+        return result.toString();
+    }
+
+    /**
+     * Appends general information of the revision to the beginning of the StringBuilder.
+     *
+     * @param coordinate  the object to extract the information from.
+     * @param numNodes    number of nodes in the graph
+     * @param result the StringBuilder to append the information.
+     */
+    private static void appendArtifactInformation(StringBuilder result,
+                                                  final MavenCoordinate coordinate, int numNodes) {
+        appendKeyValue(result, "product", coordinate.getProduct());
+        appendKeyValue(result, "nodes", numNodes);
+        appendKeyValue(result, "forge", Constants.mvnForge);
+        appendKeyValue(result, "generator", Constants.opalGenerator);
+        appendKeyValue(result, "version", coordinate.getVersionConstraint());
+    }
+
+    /**
+     * Appends graph information of the revision to the StringBuilder.
+     *
+     * @param graph  the graph object to extract the information from.
+     * @param result the StringBuilder to append the information.
+     */
+    private static void appendGraph(StringBuilder result, final DirectedGraph graph) {
+        result.append("\"nodes\":[");
+        for (final var node : graph.nodes()) {
+            result.append(node).append(",");
+        }
+        removeLastIfNotEmpty(result, graph.nodes().size());
+        result.append("],");
+        result.append("\"edges\":[");
+        for (final var edge : graph.edgeSet()) {
+            result.append("[").append(edge.firstLong()).append(",").append(edge.secondLong()).append("],");
+        }
+        removeLastIfNotEmpty(result, graph.edgeSet().size());
+        result.append("],");
+    }
+
     /**
      * Converts an {@link ExtendedRevisionJavaCallGraph} object to its corresponding JSON String
      * without any object creation in between. It creates a {@link StringBuilder) in the beginning
