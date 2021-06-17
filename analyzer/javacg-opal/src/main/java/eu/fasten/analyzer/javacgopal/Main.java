@@ -23,28 +23,22 @@ import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
 import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-
-import eu.fasten.core.merge.LocalMerger;
 import org.apache.commons.io.FilenameUtils;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Makes javacg-opal module runnable from command line.
@@ -183,65 +177,8 @@ public class Main implements Runnable {
 
         } else if (commands.computations.mode.equals("FILE")) {
             try {
-                var lines = Files.readAllLines(getArtifactFile().toPath());
-                for (var line : lines) {
-                    var parts = Arrays.asList(line.split(","));
-                    var artifact = parts.get(1);
-                    var artifactCoordinate = MavenCoordinate.fromString(artifact, "jar");
-                    if (this.repos != null && !this.repos.isEmpty()) {
-                        artifactCoordinate.setMavenRepos(this.repos);
-                    }
-                    var dependencies = Arrays.asList(parts.get(2).split(";"));
-                    ExtendedRevisionJavaCallGraph artifactCg = generate(artifactCoordinate, commands.computations.main, commands.computations.genAlgorithm, !this.output.isEmpty());
-                    var depSet = new ArrayList<ExtendedRevisionJavaCallGraph>(dependencies.size());
-                    for (var dep : dependencies) {
-                        var depCoordinate = MavenCoordinate.fromString(dep, "jar");
-                        if (this.repos != null && !this.repos.isEmpty()) {
-                            depCoordinate.setMavenRepos(this.repos);
-                        }
-                        ExtendedRevisionJavaCallGraph depCg;
-                        try {
-                            depCg = generate(depCoordinate, commands.computations.main, commands.computations.genAlgorithm, !this.output.isEmpty());
-                        } catch (OPALException | MissingArtifactException ex) {
-                            continue;
-                        }
-                        depSet.add(depCg);
-                    }
-                    depSet.add(artifactCg);
-                    var merger = new CGMerger(depSet);
-                    var uris = merger.getAllUris();
-                    var localMerger = new LocalMerger(depSet);
-                    var localUris = localMerger.getAllUris();
-                    var result = merger.mergeAllDeps();
-                    var localResult = localMerger.mergeAllDeps();
-
-                    var resultUris = new HashSet<String>();
-                    for (var node : result.nodes()) {
-                        resultUris.add(uris.get(node));
-                    }
-                    var localResultUris = new HashSet<String>();
-                    for (var node : localResult.nodes()) {
-                        localResultUris.add(localUris.get(node));
-                    }
-
-                    var mergerMinusLocal = resultUris;
-                    mergerMinusLocal.removeAll(localResultUris);
-                    var localMinusMerger = localResultUris;
-                    localMinusMerger.removeAll(resultUris);
-                    logger.info("---------------------------------------------------------------");
-                    logger.info("LocalMerger - CGMerger nodes: " + localMinusMerger.size());
-                    localMinusMerger.forEach(logger::info);
-                    logger.info("---------------------------------------------------------------");
-                    logger.info("CGMerger - LocalMerger nodes: " + mergerMinusLocal.size());
-                    mergerMinusLocal.forEach(logger::info);
-                    logger.info("---------------------------------------------------------------");
-                    var nodes = result.numNodes();
-                    var localNodes = localResult.numNodes();
-                    var edges = result.numArcs();
-                    var localEdges = localResult.numArcs();
-                    logger.info("CGMerger - Nodes: " + nodes + "; Edges: " + edges);
-                    logger.info("LocalMerger - Nodes: " + localNodes + "; Edges: " + localEdges);
-                }
+                generate(getArtifactFile(), commands.computations.main,
+                        commands.computations.genAlgorithm, !this.output.isEmpty());
             } catch (IOException | OPALException | MissingArtifactException e) {
                 logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
             }
@@ -281,7 +218,7 @@ public class Main implements Runnable {
                                                    final List<T> dependencies)
             throws IOException, OPALException, MissingArtifactException {
         final long startTime = System.currentTimeMillis();
-        final ExtendedRevisionJavaCallGraph result;
+        final DirectedGraph result;
         final var deps = new ArrayList<ExtendedRevisionJavaCallGraph>();
         for (final var dep : dependencies) {
             deps.add(generate(dep, "", commands.computations.genAlgorithm, true));
@@ -290,21 +227,23 @@ public class Main implements Runnable {
                 commands.computations.genAlgorithm, true);
         deps.add(art);
         final var merger = new CGMerger(deps);
-        result = new ExtendedRevisionJavaCallGraph(new JSONObject()); //merger.mergeWithCHA(art); TODO: Fix this
+        result = merger.mergeWithCHA(art);
 
-//        logger.info("Resolved {} nodes, {} calls in {} seconds",
-//                result.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
-//                result.getGraph().getResolvedCalls().size(),
-//                new DecimalFormat("#0.000")
-//                        .format((System.currentTimeMillis() - startTime) / 1000d));
-
-        if (!this.output.isEmpty()) {
-            try {
-                CallGraphUtils.writeToFile(Paths.get(Paths.get(this.output).getParent().toString(),
-                        FilenameUtils.getBaseName(this.output) + "_" + result.product + "_merged" + "." +
-                                FilenameUtils.getExtension(this.output)).toString(), JSONUtils.toJSONString(result), "");
-            } catch (NullPointerException e) {
-                logger.error("Provided output path might be incomplete!");
+        if (result != null) {
+            logger.info("Resolved {} nodes, {} calls in {} seconds",
+                    result.nodes().size(),
+                    result.edgeSet().size(),
+                    new DecimalFormat("#0.000")
+                            .format((System.currentTimeMillis() - startTime) / 1000d));
+            // FIXME
+            if (!this.output.isEmpty()) {
+                try {
+                    CallGraphUtils.writeToFile(Paths.get(Paths.get(this.output).getParent().toString(),
+                            FilenameUtils.getBaseName(this.output) + "_" + result.product + "_merged" + "." +
+                                    FilenameUtils.getExtension(this.output)).toString(), JSONUtils.toJSONString(result), "");
+                } catch (NullPointerException e) {
+                    logger.error("Provided output path might be incomplete!");
+                }
             }
         }
 

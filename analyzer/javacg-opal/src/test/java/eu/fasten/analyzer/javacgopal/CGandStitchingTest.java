@@ -333,7 +333,7 @@ public class CGandStitchingTest {
             getRCG("net.bytebuddy:byte-buddy:1.10.5"),
             getRCG("org.apache.kafka:kafka-clients:2.3.0")));
 
-        var merger = new LocalMerger(depSet);
+        var merger = new CGMerger(depSet);
         merger.mergeWithCHA(depSet.get(2));
     }
 
