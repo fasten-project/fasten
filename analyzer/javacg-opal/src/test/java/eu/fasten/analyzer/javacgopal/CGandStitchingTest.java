@@ -29,7 +29,6 @@ import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
 import eu.fasten.analyzer.sourceanalyzer.CommentParser;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.merge.CGMerger;
-import eu.fasten.core.merge.LocalMerger;
 import eu.fasten.core.merge.CallGraphUtils;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import java.io.File;
