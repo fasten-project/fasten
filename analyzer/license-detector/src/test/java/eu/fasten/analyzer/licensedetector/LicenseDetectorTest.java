@@ -81,14 +81,25 @@ public class LicenseDetectorTest {
 
         // For all inputs
         inputToExpected.forEach((repoAbsolutePath, expectedRetrievedPomFile) -> {
+
             try {
+                assertTrue(
+                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).exists(),
+                        "pom.xml file does not exist."
+                );
+
+                assertTrue(
+                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).isFile(),
+                        "Retrieved pom.xml file is a directory."
+                );
+
                 assertEquals(
                         expectedRetrievedPomFile,
                         new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath),
                         "Retrieved pom.xml file is not the one the test expected."
                 );
             } catch (FileNotFoundException e) {
-                fail("Test couldn't find pom file " + expectedRetrievedPomFile.getAbsolutePath(), e.getCause());
+                fail("Test has failed with the following exception: " + e.getMessage());
             }
         });
     }
@@ -102,9 +113,18 @@ public class LicenseDetectorTest {
                         "complete-maven-project",
                         Stream.of(
                                 // FIXME SPDX IDs
-                                new DetectedLicense("Apache License, Version 2.0", DetectedLicenseSource.LOCAL_POM, null),
-                                new DetectedLicense("GNU General Public License (GPL) version 2, or any later version", DetectedLicenseSource.LOCAL_POM, null),
-                                new DetectedLicense("GPLv2 with Classpath exception", DetectedLicenseSource.LOCAL_POM, null)
+                                new DetectedLicense(
+                                        "Apache License, Version 2.0",
+                                        DetectedLicenseSource.LOCAL_POM, null
+                                ),
+                                new DetectedLicense(
+                                        "GNU General Public License (GPL) version 2, or any later version",
+                                        DetectedLicenseSource.LOCAL_POM, null
+                                ),
+                                new DetectedLicense(
+                                        "GPLv2 with Classpath exception",
+                                        DetectedLicenseSource.LOCAL_POM, null
+                                )
                         ).collect(Collectors.toCollection(HashSet::new))
                 ),
                 Map.entry(
@@ -129,67 +149,6 @@ public class LicenseDetectorTest {
                         new LicenseDetectorPlugin.LicenseDetector().getOutboundLicenses(pomFile, null),
                         expectedDetectedLicenses,
                         "Retrieved and expected outbound licenses do not match."
-                );
-            } catch (RuntimeException | XmlPullParserException e) {
-                fail("Test has failed with the following exception: " + e.getMessage());
-            }
-        });
-    }
-
-    @Test
-    public void givenRepoWithDependencies_whenRetrievingDependenciesLicenses_thenDependencyLicensesAreCorrectlyRetrieved() {
-
-        // Relative Maven repo path -> expected detected dependency licenses
-        Map<String, Set<DetectedLicense>> inputToExpected = Map.ofEntries(
-                Map.entry(
-                        // Two dependencies with clearly defined licenses
-                        "complete-maven-project",
-                        Stream.of(
-                                // FIXME SPDX IDs
-                                new DetectedLicense("Apache-2.0", DetectedLicenseSource.MAVEN_CENTRAL, null),
-                                new DetectedLicense("Eclipse Public License 1.0", DetectedLicenseSource.MAVEN_CENTRAL, null)
-                        ).collect(Collectors.toCollection(HashSet::new))
-                ),
-                Map.entry(
-                        "empty-license-section-maven-project",
-                        Collections.<DetectedLicense>emptySet()
-                ),
-                Map.entry(
-                        "no-license-section-maven-project",
-                        Collections.<DetectedLicense>emptySet()
-                ),
-                Map.entry(
-                        // This case has a lot of dependencies without the `licenses` XML tag in their `pom.xml` file
-                        "licensed-dependencies-maven-project",
-                        Stream.of(
-                                // FIXME SPDX IDs
-                                new DetectedLicense("Apache-2.0", DetectedLicenseSource.MAVEN_CENTRAL, null),
-                                new DetectedLicense("Eclipse Public License 1.0", DetectedLicenseSource.MAVEN_CENTRAL, null)
-                        ).collect(Collectors.toCollection(HashSet::new))
-                ),
-                Map.entry(
-                        // These dependencies use Maven properties that should be resolved first
-                        "dependencies-with-maven-properties",
-                        Stream.of(
-                                // FIXME SPDX IDs
-                                new DetectedLicense("Apache-2.0", DetectedLicenseSource.MAVEN_CENTRAL, null),
-                                new DetectedLicense("Eclipse Public License 1.0", DetectedLicenseSource.MAVEN_CENTRAL, null)
-                        ).collect(Collectors.toCollection(HashSet::new))
-                )
-        );
-
-        inputToExpected.forEach((relativeRepoPath, expectedDetectedDependencyLicenses) -> {
-
-            // Retrieving the test Maven repo pom file
-            File pomFile = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
-                    .getResource(relativeRepoPath + "/pom.xml")).getFile());
-            assertFalse(pomFile.isDirectory(), "Test Maven repo pom.xml file shouldn't be a directory.");
-
-            try {
-                assertEquals(
-                        new LicenseDetectorPlugin.LicenseDetector().getDependencyLicensesFromMavenCentral(pomFile),
-                        expectedDetectedDependencyLicenses,
-                        "Retrieved and expected dependency inbound licenses do not match."
                 );
             } catch (RuntimeException | XmlPullParserException e) {
                 fail("Test has failed with the following exception: " + e.getMessage());
