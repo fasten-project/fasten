@@ -59,7 +59,7 @@ public class MergerEfficiencyTests {
                 }).collect(Collectors.toList());
     }
 
-    @Disabled // FIXME: Cannot finish in 20min
+    @Disabled // FIXME: now finishes in 220sec
     @Test
     public void localMergerEfficiencyTest() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();

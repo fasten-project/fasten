@@ -342,7 +342,7 @@ public class CGMerger {
             return null;
         }
 
-        var result = new ArrayImmutableDirectedGraph.Builder();
+        var result = new FastenDefaultDirectedGraph();
 
         cloneNodesAndArcs(result, callGraphData);
 
@@ -363,7 +363,7 @@ public class CGMerger {
                 .format((System.currentTimeMillis() - startTime) / 1000d));
         logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - totalTime) / 1000d));
-        return result.build();
+        return result;
     }
 
     /**
@@ -399,7 +399,7 @@ public class CGMerger {
      * @param signature     signature of the target
      * @param isCallback    true, if a given arc is a callback
      */
-    private void resolve(final ArrayImmutableDirectedGraph.Builder result,
+    private void resolve(final FastenDefaultDirectedGraph result,
                          final DirectedGraph callGraphData,
                          final Arc arc,
                          final String signature,
@@ -701,7 +701,7 @@ public class CGMerger {
      * @return augmented graph
      */
     private DirectedGraph augmentGraphs(final List<DirectedGraph> depGraphs) {
-        var result = new ArrayImmutableDirectedGraph.Builder();
+        var result = new FastenDefaultDirectedGraph();
 
         for (final var depGraph : depGraphs) {
             for (final var node : depGraph.nodes()) {
@@ -710,7 +710,7 @@ public class CGMerger {
                 }
             }
         }
-        return result.build();
+        return result;
     }
 
     /**
@@ -719,7 +719,7 @@ public class CGMerger {
      * @param result        resulting merged call graph
      * @param callGraphData initial call graph
      */
-    private void cloneNodesAndArcs(final ArrayImmutableDirectedGraph.Builder result,
+    private void cloneNodesAndArcs(final FastenDefaultDirectedGraph result,
                                    final DirectedGraph callGraphData) {
         var internalNodes = callGraphData.nodes();
         internalNodes.removeAll(callGraphData.externalNodes());
@@ -729,12 +729,11 @@ public class CGMerger {
         for (var source : internalNodes) {
             for (var target : callGraphData.successors(source)) {
                 if (callGraphData.isInternal(target)) {
-                    result.addArc(source, target);
+                    result.addEdge(source, target);
                 }
             }
         }
     }
-    private LongSet nodes;
 
     /**
      * Add a resolved edge to the {@link DirectedGraph}.
@@ -745,33 +744,51 @@ public class CGMerger {
      * @param target        target callable ID
      * @param isCallback    true, if a given arc is a callback
      */
-    private synchronized void addEdge(final ArrayImmutableDirectedGraph.Builder result,
+    private void addEdge(final FastenDefaultDirectedGraph result,
                          final DirectedGraph callGraphData,
                          final Long source, final Long target, final boolean isCallback) {
-        final var nodes = callGraphData.nodes();
 
-        if (!result.contains(source)) {
-            if (nodes.contains(source.longValue()) && callGraphData.isInternal(source)) {
-                result.addInternalNode(source);
-            } else {
-                result.addExternalNode(source);
-            }
+        if (isCallback) {
+            tryUntilSucceed(result, callGraphData, source, target);
+        } else {
+            tryUntilSucceed(result, callGraphData, target, source);
         }
-        if (!result.contains(target)) {
-            if (nodes.contains(target.longValue()) && callGraphData.isInternal(target)) {
-                result.addInternalNode(target);
-            } else {
-                result.addExternalNode(target);
-            }
-        }
+    }
 
+    private void tryUntilSucceed(FastenDefaultDirectedGraph result, DirectedGraph callGraphData,
+                                 Long source, Long target) {
+        boolean success;
+        do {
+            success = tryAddingEdge(result, callGraphData, source, target);
+        } while (!success);
+    }
+
+    private boolean tryAddingEdge(final FastenDefaultDirectedGraph result,
+                                  final DirectedGraph callGraphData,
+                                  final Long source, final Long target) {
         try {
-            if (isCallback) {
-                result.addArc(target, source);
-            } else {
-                result.addArc(source, target);
+            synchronized (result.edgeSet()) {
+                result.addEdge(target, source);
             }
-        } catch (IllegalArgumentException ignored) {
+            return true;
+        } catch (IllegalArgumentException e){
+            addNode(result, callGraphData, source);
+            addNode(result, callGraphData, target);
+            return false;
+        }
+    }
+
+    private void addNode(final FastenDefaultDirectedGraph result,
+                                      final DirectedGraph callGraphData,
+                                      final Long node) {
+        synchronized (result.vertexSet()) {
+            if (!result.containsVertex(node)) {
+                if (callGraphData.isInternal(node)) {
+                    result.addInternalNode(node);
+                } else {
+                    result.addExternalNode(node);
+                }
+            }
         }
     }
 
