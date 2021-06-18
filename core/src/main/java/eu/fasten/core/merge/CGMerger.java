@@ -26,6 +26,7 @@ import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.*;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -733,6 +734,7 @@ public class CGMerger {
             }
         }
     }
+    private LongSet nodes;
 
     /**
      * Add a resolved edge to the {@link DirectedGraph}.
@@ -746,24 +748,23 @@ public class CGMerger {
     private synchronized void addEdge(final ArrayImmutableDirectedGraph.Builder result,
                          final DirectedGraph callGraphData,
                          final Long source, final Long target, final boolean isCallback) {
-        try {
-            if (callGraphData.nodes().contains(source.longValue())
-                    && callGraphData.isInternal(source)) {
+        final var nodes = callGraphData.nodes();
+
+        if (!result.contains(source)) {
+            if (nodes.contains(source.longValue()) && callGraphData.isInternal(source)) {
                 result.addInternalNode(source);
             } else {
                 result.addExternalNode(source);
             }
-        } catch (IllegalArgumentException ignored) {
         }
-        try {
-            if (callGraphData.nodes().contains(target.longValue())
-                    && callGraphData.isInternal(target)) {
+        if (!result.contains(target)) {
+            if (nodes.contains(target.longValue()) && callGraphData.isInternal(target)) {
                 result.addInternalNode(target);
             } else {
                 result.addExternalNode(target);
             }
-        } catch (IllegalArgumentException ignored) {
         }
+
         try {
             if (isCallback) {
                 result.addArc(target, source);
