@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import org.apache.commons.lang.StringUtils;
 import org.junit.jupiter.api.Test;
 import java.io.File;
