@@ -18,16 +18,19 @@
 
 package eu.fasten.core.merge;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import eu.fasten.core.data.*;
-import eu.fasten.core.data.graphdb.GraphMetadata;
-import eu.fasten.core.data.graphdb.RocksDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.*;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -41,17 +44,29 @@ import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
+
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.FastenDefaultDirectedGraph;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.graphdb.GraphMetadata;
+import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSets;
 
 public class CGMerger {
 
@@ -59,7 +74,7 @@ public class CGMerger {
 
     private final Map<String, List<String>> universalChildren;
     private final Map<String, List<String>> universalParents;
-    private final Object2ObjectOpenHashMap<String, Object2ObjectOpenHashMap<String, LongOpenHashSet>> typeDictionary;
+    private final Map<String, Map<String, LongSet>> typeDictionary;
 
     private DSLContext dbContext;
     private RocksDao rocksDao;
@@ -87,9 +102,9 @@ public class CGMerger {
         this.allUris = HashBiMap.create();
         final var graphAndDict = getDirectedGraphsAndTypeDict(dependencySet);
         this.ercgDependencySet = graphAndDict.getLeft();
-        this.typeDictionary = new Object2ObjectOpenHashMap<>(graphAndDict.getRight().size());
+        this.typeDictionary = new HashMap<>(graphAndDict.getRight().size());
         graphAndDict.getRight().forEach((k1, v1) -> {
-            var value = new Object2ObjectOpenHashMap<String, LongOpenHashSet>(v1.size());
+            var value = new HashMap<String, LongSet>(v1.size());
             v1.forEach((k2, v2) -> value.put(k2, new LongOpenHashSet(v2)));
             this.typeDictionary.put(k1, value);
         });
@@ -351,14 +366,25 @@ public class CGMerger {
         if (graphArcs == null) {
             return null;
         }
+        
+        final Set<LongLongPair> edges = ConcurrentHashMap.newKeySet();
         graphArcs.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
             var sourceId = entry.getLongKey();
             var nodeMetadata = entry.getValue();
             for (var receiver : nodeMetadata.receiverRecords) {
                 var arc = new Arc(sourceId, receiver);
-                resolve(result, callGraphData, arc, receiver.receiverSignature, callGraphData.isExternal(sourceId));
+                resolve(edges, callGraphData, arc, receiver.receiverSignature, callGraphData.isExternal(sourceId));
             }
         });
+        
+        for(LongLongPair edge: edges) {
+            // TODO: This check could be avoided by having FastenDefaulDirectedGraph to not allow multiple edges
+            if (result.containsEdge(edge)) continue;
+            addNode(result, callGraphData, edge.firstLong());
+            addNode(result, callGraphData, edge.secondLong());
+            result.addEdge(edge.firstLong(), edge.secondLong(), edge);
+        }
+        
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
         logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
@@ -399,19 +425,27 @@ public class CGMerger {
      * @param signature     signature of the target
      * @param isCallback    true, if a given arc is a callback
      */
-    private void resolve(final FastenDefaultDirectedGraph result,
+    private void resolve(final Set<LongLongPair> edges,
                          final DirectedGraph callGraphData,
                          final Arc arc,
                          final String signature,
                          final boolean isCallback) {
+	
+	// Cache frequently accessed variables
+        final Map<String, LongSet> emptyMap = Collections.emptyMap();
+	final LongSet emptyLongSet = LongSets.emptySet();
+	Map<String, Map<String, LongSet>> typeDictionary = this.typeDictionary;
+	Map<String, List<String>> universalParents = this.universalParents;
+	Map<String, List<String>> universalChildren = this.universalChildren;
+	
         for (String receiverTypeUri : arc.target.receiverTypes) {
-            switch (arc.target.callType) {
+	    switch (arc.target.callType) {
                 case VIRTUAL:
                 case INTERFACE:
                     var foundTarget = false;
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
-                            new Object2ObjectOpenHashMap<>()).getOrDefault(signature, new LongOpenHashSet())) {
-                        addEdge(result, callGraphData, arc.source, target, isCallback);
+                            emptyMap).getOrDefault(signature, emptyLongSet)) {
+                        addEdge(edges, callGraphData, arc.source, target, isCallback);
                         foundTarget = true;
                     }
                     if (!foundTarget) {
@@ -419,9 +453,9 @@ public class CGMerger {
                         if (parents != null) {
                             for (final var parentUri : parents) {
                                 for (final var target : typeDictionary.getOrDefault(parentUri,
-                                        new Object2ObjectOpenHashMap<>())
-                                        .getOrDefault(signature, new LongOpenHashSet())) {
-                                    addEdge(result, callGraphData, arc.source, target, isCallback);
+                                        emptyMap)
+                                        .getOrDefault(signature, emptyLongSet)) {
+                                    addEdge(edges, callGraphData, arc.source, target, isCallback);
                                     foundTarget = true;
                                     break;
                                 }
@@ -435,9 +469,9 @@ public class CGMerger {
                             if (types != null) {
                                 for (final var depTypeUri : types) {
                                     for (final var target : typeDictionary.getOrDefault(depTypeUri,
-                                            new Object2ObjectOpenHashMap<>())
-                                            .getOrDefault(signature, new LongOpenHashSet())) {
-                                        addEdge(result, callGraphData, arc.source, target,
+                                            emptyMap)
+                                            .getOrDefault(signature, emptyLongSet)) {
+                                        addEdge(edges, callGraphData, arc.source, target,
                                                 isCallback);
                                     }
                                 }
@@ -450,8 +484,8 @@ public class CGMerger {
                     break;
                 default:
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
-                            new Object2ObjectOpenHashMap<>()).getOrDefault(signature, new LongOpenHashSet())) {
-                        addEdge(result, callGraphData, arc.source, target, isCallback);
+                            emptyMap).getOrDefault(signature, emptyLongSet)) {
+                        addEdge(edges, callGraphData, arc.source, target, isCallback);
                     }
                     break;
             }
@@ -471,10 +505,10 @@ public class CGMerger {
      * @param rocksDao        rocks DAO
      * @return a type dictionary
      */
-    private Object2ObjectOpenHashMap<String, Object2ObjectOpenHashMap<String, LongOpenHashSet>> createTypeDictionary(
+    private Map<String, Map<String, LongSet>> createTypeDictionary(
             final Set<Long> dependenciesIds, final DSLContext dbContext, final RocksDao rocksDao) {
         final long startTime = System.currentTimeMillis();
-        var result = new Object2ObjectOpenHashMap<String, Object2ObjectOpenHashMap<String, LongOpenHashSet>>();
+        var result = new HashMap<String, Map<String, LongSet>>();
 
         var callables = getCallables(dependenciesIds, rocksDao);
 
@@ -484,7 +518,7 @@ public class CGMerger {
                 .fetch()
                 .forEach(callable -> {
                     var node = new Node(FastenJavaURI.create(callable.value1()).decanonicalize());
-                    result.putIfAbsent(node.typeUri, new Object2ObjectOpenHashMap<>());
+                    result.putIfAbsent(node.typeUri, new HashMap<>());
                     var type = result.get(node.typeUri);
                     var newestSet = new LongOpenHashSet();
                     newestSet.add(callable.value2().longValue());
@@ -744,52 +778,64 @@ public class CGMerger {
      * @param target        target callable ID
      * @param isCallback    true, if a given arc is a callback
      */
-    private void addEdge(final FastenDefaultDirectedGraph result,
+    private void addEdge(final Set<LongLongPair> edges,
                          final DirectedGraph callGraphData,
-                         final Long source, final Long target, final boolean isCallback) {
+                         Long source, Long target, final boolean isCallback) {
+	if (isCallback) {
+	    Long t = source;
+	    source = target;
+	    target = t;
+	}
 
-        if (isCallback) {
-            tryUntilSucceed(result, callGraphData, source, target);
-        } else {
-            tryUntilSucceed(result, callGraphData, target, source);
-        }
-    }
-
-    private void tryUntilSucceed(FastenDefaultDirectedGraph result, DirectedGraph callGraphData,
-                                 Long source, Long target) {
-        boolean success;
-        do {
-            success = tryAddingEdge(result, callGraphData, source, target);
-        } while (!success);
-    }
-
-    private boolean tryAddingEdge(final FastenDefaultDirectedGraph result,
-                                  final DirectedGraph callGraphData,
-                                  final Long source, final Long target) {
-        try {
-            synchronized (result.edgeSet()) {
-                result.addEdge(target, source);
-            }
-            return true;
-        } catch (IllegalArgumentException e){
+	edges.add(LongLongPair.of(target, source));
+	/*
+	synchronized(result) {
             addNode(result, callGraphData, source);
             addNode(result, callGraphData, target);
-            return false;
+            result.addEdge(target, source);
+        }
+        */
+    }
+
+
+    /**
+     * Add a resolved edge to the {@link DirectedGraph}.
+     *
+     * @param result        graph with resolved calls
+     * @param source        source callable ID
+     * @param callGraphData graph for the artifact to resolve
+     * @param target        target callable ID
+     * @param isCallback    true, if a given arc is a callback
+     */
+    private void addEdge(final FastenDefaultDirectedGraph result,
+                         final DirectedGraph callGraphData,
+                         Long source, Long target, final boolean isCallback) {
+	if (isCallback) {
+	    Long t = source;
+	    source = target;
+	    target = t;
+	}
+
+	synchronized(result) {
+            addNode(result, callGraphData, source);
+            addNode(result, callGraphData, target);
+            result.addEdge(target, source);
         }
     }
 
+
     private void addNode(final FastenDefaultDirectedGraph result,
-                                      final DirectedGraph callGraphData,
-                                      final Long node) {
-        synchronized (result.vertexSet()) {
-            if (!result.containsVertex(node)) {
-                if (callGraphData.isInternal(node)) {
-                    result.addInternalNode(node);
-                } else {
-                    result.addExternalNode(node);
-                }
-            }
-        }
+	    final DirectedGraph callGraphData,
+	    final Long node) {
+	// TODO: JGraphT already checks whether the node is in the vertex set.
+	// If there's no difference between internal and external nodes can't we get rid of this?
+	if (!result.containsVertex(node)) {
+	    if (callGraphData.isInternal(node)) {
+		result.addInternalNode(node);
+	    } else {
+		result.addExternalNode(node);
+	    }
+	}
     }
 
     /**

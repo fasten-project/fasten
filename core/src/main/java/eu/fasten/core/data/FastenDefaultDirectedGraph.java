@@ -74,8 +74,10 @@ public class FastenDefaultDirectedGraph extends DefaultDirectedGraph<Long, LongL
 
     @Override
     public LongLongPair addEdge(Long source, Long target) {
-        LongLongPair edge = new LongLongMutablePair(source, target);
-        return this.addEdge(source, target, edge) ? edge : null;
+	if (containsEdge(source, target)) return null;
+	LongLongPair edge = LongLongPair.of(source, target);
+        addEdge(source, target, edge);
+        return edge;
     }
 
     public boolean addInternalNode(long node) {

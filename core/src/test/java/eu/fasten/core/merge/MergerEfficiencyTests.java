@@ -18,13 +18,6 @@
 
 package eu.fasten.core.merge;
 
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import org.json.JSONObject;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -36,6 +29,13 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.json.JSONObject;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 
 public class MergerEfficiencyTests {
 
@@ -59,7 +59,6 @@ public class MergerEfficiencyTests {
                 }).collect(Collectors.toList());
     }
 
-    @Disabled // FIXME: now finishes in 220sec
     @Test
     public void localMergerEfficiencyTest() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
@@ -84,7 +83,6 @@ public class MergerEfficiencyTests {
     }
 
     @Test
-    @Disabled
     public void localMergerRepeatedEfficiencyTests() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 
