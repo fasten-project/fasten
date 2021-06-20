@@ -129,7 +129,7 @@ public class CGMerger {
                 type.getValue().getDefinedMethods().forEach((signature, node) -> {
                     final var localId = type.getValue().getMethodKey(node);
                     final var oldType = typeDict.getOrDefault(type.getKey(), new HashMap<>());
-                    final var oldNode = oldType.getOrDefault(node.getSignature(), new HashSet<>());
+                    final var oldNode = oldType.getOrDefault(node.getSignature(), new LongOpenHashSet());
                     oldNode.add(this.allUris.inverse().get(uris.get(localId)));
                     oldType.put(node.getSignature(), oldNode);
                     typeDict.put(type.getKey(), oldType);
