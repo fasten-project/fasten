@@ -378,8 +378,6 @@ public class CGMerger {
         });
         
         for(LongLongPair edge: edges) {
-            // TODO: This check could be avoided by having FastenDefaulDirectedGraph to not allow multiple edges
-            if (result.containsEdge(edge)) continue;
             addNode(result, callGraphData, edge.firstLong());
             addNode(result, callGraphData, edge.secondLong());
             result.addEdge(edge.firstLong(), edge.secondLong(), edge);
