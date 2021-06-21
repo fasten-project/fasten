@@ -91,7 +91,7 @@ public class LicenseDetectorPlugin extends Plugin {
 
 
             } catch (Exception e) { // Fasten error-handling guidelines
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e.getCause());
                 setPluginError(e);
             }
         }
