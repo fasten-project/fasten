@@ -84,7 +84,8 @@ public class LicenseDetectorPlugin extends Plugin {
                                 detectedLicenses.getOutbound()
                 );
 
-                // TODO Detecting inbound licenses by scanning the project
+                // Detecting inbound licenses by scanning the project
+                String resultPath = scanProject(repoPath);
 
                 // TODO Unzipping the JAR to determine which files actually form the package
                 // TODO Use the `sourcesUrl` field in the `fasten.RepoCloner.out` input record
@@ -99,8 +100,8 @@ public class LicenseDetectorPlugin extends Plugin {
         /**
          * Retrieves all licenses declared in a `pom.xml` file.
          *
-         * @param pomFile      the `pom.xml` file to be analyzed.
-         * @param coordinate   the Maven coordinate this `pom.xml` file belongs to.
+         * @param pomFile    the `pom.xml` file to be analyzed.
+         * @param coordinate the Maven coordinate this `pom.xml` file belongs to.
          * @return the detected licenses.
          * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
          */
@@ -138,7 +139,7 @@ public class LicenseDetectorPlugin extends Plugin {
                 }
             } catch (IOException e) {
                 throw new RuntimeException("Pom file " + pomFile.getAbsolutePath() +
-                        " exists but couldn't instantiate a FileReader object..");
+                        " exists but couldn't instantiate a FileReader object..", e.getCause());
             } catch (XmlPullParserException e) {
                 throw new XmlPullParserException("Pom file " + pomFile.getAbsolutePath() +
                         " exists but couldn't be parsed as a Maven pom XML file: " + e.getMessage());
@@ -274,6 +275,74 @@ public class LicenseDetectorPlugin extends Plugin {
             return groupId + ":" + artifactId + ":" + version;
         }
 
+        /**
+         * Scans a repository looking for license text in files with scancode.
+         *
+         * @param repoPath the repository path whose pom.xml file must be retrieved.
+         * @return the path of the file containing the result.
+         * @throws IOException in case scancode couldn't start.
+         * @throws InterruptedException in case this function couldn't wait for scancode to complete.
+         * @throws RuntimeException in case scancode returns with an error code != 0.
+         */
+        protected String scanProject(String repoPath) throws IOException, InterruptedException, RuntimeException {
+
+            // Where is the result stored
+            String resultPath = repoPath + "/scancode.json";
+
+            // `scancode` command to be executed
+            List<String> cmd = Arrays.asList(
+                    "scancode",
+                    // Scan for licenses
+                    "--license",
+                    // Report full, absolute paths
+                    "--full-root",
+                    // Scan using n parallel processes // FIXME use $(nproc)
+                    "--processes", "1",
+                    // Write scan output as a compact JSON file
+                    "--json", resultPath,
+                    // SPDX RDF file
+                    // "--spdx-rdf", repoPath + "/scancode.spdx.rdf",
+                    // SPDX tag/value file
+                    // "--spdx-tv", repoPath + "/scancode.spdx.tv ",
+                    /*  Only return files or directories with findings for the requested scans.
+                        Files and directories without findings are omitted
+                        (file information is not treated as findings). */
+                    "--only-findings",
+                    // TODO Scancode timeout?
+                    // "--timeout", "600.0",
+                    // Repository directory
+                    repoPath
+            );
+
+            // Start scanning
+            logger.info("Scanning project in " + repoPath + "...");
+            ProcessBuilder pb = new ProcessBuilder(cmd);
+            pb.inheritIO();
+            Process p = null;
+            int exitCode = Integer.MIN_VALUE;
+            try {
+                p = pb.start(); // start scanning the project
+                exitCode = p.waitFor();// synchronous call
+            } catch (IOException e) {
+                if (p != null) {
+                    p.destroy();
+                }
+                throw new IOException("Couldn't start the scancode analyzer: " + e.getMessage(), e.getCause());
+            } catch (InterruptedException e) {
+                if (p != null) {
+                    p.destroy();
+                }
+                throw new InterruptedException("Couldn't wait for scancode to complete: " + e.getMessage());
+            }
+            if (exitCode != 0) {
+                throw new RuntimeException("Scancode returned with exit code " + exitCode + ".");
+            }
+
+            logger.info("...project in " + repoPath + " scanned successfully.");
+
+            return resultPath;
+        }
+
         @Override
         public Optional<String> produce() {
             if (detectedLicenses == null ||
@@ -301,7 +370,7 @@ public class LicenseDetectorPlugin extends Plugin {
 
         @Override
         public String version() {
-            return "0.0.2";
+            return "0.1.0";
         }
 
         @Override
@@ -323,16 +392,6 @@ public class LicenseDetectorPlugin extends Plugin {
 
         @Override
         public void freeResource() {
-        }
-
-        @Override
-        public boolean isStaticMembership() {
-            return false;
-        }
-
-        @Override
-        public long getMaxConsumeTimeout() {
-            return 1 * 60 * 60 * 1000; // FIXME 1 hour
         }
     }
 }
