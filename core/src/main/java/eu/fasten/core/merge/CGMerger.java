@@ -298,7 +298,7 @@ public class CGMerger {
             final var target = callsite.getKey().secondInt();
             final var signature = allMethods.get(source).getSignature();
             final var type = typeMap.get(source);
-            final var receivers = new ArrayList<GraphMetadata.ReceiverRecord>();
+            final var receivers = new HashSet<GraphMetadata.ReceiverRecord>();
             final var metadata = callsite.getValue();
             for (var obj : metadata.values()) {
                 var receiver = (HashMap<String, Object>) obj;
@@ -312,8 +312,10 @@ public class CGMerger {
             final var globalSource = this.allUris.inverse().get(allUris.get(source));
             var value = map.get(globalSource.longValue());
             if (value == null) {
-                value = new GraphMetadata.NodeMetadata(type, signature, receivers);
+                value = new GraphMetadata.NodeMetadata(type, signature, new ArrayList<>(receivers));
             } else {
+                receivers.addAll(value.receiverRecords);
+                value.receiverRecords.removeAll(receivers);
                 value.receiverRecords.addAll(receivers);
             }
             map.put(globalSource.longValue(), value);
