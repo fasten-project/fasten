@@ -102,16 +102,17 @@ public class CGMerger {
         this.allUris = HashBiMap.create();
         final var graphAndDict = getDirectedGraphsAndTypeDict(dependencySet);
         this.ercgDependencySet = graphAndDict.getLeft();
-        this.typeDictionary = new HashMap<>(graphAndDict.getRight().size());
-        graphAndDict.getRight().forEach((k1, v1) -> {
-            var value = new HashMap<String, LongSet>(v1.size());
-            v1.forEach((k2, v2) -> value.put(k2, new LongOpenHashSet(v2)));
-            this.typeDictionary.put(k1, value);
-        });
+        this.typeDictionary = graphAndDict.getRight();
+//            new HashMap<>(graphAndDict.getRight().size());
+//        graphAndDict.getRight().forEach((k1, v1) -> {
+//            var value = new HashMap<String, LongSet>(v1.size());
+//            v1.forEach((k2, v2) -> value.put(k2, new LongOpenHashSet(v2)));
+//            this.typeDictionary.put(k1, value);
+//        });
     }
 
     private Pair<List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>>, Map<String, Map<String,
-            Set<Long>>>> getDirectedGraphsAndTypeDict(
+            LongSet>>> getDirectedGraphsAndTypeDict(
             final List<ExtendedRevisionJavaCallGraph> dependencySet) {
 
         List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>> depSet = new ArrayList<>();
@@ -122,7 +123,7 @@ public class CGMerger {
             depSet.add(ImmutablePair.of(directedDep, dep));
         }
 
-        Map<String, Map<String, Set<Long>>> typeDict = new HashMap<>();
+        Map<String, Map<String, LongSet>> typeDict = new HashMap<>();
         for (final var rcg : dependencySet) {
             final var uris = rcg.mapOfFullURIStrings();
             for (final var type : rcg.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
@@ -130,7 +131,7 @@ public class CGMerger {
                     final var localId = type.getValue().getMethodKey(node);
                     final var oldType = typeDict.getOrDefault(type.getKey(), new HashMap<>());
                     final var oldNode = oldType.getOrDefault(node.getSignature(), new LongOpenHashSet());
-                    oldNode.add(this.allUris.inverse().get(uris.get(localId)));
+                    oldNode.add(this.allUris.inverse().get(uris.get(localId)).longValue());
                     oldType.put(node.getSignature(), oldNode);
                     typeDict.put(type.getKey(), oldType);
                 });
@@ -366,7 +367,7 @@ public class CGMerger {
             var nodeMetadata = entry.getValue();
             for (var receiver : nodeMetadata.receiverRecords) {
                 var arc = new Arc(sourceId, receiver);
-                resolve(edges, callGraphData, arc, receiver.receiverSignature, callGraphData.isExternal(sourceId));
+                resolve(edges, arc, receiver.receiverSignature, callGraphData.isExternal(sourceId));
             }
         });
         
@@ -410,19 +411,17 @@ public class CGMerger {
 
     /**
      * Resolve call.
-     * @param callGraphData graph for the artifact to resolve
      * @param arc           source, target and receivers information
      * @param signature     signature of the target
      * @param isCallback    true, if a given arc is a callback
      */
     private void resolve(final Set<LongLongPair> edges,
-                         final DirectedGraph callGraphData,
                          final Arc arc,
                          final String signature,
                          final boolean isCallback) {
 	
 	// Cache frequently accessed variables
-        final Map<String, LongSet> emptyMap = Collections.emptyMap();
+    final Map<String, LongSet> emptyMap = Collections.emptyMap();
 	final LongSet emptyLongSet = LongSets.emptySet();
 	Map<String, Map<String, LongSet>> typeDictionary = this.typeDictionary;
 	Map<String, List<String>> universalParents = this.universalParents;
@@ -776,8 +775,6 @@ public class CGMerger {
 
 	edges.add(LongLongPair.of(source, target));
     }
-
-
 
 
 
