@@ -149,7 +149,7 @@ public class CGMerger {
             final var updatedNode = updateNode(node, offset, uris);
             for (final var successor : directedMerge.successors(node)) {
                 final var updatedSuccessor = updateNode(successor, offset, uris);
-                addEdge(result, updatedNode, updatedSuccessor);
+                addCall(result, updatedNode, updatedSuccessor);
             }
         }
         return result;
@@ -254,11 +254,6 @@ public class CGMerger {
             this.signature = StringUtils.substringAfter(uri.decanonicalize().getEntity(), ".");
         }
 
-        public Node(final String typeUri, final String signature) {
-            this.typeUri = typeUri;
-            this.signature = signature;
-        }
-
         /**
          * Check if the given method is a constructor.
          *
@@ -359,8 +354,6 @@ public class CGMerger {
 
         var result = new FastenDefaultDirectedGraph();
 
-        cloneNodesAndArcs(result, callGraphData);
-
         final long startTime = System.currentTimeMillis();
 
         if (graphArcs == null) {
@@ -417,7 +410,6 @@ public class CGMerger {
 
     /**
      * Resolve call.
-     *  @param result        graph with resolved calls
      * @param callGraphData graph for the artifact to resolve
      * @param arc           source, target and receivers information
      * @param signature     signature of the target
@@ -443,7 +435,7 @@ public class CGMerger {
                     var foundTarget = false;
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             emptyMap).getOrDefault(signature, emptyLongSet)) {
-                        addEdge(edges, callGraphData, arc.source, target, isCallback);
+                        addCall(edges, arc.source, target, isCallback);
                         foundTarget = true;
                     }
                     if (!foundTarget) {
@@ -453,7 +445,7 @@ public class CGMerger {
                                 for (final var target : typeDictionary.getOrDefault(parentUri,
                                         emptyMap)
                                         .getOrDefault(signature, emptyLongSet)) {
-                                    addEdge(edges, callGraphData, arc.source, target, isCallback);
+                                    addCall(edges, arc.source, target, isCallback);
                                     foundTarget = true;
                                     break;
                                 }
@@ -469,7 +461,7 @@ public class CGMerger {
                                     for (final var target : typeDictionary.getOrDefault(depTypeUri,
                                             emptyMap)
                                             .getOrDefault(signature, emptyLongSet)) {
-                                        addEdge(edges, callGraphData, arc.source, target,
+                                        addCall(edges, arc.source, target,
                                                 isCallback);
                                     }
                                 }
@@ -483,7 +475,7 @@ public class CGMerger {
                 default:
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             emptyMap).getOrDefault(signature, emptyLongSet)) {
-                        addEdge(edges, callGraphData, arc.source, target, isCallback);
+                        addCall(edges, arc.source, target, isCallback);
                     }
                     break;
             }
@@ -719,7 +711,7 @@ public class CGMerger {
     }
 
 
-    private void addEdge(final FastenDefaultDirectedGraph result,
+    private void addCall(final FastenDefaultDirectedGraph result,
                          final long source, final long target) {
         result.addInternalNode(source);
         result.addInternalNode(target);
@@ -738,7 +730,7 @@ public class CGMerger {
         for (final var depGraph : depGraphs) {
             for (final var node : depGraph.nodes()) {
                 for (final var successor : depGraph.successors(node)) {
-                    addEdge(result, depGraph, node, successor, false);
+                    addCall(result, node, successor);
                 }
             }
         }
@@ -770,14 +762,11 @@ public class CGMerger {
     /**
      * Add a resolved edge to the {@link DirectedGraph}.
      *
-     * @param result        graph with resolved calls
      * @param source        source callable ID
-     * @param callGraphData graph for the artifact to resolve
      * @param target        target callable ID
      * @param isCallback    true, if a given arc is a callback
      */
-    private void addEdge(final Set<LongLongPair> edges,
-                         final DirectedGraph callGraphData,
+    private void addCall(final Set<LongLongPair> edges,
                          Long source, Long target, final boolean isCallback) {
 	if (isCallback) {
 	    Long t = source;
@@ -785,41 +774,11 @@ public class CGMerger {
 	    target = t;
 	}
 
-	edges.add(LongLongPair.of(target, source));
-	/*
-	synchronized(result) {
-            addNode(result, callGraphData, source);
-            addNode(result, callGraphData, target);
-            result.addEdge(target, source);
-        }
-        */
+	edges.add(LongLongPair.of(source, target));
     }
 
 
-    /**
-     * Add a resolved edge to the {@link DirectedGraph}.
-     *
-     * @param result        graph with resolved calls
-     * @param source        source callable ID
-     * @param callGraphData graph for the artifact to resolve
-     * @param target        target callable ID
-     * @param isCallback    true, if a given arc is a callback
-     */
-    private void addEdge(final FastenDefaultDirectedGraph result,
-                         final DirectedGraph callGraphData,
-                         Long source, Long target, final boolean isCallback) {
-	if (isCallback) {
-	    Long t = source;
-	    source = target;
-	    target = t;
-	}
 
-	synchronized(result) {
-            addNode(result, callGraphData, source);
-            addNode(result, callGraphData, target);
-            result.addEdge(target, source);
-        }
-    }
 
 
     private void addNode(final FastenDefaultDirectedGraph result,

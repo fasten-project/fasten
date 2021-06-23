@@ -166,37 +166,8 @@ public class CGMergerTest {
 
         assertNotNull(mergedGraph);
 
-        assertEquals(LongArrayList.wrap(new long[]{MAIN_INIT}), mergedGraph.successors(MAIN_INIT));
-
         assertEquals(new HashSet<>(mergedGraph.successors(MAIN_MAIN_METHOD)),
                 Set.of(BAR_SUPER_METHOD, BAZ_INIT, BAR_INIT, FOO_STATIC_METHOD, FOO_INIT));
-    }
-
-    @Test
-    public void recursiveCallsTest() throws RocksDBException {
-        var connection = new MockConnection(new MockProvider());
-        var context = DSL.using(connection, SQLDialect.POSTGRES);
-
-        // random internal node with recursive call
-        final int nodeWithRecursiveCall = 3;
-
-        var directedGraph = new ArrayImmutableDirectedGraph.Builder();
-        directedGraph.addInternalNode(nodeWithRecursiveCall);
-        directedGraph.addArc(nodeWithRecursiveCall, nodeWithRecursiveCall);
-        final var directedGraphBuilt = directedGraph.build();
-        var rocksDao = Mockito.mock(RocksDao.class);
-        Mockito.when(rocksDao.getGraphData(42)).thenReturn(directedGraphBuilt);
-        Mockito.when(rocksDao.getGraphMetadata(42, directedGraphBuilt)).thenReturn(graphMetadata);
-        merger = new CGMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
-                context, rocksDao);
-
-        var mergedGraph = merger.mergeWithCHA(42);
-
-        assertNotNull(mergedGraph);
-
-        assertTrue(mergedGraph.nodes().contains(nodeWithRecursiveCall));
-        assertEquals(LongArrayList.wrap(new long[]{nodeWithRecursiveCall}),
-                mergedGraph.successors(nodeWithRecursiveCall));
     }
 
     private DirectedGraph createMockDirectedGraph() {
