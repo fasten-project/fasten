@@ -21,13 +21,7 @@ package eu.fasten.analyzer.javacgopal.data.analysis;
 import eu.fasten.core.data.*;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
@@ -331,7 +325,7 @@ public class OPALClassHierarchy {
     public Map<Object, Object> getCallSite(final Method source, final Integer pc,
                                            Stmt<DUVar<ValueInformation>>[] stmts) {
         final var instruction = source.instructionsOption().get()[pc].mnemonic();
-        final List<FastenURI> receiverType = new ArrayList<>();
+        final var receiverType = new HashSet<FastenURI>();
 
         if (instruction.equals("invokevirtual") | instruction.equals("invokeinterface")) {
             if (stmts != null) {
@@ -362,7 +356,8 @@ public class OPALClassHierarchy {
         var callSite = new HashMap<>();
         callSite.put("line", source.body().get().lineNumber(pc).getOrElse(() -> 404));
         callSite.put("type", instruction);
-        callSite.put("receiver", receiverType.toString());
+        callSite.put("receiver", "[" + receiverType.stream().map(FastenURI::toString)
+                .reduce((f1, f2) -> f1 + "," + f2).orElse("") + "]");
 
         return Map.of(pc.toString(), callSite);
     }
