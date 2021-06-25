@@ -1064,8 +1064,8 @@ public class MetadataDao {
 
             try {
                 var uriObject = FastenUriUtils.parsePartialFastenUri(uri);
-                jObj.put("methodName", uriObject.get(2));
-                jObj.put("methodArgs", uriObject.get(3));
+                jObj.put("method_name", uriObject.get(2));
+                jObj.put("method_args", uriObject.get(3));
             } catch (IllegalArgumentException err) {
                 logger.warn("Error FASTEN URI Parser: " + err.toString());
             }
@@ -1586,8 +1586,23 @@ public class MetadataDao {
     }
 
     public String searchPackageNames(String searchName, int offset, int limit) {
-        var result = context
-                .fetch("select * from packages where package_name like ? offset ? limit ?", "%" + searchName + "%", offset, limit);
+
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+
+        // Query
+        Result<Record> result = context
+                .select(p.fields())
+                .from(p)
+                .where(
+                    exists(context.select(p.ID).from(p).where(p.ID.eq(pv.PACKAGE_ID)).limit(1))
+                    .and(p.PACKAGE_NAME.like("%" + searchName + "%"))
+                )
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+
+        // Returning the result
         logger.debug("Total rows: " + result.size());
         return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }

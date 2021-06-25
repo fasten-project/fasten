@@ -84,7 +84,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var group = json.getString("groupId");
             var artifact = json.getString("artifactId");
             var ver = json.getString("version");
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
@@ -104,7 +104,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var group = json.getString("groupId");
             var artifact = json.getString("artifactId");
             var ver = json.getString("version");
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
@@ -129,7 +129,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         var jsonArray = new JSONArray();
         depSet.stream().map(r -> {
             var json = new JSONObject();
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
             json.put(String.valueOf(r.id), url);
             return json;
