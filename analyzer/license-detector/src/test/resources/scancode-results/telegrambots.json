@@ -1,0 +1,1770 @@
+{
+  "headers": [
+    {
+      "tool_name": "scancode-toolkit",
+      "tool_version": "21.3.31",
+      "options": {
+        "input": [
+          "/mnt/fasten/o/org.bytedeco:tb/tb"
+        ],
+        "--full-root": true,
+        "--json": "/mnt/fasten/o/org.bytedeco:tb/tb/scancode.json",
+        "--license": true,
+        "--only-findings": true,
+        "--spdx-rdf": "/mnt/fasten/o/org.bytedeco:tb/tb/scancode.spdx.rdf",
+        "--spdx-tv": "/mnt/fasten/o/org.bytedeco:tb/tb/scancode.spdx.tv "
+      },
+      "notice": "Generated with ScanCode and provided on an \"AS IS\" BASIS, WITHOUT WARRANTIES\nOR CONDITIONS OF ANY KIND, either express or implied. No content created from\nScanCode should be considered or used as legal advice. Consult an Attorney\nfor any legal advice.\nScanCode is a free software code scanning tool from nexB Inc. and others.\nVisit https://github.com/nexB/scancode-toolkit/ for support and download.",
+      "start_timestamp": "2021-06-23T092431.678321",
+      "end_timestamp": "2021-06-23T093400.572898",
+      "duration": 568.8946776390076,
+      "message": null,
+      "errors": [],
+      "extra_data": {
+        "files_count": 30
+      }
+    }
+  ],
+  "files": [
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/LICENSE",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "mit",
+          "score": 100.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 1,
+          "end_line": 1,
+          "matched_rule": {
+            "identifier": "mit_14.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": true,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 2,
+            "matched_length": 2,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        },
+        {
+          "key": "mit",
+          "score": 100.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 5,
+          "end_line": 21,
+          "matched_rule": {
+            "identifier": "mit.LICENSE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": true,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 161,
+            "matched_length": 161,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "mit",
+        "mit"
+      ],
+      "percentage_of_license_text": 97.02,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/mvnw",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "apache-2.0",
+          "score": 100.0,
+          "name": "Apache License 2.0",
+          "short_name": "Apache 2.0",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Apache Software Foundation",
+          "homepage_url": "http://www.apache.org/licenses/",
+          "text_url": "http://www.apache.org/licenses/LICENSE-2.0",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/apache-2.0",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/apache-2.0.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/apache-2.0.yml",
+          "spdx_license_key": "Apache-2.0",
+          "spdx_url": "https://spdx.org/licenses/Apache-2.0",
+          "start_line": 3,
+          "end_line": 18,
+          "matched_rule": {
+            "identifier": "apache-2.0_2.RULE",
+            "license_expression": "apache-2.0",
+            "licenses": [
+              "apache-2.0"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 119,
+            "matched_length": 119,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "apache-2.0"
+      ],
+      "percentage_of_license_text": 9.96,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/mvnw.cmd",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "apache-2.0",
+          "score": 100.0,
+          "name": "Apache License 2.0",
+          "short_name": "Apache 2.0",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Apache Software Foundation",
+          "homepage_url": "http://www.apache.org/licenses/",
+          "text_url": "http://www.apache.org/licenses/LICENSE-2.0",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/apache-2.0",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/apache-2.0.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/apache-2.0.yml",
+          "spdx_license_key": "Apache-2.0",
+          "spdx_url": "https://spdx.org/licenses/Apache-2.0",
+          "start_line": 2,
+          "end_line": 17,
+          "matched_rule": {
+            "identifier": "apache-2.0_2.RULE",
+            "license_expression": "apache-2.0",
+            "licenses": [
+              "apache-2.0"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 119,
+            "matched_length": 119,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "apache-2.0"
+      ],
+      "percentage_of_license_text": 13.84,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/pom.xml",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "bsd-new",
+          "score": 75.0,
+          "name": "BSD-3-Clause",
+          "short_name": "BSD-3-Clause",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Regents of the University of California",
+          "homepage_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "text_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/bsd-new",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.yml",
+          "spdx_license_key": "BSD-3-Clause",
+          "spdx_url": "https://spdx.org/licenses/BSD-3-Clause",
+          "start_line": 21,
+          "end_line": 27,
+          "matched_rule": {
+            "identifier": "bsd-new_531.RULE",
+            "license_expression": "bsd-new",
+            "licenses": [
+              "bsd-new"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": true,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 24,
+            "matched_length": 18,
+            "match_coverage": 75.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "bsd-new"
+      ],
+      "percentage_of_license_text": 2.31,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/README.md",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "mit",
+          "score": 66.67,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 8,
+          "end_line": 8,
+          "matched_rule": {
+            "identifier": "mit_661.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": true,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 15,
+            "matched_length": 10,
+            "match_coverage": 66.67,
+            "rule_relevance": 100
+          }
+        },
+        {
+          "key": "mit",
+          "score": 100.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 103,
+          "end_line": 104,
+          "matched_rule": {
+            "identifier": "mit_31.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": true,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 3,
+            "matched_length": 3,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        },
+        {
+          "key": "mit",
+          "score": 100.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 108,
+          "end_line": 124,
+          "matched_rule": {
+            "identifier": "mit.LICENSE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": true,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 161,
+            "matched_length": 161,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "mit",
+        "mit",
+        "mit"
+      ],
+      "percentage_of_license_text": 25.7,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/.mvn/wrapper/MavenWrapperDownloader.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "apache-2.0",
+          "score": 100.0,
+          "name": "Apache License 2.0",
+          "short_name": "Apache 2.0",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Apache Software Foundation",
+          "homepage_url": "http://www.apache.org/licenses/",
+          "text_url": "http://www.apache.org/licenses/LICENSE-2.0",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/apache-2.0",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/apache-2.0.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/apache-2.0.yml",
+          "spdx_license_key": "Apache-2.0",
+          "spdx_url": "https://spdx.org/licenses/Apache-2.0",
+          "start_line": 4,
+          "end_line": 14,
+          "matched_rule": {
+            "identifier": "apache-2.0_7.RULE",
+            "license_expression": "apache-2.0",
+            "licenses": [
+              "apache-2.0"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 85,
+            "matched_length": 85,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "apache-2.0"
+      ],
+      "percentage_of_license_text": 17.63,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots/LICENSE",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "mit",
+          "score": 100.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 1,
+          "end_line": 1,
+          "matched_rule": {
+            "identifier": "mit_14.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": true,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 2,
+            "matched_length": 2,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        },
+        {
+          "key": "mit",
+          "score": 100.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 5,
+          "end_line": 21,
+          "matched_rule": {
+            "identifier": "mit.LICENSE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": true,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 161,
+            "matched_length": 161,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "mit",
+        "mit"
+      ],
+      "percentage_of_license_text": 97.02,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots/pom.xml",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "bsd-new",
+          "score": 75.0,
+          "name": "BSD-3-Clause",
+          "short_name": "BSD-3-Clause",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Regents of the University of California",
+          "homepage_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "text_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/bsd-new",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.yml",
+          "spdx_license_key": "BSD-3-Clause",
+          "spdx_url": "https://spdx.org/licenses/BSD-3-Clause",
+          "start_line": 45,
+          "end_line": 51,
+          "matched_rule": {
+            "identifier": "bsd-new_531.RULE",
+            "license_expression": "bsd-new",
+            "licenses": [
+              "bsd-new"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": true,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 24,
+            "matched_length": 18,
+            "match_coverage": 75.0,
+            "rule_relevance": 100
+          }
+        },
+        {
+          "key": "mit",
+          "score": 90.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 47,
+          "end_line": 48,
+          "matched_rule": {
+            "identifier": "mit_785.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 10,
+            "matched_length": 9,
+            "match_coverage": 90.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "bsd-new",
+        "mit"
+      ],
+      "percentage_of_license_text": 2.16,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots/src/main/java/org/telegram/telegrambots/updatesreceivers/ExponentialBackOff.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "apache-2.0",
+          "score": 100.0,
+          "name": "Apache License 2.0",
+          "short_name": "Apache 2.0",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Apache Software Foundation",
+          "homepage_url": "http://www.apache.org/licenses/",
+          "text_url": "http://www.apache.org/licenses/LICENSE-2.0",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/apache-2.0",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/apache-2.0.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/apache-2.0.yml",
+          "spdx_license_key": "Apache-2.0",
+          "spdx_url": "https://spdx.org/licenses/Apache-2.0",
+          "start_line": 4,
+          "end_line": 12,
+          "matched_rule": {
+            "identifier": "apache-2.0_7.RULE",
+            "license_expression": "apache-2.0",
+            "licenses": [
+              "apache-2.0"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 85,
+            "matched_length": 85,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "apache-2.0"
+      ],
+      "percentage_of_license_text": 7.42,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-abilities/pom.xml",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "bsd-new",
+          "score": 75.0,
+          "name": "BSD-3-Clause",
+          "short_name": "BSD-3-Clause",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Regents of the University of California",
+          "homepage_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "text_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/bsd-new",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.yml",
+          "spdx_license_key": "BSD-3-Clause",
+          "spdx_url": "https://spdx.org/licenses/BSD-3-Clause",
+          "start_line": 51,
+          "end_line": 57,
+          "matched_rule": {
+            "identifier": "bsd-new_531.RULE",
+            "license_expression": "bsd-new",
+            "licenses": [
+              "bsd-new"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": true,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 24,
+            "matched_length": 18,
+            "match_coverage": 75.0,
+            "rule_relevance": 100
+          }
+        },
+        {
+          "key": "mit",
+          "score": 90.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 53,
+          "end_line": 54,
+          "matched_rule": {
+            "identifier": "mit_785.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 10,
+            "matched_length": 9,
+            "match_coverage": 90.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "bsd-new",
+        "mit"
+      ],
+      "percentage_of_license_text": 2.82,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-chat-session-bot/pom.xml",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "bsd-new",
+          "score": 75.0,
+          "name": "BSD-3-Clause",
+          "short_name": "BSD-3-Clause",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Regents of the University of California",
+          "homepage_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "text_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/bsd-new",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.yml",
+          "spdx_license_key": "BSD-3-Clause",
+          "spdx_url": "https://spdx.org/licenses/BSD-3-Clause",
+          "start_line": 51,
+          "end_line": 57,
+          "matched_rule": {
+            "identifier": "bsd-new_531.RULE",
+            "license_expression": "bsd-new",
+            "licenses": [
+              "bsd-new"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": true,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 24,
+            "matched_length": 18,
+            "match_coverage": 75.0,
+            "rule_relevance": 100
+          }
+        },
+        {
+          "key": "mit",
+          "score": 90.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 53,
+          "end_line": 54,
+          "matched_rule": {
+            "identifier": "mit_785.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 10,
+            "matched_length": 9,
+            "match_coverage": 90.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "bsd-new",
+        "mit"
+      ],
+      "percentage_of_license_text": 2.89,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-extensions/pom.xml",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "bsd-new",
+          "score": 75.0,
+          "name": "BSD-3-Clause",
+          "short_name": "BSD-3-Clause",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Regents of the University of California",
+          "homepage_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "text_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/bsd-new",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.yml",
+          "spdx_license_key": "BSD-3-Clause",
+          "spdx_url": "https://spdx.org/licenses/BSD-3-Clause",
+          "start_line": 45,
+          "end_line": 51,
+          "matched_rule": {
+            "identifier": "bsd-new_531.RULE",
+            "license_expression": "bsd-new",
+            "licenses": [
+              "bsd-new"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": true,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 24,
+            "matched_length": 18,
+            "match_coverage": 75.0,
+            "rule_relevance": 100
+          }
+        },
+        {
+          "key": "mit",
+          "score": 90.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 47,
+          "end_line": 48,
+          "matched_rule": {
+            "identifier": "mit_785.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 10,
+            "matched_length": 9,
+            "match_coverage": 90.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "bsd-new",
+        "mit"
+      ],
+      "percentage_of_license_text": 3.13,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-extensions/README.md",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "mit",
+          "score": 66.67,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 4,
+          "end_line": 4,
+          "matched_rule": {
+            "identifier": "mit_661.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": true,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 15,
+            "matched_length": 10,
+            "match_coverage": 66.67,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "mit"
+      ],
+      "percentage_of_license_text": 10.2,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/pom.xml",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "bsd-new",
+          "score": 75.0,
+          "name": "BSD-3-Clause",
+          "short_name": "BSD-3-Clause",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Regents of the University of California",
+          "homepage_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "text_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/bsd-new",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.yml",
+          "spdx_license_key": "BSD-3-Clause",
+          "spdx_url": "https://spdx.org/licenses/BSD-3-Clause",
+          "start_line": 45,
+          "end_line": 51,
+          "matched_rule": {
+            "identifier": "bsd-new_531.RULE",
+            "license_expression": "bsd-new",
+            "licenses": [
+              "bsd-new"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": true,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 24,
+            "matched_length": 18,
+            "match_coverage": 75.0,
+            "rule_relevance": 100
+          }
+        },
+        {
+          "key": "mit",
+          "score": 90.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 47,
+          "end_line": 48,
+          "matched_rule": {
+            "identifier": "mit_785.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 10,
+            "matched_length": 9,
+            "match_coverage": 90.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "bsd-new",
+        "mit"
+      ],
+      "percentage_of_license_text": 2.89,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/api/interfaces/Validable.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 56.47,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/api/methods/games/GetGameHighScores.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 16.61,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/api/methods/games/SetGameScore.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 14.2,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/api/methods/send/SendGame.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 18.9,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/api/objects/ResponseParameters.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 35.29,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/api/objects/games/Animation.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 23.76,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/api/objects/games/CallbackGame.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 58.18,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/api/objects/games/Game.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 26.23,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/api/objects/games/GameHighScore.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 40.85,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/api/objects/inlinequery/result/InlineQueryResultGame.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 28.24,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/exceptions/TelegramApiException.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 55.17,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/exceptions/TelegramApiRequestException.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 26.74,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/exceptions/TelegramApiValidationException.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 46.6,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-meta/src/main/java/org/telegram/telegrambots/meta/updateshandlers/DownloadFileCallback.java",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "gpl-3.0-plus",
+          "score": 97.96,
+          "name": "GNU General Public License 3.0 or later",
+          "short_name": "GPL 3.0 or later",
+          "category": "Copyleft",
+          "is_exception": false,
+          "owner": "Free Software Foundation (FSF)",
+          "homepage_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "text_url": "http://www.gnu.org/licenses/gpl-3.0-standalone.html",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/gpl-3.0-plus",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/gpl-3.0-plus.yml",
+          "spdx_license_key": "GPL-3.0-or-later",
+          "spdx_url": "https://spdx.org/licenses/GPL-3.0-or-later",
+          "start_line": 4,
+          "end_line": 15,
+          "matched_rule": {
+            "identifier": "gpl-3.0-plus_56.RULE",
+            "license_expression": "gpl-3.0-plus",
+            "licenses": [
+              "gpl-3.0-plus"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 96,
+            "matched_length": 96,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "gpl-3.0-plus"
+      ],
+      "percentage_of_license_text": 68.57,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/telegrambots-spring-boot-starter/pom.xml",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "bsd-new",
+          "score": 75.0,
+          "name": "BSD-3-Clause",
+          "short_name": "BSD-3-Clause",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "Regents of the University of California",
+          "homepage_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "text_url": "http://www.opensource.org/licenses/BSD-3-Clause",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/bsd-new",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/bsd-new.yml",
+          "spdx_license_key": "BSD-3-Clause",
+          "spdx_url": "https://spdx.org/licenses/BSD-3-Clause",
+          "start_line": 45,
+          "end_line": 51,
+          "matched_rule": {
+            "identifier": "bsd-new_531.RULE",
+            "license_expression": "bsd-new",
+            "licenses": [
+              "bsd-new"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": false,
+            "is_license_tag": true,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 24,
+            "matched_length": 18,
+            "match_coverage": 75.0,
+            "rule_relevance": 100
+          }
+        },
+        {
+          "key": "mit",
+          "score": 90.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 47,
+          "end_line": 48,
+          "matched_rule": {
+            "identifier": "mit_785.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": true,
+            "is_license_reference": false,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "3-seq",
+            "rule_length": 10,
+            "matched_length": 9,
+            "match_coverage": 90.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "bsd-new",
+        "mit"
+      ],
+      "percentage_of_license_text": 2.38,
+      "scan_errors": []
+    },
+    {
+      "path": "/mnt/fasten/o/org.bytedeco:tb/tb/TelegramBots.wiki/Changelog.md",
+      "type": "file",
+      "licenses": [
+        {
+          "key": "mit",
+          "score": 100.0,
+          "name": "MIT License",
+          "short_name": "MIT License",
+          "category": "Permissive",
+          "is_exception": false,
+          "owner": "MIT",
+          "homepage_url": "http://opensource.org/licenses/mit-license.php",
+          "text_url": "http://opensource.org/licenses/mit-license.php",
+          "reference_url": "https://scancode-licensedb.aboutcode.org/mit",
+          "scancode_text_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.LICENSE",
+          "scancode_data_url": "https://github.com/nexB/scancode-toolkit/tree/develop/src/licensedcode/data/licenses/mit.yml",
+          "spdx_license_key": "MIT",
+          "spdx_url": "https://spdx.org/licenses/MIT",
+          "start_line": 244,
+          "end_line": 244,
+          "matched_rule": {
+            "identifier": "mit_14.RULE",
+            "license_expression": "mit",
+            "licenses": [
+              "mit"
+            ],
+            "is_license_text": false,
+            "is_license_notice": false,
+            "is_license_reference": true,
+            "is_license_tag": false,
+            "is_license_intro": false,
+            "matcher": "2-aho",
+            "rule_length": 2,
+            "matched_length": 2,
+            "match_coverage": 100.0,
+            "rule_relevance": 100
+          }
+        }
+      ],
+      "license_expressions": [
+        "mit"
+      ],
+      "percentage_of_license_text": 0.1,
+      "scan_errors": []
+    }
+  ]
+}

@@ -1,8 +1,12 @@
 package eu.fasten.analyzer.licensedetector;
 
+import com.google.common.collect.Sets;
 import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
 import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -42,8 +46,7 @@ public class LicenseDetectorTest {
             try {
                 recordContent = Files.readString(Paths.get(ClassLoader.getSystemResource(recordFilePath).toURI()));
             } catch (IOException | URISyntaxException e) {
-                System.err.print("Couldn't locate test file " + recordFilePath + ".");
-                fail();
+                fail("Couldn't locate the test file at " + recordFilePath + ": " + e.getMessage(), e.getCause());
             }
             assertNotNull(recordContent, "Test record content hasn't been retrieved.");
             assertFalse(recordContent.isEmpty(), "Test record shouldn't be empty."); // shouldn't be empty
@@ -99,7 +102,7 @@ public class LicenseDetectorTest {
                         "Retrieved pom.xml file is not the one the test expected."
                 );
             } catch (FileNotFoundException e) {
-                fail("Test has failed with the following exception: " + e.getMessage());
+                fail("Test has failed with the following exception: " + e.getMessage(), e.getCause());
             }
         });
     }
@@ -115,15 +118,15 @@ public class LicenseDetectorTest {
                                 // FIXME SPDX IDs
                                 new DetectedLicense(
                                         "Apache License, Version 2.0",
-                                        DetectedLicenseSource.LOCAL_POM, null
+                                        DetectedLicenseSource.LOCAL_POM
                                 ),
                                 new DetectedLicense(
                                         "GNU General Public License (GPL) version 2, or any later version",
-                                        DetectedLicenseSource.LOCAL_POM, null
+                                        DetectedLicenseSource.LOCAL_POM
                                 ),
                                 new DetectedLicense(
                                         "GPLv2 with Classpath exception",
-                                        DetectedLicenseSource.LOCAL_POM, null
+                                        DetectedLicenseSource.LOCAL_POM
                                 )
                         ).collect(Collectors.toCollection(HashSet::new))
                 ),
@@ -146,13 +149,78 @@ public class LicenseDetectorTest {
 
             try {
                 assertEquals(
-                        new LicenseDetectorPlugin.LicenseDetector().getOutboundLicenses(pomFile, null),
+                        new LicenseDetectorPlugin.LicenseDetector().getOutboundLicenses(pomFile),
                         expectedDetectedLicenses,
                         "Retrieved and expected outbound licenses do not match."
                 );
             } catch (RuntimeException | XmlPullParserException e) {
-                fail("Test has failed with the following exception: " + e.getMessage());
+                fail("Test has failed with the following exception: " + e.getMessage(), e.getCause());
             }
         });
+    }
+
+    @Test
+    public void givenScanResult_whenParsingScanResult_thenLicensesAreCorrectlyRetrieved() {
+
+        // Relative scan result file path -> expected number of scanned files
+        Map<String, Integer> inputToExpected = Map.ofEntries(
+                Map.entry("scancode-results/javacv.json", 89),
+                Map.entry("scancode-results/telegrambots.json", 30)
+        );
+
+        inputToExpected.forEach((relativeScanResultPath, expectedNumberScannedFiles) -> {
+
+            // Retrieving scan result file absolute path
+            String absoluteScanResultPath = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
+                    .getResource(relativeScanResultPath)).getFile()).getAbsolutePath();
+            assertNotNull(absoluteScanResultPath, "Test scan result file absolute path shouldn't be empty.");
+
+
+            try {
+
+                // Parsing the scan result
+                JSONArray fileLicenses =
+                        new LicenseDetectorPlugin.LicenseDetector().parseScanResult(absoluteScanResultPath);
+
+                // All test cases contain results with at least one file
+                assertNotNull(fileLicenses, "Test case should contain at least one scanned file.");
+
+                // Checking whether the number of scanned files is correct or not
+                assertEquals(expectedNumberScannedFiles, fileLicenses.length(),
+                        "Number of scanned files does not match with the expect value.");
+            } catch (IOException e) {
+                fail("Couldn't read the test scan result file: " + e.getMessage(), e.getCause());
+            } catch (JSONException e) {
+                fail("Coudln't retieve the root element of the test scan result file: " + e.getMessage(), e.getCause());
+            }
+        });
+    }
+
+    @Test
+    public void givenDetectedLicensesObject_whenPluginGeneratesJsonResult_thenJsonResultIsCorrectlyGenerated() {
+
+        // Input data
+        DetectedLicense outboundLicense = new DetectedLicense("license", DetectedLicenseSource.LOCAL_POM);
+        JSONArray files = new JSONArray().put(new JSONObject().put("path", "MyClass.java"));
+
+        // Expected JSON result
+        JSONArray expectedOutboundLicenses = new JSONArray().put(
+                new JSONObject().put("name", outboundLicense.getName()).put("source", outboundLicense.getSource()));
+        String expectedJsonResult = new JSONObject()
+                .put("outbound", expectedOutboundLicenses).put("files", files).toString();
+
+        // Pre-fill license detector with the licenses declared above
+        LicenseDetectorPlugin.LicenseDetector licenseDetector = new LicenseDetectorPlugin.LicenseDetector();
+        licenseDetector.detectedLicenses.setOutbound(Sets.newHashSet(outboundLicense));
+        licenseDetector.detectedLicenses.addFiles(files);
+
+        // Producing the output JSON
+        Optional<String> result = licenseDetector.produce();
+
+        // Must generate a result
+        assertTrue(result.isPresent(), "Plugin should have generated a JSON result, but it's empty.");
+
+        // Checking whether the JSON result is the expected one or not
+        assertEquals(expectedJsonResult.compareToIgnoreCase(result.get()), 0);
     }
 }

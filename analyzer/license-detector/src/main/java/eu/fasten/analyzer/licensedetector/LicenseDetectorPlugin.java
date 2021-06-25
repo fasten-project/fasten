@@ -9,6 +9,8 @@ import org.apache.maven.model.License;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -20,8 +22,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.regex.Pattern;
 
 
 public class LicenseDetectorPlugin extends Plugin {
@@ -77,7 +82,7 @@ public class LicenseDetectorPlugin extends Plugin {
                 // TODO Checking whether the repository has already been scanned (by querying the KB)
 
                 // Retrieving the outbound license
-                detectedLicenses.setOutbound(getOutboundLicenses(pomFile, coordinate));
+                detectedLicenses.setOutbound(getOutboundLicenses(pomFile));
                 logger.info(
                         detectedLicenses.getOutbound().size() + " outbound license" +
                                 (detectedLicenses.getOutbound().size() == 1 ? "" : "s") + " detected: " +
@@ -85,7 +90,15 @@ public class LicenseDetectorPlugin extends Plugin {
                 );
 
                 // Detecting inbound licenses by scanning the project
-                String resultPath = scanProject(repoPath);
+                String scanResultPath = scanProject(repoPath);
+
+                // Parsing the result
+                JSONArray fileLicenses = parseScanResult(scanResultPath);
+                if (fileLicenses != null && !fileLicenses.isEmpty()) {
+                    detectedLicenses.addFiles(fileLicenses);
+                } else {
+                    logger.warn("Scanner hasn't detected any licenses in " + scanResultPath + ".");
+                }
 
                 // TODO Unzipping the JAR to determine which files actually form the package
                 // TODO Use the `sourcesUrl` field in the `fasten.RepoCloner.out` input record
@@ -100,13 +113,11 @@ public class LicenseDetectorPlugin extends Plugin {
         /**
          * Retrieves all licenses declared in a `pom.xml` file.
          *
-         * @param pomFile    the `pom.xml` file to be analyzed.
-         * @param coordinate the Maven coordinate this `pom.xml` file belongs to.
+         * @param pomFile the `pom.xml` file to be analyzed.
          * @return the detected licenses.
          * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
          */
-        protected Set<DetectedLicense> getLicensesFromPomFile(File pomFile,
-                                                              Revision coordinate) throws XmlPullParserException {
+        protected Set<DetectedLicense> getLicensesFromPomFile(File pomFile) throws XmlPullParserException {
 
             // Result
             List<License> licenses;
@@ -133,8 +144,13 @@ public class LicenseDetectorPlugin extends Plugin {
                     Set<DetectedLicense> result = new HashSet<>(Collections.emptySet());
                     licenses.forEach(license -> result.add(new DetectedLicense(
                             license.getName(),
-                            DetectedLicenseSource.LOCAL_POM,
-                            coordinate)));
+                            DetectedLicenseSource.LOCAL_POM)));
+
+                    String licenseName = "Apache 2.0 license";
+                    if (Pattern.compile(Pattern.quote(licenseName), Pattern.CASE_INSENSITIVE).matcher("apache").find()) {
+
+                    }
+
                     return result;
                 }
             } catch (IOException e) {
@@ -152,16 +168,14 @@ public class LicenseDetectorPlugin extends Plugin {
         /**
          * Retrieves outbound licenses of the analyzed project.
          *
-         * @param pomFile    the repository `pom.xml` file.
-         * @param coordinate the Maven coordinate this `pom.xml` file belongs to.
+         * @param pomFile the repository `pom.xml` file.
          * @return a set of detected outbound licenses.
          * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
          */
-        protected Set<DetectedLicense> getOutboundLicenses(File pomFile,
-                                                           Revision coordinate) throws XmlPullParserException {
+        protected Set<DetectedLicense> getOutboundLicenses(File pomFile) throws XmlPullParserException {
 
             // Retrieving outbound licenses from the local `pom.xml` file.
-            Set<DetectedLicense> licenses = getLicensesFromPomFile(pomFile, coordinate);
+            Set<DetectedLicense> licenses = getLicensesFromPomFile(pomFile);
 
             // TODO Retrieving licenses from Maven central
 //            if (licenses.isEmpty()) { // in case no licenses have been found in the local `pom.xml` file
@@ -241,7 +255,7 @@ public class LicenseDetectorPlugin extends Plugin {
             // Retrieving all repository's pom files
             File[] pomFiles = repoFolder.listFiles((dir, name) -> name.equalsIgnoreCase("pom.xml"));
             if (pomFiles == null) {
-                throw new RuntimeException(repoPath + " does not denote a directory.");
+                throw new RuntimeException("Path " + repoPath + " does not denote a directory.");
             }
             logger.info("Found " + pomFiles.length + " pom.xml file" +
                     ((pomFiles.length == 1) ? "" : "s") + ": " + Arrays.toString(pomFiles));
@@ -280,9 +294,9 @@ public class LicenseDetectorPlugin extends Plugin {
          *
          * @param repoPath the repository path whose pom.xml file must be retrieved.
          * @return the path of the file containing the result.
-         * @throws IOException in case scancode couldn't start.
+         * @throws IOException          in case scancode couldn't start.
          * @throws InterruptedException in case this function couldn't wait for scancode to complete.
-         * @throws RuntimeException in case scancode returns with an error code != 0.
+         * @throws RuntimeException     in case scancode returns with an error code != 0.
          */
         protected String scanProject(String repoPath) throws IOException, InterruptedException, RuntimeException {
 
@@ -343,10 +357,42 @@ public class LicenseDetectorPlugin extends Plugin {
             return resultPath;
         }
 
+        /**
+         * Parses the scan result file and returns file licenses.
+         *
+         * @param scanResultPath the path of the file containing the scan results.
+         * @return the list of licenses that have been detected by scanning files.
+         * @throws IOException   in case the JSON scan result couldn't be read.
+         * @throws JSONException in case the root object of the JSON scan result couldn't have been retrieved.
+         */
+        protected JSONArray parseScanResult(String scanResultPath) throws IOException, JSONException {
+
+            try {
+                // Retrieving the root element of the scan result file
+                JSONObject root = new JSONObject(Files.readString(Paths.get(scanResultPath)));
+                if (root.isEmpty()) {
+                    throw new JSONException("Couldn't retrieve the root object of the JSON scan result file " +
+                            "at " + scanResultPath + ".");
+                }
+
+                // Returning file licenses
+                if (root.has("files") && !root.isNull("files")) {
+                    return root.getJSONArray("files");
+                }
+            } catch (IOException e) {
+                throw new IOException("Couldn't read the JSON scan result file at " + scanResultPath +
+                        ": " + e.getMessage(), e.getCause());
+            }
+
+            // In case nothing could have been found
+            return null;
+        }
+
         @Override
         public Optional<String> produce() {
             if (detectedLicenses == null ||
-                    (detectedLicenses.getOutbound().isEmpty() && detectedLicenses.getDependencies().isEmpty())) {
+                    (detectedLicenses.getOutbound().isEmpty() && detectedLicenses.getFiles().isEmpty())
+            ) {
                 return Optional.empty();
             } else {
                 return Optional.of(new JSONObject(detectedLicenses).toString());
@@ -392,6 +438,11 @@ public class LicenseDetectorPlugin extends Plugin {
 
         @Override
         public void freeResource() {
+        }
+
+        @Override
+        public long getMaxConsumeTimeout() {
+            return 30 * 60 * 1000; // 30 minutes
         }
     }
 }
