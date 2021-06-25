@@ -144,7 +144,7 @@ public class CGMerger {
             final var updatedNode = updateNode(node, offset, uris);
             for (final var successor : directedMerge.successors(node)) {
                 final var updatedSuccessor = updateNode(successor, offset, uris);
-                addCall(result, updatedNode, updatedSuccessor);
+                addEdge(result, updatedNode, updatedSuccessor);
             }
         }
         return result;
@@ -368,10 +368,7 @@ public class CGMerger {
         });
         
         for(LongLongPair edge: edges) {
-            addCall(result, edge.firstLong(), edge.secondLong());
-//            result.addVertex(edge.firstLong());
-//            result.addVertex(edge.secondLong());
-//            result.addEdge(edge.firstLong(), edge.secondLong());
+            addEdge(result, edge.firstLong(), edge.secondLong());
         }
         
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
@@ -707,7 +704,7 @@ public class CGMerger {
     }
 
 
-    private void addCall(final MergedDirectedGraph result,
+    private void addEdge(final MergedDirectedGraph result,
                          final long source, final long target) {
         result.addVertex(source);
         result.addVertex(target);
@@ -726,7 +723,7 @@ public class CGMerger {
         for (final var depGraph : depGraphs) {
             for (final var node : depGraph.nodes()) {
                 for (final var successor : depGraph.successors(node)) {
-                    addCall(result, node, successor);
+                    addEdge(result, node, successor);
                 }
             }
         }
