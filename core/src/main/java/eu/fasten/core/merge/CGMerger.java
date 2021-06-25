@@ -51,7 +51,7 @@ import com.google.common.collect.HashBiMap;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.FastenDefaultDirectedGraph;
+import eu.fasten.core.data.MergedDirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
@@ -103,12 +103,6 @@ public class CGMerger {
         final var graphAndDict = getDirectedGraphsAndTypeDict(dependencySet);
         this.ercgDependencySet = graphAndDict.getLeft();
         this.typeDictionary = graphAndDict.getRight();
-//            new HashMap<>(graphAndDict.getRight().size());
-//        graphAndDict.getRight().forEach((k1, v1) -> {
-//            var value = new HashMap<String, LongSet>(v1.size());
-//            v1.forEach((k2, v2) -> value.put(k2, new LongOpenHashSet(v2)));
-//            this.typeDictionary.put(k1, value);
-//        });
     }
 
     private Pair<List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>>, Map<String, Map<String,
@@ -142,7 +136,7 @@ public class CGMerger {
     }
 
     private DirectedGraph ercgToDirectedGraph(final ExtendedRevisionJavaCallGraph ercg, long offset) {
-        final var result = new FastenDefaultDirectedGraph();
+        final var result = new MergedDirectedGraph();
         final var uris = ercg.mapOfFullURIStrings();
         final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(ercg);
 
@@ -216,7 +210,7 @@ public class CGMerger {
             }
         }
         logger.warn("This cg does not exist in the dependency set.");
-        return new FastenDefaultDirectedGraph();
+        return new MergedDirectedGraph();
     }
 
     /**
@@ -355,14 +349,14 @@ public class CGMerger {
             return null;
         }
 
-        var result = new FastenDefaultDirectedGraph();
+        var result = new MergedDirectedGraph();
 
         final long startTime = System.currentTimeMillis();
 
         if (graphArcs == null) {
             return null;
         }
-        
+
         final Set<LongLongPair> edges = ConcurrentHashMap.newKeySet();
         graphArcs.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
             var sourceId = entry.getLongKey();
@@ -374,9 +368,10 @@ public class CGMerger {
         });
         
         for(LongLongPair edge: edges) {
-            addNode(result, callGraphData, edge.firstLong());
-            addNode(result, callGraphData, edge.secondLong());
-            result.addEdge(edge.firstLong(), edge.secondLong(), edge);
+            addCall(result, edge.firstLong(), edge.secondLong());
+//            result.addVertex(edge.firstLong());
+//            result.addVertex(edge.secondLong());
+//            result.addEdge(edge.firstLong(), edge.secondLong());
         }
         
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
@@ -712,10 +707,10 @@ public class CGMerger {
     }
 
 
-    private void addCall(final FastenDefaultDirectedGraph result,
+    private void addCall(final MergedDirectedGraph result,
                          final long source, final long target) {
-        result.addInternalNode(source);
-        result.addInternalNode(target);
+        result.addVertex(source);
+        result.addVertex(target);
         result.addEdge(source, target);
     }
 
@@ -726,7 +721,7 @@ public class CGMerger {
      * @return augmented graph
      */
     private DirectedGraph augmentGraphs(final List<DirectedGraph> depGraphs) {
-        var result = new FastenDefaultDirectedGraph();
+        var result = new MergedDirectedGraph();
 
         for (final var depGraph : depGraphs) {
             for (final var node : depGraph.nodes()) {
@@ -744,7 +739,7 @@ public class CGMerger {
      * @param result        resulting merged call graph
      * @param callGraphData initial call graph
      */
-    private void cloneNodesAndArcs(final FastenDefaultDirectedGraph result,
+    private void cloneNodesAndArcs(final MergedDirectedGraph result,
                                    final DirectedGraph callGraphData) {
         var internalNodes = callGraphData.nodes();
         internalNodes.removeAll(callGraphData.externalNodes());
@@ -778,21 +773,6 @@ public class CGMerger {
 	edges.add(LongLongPair.of(source, target));
     }
 
-
-
-    private void addNode(final FastenDefaultDirectedGraph result,
-	    final DirectedGraph callGraphData,
-	    final Long node) {
-	// TODO: JGraphT already checks whether the node is in the vertex set.
-	// If there's no difference between internal and external nodes can't we get rid of this?
-	if (!result.containsVertex(node)) {
-	    if (callGraphData.isInternal(node)) {
-		result.addInternalNode(node);
-	    } else {
-		result.addExternalNode(node);
-	    }
-	}
-    }
 
     /**
      * Fetches metadata of the nodes of first arg from database.

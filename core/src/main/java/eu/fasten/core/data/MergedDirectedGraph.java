@@ -3,7 +3,6 @@ package eu.fasten.core.data;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
-import it.unimi.dsi.fastutil.longs.LongLongMutablePair;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -11,18 +10,16 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 
 import java.io.Serializable;
 import java.util.stream.Collectors;
+import org.jgrapht.graph.DefaultEdge;
 
-public class FastenDefaultDirectedGraph extends DefaultDirectedGraph<Long, LongLongPair> implements DirectedGraph, Serializable {
+public class MergedDirectedGraph extends DefaultDirectedGraph<Long, LongLongPair> implements DirectedGraph, Serializable {
 
-    private final LongSet externalNodes;
-
-    public FastenDefaultDirectedGraph() {
-        this(LongLongPair.class);
+    public MergedDirectedGraph() {
+        this(MergedEdge.class);
     }
 
-    public FastenDefaultDirectedGraph(Class<? extends LongLongPair> edgeClass) {
+    public MergedDirectedGraph(Class<? extends LongLongPair> edgeClass) {
         super(edgeClass);
-        externalNodes = new LongOpenHashSet();
     }
 
     @Override
@@ -54,49 +51,45 @@ public class FastenDefaultDirectedGraph extends DefaultDirectedGraph<Long, LongL
 
     @Override
     public LongSet externalNodes() {
-        return this.externalNodes;
+        return LongSet.of();
     }
 
     @Override
     public boolean isInternal(long node) {
-        return this.containsVertex(node) && !isExternal(node);
+        return false;
     }
 
     @Override
     public boolean isExternal(long node) {
-        return externalNodes.contains(node);
+        return false;
     }
+
 
     @Override
     public LongIterator iterator() {
         return this.nodes().iterator();
     }
 
-    @Override
-    public LongLongPair addEdge(Long source, Long target) {
-	if (containsEdge(source, target)) return null;
-	LongLongPair edge = LongLongPair.of(source, target);
-        addEdge(source, target, edge);
-        return edge;
-    }
 
     public boolean addInternalNode(long node) {
         return addVertex(node);
     }
 
-    public boolean addExternalNode(long node) {
-        boolean result = addVertex(node);
-        if(result) {
-            externalNodes.add(node);
-        }
-        return result;
+    public boolean removeVertex(long node) {
+        return super.removeVertex(node);
     }
 
-    public boolean removeVertex(long node) {
-        boolean result = super.removeVertex(node);
-        if(result) {
-            externalNodes.remove(node);
+    public static class MergedEdge extends DefaultEdge implements LongLongPair {
+
+        @Override
+        public long leftLong() {
+            return (long) this.getSource();
         }
-        return result;
+
+        @Override
+        public long rightLong() {
+            return (long) this.getTarget();
+        }
+
     }
 }

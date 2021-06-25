@@ -18,6 +18,7 @@
 
 package eu.fasten.core.merge;
 
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;

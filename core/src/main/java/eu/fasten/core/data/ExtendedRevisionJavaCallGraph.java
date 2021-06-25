@@ -356,7 +356,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      * @return a directed graph based on the local identifiers of {@code erjcg}.
      */
     public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
-        FastenDefaultDirectedGraph dg = new FastenDefaultDirectedGraph();
+        MergedDirectedGraph dg = new MergedDirectedGraph();
         erjcg.getClassHierarchy().get(JavaScope.internalTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
         erjcg.getClassHierarchy().get(JavaScope.resolvedTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
         erjcg.getGraph().getResolvedCalls().keySet().forEach(p -> dg.addEdge((long) p.firstInt(),

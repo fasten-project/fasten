@@ -28,8 +28,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongArraySet;
+import it.unimi.dsi.fastutil.longs.LongLongImmutablePair;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
@@ -309,8 +308,17 @@ public class CGMergerTest {
                 ".simpleImport/Imported.targetMethod()%2Fjava.lang%2FVoidType");
         final var target2 = uris.inverse().get("fasten://mvn!Imported$1/merge.simpleImport/Imported" +
                 ".%3Cinit%3E()%2Fjava.lang%2FVoidType");
+
         assertEquals(Set.of(LongLongPair.of(source, target1), LongLongPair.of(source,
-                target2)), cg.edgeSet());
+                target2)), convertToImmutablePairs(cg.edgeSet()));
+    }
+
+    private Set<LongLongImmutablePair> convertToImmutablePairs(Set<LongLongPair> edgeSet) {
+        Set<LongLongImmutablePair> result = new HashSet<>();
+        for (LongLongPair edge : edgeSet) {
+            result.add(LongLongImmutablePair.of(edge.leftLong(), edge.rightLong()));
+        }
+        return result;
     }
 
     @Test
