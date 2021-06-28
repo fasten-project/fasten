@@ -44,6 +44,7 @@
         <module>vulnerability-cache-processor-plugin</module>
         <module>compliance-analyzer</module>
         <module>license-detector</module>
+        <module>license-feeder</module>
     </modules>
 
     <build>
