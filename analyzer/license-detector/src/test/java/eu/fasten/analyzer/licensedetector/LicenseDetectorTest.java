@@ -149,7 +149,7 @@ public class LicenseDetectorTest {
 
             try {
                 assertEquals(
-                        new LicenseDetectorPlugin.LicenseDetector().getOutboundLicenses(pomFile),
+                        new LicenseDetectorPlugin.LicenseDetector().getLicensesFromPomFile(pomFile),
                         expectedDetectedLicenses,
                         "Retrieved and expected outbound licenses do not match."
                 );
@@ -222,5 +222,39 @@ public class LicenseDetectorTest {
 
         // Checking whether the JSON result is the expected one or not
         assertEquals(expectedJsonResult.compareToIgnoreCase(result.get()), 0);
+    }
+
+    @Test
+    public void givenRepoUrls_whenRetrievingOutboundLicenseFromGitHub_thenOutboudLicenseIsCorrectlyRetrieved() {
+
+        // GitHub repo URL -> its SPDX license ID
+        Map<String, String> inputToExpected = Map.ofEntries(
+                Map.entry("HTTPS://GITHUB.COM/EsotericSoftware/reflectasm.git", "BSD-3-Clause"),
+                Map.entry("https://github.com/EsotericSoftware/reflectasm.git", "BSD-3-Clause"),
+                Map.entry("https://github.com/EsotericSoftware/reflectasm/", "BSD-3-Clause"),
+                Map.entry("https://github.com/EsotericSoftware/reflectasm", "BSD-3-Clause"),
+                Map.entry("http://github.com/EsotericSoftware/reflectasm", "BSD-3-Clause"),
+                Map.entry("github.com/EsotericSoftware/reflectasm", "BSD-3-Clause"),
+                Map.entry("https://github.com/remkop/picocli/tree/master", "Apache-2.0"),
+                Map.entry("https://github.com/remkop/picocli", "Apache-2.0"),
+                Map.entry("https://tomakehurst@github.com/tomakehurst/wiremock.git", "Apache-2.0")
+        );
+
+        inputToExpected.forEach((repoUrl, expectedLicense) -> {
+            try {
+
+                // Retrieving the outbound license from GitHub
+                DetectedLicense retrievedLicense =
+                        new LicenseDetectorPlugin.LicenseDetector().getLicenseFromGitHub(repoUrl);
+
+                // Checking whether the retrieved license is equal to the expected one or not
+                assertEquals(expectedLicense.compareToIgnoreCase(retrievedLicense.getName()), 0,
+                        "The outbound license retrieved from GitHub is not equal to the expected one.");
+            } catch (IllegalArgumentException | IOException e) { // not a valid GitHub repo URL
+                fail("Invalid GitHub URL: " + e.getMessage(), e.getCause());
+            } catch (@SuppressWarnings({"TryWithIdenticalCatches", "RedundantSuppression"}) RuntimeException e) {
+                fail("Could not contact GitHub API: " + e.getMessage(), e.getCause());
+            }
+        });
     }
 }
