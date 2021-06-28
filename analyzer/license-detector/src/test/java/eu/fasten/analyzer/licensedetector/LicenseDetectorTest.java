@@ -7,6 +7,7 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -22,6 +23,13 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class LicenseDetectorTest {
+
+    private LicenseDetectorPlugin.LicenseDetector licenseDetector;
+
+    @BeforeEach
+    public void setup() {
+        licenseDetector = new LicenseDetectorPlugin.LicenseDetector();
+    }
 
     @Test
     public void givenRepoClonerRecordContainingRepoPath_whenExtractingRepoPath_thenRepoPathIsExtracted() {
@@ -54,7 +62,7 @@ public class LicenseDetectorTest {
             // Extracting repository path
             assertEquals(
                     expectedExtractedRepoPath,
-                    new LicenseDetectorPlugin.LicenseDetector().extractRepoPath(recordContent),
+                    licenseDetector.extractRepoPath(recordContent),
                     "Extracted repository path did not match test record content."
             );
         });
@@ -87,18 +95,18 @@ public class LicenseDetectorTest {
 
             try {
                 assertTrue(
-                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).exists(),
+                        licenseDetector.retrievePomFile(repoAbsolutePath).exists(),
                         "pom.xml file does not exist."
                 );
 
                 assertTrue(
-                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).isFile(),
+                        licenseDetector.retrievePomFile(repoAbsolutePath).isFile(),
                         "Retrieved pom.xml file is a directory."
                 );
 
                 assertEquals(
                         expectedRetrievedPomFile,
-                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath),
+                        licenseDetector.retrievePomFile(repoAbsolutePath),
                         "Retrieved pom.xml file is not the one the test expected."
                 );
             } catch (FileNotFoundException e) {
@@ -149,7 +157,7 @@ public class LicenseDetectorTest {
 
             try {
                 assertEquals(
-                        new LicenseDetectorPlugin.LicenseDetector().getLicensesFromPomFile(pomFile),
+                        licenseDetector.getLicensesFromPomFile(pomFile),
                         expectedDetectedLicenses,
                         "Retrieved and expected outbound licenses do not match."
                 );
@@ -179,8 +187,7 @@ public class LicenseDetectorTest {
             try {
 
                 // Parsing the scan result
-                JSONArray fileLicenses =
-                        new LicenseDetectorPlugin.LicenseDetector().parseScanResult(absoluteScanResultPath);
+                JSONArray fileLicenses = licenseDetector.parseScanResult(absoluteScanResultPath);
 
                 // All test cases contain results with at least one file
                 assertNotNull(fileLicenses, "Test case should contain at least one scanned file.");
@@ -210,7 +217,6 @@ public class LicenseDetectorTest {
                 .put("outbound", expectedOutboundLicenses).put("files", files).toString();
 
         // Pre-fill license detector with the licenses declared above
-        LicenseDetectorPlugin.LicenseDetector licenseDetector = new LicenseDetectorPlugin.LicenseDetector();
         licenseDetector.detectedLicenses.setOutbound(Sets.newHashSet(outboundLicense));
         licenseDetector.detectedLicenses.addFiles(files);
 
@@ -244,8 +250,7 @@ public class LicenseDetectorTest {
             try {
 
                 // Retrieving the outbound license from GitHub
-                DetectedLicense retrievedLicense =
-                        new LicenseDetectorPlugin.LicenseDetector().getLicenseFromGitHub(repoUrl);
+                DetectedLicense retrievedLicense = licenseDetector.getLicenseFromGitHub(repoUrl);
 
                 // Checking whether the retrieved license is equal to the expected one or not
                 assertEquals(expectedLicense.compareToIgnoreCase(retrievedLicense.getName()), 0,
