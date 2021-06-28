@@ -105,10 +105,6 @@ public class LicenseDetectorPlugin extends Plugin {
                     logger.warn("Scanner hasn't detected any licenses in " + scanResultPath + ".");
                 }
 
-                // TODO Unzipping the JAR to determine which files actually form the package
-                // TODO Use the `sourcesUrl` field in the `fasten.RepoCloner.out` input record
-
-
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage(), e.getCause());
                 setPluginError(e);
