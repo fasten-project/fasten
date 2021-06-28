@@ -111,7 +111,11 @@ public class KnowledgeBaseConnector {
      */
     @PostConstruct
     public void setLimaUrl() {
-        KnowledgeBaseConnector.rcgBaseUrl = this.rcgUrl;
+        var url = this.rcgUrl;
+        if (!url.endsWith("/")) {
+            url += "/";
+        }
+        KnowledgeBaseConnector.rcgBaseUrl = url;
         logger.info("RCG base URL successfully set");
     }
 

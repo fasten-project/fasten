@@ -47,5 +47,5 @@ public interface PackageApiService {
 
     ResponseEntity<String> searchPackageNames(String packageName, int offset, int limit);
 
-    ResponseEntity<String> getERCGLink(String packageName, String version);
+    ResponseEntity<String> getERCGLink(String packageName, String version, String artifactRepo, Long date);
 }

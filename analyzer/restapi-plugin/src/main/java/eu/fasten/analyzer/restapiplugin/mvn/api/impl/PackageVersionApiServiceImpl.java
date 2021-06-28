@@ -38,7 +38,7 @@ public class PackageVersionApiServiceImpl implements PackageVersionApiService {
         var groupId = coordinate[0];
         var artifactId = coordinate[1];
         var version = coordinate[2];
-        String result = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+        String result = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                 artifactId.charAt(0), artifactId, artifactId, groupId, version);
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
