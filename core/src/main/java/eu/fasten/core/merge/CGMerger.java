@@ -358,7 +358,7 @@ public class CGMerger {
         }
 
         final Set<LongLongPair> edges = ConcurrentHashMap.newKeySet();
-        graphArcs.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
+        graphArcs.gid2NodeMetadata.long2ObjectEntrySet().stream().forEach(entry -> {
             var sourceId = entry.getLongKey();
             var nodeMetadata = entry.getValue();
             for (var receiver : nodeMetadata.receiverRecords) {
