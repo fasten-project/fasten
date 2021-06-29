@@ -366,11 +366,15 @@ public class CGMerger {
                 resolve(edges, arc, receiver.receiverSignature, callGraphData.isExternal(sourceId));
             }
         });
-        
+
+
         for(LongLongPair edge: edges) {
             addEdge(result, edge.firstLong(), edge.secondLong());
         }
-        
+        if (edges.size()!= result.edgeSet().size()) {
+            logger.error("There was a different in number of result edges and resolved edges");
+            throw new RuntimeException();
+        }
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
         logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
