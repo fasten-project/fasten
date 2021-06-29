@@ -720,20 +720,14 @@ public class CGMerger {
      */
     private DirectedGraph augmentGraphs(final List<DirectedGraph> depGraphs) {
         var result = new MergedDirectedGraph();
-
+        int numNode = 0;
         for (DirectedGraph depGraph : depGraphs) {
+            numNode += depGraph.numNodes();
             for (LongLongPair longLongPair : depGraph.edgeSet()) {
                 addEdge(result, longLongPair.firstLong(), longLongPair.secondLong());
             }
         }
-//        for (final var depGraph : depGraphs) {
-//            for (final var node : depGraph.nodes()) {
-//                for (final var successor : depGraph.successors(node)) {
-//                    addEdge(result, node, successor);
-//                }
-//            }
-//
-//        }
+        logger.info("Number of Augmented nodes: {}", numNode);
 
         return result;
     }
