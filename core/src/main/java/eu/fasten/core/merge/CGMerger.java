@@ -371,10 +371,7 @@ public class CGMerger {
         for(LongLongPair edge: edges) {
             addEdge(result, edge.firstLong(), edge.secondLong());
         }
-        if (edges.size()!= result.edgeSet().size()) {
-            logger.error("There was a different in number of result edges and resolved edges");
-            throw new RuntimeException();
-        }
+
         logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
                 .format((System.currentTimeMillis() - startTime) / 1000d));
         logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
@@ -724,13 +721,20 @@ public class CGMerger {
     private DirectedGraph augmentGraphs(final List<DirectedGraph> depGraphs) {
         var result = new MergedDirectedGraph();
 
-        for (final var depGraph : depGraphs) {
-            for (final var node : depGraph.nodes()) {
-                for (final var successor : depGraph.successors(node)) {
-                    addEdge(result, node, successor);
-                }
+        for (DirectedGraph depGraph : depGraphs) {
+            for (LongLongPair longLongPair : depGraph.edgeSet()) {
+                addEdge(result, longLongPair.firstLong(), longLongPair.secondLong());
             }
         }
+//        for (final var depGraph : depGraphs) {
+//            for (final var node : depGraph.nodes()) {
+//                for (final var successor : depGraph.successors(node)) {
+//                    addEdge(result, node, successor);
+//                }
+//            }
+//
+//        }
+
         return result;
     }
 
