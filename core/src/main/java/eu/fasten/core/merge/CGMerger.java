@@ -354,8 +354,6 @@ public class CGMerger {
 
         var result = new MergedDirectedGraph();
 
-        final long startTime = System.currentTimeMillis();
-
         if (graphArcs == null) {
             return null;
         }
@@ -375,10 +373,10 @@ public class CGMerger {
             addEdge(result, edge.firstLong(), edge.secondLong());
         }
 
-        logger.info("Stitched in {} seconds", new DecimalFormat("#0.000")
-                .format((System.currentTimeMillis() - startTime) / 1000d));
-        logger.info("Merged call graphs in {} seconds", new DecimalFormat("#0.000")
-                .format((System.currentTimeMillis() - totalTime) / 1000d));
+        logger.info("Merged call graphs in {} seconds, num node: {}, num edges: {}",
+            new DecimalFormat("#0.000").format(
+                (System.currentTimeMillis() - totalTime) / 1000d), result.numNodes(),
+            result.numArcs());
         return result;
     }
 
