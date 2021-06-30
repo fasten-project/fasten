@@ -140,13 +140,16 @@ public class CGMerger {
         final var uris = ercg.mapOfFullURIStrings();
         final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(ercg);
 
-        for (final var node : directedMerge.nodes()) {
-            final var updatedNode = updateNode(node, offset, uris);
-            for (final var successor : directedMerge.successors(node)) {
-                final var updatedSuccessor = updateNode(successor, offset, uris);
-                addEdge(result, updatedNode, updatedSuccessor);
+        for (Long node : directedMerge.nodes()) {
+            var uri = uris.get(node.intValue());
+
+            if (!allUris.containsValue(uri)) {
+                final var updatedNode = node + offset;
+                this.allUris.put(updatedNode, uri);
+                result.addVertex(updatedNode);
             }
         }
+
         return result;
     }
 

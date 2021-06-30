@@ -359,8 +359,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
         MergedDirectedGraph dg = new MergedDirectedGraph();
         erjcg.getClassHierarchy().get(JavaScope.internalTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
         erjcg.getClassHierarchy().get(JavaScope.resolvedTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
-        erjcg.getGraph().getResolvedCalls().keySet().forEach(p -> dg.addEdge((long) p.firstInt(),
-            (long) p.secondInt()));
 
         return dg;
     }
