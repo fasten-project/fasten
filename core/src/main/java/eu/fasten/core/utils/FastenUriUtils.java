@@ -93,7 +93,7 @@ public class FastenUriUtils {
 
 
         // Method: `.{method}(`
-        Pattern methodNamePattern = Pattern.compile("(?<=\\.(\\$?))([^,;./$]+?)(?=\\()");
+        Pattern methodNamePattern = Pattern.compile("(?<=\\.(\\$?))([^,;./]+?)(?=\\()");
         Matcher methodNameMatcher = methodNamePattern.matcher(partialFastenUri);
         if (!methodNameMatcher.find() || methodNameMatcher.group(0).isEmpty())
             throw new IllegalArgumentException(partialUriFormatException + "; failed to parse method name.");
