@@ -49,7 +49,7 @@ public class LicenseDetectorPlugin extends Plugin {
         /**
          * The topic this plugin consumes.
          */
-        protected String consumerTopic = "fasten.RepoCloner.out";
+        protected String consumerTopic = "fasten.SyncJava.out";
 
         /**
          * TODO
@@ -294,6 +294,9 @@ public class LicenseDetectorPlugin extends Plugin {
          */
         protected String extractRepoPath(String record) throws IllegalArgumentException {
             var payload = new JSONObject(record);
+            if (payload.has("fasten.RepoCloner.out")) {
+                payload = payload.getJSONObject("fasten.RepoCloner.out");
+            }
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
@@ -343,6 +346,9 @@ public class LicenseDetectorPlugin extends Plugin {
         @Nullable
         protected String extractRepoURL(String record) {
             var payload = new JSONObject(record);
+            if (payload.has("fasten.RepoCloner.out")) {
+                payload = payload.getJSONObject("fasten.RepoCloner.out");
+            }
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
