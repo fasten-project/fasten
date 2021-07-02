@@ -26,6 +26,8 @@ import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.*;
+import org.opalj.br.Annotation;
+import org.opalj.br.ElementValuePair;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
 import org.opalj.br.analyses.Project;
@@ -158,6 +160,19 @@ public class PartialCallGraph {
         objs.sort(Comparator.comparing(Object::toString));
 
         for (final var classFile : objs) {
+            var annotations = JavaConverters.asJavaIterable(classFile.annotations());
+            for (Annotation annotation : annotations) {
+                final var annotationPackage =
+                    OPALMethod.getPackageName(annotation.annotationType());
+                final var annotationClass = OPALMethod.getClassName(annotation.annotationType());
+
+                final var values = JavaConverters.asJavaIterable(annotation.elementValuePairs());
+                for (ElementValuePair value : values) {
+                    final var valuePackage = OPALMethod.getPackageName(value.value().valueType());
+                    final var valueClass = OPALMethod.getClassName(value.value().valueType());
+                    final var valueContent = value.value().toJava();
+                }
+            }
             final var currentClass = classFile.thisType();
             final var methods = getMethodsMap(methodNum.get(),
                     JavaConverters.asJavaIterable(classFile.methods()));

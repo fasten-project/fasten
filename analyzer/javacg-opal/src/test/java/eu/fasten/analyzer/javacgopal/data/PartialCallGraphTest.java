@@ -74,6 +74,14 @@ class PartialCallGraphTest {
     }
 
     @Test
+    void testAnnotations() throws OPALException {
+        PartialCallGraph annotatedClass = new PartialCallGraph(new CallGraphConstructor(
+            new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource("PackageApi.class")).getFile()), "", "CHA"),
+            true);
+    }
+
+    @Test
     void getClassHierarchy() {
         var cha = singleCallCG.getClassHierarchy();
 
