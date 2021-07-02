@@ -161,16 +161,18 @@ public class PartialCallGraph {
 
         for (final var classFile : objs) {
             var annotations = JavaConverters.asJavaIterable(classFile.annotations());
-            for (Annotation annotation : annotations) {
-                final var annotationPackage =
-                    OPALMethod.getPackageName(annotation.annotationType());
-                final var annotationClass = OPALMethod.getClassName(annotation.annotationType());
+            if (annotations != null) {
+                for (Annotation annotation : annotations) {
+                    final var annotationPackage =
+                        OPALMethod.getPackageName(annotation.annotationType());
+                    final var annotationClass = OPALMethod.getClassName(annotation.annotationType());
 
-                final var values = JavaConverters.asJavaIterable(annotation.elementValuePairs());
-                for (ElementValuePair value : values) {
-                    final var valuePackage = OPALMethod.getPackageName(value.value().valueType());
-                    final var valueClass = OPALMethod.getClassName(value.value().valueType());
-                    final var valueContent = value.value().toJava();
+                    final var values = JavaConverters.asJavaIterable(annotation.elementValuePairs());
+                    for (ElementValuePair value : values) {
+                        final var valuePackage = OPALMethod.getPackageName(value.value().valueType());
+                        final var valueClass = OPALMethod.getClassName(value.value().valueType());
+                        final var valueContent = value.value().toJava();
+                    }
                 }
             }
             final var currentClass = classFile.thisType();
