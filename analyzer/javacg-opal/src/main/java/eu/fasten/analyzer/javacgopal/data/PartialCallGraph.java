@@ -171,11 +171,16 @@ public class PartialCallGraph {
 
                     var valueList = new ArrayList<Pair<String, String>>();
                     final var values = JavaConverters.asJavaIterable(annotation.elementValuePairs());
-                    for (ElementValuePair value : values) {
-                        final var valuePackage = OPALMethod.getPackageName(value.value().valueType());
-                        final var valueClass = OPALMethod.getClassName(value.value().valueType());
-                        final var valueContent = value.value().toJava();
-                        valueList.add(Pair.of(valuePackage + "/" + valueClass, valueContent));
+                    if (values != null) {
+                        for (ElementValuePair value : values) {
+                            try {
+                                final var valuePackage = OPALMethod.getPackageName(value.value().valueType());
+                                final var valueClass = OPALMethod.getClassName(value.value().valueType());
+                                final var valueContent = value.value().toJava();
+                                valueList.add(Pair.of(valuePackage + "/" + valueClass, valueContent));
+                            } catch (NullPointerException ignored) {
+                            }
+                        }
                     }
                     opalAnnotations.put(annotationPackage + "/" + annotationClass, valueList);
                 }

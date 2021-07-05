@@ -14,7 +14,7 @@ public class JSONUtils {
         var result = new StringBuilder("{");
         appendArtifactInformation(result, coordinate, graph.numNodes());
         appendGraph(result, graph);
-        if (result.charAt(result.length()-1) == ',') {
+        if (result.charAt(result.length() - 1) == ',') {
             result.setLength(result.length() - 1);
         }
         result.append("}");
@@ -24,9 +24,9 @@ public class JSONUtils {
     /**
      * Appends general information of the revision to the beginning of the StringBuilder.
      *
-     * @param coordinate  the object to extract the information from.
-     * @param numNodes    number of nodes in the graph
-     * @param result the StringBuilder to append the information.
+     * @param coordinate the object to extract the information from.
+     * @param numNodes   number of nodes in the graph
+     * @param result     the StringBuilder to append the information.
      */
     private static void appendArtifactInformation(StringBuilder result,
                                                   final MavenCoordinate coordinate, int numNodes) {
@@ -74,7 +74,7 @@ public class JSONUtils {
         if (erjcg.timestamp >= 0) {
             appendKeyValue(result, "timestamp", erjcg.timestamp, true);
         }
-        if (result.charAt(result.length()-1) == ',') {
+        if (result.charAt(result.length() - 1) == ',') {
             result.setLength(result.length() - 1);
         }
         result.append("}");
@@ -115,8 +115,9 @@ public class JSONUtils {
     /**
      * Removes the last character of StringBuilder if the second parameter is not zero.
      * This method helps to remove extra "," from the end of multiple element lists.
+     *
      * @param result the StringBuilder to remove from.
-     * @param size if the size of the list is zero there is no "," to be removed.
+     * @param size   if the size of the list is zero there is no "," to be removed.
      */
     private static void removeLastIfNotEmpty(StringBuilder result,
                                              int size) {
@@ -128,7 +129,7 @@ public class JSONUtils {
     /**
      * Appends call information of the specified call to the StringBuilder.
      *
-     * @param entry the call Map Entry to extract the information from.
+     * @param entry  the call Map Entry to extract the information from.
      * @param result the StringBuilder to append the information.
      */
     private static void appendCall(StringBuilder result,
@@ -143,7 +144,7 @@ public class JSONUtils {
      * Appends metadata information of the callable to the StringBuilder.
      *
      * @param metadata of the call Map to extract the information from.
-     * @param result the StringBuilder to append the information.
+     * @param result   the StringBuilder to append the information.
      */
     private static void appendCallableMetadataJson(StringBuilder result,
                                                    final Map<Object, Object> metadata) {
@@ -163,7 +164,7 @@ public class JSONUtils {
      * @param result the StringBuilder to append information.
      */
     private static void appendCha(StringBuilder result, final Map<JavaScope,
-        Map<String, JavaType>> cha) {
+            Map<String, JavaType>> cha) {
         result.append("\"cha\":{\"externalTypes\":{");
         for (final var entry : cha.get(JavaScope.externalTypes).entrySet()) {
             appendType(result, entry.getKey(), entry.getValue());
@@ -206,10 +207,10 @@ public class JSONUtils {
         appendKeyValue(result, "sourceFile", type.getSourceFileName());
         result.append("\"superClasses\":[");
         appendSupers(result, type.getSuperClasses());
-        result.append("]},");
+        result.append("],");
         result.append("\"annotations\":{");
         appendAnnotations(result, type.getAnnotations());
-        result.append("},");
+        result.append("}},");
     }
 
     /**
@@ -226,23 +227,31 @@ public class JSONUtils {
 
     }
 
-    public static void appendAnnotations(StringBuilder result, final Map<String,
-            List<Pair<String, String>>> annotations) {
+    /**
+     * Appends information of the annotations to the StringBuilder.
+     *
+     * @param result      the StringBuilder to append the information.
+     * @param annotations annotations information
+     */
+    public static void appendAnnotations(StringBuilder result,
+                                         final Map<String, List<Pair<String, String>>> annotations) {
         for (var annotationEntry : annotations.entrySet()) {
             result.append(quote(annotationEntry.getKey())).append(":[");
             for (var annotationValue : annotationEntry.getValue()) {
-                result.append("[").append(quote(annotationValue.getLeft())).append(",").append(quote(annotationValue.getRight())).append("],");
+                result.append("[").append(quote(annotationValue.getLeft())).append(",")
+                        .append(quote(annotationValue.getRight().replaceAll("\"", "\\\\\""))).append("],");
             }
+            removeLastIfNotEmpty(result, annotationEntry.getValue().size());
             result.append("],");
         }
-        removeLastIfNotEmpty(result, annotations.size());
+        removeLastIfNotEmpty(result, annotations.entrySet().size());
     }
 
     /**
      * Appends methods of a type to the StringBuilder.
      *
      * @param methods Map of nodes to extract the information.
-     * @param result the StringBuilder to append the information.
+     * @param result  the StringBuilder to append the information.
      */
     private static void appendMethods(StringBuilder result,
                                       final Map<Integer, JavaNode> methods) {
@@ -262,18 +271,18 @@ public class JSONUtils {
     /**
      * Appends metadata of a node to the StringBuilder.
      *
-     * @param map Map of metadata to extract the information.
+     * @param map    Map of metadata to extract the information.
      * @param result the StringBuilder to append the information.
      */
     private static void appendMetadata(StringBuilder result, final Map<?, ?> map) {
         for (final var entry : map.entrySet()) {
             if (entry.getValue() instanceof String) {
                 result.append("\"").append(entry.getKey()).append("\":\"").append(entry.getValue())
-                    .append(
-                        "\",");
+                        .append(
+                                "\",");
             } else {
                 result.append("\"").append(entry.getKey()).append("\":").append(entry.getValue())
-                    .append(",");
+                        .append(",");
             }
         }
         removeLastIfNotEmpty(result, map.size());
@@ -294,8 +303,8 @@ public class JSONUtils {
      * list of key values and the value is a Number.
      *
      * @param result StringBuilder to append to the key value.
-     * @param key key String.
-     * @param value Number value.
+     * @param key    key String.
+     * @param value  Number value.
      */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final Number value) {
@@ -306,8 +315,8 @@ public class JSONUtils {
      * Appends a key value to a given StringBuilder assuming the value is a Number.
      *
      * @param result StringBuilder to append to the key value.
-     * @param key key String.
-     * @param value Number value.
+     * @param key    key String.
+     * @param value  Number value.
      */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final Number value, final boolean lastKey) {
@@ -322,8 +331,8 @@ public class JSONUtils {
      * list of key values and the value is a String.
      *
      * @param result StringBuilder to append to the key value.
-     * @param key String key.
-     * @param value String value.
+     * @param key    String key.
+     * @param value  String value.
      */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final String value) {
@@ -334,8 +343,8 @@ public class JSONUtils {
      * Appends a key value to a given StringBuilder assuming the value is a String.
      *
      * @param result StringBuilder to append to the key value.
-     * @param key String key.
-     * @param value String value.
+     * @param key    String key.
+     * @param value  String value.
      */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final String value, final boolean lastKey) {
