@@ -21,7 +21,8 @@
         "final": false,
         "superInterfaces": [],
         "sourceFile": "",
-        "superClasses": []
+        "superClasses": [],
+        "annotations": {}
       }
     },
     "internalTypes": {
@@ -54,7 +55,8 @@
         "sourceFile": "B.java",
         "superClasses": [
           "/java.lang/Object"
-        ]
+        ],
+        "annotations": {}
       }
     },
     "resolvedTypes": {

@@ -30,6 +30,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -131,8 +132,24 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             var access = getAccess(type.getAccess());
             var superClasses = JavaType.toListOfString(type.getSuperClasses()).stream().map(namespaceMap::get).toArray(Long[]::new);
             var superInterfaces = JavaType.toListOfString(type.getSuperInterfaces()).stream().map(namespaceMap::get).toArray(Long[]::new);
+            var annotations = extractAnnotationsFromType(type);
             return metadataDao.insertModule(packageVersionId, namespaceMap.get(fastenUri.toString()),
-                    isFinal, access, superClasses, superInterfaces, null, null);
+                    isFinal, access, superClasses, superInterfaces, null, annotations);
+        }
+
+        private JSONObject extractAnnotationsFromType(JavaType type) {
+            var annotationsJson = new JSONObject();
+            for (var annotationEntry : type.getAnnotations().entrySet()) {
+                var jArray = new JSONArray();
+                for (var annotationValue : annotationEntry.getValue()) {
+                    var jValue = new JSONArray();
+                    jValue.put(annotationValue.getLeft());
+                    jValue.put(annotationValue.getRight());
+                    jArray.put(jValue);
+                }
+                annotationsJson.put(annotationEntry.getKey(), jArray);
+            }
+            return annotationsJson;
         }
 
         private List<CallablesRecord> extractCallablesFromType(JavaType type,

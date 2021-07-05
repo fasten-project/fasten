@@ -28,10 +28,8 @@ import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Objects;
+import java.util.*;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -88,12 +86,16 @@ class OPALTypeTest {
         var superInterfaces = new ArrayList<ObjectType>();
         superInterfaces.add(superInterface);
 
-        var type = new OPALType(methods, superClasses, superInterfaces, "source.java", "", false);
+        var annotations = new HashMap<String, List<Pair<String, String>>>();
+        annotations.put("org/springframework/boot/RestController", new ArrayList<>());
+
+        var type = new OPALType(methods, superClasses, superInterfaces, "source.java", "", false, annotations);
 
         assertEquals("source.java", type.getSourceFileName());
         assertEquals(123, type.getMethods().get(method));
         assertEquals(superClass, type.getSuperClasses().peek());
         assertEquals(superInterface, type.getSuperInterfaces().get(0));
+        assertEquals(annotations, type.getAnnotations());
     }
 
     @Test
@@ -215,7 +217,7 @@ class OPALTypeTest {
         var methods = new HashMap<Method, Integer>();
         methods.put(method, 123);
 
-        var opalType = new OPALType(methods, null, new ArrayList<>(), "source.java", "", false);
+        var opalType = new OPALType(methods, null, new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var resultType = OPALType.getType(opalType, type);
 
@@ -253,7 +255,7 @@ class OPALTypeTest {
         var interfaces = new ArrayList<ObjectType>();
         interfaces.add(type);
 
-        var opalType = new OPALType(methods, chain, interfaces, "source.java", "", false);
+        var opalType = new OPALType(methods, chain, interfaces, "source.java", "", false, new HashMap<>());
 
         var resultType = OPALType.getType(opalType, type);
 

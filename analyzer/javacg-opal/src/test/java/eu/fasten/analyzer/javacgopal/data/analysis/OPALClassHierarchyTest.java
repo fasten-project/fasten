@@ -111,7 +111,7 @@ class OPALClassHierarchyTest {
         var methodsInternal = new HashMap<Method, Integer>();
         methodsInternal.put(method, 123);
 
-        var opalTypeInternal = new OPALType(methodsInternal, null, new ArrayList<>(), "source.java", "", false);
+        var opalTypeInternal = new OPALType(methodsInternal, null, new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internals = Map.of(type, opalTypeInternal);
         var externals = Map.of(type, Map.of(declaredMethod, 4));
@@ -216,7 +216,7 @@ class OPALClassHierarchyTest {
         methods.put(source, 123);
         methods.put(target, 234);
 
-        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -247,7 +247,7 @@ class OPALClassHierarchyTest {
         var methods = new HashMap<Method, Integer>();
         methods.put(source, 123);
 
-        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -278,7 +278,7 @@ class OPALClassHierarchyTest {
         var methods = new HashMap<Method, Integer>();
         methods.put(target, 123);
 
-        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -341,7 +341,7 @@ class OPALClassHierarchyTest {
         methods.put(source, 123);
         methods.put(target, 234);
 
-        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -380,7 +380,7 @@ class OPALClassHierarchyTest {
         var target = Mockito.mock(Method.class);
         Mockito.when(target.declaringClassFile()).thenReturn(classFile);
 
-        var type = new OPALType(new HashMap<>(), new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(new HashMap<>(), new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -422,7 +422,7 @@ class OPALClassHierarchyTest {
         var methods = new HashMap<Method, Integer>();
         methods.put(target, 6);
 
-        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);

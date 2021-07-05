@@ -154,18 +154,22 @@ public class JavaType {
         this.access = type.getString("access");
         this.isFinal = type.getBoolean("final");
 
-        var annotations = new HashMap<String, List<Pair<String, String>>>();
-        var annotationsJson = type.getJSONObject("annotations");
-        for (var annotation : annotationsJson.keySet()) {
-            var valueList = new ArrayList<Pair<String, String>>();
-            var valueArray = annotationsJson.optJSONArray(annotation);
-            for (int i = 0; i < valueArray.length(); i++) {
-                var value = valueArray.getJSONArray(i);
-                valueList.add(Pair.of(value.getString(0), value.getString(1)));
+        if (type.has("annotations")) {
+            var annotations = new HashMap<String, List<Pair<String, String>>>();
+            var annotationsJson = type.getJSONObject("annotations");
+            for (var annotation : annotationsJson.keySet()) {
+                var valueList = new ArrayList<Pair<String, String>>();
+                var valueArray = annotationsJson.optJSONArray(annotation);
+                for (int i = 0; i < valueArray.length(); i++) {
+                    var value = valueArray.getJSONArray(i);
+                    valueList.add(Pair.of(value.getString(0), value.getString(1)));
+                }
+                annotations.put(annotation, valueList);
             }
-            annotations.put(annotation, valueList);
+            this.annotations = annotations;
+        } else {
+            this.annotations = new HashMap<>();
         }
-        this.annotations = annotations;
     }
 
     public String getUri() {
