@@ -26,6 +26,7 @@ import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.*;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opalj.br.Annotation;
 import org.opalj.br.ElementValuePair;
 import org.opalj.br.Method;
@@ -159,6 +160,7 @@ public class PartialCallGraph {
         final var objs = Lists.newArrayList(JavaConverters.asJavaIterable(project.allClassFiles()));
         objs.sort(Comparator.comparing(Object::toString));
 
+        var opalAnnotations = new HashMap<String, List<Pair<String, String>>>();
         for (final var classFile : objs) {
             var annotations = JavaConverters.asJavaIterable(classFile.annotations());
             if (annotations != null) {
@@ -167,12 +169,15 @@ public class PartialCallGraph {
                         OPALMethod.getPackageName(annotation.annotationType());
                     final var annotationClass = OPALMethod.getClassName(annotation.annotationType());
 
+                    var valueList = new ArrayList<Pair<String, String>>();
                     final var values = JavaConverters.asJavaIterable(annotation.elementValuePairs());
                     for (ElementValuePair value : values) {
                         final var valuePackage = OPALMethod.getPackageName(value.value().valueType());
                         final var valueClass = OPALMethod.getClassName(value.value().valueType());
                         final var valueContent = value.value().toJava();
+                        valueList.add(Pair.of(valuePackage + "/" + valueClass, valueContent));
                     }
+                    opalAnnotations.put(annotationPackage + "/" + annotationClass, valueList);
                 }
             }
             final var currentClass = classFile.thisType();
@@ -186,7 +191,8 @@ public class PartialCallGraph {
                     classFile.sourceFile().isDefined()
                             ? filepath + "/" + classFile.sourceFile().get()
                             : "NotFound",
-                    classFile.isPublic() ? "public" : "packagePrivate", classFile.isFinal());
+                    classFile.isPublic() ? "public" : "packagePrivate", classFile.isFinal(),
+                    opalAnnotations);
 
             result.put(currentClass, type);
             methodNum.addAndGet(methods.size());

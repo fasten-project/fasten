@@ -6,6 +6,7 @@ import java.util.Map;
 
 import eu.fasten.core.data.opal.MavenCoordinate;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class JSONUtils {
 
@@ -206,7 +207,9 @@ public class JSONUtils {
         result.append("\"superClasses\":[");
         appendSupers(result, type.getSuperClasses());
         result.append("]},");
-
+        result.append("\"annotations\":{");
+        appendAnnotations(result, type.getAnnotations());
+        result.append("},");
     }
 
     /**
@@ -221,6 +224,18 @@ public class JSONUtils {
         }
         removeLastIfNotEmpty(result, supers.size());
 
+    }
+
+    public static void appendAnnotations(StringBuilder result, final Map<String,
+            List<Pair<String, String>>> annotations) {
+        for (var annotationEntry : annotations.entrySet()) {
+            result.append(quote(annotationEntry.getKey())).append(":[");
+            for (var annotationValue : annotationEntry.getValue()) {
+                result.append("[").append(quote(annotationValue.getLeft())).append(",").append(quote(annotationValue.getRight())).append("],");
+            }
+            result.append("],");
+        }
+        removeLastIfNotEmpty(result, annotations.size());
     }
 
     /**

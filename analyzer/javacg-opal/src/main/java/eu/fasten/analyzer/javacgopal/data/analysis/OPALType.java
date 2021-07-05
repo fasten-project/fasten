@@ -50,6 +50,7 @@ public class OPALType {
     private final List<ObjectType> superInterfaces;
     private final String access;
     private final boolean isFinal;
+    private final Map<String, List<Pair<String, String>>> annotations;
 
     /**
      * Creates {@link OPALType} for the given data.
@@ -61,13 +62,15 @@ public class OPALType {
      */
     public OPALType(final Map<Method, Integer> methods, final LinkedList<ObjectType> superClasses,
                     final List<ObjectType> superInterfaces, final String sourceFileName,
-                    final String access, final boolean isFinal) {
+                    final String access, final boolean isFinal,
+                    final Map<String, List<Pair<String, String>>> annotations) {
         this.methods = methods;
         this.superClasses = superClasses;
         this.superInterfaces = superInterfaces;
         this.sourceFileName = sourceFileName;
         this.access = access;
         this.isFinal = isFinal;
+        this.annotations = annotations;
     }
 
     public Map<Method, Integer> getMethods() {
@@ -84,6 +87,10 @@ public class OPALType {
 
     public String getSourceFileName() {
         return sourceFileName;
+    }
+
+    public Map<String, List<Pair<String, String>>> getAnnotations() {
+        return annotations;
     }
 
     /**
@@ -111,7 +118,7 @@ public class OPALType {
 		return Map.of(uri,
                 new JavaType(uri, "", toURIDeclaredMethods(methods), new HashMap<>(),superClassesURIs,
                         toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass)),
-                        "", false));
+                        "", false, new HashMap<>()));
     }
 
     /**
@@ -129,13 +136,12 @@ public class OPALType {
         } else {
             superClassesURIs = new LinkedList<>();
         }
-
         final var methodMaps = getMethodMaps(type.methods);
         final String uri = OPALMethod.getTypeURI(klass).toString();
 		return MutablePair.of(uri,
             new JavaType(uri, type.sourceFileName, methodMaps.getRight(),
                 methodMaps.getLeft(), superClassesURIs, toURIInterfaces(type.superInterfaces),
-                type.access, type.isFinal));
+                type.access, type.isFinal, type.getAnnotations()));
     }
 
     /**

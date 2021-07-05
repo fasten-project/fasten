@@ -18,29 +18,26 @@
 
 package eu.fasten.core.data;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 /**
  * Each type is a class or an interface.
  */
 public class JavaType {
 
-	/** The FASTEN URI of this Java type. */
-	private final String uri;
+    /**
+     * The FASTEN URI of this Java type.
+     */
+    private final String uri;
 
     /**
      * The source file name of this type.
@@ -78,9 +75,12 @@ public class JavaType {
      */
     private final boolean isFinal;
 
+    private final Map<String, List<Pair<String, String>>> annotations;
+
     /**
      * Creates {@link JavaType} for the given data.
-     *  @param sourceFile      the name of this type's source file
+     *
+     * @param sourceFile      the name of this type's source file
      * @param methods         a map of methods in this type with their indexed by their ids.
      * @param defineds        a map of all defined methods of a type to their signature.
      * @param superClasses    classes that this type extends.
@@ -92,18 +92,20 @@ public class JavaType {
                     final Map<String, JavaNode> defineds,
                     final LinkedList<FastenURI> superClasses,
                     final List<FastenURI> superInterfaces, final String access,
-                    final boolean isFinal) {
+                    final boolean isFinal, Map<String, List<Pair<String, String>>> annotations) {
         this.uri = uri;
         this.sourceFileName = sourceFile;
         this.methods = methods;
         this.javaNodes = new Object2IntOpenHashMap<>();
-        methods.forEach((x, y) -> javaNodes.put(y, x));;
+        methods.forEach((x, y) -> javaNodes.put(y, x));
+        ;
         javaNodes.defaultReturnValue(-1);
         this.definedMethods = defineds;
         this.superClasses = superClasses;
         this.superInterfaces = superInterfaces;
         this.access = access;
         this.isFinal = isFinal;
+        this.annotations = annotations;
     }
 
     /**
@@ -127,10 +129,10 @@ public class JavaType {
             final var metadata = nodeJson.getJSONObject("metadata");
             final var node = new JavaNode(FastenURI.create(nodeJson.getString("uri")), metadata.toMap());
             final int k = Integer.parseInt(methodKey);
-			this.methods.put(k, node);
+            this.methods.put(k, node);
             this.javaNodes.put(node, k);
             if (!metadata.isEmpty()) {
-                if (metadata.getBoolean("defined")){
+                if (metadata.getBoolean("defined")) {
                     definedMethods.put(node.getSignature(), node);
                 }
             }
@@ -151,12 +153,25 @@ public class JavaType {
         }
         this.access = type.getString("access");
         this.isFinal = type.getBoolean("final");
+
+        var annotations = new HashMap<String, List<Pair<String, String>>>();
+        var annotationsJson = type.getJSONObject("annotations");
+        for (var annotation : annotationsJson.keySet()) {
+            var valueList = new ArrayList<Pair<String, String>>();
+            var valueArray = annotationsJson.optJSONArray(annotation);
+            for (int i = 0; i < valueArray.length(); i++) {
+                var value = valueArray.getJSONArray(i);
+                valueList.add(Pair.of(value.getString(0), value.getString(1)));
+            }
+            annotations.put(annotation, valueList);
+        }
+        this.annotations = annotations;
     }
 
     public String getUri() {
         return uri;
     }
-    
+
     public String getSourceFileName() {
         return sourceFileName;
     }
@@ -181,6 +196,10 @@ public class JavaType {
         return isFinal;
     }
 
+    public Map<String, List<Pair<String, String>>> getAnnotations() {
+        return annotations;
+    }
+
     /**
      * Returns the integer associated to the given JavaNode.
      *
@@ -190,7 +209,7 @@ public class JavaType {
     public int getMethodKey(final JavaNode node) {
         return javaNodes.getInt(node);
     }
-    
+
     /**
      * Puts a JavaNode to the list of methods of this {@link JavaType}.
      *
@@ -260,70 +279,76 @@ public class JavaType {
         result.put("access", this.access);
         result.put("final", this.isFinal);
 
+        var annotationsJson = new JSONObject();
+        for (var annotationEntry : this.annotations.entrySet()) {
+            var jArray = new JSONArray();
+            for (var annotationValue : annotationEntry.getValue()) {
+                var jValue = new JSONArray();
+                jValue.put(annotationValue.getLeft());
+                jValue.put(annotationValue.getRight());
+                jArray.put(jValue);
+            }
+            annotationsJson.put(annotationEntry.getKey(), jArray);
+        }
+        result.put("annotations", annotationsJson);
+
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        JavaType javaType = (JavaType) o;
+
+        if (isFinal != javaType.isFinal) return false;
+        if (!Objects.equals(uri, javaType.uri)) return false;
+        if (!Objects.equals(sourceFileName, javaType.sourceFileName))
+            return false;
+        if (!Objects.equals(methods, javaType.methods))
+            return false;
+        if (!Objects.equals(javaNodes, javaType.javaNodes))
+            return false;
+        if (!Objects.equals(superClasses, javaType.superClasses))
+            return false;
+        if (!Objects.equals(definedMethods, javaType.definedMethods))
+            return false;
+        if (!Objects.equals(superInterfaces, javaType.superInterfaces))
+            return false;
+        if (!Objects.equals(access, javaType.access))
+            return false;
+        return Objects.equals(annotations, javaType.annotations);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = uri != null ? uri.hashCode() : 0;
+        result = 31 * result + (sourceFileName != null ? sourceFileName.hashCode() : 0);
+        result = 31 * result + (methods != null ? methods.hashCode() : 0);
+        result = 31 * result + (javaNodes != null ? javaNodes.hashCode() : 0);
+        result = 31 * result + (superClasses != null ? superClasses.hashCode() : 0);
+        result = 31 * result + (definedMethods != null ? definedMethods.hashCode() : 0);
+        result = 31 * result + (superInterfaces != null ? superInterfaces.hashCode() : 0);
+        result = 31 * result + (access != null ? access.hashCode() : 0);
+        result = 31 * result + (isFinal ? 1 : 0);
+        result = 31 * result + (annotations != null ? annotations.hashCode() : 0);
         return result;
     }
 
     @Override
     public String toString() {
-        return "JavaType{"
-                + "sourceFileName='" + sourceFileName + '\''
-                + ", methods=" + methods
-                + ", superClasses=" + superClasses
-                + ", superInterfaces=" + superInterfaces
-                + ", access=" + access
-                + ", final=" + isFinal
-                + '}';
+        return "JavaType{" +
+                "uri='" + uri + '\'' +
+                ", sourceFileName='" + sourceFileName + '\'' +
+                ", methods=" + methods +
+                ", javaNodes=" + javaNodes +
+                ", superClasses=" + superClasses +
+                ", definedMethods=" + definedMethods +
+                ", superInterfaces=" + superInterfaces +
+                ", access='" + access + '\'' +
+                ", isFinal=" + isFinal +
+                ", annotations=" + annotations +
+                '}';
     }
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((access == null) ? 0 : access.hashCode());
-		result = prime * result + ((definedMethods == null) ? 0 : definedMethods.hashCode());
-		result = prime * result + (isFinal ? 1231 : 1237);
-		result = prime * result + ((javaNodes == null) ? 0 : javaNodes.hashCode());
-		result = prime * result + ((methods == null) ? 0 : methods.hashCode());
-		result = prime * result + ((sourceFileName == null) ? 0 : sourceFileName.hashCode());
-		result = prime * result + ((superClasses == null) ? 0 : superClasses.hashCode());
-		result = prime * result + ((superInterfaces == null) ? 0 : superInterfaces.hashCode());
-		result = prime * result + ((uri == null) ? 0 : uri.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) return true;
-		if (obj == null) return false;
-		if (getClass() != obj.getClass()) return false;
-		JavaType other = (JavaType)obj;
-		if (access == null) {
-			if (other.access != null) return false;
-		} else if (!access.equals(other.access)) return false;
-		if (definedMethods == null) {
-			if (other.definedMethods != null) return false;
-		} else if (!definedMethods.equals(other.definedMethods)) return false;
-		if (isFinal != other.isFinal) return false;
-		if (javaNodes == null) {
-			if (other.javaNodes != null) return false;
-		} else if (!javaNodes.equals(other.javaNodes)) return false;
-		if (methods == null) {
-			if (other.methods != null) return false;
-		} else if (!methods.equals(other.methods)) return false;
-		if (sourceFileName == null) {
-			if (other.sourceFileName != null) return false;
-		} else if (!sourceFileName.equals(other.sourceFileName)) return false;
-		if (superClasses == null) {
-			if (other.superClasses != null) return false;
-		} else if (!superClasses.equals(other.superClasses)) return false;
-		if (superInterfaces == null) {
-			if (other.superInterfaces != null) return false;
-		} else if (!superInterfaces.equals(other.superInterfaces)) return false;
-		if (uri == null) {
-			if (other.uri != null) return false;
-		} else if (!uri.equals(other.uri)) return false;
-		return true;
-	}
-
-    
 }
