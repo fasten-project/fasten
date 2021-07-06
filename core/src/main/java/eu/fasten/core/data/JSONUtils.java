@@ -239,12 +239,23 @@ public class JSONUtils {
             result.append(quote(annotationEntry.getKey())).append(":[");
             for (var annotationValue : annotationEntry.getValue()) {
                 result.append("[").append(quote(annotationValue.getLeft())).append(",")
-                        .append(quote(annotationValue.getRight().replaceAll("\"", "\\\\\""))).append("],");
+                        .append(quote(escapeString(annotationValue.getRight()))).append("],");
             }
             removeLastIfNotEmpty(result, annotationEntry.getValue().size());
             result.append("],");
         }
         removeLastIfNotEmpty(result, annotations.entrySet().size());
+    }
+
+    private static String escapeString(String str) {
+        return str.replace("\\", "\\\\")
+                .replace("\t", "\\t")
+                .replace("\b", "\\b")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\f", "\\f")
+                .replace("'", "\\'")
+                .replace("\"", "\\\"");
     }
 
     /**

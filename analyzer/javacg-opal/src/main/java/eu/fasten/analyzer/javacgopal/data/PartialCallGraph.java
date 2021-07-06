@@ -27,10 +27,8 @@ import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.*;
 import org.apache.commons.lang3.tuple.Pair;
-import org.opalj.br.Annotation;
-import org.opalj.br.ElementValuePair;
-import org.opalj.br.Method;
-import org.opalj.br.ObjectType;
+import org.apache.commons.text.StringEscapeUtils;
+import org.opalj.br.*;
 import org.opalj.br.analyses.Project;
 import java.io.File;
 import java.util.ArrayList;
@@ -43,6 +41,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.opalj.collection.immutable.RefArray;
 import org.opalj.tac.AITACode;
 import org.opalj.tac.ComputeTACAIKey$;
 import org.opalj.tac.DUVar;
@@ -176,7 +175,7 @@ public class PartialCallGraph {
                             try {
                                 final var valuePackage = OPALMethod.getPackageName(value.value().valueType());
                                 final var valueClass = OPALMethod.getClassName(value.value().valueType());
-                                final var valueContent = value.value().toJava();
+                                final var valueContent = StringEscapeUtils.escapeJava(value.value().toJava());
                                 valueList.add(Pair.of(valuePackage + "/" + valueClass, valueContent));
                             } catch (NullPointerException ignored) {
                             }
