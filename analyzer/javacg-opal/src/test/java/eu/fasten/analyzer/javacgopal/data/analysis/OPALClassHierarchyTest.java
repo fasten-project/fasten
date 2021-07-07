@@ -22,7 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import eu.fasten.core.data.Graph;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
+import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -109,7 +111,7 @@ class OPALClassHierarchyTest {
         var methodsInternal = new HashMap<Method, Integer>();
         methodsInternal.put(method, 123);
 
-        var opalTypeInternal = new OPALType(methodsInternal, null, new ArrayList<>(), "source.java", "", false);
+        var opalTypeInternal = new OPALType(methodsInternal, null, new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internals = Map.of(type, opalTypeInternal);
         var externals = Map.of(type, Map.of(declaredMethod, 4));
@@ -129,19 +131,19 @@ class OPALClassHierarchyTest {
             .get(JavaScope.externalTypes)
             .get("/some.package/typeName");
 
-        Assertions.assertEquals("source.java", internalUri.getSourceFileName());
-        Assertions.assertEquals("methodName(/some.package/typeName)/some.package/typeName",
+        assertEquals("source.java", internalUri.getSourceFileName());
+        assertEquals("methodName(/some.package/typeName)/some.package/typeName",
             internalUri.getMethods().get(123).getSignature());
-        Assertions.assertEquals(0, internalUri.getSuperInterfaces().size());
-        Assertions.assertEquals(0, internalUri.getSuperClasses().size());
+        assertEquals(0, internalUri.getSuperInterfaces().size());
+        assertEquals(0, internalUri.getSuperClasses().size());
 
-        Assertions.assertEquals("", externalUri.getSourceFileName());
-        Assertions.assertEquals("methodName(/some.package/typeName)/some.package/typeName",
+        assertEquals("", externalUri.getSourceFileName());
+        assertEquals("methodName(/some.package/typeName)/some.package/typeName",
             externalUri.getMethods().get(4).getSignature());
-        Assertions.assertEquals(1, externalUri.getSuperInterfaces().size());
-        Assertions.assertEquals("/some.package/typeName",
+        assertEquals(1, externalUri.getSuperInterfaces().size());
+        assertEquals("/some.package/typeName",
             externalUri.getSuperInterfaces().get(0).toString());
-        Assertions.assertEquals(0, externalUri.getSuperClasses().size());
+        assertEquals(0, externalUri.getSuperClasses().size());
     }
 
     private Method createMethod() {
@@ -214,7 +216,7 @@ class OPALClassHierarchyTest {
         methods.put(source, 123);
         methods.put(target, 234);
 
-        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -245,7 +247,7 @@ class OPALClassHierarchyTest {
         var methods = new HashMap<Method, Integer>();
         methods.put(source, 123);
 
-        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -276,7 +278,7 @@ class OPALClassHierarchyTest {
         var methods = new HashMap<Method, Integer>();
         methods.put(target, 123);
 
-        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -339,7 +341,7 @@ class OPALClassHierarchyTest {
         methods.put(source, 123);
         methods.put(target, 234);
 
-        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -378,7 +380,7 @@ class OPALClassHierarchyTest {
         var target = Mockito.mock(Method.class);
         Mockito.when(target.declaringClassFile()).thenReturn(classFile);
 
-        var type = new OPALType(new HashMap<>(), new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(new HashMap<>(), new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -420,7 +422,7 @@ class OPALClassHierarchyTest {
         var methods = new HashMap<Method, Integer>();
         methods.put(target, 6);
 
-        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false);
+        var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
@@ -492,8 +494,8 @@ class OPALClassHierarchyTest {
     void appendGraph() {
         OPALClassHierarchy classHierarchy =
             Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
-        var newGraph = Mockito.mock(Graph.class);
-        var existingGraph = Mockito.mock(Graph.class);
+        var newGraph = Mockito.mock(JavaGraph.class);
+        var existingGraph = Mockito.mock(JavaGraph.class);
         final var incompeletes = new ArrayList<Integer>();
         final Set<Integer> visitedPCs = new java.util.HashSet<>();
 

@@ -20,9 +20,7 @@ package eu.fasten.core.merge;
 
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -119,8 +117,8 @@ public class Benchmark implements Runnable {
 
         System.out.format("%14s%4s%12s%4s%12s\n", "", "|", "DATABASE", "|", "LOCAL");
         System.out.println("--------------------------------------------------");
-        System.out.format("%14s%4s%12d%4s%12d\n", "Edges", "|",
-                directedGraph.numArcs(), "|", callgraph.getGraph().getResolvedCalls().size());
+//        System.out.format("%14s%4s%12d%4s%12d\n", "Edges", "|",
+//                directedGraph.numArcs(), "|", callgraph.getGraph().getResolvedCalls().size());
         System.out.format("%14s%4s%12d%4s%12d\n", "Unique edges", "|",
                 databaseResolvedGraph.size(), "|", localResolvedGraph.size());
 
@@ -167,12 +165,12 @@ public class Benchmark implements Runnable {
         var localMethodsMap = callgraph.mapOfAllMethods();
         var localResolvedGraph = new HashSet<Pair<String, String>>();
 
-        for (var arc : callgraph.getGraph().getResolvedCalls().keySet()) {
-            var newArc = ImmutablePair
-                    .of(localMethodsMap.get(arc.firstInt()).getUri().toString(),
-                            localMethodsMap.get(arc.secondInt()).getUri().toString());
-            localResolvedGraph.add(newArc);
-        }
+//        for (var arc : callgraph.getGraph().getResolvedCalls().keySet()) {
+//            var newArc = ImmutablePair
+//                    .of(localMethodsMap.get(arc.firstInt()).getUri().toString(),
+//                            localMethodsMap.get(arc.secondInt()).getUri().toString());
+//            localResolvedGraph.add(newArc);
+//        }
         return localResolvedGraph;
     }
 
@@ -192,8 +190,8 @@ public class Benchmark implements Runnable {
 
     private DirectedGraph getDatabaseCallGraph() {
         final var depSet = dependencies;
-        var databaseMerger = new DatabaseMerger(depSet, dbContext, rocksDao);
-        return databaseMerger.mergeWithCHA(artifact);
+        var merger = new CGMerger(depSet, dbContext, rocksDao);
+        return merger.mergeWithCHA(artifact);
     }
 
     private Map<Long, String> getMethodsMap(final DSLContext dslContext, final LongSet nodes) {

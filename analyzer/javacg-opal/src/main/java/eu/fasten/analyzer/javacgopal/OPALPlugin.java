@@ -18,15 +18,14 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
+import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.analyzer.javacgopal.data.exceptions.EmptyCallGraphException;
-import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
-import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
-import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.util.ArrayList;

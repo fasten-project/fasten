@@ -140,6 +140,10 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph, Serializable 
 
 			return new ArrayImmutableDirectedGraph(GID2Offset, succpred, externalNodes);
 		}
+
+		public boolean contains(Long source) {
+			return graph.containsKey(source.longValue());
+		}
 	}
 
 	// Constructor needed for kryo serialization

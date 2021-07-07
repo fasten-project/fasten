@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2021 Sebastian Proksch
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -13,6 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package eu.fasten.analyzer.sourceanalyzer;
 
 import com.github.javaparser.ast.Node;
@@ -25,13 +26,7 @@ import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.comments.LineComment;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorWithDefaults;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CommentPrintingVisitor extends VoidVisitorWithDefaults<Object> {

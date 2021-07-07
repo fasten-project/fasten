@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.HashSet;
 import java.util.Objects;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -64,8 +65,8 @@ class ExtendedRevisionJavaCallGraphTest {
         assertEquals(jsonGraph.getJSONObject("cha").getJSONObject("externalTypes").toString(),
                 graph.toJSON().getJSONObject("cha").getJSONObject("externalTypes").toString());
 
-        assertEquals(jsonGraph.getJSONObject("graph").toMap(),
-                graph.toJSON().getJSONObject("graph").toMap());
+        assertEquals(new HashSet<>(jsonGraph.getJSONArray("call-sites").toList()),
+                new HashSet<>(graph.toJSON().getJSONArray("call-sites").toList()));
 
         assertEquals(jsonGraph.getJSONObject("cha").getJSONObject("internalTypes")
                         .getJSONObject("/internal.package/B")

@@ -7,9 +7,10 @@ package eu.fasten.core.data.metadatadb.codegen.tables;
 import eu.fasten.core.data.metadatadb.codegen.Indexes;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.Public;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 
-import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,7 +23,7 @@ import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row8;
+import org.jooq.Row10;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -44,7 +45,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Callables extends TableImpl<CallablesRecord> {
 
-    private static final long serialVersionUID = 1823202810;
+    private static final long serialVersionUID = -1458014207;
 
     /**
      * The reference instance of <code>public.callables</code>
@@ -80,11 +81,6 @@ public class Callables extends TableImpl<CallablesRecord> {
     public final TableField<CallablesRecord, Boolean> IS_INTERNAL_CALL = createField(DSL.name("is_internal_call"), org.jooq.impl.SQLDataType.BOOLEAN.nullable(false), this, "");
 
     /**
-     * The column <code>public.callables.created_at</code>.
-     */
-    public final TableField<CallablesRecord, Timestamp> CREATED_AT = createField(DSL.name("created_at"), org.jooq.impl.SQLDataType.TIMESTAMP, this, "");
-
-    /**
      * The column <code>public.callables.line_start</code>.
      */
     public final TableField<CallablesRecord, Integer> LINE_START = createField(DSL.name("line_start"), org.jooq.impl.SQLDataType.INTEGER, this, "");
@@ -93,6 +89,21 @@ public class Callables extends TableImpl<CallablesRecord> {
      * The column <code>public.callables.line_end</code>.
      */
     public final TableField<CallablesRecord, Integer> LINE_END = createField(DSL.name("line_end"), org.jooq.impl.SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>public.callables.type</code>.
+     */
+    public final TableField<CallablesRecord, CallableType> TYPE = createField(DSL.name("type"), org.jooq.impl.SQLDataType.VARCHAR.asEnumDataType(eu.fasten.core.data.metadatadb.codegen.enums.CallableType.class), this, "");
+
+    /**
+     * The column <code>public.callables.defined</code>.
+     */
+    public final TableField<CallablesRecord, Boolean> DEFINED = createField(DSL.name("defined"), org.jooq.impl.SQLDataType.BOOLEAN, this, "");
+
+    /**
+     * The column <code>public.callables.access</code>.
+     */
+    public final TableField<CallablesRecord, Access> ACCESS = createField(DSL.name("access"), org.jooq.impl.SQLDataType.VARCHAR.asEnumDataType(eu.fasten.core.data.metadatadb.codegen.enums.Access.class), this, "");
 
     /**
      * The column <code>public.callables.metadata</code>.
@@ -193,11 +204,11 @@ public class Callables extends TableImpl<CallablesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row8 type methods
+    // Row10 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<Long, Long, String, Boolean, Timestamp, Integer, Integer, JSONB> fieldsRow() {
-        return (Row8) super.fieldsRow();
+    public Row10<Long, Long, String, Boolean, Integer, Integer, CallableType, Boolean, Access, JSONB> fieldsRow() {
+        return (Row10) super.fieldsRow();
     }
 }

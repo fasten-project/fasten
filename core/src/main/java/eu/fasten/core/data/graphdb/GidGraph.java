@@ -18,9 +18,7 @@
 
 package eu.fasten.core.data.graphdb;
 
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
-import org.jooq.JSONB;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.ArrayList;
@@ -49,7 +47,7 @@ public class GidGraph {
      * @param edges            List of edges of the graph with pairs for Global IDs
      */
     public GidGraph(long index, String product, String version, List<Long> nodes, int numInternalNodes,
-                    List<EdgesRecord> edges) {
+                    List<CallSitesRecord> edges) {
         this.index = index;
         this.product = product;
         this.version = version;
@@ -121,10 +119,10 @@ public class GidGraph {
         }
         var numInternalNodes = jsonGraph.getInt("numInternalNodes");
         var jsonEdges = jsonGraph.getJSONArray("edges");
-        List<EdgesRecord> edges = new ArrayList<>(jsonEdges.length());
+        List<CallSitesRecord> edges = new ArrayList<>(jsonEdges.length());
         for (int i = 0; i < jsonEdges.length(); i++) {
             var edgeArr = jsonEdges.getJSONArray(i);
-            var edge = new EdgesRecord(edgeArr.getLong(0), edgeArr.getLong(1), new ReceiverRecord[]{}, JSONB.valueOf(""));
+            var edge = new CallSitesRecord(edgeArr.getLong(0), edgeArr.getLong(1), null, null, null, null);
             edges.add(edge);
         }
         return new GidGraph(index, product, version, nodes, numInternalNodes, edges);

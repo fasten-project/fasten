@@ -53,22 +53,18 @@
     },
     "resolvedTypes": {}
   },
-  "graph": {
-    "internalCalls": [],
-    "externalCalls": [
+  "call-sites": [
       [
         "300",
         "302",
         {
           "3": {
-            "receiver": "/test.group/Bar",
+            "receiver": "[/test.group/Bar]",
             "type": "invokespecial",
             "line": 5
           }
         }
       ]
     ],
-    "resolvedCalls": []
-  },
   "timestamp": 0
 }

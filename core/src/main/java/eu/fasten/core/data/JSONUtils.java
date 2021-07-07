@@ -4,9 +4,60 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import eu.fasten.core.data.opal.MavenCoordinate;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class JSONUtils {
+
+    public static String toJSONString(final DirectedGraph graph, final MavenCoordinate coordinate) {
+        var result = new StringBuilder("{");
+        appendArtifactInformation(result, coordinate, graph.numNodes());
+        appendGraph(result, graph);
+        if (result.charAt(result.length() - 1) == ',') {
+            result.setLength(result.length() - 1);
+        }
+        result.append("}");
+        return result.toString();
+    }
+
+    /**
+     * Appends general information of the revision to the beginning of the StringBuilder.
+     *
+     * @param coordinate the object to extract the information from.
+     * @param numNodes   number of nodes in the graph
+     * @param result     the StringBuilder to append the information.
+     */
+    private static void appendArtifactInformation(StringBuilder result,
+                                                  final MavenCoordinate coordinate, int numNodes) {
+        appendKeyValue(result, "product", coordinate.getProduct());
+        appendKeyValue(result, "nodes", numNodes);
+        appendKeyValue(result, "forge", Constants.mvnForge);
+        appendKeyValue(result, "generator", Constants.opalGenerator);
+        appendKeyValue(result, "version", coordinate.getVersionConstraint());
+    }
+
+    /**
+     * Appends graph information of the revision to the StringBuilder.
+     *
+     * @param graph  the graph object to extract the information from.
+     * @param result the StringBuilder to append the information.
+     */
+    private static void appendGraph(StringBuilder result, final DirectedGraph graph) {
+        result.append("\"nodes\":[");
+        for (final var node : graph.nodes()) {
+            result.append(node).append(",");
+        }
+        removeLastIfNotEmpty(result, graph.nodes().size());
+        result.append("],");
+        result.append("\"edges\":[");
+        for (final var edge : graph.edgeSet()) {
+            result.append("[").append(edge.firstLong()).append(",").append(edge.secondLong()).append("],");
+        }
+        removeLastIfNotEmpty(result, graph.edgeSet().size());
+        result.append("],");
+    }
+
     /**
      * Converts an {@link ExtendedRevisionJavaCallGraph} object to its corresponding JSON String
      * without any object creation in between. It creates a {@link StringBuilder) in the beginning
@@ -19,11 +70,11 @@ public class JSONUtils {
         var result = new StringBuilder("{");
         appendArtifactInformation(result, erjcg);
         appendCha(result, erjcg.classHierarchy);
-        appendGraph(result, erjcg.graph);
+        appendGraph(result, erjcg.getGraph());
         if (erjcg.timestamp >= 0) {
             appendKeyValue(result, "timestamp", erjcg.timestamp, true);
         }
-        if (result.charAt(result.length()-1) == ',') {
+        if (result.charAt(result.length() - 1) == ',') {
             result.setLength(result.length() - 1);
         }
         result.append("}");
@@ -51,31 +102,22 @@ public class JSONUtils {
      * @param graph  the graph object to extract the information from.
      * @param result the StringBuilder to append the information.
      */
-    private static void appendGraph(StringBuilder result, final Graph graph) {
-        result.append("\"graph\":{\"internalCalls\":[");
-        for (final var entry : graph.getInternalCalls().entrySet()) {
+    private static void appendGraph(StringBuilder result, final JavaGraph graph) {
+        result.append("\"call-sites\":[");
+        for (final var entry : graph.getCallSites().entrySet()) {
             appendCall(result, entry);
         }
-        removeLastIfNotEmpty(result, graph.getInternalCalls().size());
-        result.append("],\"externalCalls\":[");
-        for (final var entry : graph.getExternalCalls().entrySet()) {
-            appendCall(result, entry);
-        }
-        removeLastIfNotEmpty(result, graph.getExternalCalls().size());
-        result.append("],\"resolvedCalls\":[");
-        for (final var entry : graph.getResolvedCalls().entrySet()) {
-            appendCall(result, entry);
-        }
-        removeLastIfNotEmpty(result, graph.getResolvedCalls().size());
-        result.append("]},");
+        removeLastIfNotEmpty(result, graph.getCallSites().size());
+        result.append("],");
 
     }
 
     /**
      * Removes the last character of StringBuilder if the second parameter is not zero.
      * This method helps to remove extra "," from the end of multiple element lists.
+     *
      * @param result the StringBuilder to remove from.
-     * @param size if the size of the list is zero there is no "," to be removed.
+     * @param size   if the size of the list is zero there is no "," to be removed.
      */
     private static void removeLastIfNotEmpty(StringBuilder result,
                                              int size) {
@@ -87,7 +129,7 @@ public class JSONUtils {
     /**
      * Appends call information of the specified call to the StringBuilder.
      *
-     * @param entry the call Map Entry to extract the information from.
+     * @param entry  the call Map Entry to extract the information from.
      * @param result the StringBuilder to append the information.
      */
     private static void appendCall(StringBuilder result,
@@ -102,7 +144,7 @@ public class JSONUtils {
      * Appends metadata information of the callable to the StringBuilder.
      *
      * @param metadata of the call Map to extract the information from.
-     * @param result the StringBuilder to append the information.
+     * @param result   the StringBuilder to append the information.
      */
     private static void appendCallableMetadataJson(StringBuilder result,
                                                    final Map<Object, Object> metadata) {
@@ -122,7 +164,7 @@ public class JSONUtils {
      * @param result the StringBuilder to append information.
      */
     private static void appendCha(StringBuilder result, final Map<JavaScope,
-        Map<String, JavaType>> cha) {
+            Map<String, JavaType>> cha) {
         result.append("\"cha\":{\"externalTypes\":{");
         for (final var entry : cha.get(JavaScope.externalTypes).entrySet()) {
             appendType(result, entry.getKey(), entry.getValue());
@@ -165,8 +207,10 @@ public class JSONUtils {
         appendKeyValue(result, "sourceFile", type.getSourceFileName());
         result.append("\"superClasses\":[");
         appendSupers(result, type.getSuperClasses());
-        result.append("]},");
-
+        result.append("],");
+        result.append("\"annotations\":{");
+        appendAnnotations(result, type.getAnnotations());
+        result.append("}},");
     }
 
     /**
@@ -184,10 +228,41 @@ public class JSONUtils {
     }
 
     /**
+     * Appends information of the annotations to the StringBuilder.
+     *
+     * @param result      the StringBuilder to append the information.
+     * @param annotations annotations information
+     */
+    public static void appendAnnotations(StringBuilder result,
+                                         final Map<String, List<Pair<String, String>>> annotations) {
+        for (var annotationEntry : annotations.entrySet()) {
+            result.append(quote(annotationEntry.getKey())).append(":[");
+            for (var annotationValue : annotationEntry.getValue()) {
+                result.append("[").append(quote(annotationValue.getLeft())).append(",")
+                        .append(quote(escapeString(annotationValue.getRight()))).append("],");
+            }
+            removeLastIfNotEmpty(result, annotationEntry.getValue().size());
+            result.append("],");
+        }
+        removeLastIfNotEmpty(result, annotations.entrySet().size());
+    }
+
+    private static String escapeString(String str) {
+        return str.replace("\\", "\\\\")
+                .replace("\t", "\\t")
+                .replace("\b", "\\b")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\f", "\\f")
+                .replace("'", "\\'")
+                .replace("\"", "\\\"");
+    }
+
+    /**
      * Appends methods of a type to the StringBuilder.
      *
      * @param methods Map of nodes to extract the information.
-     * @param result the StringBuilder to append the information.
+     * @param result  the StringBuilder to append the information.
      */
     private static void appendMethods(StringBuilder result,
                                       final Map<Integer, JavaNode> methods) {
@@ -207,18 +282,18 @@ public class JSONUtils {
     /**
      * Appends metadata of a node to the StringBuilder.
      *
-     * @param map Map of metadata to extract the information.
+     * @param map    Map of metadata to extract the information.
      * @param result the StringBuilder to append the information.
      */
     private static void appendMetadata(StringBuilder result, final Map<?, ?> map) {
         for (final var entry : map.entrySet()) {
             if (entry.getValue() instanceof String) {
                 result.append("\"").append(entry.getKey()).append("\":\"").append(entry.getValue())
-                    .append(
-                        "\",");
+                        .append(
+                                "\",");
             } else {
                 result.append("\"").append(entry.getKey()).append("\":").append(entry.getValue())
-                    .append(",");
+                        .append(",");
             }
         }
         removeLastIfNotEmpty(result, map.size());
@@ -239,8 +314,8 @@ public class JSONUtils {
      * list of key values and the value is a Number.
      *
      * @param result StringBuilder to append to the key value.
-     * @param key key String.
-     * @param value Number value.
+     * @param key    key String.
+     * @param value  Number value.
      */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final Number value) {
@@ -251,8 +326,8 @@ public class JSONUtils {
      * Appends a key value to a given StringBuilder assuming the value is a Number.
      *
      * @param result StringBuilder to append to the key value.
-     * @param key key String.
-     * @param value Number value.
+     * @param key    key String.
+     * @param value  Number value.
      */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final Number value, final boolean lastKey) {
@@ -267,8 +342,8 @@ public class JSONUtils {
      * list of key values and the value is a String.
      *
      * @param result StringBuilder to append to the key value.
-     * @param key String key.
-     * @param value String value.
+     * @param key    String key.
+     * @param value  String value.
      */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final String value) {
@@ -279,8 +354,8 @@ public class JSONUtils {
      * Appends a key value to a given StringBuilder assuming the value is a String.
      *
      * @param result StringBuilder to append to the key value.
-     * @param key String key.
-     * @param value String value.
+     * @param key    String key.
+     * @param value  String value.
      */
     private static void appendKeyValue(StringBuilder result, final String key,
                                        final String value, final boolean lastKey) {
