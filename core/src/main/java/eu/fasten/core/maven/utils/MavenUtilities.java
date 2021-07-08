@@ -19,16 +19,20 @@
 package eu.fasten.core.maven.utils;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.data.Revision;
 import org.apache.commons.io.FileUtils;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.sql.Timestamp;
 import java.util.*;
 
 /**
@@ -197,4 +201,59 @@ public class MavenUtilities {
         }
     }
 
+    /**
+     * Retrieves the Maven coordinate of the input record.
+     * TODO Unit tests.
+     *
+     * @param record the input record containing repository information (`fasten.RepoCloner.out`).
+     * @return the Maven coordinate of the input record.
+     * @throws IllegalArgumentException in case the function couldn't find coordinate information
+     *                                  in the input record.
+     */
+    public static Revision extractMavenCoordinates(String record) {
+        var payload = new JSONObject(record);
+        if (payload.has("payload")) {
+            payload = payload.getJSONObject("payload");
+        }
+        String groupId = payload.getString("groupId");
+        if (groupId == null) {
+            throw new IllegalArgumentException("Invalid repository information: missing coordinate group ID.");
+        }
+        String artifactId = payload.getString("artifactId");
+        if (artifactId == null) {
+            throw new IllegalArgumentException("Invalid repository information: missing coordinate artifact ID.");
+        }
+        String version = payload.getString("version");
+        if (version == null) {
+            throw new IllegalArgumentException("Invalid repository information: missing coordinate version.");
+        }
+        long createdAt = payload.getLong("date");
+        // TODO Is the timestamp conversion right?
+        return new Revision(groupId, artifactId, version, new Timestamp(createdAt));
+    }
+
+    /**
+     * Pretty-prints Maven coordinates.
+     *
+     * @param groupId    the maven coordinate's group ID.
+     * @param artifactId the maven coordinate's artifact ID.
+     * @return a pretty String representation of the input Maven coordinate.
+     */
+    public static String getMavenCoordinateName(String groupId, @Nullable String artifactId) {
+        return groupId +
+                (artifactId == null || artifactId.compareTo("") == 0 ?
+                        "" : Constants.mvnCoordinateSeparator + artifactId);
+    }
+
+    /**
+     * Pretty-prints Maven coordinates (with version).
+     *
+     * @param groupId    the maven coordinate's group ID.
+     * @param artifactId the maven coordinate's artifact ID.
+     * @param version    the maven coordinate's version.
+     * @return a pretty String representation of the input Maven coordinate.
+     */
+    public static String getMavenCoordinateName(String groupId, String artifactId, String version) {
+        return getMavenCoordinateName(groupId, artifactId) + Constants.mvnCoordinateSeparator + version;
+    }
 }

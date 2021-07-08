@@ -243,7 +243,7 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
-            <version>1.14.3</version>
+            <version>1.15.3</version>
             <scope>test</scope>
         </dependency>
         <dependency> <!-- For environment variables -->
@@ -256,6 +256,13 @@
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-invoker</artifactId>
             <version>3.0.1</version>
+        </dependency>
+        <!-- JSON comparator -->
+        <dependency>
+            <groupId>org.skyscreamer</groupId>
+            <artifactId>jsonassert</artifactId>
+            <version>1.5.0</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -1,6 +1,7 @@
-package eu.fasten.analyzer.licensedetector.license;
+package eu.fasten.core.data.metadatadb.license;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,5 +30,15 @@ public class DetectedLicenses {
 
     public void addFiles(JSONArray files) {
         files.forEach(file -> this.files.put(file));
+    }
+
+    public String getOutboundJson() {
+        JSONObject outboundObject = new JSONObject();
+        JSONArray licensesArray = new JSONArray();
+        outbound.forEach(l -> licensesArray.put(
+                new JSONObject().put("name", l.getName()).put("source", l.getSource())
+        ));
+        outboundObject.put("outbound", licensesArray);
+        return outboundObject.toString().strip();
     }
 }

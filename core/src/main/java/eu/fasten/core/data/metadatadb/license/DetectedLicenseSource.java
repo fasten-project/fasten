@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.licensedetector.license;
+package eu.fasten.core.data.metadatadb.license;
 
 /**
  * Where a certain licenses has been retrieved from.

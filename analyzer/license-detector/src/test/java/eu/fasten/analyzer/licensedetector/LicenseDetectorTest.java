@@ -1,8 +1,8 @@
 package eu.fasten.analyzer.licensedetector;
 
 import com.google.common.collect.Sets;
-import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
-import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
+import eu.fasten.core.data.metadatadb.license.DetectedLicense;
+import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.json.JSONArray;
 import org.json.JSONException;

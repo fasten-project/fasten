@@ -18,7 +18,7 @@ public class PostgresConnectorTest {
     protected static final String KB_PASSWORD = "testpassword";
 
     @ClassRule
-    public static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:11.1")
+    public static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:13.2")
             .withDatabaseName("integration-test-postgres")
             .withUsername(KB_USERNAME)
             .withPassword(KB_PASSWORD);

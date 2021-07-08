@@ -1,10 +1,9 @@
 package eu.fasten.analyzer.licensedetector;
 
 import com.google.common.collect.Sets;
-import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
-import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
-import eu.fasten.analyzer.licensedetector.license.DetectedLicenses;
-import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.data.metadatadb.license.DetectedLicense;
+import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
+import eu.fasten.core.data.metadatadb.license.DetectedLicenses;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.apache.maven.model.License;
 import org.apache.maven.model.Model;
@@ -27,7 +26,6 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.Timestamp;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -308,36 +306,6 @@ public class LicenseDetectorPlugin extends Plugin {
         }
 
         /**
-         * Retrieves the Maven coordinate of the input record.
-         *
-         * @param record the input record containing repository information.
-         * @return the Maven coordinate of the input record.
-         * @throws IllegalArgumentException in case the function couldn't find coordinate information
-         *                                  in the input record.
-         */
-        protected Revision extractMavenCoordinates(String record) {
-            var payload = new JSONObject(record);
-            if (payload.has("payload")) {
-                payload = payload.getJSONObject("payload");
-            }
-            String groupId = payload.getString("groupId");
-            if (groupId == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate group ID.");
-            }
-            String artifactId = payload.getString("artifactId");
-            if (artifactId == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate artifact ID.");
-            }
-            String version = payload.getString("version");
-            if (version == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate version.");
-            }
-            long createdAt = payload.getLong("date");
-            // TODO Is the timestamp conversion right?
-            return new Revision(groupId, artifactId, version, new Timestamp(createdAt));
-        }
-
-        /**
          * Retrieves the repository URL from the input record.
          *
          * @param record the input record containing repository information.
@@ -390,18 +358,6 @@ public class LicenseDetectorPlugin extends Plugin {
             }
 
             return pomFile.get();
-        }
-
-        /**
-         * Pretty-prints Maven coordinates.
-         *
-         * @param groupId    the maven coordinate's group ID.
-         * @param artifactId the maven coordinate's artifact ID.
-         * @param version    the maven coordinate's version.
-         * @return a pretty String representation of the input Maven coordinate.
-         */
-        protected static String constructMavenArtifactName(String groupId, String artifactId, String version) {
-            return groupId + ":" + artifactId + ":" + version;
         }
 
         /**

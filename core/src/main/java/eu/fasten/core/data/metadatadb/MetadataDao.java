@@ -28,6 +28,8 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.IngestedArtifactsRecord;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.utils.FastenUriUtils;
 import org.apache.commons.math3.util.Pair;
 import org.jooq.*;
@@ -36,8 +38,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.sql.Timestamp;
 import java.util.*;
+
 import static org.jooq.impl.DSL.*;
 
 public class MetadataDao {
@@ -174,6 +178,113 @@ public class MetadataDao {
                                 PackageVersions.PACKAGE_VERSIONS.as("excluded").METADATA))
                 .returning(PackageVersions.PACKAGE_VERSIONS.ID).fetchOne();
         return resultRecord.getValue(PackageVersions.PACKAGE_VERSIONS.ID);
+    }
+
+    /**
+     * Inserts outbound licenses at the package version level.
+     *
+     * @param coordinates the coordinates whose outbound licenses are about to be inserted.
+     * @param outboundLicenses the package version's outbound licenses.
+     * @return the updated metadata field.
+     */
+    public String insertPackageOutboundLicenses(Revision coordinates,
+                                              String outboundLicenses) {
+        return insertPackageOutboundLicenses(
+                coordinates.groupId,
+                coordinates.artifactId,
+                coordinates.version.toString(), // FIXME
+                outboundLicenses);
+    }
+
+    /**
+     * Inserts outbound licenses at the package version level.
+     *
+     * @param groupId          the group ID of the package version whose outbound licenses are about to be inserted.
+     * @param artifactId       the artifact ID of the package version whose outbound licenses are about to be inserted.
+     * @param packageVersion   the package version whose outbound licenses are about to be inserted.
+     * @param outboundLicenses the package version's outbound licenses.
+     * @return the updated metadata field.
+     */
+    public String insertPackageOutboundLicenses(String groupId,
+                                                String artifactId,
+                                                String packageVersion,
+                                                String outboundLicenses) {
+        return insertPackageOutboundLicenses(
+                MavenUtilities.getMavenCoordinateName(groupId, artifactId),
+                packageVersion,
+                outboundLicenses);
+    }
+
+    /**
+     * Inserts outbound licenses at the package version level.
+     *
+     * @param packageName      the package name whose outbound licenses are about to be inserted.
+     * @param packageVersion   the package version whose outbound licenses are about to be inserted.
+     * @param outboundLicenses the package version's outbound licenses.
+     * @return the updated metadata field.
+     */
+    public String insertPackageOutboundLicenses(String packageName, String packageVersion, String outboundLicenses) {
+
+        /*  Warning!
+            The `concat()` method casts the first argument to `VARCHAR`, causing errors!
+
+            Packages p = Packages.PACKAGES;
+            PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+            Record updatedMetadata = context.update(pv)
+                    .set(
+                            pv.METADATA,
+                            when(pv.METADATA.isNull(), JSONB.valueOf("{}")).otherwise(pv.METADATA)
+                                    .concat(outboundLicenses).cast(SQLDataType.JSONB)
+                    )
+                    .from(p)
+                    .where(p.ID.eq(pv.PACKAGE_ID).and(packageVersionWhereClause(packageName, packageVersion)))
+                    .returning(pv.METADATA)
+                    .fetchOne();
+        */
+        // Using plain SQL
+        Object updatedMetadata = context.fetchValue("UPDATE package_versions pv\n" +
+                "SET metadata = (CASE WHEN metadata IS NULL THEN '{}'::jsonb ELSE metadata END) || {0}\n" +
+                "    FROM packages p\n" +
+                "WHERE p.id = pv.package_id\n" +
+                "  AND p.package_name = LOWER({1})\n" +
+                "  AND pv.version = LOWER({2})\n" +
+                "    RETURNING pv.metadata;", JSONB.valueOf(outboundLicenses), packageName, packageVersion);
+        System.out.println(updatedMetadata);
+
+        // Updated metadata field
+        assert updatedMetadata != null; // FIXME
+        return updatedMetadata.toString();
+    }
+
+    /**
+     * Inserts multiple records in the 'package_versions' table in the database.
+     *
+     * @param packageId     ID of the common package (references 'packages.id')
+     * @param cgGenerators  List of code generators
+     * @param versions      List of versions
+     * @param architectures List of architectures
+     * @param createdAt     List of timestamps
+     * @param metadata      List of metadata objects
+     * @return List of IDs of the new records
+     * @throws IllegalArgumentException if lists are not of the same size
+     */
+    public List<Long> insertPackageVersions(long packageId, List<String> cgGenerators,
+                                            List<String> versions, List<Long> artifactRepositoriesIds,
+                                            List<String> architectures, List<Timestamp> createdAt,
+                                            List<JSONObject> metadata)
+            throws IllegalArgumentException {
+        if (cgGenerators.size() != versions.size() || versions.size() != createdAt.size()
+                || createdAt.size() != metadata.size() || metadata.size() != architectures.size()) {
+            throw new IllegalArgumentException("All lists should have equal size");
+        }
+        int length = cgGenerators.size();
+        var recordIds = new ArrayList<Long>(length);
+        for (int i = 0; i < length; i++) {
+            long result = insertPackageVersion(packageId, cgGenerators.get(i), versions.get(i),
+                    artifactRepositoriesIds.get(i), architectures.get(i), createdAt.get(i), metadata.get(i));
+            recordIds.add(result);
+        }
+        return recordIds;
     }
 
     /**
