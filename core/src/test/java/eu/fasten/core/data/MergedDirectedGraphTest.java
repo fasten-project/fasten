@@ -6,13 +6,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class FastenDefaultDirectedGraphTest {
+class MergedDirectedGraphTest {
 
-    FastenDefaultDirectedGraph dg;
+    MergedDirectedGraph dg;
 
     @BeforeEach
     void setUp() {
-        dg = new FastenDefaultDirectedGraph();
+        dg = new MergedDirectedGraph();
         dg.addVertex(1L);
         dg.addVertex(2L);
         dg.addVertex(3L);

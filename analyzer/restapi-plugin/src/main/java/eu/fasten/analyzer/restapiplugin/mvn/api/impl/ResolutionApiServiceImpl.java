@@ -26,7 +26,7 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.MavenResolver;
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.merge.DatabaseMerger;
+import eu.fasten.core.merge.CGMerger;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -90,7 +90,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var group = json.getString("groupId");
             var artifact = json.getString("artifactId");
             var ver = json.getString("version");
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
@@ -110,7 +110,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var group = json.getString("groupId");
             var artifact = json.getString("artifactId");
             var ver = json.getString("version");
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
@@ -135,7 +135,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         var jsonArray = new JSONArray();
         depSet.stream().map(r -> {
             var json = new JSONObject();
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
             json.put(String.valueOf(r.id), url);
             return json;
@@ -159,7 +159,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var depSet = this.graphResolver.resolveDependencies(groupId,
                     artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, true);
             var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
-            var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
+            var databaseMerger = new CGMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
             graph = databaseMerger.mergeWithCHA(packageVersionId);
         } else {
             try {

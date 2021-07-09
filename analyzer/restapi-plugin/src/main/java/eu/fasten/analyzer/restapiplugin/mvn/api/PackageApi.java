@@ -88,8 +88,10 @@ public class PackageApi {
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/rcg", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getERCGLink(@PathVariable("pkg") String packageName,
-                                       @PathVariable("pkg_ver") String version) {
-        return service.getERCGLink(packageName, version);
+                                       @PathVariable("pkg_ver") String version,
+                                       @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
+                                       @RequestParam(required = false) Long releaseDate) {
+        return service.getERCGLink(packageName, version, artifactRepo, releaseDate);
     }
 }
 

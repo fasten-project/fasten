@@ -113,7 +113,7 @@ public class GraphDatabasePlugin extends Plugin {
                 }
             } else {
                 try {
-                    if (json.has("edges_info")) {
+                    if (json.has("callsites_info")) {
                         gidGraph = ExtendedGidGraph.getGraph(json);
                     } else {
                         gidGraph = GidGraph.getGraph(json);

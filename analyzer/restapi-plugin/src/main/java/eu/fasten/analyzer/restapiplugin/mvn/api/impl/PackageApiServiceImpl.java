@@ -23,6 +23,7 @@ import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.api.PackageApiService;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -120,12 +121,20 @@ public class PackageApiServiceImpl implements PackageApiService {
     }
 
     @Override
-    public ResponseEntity<String> getERCGLink(String packageName, String version) {
-        var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
-        var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
-        String result = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
-                artifactId.charAt(0), artifactId, artifactId, groupId, version);
-        result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+    public ResponseEntity<String> getERCGLink(String packageName, String version, String artifactRepo, Long date) {
+        if (KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, version)) {
+            var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+            var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
+            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+                    artifactId.charAt(0), artifactId, artifactId, groupId, version).replace("\\/", "/");
+            var result = MavenUtilities.sendGetRequest(url);
+            if (result == null) {
+                return new ResponseEntity<>("Could not find the requested data at " + url, HttpStatus.NOT_FOUND);
+            }
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        } else {
+            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, version, artifactRepo, date);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
     }
 }

@@ -17,22 +17,22 @@
  */
 package eu.fasten.analyzer.qualityanalyzer;
 
-import eu.fasten.analyzer.qualityanalyzer.data.*;
-
+import eu.fasten.analyzer.qualityanalyzer.data.CallableHolder;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-
-import eu.fasten.core.data.metadatadb.codegen.tables.*;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.FilesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.ModuleContentsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
-
 import org.jooq.DSLContext;
-import org.jooq.Record;
 import org.jooq.Result;
-
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,18 +43,11 @@ import java.util.Map;
 public class MetadataUtils {
 
     private final Logger logger = LoggerFactory.getLogger(MetadataUtils.class.getName());
-
-    private Map<String, DSLContext> dslContexts = null;
-
+    private final Map<String, DSLContext> dslContexts;
     private DSLContext selectedContext = null;
-
     private Long recordId = null;
-
     public MetadataUtils(Map<String, DSLContext> contexts) {
         this.dslContexts = contexts;
-    }
-
-    public void freeResource() {
     }
 
     /**
@@ -74,17 +67,12 @@ public class MetadataUtils {
             throw new IllegalStateException("Empty list of callables");
         }
 
-
         var metadataDao = new MetadataDao(selectedContext);
         selectedContext.transaction(transaction -> {
             // Start transaction
             metadataDao.setContext(DSL.using(transaction));
-            try {
-                for (CallableHolder callable : callableHolderList) {
-                    recordId = metadataDao.updateCallableMetadata(callable.getModuleId(), callable.getFastenUri(), callable.isInternal(), callable.getCallableMetadata());
-                }
-            } catch(RuntimeException ex) {
-                throw ex;
+            for (CallableHolder callable : callableHolderList) {
+                recordId = metadataDao.updateCallableMetadata(callable.getModuleId(), callable.getFastenUri(), callable.isInternal(), callable.getCallableMetadata());
             }
         });
 
@@ -100,11 +88,10 @@ public class MetadataUtils {
         //5. get callables for module id
         //6. filter callables that contain "good" values for start and end line
 
-        String product = null;
-        String version = null;
+        String product;
+        String version;
         String rapid_version = jsonRecord.getString("plugin_version");
-
-        JSONObject payload = null;
+        JSONObject payload;
 
         if (jsonRecord.has("payload")) {
             payload = jsonRecord.getJSONObject("payload");
@@ -129,16 +116,12 @@ public class MetadataUtils {
         }
 
         String filename = payload.getString("filename");
-        //Fix issue #21 from quality-analyzer repository
-        //int index = StringUtils.ordinalIndexOf(path, "/", 5);
-        //String filename = path.substring(index+1);
-        
         logger.info("Filename from RapidPlugin is " + filename);
 
         int lineStart = payload.getInt("start_line");
         int lineEnd = payload.getInt("end_line");
 
-        Long fileId = getFileId(pckVersionId, filename);//could return null
+        Long fileId = getFileId(pckVersionId, filename);
 
         if(fileId == null ) {
             logger.error("Could not fetch fileID for package version id = " + pckVersionId +
@@ -159,21 +142,18 @@ public class MetadataUtils {
         JSONObject metadata = new JSONObject();
         metadata.put("quality", tailored);
 
-        List<Long> modulesId = getModuleIds(fileId);//could return empty List
+        List<Long> modulesId = getModuleIds(fileId);
         logger.info("Found " + modulesId.size() + " modules");
 
-        ArrayList<CallableHolder> callables = new ArrayList<CallableHolder>();
+        ArrayList<CallableHolder> callables = new ArrayList<>();
 
         String qaCallableName = payload.getString("callable_name");
 
         if(!modulesId.isEmpty()) {
-
             for(Long moduleId : modulesId) {
                 logger.info("Found module with moduleId: " + moduleId);
                 callables.addAll(getCallablesInformation(moduleId, qaCallableName, lineStart, lineEnd, metadata));
             }
-
-
             logger.info("Found " + callables.size() + " methods for which startLine and endline are in [" + lineStart + ", " + lineEnd + "]");
             logger.info("Callables details ###");
             for(CallableHolder callable : callables ){
@@ -181,9 +161,7 @@ public class MetadataUtils {
             }
             logger.info("End of callables details ###");
         }
-
         return callables;
-
     }
 
     /**
@@ -194,14 +172,10 @@ public class MetadataUtils {
 
         logger.info("Looking for package_version_id of " + coordinate);
 
-        Long packageId = getPackageIdFromCoordinate(
-                coordinate,
-                forge);
+        Long packageId = getPackageIdFromCoordinate(coordinate, forge);
 
         if (packageId != null) {
-            return getPackageVersionIdFromVersion(
-                    packageId,
-                    version);
+            return getPackageVersionIdFromVersion(packageId, version);
         }
 
         return null;
@@ -218,14 +192,13 @@ public class MetadataUtils {
 
         logger.info("getPackageIdFromCoordinate: coordinate = " + coordinate + ", forge = " + forge);
 
-        PackagesRecord record = (PackagesRecord) selectedContext.select()
-                .from(Packages.PACKAGES)
+        PackagesRecord record = selectedContext.selectFrom(Packages.PACKAGES)
                 .where(Packages.PACKAGES.PACKAGE_NAME.equal(coordinate))
                 .and(Packages.PACKAGES.FORGE.equal(forge))
                 .fetchOne();
 
         if (record != null) {
-            return record.component1();
+            return record.getId();
         }
 
         return null;
@@ -240,8 +213,7 @@ public class MetadataUtils {
     private Long getPackageVersionIdFromVersion(Long pkgId, String version) {
 
         // Find the package version record
-        PackageVersionsRecord pkgVersionRecord = (PackageVersionsRecord) selectedContext.select()
-                .from(PackageVersions.PACKAGE_VERSIONS)
+        PackageVersionsRecord pkgVersionRecord = selectedContext.selectFrom(PackageVersions.PACKAGE_VERSIONS)
                 .where(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.equal(pkgId))
                 .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equal(version))
                 .fetchOne();
@@ -261,12 +233,7 @@ public class MetadataUtils {
      * @return - Long value of fileId or -1 if the file cannot be found
      */
     private Long getFileId(Long packageVersionId, String filename) {
-        // For the demo, just cut out the filename, without the path
-        //var splits = filepath.split("/");
-        //var filename = splits[splits.length - 1];
-
-        FilesRecord fr = (FilesRecord) selectedContext.select()
-                .from(Files.FILES)
+        FilesRecord fr = selectedContext.selectFrom(Files.FILES)
                 .where(Files.FILES.PACKAGE_VERSION_ID.equal(packageVersionId))
                 .and(Files.FILES.PATH.equal(filename))
                 .fetchOne();
@@ -285,18 +252,17 @@ public class MetadataUtils {
      */
     public List<Long> getModuleIds(Long fileId) {
         List<Long> moduleIds = new ArrayList<>();
-        Result<Record> mcr = selectedContext.select()
-                .from(ModuleContents.MODULE_CONTENTS)
+        Result<ModuleContentsRecord> mcrs = selectedContext.selectFrom(ModuleContents.MODULE_CONTENTS)
                 .where(ModuleContents.MODULE_CONTENTS.FILE_ID.equal(fileId))
                 .fetch();
 
-        if(mcr.isNotEmpty()) {
-            for (Record record : mcr) {
-                moduleIds.add((Long) record.get(0));
+        if(mcrs.isNotEmpty()) {
+            for (ModuleContentsRecord mcr : mcrs) {
+                moduleIds.add(mcr.getModuleId());
             }
         }
 
-        return moduleIds;//we cannot return-1 here since that implies external callable
+        return moduleIds; //we cannot return-1 here since that implies external callable
     }
 
     /**
@@ -320,8 +286,7 @@ public class MetadataUtils {
          and OPAL.
         */
 
-        Result<Record> crs = selectedContext.select()
-                .from(Callables.CALLABLES)
+        Result<CallablesRecord> crs = selectedContext.selectFrom(Callables.CALLABLES)
                 .where(Callables.CALLABLES.MODULE_ID.equal(moduleId))
                 .andNot(Callables.CALLABLES.LINE_START.gt(lineEnd))
                 .andNot(Callables.CALLABLES.LINE_END.lt(lineStart))
@@ -329,9 +294,8 @@ public class MetadataUtils {
 
         logger.info("Fetched " + crs.size() + " entries from callables table");
 
-        for (Record cr : crs) {
-
-            String fastenUri = (String) cr.get(2);
+        for (CallablesRecord cr : crs) {
+            String fastenUri = cr.getFastenUri();
 
             String separator = ":";
             int position = qaName.lastIndexOf(separator);
@@ -341,7 +305,6 @@ public class MetadataUtils {
             logger.info("Lizard callable name is " + qaName + " parsed methodName is " + methodName);
 
             if(fastenUri.contains(methodName)) {
-
                 // Create callable object
                 CallableHolder ch = new CallableHolder(cr);
                 ch.setCallableMetadata(metadata);

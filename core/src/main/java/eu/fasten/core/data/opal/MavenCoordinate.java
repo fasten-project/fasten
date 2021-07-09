@@ -16,30 +16,26 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.core.data.opal;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-
-import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre".

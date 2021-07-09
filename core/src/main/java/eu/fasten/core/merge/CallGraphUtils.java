@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +114,7 @@ public class CallGraphUtils {
         final var types = ercg.nodeIDtoTypeNameMap();
         if (includeInternals) {
             result.put("internalTypes",
-                getEdges(ercg.getGraph().getInternalCalls(), methods, types));
+                getEdges(ercg.getGraph().getCallSites(), methods, types));
         }
         result.put("resolvedTypes",
             getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
@@ -157,7 +156,7 @@ public class CallGraphUtils {
      * @param methodSignature method signature
      * @return decoded method signature
      */
-    private static String decode(final String methodSignature) {
+    public static String decode(final String methodSignature) {
         String result = methodSignature;
         while (result.contains("%")) {
             result = URLDecoder.decode(result, StandardCharsets.UTF_8);
@@ -188,7 +187,7 @@ public class CallGraphUtils {
      * @return String representation of an edge
      */
     public static String getStringEdge(final Pair<String, String> edge) {
-        return edge.getLeft() + " '->" + "'\n" + edge.getRight() + "\n\n";
+        return decode(edge.getLeft()) + " '->" + "'\n" + decode(edge.getRight()) + "\n\n";
     }
 
     /**

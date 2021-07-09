@@ -18,19 +18,10 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
-import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.*;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
-import eu.fasten.core.data.FastenURI;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
@@ -240,7 +231,7 @@ public class OPALClassHierarchy {
     public void appendGraph(final Object source,
                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
                             final Stmt<DUVar<ValueInformation>>[] stmts,
-                            final Graph resultGraph, List<Integer> incompeletes,
+                            final JavaGraph resultGraph, List<Integer> incompeletes,
                             final Set<Integer> visitedPCs, final boolean callSiteOnly) {
         final var edges = this.getSubGraph(source, targets, stmts, incompeletes, visitedPCs, callSiteOnly);
         resultGraph.append(edges);
@@ -254,14 +245,13 @@ public class OPALClassHierarchy {
      * @param callSiteOnly
      * @return ExtendedRevisionJavaCallGraph sub-graph
      */
-    public Graph getSubGraph(final Object source,
+    public JavaGraph getSubGraph(final Object source,
                              final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
                              final Stmt<DUVar<ValueInformation>>[] stmts,
                              final List<Integer> incompeletes,
                              final Set<Integer> visitedPCs, boolean callSiteOnly) {
 
-        final var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
-        final var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+        final var callSites = new HashMap<List<Integer>, Map<Object, Object>>();
 
         if (targets != null) {
             for (final var opalCallSite : JavaConverters.asJavaIterable(targets.toIterable())) {
@@ -271,18 +261,18 @@ public class OPALClassHierarchy {
                     final var pc = (Integer) opalCallSite._1();
                     incompeletes.remove(pc);
                     if (!callSiteOnly) {
-                        processPC(source, stmts, visitedPCs, internalCalls, externalCalls,
+                        processPC(source, stmts, visitedPCs, callSites, callSites,
                             opalCallSite, targetDeclaration, pc);
                     } else {
                         if (!visitedPCs.contains(pc)) {
-                            processPC(source, stmts, visitedPCs, internalCalls, externalCalls,
+                            processPC(source, stmts, visitedPCs, callSites, callSites,
                                 opalCallSite, targetDeclaration, pc);
                         }
                     }
                 }
             }
         }
-        return new Graph(convert(internalCalls), convert(externalCalls));
+        return new JavaGraph(convert(callSites));
     }
 
     private void processPC(final Object source, final Stmt<DUVar<ValueInformation>>[] stmts,
@@ -321,7 +311,7 @@ public class OPALClassHierarchy {
 		final HashMap<IntIntPair, Map<Object, Object>> result = new HashMap<>();
 		for (final var e : externalCalls.entrySet()) {
 			final List<Integer> key = e.getKey();
-			result.put(IntIntPair.of(key.get(0).intValue(), key.get(1).intValue()), e.getValue());
+			result.put(IntIntPair.of(key.get(0), key.get(1)), e.getValue());
 		}
 		return result;
 	}
@@ -335,7 +325,7 @@ public class OPALClassHierarchy {
     public Map<Object, Object> getCallSite(final Method source, final Integer pc,
                                            Stmt<DUVar<ValueInformation>>[] stmts) {
         final var instruction = source.instructionsOption().get()[pc].mnemonic();
-        final List<FastenURI> receiverType = new ArrayList<>();
+        final var receiverType = new HashSet<FastenURI>();
 
         if (instruction.equals("invokevirtual") | instruction.equals("invokeinterface")) {
             if (stmts != null) {
@@ -366,7 +356,8 @@ public class OPALClassHierarchy {
         var callSite = new HashMap<>();
         callSite.put("line", source.body().get().lineNumber(pc).getOrElse(() -> 404));
         callSite.put("type", instruction);
-        callSite.put("receiver", receiverType.toString());
+        callSite.put("receiver", "[" + receiverType.stream().map(FastenURI::toString)
+                .reduce((f1, f2) -> f1 + "," + f2).orElse("") + "]");
 
         return Map.of(pc.toString(), callSite);
     }

@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.javacgopal.data.exceptions;
+package eu.fasten.core.data.opal.exceptions;
 
 /**
  * This exception is thrown whenever

@@ -18,17 +18,17 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.core.data.CScope;
 import eu.fasten.core.data.CNode;
+import eu.fasten.core.data.CScope;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
-import eu.fasten.core.data.metadatadb.codegen.udt.records.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -41,6 +41,7 @@ import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -63,6 +64,21 @@ public class MetadataDatabaseCPlugin extends Plugin {
             return MetadataDBCExtension.dslContext;
         }
 
+        private static final String globalNamespace = "C";
+        private static final String moduleNamespaceAddition = "_module";
+
+        protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
+            ExtendedRevisionCCallGraph cGraph = (ExtendedRevisionCCallGraph) graph;
+            var namespaces = new HashSet<String>();
+            namespaces.add(globalNamespace);
+            cGraph.getClassHierarchy().get(CScope.externalProduct).values().forEach(v -> v.values().forEach(m -> namespaces.add(m.getFile() + moduleNamespaceAddition)));
+            cGraph.getClassHierarchy().get(CScope.internalBinary).values().forEach(v -> v.values().forEach(m -> namespaces.add(m.getFile() + moduleNamespaceAddition)));
+            cGraph.getClassHierarchy().get(CScope.externalStaticFunction).values().forEach(v -> v.values().forEach(m -> namespaces.add(m.getFile() + moduleNamespaceAddition)));
+            cGraph.getClassHierarchy().get(CScope.externalUndefined).values().forEach(v -> v.values().forEach(m -> namespaces.add(m.getFile() + moduleNamespaceAddition)));
+            cGraph.getClassHierarchy().get(CScope.internalStaticFunction).values().forEach(v -> v.values().forEach(m -> namespaces.add(m.getFile() + moduleNamespaceAddition)));
+            return metadataDao.insertNamespaces(namespaces);
+        }
+
         /**
          * Saves a callgraph of new format to the database to appropriate tables.
          * We override this method because we want to save the architecture
@@ -82,7 +98,8 @@ public class MetadataDatabaseCPlugin extends Plugin {
                     CCallGraph.getCgGenerator(), CCallGraph.version, null, CCallGraph.architecture,
                     getProperTimestamp(CCallGraph.timestamp), new JSONObject());
 
-            var allCallables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId);
+            var namespaceMap = getNamespaceMap(callGraph, metadataDao);
+            var allCallables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId, namespaceMap);
             var callables = allCallables.getLeft();
             var numInternal = allCallables.getRight();
 
@@ -126,13 +143,13 @@ public class MetadataDatabaseCPlugin extends Plugin {
          * scopes and external static functions.
          */
         public ArrayList<CallablesRecord> getCallables(final Map<CScope, Map<String, Map<Integer, CNode>>> cha, CScope scope,
-                boolean isInternal, boolean saveFiles, long packageVersionId, MetadataDao metadataDao) {
+                boolean isInternal, boolean saveFiles, long packageVersionId, MetadataDao metadataDao, Map<String, Long> namespaceMap) {
             var callables = new ArrayList<CallablesRecord>();
             for (final var name : cha.get(scope).entrySet()) {
                 for (final var method : name.getValue().entrySet()) {
                     // We use dummy modules to connect files to callables
                     // otherwise we set the global "C" as the namespace.
-                    String namespace = saveFiles ? null : "C";
+                    String namespace = saveFiles ? method.getValue().getFile() + moduleNamespaceAddition : globalNamespace;
                     var moduleId = -1L;
                     // Save module
                     if (saveFiles) {
@@ -141,7 +158,7 @@ public class MetadataDatabaseCPlugin extends Plugin {
                         // Check if dummy module already exist for this file.
                         moduleId = metadataDao.getModuleContent(fileId);
                         if (moduleId == -1L) {
-                            moduleId = metadataDao.insertModule(packageVersionId, namespace, null, null, true);
+                            moduleId = metadataDao.insertModule(packageVersionId, namespaceMap.get(namespace), null, true);
                         }
                         metadataDao.insertModuleContent(moduleId, fileId);
                         // Save binary Module
@@ -160,49 +177,61 @@ public class MetadataDatabaseCPlugin extends Plugin {
                             firstLine = callableMetadata.getInt("first");
                         else
                             firstLine = Integer.parseInt(callableMetadata.getString("first"));
-                        callableMetadata.remove("first");
                     }
+                    callableMetadata.remove("first");
                     Integer lastLine = null;
                     if (callableMetadata.has("last")) {
                         if (!(callableMetadata.get("last") instanceof String))
                             lastLine = callableMetadata.getInt("last");
                         else
                             lastLine = Integer.parseInt(callableMetadata.getString("last"));
-                        callableMetadata.remove("last");
                     }
-                    callableMetadata.put("type", scope);
-                    callables.add(new CallablesRecord(localId, moduleId, uri, isInternal, null,
-                        firstLine, lastLine, JSONB.valueOf(callableMetadata.toString())));
+                    callableMetadata.remove("last");
+                    var callableType = getCallableType(String.valueOf(scope));
+                    Boolean callableDefined = null;
+                    if (callableMetadata.has("defined") && (callableMetadata.get("defined") instanceof Boolean)) {
+                        callableDefined = callableMetadata.getBoolean("defined");
+                    }
+                    callableMetadata.remove("defined");
+                    Access callableAccess = null;
+                    if (callableMetadata.has("access") && (callableMetadata.get("access") instanceof String)) {
+                        callableAccess = getAccess(callableMetadata.getString("access"));
+                    }
+                    callableMetadata.remove("access");
+                    callables.add(new CallablesRecord(localId, moduleId, uri, isInternal,
+                        firstLine, lastLine, callableType, callableDefined, callableAccess,
+                            JSONB.valueOf(callableMetadata.toString())));
                 }
             }
             return callables;
         }
 
-        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
+        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao,
+                                                                                    long packageVersionId, Map<String, Long> namespaceMap) {
             ExtendedRevisionCCallGraph CCallGraph = (ExtendedRevisionCCallGraph) callgraph;
             var callables = new ArrayList<CallablesRecord>();
             var cha = CCallGraph.getClassHierarchy();
 
-            callables.addAll(getCallables(cha, CScope.internalBinary, true, true, packageVersionId, metadataDao));
-            callables.addAll(getCallables(cha, CScope.internalStaticFunction, true, true, packageVersionId, metadataDao));
+            callables.addAll(getCallables(cha, CScope.internalBinary, true, true, packageVersionId, metadataDao, namespaceMap));
+            callables.addAll(getCallables(cha, CScope.internalStaticFunction, true, true, packageVersionId, metadataDao, namespaceMap));
             var numInternal = callables.size();
 
-            callables.addAll(getCallables(cha, CScope.externalProduct, false, false, packageVersionId, metadataDao));
-            callables.addAll(getCallables(cha, CScope.externalUndefined, false, false, packageVersionId, metadataDao));
-            callables.addAll(getCallables(cha, CScope.externalStaticFunction, false, true, packageVersionId, metadataDao));
+            callables.addAll(getCallables(cha, CScope.externalProduct, false, false, packageVersionId, metadataDao, namespaceMap));
+            callables.addAll(getCallables(cha, CScope.externalUndefined, false, false, packageVersionId, metadataDao, namespaceMap));
+            callables.addAll(getCallables(cha, CScope.externalStaticFunction, false, true, packageVersionId, metadataDao, namespaceMap));
 
             return new ImmutablePair<>(callables, numInternal);
         }
 
-        protected List<EdgesRecord> insertEdges(Graph graph,
-                                 Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
+        protected List<CallSitesRecord> insertEdges(Graph graph,
+                                                    Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)
             var graphCalls = graph.getInternalCalls();
             graphCalls.putAll(graph.getExternalCalls());
 
-            var edges = new ArrayList<EdgesRecord>(numEdges);
+            var edges = new ArrayList<CallSitesRecord>(numEdges);
             for (var edgeEntry : graphCalls.entrySet()) {
 
                 // Get Global ID of the source callable
@@ -210,17 +239,14 @@ public class MetadataDatabaseCPlugin extends Plugin {
                 // Get Global ID of the target callable
                 var target = lidToGidMap.get((long) edgeEntry.getKey().secondInt());
 
-                // Create receivers
-                var receivers = new ReceiverRecord[0];
-
                 // Add edge record to the list of records
-                edges.add(new EdgesRecord(source, target, receivers, JSONB.valueOf("{}")));
+                edges.add(new CallSitesRecord(source, target, null, null, null, null));
             }
 
             // Batch insert all edges
             final var edgesIterator = edges.iterator();
             while (edgesIterator.hasNext()) {
-                var edgesBatch = new ArrayList<EdgesRecord>(Constants.insertionBatchSize);
+                var edgesBatch = new ArrayList<CallSitesRecord>(Constants.insertionBatchSize);
                 while (edgesIterator.hasNext()
                         && edgesBatch.size() < Constants.insertionBatchSize) {
                     edgesBatch.add(edgesIterator.next());

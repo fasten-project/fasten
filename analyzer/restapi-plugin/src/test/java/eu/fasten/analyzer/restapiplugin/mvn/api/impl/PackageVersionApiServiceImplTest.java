@@ -45,7 +45,7 @@ public class PackageVersionApiServiceImplTest {
         var coordinate = "group:artifact:version";
         var id = 42L;
         Mockito.when(kbDao.getArtifactName(id)).thenReturn(coordinate);
-        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl";
+        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl/";
         var expected = new ResponseEntity<>("http://lima.ewi.tudelft.nl/mvn/a/artifact/artifact_group_version.json", HttpStatus.OK);
         var result = service.getERCGLink(id);
         assertEquals(expected, result);
