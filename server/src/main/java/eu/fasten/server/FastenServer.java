@@ -19,11 +19,7 @@
 package eu.fasten.server;
 
 import ch.qos.logback.classic.Level;
-import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.plugins.DataWriter;
-import eu.fasten.core.plugins.FastenPlugin;
-import eu.fasten.core.plugins.GraphDBConnector;
-import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.core.plugins.*;
 import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
@@ -46,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
-
 
 
 @CommandLine.Command(name = "FastenServer", mixinStandardHelpOptions = true)
@@ -108,6 +103,11 @@ public class FastenServer implements Runnable {
             split = ",")
     Map<String, String> dbUrls;
 
+    @Option(names = {"-dgp", "--dep_graph_path"},
+            paramLabel = "dir",
+            description = "Path to serialized dependency graph")
+    String depGraphPath;
+
     @Option(names = {"-gd", "--graphdb_dir"},
             paramLabel = "dir",
             description = "Path to directory with RocksDB database")
@@ -161,7 +161,9 @@ public class FastenServer implements Runnable {
     @Override
     public void run() {
         setLoggingLevel();
-        if (!deployMode){ showSysInfo(); }
+        if (!deployMode) {
+            showSysInfo();
+        }
 
         logger.debug("Loading plugins from: {}", pluginPath);
 
@@ -189,17 +191,21 @@ public class FastenServer implements Runnable {
         var kafkaPlugins = jarPluginManager.getExtensions(KafkaPlugin.class);
         var graphDbPlugins = jarPluginManager.getExtensions(GraphDBConnector.class);
         var dataWriterPlugins = jarPluginManager.getExtensions(DataWriter.class);
+        var graphResolverUserPlugins = jarPluginManager.getExtensions(DependencyGraphUser.class);
+        var graphDbReaderPlugins = jarPluginManager.getExtensions(GraphDBReader.class);
 
         logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:"
                         + " {} total plugins",
                 kafkaPlugins.size(), dbPlugins.size(), graphDbPlugins.size(), fastenPlugins.size());
         fastenPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName()))
                 .forEach(x -> logger.info("{}, {}, {}", x.getClass().getSimpleName(),
-                x.version(), x.description()));
+                        x.version(), x.description()));
 
         makeDBConnection(dbPlugins);
         makeGraphDBConnection(graphDbPlugins);
         setBaseDirectory(dataWriterPlugins);
+        loadDependencyGraphResolvers(graphResolverUserPlugins);
+        makeReadOnlyGraphDBConnection(graphDbReaderPlugins);
 
         var kafkaServerPlugins = setupKafkaPlugins(kafkaPlugins);
 
@@ -269,8 +275,28 @@ public class FastenServer implements Runnable {
         });
     }
 
+    private void loadDependencyGraphResolvers(List<DependencyGraphUser> plugins) {
+        plugins.forEach(p -> {
+            if (dbUrls != null && depGraphPath != null) {
+                DSLContext dbContext = null;
+                try {
+                    dbContext = getDSLContext(dbUrls.get("mvn"));
+                } catch (SQLException ex) {
+                    logger.error("Couldn't set {} DB connection for plug-in {}\n{}",
+                            dbUrls.get("mvn"), p.getClass().getSimpleName(), ex.getStackTrace());
+                }
+                p.loadGraphResolver(dbContext, depGraphPath);
+            } else {
+                logger.error("Couldn't load dependency graph. Make sure that you have "
+                        + "provided a valid DB URL, username, password, "
+                        + "and a path to the serialized dependency graph.");
+            }
+        });
+    }
+
     /**
      * Get a DB connection for a given DB URL
+     *
      * @param dbURL JDBC URI
      * @throws SQLException
      */
@@ -291,6 +317,29 @@ public class FastenServer implements Runnable {
             if (ObjectUtils.allNotNull(graphDbDir)) {
                 try {
                     p.setRocksDao(RocksDBConnector.createRocksDBAccessObject(graphDbDir));
+                    logger.debug("Set Graph DB connection successfully for plug-in {}",
+                            p.getClass().getSimpleName());
+                } catch (RuntimeException e) {
+                    logger.error("Couldn't set GraphDB connection for plug-in {}",
+                            p.getClass().getSimpleName(), e);
+                }
+            } else {
+                logger.error("Couldn't set a GraphDB connection. Make sure that you have "
+                        + "provided a valid directory to the database.");
+            }
+        });
+    }
+
+    /**
+     * Setup RocksDB connection for GraphDB plugins.
+     *
+     * @param graphDbPlugins list of Graph DB plugins
+     */
+    private void makeReadOnlyGraphDBConnection(List<GraphDBReader> graphDbPlugins) {
+        graphDbPlugins.forEach((p) -> {
+            if (ObjectUtils.allNotNull(graphDbDir)) {
+                try {
+                    p.setRocksDao(RocksDBConnector.createReadOnlyRocksDBAccessObject(graphDbDir));
                     logger.debug("Set Graph DB connection successfully for plug-in {}",
                             p.getClass().getSimpleName());
                 } catch (RuntimeException e) {
