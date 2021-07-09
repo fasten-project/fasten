@@ -120,7 +120,7 @@ class MetadataDaoTest {
             outboundLicenses.setOutbound(licenses);
             String updatedMetadata = metadataDao.insertPackageOutboundLicenses(
                     coordinates,
-                    outboundLicenses.getOutboundJson()
+                    outboundLicenses.generateOutboundJson()
             );
 
             // Checking whether the updated package version's metadata field has been updated correctly or not

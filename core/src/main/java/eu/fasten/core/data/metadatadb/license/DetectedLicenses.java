@@ -32,7 +32,13 @@ public class DetectedLicenses {
         files.forEach(file -> this.files.put(file));
     }
 
-    public String getOutboundJson() {
+    /**
+     * Generates a JSON snippet containing outbound licenses only.
+     * E.g.: '{"outbound": [{"name": "apache-2.0", source: "LOCAL_POM"}]}'.
+     *
+     * @return a JSON snippet containing outbound licenses only.
+     */
+    public String generateOutboundJson() {
         JSONObject outboundObject = new JSONObject();
         JSONArray licensesArray = new JSONArray();
         outbound.forEach(l -> licensesArray.put(
