@@ -249,7 +249,6 @@ public class MetadataDao {
                 "  AND p.package_name = LOWER({1})\n" +
                 "  AND pv.version = LOWER({2})\n" +
                 "    RETURNING pv.metadata;", JSONB.valueOf(outboundLicenses), packageName, packageVersion);
-        System.out.println(updatedMetadata);
 
         // Updated metadata field
         assert updatedMetadata != null; // FIXME

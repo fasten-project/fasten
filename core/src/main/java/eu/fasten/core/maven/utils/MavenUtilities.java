@@ -202,37 +202,6 @@ public class MavenUtilities {
     }
 
     /**
-     * Retrieves the Maven coordinate of the input record.
-     * TODO Unit tests.
-     *
-     * @param record the input record containing repository information (`fasten.RepoCloner.out`).
-     * @return the Maven coordinate of the input record.
-     * @throws IllegalArgumentException in case the function couldn't find coordinate information
-     *                                  in the input record.
-     */
-    public static Revision extractMavenCoordinates(String record) {
-        var payload = new JSONObject(record);
-        if (payload.has("payload")) {
-            payload = payload.getJSONObject("payload");
-        }
-        String groupId = payload.getString("groupId");
-        if (groupId == null) {
-            throw new IllegalArgumentException("Invalid repository information: missing coordinate group ID.");
-        }
-        String artifactId = payload.getString("artifactId");
-        if (artifactId == null) {
-            throw new IllegalArgumentException("Invalid repository information: missing coordinate artifact ID.");
-        }
-        String version = payload.getString("version");
-        if (version == null) {
-            throw new IllegalArgumentException("Invalid repository information: missing coordinate version.");
-        }
-        long createdAt = payload.getLong("date");
-        // TODO Is the timestamp conversion right?
-        return new Revision(groupId, artifactId, version, new Timestamp(createdAt));
-    }
-
-    /**
      * Pretty-prints Maven coordinates.
      *
      * @param groupId    the maven coordinate's group ID.
