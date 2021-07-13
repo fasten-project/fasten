@@ -16,21 +16,19 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.core.plugins;
 
-import org.springframework.http.ResponseEntity;
-import java.util.List;
+import eu.fasten.core.data.graphdb.RocksDao;
 
-public interface ResolutionApiService {
+/**
+ * A plug-in that needs to access graph database (RocksDB) in a read-only mode
+ */
+public interface GraphDBReader extends FastenPlugin {
 
-    ResponseEntity<String> resolveDependencies(String package_name, String version, boolean transitive, long timestamp, boolean useDepGraph);
-
-    ResponseEntity<String> resolveDependents(String package_name, String version, boolean transitive, long timestamp);
-
-    ResponseEntity<String> resolveMultipleDependencies(List<String> mavenCoordinates);
-
-    ResponseEntity<String> getDirectedGraph(long packageVersionId, boolean needStitching, long timestamp);
-
-    ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version);
-
+    /**
+     * Sets read-only RocksDB connection.
+     *
+     * @param rocksDao RocksDB Database Access Object
+     */
+    void setRocksDao(RocksDao rocksDao);
 }
