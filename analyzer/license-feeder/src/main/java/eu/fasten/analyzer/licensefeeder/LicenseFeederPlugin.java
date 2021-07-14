@@ -113,7 +113,7 @@ public class LicenseFeederPlugin extends Plugin {
          * Inserts outbound licenses at the package version level.
          *
          * @param coordinates the coordinates whose outbound licenses are about to be inserted.
-         * @param record the input record containing outbound license findings.
+         * @param record      the input record containing outbound license findings.
          * @param metadataDao Data Access Object to insert records in the database.
          */
         protected void insertOutboundLicenses(Revision coordinates, String record, MetadataDao metadataDao) {

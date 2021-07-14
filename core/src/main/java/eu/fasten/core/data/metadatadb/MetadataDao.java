@@ -188,7 +188,7 @@ public class MetadataDao {
      * @return the updated metadata field.
      */
     public String insertPackageOutboundLicenses(Revision coordinates,
-                                              String outboundLicenses) {
+                                                String outboundLicenses) {
         return insertPackageOutboundLicenses(
                 coordinates.groupId,
                 coordinates.artifactId,

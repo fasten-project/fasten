@@ -9,6 +9,7 @@ import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.junit.ClassRule;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -131,5 +132,10 @@ class MetadataDaoTest {
                     JSONCompareMode.NON_EXTENSIBLE
             );
         });
+    }
+
+    @AfterAll
+    static void stopPostgresContainer() {
+        postgreSQLContainer.stop();
     }
 }

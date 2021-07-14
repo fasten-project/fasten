@@ -3,11 +3,24 @@
 #############################################
 
 FROM maven:3.8.1-jdk-11-slim AS build-jars
+
 COPY . /home/app
+
 # Building the server JAR
-RUN mvn --file /home/app/pom.xml install --projects server --also-make
+# - Skips integration tests requiring Testcontainers (hence, Docker).
+#   Integration tests are run by the CI anyways.
+RUN mvn --file /home/app/pom.xml install --projects server --also-make -Dtest=\!MetadataDaoTest,\!PostgresConnectorTest
+
+# Building the generic analyzer plugin JAR
+RUN mvn --file /home/app/pom.xml install --projects analyzer
+
 # Building the license plugin JAR
-RUN mvn --file /home/app/pom.xml install --projects analyzer,:license-feeder
+# - Skips integration tests requiring Testcontainers (hence, Docker)
+#   Integration tests are run by the CI anyways.
+# - Doesn't fail in absence of tests, since the license feeder doesn't have unit tests yet
+#   (the functions used in the MetadataDao do have unit tests)
+#   TODO Delete `-DfailIfNoTests=false` upon creating unit tests for the license feeder class
+RUN mvn --file /home/app/pom.xml install --projects :license-feeder -Dtest=\!*IntegrationTest -DfailIfNoTests=false
 
 #######################
 # Stage 2a: packaging #

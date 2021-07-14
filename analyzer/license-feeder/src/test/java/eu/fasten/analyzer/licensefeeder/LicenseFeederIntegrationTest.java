@@ -4,6 +4,7 @@ import com.github.stefanbirkner.systemlambda.SystemLambda;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import org.junit.ClassRule;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -11,7 +12,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.util.Collections;
 
-class LicenseFeederPluginTest {
+class LicenseFeederIntegrationTest {
 
     protected static final String KB_USERNAME = "fasten";
     protected static final String KB_PASSWORD = "testpassword";
@@ -37,12 +38,15 @@ class LicenseFeederPluginTest {
 
                 // No exception should be thrown while connecting to the DB
                 licenseFeeder.setDBConnection(Collections.singletonMap(Constants.mvnForge,
-                                PostgresConnector.getDSLContext(
-                                        postgreSQLContainer.getJdbcUrl(),
-                                        postgreSQLContainer.getUsername(),
-                                        true
-                                )
-                        )
-                ));
+                        PostgresConnector.getDSLContext(
+                                postgreSQLContainer.getJdbcUrl(),
+                                postgreSQLContainer.getUsername(),
+                                true
+                        ))));
+    }
+
+    @AfterAll
+    static void stopPostgresContainer() {
+        postgreSQLContainer.stop();
     }
 }
