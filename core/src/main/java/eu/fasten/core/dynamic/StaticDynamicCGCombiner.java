@@ -94,7 +94,7 @@ public class StaticDynamicCGCombiner {
         });
         var graph = new HybridDirectedGraph(isStaticCallMap);
         allUrisMap.keySet().forEach(graph::addVertex);
-        allCalls.forEach(call -> graph.addEdge(call.firstLong(), call.secondLong(), call));
+        allCalls.forEach(call -> graph.addEdge(call.firstLong(), call.secondLong()));
         return graph;
     }
 }
