@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.dynamic;
+package eu.fasten.core.dynamic.data;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
